@@ -1,0 +1,48 @@
+import os
+os.makedirs('testgp2plot', exist_ok=True)
+%run testgp2a.py
+fig.savefig("testgp2plot/a.png")
+%run testgp2b.py
+fig.savefig("testgp2plot/b.png")
+%run testgp2c.py
+fig.savefig("testgp2plot/c.png")
+%run testgp2d.py
+fig.savefig("testgp2plot/d.png")
+%run testgp2e.py
+fig.savefig("testgp2plot/e.png")
+%run testgp2f.py
+fig.savefig("testgp2plot/f.png")
+%run testgp2g.py
+fig.savefig("testgp2plot/g.png")
+%run testgp2h.py
+fig.savefig("testgp2plot/h.png")
+%run testgp2i.py
+fig.savefig("testgp2plot/i.png")
+%run testgp2j.py
+fig.savefig("testgp2plot/j.png")
+%run testgp2k.py
+fig.savefig("testgp2plot/k.png")
+%run testgp2l.py
+fig.savefig("testgp2plot/l.png")
+%run testgp2m.py
+fig.savefig("testgp2plot/m.png")
+%run testgp2n.py
+fig.savefig("testgp2plot/n.png")
+%run testgp2o.py
+fig.savefig("testgp2plot/o.png")
+%run testgp2p.py
+fig.savefig("testgp2plot/p.png")
+%run testgp2q.py
+fig.savefig("testgp2plot/q.png")
+%run testgp2r.py
+fig.savefig("testgp2plot/r.png")
+%run testgp2s.py
+fig.savefig("testgp2plot/s.png")
+%run testgp2t.py
+fig.savefig("testgp2plot/t.png")
+%run testgp2u.py
+fig.savefig("testgp2plot/u.png")
+%run testgp2v.py
+fig.savefig("testgp2plot/v.png")
+%run testgp2w.py
+fig.savefig("testgp2plot/w.png")
