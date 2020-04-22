@@ -12,7 +12,7 @@ for d in derivs:
 
 u = gp.prior()
 
-fig = plt.figure('testgp2n')
+fig = plt.figure('n')
 fig.clf()
 ax = fig.subplots(1, 1)
 

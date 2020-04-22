@@ -37,7 +37,7 @@ sample = m + _linalg.CholGersh(cov, eps=1e-5)._L @ np.random.randn(len(m))
 sample = sample.reshape(xpred.shape)
 
 print('plot...')
-fig = plt.figure('testgp2q')
+fig = plt.figure('q')
 fig.clf()
 ax = fig.add_subplot(111, projection='3d')
 

@@ -4,7 +4,7 @@ import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
 
-fig = plt.figure('testgp2v')
+fig = plt.figure('v')
 fig.clf()
 ax = fig.subplots(1, 1)
 

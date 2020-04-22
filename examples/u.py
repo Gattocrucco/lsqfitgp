@@ -48,7 +48,7 @@ gp.addx(xpred[1], 1, deriv=(1, 'time'))
 
 pred = gp.predfromdata(datadict, [0, 1])
 
-fig = plt.figure('testgp2u')
+fig = plt.figure('u')
 fig.clf()
 ax = fig.subplots(1, 1)
 

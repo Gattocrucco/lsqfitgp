@@ -17,7 +17,7 @@ print('fit...')
 u = gp.pred({'data': y}, ['pred', 'deriv'], fromdata=True)
 
 print('figure...')
-fig = plt.figure('testgp2b')
+fig = plt.figure('b')
 fig.clf()
 ax = fig.subplots(1, 1)
 

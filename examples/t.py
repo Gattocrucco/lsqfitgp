@@ -59,7 +59,7 @@ gp.addx(xpred, 'B')
 
 pred = gp.predfromdata({'A': data}, 'B')
 
-fig = plt.figure('testgp2t')
+fig = plt.figure('t')
 fig.clf()
 ax = fig.subplots(1, 1)
 

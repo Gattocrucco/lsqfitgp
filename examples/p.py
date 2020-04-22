@@ -21,7 +21,7 @@ m, cov = gp.predfromdata({'pere': y}, 'banane', raw=True)
 s = np.sqrt(np.diag(cov))
 
 print('plot...')
-fig = plt.figure('testgp2p')
+fig = plt.figure('p')
 fig.clf()
 ax = fig.subplots(1, 1)
 

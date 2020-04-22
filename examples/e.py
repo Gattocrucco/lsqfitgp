@@ -19,7 +19,7 @@ print('fit...')
 u = gp.predfromdata({'data': y[0::2], 'dataderiv': y[1::2]}, ['pred', 'predderiv'])
 
 print('figure...')
-fig = plt.figure('testgp2e')
+fig = plt.figure('e')
 fig.clf()
 ax = fig.subplots(1, 1)
 

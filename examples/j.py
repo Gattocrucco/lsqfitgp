@@ -16,7 +16,7 @@ m = gvar.mean(u)
 s = gvar.sdev(u)
 cov = gvar.evalcov(u)
 
-fig = plt.figure('testgp2j')
+fig = plt.figure('j')
 fig.clf()
 ax = fig.subplots(1, 1)
 

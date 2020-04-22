@@ -51,7 +51,7 @@ ypredalt = fcn('pred', fit.palt)
 
 phipred = gp.predfromfit({'data': fit.p['phi']}, 'pred')
 
-fig = plt.figure('testgp2c')
+fig = plt.figure('c')
 fig.clf()
 axs = fig.subplots(1, 2)
 

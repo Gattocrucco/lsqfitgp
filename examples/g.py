@@ -18,7 +18,7 @@ umean, ucov = gp.predfromdata({'data': y}, ['pred', 'predderiv'], raw=True)
 ualt = gp.predfromdata({'data': y}, ['pred', 'predderiv'])
 
 print('figure...')
-fig = plt.figure('testgp2g')
+fig = plt.figure('g')
 fig.clf()
 ax = fig.subplots(1, 1)
 

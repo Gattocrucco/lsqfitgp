@@ -12,7 +12,7 @@ for d in derivs:
 
 cov = gp.prior(raw=True)
 
-fig = plt.figure('testgp2o')
+fig = plt.figure('o')
 fig.clf()
 ax = fig.subplots(1, 1)
 

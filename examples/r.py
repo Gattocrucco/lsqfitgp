@@ -33,7 +33,7 @@ print('samples...')
 samples = m + _linalg.CholGersh(cov, eps=1e-5)._L @ np.random.randn(len(cov))
 
 print('plot...')
-fig = plt.figure('testgp2r')
+fig = plt.figure('r')
 fig.clf()
 ax = fig.add_subplot(111, projection='3d')
 

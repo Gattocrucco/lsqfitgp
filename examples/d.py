@@ -17,7 +17,7 @@ print('fit...')
 u = gp.predfromdata({'data': y}, ['integral', 'pred'])
 
 print('figure...')
-fig = plt.figure('testgp2d')
+fig = plt.figure('d')
 fig.clf()
 ax = fig.subplots(1, 1)
 

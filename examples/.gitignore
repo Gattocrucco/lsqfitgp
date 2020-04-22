@@ -1,2 +1,5 @@
 # A symlink I use on my copy
 lsqfitgp
+
+# Figures saved by RUNALL.ipy
+*.png

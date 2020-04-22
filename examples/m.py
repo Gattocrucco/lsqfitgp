@@ -28,7 +28,7 @@ gp.addx(xpred, 'pred')
 m, cov = gp.predfromdata({'data': y}, 'pred', raw=True)
 s = np.sqrt(np.diag(cov))
 
-fig = plt.figure('testgp2m')
+fig = plt.figure('m')
 fig.clf()
 ax = fig.subplots(1, 1)
 

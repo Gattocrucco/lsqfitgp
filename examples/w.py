@@ -42,7 +42,7 @@ sdev = gvar.sdev(pred)
 samples = [sample for _, sample in zip(range(1), gvar.raniter(pred))]
 
 print('figure...')
-fig = plt.figure('testgp2w')
+fig = plt.figure('w')
 fig.clf()
 fig.set_size_inches(6, 7)
 axs = fig.subplots(3, 1)
