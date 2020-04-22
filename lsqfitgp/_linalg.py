@@ -64,8 +64,9 @@ class DecompMeta(type):
     Metaclass for adding autograd support to subclasses of Decomposition.
     """
     
-    def __new__(cls, name, bases, dct):
-        subclass = super().__new__(cls, name, bases, dct)
+    # TODO add vjps for the parameter b
+    
+    def __init__(subclass, *args):
         
         # For __init__ I can't use an _autograd flag like below to avoid double
         # wrapping because the wrapper is called as super().__init__ in
@@ -152,8 +153,6 @@ class DecompMeta(type):
                 return logdet_autograd(self, self._K)
             logdet._autograd = True
             subclass.logdet = logdet
-        
-        return subclass
 
 # TODO learn how to properly do abstract classes in Python instead of
 # raising NotImplementedError manually
@@ -369,6 +368,10 @@ class BlockDecomp:
     
     # This is not a subclass of Decomposition because the __init__
     # signature is different.
+    
+    # This class can be used only starting from a seed block and adding
+    # other blocks one at a time. Would a divide et impera approach be useful
+    # for my case?
     
     def __init__(self, P_decomp, S, Q, S_decomp_class):
         """

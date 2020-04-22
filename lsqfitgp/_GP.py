@@ -149,6 +149,15 @@ class GP:
     
     """
     
+    # TODO maybe checkpos=True is a too strong default. It can quickly grow
+    # beyond doable even if the actual computations remain light. Also, it
+    # does not really make sense that it is used only in case of gvar output.
+    # Alternative 1: set checkpos=False by default and if True build all the
+    # covariance blocks the first time I call _covblock and check everything.
+    # Alternative 2: only check the matrices I need to invert. Alternative 3:
+    # the default is to check only if the matrices are small enough that it is
+    # not a problem. Alternative 4: check diagonal blocks.
+    
     def __init__(self, covfun, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
         """
         
@@ -310,6 +319,8 @@ class GP:
             
             self._elements[key] = _Points(gx, deriv)
     
+    # TODO apply the checkfinite setting on the tensors.
+    
     def addtransf(self, tensors, key):
         """
         
@@ -422,16 +433,13 @@ class GP:
             cov = cov.T
 
         if self._checkfinite and not np.all(np.isfinite(cov)):
-            raise RuntimeError('covariance block ({}, {}) is not finite'.format(xkey, ykey))
+            raise RuntimeError('covariance block {!r} is not finite'.format((xkey, ykey)))
         if self._checksym and xkey == ykey and not np.allclose(cov, cov.T):
-            raise RuntimeError('covariance block ({}, {}) is not symmetric'.format(xkey, ykey))
+            raise RuntimeError('covariance block {!r} is not symmetric'.format((xkey, ykey)))
 
         return cov
 
     def _covblock(self, row, col):
-        if not self._elements:
-            raise RuntimeError('process is empty, add values with `addx`')
-
         if not hasattr(self, '_covblocks'):
             self._covblocks = dict() # (key1, key2) -> matrix
         
@@ -442,7 +450,7 @@ class GP:
                 if self._checksym:
                     blockT = self._makecovblock(col, row)
                     if not np.allclose(block.T, blockT):
-                        raise RuntimeError('covariance block ({}, {}) is not symmetric'.format(row, col))
+                        raise RuntimeError('covariance block {!r} is not symmetric'.format((row, col)))
                 self._covblocks[col, row] = block.T
             self._covblocks[row, col] = block
         
@@ -486,6 +494,8 @@ class GP:
         # know how to do it. In case it is possible, replace this with a
         # method that gets the prior for a key without necessarily generating
         # the whole prior. Finally, remove the _canaddx check in GP.addx.
+        
+        # TODO I can do a lazy prior at least for transformations.
         if not hasattr(self, '_priordict'):
             if self._checkpositive:
                 fullcov = self._assemblecovblocks(list(self._elements))

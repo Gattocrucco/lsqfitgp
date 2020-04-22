@@ -11,7 +11,7 @@ sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
 
 def pred(kw, seed):
-    np.random.seed(int(seed))
+    np.random.seed(seed)
     x = np.random.uniform(-5, 5, size=20)
     xpred = np.random.uniform(-10, 10, size=100)
 
@@ -54,10 +54,10 @@ for fromdata in [True, False]:
         name += '_'.join(k + '_' + str(v) for (k, v) in kw2.items())
         fundef = """
 def {}():
-    seed = time.time()
+    seed = int(1e6 * time.time()) % (1 << 32)
     m1, cov1 = pred({}, seed)
     m2, cov2 = pred({}, seed)
     assert_close(m1, m2)
-    assert_close_cov(cov1, cov2, 3e-2, 3e-5)
+    assert_close_cov(cov1, cov2, 3e-2, 4e-5)
 """.format(name, kw1, kw2)
         exec(fundef)

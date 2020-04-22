@@ -4,15 +4,21 @@ import autograd
 from autograd import numpy as np
 from scipy import linalg, stats
 import gvar
+import pytest
 
 sys.path = ['.'] + sys.path
 from lsqfitgp import _linalg
 
+# TODO test usolve with actual object arrays
+
+# TODO remove most auto random n features
+
+# TODO learn how to properly do abstract classes in python
 class DecompTestBase:
     
     @property
     def decompclass(self):
-        raise NotImplementedError()
+        raise NotImplementedError
         
     def randsize(self):
         return np.random.randint(1, 20)
@@ -182,6 +188,8 @@ class DecompTestBase:
             assert np.allclose(sol, result, rtol=1e-4)
     
     # TODO test second derivatives
+    
+    # TODO test derivatives w.r.t. b
 
 class TestDiag(DecompTestBase):
     
@@ -286,3 +294,39 @@ def check_solve_triangular(A, B, lower):
     assert np.allclose(np.tensordot(A, x1, 1), B)
     x2 = _linalg.solve_triangular(A, B, lower=lower)
     assert np.allclose(x1, x2)
+
+class XFailMeta(type):
+    
+    def __init__(cls, *args):
+        for m, f in DecompTestBase.__dict__.items():
+            if 'grad' in m or 'jac' in m:
+                setattr(cls, m, pytest.mark.xfail(f))
+
+class BlockDecompTestBase(DecompTestBase, metaclass=XFailMeta):
+    """
+    Abstract class for testing BlockDecomp. Concrete subclasses must
+    overwrite subdecompclass.
+    """
+    
+    @property
+    def subdecompclass(self):
+        raise NotImplementedError
+    
+    @property
+    def decompclass(self):
+        def decomp(K):
+            if len(K) == 1:
+                return self.subdecompclass(K)
+            p = np.random.randint(1, len(K))
+            P = K[:p, :p]
+            Q = K[:p, p:]
+            S = K[p:, p:]
+            args = (self.subdecompclass(P), S, Q, self.subdecompclass)
+            return _linalg.BlockDecomp(*args)
+        return decomp
+
+class TestBlockChol(BlockDecompTestBase):
+    
+    @property
+    def subdecompclass(self):
+        return _linalg.Chol
