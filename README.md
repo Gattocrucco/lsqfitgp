@@ -25,6 +25,10 @@ In the directory `examples` there are various scripts named with single letters
 (sorry for this nonsense notation). In an IPython shell, you can run
 `examples/RUNALL.ipy` to run all the examples and save the figures on files.
 
+## Documentation
+
+There's no manual, only docstrings in the code.
+
 ## Tests
 
 The test code is in `test`. Launch `pytest` in the repository to run all the
