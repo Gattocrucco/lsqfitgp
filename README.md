@@ -10,7 +10,15 @@ Module for manipulating gaussian processes. Features:
     
   * [autograd](https://github.com/HIPS/autograd)-friendly.
   
-  * Supports multidimensional structured non-numerical input.
+  * Supports multidimensional structured non-numerical input with named
+    dimensions.
+    
+  * Apply arbitrary linear transformations to the process.
+  
+  * Use dictionaries to manipulate hyperparameters and hyperpriors. Use
+    `gvar.BufferDict` to transparently apply transformations.
+    
+  * Get a covariance matrix for the optimized hyperparameters.
   
 ## Installation
 
