@@ -1,5 +1,3 @@
-from __future__ import division
-
 import sys
 import itertools
 import time
@@ -58,6 +56,6 @@ def {}():
     m1, cov1 = pred({}, seed)
     m2, cov2 = pred({}, seed)
     assert_close(m1, m2)
-    assert_close_cov(cov1, cov2, 3e-2, 4e-5)
+    assert_close_cov(cov1, cov2, 3e-2, 2e-4)
 """.format(name, kw1, kw2)
         exec(fundef)

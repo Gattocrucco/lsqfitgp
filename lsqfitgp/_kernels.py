@@ -1,5 +1,3 @@
-from __future__ import division
-
 from autograd import numpy as np
 from autograd.scipy import special
 from scipy import special as special_noderiv

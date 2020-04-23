@@ -1,5 +1,3 @@
-from __future__ import division
-
 import gvar
 from autograd import numpy as np
 from autograd.scipy import linalg

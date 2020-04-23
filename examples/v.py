@@ -1,5 +1,3 @@
-from __future__ import division
-
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
