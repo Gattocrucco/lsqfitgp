@@ -1,3 +1,5 @@
+from autograd import numpy
+
 from . import _gvar_autograd
 from ._GP import *
 from ._Kernel import *

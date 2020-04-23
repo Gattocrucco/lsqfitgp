@@ -2,7 +2,7 @@ import builtins
 
 import autograd
 import gvar
-from autograd import scipy
+from autograd import numpy as np
 
 __doc__ = """
 Module that replaces gvar.numpy with autograd.numpy.
@@ -42,8 +42,14 @@ def switch_functions(module):
 switch_numpy(autograd.numpy)
 switch_functions(autograd.numpy)
 
-# gvar.erf = scipy.special.erf
-# gvar.BufferDict.extension_fcn['erfinv'] = gvar.erf
+gvar.erf = autograd.extend.primitive(gvar.erf)
+erf_jvp = lambda ans, x: lambda g: g * 2 / np.sqrt(np.pi) * np.exp(-x ** 2)
+autograd.extend.defvjp(gvar.erf, erf_jvp)
+autograd.extend.defjvp(gvar.erf, erf_jvp)
+
+gvar.BufferDict.extension_fcn['log'] = gvar.exp
+gvar.BufferDict.extension_fcn['sqrt'] = gvar.square
+gvar.BufferDict.extension_fcn['erfinv'] = gvar.erf
 
 autograd.extend.defvjp(
     autograd.numpy.asarray,
