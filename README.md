@@ -39,5 +39,5 @@ There's no manual, only docstrings in the code.
 
 ## Tests
 
-The test code is in `test`. Launch `pytest` in the repository to run all the
+The test code is in `tests`. Launch `pytest` in the repository to run all the
 tests. `pytest` can be installed with `pip install pytest`.
