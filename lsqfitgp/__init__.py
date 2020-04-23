@@ -1,3 +1,4 @@
+from . import _gvar_autograd
 from ._GP import *
 from ._Kernel import *
 from ._kernels import *

@@ -318,9 +318,7 @@ class GP:
                         raise ValueError('derivative field {} not in x'.format(repr(dim)))
             
             self._elements[key] = _Points(gx, deriv)
-    
-    # TODO apply the checkfinite setting on the tensors.
-    
+        
     def addtransf(self, tensors, key):
         """
         
@@ -352,14 +350,14 @@ class GP:
         
         # Check tensors and convert them to numpy arrays.
         for k, t in tensors.items():
-            if not np.isscalar(t) and not _isarraylike_nostructured(t):
-                raise TypeError('tensor for key {} is not scalar, array or list'.format(k))
             t = np.array(t, copy=False)
             if not np.issubdtype(t.dtype, np.number):
-                raise TypeError('tensor for key {} has non-numeric dtype {}'.format(k, t.dtype))
+                raise TypeError('tensors[{!r}] has non-numeric dtype {!r}'.format(k, t.dtype))
             rshape = self._elements[k].shape
+            if self._checkfinite and not np.all(np.isfinite(t)):
+                raise ValueError('tensors[{!r}] contains infs/nans'.format(k))
             if t.shape and t.shape[-1] != rshape[0]:
-                raise RuntimeError('tensor with shape {} can not be matrix multiplied with shape {} of key {}'.format(t.shape, rshape, k))
+                raise RuntimeError('tensors[{!r}] with shape {!r} can not be matrix multiplied with shape {!r}'.format(k, t.shape, rshape))
             tensors[k] = t
         
         # Compute shape.
@@ -373,9 +371,9 @@ class GP:
             shape = _array.broadcast_shapes(shapes)
         except ValueError:
             msg = 'can not broadcast tensors with shapes ['
-            msg += ', '.join(str(t.shape) for t in arrays)
+            msg += ', '.join(repr(t.shape) for t in arrays)
             msg += '] contracted with arrays with shapes ['
-            msg += ', '.join(str(e.shape) for e in elements) + ']'
+            msg += ', '.join(repr(e.shape) for e in elements) + ']'
             raise ValueError(msg)
         
         self._elements[key] = _Transf(tensors, shape)
