@@ -1,3 +1,5 @@
+import abc
+
 from autograd import numpy as np
 from autograd.scipy import linalg
 from autograd import extend
@@ -59,7 +61,7 @@ def asinexact(dtype):
     else:
         return np.float64
 
-class DecompMeta(type):
+class DecompMeta(abc.ABCMeta):
     """
     Metaclass for adding autograd support to subclasses of Decomposition.
     """
@@ -167,8 +169,6 @@ class DecompMeta(type):
             logdet._autograd = True
             cls.logdet = logdet
 
-# TODO learn how to properly do abstract classes in Python instead of
-# raising NotImplementedError manually
 class Decomposition(metaclass=DecompMeta):
     """
     
@@ -183,24 +183,27 @@ class Decomposition(metaclass=DecompMeta):
     
     """
     
+    @abc.abstractmethod
     def __init__(self, K):
         """
         Decompose matrix K.
         """
-        raise NotImplementedError
+        pass
         
+    @abc.abstractmethod
     def solve(self, b):
         """
         Solve the linear system K @ x = b.
         """
-        raise NotImplementedError
+        pass
     
+    @abc.abstractmethod
     def usolve(self, ub):
         """
         Solve the linear system K @ x = b where b is possibly an array of
         `gvar`s.
         """
-        raise NotImplementedError
+        pass
     
     def quad(self, b):
         """
@@ -208,11 +211,12 @@ class Decomposition(metaclass=DecompMeta):
         """
         return b.T @ self.solve(b)
     
+    @abc.abstractmethod
     def logdet(self):
         """
         Compute log(det(K)).
         """
-        raise NotImplementedError
+        pass
 
 class Diag(Decomposition):
     """
@@ -370,7 +374,6 @@ def _gershgorin_eigval_bound(K):
     """
     return np.max(np.sum(np.abs(K), axis=1))
 
-# TODO test this.
 class BlockDecomp:
     """
     Decomposition of a 2x2 symmetric block matrix using decompositions of the

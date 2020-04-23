@@ -1,4 +1,5 @@
 import sys
+import abc
 
 import autograd
 from autograd import numpy as np
@@ -11,43 +12,33 @@ from lsqfitgp import _linalg
 
 # TODO test usolve with actual object arrays
 
-# TODO remove most auto random n features
-
-# TODO learn how to properly do abstract classes in python
-class DecompTestBase:
+class DecompTestBase(metaclass=abc.ABCMeta):
     
     @property
+    @abc.abstractmethod
     def decompclass(self):
-        raise NotImplementedError
-        
+        pass
+            
     def randsize(self):
         return np.random.randint(1, 20)
         
-    def randsymmat(self, n=None):
-        if not n:
-            n = self.randsize()
+    def randsymmat(self, n):
         O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
         eigvals = np.random.uniform(1e-2, 1e2, size=n)
         K = (O * eigvals) @ O.T
         assert np.allclose(K, K.T)
         return K
     
-    def mat(self, s, n=None):
-        if not n and not isinstance(s, np.numpy_boxes.ArrayBox):
-            n = self.randsize()
+    def mat(self, s, n):
         x = np.arange(n)
         return np.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
     
     matjac = autograd.jacobian(mat, 1)
     
-    def randvec(self, n=None):
-        if not n:
-            n = self.randsize()
+    def randvec(self, n):
         return np.random.randn(n)
     
-    def randmat(self, m=None, n=None):
-        if not m:
-            m = self.randsize()
+    def randmat(self, m, n=None):
         if not n:
             n = self.randsize()
         return np.random.randn(m, n)
@@ -169,7 +160,7 @@ class DecompTestBase:
 
     def test_logdet(self):
         for n in range(1, 20):
-            K = self.randsymmat()
+            K = self.randsymmat(n)
             sol = np.sum(np.log(linalg.eigvalsh(K)))
             result = self.decompclass(K).logdet()
             assert np.allclose(sol, result)
@@ -302,9 +293,10 @@ class BlockDecompTestBase(DecompTestBase):
     """
     
     @property
+    @abc.abstractmethod
     def subdecompclass(self):
-        raise NotImplementedError
-    
+        pass
+            
     @property
     def decompclass(self):
         def decomp(K):
