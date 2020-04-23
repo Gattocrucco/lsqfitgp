@@ -39,7 +39,7 @@ pred = gp.predfromdata({'data': data['data']}, ['pred', 'predshort', 'predlong']
 print('sample posterior...')
 mean = gvar.mean(pred)
 sdev = gvar.sdev(pred)
-samples = [sample for _, sample in zip(range(1), gvar.raniter(pred))]
+samples = list(gvar.raniter(pred, 1))
 
 print('figure...')
 fig = plt.figure('w')

@@ -59,7 +59,7 @@ for deriv in pred:
     polys = ax.fill_between(time_pred, m - s, m + s, alpha=0.5, label=f'deriv {deriv}')
     colors[deriv] = polys.get_facecolor()[0]
 
-for _, sample in zip(range(3), gvar.raniter(pred)):
+for sample in gvar.raniter(pred, 3):
     for deriv in pred:
         ax.plot(time_pred, sample[deriv], color=colors[deriv])
 

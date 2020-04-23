@@ -25,7 +25,7 @@ for deriv in derivs:
     patch = ax.fill_between(x, m - s, m + s, label=f'deriv {deriv}', alpha=0.5)
     colors[deriv] = patch.get_facecolor()[0]
     
-for i, sample in zip(range(1), gvar.raniter(u)):
+for sample in gvar.raniter(u, 1):
     for deriv in derivs:
         ax.plot(x, sample[deriv], '-', color=colors[deriv])
 

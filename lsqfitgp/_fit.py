@@ -32,14 +32,7 @@ def _unflat(x, original):
     if isinstance(original, np.ndarray):
         return x.reshape(original.shape)
     elif isinstance(original, gvar.BufferDict):
-        d = gvar.BufferDict()
-        for key in original:
-            slic, shape = original.slice_shape(key)
-            val = x[slic]
-            if shape:
-                val = val.reshape(shape)
-            d[key] = val
-        return d
+        return gvar.BufferDict(original, buf=x)
 
 def empbayes_fit(hyperprior, gpfactory, data):
     """
@@ -85,5 +78,4 @@ def empbayes_fit(hyperprior, gpfactory, data):
     
     result = optimize.minimize(autograd.value_and_grad(fun), hpmean, jac=True)
     uresult = gvar.gvar(result.x, result.hess_inv)
-    shapedresult = _unflat(uresult, hyperprior)
-    return _asarrayorbufferdict(shapedresult)
+    return _unflat(uresult, hyperprior)

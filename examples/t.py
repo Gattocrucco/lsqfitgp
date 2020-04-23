@@ -70,7 +70,7 @@ for i in range(2):
     polys = ax.fill_between(time_pred, m - s, m + s, alpha=0.5, label=label_names[i])
     colors.append(polys.get_facecolor()[0])
 
-for _, sample in zip(range(3), gvar.raniter(pred)):
+for sample in gvar.raniter(pred, 3):
     for i in range(2):
         ax.plot(time_pred, sample[i], color=colors[i])
 

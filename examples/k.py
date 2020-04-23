@@ -29,7 +29,7 @@ for label in u:
     colors[label] = patch.get_facecolor()[0]
     
 print('samples...')
-for i, sample in zip(range(1), gvar.raniter(u)):
+for sample in gvar.raniter(u, 1):
     for label in u:
         ax.plot(xpred, sample[label], '-', color=colors[label])
 ax.plot(xdata, y, 'k.', label='data')
