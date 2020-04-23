@@ -74,6 +74,11 @@ Reference: Rasmussen et al. (2006), "Gaussian Processes for Machine Learning".
 
 # TODO
 #
+# Write a manual.
+#
+# Make the gvar testsuite work with autograd.numpy, then the lsqfit testsuite,
+# then incorporate the patches and modify _fit.py.
+#
 # Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
 # (quick partial fix: larger eps in IsotropicKernel.__init__).
 #

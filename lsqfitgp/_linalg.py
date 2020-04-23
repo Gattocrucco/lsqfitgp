@@ -64,50 +64,63 @@ class DecompMeta(type):
     Metaclass for adding autograd support to subclasses of Decomposition.
     """
     
-    # TODO add vjps for the parameter b
+    # TODO add jvps for solve and quad for forward mode
     
-    def __init__(subclass, *args):
+    def __init__(cls, *args):
         
         # For __init__ I can't use an _autograd flag like below to avoid double
         # wrapping because the wrapper is called as super().__init__ in
         # subclasses, so I assign self._K *after* calling old__init__.
-        old__init__ = subclass.__init__
+        old__init__ = cls.__init__
         def __init__(self, K, **kw):
             old__init__(self, noautograd(K), **kw)
             self._K = K
-        subclass.__init__ = __init__
+        cls.__init__ = __init__
         
-        oldsolve = subclass.solve
+        oldsolve = cls.solve
         if not hasattr(oldsolve, '_autograd'):
             @extend.primitive
             def solve_autograd(self, K, b):
                 return oldsolve(self, b)
-            def solve_vjp(ans, self, K, b):
+            def solve_vjp_K(ans, self, K, b):
                 assert ans.shape == b.shape
                 assert b.shape[0] == K.shape[0] == K.shape[1]
                 def vjp(g):
                     assert g.shape[-len(b.shape):] == b.shape
-                    A = solve_autograd(self, K, np.moveaxis(g, -len(b.shape), 0))
+                    g = np.moveaxis(g, -len(b.shape), 0)
+                    A = solve_autograd(self, K, g)
                     B = np.moveaxis(ans, 0, -1)
                     AB = np.tensordot(A, B, len(b.shape) - 1)
                     AB = np.moveaxis(AB, 0, -2)
                     assert AB.shape == g.shape[:-len(b.shape)] + K.shape
                     return -AB
                 return vjp
+            def solve_vjp_b(ans, self, K, b):
+                assert ans.shape == b.shape
+                assert b.shape[0] == K.shape[0] == K.shape[1]
+                def vjp(g):
+                    assert g.shape[-len(b.shape):] == b.shape
+                    g = np.moveaxis(g, -len(b.shape), 0)
+                    gj = solve_autograd(self, K, g)
+                    gj = np.moveaxis(gj, 0, -len(b.shape))
+                    assert gj.shape == g.shape
+                    return gj
+                return vjp
             extend.defvjp(
                 solve_autograd,
-                solve_vjp,
-                argnums=[1]
+                solve_vjp_K,
+                solve_vjp_b,
+                argnums=[1, 2]
             )
             def solve(self, b):
                 return solve_autograd(self, self._K, b)
             # solve_autograd is used by logdet_vjp, so I store it here in case
             # logdet but not solve need wrapping in a subclass
             solve._autograd = solve_autograd
-            subclass.solve = solve
+            cls.solve = solve
         
-        # TODO write vjp optimized for quad instead of relying on solve
-        oldquad = subclass.quad
+        # TODO write vjp/jvp optimized for quad instead of relying on solve
+        oldquad = cls.quad
         if not hasattr(oldquad, '_autograd'):
             def quad(self, b):
                 if isinstance(self._K, np.numpy_boxes.ArrayBox):
@@ -115,9 +128,9 @@ class DecompMeta(type):
                 else:
                     return oldquad(self, b)
             quad._autograd = True
-            subclass.quad = quad
+            cls.quad = quad
         
-        oldlogdet = subclass.logdet
+        oldlogdet = cls.logdet
         if not hasattr(oldlogdet, '_autograd'):
             @extend.primitive
             def logdet_autograd(self, K):
@@ -137,22 +150,22 @@ class DecompMeta(type):
             # TODO the vjp is bad because it makes a matrix inversion. I would
             # like to do forward propagation just for the logdet plus the
             # preceding step, but I don't think autograd supports this.
-            # def logdet_jvp(ans, self, K):
-            #     assert ans.shape == ()
-            #     assert K.shape[0] == K.shape[1]
-            #     def jvp(g):
-            #         assert g.shape[:2] == K.shape
-            #         return np.trace(solve_autograd(self, K, g))
-            #     return jvp
-            # extend.defjvp(
-            #     logdet_autograd,
-            #     logdet_jvp,
-            #     argnums=[1]
-            # )
+            def logdet_jvp(ans, self, K):
+                assert ans.shape == ()
+                assert K.shape[0] == K.shape[1]
+                def jvp(g):
+                    assert g.shape[:2] == K.shape
+                    return np.trace(solve_autograd(self, K, g))
+                return jvp
+            extend.defjvp(
+                logdet_autograd,
+                logdet_jvp,
+                argnums=[1]
+            )
             def logdet(self):
                 return logdet_autograd(self, self._K)
             logdet._autograd = True
-            subclass.logdet = logdet
+            cls.logdet = logdet
 
 # TODO learn how to properly do abstract classes in Python instead of
 # raising NotImplementedError manually

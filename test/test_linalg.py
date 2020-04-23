@@ -295,14 +295,7 @@ def check_solve_triangular(A, B, lower):
     x2 = _linalg.solve_triangular(A, B, lower=lower)
     assert np.allclose(x1, x2)
 
-class XFailMeta(type):
-    
-    def __init__(cls, *args):
-        for m, f in DecompTestBase.__dict__.items():
-            if 'grad' in m or 'jac' in m:
-                setattr(cls, m, pytest.mark.xfail(f))
-
-class BlockDecompTestBase(DecompTestBase, metaclass=XFailMeta):
+class BlockDecompTestBase(DecompTestBase):
     """
     Abstract class for testing BlockDecomp. Concrete subclasses must
     overwrite subdecompclass.

@@ -12,6 +12,8 @@ __all__ = [
     'empbayes_fit'
 ]
 
+# TODO accept iterables other than list? Like, just rely on np.array?
+# TODO this function is sensitive to autograd's np.array bug
 def _asarrayorbufferdict(x):
     if isinstance(x, list):
         return np.array(x)
