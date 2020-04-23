@@ -25,6 +25,25 @@ derivatives of the process, using `autograd` to compute automatically
 derivatives of the kernels. Indirectly, this can be used to make inference with
 integrals.
 
+Functions and classes
+---------------------
+    
+    GP : class
+        Class of objects representing a gaussian process.
+    kernel : decorator
+        Decorator for marking a function as a kernel.
+    isotropickernel : decorator
+        Decorator for marking a function as an isotropic kernel.
+    empbayes_fit : function
+        Fit the hyperpriors of a gaussian process.
+    StructuredArray : class
+        Autograd-friendly wrapper of numpy structured arrays.
+    where : function
+        Make a kernel that switches between two kernels based on a condition.
+
+Kernels
+-------
+
 The covariance kernels are represented by subclasses of class `Kernel`. There's
 also `IsotropicKernel` for covariance functions that depend only on the
 distance between the arguments. Kernel objects can be summed, multiplied and
@@ -33,8 +52,8 @@ raised to a power.
 To make a custom kernel, you can instantiate one of the two general classes by
 passing them a function, or subclass them. For convenience, decorators are
 provided to convert a function to a covariance kernel. Otherwise, use one of
-the already available subclasses. Isotropic kernels are normalized to have unit
-variance and roughly unit lengthscale.
+the already available subclasses listed below. Isotropic kernels are normalized
+to have unit variance and roughly unit lengthscale.
 
     Constant :
         Equivalent to fitting with a constant.
@@ -66,7 +85,7 @@ variance and roughly unit lengthscale.
         A periodic gaussian kernel, represents a periodic function.
     Categorical :
         Arbitrary covariance matrix over a finite set of values.
-    Cos:
+    Cos :
         A cosine.
     FracBrownian :
         Fractional Brownian motion, like Wiener but with correlations.
