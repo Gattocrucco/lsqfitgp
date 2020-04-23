@@ -8,6 +8,8 @@ from ._array import *
 from ._fit import *
 from ._Deriv import *
 
+__version__ = '0.0.1'
+
 __doc__ = """
 
 Module to fit gaussian processes with gvar/lsqfit. It can both be used

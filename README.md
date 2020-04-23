@@ -22,10 +22,9 @@ Module for manipulating gaussian processes. Features:
   
 ## Installation
 
-I've still not packaged the program, so copy the directory `lsqfitgp` in the
-same directory of the python script that needs to import it, or use the
-environment variable `PYTHONPATH` or `sys.path` to tell Python where you have
-placed `lsqfitgp`.
+```
+pip install lsqfitgp
+```
 
 ## Examples
 
