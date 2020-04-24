@@ -40,6 +40,8 @@ term and a normal hessian on the logdet term.
 
 ## Optimization
 
+### `gvar`-related issues
+
 `gvar.raniter` uses `gvar.evalcov_blocks` which is optimized for sparse
 covariance matrices, while I tipically use it with dense covariance matrices.
 For example, in `examples/w.py`, out of 10 seconds of `gvar.raniter`, the
@@ -50,6 +52,23 @@ single output array where the first axes run along samples. Possible name:
 of gvars, or a scalar/array/dict representing a covariance matrix. It has a
 `solver` argument like `GP.__init__` (move the solver name mapping to
 `_linalg.py`).
+
+Other option: optimize `gvar.evalcov_blocks`. Write a function that fetches the
+submatrix of the global covariance matrix converting it to a
+`scipy.sparse.csr_matrix`. If `nnz` is over a certain threshold, convert it to
+dense without trying blocking (unless the graph routines are efficient for
+dense cases). Otherwise, use `scipy.sparse.csgraph.connected_components` to
+find the connected components. In converting to csr, only store a triangular
+part, and use `directed=True` in `connected_components`. This may trigger
+corner cases depending on `gvar.smat` implementation details, check if
+`gvar.smat` stores both off-diagonal elements when only one of them is non-null.
+The csr matrix just needs to contains connectivity information, so the dtype
+can be int8. Actually, `connected_components` only uses the sparsity
+information, so if `csr_matrix.__init__` is permissive I could pass a matrix
+without actual values. The complexity of the algorithm is O(n^2) so it should
+not be a bottleneck respect to the matrix decomposition.
+
+### Solvers
 
 Kronecker optimization: subclass GPKron where addx has a parameter `dim` and
 it accepts only non-structured arrays. Or, more flexible: make a class
@@ -65,6 +84,10 @@ using the numpy internal interfaces so that I can let it roam around without
 changing the code and use autograd? Something like pydata/sparse (if that
 works).
 
+Option to compute only the diagonal of the output covariance matrix, and
+allow diagonal-only input covariance for data (will be fundamental for
+kronecker). For the output it already works implicitly when using gvars.
+
 Sparse algorithms. Make a custom minimal CSR class that allows an autograd
 box as values buffer with only kernel operations implemented (addition,
 multiplication, matrix multiplication, power). Make two decompositions
@@ -76,17 +99,15 @@ Alternative: make pydata/sparse work with autograd. I hope I can inject the
 code into the module so I don't have to rely on a fork. Probably I have to
 define some missing basic functions and define the vjp of the constructors.
 
+Fourier kernels. Look at Celerite's algorithms.
+
 DiagLowRank for low rank matrix + multiple of the identity (multiple rank-1
 updates to the Cholesky factor? Would it be useful anyway?)
 
-Option to compute only the diagonal of the output covariance matrix, and
-allow diagonal-only input covariance for data (will be fundamental for
-kronecker). For the output it already works implicitly when using gvars.
+### Other
 
 Make everything opt-in except numpy. There's already a numpy submodule for
 doing this with scipy.linalg (numpy.dual).
 autograd can be handled by try-except ImportError and defining a variable
 has_autograd. With gvar maybe I can get through quickly if I define
 gvar.BufferDict = dict and other things NotImplemented. (Low priority).
-
-Fourier kernels. Look at Celerite's algorithms.
