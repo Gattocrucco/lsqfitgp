@@ -61,12 +61,13 @@ dense cases). Otherwise, use `scipy.sparse.csgraph.connected_components` to
 find the connected components. In converting to csr, only store a triangular
 part, and use `directed=True` in `connected_components`. This may trigger
 corner cases depending on `gvar.smat` implementation details, check if
-`gvar.smat` stores both off-diagonal elements when only one of them is non-null.
-The csr matrix just needs to contains connectivity information, so the dtype
-can be int8. Actually, `connected_components` only uses the sparsity
+`gvar.smat` stores both off-diagonal elements when only one of them is
+non-null. The csr matrix just needs to contains connectivity information, so
+the dtype can be int8. Actually, `connected_components` only uses the sparsity
 information, so if `csr_matrix.__init__` is permissive I could pass a matrix
-without actual values. The complexity of the algorithm is O(n^2) so it should
-not be a bottleneck respect to the matrix decomposition.
+without actual values. However, it is probably more efficient to store the
+values and then retrieve them for the output. The complexity of the algorithm
+is O(n^2) so it should not be a bottleneck respect to the matrix decomposition.
 
 ### Solvers
 
