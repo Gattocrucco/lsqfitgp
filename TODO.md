@@ -53,6 +53,14 @@ of gvars, or a scalar/array/dict representing a covariance matrix. It has a
 `solver` argument like `GP.__init__` (move the solver name mapping to
 `_linalg.py`).
 
+I made a pull request to gvar with a faster `evalcov_blocks`. Now by profiling
+`examples/w.py` I see the bottleneck is in `gvar.svd.__init__`. It is not the
+actual SVD decomposition (why on earth is it doing a SVD instead of
+diagonalizing?), it is just the code in `gvar.svd.__init__`. What is it doing?
+I'm in doubt if trying to optimize `gvar.svd` or just optimizing `gvar.raniter`
+by writing her own decomposition routine. Or maybe `gvar.svd` computes optional
+things that I can disable in `gvar.raniter`.
+
 ### Solvers
 
 Kronecker optimization: subclass GPKron where addx has a parameter `dim` and
