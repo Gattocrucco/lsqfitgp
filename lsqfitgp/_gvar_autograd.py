@@ -66,3 +66,11 @@ def array(A, *args, **kwargs):
         return autograd.numpy.numpy_wrapper._array_from_scalar_or_array(args, kwargs, A)
 autograd.numpy.numpy_wrapper.array = array
 autograd.numpy.array = array
+
+try:
+    from gvar import _utilities
+    from gvar._evalcov_fast import evalcov_blocks
+    gvar.evalcov_blocks = evalcov_blocks
+    _utilities.evalcov_blocks = evalcov_blocks
+except ImportError:
+    pass
