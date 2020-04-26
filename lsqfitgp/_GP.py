@@ -138,10 +138,6 @@ class GP:
     
     Object that represents a gaussian process over arbitrary input.
     
-    Methods that accept arrays/dictionaries also recognize lists,
-    StructuredArray and gvar.BufferDict. The output is always a np.ndarray or
-    gvar.BufferDict.
-    
     Methods
     -------
     addx :
@@ -182,14 +178,15 @@ class GP:
             the available solvers. Default is `eigcut+` which is slow but
             robust.
         checkpos : bool
-            If True (default), raise a `ValueError` if the covariance matrix
-            turns out non positive within numerical error. The check will be
-            done only if you use in some way the `gvar` prior.
+            If True (default), raise a `LinAlgError` if the prior covariance
+            matrix turns out non positive within numerical error. The check
+            will be done only if you use in some way the `gvar` prior. With
+            the Cholesky solvers the check will be done in all cases.
         checksym : bool
-            If True (default), check that the covariance matrix is symmetric.
-            If False, only half of the matrix is computed.
+            If True (default), check that the prior covariance matrix is
+            symmetric. If False, only half of the matrix is computed.
         checkfinite : bool
-            If True (default), check that the covariance matrix does not
+            If True (default), check that the prior covariance matrix does not
             contain infs or nans.
         
         Solvers
@@ -209,7 +206,8 @@ class GP:
             O(n^3) algorithms.
         maxeigv :
             Cholesky decomposition regularizing the matrix with the maximum
-            eigenvalue. Slow for small sizes.
+            eigenvalue. Slow for small sizes. Use only for large sizes and if
+            gersh is giving inaccurate results.
         
         Keyword arguments
         -----------------
@@ -227,7 +225,6 @@ class GP:
         self._covfun = covfun
         self._elements = dict() # key -> _Element
         self._canaddx = True
-        self._checkpositive = bool(checkpos)
         decomp = {
             'eigcut+': _linalg.EigCutFullRank,
             'eigcut-': _linalg.EigCutLowRank,
@@ -236,14 +233,15 @@ class GP:
             'maxeigv': _linalg.CholMaxEig
         }[solver]
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **kw)
-        self._checkfinite = bool(checkfinite)
+        self._checkpositive = bool(checkpos)
         self._checksym = bool(checksym)
+        self._checkfinite = bool(checkfinite)
     
     # TODO after I implement block solving, add per-key solver option
     def addx(self, x, key=None, deriv=0):
         """
         
-        Add points where the gaussian process is evaluated. The GP objects
+        Add points where the gaussian process is evaluated. The GP object
         keeps the various x arrays in a dictionary. If `x` is an array, you
         have to specify its dictionary key with the `key` parameter. Otherwise,
         you can directly pass a dictionary for `x`.
@@ -257,7 +255,8 @@ class GP:
         computed internally its covariance matrix, the x are ignored.
         
         If you use in some way the `gvar` prior, e.g. by calling `prior` or
-        `pred` using `gvar`s, you can't call `addx` any more.
+        `pred` using `gvar`s, you can't call `addx` any more, due to a
+        limitation in gvar.
         
         Parameters
         ----------
@@ -277,6 +276,7 @@ class GP:
         
         deriv = _Deriv.Deriv(deriv)
         
+        # TODO use duck typing instead of checking classes
         if _isarraylike(x):
             if key is None:
                 raise ValueError('x is array but key is None')
@@ -291,18 +291,18 @@ class GP:
         
         for key in x:
             if key in self._elements:
-                raise RuntimeError('key {} already in GP'.format(repr(key)))
+                raise RuntimeError('key {!r} already in GP'.format(key))
             
             gx = x[key]
             
             # Convert to numpy array or StructuredArray.
             if not _isarraylike(gx):
-                raise TypeError('x[{}] is not array or list'.format(repr(key)))
+                raise TypeError('x[{!r}] is not array or list'.format(key))
             gx = _asarray(gx)
 
             # Check it is not empty.
             if not gx.size:
-                raise ValueError('x[{}] is empty'.format(repr(key)))
+                raise ValueError('x[{!r}] is empty'.format(key))
 
             # Check dtype is compatible with previous arrays.
             # TODO since we never concatenate arrays we could allow a less
@@ -315,7 +315,9 @@ class GP:
                 try:
                     self._dtype = np.result_type(self._dtype, gx.dtype)
                 except TypeError:
-                    raise TypeError('x[{}].dtype = {} which is not compatible with {}'.format(repr(key), repr(gx.dtype), repr(self._dtype)))
+                    msg = 'x[{!r}].dtype = {!r} not compatible with {!r}'
+                    msg = msg.format(key, gx.dtype, self._dtype)
+                    raise TypeError(msg)
             else:
                 self._dtype = gx.dtype
 
@@ -327,7 +329,7 @@ class GP:
             else:
                 for dim in deriv:
                     if dim not in gx.dtype.names:
-                        raise ValueError('derivative field {} not in x'.format(repr(dim)))
+                        raise ValueError('deriv field {!r} not in x'.format(dim))
             
             self._elements[key] = _Points(gx, deriv)
         
@@ -340,11 +342,16 @@ class GP:
         Parameters
         ----------
         tensors : dict
-            Dictionary mapping keys of the GP to arrays. Each array is
-            matrix-multiplied with the process array represented by its key.
-            Scalars are just multiplied. Finally, the keys are summed over.
+            Dictionary mapping keys of the GP to arrays/scalars. Each array is
+            matrix-multiplied with the process array represented by its key,
+            while scalars are just multiplied. Finally, the keys are summed
+            over.
         key :
             A new key under which the transformation is placed.
+        
+        The multiplication between the tensors and the process is done with
+        np.tensordot with 1-axis contraction. For >2d arrays this is different
+        from numpy's matrix multiplication.
         
         """
         # TODO axes parameter like np.tensordot to allow fancy contractions
@@ -353,7 +360,7 @@ class GP:
         if key is None:
             raise ValueError('key can not be None')
         if key in self._elements:
-            raise RuntimeError('key {} already in GP'.format(key))
+            raise RuntimeError('key {!r} already in GP'.format(key))
         
         # Check keys.
         for k in tensors:
@@ -364,12 +371,14 @@ class GP:
         for k, t in tensors.items():
             t = np.array(t, copy=False)
             if not np.issubdtype(t.dtype, np.number):
-                raise TypeError('tensors[{!r}] has non-numeric dtype {!r}'.format(k, t.dtype))
-            rshape = self._elements[k].shape
+                msg = 'tensors[{!r}] has non-numeric dtype {!r}'
+                raise TypeError(msg.format(k, t.dtype))
             if self._checkfinite and not np.all(np.isfinite(t)):
                 raise ValueError('tensors[{!r}] contains infs/nans'.format(k))
+            rshape = self._elements[k].shape
             if t.shape and t.shape[-1] != rshape[0]:
-                raise RuntimeError('tensors[{!r}] with shape {!r} can not be matrix multiplied with shape {!r}'.format(k, t.shape, rshape))
+                msg = 'tensors[{!r}].shape = {!r} can not be multiplied with shape {!r}'
+                raise ValueError(msg.format(k, t.shape, rshape))
             tensors[k] = t
         
         # Compute shape.
@@ -457,7 +466,8 @@ class GP:
                 if self._checksym:
                     blockT = self._makecovblock(col, row)
                     if not np.allclose(block.T, blockT):
-                        raise RuntimeError('covariance block {!r} is not symmetric'.format((row, col)))
+                        msg = 'covariance block {!r} is not symmetric'
+                        raise RuntimeError(msg.format((row, col)))
                 self._covblocks[col, row] = block.T
             self._covblocks[row, col] = block
         
@@ -466,7 +476,10 @@ class GP:
     def _assemblecovblocks(self, rowkeys, colkeys=None):
         if colkeys is None:
             colkeys = rowkeys
-        blocks = [[self._covblock(row, col) for col in colkeys] for row in rowkeys]
+        blocks = [
+            [self._covblock(row, col) for col in colkeys]
+            for row in rowkeys
+        ]
         return _block_matrix(blocks)
     
     def _solver(self, keys, ycov=0):
@@ -491,7 +504,7 @@ class GP:
             if mineigv < bound:
                 msg = 'covariance matrix is not positive definite: '
                 msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
-                raise ValueError(msg)
+                raise np.linalg.LinAlgError(msg)
     
     def _priorpoints(self, key):
         # TODO I think that gvar internals would let me build the prior
@@ -562,7 +575,8 @@ class GP:
         Parameters
         ----------
         key : None, key or list of keys
-            Key(s) corresponding to one passed to `addx`. None for all keys.
+            Key(s) corresponding to one passed to `addx` or `addtransf`. None
+            for all keys.
         raw : bool
             If True, instead of returning a collection of `gvar`s return
             their covariance matrix as would be returned by `gvar.evalcov`.
@@ -606,6 +620,7 @@ class GP:
             return self._prior(key)
         
     def _flatgiven(self, given, givencov):
+        # TODO duck typing of given with hasattr(keys)
         if _isarraylike_nostructured(given):
             if len(self._elements) == 1:
                 given = {key: given for key in self._elements}
@@ -629,15 +644,14 @@ class GP:
             if key not in self._elements:
                 raise KeyError(key)
 
-            if not _isarraylike_nostructured(l):
-                raise TypeError('element given[{}] is not list or array'.format(repr(key)))
-            
             l = np.array(l, copy=False)
             shape = self._elements[key].shape
             if l.shape != shape:
-                raise ValueError('given[{}] has shape {} different from shape {}'.format(repr(key), l.shape, shape))
+                msg = 'given[{!r}] has shape {!r} different from shape {!r}'
+                raise ValueError(msg.format(key, l.shape, shape))
             if l.dtype != object and not np.issubdtype(l.dtype, np.number):
-                    raise ValueError('given[{}] has non-numerical dtype {}'.format(repr(key), l.dtype))
+                msg = 'given[{!r}] has non-numerical dtype {!r}'
+                raise ValueError(msg.format(key, l.dtype))
             
             ylist.append(l.reshape(-1))
             keylist.append(key)
@@ -748,7 +762,7 @@ class GP:
         y = _concatenate_noop(ylist)
         
         # I suppose it is good to have Kxxs row-major and Kxsx column-major for
-        # multiplication performance
+        # matrix multiplication performance
         Kxxs = self._assemblecovblocks(inkeys, outkeys)
         Kxsx = Kxxs.T
         
@@ -756,7 +770,7 @@ class GP:
             ycov = _block_matrix(ycovblocks)
         elif (fromdata or raw or not keepcorr) and y.dtype == object:
             ycov = gvar.evalcov(gvar.gvar(y))
-            # TODO use evalcov_block when it becomes fast enough
+            # TODO use evalcov_blocks when it becomes fast enough
             if self._checkfinite and not np.all(np.isfinite(ycov)):
                 raise ValueError('covariance matrix of `given` is not finite')
         else:
@@ -870,7 +884,7 @@ class GP:
         
         Returns
         -------
-        marglike : scalar
+        logGBF : scalar
             The logarithm of the marginal likelihood.
             
         """        
@@ -882,9 +896,6 @@ class GP:
             ymean = gvar.mean(y)
         elif y.dtype == object:
             gvary = gvar.gvar(y)
-            # TODO this gvar.gvar(y) is here because gvar.evalcov is picky and
-            # won't accept a non-gvar scalar in the array. I should modify
-            # gvar.evalcov, since gvar.mean and gvar.sdev accept non-gvars.
             ycov = gvar.evalcov(gvary)
             ymean = gvar.mean(gvary)
         else:

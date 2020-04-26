@@ -61,6 +61,7 @@ autograd.numpy.numpy_boxes.ArrayBox.item = lambda self: self[(0,) * len(self.sha
 def array(A, *args, **kwargs):
     t = builtins.type(A)
     if t in (list, tuple):
+        # TODO This patch is probably very slow!
         return autograd.numpy.numpy_wrapper.array_from_args(args, kwargs, *map(lambda a: a if a.shape else a.item(), map(array, A)))
     else:
         return autograd.numpy.numpy_wrapper._array_from_scalar_or_array(args, kwargs, A)

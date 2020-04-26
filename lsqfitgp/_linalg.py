@@ -350,6 +350,9 @@ class CholMaxEig(Chol):
     """
     
     def __init__(self, K, eps=None, **kw):
+        # TODO Should I precondition K *before* computing and adding the
+        # epsilon on the diagonal? In case, there's a function in scipy for
+        # generic rescaling preconditioning.
         w = slinalg.eigsh(K, k=1, which='LM', return_eigenvectors=False)
         eps = self._eps(eps, K, w[0])
         super().__init__(K + np.diag(np.full(len(K), eps)), **kw)
