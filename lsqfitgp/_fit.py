@@ -65,8 +65,11 @@ def empbayes_fit(hyperprior, gpfactory, data):
     
     hyperprior = _asarrayorbufferdict(hyperprior)
     flathp = _flat(hyperprior)
-    hpcov = gvar.evalcov(flathp) # TODO use gvar.evalcov_blocks
+    hpcov = gvar.evalcov(flathp)
+    # TODO use gvar.evalcov_blocks when it becomes fast enough
     chol = linalg.cholesky(hpcov, lower=True)
+    # TODO regularize hpcov in case it is not numerically positive definite,
+    # maybe since this is typically small we could do a diagonalization
     hpmean = gvar.mean(flathp)
     
     def fun(p):

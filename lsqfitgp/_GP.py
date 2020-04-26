@@ -1,12 +1,12 @@
 import itertools
 import sys
 import builtins
+import abc
 
 import gvar
 from autograd import numpy as np
 from autograd.scipy import linalg
 from autograd.builtins import isinstance
-import numpy # to bypass autograd
 
 from . import _Kernel
 from . import _linalg
@@ -58,7 +58,6 @@ def _asarray(x):
         return x
     else:
         return np.array(x, copy=False)
-        # TODO won't work with object array-like due to autograd's array bug
 
 def _isdictlike(x):
     return isinstance(x, (dict, gvar.BufferDict))
@@ -84,42 +83,55 @@ def _compatible_dtypes(d1, d2):
             return False
     return True
 
-class _Element:
+class _Element(metaclass=abc.ABCMeta):
     """
     Abstract class for an object holding information associated to a key in a
     GP object.
     """
-    def __init__(self):
-        raise NotImplementedError()
+    
     @property
+    @abc.abstractmethod
     def shape(self):
         """Output shape"""
-        return NotImplemented
+        pass
+    
     @property
     def size(self):
         return np.prod(self.shape)
 
 class _Points(_Element):
     """Points where the process is evaluated"""
+    
     def __init__(self, x, deriv):
         assert _isarraylike(x)
         assert isinstance(deriv, _Deriv.Deriv)
         self.x = x
         self.deriv = deriv
+    
     @property
     def shape(self):
         return self.x.shape
 
 class _Transf(_Element):
     """Trasformation over other _Element objects"""
+    
     def __init__(self, tensors, shape):
         assert isinstance(tensors, dict)
         assert isinstance(shape, tuple)
         self.tensors = tensors # dict key -> array
         self._shape = shape
+    
     @property
     def shape(self):
         return self._shape
+    
+    @classmethod
+    def tensormul(cls, tensor, x):
+        if tensor.shape:
+            x = np.tensordot(tensor, x, axes=1)
+        elif tensor.item != 1:
+            x = tensor * x
+        return x
 
 class GP:
     """
@@ -155,6 +167,8 @@ class GP:
     # Alternative 2: only check the matrices I need to invert. Alternative 3:
     # the default is to check only if the matrices are small enough that it is
     # not a problem. Alternative 4: check diagonal blocks.
+    # Current behaviour: only the covariance of things added with addx is
+    # checked
     
     def __init__(self, covfun, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
         """
@@ -406,10 +420,7 @@ class GP:
             cov = self._covblock(key, ykey)
             assert cov.shape == (elem.size, y.size)
             cov = cov.reshape(elem.shape + y.shape)
-            if tensor.shape:
-                cov = np.tensordot(tensor, cov, axes=1)
-            elif tensor.item != 1:
-                cov = tensor * cov
+            cov = type(x).tensormul(tensor, cov)
             if covsum is not None:
                 covsum = covsum + cov
             else:
@@ -470,7 +481,6 @@ class GP:
         # scalar, and in some cases if ycov is diagonal. Is there an efficient
         # way to update a Cholesky decomposition if I add a diagonal matrix?
         Kxx = self._assemblecovblocks(keys)
-        assert np.allclose(Kxx, Kxx.T) # TODO remove
         return self._decompclass(Kxx + ycov)
         
     def _checkpos(self, cov):
@@ -482,33 +492,61 @@ class GP:
                 msg = 'covariance matrix is not positive definite: '
                 msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
                 raise ValueError(msg)
-        
-    @property
-    def _prior(self):
+    
+    def _priorpoints(self, key):
         # TODO I think that gvar internals would let me build the prior
         # one block at a time although everything is correlated, but I don't
-        # know how to do it. In case it is possible, replace this with a
-        # method that gets the prior for a key without necessarily generating
-        # the whole prior. Finally, remove the _canaddx check in GP.addx.
-        
-        # TODO I can do a lazy prior at least for transformations.
+        # know how to do it. If I do that, remove _canaddx.
         if not hasattr(self, '_priordict'):
             if self._checkpositive:
-                fullcov = self._assemblecovblocks(list(self._elements))
+                keys = [
+                    k for k, v in self._elements.items()
+                    if isinstance(v, _Points)
+                ]
+                fullcov = self._assemblecovblocks(list(keys))
                 self._checkpos(fullcov)
+            items = [
+                (k, v) for k, v in self._elements.items()
+                if isinstance(v, _Points)
+            ]
             mean = {
                 key: np.zeros(x.shape)
-                for key, x in self._elements.items()
+                for key, x in items
             }
             cov = {
                 (row, col): self._covblock(row, col).reshape(x.shape + y.shape)
-                for row, x in self._elements.items()
-                for col, y in self._elements.items()
+                for row, x in items
+                for col, y in items
             }
             self._priordict = gvar.gvar(mean, cov)
             self._priordict.buf.flags['WRITEABLE'] = False
             self._canaddx = False
-        return self._priordict
+        return self._priordict[key]
+    
+    def _priortransf(self, key):
+        x = self._elements[key]
+        assert isinstance(x, _Transf)
+        out = None
+        for k, tensor in x.tensors.items():
+            prior = self._prior(k)
+            transf = type(x).tensormul(tensor, prior)
+            if out is None:
+                out = transf
+            else:
+                out = out + transf
+        return out
+    
+    def _prior(self, key):
+        prior = getattr(self, '_priordict', {}).get(key, None)
+        if prior is None:
+            x = self._elements[key]
+            if isinstance(x, _Points):
+                prior = self._priorpoints(key)
+                # _priorpoints already caches the result
+            elif isinstance(x, _Transf):
+                prior = self._priortransf(key)
+                self._priordict[key] = prior
+        return prior
     
     def prior(self, key=None, raw=False):
         """
@@ -562,10 +600,10 @@ class GP:
             return self._covblock(key, key)
         elif outkeys is not None:
             return gvar.BufferDict({
-                key: self._prior[key] for key in outkeys
+                key: self._prior(key) for key in outkeys
             })
         else:
-            return self._prior[key]
+            return self._prior(key)
         
     def _flatgiven(self, given, givencov):
         if _isarraylike_nostructured(given):
@@ -594,10 +632,7 @@ class GP:
             if not _isarraylike_nostructured(l):
                 raise TypeError('element given[{}] is not list or array'.format(repr(key)))
             
-            l = numpy.array(l, copy=False)
-            # TODO I use numpy instead of np == autograd.numpy because np.array
-            # has this bug:
-            # array([object()]) -> array([array([object()])])
+            l = np.array(l, copy=False)
             shape = self._elements[key].shape
             if l.shape != shape:
                 raise ValueError('given[{}] has shape {} different from shape {}'.format(repr(key), l.shape, shape))
@@ -712,26 +747,16 @@ class GP:
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = _concatenate_noop(ylist)
         
-        # I think it is good to have Kxxs row-major and Kxsx column-major
+        # I suppose it is good to have Kxxs row-major and Kxsx column-major for
+        # multiplication performance
         Kxxs = self._assemblecovblocks(inkeys, outkeys)
         Kxsx = Kxxs.T
-        
-        # TODO remove
-        assert np.allclose(Kxxs, self._assemblecovblocks(outkeys, inkeys).T)
         
         if ycovblocks is not None:
             ycov = _block_matrix(ycovblocks)
         elif (fromdata or raw or not keepcorr) and y.dtype == object:
             ycov = gvar.evalcov(gvar.gvar(y))
-            # TODO use evalcov_block? If fromdata=True, it doesn't really
-            # make a difference because I just use ycov in Kxx + ycov. If
-            # fromdata=False, typically ycov will be dense. The only reason
-            # is that maybe gvar.evalcov is not optimized to handle non-dense
-            # cases, but in this case I should modify gvar.evalcov. Case under
-            # which it makes a difference even for fromdata=True: I implement
-            # caching of decompositions and ycov is diagonal. Or: ycov is zero,
-            # then evalcov builds a matrix of zeros anyway -> make a method
-            # to replace evalcov.
+            # TODO use evalcov_block when it becomes fast enough
             if self._checkfinite and not np.all(np.isfinite(ycov)):
                 raise ValueError('covariance matrix of `given` is not finite')
         else:
@@ -740,8 +765,6 @@ class GP:
         if raw or not keepcorr:
             
             Kxsxs = self._assemblecovblocks(outkeys)
-
-            assert np.allclose(Kxsxs, Kxsxs.T) # TODO remove
             
             ymean = gvar.mean(y)
             if self._checkfinite and not np.all(np.isfinite(ymean)):
@@ -766,8 +789,8 @@ class GP:
                 mean = A @ ymean
             
         else: # (keepcorr and not raw)        
-            yplist = [self._prior[key].reshape(-1) for key in inkeys]
-            ysplist = [self._prior[key].reshape(-1) for key in outkeys]
+            yplist = [self._prior(key).reshape(-1) for key in inkeys]
+            ysplist = [self._prior(key).reshape(-1) for key in outkeys]
             yp = _concatenate_noop(yplist)
             ysp = _concatenate_noop(ysplist)
             
