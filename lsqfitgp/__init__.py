@@ -8,7 +8,7 @@ from ._array import *
 from ._fit import *
 from ._Deriv import *
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 __doc__ = """
 
