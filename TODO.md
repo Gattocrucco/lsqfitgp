@@ -42,6 +42,8 @@ term and a normal hessian on the logdet term.
 
 ### `gvar`-related issues
 
+#### `evalcov_blocks`
+
 `gvar.raniter` uses `gvar.evalcov_blocks` which is optimized for sparse
 covariance matrices, while I tipically use it with dense covariance matrices.
 For example, in `examples/w.py`, out of 10 seconds of `gvar.raniter`, the
@@ -53,6 +55,8 @@ of gvars, or a scalar/array/dict representing a covariance matrix. It has a
 `solver` argument like `GP.__init__` (move the solver name mapping to
 `_linalg.py`).
 
+#### `svd`
+
 I made a pull request to gvar with a faster `evalcov_blocks`. Now by profiling
 `examples/w.py` I see the bottleneck is in `gvar.svd.__init__`. It is not the
 actual SVD decomposition (why on earth is it doing a SVD instead of
@@ -60,6 +64,25 @@ diagonalizing?), it is just the code in `gvar.svd.__init__`. What is it doing?
 I'm in doubt if trying to optimize `gvar.svd` or just optimizing `gvar.raniter`
 by writing her own decomposition routine. Or maybe `gvar.svd` computes optional
 things that I can disable in `gvar.raniter`.
+
+#### `evalcov`
+
+Possible optimization for `evalcov`: if the sparsity is more than something,
+also depending on the absolute size, use a dense matrix multiplication. I tried
+it on 100 fully dense same-rank variables and it gives a 16x improvement.
+Steps:
+
+  * Read all the `d` attributes and the `cov` rows counting the number of
+    elements and storing which indices are used in the indices mask.
+    
+  * Sum the indices mask to know the number of primary gvars involved; using
+    this and the count of nonzero elements determine if the dense
+    multiplication is to be used.
+    
+  * Prepare the matrices and write `d` and `cov` into them; do the
+    multiplication. If LAPACK has routines specialized for matrix
+    multiplication with triangular inputs or triangular outputs, use them.
+    There's a LAPACK wrapper in scipy.
 
 #### Global covariance matrix
 
@@ -85,6 +108,9 @@ if only the lower triangular part is stored.
 
 All this can be implemented using `scipy.sparse`. The core functionality of
 `scipy.sparse` can be easily copy-pasted if depending on scipy is to be avoided.
+
+Storing only the lower part should only have benefits. Using a compressed
+sparse format may not be worth it.
 
 ### Solvers
 
