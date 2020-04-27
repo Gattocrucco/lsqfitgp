@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/lsqfitgp/badge/?version=latest)](https://lsqfitgp.readthedocs.io/en/latest/?badge=latest)
+
 # lsqfitgp
 
 Module for manipulating gaussian processes. Features:
