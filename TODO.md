@@ -6,6 +6,20 @@ Other TODOs are scattered in the code. Search for `TODO`.
 
 Write a manual.
 
+The help for gvar Cython-compiled functions misses the signature. Is there an
+automatic way to set it in the docstring?
+
+From numpy's guidelines: avoid the colon in the lists when there's nothing
+after the column. Use optional this way: type, optional. Fixed set of values:
+use braces with default argument first. In returned values list, if there's no
+meaningful name, just write the type with no colon.
+
+Add Kernel or IsotropicKernel in the kernels list.
+
+Add a Raises section to GP methods that can trigger covariance matrix checks.
+
+Add Examples sections.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
