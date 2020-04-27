@@ -69,20 +69,32 @@ things that I can disable in `gvar.raniter`.
 
 Possible optimization for `evalcov`: if the sparsity is more than something,
 also depending on the absolute size, use a dense matrix multiplication. I tried
-it on 100 fully dense same-rank variables and it gives a 16x improvement.
-Steps:
+it on a completely dense case with 100 variables and it gave a 16x improvement,
+keeping also into account the conversion of the matrices. Steps:
 
-  * Read all the `d` attributes and the `cov` rows counting the number of
-    elements and storing which indices are used in the indices mask.
+  * Build the mask as usual reading the indices from `d` attributes, while also
+    counting the total number of elements.
+  
+  * Get the count of primary gvars involved by summing the mask.
+  
+  * Count the number of nonzero entries in `cov` with the mask. Probably
+    requires a new `smat` method.
     
-  * Sum the indices mask to know the number of primary gvars involved; using
-    this and the count of nonzero elements determine if the dense
-    multiplication is to be used.
+  * Using the counts and the number of primary gvars, determine if the dense
+    algorithm would be convenient.
     
-  * Prepare the matrices and write `d` and `cov` into them; do the
-    multiplication. If LAPACK has routines specialized for matrix
-    multiplication with triangular inputs or triangular outputs, use them.
-    There's a LAPACK wrapper in scipy.
+  * Extract a dense submatrix from `cov` using the mask. Probably requires a
+    new `smat` method, and probably it is convenient to first convert the
+    mask to a mapping, i.e. replace the 1s with the cumsum of the 1s, they then
+    point to the destination index with an offset of +1.
+    
+  * Write `d` elements into a dense matrix, using the mapping as above.
+    Probably requires a new svec method, which could be used by the `smat`
+    method above.
+    
+  * Perform the matrix multiplication. Check if LAPACK has routines specialized
+    for matrix multiplication with symmetric inputs/outputs. There's a LAPACK
+    wrapper in scipy.
 
 #### Global covariance matrix
 
@@ -114,23 +126,31 @@ sparse format may not be worth it.
 
 ### Solvers
 
-Kronecker optimization: subclass GPKron where addx has a parameter `dim` and
-it accepts only non-structured arrays. Or, more flexible: make a class
-Lattice that is structured-array-like but different shapes for each field,
-and a field _kronok in Kernel update automatically when doing operations with
-kernels. Also, take a look at the pymc3 implementation. Can I use the
-kronecker optimization when the data covariance is non-null? -> Yes with a
-reasonable approximation of the marginal likelihood, but the data covariance
-must be diagonal. Other desiderata: separation along arbitrary subsets of
-the dimensions, it would be important when combining different keys with
-addtransf (I don't remember why). Can I implement a "kronecker" numpy array
-using the numpy internal interfaces so that I can let it roam around without
-changing the code and use autograd? Something like pydata/sparse (if that
-works).
+Fourier kernels. Look at Celerite's algorithms.
+
+DiagLowRank for low rank matrix + multiple of the identity (multiple rank-1
+updates to the Cholesky factor? Would it be useful anyway?)
+
+#### Kronecker
+
+Subclass GPKron where addx has a parameter `dim` and it accepts only
+non-structured arrays. Or, more flexible: make a class Lattice that is
+structured-array-like but different shapes for each field, and a field _kronok
+in Kernel update automatically when doing operations with kernels. Also, take a
+look at the pymc3 implementation. Can I use the kronecker optimization when the
+data covariance is non-null? -> Yes with a reasonable approximation of the
+marginal likelihood, but the data covariance must be diagonal. Other
+desiderata: separation along arbitrary subsets of the dimensions, it would be
+important when combining different keys with addtransf (I don't remember why).
+Can I implement a "kronecker" numpy array using the numpy internal interfaces
+so that I can let it roam around without changing the code and use autograd?
+Something like pydata/sparse (if that works).
 
 Option to compute only the diagonal of the output covariance matrix, and
 allow diagonal-only input covariance for data (will be fundamental for
 kronecker). For the output it already works implicitly when using gvars.
+
+#### Sparse
 
 Sparse algorithms. Make a custom minimal CSR class that allows an autograd
 box as values buffer with only kernel operations implemented (addition,
@@ -143,15 +163,9 @@ Alternative: make pydata/sparse work with autograd. I hope I can inject the
 code into the module so I don't have to rely on a fork. Probably I have to
 define some missing basic functions and define the vjp of the constructors.
 
-Fourier kernels. Look at Celerite's algorithms.
-
-DiagLowRank for low rank matrix + multiple of the identity (multiple rank-1
-updates to the Cholesky factor? Would it be useful anyway?)
-
 ### Other
 
 Make everything opt-in except numpy. There's already a numpy submodule for
-doing this with scipy.linalg (numpy.dual).
-autograd can be handled by try-except ImportError and defining a variable
-has_autograd. With gvar maybe I can get through quickly if I define
-gvar.BufferDict = dict and other things NotImplemented. (Low priority).
+doing this with scipy.linalg (numpy.dual). `autograd` can be handled by
+try-except ImportError and defining a variable has_autograd. With gvar maybe I
+can get through quickly if I define gvar.BufferDict = dict (Low priority).
