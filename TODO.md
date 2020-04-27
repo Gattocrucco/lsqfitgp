@@ -61,6 +61,31 @@ I'm in doubt if trying to optimize `gvar.svd` or just optimizing `gvar.raniter`
 by writing her own decomposition routine. Or maybe `gvar.svd` computes optional
 things that I can disable in `gvar.raniter`.
 
+#### Global covariance matrix
+
+In general gvar could benefit some core optimizations. The global covariance
+matrix is in LIL (list of lists) format, and the full matrix is stored despite
+being symmetrical. There are two main optimizations that can be implemented
+separately: using a compressed sparse format, and storing only the lower
+triangular part.
+
+If only the lower triangular part is stored, computing covariance matrices is
+still reasonably simple. Let `A` be the covariance matrix. Say `A = L + L^T`,
+where `L` is lower triangular, so `L_ij = A_ij` if `i < j`, `A_ii/2` if `i = j`,
+`0` if `i > j`. Let `B` be the linear transformation from the primary `gvar`s
+to the `gvar`s we want to compute the covariance of, i.e. `C = B A B^T`. So:
+`C = B A B^T = B (L + L^T) B^T = H + H^T`, where `H = B L B^T`.
+
+Using a compressed sparse format is not particularly inefficient because,
+although gvar needs to add entries to it, the new entries are always added as
+a diagonal block on new rows, so the buffers can be extended like `std:vector`
+bringing a global factor of 2. The possibility to implement the functionality
+of adding primary gvars correlated with existing primary gvars can be preserved
+if only the lower triangular part is stored.
+
+All this can be implemented using `scipy.sparse`. The core functionality of
+`scipy.sparse` can be easily copy-pasted if depending on scipy is to be avoided.
+
 ### Solvers
 
 Kronecker optimization: subclass GPKron where addx has a parameter `dim` and
