@@ -92,9 +92,11 @@ keeping also into account the conversion of the matrices. Steps:
     Probably requires a new svec method, which could be used by the `smat`
     method above.
     
-  * Perform the matrix multiplication. Check if LAPACK has routines specialized
-    for matrix multiplication with symmetric inputs/outputs. There's a LAPACK
-    wrapper in scipy.
+  * Perform the matrix multiplication.
+  
+  * Optionally, as a further optimization, copy only a triangular part of
+    `cov` halving diagonal elements, use `BLAS_xtrmm` for doing the matrix
+    multiplication, and finally take twice the symmetrical part of the result.
 
 #### Global covariance matrix
 
