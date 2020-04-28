@@ -9,7 +9,8 @@ Welcome to lsqfitgp's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
+   
+   introduction.rst
 
 
 Indices and tables
