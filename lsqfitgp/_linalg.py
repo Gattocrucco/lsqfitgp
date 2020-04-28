@@ -1,9 +1,9 @@
 import abc
 
-from autograd import numpy as np
-from autograd.scipy import linalg
-from autograd import extend
-from scipy.sparse import linalg as slinalg
+from ._imports import numpy as np
+from ._imports import linalg
+from ._imports import autograd
+from ._imports import sparse
 
 __doc__ = """
 
@@ -43,14 +43,17 @@ BlockDecomp :
 
 # TODO add an optional argument c to quad to compute b.T @ inv(K) @ c.
 
-def noautograd(x):
-    """
-    Unpack an autograd numpy array.
-    """
-    if isinstance(x, np.numpy_boxes.ArrayBox):
-        return noautograd(x._value)
-    else:
-        return x
+if autograd is not None:
+    def noautograd(x):
+        """
+        Unpack an autograd numpy array.
+        """
+        if isinstance(x, np.numpy_boxes.ArrayBox):
+            return noautograd(x._value)
+        else:
+            return x
+else:
+    noautograd = lambda x: x
 
 def asinexact(dtype):
     """
@@ -81,7 +84,7 @@ class DecompMeta(abc.ABCMeta):
         
         oldsolve = cls.solve
         if not hasattr(oldsolve, '_autograd'):
-            @extend.primitive
+            @autograd.extend.primitive
             def solve_autograd(self, K, b):
                 return oldsolve(self, b)
             def solve_vjp_K(ans, self, K, b):
@@ -108,7 +111,7 @@ class DecompMeta(abc.ABCMeta):
                     assert gj.shape == g.shape
                     return gj
                 return vjp
-            extend.defvjp(
+            autograd.extend.defvjp(
                 solve_autograd,
                 solve_vjp_K,
                 solve_vjp_b,
@@ -134,7 +137,7 @@ class DecompMeta(abc.ABCMeta):
         
         oldlogdet = cls.logdet
         if not hasattr(oldlogdet, '_autograd'):
-            @extend.primitive
+            @autograd.extend.primitive
             def logdet_autograd(self, K):
                 return oldlogdet(self)
             def logdet_vjp(ans, self, K):
@@ -144,7 +147,7 @@ class DecompMeta(abc.ABCMeta):
                     invK = self.solve._autograd(self, K, np.eye(len(K)))
                     return g[..., None, None] * invK
                 return vjp
-            extend.defvjp(
+            autograd.extend.defvjp(
                 logdet_autograd,
                 logdet_vjp,
                 argnums=[1]
@@ -159,7 +162,7 @@ class DecompMeta(abc.ABCMeta):
                     assert g.shape[:2] == K.shape
                     return np.trace(solve_autograd(self, K, g))
                 return jvp
-            extend.defjvp(
+            autograd.extend.defjvp(
                 logdet_autograd,
                 logdet_jvp,
                 argnums=[1]
@@ -168,6 +171,9 @@ class DecompMeta(abc.ABCMeta):
                 return logdet_autograd(self, self._K)
             logdet._autograd = True
             cls.logdet = logdet
+
+if autograd is None:
+    DecompMeta = abc.ABCMeta
 
 class Decomposition(metaclass=DecompMeta):
     """
@@ -276,7 +282,7 @@ class ReduceRank(Diag):
     
     def __init__(self, K, rank=1):
         assert isinstance(rank, (int, np.integer)) and rank >= 1
-        self._w, self._V = slinalg.eigsh(K, k=rank, which='LM')
+        self._w, self._V = sparse.linalg.eigsh(K, k=rank, which='LM')
 
 def solve_triangular(a, b, lower=False):
     """
@@ -353,7 +359,7 @@ class CholMaxEig(Chol):
         # TODO Should I precondition K *before* computing and adding the
         # epsilon on the diagonal? In case, there's a function in scipy for
         # generic rescaling preconditioning.
-        w = slinalg.eigsh(K, k=1, which='LM', return_eigenvectors=False)
+        w = sparse.linalg.eigsh(K, k=1, which='LM', return_eigenvectors=False)
         eps = self._eps(eps, K, w[0])
         super().__init__(K + np.diag(np.full(len(K), eps)), **kw)
 

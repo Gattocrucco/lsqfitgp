@@ -1,7 +1,7 @@
 import builtins
 
-from autograd import numpy as np
-from autograd.builtins import isinstance
+from ._imports import numpy as np
+from ._imports import isinstance
 
 __all__ = [
     'StructuredArray'

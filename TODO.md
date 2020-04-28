@@ -178,10 +178,3 @@ the kernel if the result is dense, but not while making prediction.
 Alternative: make pydata/sparse work with autograd. I hope I can inject the
 code into the module so I don't have to rely on a fork. Probably I have to
 define some missing basic functions and define the vjp of the constructors.
-
-### Other
-
-Make everything opt-in except numpy. There's already a numpy submodule for
-doing this with scipy.linalg (numpy.dual). `autograd` can be handled by
-try-except ImportError and defining a variable has_autograd. With gvar maybe I
-can get through quickly if I define gvar.BufferDict = dict (Low priority).

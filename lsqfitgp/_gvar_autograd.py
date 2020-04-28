@@ -1,5 +1,6 @@
 import builtins
 
+# do not use _imports here, because _imports imports this module
 import autograd
 import gvar
 from autograd import numpy as np
@@ -50,23 +51,6 @@ autograd.extend.defjvp(gvar.erf, erf_jvp)
 gvar.BufferDict.extension_fcn['log'] = gvar.exp
 gvar.BufferDict.extension_fcn['sqrt'] = gvar.square
 gvar.BufferDict.extension_fcn['erfinv'] = gvar.erf
-
-autograd.extend.defvjp(
-    autograd.numpy.asarray,
-    lambda ans, *args, **kw: lambda g: g
-)
-
-autograd.numpy.numpy_boxes.ArrayBox.item = lambda self: self[(0,) * len(self.shape)]
-
-def array(A, *args, **kwargs):
-    t = builtins.type(A)
-    if t in (list, tuple):
-        # TODO This patch is probably very slow!
-        return autograd.numpy.numpy_wrapper.array_from_args(args, kwargs, *map(lambda a: a if a.shape else a.item(), map(array, A)))
-    else:
-        return autograd.numpy.numpy_wrapper._array_from_scalar_or_array(args, kwargs, A)
-autograd.numpy.numpy_wrapper.array = array
-autograd.numpy.array = array
 
 try:
     from gvar import _utilities

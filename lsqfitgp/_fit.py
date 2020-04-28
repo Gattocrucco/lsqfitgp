@@ -1,8 +1,8 @@
-import gvar
-from autograd import numpy as np
-from autograd.scipy import linalg
-import autograd
-from scipy import optimize
+from ._imports import gvar
+from ._imports import numpy as np
+from ._imports import linalg
+from ._imports import autograd
+from ._imports import optimize
 
 from . import _GP
 

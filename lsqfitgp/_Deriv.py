@@ -1,5 +1,6 @@
 import collections
-import numpy as np
+
+from ._imports import numpy as np
 
 __all__ = [
     'Deriv'

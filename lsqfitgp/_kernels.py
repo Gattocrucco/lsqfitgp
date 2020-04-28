@@ -1,7 +1,6 @@
-from autograd import numpy as np
-from autograd.scipy import special
-from scipy import special as special_noderiv
-from autograd import extend
+from ._imports import numpy as np
+from ._imports import special
+from ._imports import autograd
 import numpy # to bypass autograd
 
 from . import _array
@@ -79,7 +78,8 @@ def Polynomial(x, y, exponent=None, sigma0=1):
     assert np.isscalar(sigma0)
     assert sigma0 >= 0
     return (_dot(x, y) + sigma0 ** 2) ** exponent
-    
+
+# TODO make a pull request to autograd for kv and kvp.
 # This still does not work with derivatives due to the pole of kv. I need a
 # direct calculation of x ** nu * kv(nu, x).
 # _kvp = extend.primitive(special_noderiv.kvp)
@@ -89,31 +89,34 @@ def Polynomial(x, y, exponent=None, sigma0=1):
 #     argnums=[1]
 # )
 # _kv = lambda v, z: _kvp(v, z, 0)
-_kv = special_noderiv.kv
+if special is not None:
+    from scipy import special
+    _kv = special.kv
 
-@extend.primitive
-def _maternp(x, p):
-    poly = 1
-    for k in reversed(range(p)):
-        c_kp1_over_ck = (p - k) / ((2 * p - k) * (k + 1))
-        poly *= c_kp1_over_ck * 2 * x
-        poly += 1
-    return np.exp(-x) * poly
+if autograd is not None:
+    @autograd.extend.primitive
+    def _maternp(x, p):
+        poly = 1
+        for k in reversed(range(p)):
+            c_kp1_over_ck = (p - k) / ((2 * p - k) * (k + 1))
+            poly *= c_kp1_over_ck * 2 * x
+            poly += 1
+        return np.exp(-x) * poly
 
-def _maternp_deriv(x, p):
-    if p == 0:
-        return -np.exp(-x)
-    poly = 1
-    for k in reversed(range(1, p)):
-        c_kp1_over_ck = (p - k) / ((2 * p - k - 1) * k)
-        poly = 1 + poly * c_kp1_over_ck * 2 * x
-    poly = poly / (1 - 2 * p) * x
-    return np.exp(-x) * poly
+    def _maternp_deriv(x, p):
+        if p == 0:
+            return -np.exp(-x)
+        poly = 1
+        for k in reversed(range(1, p)):
+            c_kp1_over_ck = (p - k) / ((2 * p - k - 1) * k)
+            poly = 1 + poly * c_kp1_over_ck * 2 * x
+        poly = poly / (1 - 2 * p) * x
+        return np.exp(-x) * poly
 
-extend.defvjp(
-    _maternp,
-    lambda ans, x, p: lambda g: g * _maternp_deriv(x, p)
-)
+    autograd.extend.defvjp(
+        _maternp,
+        lambda ans, x, p: lambda g: g * _maternp_deriv(x, p)
+    )
 
 def _matern_derivable(**kw):
     nu = kw.get('nu', None)
@@ -147,14 +150,15 @@ def Matern12(r):
     """
     return np.exp(-r)
 
-@extend.primitive
-def _matern32(x):
-    return (1 + x) * np.exp(-x)
+if autograd is not None:
+    @autograd.extend.primitive
+    def _matern32(x):
+        return (1 + x) * np.exp(-x)
 
-extend.defvjp(
-    _matern32,
-    lambda ans, x: lambda g: g * -x * np.exp(-x)
-)
+    autograd.extend.defvjp(
+        _matern32,
+        lambda ans, x: lambda g: g * -x * np.exp(-x)
+    )
 
 @isotropickernel(input='soft', derivable=1)
 def Matern32(r):
@@ -163,14 +167,15 @@ def Matern32(r):
     """
     return _matern32(np.sqrt(3) * r)
 
-@extend.primitive
-def _matern52(x):
-    return (1 + x * (1 + x/3)) * np.exp(-x)
+if autograd is not None:
+    @autograd.extend.primitive
+    def _matern52(x):
+        return (1 + x * (1 + x/3)) * np.exp(-x)
 
-extend.defvjp(
-    _matern52,
-    lambda ans, x: lambda g: g * -x/3 * _matern32(x)
-)
+    autograd.extend.defvjp(
+        _matern52,
+        lambda ans, x: lambda g: g * -x/3 * _matern32(x)
+    )
 
 @isotropickernel(input='soft', derivable=2)
 def Matern52(r):

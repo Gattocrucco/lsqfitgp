@@ -1,6 +1,4 @@
-from autograd import numpy
-
-from . import _gvar_autograd
+from ._imports import numpy, scipy # keep this first
 from ._GP import *
 from ._Kernel import *
 from ._kernels import *
