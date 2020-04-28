@@ -201,7 +201,7 @@ class Decomposition(metaclass=DecompMeta):
     def usolve(self, ub):
         """
         Solve the linear system K @ x = b where b is possibly an array of
-        `gvar`s.
+        gvars.
         """
         pass
     

@@ -255,7 +255,7 @@ class GP:
         computed internally its covariance matrix, the x are ignored.
         
         If you use in some way the `gvar` prior, e.g. by calling `prior` or
-        `pred` using `gvar`s, you can't call `addx` any more, due to a
+        `pred` using gvars, you can't call `addx` any more, due to a
         limitation in gvar.
         
         Parameters
@@ -564,9 +564,9 @@ class GP:
     def prior(self, key=None, raw=False):
         """
         
-        Return an array or a dictionary of arrays of `gvar`s representing the
+        Return an array or a dictionary of arrays of gvars representing the
         prior for the gaussian process. The returned object is not unique but
-        the `gvar`s stored inside are, so all the correlations are kept between
+        the gvars stored inside are, so all the correlations are kept between
         objects returned by different calls to `prior`.
         
         Calling without arguments returns the complete prior as a dictionary.
@@ -578,7 +578,7 @@ class GP:
             Key(s) corresponding to one passed to `addx` or `addtransf`. None
             for all keys.
         raw : bool
-            If True, instead of returning a collection of `gvar`s return
+            If True, instead of returning a collection of gvars return
             their covariance matrix as would be returned by `gvar.evalcov`.
             Default False.
         
@@ -587,7 +587,7 @@ class GP:
         If raw=False (default):
         
         prior : np.ndarray or gvar.BufferDict
-            A collection of `gvar`s representing the prior.
+            A collection of gvars representing the prior.
         
         If raw=True:
         
@@ -687,8 +687,8 @@ class GP:
         obtained with a fit. The latter case is for when the gaussian process
         was used in a fit with other parameters.
         
-        The output is a collection of `gvar`s, either an array or a dictionary
-        of arrays. They are properly correlated with `gvar`s returned by
+        The output is a collection of gvars, either an array or a dictionary
+        of arrays. They are properly correlated with gvars returned by
         `prior` and with the input data/fit.
         
         The input is a dictionary of arrays, `given`, with keys corresponding
@@ -699,8 +699,8 @@ class GP:
         ----------
         given : array or dictionary of arrays
             The data or fit result for some/all of the points in the GP.
-            The arrays can contain either `gvar`s or normal numbers, the latter
-            being equivalent to zero-uncertainty `gvar`s.
+            The arrays can contain either gvars or normal numbers, the latter
+            being equivalent to zero-uncertainty gvars.
         key : None, key or list of keys
             If None, compute the posterior for all points in the GP (also those
             used in `given`). Otherwise only those specified by key.
@@ -711,22 +711,22 @@ class GP:
             Mandatory. Specify if the contents of `given` are data or already
             a posterior.
         raw : bool (default False)
-            If True, instead of returning a collection of `gvar`s, return
+            If True, instead of returning a collection of gvars, return
             the mean and the covariance. When the mean is a dictionary, the
             covariance is a dictionary whose keys are pairs of keys of the
             mean (the same format used by `gvar.evalcov`).
         keepcorr : bool
-            If True (default), the returned `gvar`s are correlated with the
+            If True (default), the returned gvars are correlated with the
             prior and the data/fit. If False, they have the correct covariance
             between themselves, but are independent from all other preexisting
-            `gvar`s.
+            gvars.
         
         Returns
         -------
         If raw=False (default):
         
         posterior : array or dictionary of arrays
-            A collections of `gvar`s representing the posterior.
+            A collections of gvars representing the posterior.
         
         If raw=True:
         
@@ -876,8 +876,8 @@ class GP:
         ----------
         given : array or dictionary of arrays
             The data for some/all of the points in the GP. The arrays can
-            contain either `gvar`s or normal numbers, the latter being
-            equivalent to zero-uncertainty `gvar`s.
+            contain either gvars or normal numbers, the latter being
+            equivalent to zero-uncertainty gvars.
         givencov : array or dictionary of arrays
             Covariance matrix of `given`. If not specified, the covariance
             is extracted from `given` with `gvar.evalcov(given)`.
