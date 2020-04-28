@@ -74,7 +74,7 @@ use, and tell it we want to evaluate the process on the array of points ``x``
 we created before::
 
     gproc = lgp.GP(kernel)
-    gproc.addx(x, 'data')
+    gproc.addx(x, 'foo')
 
 So, we add points using the :meth:`addx` method of :class:`GP` objects. It
 won't be very useful to only ask for the process values on the data---we
@@ -82,22 +82,21 @@ already know the answer there---so we add another array of points, more finely
 spaced, and more extended::
 
     xpred = np.linspace(-10, 10, 200)
-    gproc.addx(xpred, 'pred')
+    gproc.addx(xpred, 'bar')
 
 When adding ``x`` and ``xpred``, we also provided two strings to
-:meth:`addx`, ``'data'`` and ``'pred'``. These have no special meaning, they
+:meth:`addx`, ``'foo'`` and ``'bar'``. These have no special meaning, they
 are just labels the :class:`GP` object uses to distinguish the various arrays
-you add to it. You can think of them as variable names, choose them as you
-see fit.
+you add to it. You can think of them as variable names.
 
 Now, we ask ``gproc`` to compute the *a posteriori* function values on
 ``xpred`` by using the known values on ``x``::
 
-    ypred = gproc.pred({'data': y}, 'pred')
+    ypred = gproc.predfromdata({'foo': y}, 'bar')
 
-So :meth:`pred` takes two arguments; the first is a Python dictionary with
-labels as keys and arrays of function values as values, the second is the label
-on which we want the estimate.
+So :meth:`predfromdata` takes two arguments; the first is a Python dictionary
+with labels as keys and arrays of function values as values, the second is the
+label on which we want the estimate.
 
 Now we make a plot of everything::
 
@@ -112,14 +111,16 @@ Now we make a plot of everything::
     ax.set_ylabel('y')
     
     ax.plot(x, y, marker='.', linestyle='', color='black', label='data')
+    
     ypred_mean = gvar.mean(ypred)
     ax.plot(xpred, ypred_mean, label='prediction')
     
     ax.legend()
     
-    fig.tight_layout()
     fig.savefig('example1.png')
 
 And the result is:
 
 .. image:: example1.png
+
+Notice that, to plot ``ypred``, we did ``ypred_mean = gvar.mean(ypred)``.

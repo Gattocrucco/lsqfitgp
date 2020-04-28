@@ -282,7 +282,8 @@ def Rescaling(x, y, stdfun=None):
     deviation at the point. It can yield negative values; points with the same
     sign of `fun` will be totally correlated, points with different sign will
     be totally anticorrelated. Use this kernel to modulate the variance of
-    other kernels. Example, where the variance decreases far from the origin:
+    other kernels. Example where an exponential quadratic kernel is modified
+    to have a variance that decreases far from 0::
     
         ExpQuad() * Rescaling(stdfun=lambda x: 1 / (1 + x**2))
     
