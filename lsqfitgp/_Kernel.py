@@ -408,19 +408,16 @@ class IsotropicKernel(Kernel):
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
     
-    supername = 'Specific' + superclass.__name__
-    name = getattr(kernel, '__name__', supername)
-    if name == '<lambda>':
-        name = supername
-    
-    newclass = type(name, (superclass,), {})
+    newclass = type(kernel.__name__, (superclass,), {})
     
     def __init__(self, **kw):
         kwargs = prekw.copy()
         kwargs.update(kw)
-        return super(newclass, self).__init__(kernel, **kwargs)
+        super(newclass, self).__init__(kernel, **kwargs)
+    newclass.__wrapped__ = kernel
     newclass.__init__ = __init__
     newclass.__doc__ = kernel.__doc__
+    newclass.__qualname__ = getattr(kernel, '__qualname__', kernel.__name__)
     
     return newclass
 
