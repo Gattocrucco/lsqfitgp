@@ -29,9 +29,10 @@ copyright = year + ', ' + author
 
 
 # The full version, including alpha/beta/rc tags
-import lsqfitgp
-release = lsqfitgp.__version__
-version = release
+# import lsqfitgp
+# release = lsqfitgp.__version__
+# version = release
+release = '0.0.2'
 
 
 # -- General configuration ---------------------------------------------------
