@@ -293,6 +293,9 @@ def Rescaling(x, y, stdfun=None):
 
 @isotropickernel(input='soft', derivable=True)
 def Cos(r):
+    """
+    A cosine.
+    """
     return np.cos(r)
 
 @kernel
