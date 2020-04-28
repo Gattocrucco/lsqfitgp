@@ -11,6 +11,7 @@ lsqfitgp
    :caption: Contents:
    
    introduction.rst
+   kernelsref.rst
 
 
 Indices and tables

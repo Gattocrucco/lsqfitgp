@@ -68,3 +68,11 @@ html_static_path = ['_static']
 
 
 master_doc = 'index'
+
+# does not work because of _gvar_autograd.py
+# autodoc_mock_imports = [
+#     'autograd',
+#     'numpy',
+#     'scipy',
+#     'gvar'
+# ]
