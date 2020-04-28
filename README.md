@@ -28,15 +28,42 @@ Module for manipulating gaussian processes. Features:
 pip install lsqfitgp
 ```
 
-## Examples
-
-In the directory `examples` there are various scripts named with single letters
-(sorry for this nonsense notation). In an IPython shell, you can run
-`examples/RUNALL.ipy` to run all the examples and save the figures on files.
-
 ## Documentation
 
-There's no manual, only docstrings in the code.
+All the code is documented with docstrings, so you can use the Python help
+system directly from the shell:
+
+```python
+>>> import lsqfitgp as lgp
+>>> help(lgp)
+>>> help(lgp.something)
+```
+
+or, in an IPython shell/Jupyter notebook/Spyder IDE, use the question mark
+shortcut:
+
+```python
+In [1]: lgp?
+
+In [2]: lgp.something?
+```
+
+I'm also writing a manual available on
+[readthedocs](https://lsqfitgp.readthedocs.io/en/latest/index.html), but it is
+not complete yet. In the meantime, in the directory `examples` there are
+various scripts named with single letters (sorry for this nonsense notation).
+In an IPython shell, you can run `examples/RUNALL.ipy` to run all the examples
+and save the figures on files.
+
+To build the html manual from source, do:
+
+```sh
+pip install sphinx
+cd docs
+python3 kernelsref.py
+python3 runcode.py
+make html
+```
 
 ## Tests
 
