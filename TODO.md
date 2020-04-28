@@ -29,6 +29,9 @@ Check that float32 is respected.
 
 Test recursive dtype support.
 
+Add `test_array.py` and add a test for extracting `[..., 0]` from a
+structured array, because it is probably bugged now.
+
 ## New functionality
 
 Long-term: move to a variable-oriented approach like gvar instead of the
