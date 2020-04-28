@@ -48,6 +48,7 @@ def White(r2):
     Kernel that returns 1 when x == y, zero otherwise, so it represents white
     noise.
     """
+    # TODO check/add support for structured input
     return np.where(r2 == 0, 1, 0)
 
 @isotropickernel(derivable=True)
