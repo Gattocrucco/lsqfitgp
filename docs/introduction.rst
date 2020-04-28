@@ -10,7 +10,7 @@ functions. If you want to know more about gaussian processes, the book
 is a good reference available for free. However, understanding the technical
 details is not necessary to use the basic functionality of the module.
 
-We will now go through a full simple example fit to introduce how the module
+We will now go through a very simple example fit to introduce how the module
 works. First, import the modules::
 
     import lsqfitgp as lgp
@@ -117,10 +117,24 @@ Now we make a plot of everything::
     
     ax.legend()
     
-    fig.savefig('example1.png')
+    fig.savefig('introduction1.png')
 
-And the result is:
+.. image:: introduction1.png
 
-.. image:: example1.png
+Notice that, to plot ``ypred``, we did ``ypred_mean = gvar.mean(ypred)``. This
+is because the output of ``predfromdata`` is not an array of numbers, but an
+array of :class:`gvar.GVar` objects. :class:`GVar` variables represent gaussian
+distributions; :meth:`gvar.mean` extracts the mean of the distribution. Let's
+make an error band for the fit by computing the standard deviations with
+:meth:`gvar.sdev`::
 
-Notice that, to plot ``ypred``, we did ``ypred_mean = gvar.mean(ypred)``.
+    ypred_sdev = gvar.sdev(ypred)
+    bottom = ypred_mean - ypred_sdev
+    top = ypred_mean + ypred_sdev
+    ax.fill_between(xpred, bottom, top, alpha=0.3, color='blue')
+    
+    fig.savefig('introduction2.png')
+
+.. image:: introduction2.png
+
+TO BE COMPLETED
