@@ -93,26 +93,26 @@ if special is not None:
     from scipy import special
     _kv = special.kv
 
+def _maternp(x, p):
+    poly = 1
+    for k in reversed(range(p)):
+        c_kp1_over_ck = (p - k) / ((2 * p - k) * (k + 1))
+        poly *= c_kp1_over_ck * 2 * x
+        poly += 1
+    return np.exp(-x) * poly
+
+def _maternp_deriv(x, p):
+    if p == 0:
+        return -np.exp(-x)
+    poly = 1
+    for k in reversed(range(1, p)):
+        c_kp1_over_ck = (p - k) / ((2 * p - k - 1) * k)
+        poly = 1 + poly * c_kp1_over_ck * 2 * x
+    poly = poly / (1 - 2 * p) * x
+    return np.exp(-x) * poly
+
 if autograd is not None:
-    @autograd.extend.primitive
-    def _maternp(x, p):
-        poly = 1
-        for k in reversed(range(p)):
-            c_kp1_over_ck = (p - k) / ((2 * p - k) * (k + 1))
-            poly *= c_kp1_over_ck * 2 * x
-            poly += 1
-        return np.exp(-x) * poly
-
-    def _maternp_deriv(x, p):
-        if p == 0:
-            return -np.exp(-x)
-        poly = 1
-        for k in reversed(range(1, p)):
-            c_kp1_over_ck = (p - k) / ((2 * p - k - 1) * k)
-            poly = 1 + poly * c_kp1_over_ck * 2 * x
-        poly = poly / (1 - 2 * p) * x
-        return np.exp(-x) * poly
-
+     _maternp = autograd.extend.primitive(_maternp)
     autograd.extend.defvjp(
         _maternp,
         lambda ans, x, p: lambda g: g * _maternp_deriv(x, p)
@@ -123,7 +123,7 @@ def _matern_derivable(**kw):
     if np.isscalar(nu) and nu > 0 and (2 * nu) % 1 == 0:
         return int(nu - 1/2)
     else:
-        return False   
+        return False
 
 @isotropickernel(input='soft', derivable=_matern_derivable)
 def Matern(r, nu=None):
@@ -150,11 +150,11 @@ def Matern12(r):
     """
     return np.exp(-r)
 
-if autograd is not None:
-    @autograd.extend.primitive
-    def _matern32(x):
-        return (1 + x) * np.exp(-x)
+def _matern32(x):
+    return (1 + x) * np.exp(-x)
 
+if autograd is not None:
+    _matern32 = autograd.extend.primitive(_matern32)
     autograd.extend.defvjp(
         _matern32,
         lambda ans, x: lambda g: g * -x * np.exp(-x)
@@ -167,11 +167,11 @@ def Matern32(r):
     """
     return _matern32(np.sqrt(3) * r)
 
-if autograd is not None:
-    @autograd.extend.primitive
-    def _matern52(x):
-        return (1 + x * (1 + x/3)) * np.exp(-x)
+def _matern52(x):
+    return (1 + x * (1 + x/3)) * np.exp(-x)
 
+if autograd is not None:
+    _matern52 = autograd.extend.primitive(_matern52)
     autograd.extend.defvjp(
         _matern52,
         lambda ans, x: lambda g: g * -x/3 * _matern32(x)

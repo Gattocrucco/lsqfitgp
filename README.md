@@ -42,7 +42,7 @@ system directly from the shell:
 or, in an IPython shell/Jupyter notebook/Spyder IDE, use the question mark
 shortcut:
 
-```python
+```
 In [1]: lgp?
 
 In [2]: lgp.something?
