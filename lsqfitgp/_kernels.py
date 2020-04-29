@@ -112,7 +112,7 @@ def _maternp_deriv(x, p):
     return np.exp(-x) * poly
 
 if autograd is not None:
-     _maternp = autograd.extend.primitive(_maternp)
+    _maternp = autograd.extend.primitive(_maternp)
     autograd.extend.defvjp(
         _maternp,
         lambda ans, x, p: lambda g: g * _maternp_deriv(x, p)
