@@ -345,9 +345,11 @@ def PPKernel(r, q=0, D=1):
         poly = 1 + r * (j + 3 + r * ((2/5 * j + 12/5) * j + 3 + r * (((1/15 * j + 3/5) * j + 23/15) * j + 1)))
     return np.where(x > 0, x ** (j + q) * poly, 0)
 
-@kernel(derivable=1)
+@kernel(derivable=1, forcekron=True)
 def WienerIntegral(x, y):
     """
     A process whose derivative is a Wiener process.
     """
+    assert np.all(x >= 0)
+    assert np.all(y >= 0)
     return 1/2 * np.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))

@@ -122,6 +122,7 @@ test_kwargs = {
         dict(exponent=p) for p in range(10)
     ]),
     _kernels.Wiener: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
+    _kernels.WienerIntegral: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.FracBrownian: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.Categorical: dict(kwargs_list=[
         dict(cov=matrix_square(np.random.randn(10, 10)))
@@ -170,3 +171,12 @@ def test_matern_deriv_spec():
         r1 = autograd.elementwise_grad(_kernels.Matern(nu=nu))(x, y)
         r2 = autograd.elementwise_grad(spec())(x, y)
         assert np.allclose(r1, r2)
+
+def test_wiener_integral():
+    """
+    Test that the derivative of the Wiener integral is the Wiener.
+    """
+    x, y = np.abs(np.random.randn(2, 100))
+    r1 = _kernels.Wiener()(x, y)
+    r2 = _kernels.WienerIntegral().diff(1, 1)(x, y)
+    assert np.allclose(r1, r2)
