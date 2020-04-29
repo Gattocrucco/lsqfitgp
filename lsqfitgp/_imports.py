@@ -23,6 +23,10 @@ if autograd is None:
     if linalg is None:
         from numpy import linalg
     isinstance = builtins.isinstance
+    class dummy:
+        pass
+    numpy.numpy_boxes = dummy()
+    numpy.numpy_boxes.ArrayBox = dummy
 else:
     from autograd import numpy
     scipy = try_import('autograd.scipy')

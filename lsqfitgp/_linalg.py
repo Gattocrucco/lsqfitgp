@@ -43,17 +43,14 @@ BlockDecomp :
 
 # TODO add an optional argument c to quad to compute b.T @ inv(K) @ c.
 
-if autograd is not None:
-    def noautograd(x):
-        """
-        Unpack an autograd numpy array.
-        """
-        if isinstance(x, np.numpy_boxes.ArrayBox):
-            return noautograd(x._value)
-        else:
-            return x
-else:
-    noautograd = lambda x: x
+def noautograd(x):
+    """
+    Unpack an autograd numpy array.
+    """
+    if isinstance(x, np.numpy_boxes.ArrayBox):
+        return noautograd(x._value)
+    else:
+        return x
 
 def asinexact(dtype):
     """
