@@ -78,9 +78,10 @@ def broadcast_arrays(*arrays, **kw):
 
 class StructuredArray:
     """
-    Autograd-friendly imitation of a numpy structured array. It behaves like
-    a read-only numpy array, with the exception that you can set a whole field.
-    Example:
+    Autograd-friendly imitation of a numpy structured array.
+    
+    It behaves like a read-only numpy array, with the exception that you can
+    set a whole field. Example:
     
     >>> a = np.empty(3, dtype=[('f', float), ('g', float)])
     >>> a = StructuredArray(a)
@@ -90,6 +91,11 @@ class StructuredArray:
     
     @classmethod
     def _fromarrayanddict(cls, x, d):
+        """
+        Create a new StructuredArray, copying the dtype member from `x` and
+        using `d` as `_dict` member (no copy). The shape and size are inferred
+        from the contents of `d`.
+        """
         out = super().__new__(cls)
         out.dtype = x.dtype
         out._dict = d
@@ -101,6 +107,21 @@ class StructuredArray:
         return out
     
     def __new__(cls, array):
+        """
+        Make a new StructuredArray from a numpy array.
+        
+        Parameters
+        ----------
+        array : numpy array, StructuredArray
+            A structured array. An array qualifies as structured if
+            ``array.dtype.names is not None``.
+        
+        Notes
+        -----
+        The StructuredArray is a readonly view on the input array. When you
+        change the content of a field of the StructuredArray, however, the
+        reference to the original array for that field is lost.
+        """
         assert isinstance(array, (np.ndarray, cls))
         assert array.dtype.names is not None
         d = {
@@ -119,7 +140,10 @@ class StructuredArray:
             }
         else:
             d = {
-                name: x[key]
+                name: x[
+                    (key if isinstance(key, tuple) else (key,))
+                    + (slice(None),) * len(self.dtype.fields[name][0].shape)
+                ]
                 for name, x in self._dict.items()
             }
         return type(self)._fromarrayanddict(self, d)
