@@ -18,10 +18,14 @@ for name, obj in vars(lgp).items():
 kernels.sort()
 
 out = """\
+.. currentmodule:: lsqfitgp
+
+.. _kernels:
+
 Kernels reference
 =================
 
-This is a list of all the specific kernels implemented in ``lsqfitgp``.
+This is a list of all the specific kernels implemented in :mod:`lsqfitgp`.
 
 Kernels are reported with a simplified signature where the positional arguments
 are `r` or `r2` if the kernel is isotropic, or `x`, `y` if it isn't, and with
@@ -30,8 +34,8 @@ the general keyword arguments of :class:`Kernel` or :class:`IsotropicKernel`,
 while there are no positional arguments when instantiating the kernel and the
 call signature of instances is always `x`, `y`.
 
-Example: the kernel ``GammaExp`` is listed as ``GammaExp(r, gamma=1)``. This
-means you could use it this way::
+Example: the kernel :class:`GammaExp` is listed as ``GammaExp(r, gamma=1)``.
+This means you could use it this way::
 
     import lsqfitgp as lgp
     import numpy as np
@@ -42,7 +46,7 @@ means you could use it this way::
 """
 for kernel in kernels:
     out += f"""\
-.. autofunction:: lsqfitgp.{kernel}
+.. autofunction:: {kernel}
 """
 
 print(f'writing to {outputfile}...')
