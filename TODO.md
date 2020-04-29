@@ -59,22 +59,9 @@ term and a normal hessian on the logdet term.
 
 ### `gvar`-related issues
 
-#### `evalcov_blocks`
-
-`gvar.raniter` uses `gvar.evalcov_blocks` which is optimized for sparse
-covariance matrices, while I tipically use it with dense covariance matrices.
-For example, in `examples/w.py`, out of 10 seconds of `gvar.raniter`, the
-actual matrix decomposition takes only 0.3 s. I should write my own sampling
-function. Use numpy conventions instead of emulating `gvar.raniter`, so a
-single output array where the first axes run along samples. Possible name:
-`lgp.sample`. It has a single positional argument that is a scalar/array/dict
-of gvars, or a scalar/array/dict representing a covariance matrix. It has a
-`solver` argument like `GP.__init__` (move the solver name mapping to
-`_linalg.py`).
-
 #### `svd`
 
-I made a pull request to gvar with a faster `evalcov_blocks`. Now by profiling
+`gvar` 11.4 solved the `evalcov_blocks` bottleneck. Now by profiling
 `examples/w.py` I see the bottleneck is in `gvar.svd.__init__`. It is not the
 actual SVD decomposition (why on earth is it doing a SVD instead of
 diagonalizing?), it is just the code in `gvar.svd.__init__`. What is it doing?
