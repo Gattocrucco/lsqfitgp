@@ -30,8 +30,10 @@ pip install lsqfitgp
 
 ## Documentation
 
-All the code is documented with docstrings, so you can use the Python help
-system directly from the shell:
+The manual is available on
+[readthedocs](https://lsqfitgp.readthedocs.io/en/latest/index.html). All the
+code is documented with docstrings, so you can also use the Python help system
+directly from the shell:
 
 ```python
 >>> import lsqfitgp as lgp
@@ -48,14 +50,7 @@ In [1]: lgp?
 In [2]: lgp.something?
 ```
 
-I'm also writing a manual available on
-[readthedocs](https://lsqfitgp.readthedocs.io/en/latest/index.html), but it is
-not complete yet. In the meantime, in the directory `examples` there are
-various scripts named with single letters (sorry for this nonsense notation).
-In an IPython shell, you can run `examples/RUNALL.ipy` to run all the examples
-and save the figures on files.
-
-To build the html manual from source, do:
+### Building the manual from source
 
 ```sh
 pip install sphinx
@@ -64,6 +59,12 @@ python3 kernelsref.py
 python3 runcode.py
 make html
 ```
+
+## Examples
+
+In the directory `examples` there are various scripts named with single letters
+(sorry for this nonsense notation). In an IPython shell, you can run
+`examples/RUNALL.ipy` to run all the examples and save the figures on files.
 
 ## Tests
 
