@@ -49,9 +49,9 @@ uncertain on the function value at :math:`x` before seeing the data, and
 :math:`k(x, y)` expresses how much you think the value at point :math:`x` is
 linked with the value at point :math:`y`.
 
-``lsqfitgp`` allows you to specify arbitrary functions as kernels; however, not
-all functions are valid kernels, so it is convenient to use one of the already
-available ones from the module. We will use a quite common kernel, the
+:mod:`lsqfitgp` allows you to specify arbitrary functions as kernels; however,
+not all functions are valid kernels, so it is convenient to use one of the
+already available ones from the module. We will use a quite common kernel, the
 *exponential quadratic*:
 
 .. math::
