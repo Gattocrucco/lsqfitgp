@@ -157,7 +157,7 @@ class DecompMeta(abc.ABCMeta):
                 assert K.shape[0] == K.shape[1]
                 def jvp(g):
                     assert g.shape[:2] == K.shape
-                    return np.trace(solve_autograd(self, K, g))
+                    return np.trace(self.solve._autograd(self, K, g))
                 return jvp
             autograd.extend.defjvp(
                 logdet_autograd,
