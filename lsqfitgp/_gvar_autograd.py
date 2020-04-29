@@ -51,11 +51,3 @@ autograd.extend.defjvp(gvar.erf, erf_jvp)
 gvar.BufferDict.extension_fcn['log'] = gvar.exp
 gvar.BufferDict.extension_fcn['sqrt'] = gvar.square
 gvar.BufferDict.extension_fcn['erfinv'] = gvar.erf
-
-try:
-    from gvar import _utilities
-    from gvar._evalcov_fast import evalcov_blocks
-    gvar.evalcov_blocks = evalcov_blocks
-    _utilities.evalcov_blocks = evalcov_blocks
-except ImportError:
-    pass
