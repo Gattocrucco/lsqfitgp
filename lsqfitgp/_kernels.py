@@ -27,7 +27,8 @@ __all__ = [
     'Rescaling',
     'Cos',
     'FracBrownian',
-    'PPKernel'
+    'PPKernel',
+    'WienerIntegral'
 ]
 
 def _dot(x, y):
@@ -343,3 +344,10 @@ def PPKernel(r, q=0, D=1):
     elif q == 3:
         poly = 1 + r * (j + 3 + r * ((2/5 * j + 12/5) * j + 3 + r * (((1/15 * j + 3/5) * j + 23/15) * j + 1)))
     return np.where(x > 0, x ** (j + q) * poly, 0)
+
+@kernel(derivable=1)
+def WienerIntegral(x, y):
+    """
+    A process whose derivative is a Wiener process.
+    """
+    return 1/2 * np.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
