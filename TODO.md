@@ -69,7 +69,7 @@ I'm in doubt if trying to optimize `gvar.svd` or just optimizing `gvar.raniter`
 by writing her own decomposition routine. Or maybe `gvar.svd` computes optional
 things that I can disable in `gvar.raniter`.
 
-#### `evalcov`
+#### dense `evalcov`
 
 Possible optimization for `evalcov`: if the sparsity is more than something,
 also depending on the absolute size, use a dense matrix multiplication. I tried
@@ -93,7 +93,7 @@ keeping also into account the conversion of the matrices. Steps:
     point to the destination index with an offset of +1.
     
   * Write `d` elements into a dense matrix, using the mapping as above.
-    Probably requires a new svec method, which could be used by the `smat`
+    Probably requires a new `svec` method, which could be used by the `smat`
     method above.
     
   * Perform the matrix multiplication.
@@ -101,6 +101,41 @@ keeping also into account the conversion of the matrices. Steps:
   * Optionally, as a further optimization, copy only a triangular part of
     `cov` halving diagonal elements, use `BLAS_xtrmm` for doing the matrix
     multiplication, and finally take twice the symmetrical part of the result.
+    
+#### sparse `evalcov`
+
+My `evalcov_blocks` code didn't make it into `gvar`, but I could recycle the
+`_evalcov_sparse` function, since now `gvar` depends on `scipy` so using
+`scipy.sparse.cs_matrix` publicly is possible. Interface:
+
+    evalcov_sparse(g, lower=None, halfdiag=False):
+        """
+        Computes the covariance matrix of GVars as a sparse matrix.
+        
+        Parameters
+        ----------
+        g : GVar or array-like
+            A collection of GVars.
+        lower : None or bool, optional
+            If None (default), the full covariance matrix is returned. If True,
+            only the lower triangular part. If False, only the upper triangular
+            part.
+        halfdiag : bool, optional
+            If True, the diagonal of the matrix (the variances) is divided by 2,
+            such that, if lower=True or lower=False, the full covariance
+            matrix can be recovered by C + C.T. Default is False.
+        
+        Returns
+        -------
+        C : scipy.sparse.cs_matrix
+            The (possibly lower/upper triangular part of) covariance matrix of
+            `g`.
+        
+        Raises
+        ------
+        ValueError
+            If `lower` is None and `halfdiag` is True.
+        """
 
 #### Global covariance matrix
 
@@ -123,9 +158,6 @@ a diagonal block on new rows, so the buffers can be extended like `std:vector`
 bringing a global factor of 2. The possibility to implement the functionality
 of adding primary gvars correlated with existing primary gvars can be preserved
 if only the lower triangular part is stored.
-
-All this can be implemented using `scipy.sparse`. The core functionality of
-`scipy.sparse` can be easily copy-pasted if depending on scipy is to be avoided.
 
 Storing only the lower part should only have benefits. Using a compressed
 sparse format may not be worth it.
