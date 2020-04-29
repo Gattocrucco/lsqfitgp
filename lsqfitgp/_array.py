@@ -81,8 +81,10 @@ class StructuredArray:
     Autograd-friendly imitation of a numpy structured array.
     
     It behaves like a read-only numpy array, with the exception that you can
-    set a whole field. Example:
+    set a whole field.
     
+    Examples
+    --------
     >>> a = np.empty(3, dtype=[('f', float), ('g', float)])
     >>> a = StructuredArray(a)
     >>> a['f'] = np.arange(3) # this is allowed
@@ -158,6 +160,9 @@ class StructuredArray:
         self._dict[key] = _readonlyview(val)
     
     def reshape(self, *shape):
+        """
+        Reshape the array without changing its contents. See np.ndarray.reshape.
+        """
         if len(shape) == 1 and isinstance(shape[0], tuple):
             shape = shape[0]
         d = {
@@ -167,6 +172,10 @@ class StructuredArray:
         return type(self)._fromarrayanddict(self, d)
     
     def broadcast_to(self, shape, **kw):
+        """
+        Return a view of the array broadcasted to another shape. See
+        np.broadcast_to.
+        """
         _broadcast_shapes_2(self.shape, shape) # raises if not broadcastable
         d = {
             name: broadcast_to(x, shape + self.dtype.fields[name][0].shape, **kw)
