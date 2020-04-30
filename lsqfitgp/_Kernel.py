@@ -412,8 +412,14 @@ def _softdiff(x, y):
     return diff + np.where(diff >= 0, eps, -eps)
 
 def _softabs(x):
-    eps = _eps(x)
-    return np.where(x >= 0, x, -x) + eps
+    return np.where(x >= 0, x, -x) + _eps(x)
+
+if autograd is not None:
+    _softabs = autograd.extend.primitive(_softabs)
+    autograd.extend.defvjp(
+        _softabs,
+        lambda ans, x: lambda g: g * np.where(x >= 0, 1, -1)
+    )
 
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
