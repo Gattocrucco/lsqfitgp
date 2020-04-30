@@ -95,19 +95,19 @@ terms of derivatives, a maximum is given by a zero first derivative and a
 negative second derivative. It won't be complicated. I will stop using *foo*
 and *bar* and give meaningful names to the points::
 
-    gp = lgp.GP(lgp.ExpQuad(scale=2))
     x = np.array([-5, -4, -3, 3, 4, 5])
-    gp.addx(x, 'data')
-    gp.addx(0, 'maximum-slope', deriv=1)
-    gp.addx(0, 'maximum-curvature', deriv=2)
-    
-    xplot = np.linspace(-6, 6, 200)
-    gp.addx(xplot, 'plot')
-    
     yerr = 0.1
     y = np.cos(x) # we got bored of sines already
     y += yerr * np.random.randn(len(x))
     y = gvar.gvar(y, yerr * np.ones(len(x)))
+    
+    gp = lgp.GP(lgp.ExpQuad(scale=2))
+    gp.addx(x, 'data')
+    gp.addx(0, 'maximum-slope', deriv=1) # the cosine maximum is in 0
+    gp.addx(0, 'maximum-curvature', deriv=2)
+    
+    xplot = np.linspace(-6, 6, 200)
+    gp.addx(xplot, 'plot')
     
     given = {
         'data': y,  
