@@ -15,12 +15,6 @@ __all__ = [
     'where'
 ]
 
-def _asarray(x):
-    if isinstance(x, _array.StructuredArray):
-        return x
-    else:
-        return np.array(x, copy=False)
-
 def _asfloat(x):
     if not np.issubdtype(x.dtype, np.floating):
         return np.array(x, dtype=float, subok=True)
@@ -196,9 +190,9 @@ class _KernelBase:
         self._kernel = _kernel
     
     def __call__(self, x, y):
-        x = _asarray(x)
-        y = _asarray(y)
-        assert x.dtype == y.dtype
+        x = _array.asarray(x)
+        y = _array.asarray(y)
+        np.result_type(x.dtype, y.dtype)
         shape = _array.broadcast(x, y).shape
         if self._forcebroadcast:
             x, y = _array.broadcast_arrays(x, y)

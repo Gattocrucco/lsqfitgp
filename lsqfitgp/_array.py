@@ -76,6 +76,15 @@ def broadcast_arrays(*arrays, **kw):
     shape = broadcast_shapes(shapes)
     return tuple(broadcast_to(a, shape, **kw) for a in arrays)
 
+def asarray(x, **kw):
+    """
+    Version of np.asarray that works with StructuredArray.
+    """
+    if isinstance(x, StructuredArray):
+        return x
+    else:
+        return np.asarray(x)
+
 class StructuredArray:
     """
     Autograd-friendly imitation of a numpy structured array.

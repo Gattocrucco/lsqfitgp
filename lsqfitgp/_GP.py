@@ -48,16 +48,10 @@ def _block_matrix(blocks):
     # TODO make a bug report to autograd because np.block does not work
 
 def _isarraylike_nostructured(x):
-    return isinstance(x, (list, np.ndarray))
+    return np.isscalar(x) or isinstance(x, (list, tuple, np.ndarray))
 
 def _isarraylike(x):
     return _isarraylike_nostructured(x) or isinstance(x, _array.StructuredArray)
-
-def _asarray(x):
-    if isinstance(x, _array.StructuredArray):
-        return x
-    else:
-        return np.array(x, copy=False)
 
 def _isdictlike(x):
     return isinstance(x, (dict, gvar.BufferDict))
@@ -97,7 +91,7 @@ class _Element(metaclass=abc.ABCMeta):
     
     @property
     def size(self):
-        return np.prod(self.shape)
+        return np.prod(self.shape, dtype=int)
 
 class _Points(_Element):
     """Points where the process is evaluated"""
@@ -276,7 +270,6 @@ class GP:
         
         deriv = _Deriv.Deriv(deriv)
         
-        # TODO use duck typing instead of checking classes
         if _isarraylike(x):
             if key is None:
                 raise ValueError('x is array but key is None')
@@ -297,8 +290,8 @@ class GP:
             
             # Convert to numpy array or StructuredArray.
             if not _isarraylike(gx):
-                raise TypeError('x[{!r}] is not array or list'.format(key))
-            gx = _asarray(gx)
+                raise TypeError('x[{!r}] is not array-like'.format(key))
+            gx = _array.asarray(gx)
 
             # Check it is not empty.
             if not gx.size:
@@ -803,8 +796,8 @@ class GP:
                 mean = A @ ymean
             
         else: # (keepcorr and not raw)        
-            yplist = [self._prior(key).reshape(-1) for key in inkeys]
-            ysplist = [self._prior(key).reshape(-1) for key in outkeys]
+            yplist = [np.reshape(self._prior(key), -1) for key in inkeys]
+            ysplist = [np.reshape(self._prior(key), -1) for key in outkeys]
             yp = _concatenate_noop(yplist)
             ysp = _concatenate_noop(ysplist)
             
