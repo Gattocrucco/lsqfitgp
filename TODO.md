@@ -29,8 +29,7 @@ Check that float32 is respected.
 
 Test recursive dtype support.
 
-Add `test_array.py` and add a test for extracting `[..., 0]` from a
-structured array, because it is probably bugged now.
+It may be that gvar.raniter does not obey np.random.seed, check it.
 
 ## New functionality
 
