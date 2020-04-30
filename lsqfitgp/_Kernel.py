@@ -6,6 +6,7 @@ from ._imports import isinstance
 
 from . import _array
 from . import _Deriv
+from . import _linalg
 
 __all__ = [
     'Kernel',
@@ -380,15 +381,15 @@ class IsotropicKernel(Kernel):
             assert scale > 0
         
         def function(x, y, **kwargs):
-            q = _sum_recurse_dtype(lambda x, y: (x - y) ** 2, x, y)
+            if input == 'soft':
+                diff = _softdiff
+            else:
+                diff = lambda x, y: x - y
+            q = _sum_recurse_dtype(lambda x, y: diff(x, y) ** 2, x, y)
             if scale is not None:
                 q = q / scale ** 2
             if input == 'soft':
-                if np.issubdtype(x.dtype, np.inexact):
-                    eps = np.finfo(x.dtype).eps
-                else:
-                    eps = np.finfo(float).eps
-                q = np.sqrt(q + eps ** 2)
+                q = _softsqrt(q)
             return kernel(q, **kwargs)
         
         super().__init__(function, **kw)
@@ -398,6 +399,30 @@ class IsotropicKernel(Kernel):
         if isinstance(obj, Kernel) and isinstance(value, __class__):
             obj.__class__ = __class__
         return obj
+
+def _softsqrt(x):
+    if np.issubdtype(x.dtype, np.inexact):
+        eps = np.finfo(x.dtype).eps
+    else:
+        eps = np.finfo(float).eps
+    return np.sqrt(x + eps ** 2)
+
+def _softdiff(x, y):
+    if np.issubdtype(x.dtype, np.inexact):
+        eps = np.finfo(x.dtype).eps
+    elif np.issubdtype(y.dtype, np.inexact):
+        eps = np.finfo(y.dtype).eps
+    else:
+        eps = np.finfo(float).eps
+    diff = x - y
+    return diff + np.where(_linalg.noautograd(diff) > 0, 1, -1) * eps
+
+# if autograd is not None:
+#     _softsqrt = autograd.extend.primitive(_softsqrt)
+#     autograd.extend.defvjp(
+#         _softsqrt,
+#         lambda ans, x: lambda g: g / ans
+#     )
     
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
