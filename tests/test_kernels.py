@@ -50,7 +50,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
                 cov = kernel.diff(deriv, deriv)(x[None, :], x[:, None])
                 assert np.allclose(cov, cov.T)
                 eigv = linalg.eigvalsh(cov)
-                assert np.min(eigv) > -len(cov) * np.finfo(float).eps * np.max(eigv)
+                assert np.min(eigv) >= -len(cov) * np.finfo(float).eps * np.max(eigv)
     
     def test_positive(self):
         self.positive(0)
