@@ -12,11 +12,12 @@ pattern = re.compile(r'::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
 def runcode(file):
     with open(file, 'r') as stream:
         text = stream.read()
+    globals_locals = ({}, {})
     for match in pattern.finditer(text):
         codeblock = match.group(1)
         print(codeblock)
         code = '\n'.join(line[4:] for line in codeblock.split('\n'))
-        exec(code, locals(), locals())
+        exec(code, *globals_locals)
 
 files = sys.argv[1:]
 if not files:
