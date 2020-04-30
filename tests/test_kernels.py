@@ -42,6 +42,10 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             x[x.dtype.names[i]] = xs[i]
         return x
     
+    @property
+    def eps(self):
+        return np.finfo(float).eps
+    
     def positive(self, deriv):
         for kw in self.kwargs_list:
             x = self.random_x(**kw)
@@ -50,7 +54,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
                 cov = kernel.diff(deriv, deriv)(x[None, :], x[:, None])
                 assert np.allclose(cov, cov.T)
                 eigv = linalg.eigvalsh(cov)
-                assert np.min(eigv) >= -len(cov) * np.finfo(float).eps * np.max(eigv)
+                assert np.min(eigv) >= -len(cov) * self.eps * np.max(eigv)
     
     def test_positive(self):
         self.positive(0)
@@ -60,6 +64,9 @@ class KernelTestBase(metaclass=abc.ABCMeta):
     
     def test_positive_deriv2(self):
         self.positive(2)
+    
+    def test_positive_deriv3(self):
+        self.positive(3)
     
     def test_normalized(self):
         if issubclass(self.kernel_class, _Kernel.IsotropicKernel):
@@ -86,6 +93,15 @@ class KernelTestBase(metaclass=abc.ABCMeta):
                 r2 = kernel.diff(1, 1).diff(1, 1)(x[None, :], x[:, None])
                 assert np.allclose(r1, r2)
     
+    def test_double_diff_scalar_second_chopped(self):
+        for kw in self.kwargs_list:
+            kernel = self.kernel_class(**kw)
+            if kernel.derivable >= 2:
+                x = self.random_x(**kw)
+                r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
+                r2 = kernel.diff(2, 0).diff(0, 2)(x[None, :], x[:, None])
+                assert np.allclose(r1, r2)
+    
     def test_double_diff_nd_first(self):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
@@ -101,11 +117,20 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             if kernel.derivable >= 2:
                 x = self.random_x_nd(2, **kw)
                 r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x[None, :], x[:, None])
+                r2 = kernel.diff('f0', 'f0').diff('f1', 'f1')(x[None, :], x[:, None])
+                assert np.allclose(r1, r2)
+
+    def test_double_diff_nd_second_chopped(self):
+        for kw in self.kwargs_list:
+            kernel = self.kernel_class(**kw)
+            if kernel.derivable >= 2:
+                x = self.random_x_nd(2, **kw)
+                r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x[None, :], x[:, None])
                 r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x[None, :], x[:, None])
                 assert np.allclose(r1, r2)
 
     @classmethod
-    def make_subclass(cls, kernel_class, kwargs_list=None, random_x_fun=None):
+    def make_subclass(cls, kernel_class, kwargs_list=None, random_x_fun=None, eps=None):
         name = 'Test' + kernel_class.__name__
         subclass = type(cls)(name, (cls,), {
             'kernel_class': property(lambda self: kernel_class)
@@ -114,6 +139,8 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             subclass.kwargs_list = property(lambda self: kwargs_list)
         if random_x_fun is not None:
             subclass.random_x = lambda self, **kw: random_x_fun(**kw)
+        if eps is not None:
+            subclass.eps = property(lambda self: eps)
         return subclass
 
 def matrix_square(A):
@@ -140,7 +167,8 @@ test_kwargs = {
     _kernels.FracBrownian: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.Categorical: dict(kwargs_list=[
         dict(cov=matrix_square(np.random.randn(10, 10)))
-    ], random_x_fun=lambda **kw: np.random.randint(10, size=100))
+    ], random_x_fun=lambda **kw: np.random.randint(10, size=100)),
+    _kernels.NNKernel: dict(eps=4 * np.finfo(float).eps)
 }
 for kernel in kernels:
     factory_kw = test_kwargs.get(kernel, {})

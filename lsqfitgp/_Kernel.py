@@ -389,7 +389,7 @@ class IsotropicKernel(Kernel):
             if scale is not None:
                 q = q / scale ** 2
             if input == 'soft':
-                q = _softsqrt(q)
+                q = np.sqrt(q)
             return kernel(q, **kwargs)
         
         super().__init__(function, **kw)
@@ -400,30 +400,14 @@ class IsotropicKernel(Kernel):
             obj.__class__ = __class__
         return obj
 
-def _softsqrt(x):
-    if np.issubdtype(x.dtype, np.inexact):
-        eps = np.finfo(x.dtype).eps
-    else:
-        eps = np.finfo(float).eps
-    return np.sqrt(x + eps ** 2)
-
 def _softdiff(x, y):
-    if np.issubdtype(x.dtype, np.inexact):
-        eps = np.finfo(x.dtype).eps
-    elif np.issubdtype(y.dtype, np.inexact):
-        eps = np.finfo(y.dtype).eps
+    diff = x - y
+    if np.issubdtype(diff.dtype, np.inexact):
+        eps = np.finfo(diff.dtype).eps
     else:
         eps = np.finfo(float).eps
-    diff = x - y
-    return diff + np.where(_linalg.noautograd(diff) > 0, 1, -1) * eps
+    return diff + np.where(diff > 0, 1, -1) * eps
 
-# if autograd is not None:
-#     _softsqrt = autograd.extend.primitive(_softsqrt)
-#     autograd.extend.defvjp(
-#         _softsqrt,
-#         lambda ans, x: lambda g: g / ans
-#     )
-    
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
     
