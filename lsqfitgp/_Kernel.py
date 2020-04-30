@@ -382,10 +382,10 @@ class IsotropicKernel(Kernel):
         
         def function(x, y, **kwargs):
             if input == 'soft':
-                diff = _softdiff
+                func = lambda x, y: _softabs(x - y) ** 2
             else:
-                diff = lambda x, y: x - y
-            q = _sum_recurse_dtype(lambda x, y: diff(x, y) ** 2, x, y)
+                func = lambda x, y: (x - y) ** 2
+            q = _sum_recurse_dtype(func, x, y)
             if scale is not None:
                 q = q / scale ** 2
             if input == 'soft':
@@ -400,13 +400,20 @@ class IsotropicKernel(Kernel):
             obj.__class__ = __class__
         return obj
 
+def _eps(x):
+    if np.issubdtype(x.dtype, np.inexact):
+        return np.finfo(x.dtype).eps
+    else:
+        return np.finfo(float).eps
+
 def _softdiff(x, y):
     diff = x - y
-    if np.issubdtype(diff.dtype, np.inexact):
-        eps = np.finfo(diff.dtype).eps
-    else:
-        eps = np.finfo(float).eps
-    return diff + np.where(diff > 0, 1, -1) * eps
+    eps = _eps(diff)
+    return diff + np.where(diff >= 0, eps, -eps)
+
+def _softabs(x):
+    eps = _eps(x)
+    return np.where(x >= 0, x, -x) + eps
 
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
