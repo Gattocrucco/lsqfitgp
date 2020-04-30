@@ -43,3 +43,4 @@ This means you could use it this way::
 .. autofunction:: Rescaling
 .. autofunction:: White
 .. autofunction:: Wiener
+.. autofunction:: WienerIntegral
