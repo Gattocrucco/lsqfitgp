@@ -27,6 +27,7 @@ To start, read the :ref:`installation` section, and then :ref:`sine`.
     installation.rst
     sine.rst
     kernels.rst
+    derivatives.rst
     kernelsref.rst
 
 Indices and tables

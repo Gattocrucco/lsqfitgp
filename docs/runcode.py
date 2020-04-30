@@ -5,6 +5,8 @@ import glob
 import re
 import sys
 
+sys.path.insert(0, '..')
+
 pattern = re.compile(r'::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
 
 def runcode(file):
