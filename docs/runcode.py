@@ -16,7 +16,7 @@ def runcode(file):
         codeblock = match.group(1)
         print(codeblock)
         code = '\n'.join(line[4:] for line in codeblock.split('\n'))
-        exec(code)
+        exec(code, locals(), locals())
 
 files = sys.argv[1:]
 if not files:
