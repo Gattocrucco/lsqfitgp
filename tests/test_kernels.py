@@ -65,8 +65,8 @@ class KernelTestBase(metaclass=abc.ABCMeta):
     def test_positive_deriv2(self):
         self.positive(2)
     
-    def test_positive_deriv3(self):
-        self.positive(3)
+    # def test_positive_deriv3(self):
+    #     self.positive(3)
     
     def symmetric_offdiagonal(self, xderiv, yderiv):
         for kw in self.kwargs_list:
@@ -99,8 +99,8 @@ class KernelTestBase(metaclass=abc.ABCMeta):
     def test_symmetric_22(self):
         self.symmetric_offdiagonal(2, 2)
     
-    def test_symmetric_33(self):
-        self.symmetric_offdiagonal(3, 3)
+    # def test_symmetric_33(self):
+    #     self.symmetric_offdiagonal(3, 3)
     
     def test_normalized(self):
         if issubclass(self.kernel_class, _Kernel.IsotropicKernel):
@@ -224,29 +224,34 @@ def test_matern_half_integer():
         r2 = _kernels.Matern(nu=nualt)(x, y)
         assert np.allclose(r1, r2)
 
-def test_matern_spec():
+def check_matern_spec_p(p, xderiv, yderiv):
     """
     Test implementations of specific cases of nu.
     """
-    for p in range(3):
-        nu = p + 1/2
-        spec = eval('_kernels.Matern{}2'.format(1 + 2 * p))
-        x, y = np.random.randn(2, 100)
-        r1 = _kernels.Matern(nu=nu)(x, y)
-        r2 = spec()(x, y)
+    nu = p + 1/2
+    spec = eval('_kernels.Matern{}2'.format(1 + 2 * p))
+    if spec().derivable >= max(xderiv, yderiv):
+        x = np.random.randn(10)[:, None]
+        r1 = _kernels.Matern(nu=nu).diff(xderiv, yderiv)(x, x.T)
+        r2 = spec().diff(xderiv, yderiv)(x, x.T)
         assert np.allclose(r1, r2)
 
-def test_matern_deriv_spec():
-    """
-    Test derivatives for nu = 1/2, 3/2, 5/2.
-    """
+def check_matern_spec(xderiv, yderiv):
     for p in range(3):
-        nu = p + 1/2
-        spec = eval('_kernels.Matern{}2'.format(1 + 2 * p))
-        x, y = np.random.randn(2, 100)
-        r1 = autograd.elementwise_grad(_kernels.Matern(nu=nu))(x, y)
-        r2 = autograd.elementwise_grad(spec())(x, y)
-        assert np.allclose(r1, r2)
+        check_matern_spec_p(p, xderiv, yderiv)
+
+def test_matern_spec_00():
+    check_matern_spec(0, 0)
+def test_matern_spec_10():
+    check_matern_spec(1, 0)
+def test_matern_spec_11():
+    check_matern_spec(1, 1)
+def test_matern_spec_20():
+    check_matern_spec(2, 0)
+def test_matern_spec_21():
+    check_matern_spec(2, 1)
+def test_matern_spec_22():
+    check_matern_spec(2, 2)
 
 def test_wiener_integral():
     """

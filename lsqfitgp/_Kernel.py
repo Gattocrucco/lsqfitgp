@@ -6,7 +6,6 @@ from ._imports import isinstance
 
 from . import _array
 from . import _Deriv
-from . import _linalg
 
 __all__ = [
     'Kernel',
@@ -406,20 +405,8 @@ def _eps(x):
     else:
         return np.finfo(float).eps
 
-def _softdiff(x, y):
-    diff = x - y
-    eps = _eps(diff)
-    return diff + np.where(diff >= 0, eps, -eps)
-
 def _softabs(x):
     return np.where(x >= 0, x, -x) + _eps(x)
-
-if autograd is not None:
-    _softabs = autograd.extend.primitive(_softabs)
-    autograd.extend.defvjp(
-        _softabs,
-        lambda ans, x: lambda g: g * np.where(x >= 0, 1, -1)
-    )
 
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
