@@ -1,5 +1,6 @@
 import sys
 import inspect
+import abc
 
 import numpy as np
 import autograd
@@ -16,15 +17,16 @@ for obj in _kernels.__dict__.values():
             continue
         kernels.append(obj)
 
-class KernelTestBase:
+class KernelTestBase(metaclass=abc.ABCMeta):
     """
     Abstract base class to test kernels. Each subclass tests one specific
     kernel.
     """
     
     @property
+    @abc.abstractmethod
     def kernel_class(self):
-        raise NotImplementedError()
+        pass
     
     @property
     def kwargs_list(self):
@@ -40,13 +42,24 @@ class KernelTestBase:
             x[x.dtype.names[i]] = xs[i]
         return x
     
-    def test_positive(self):
+    def positive(self, deriv):
         for kw in self.kwargs_list:
             x = self.random_x(**kw)
-            cov = self.kernel_class(**kw)(x[None, :], x[:, None])
-            assert np.allclose(cov, cov.T)
-            eigv = linalg.eigvalsh(cov)
-            assert np.min(eigv) > -len(cov) * np.finfo(float).eps * np.max(eigv)
+            kernel = self.kernel_class(**kw)
+            if kernel.derivable >= deriv:
+                cov = kernel.diff(deriv, deriv)(x[None, :], x[:, None])
+                assert np.allclose(cov, cov.T)
+                eigv = linalg.eigvalsh(cov)
+                assert np.min(eigv) > -len(cov) * np.finfo(float).eps * np.max(eigv)
+    
+    def test_positive(self):
+        self.positive(0)
+    
+    def test_positive_deriv(self):
+        self.positive(1)
+    
+    def test_positive_deriv2(self):
+        self.positive(2)
     
     def test_normalized(self):
         if issubclass(self.kernel_class, _Kernel.IsotropicKernel):
@@ -94,8 +107,9 @@ class KernelTestBase:
     @classmethod
     def make_subclass(cls, kernel_class, kwargs_list=None, random_x_fun=None):
         name = 'Test' + kernel_class.__name__
-        subclass = type(cls)(name, (cls,), {})
-        subclass.kernel_class = property(lambda self: kernel_class)
+        subclass = type(cls)(name, (cls,), {
+            'kernel_class': property(lambda self: kernel_class)
+        })
         if kwargs_list is not None:
             subclass.kwargs_list = property(lambda self: kwargs_list)
         if random_x_fun is not None:
