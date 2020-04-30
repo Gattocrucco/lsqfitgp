@@ -68,6 +68,40 @@ class KernelTestBase(metaclass=abc.ABCMeta):
     def test_positive_deriv3(self):
         self.positive(3)
     
+    def symmetric_offdiagonal(self, xderiv, yderiv):
+        for kw in self.kwargs_list:
+            x = self.random_x(**kw)[None, :]
+            if xderiv == yderiv:
+                y = self.random_x(**kw)[:, None]
+            else:
+                y = x.T
+            kernel = self.kernel_class(**kw)
+            if kernel.derivable >= max(xderiv, yderiv):
+                b1 = kernel.diff(xderiv, yderiv)(x, y)
+                b2 = kernel.diff(yderiv, xderiv)(y, x)
+                assert np.allclose(b1, b2)
+
+    def test_symmetric_00(self):
+        self.symmetric_offdiagonal(0, 0)
+    
+    def test_symmetric_10(self):
+        self.symmetric_offdiagonal(1, 0)
+    
+    def test_symmetric_11(self):
+        self.symmetric_offdiagonal(1, 1)
+    
+    def test_symmetric_20(self):
+        self.symmetric_offdiagonal(2, 0)
+    
+    def test_symmetric_21(self):
+        self.symmetric_offdiagonal(2, 1)
+    
+    def test_symmetric_22(self):
+        self.symmetric_offdiagonal(2, 2)
+    
+    def test_symmetric_33(self):
+        self.symmetric_offdiagonal(3, 3)
+    
     def test_normalized(self):
         if issubclass(self.kernel_class, _Kernel.IsotropicKernel):
             for kw in self.kwargs_list:
