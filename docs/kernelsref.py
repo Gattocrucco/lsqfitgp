@@ -43,6 +43,12 @@ This means you could use it this way::
     x = np.random.randn(100)
     covmat = kernel(x[:, None], x[None, :])
 
+.. warning::
+
+    Taking second or higher order derivatives might give problems with
+    isotropic kernels with signature parameter `r`, while those with `r2` won't
+    have any issue.
+
 """
 for kernel in kernels:
     out += f"""\
