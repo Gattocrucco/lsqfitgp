@@ -134,19 +134,69 @@ class GP:
     
     Methods
     -------
-    addx :
+    addx
         Add points where the gaussian process is evaluated.
-    addtransf :
+    addtransf
         Add a linear transformation of the process.
-    prior :
+    prior
         Compute the prior for the process.
-    pred :
+    pred
         Compute the posterior for the process.
-    predfromfit, predfromdata :
-        Convenience wrappers for `pred`.
-    marginal_likelihood :
+    predfromfit
+        Like `pred` with ``fromdata=False``.
+    predfromdata
+        Like `pred` with ``fromdata=True``.
+    marginal_likelihood
         Compute the "marginal likelihood", also known as "bayes factor".
     
+    Parameters
+    ----------
+    covfun : Kernel
+        An instance of `Kernel` representing the covariance kernel.
+    solver : str
+        A solver used to invert the covariance matrix. See list below for
+        the available solvers. Default is `eigcut+` which is slow but
+        robust.
+        
+        'eigcut+'
+            Promote small eigenvalues to a minimum value.
+        'eigcut-'
+            Remove small eigenvalues.
+        'lowrank'
+            Reduce the rank of the matrix. The complexity is O(n^2 r) where
+            `n` is the matrix size and `r` the required rank, while other
+            algorithms are O(n^3). Slow for small sizes.
+        'gersh'
+            Cholesky decomposition after regularizing the matrix with a
+            Gershgorin estimate of the maximum eigenvalue. The fastest of the
+            O(n^3) algorithms.
+        'maxeigv'
+            Cholesky decomposition regularizing the matrix with the maximum
+            eigenvalue. Slow for small sizes. Use only for large sizes and if
+            'gersh' is giving inaccurate results.
+    
+    checkpos : bool
+        If True (default), raise a `LinAlgError` if the prior covariance
+        matrix turns out non positive within numerical error. The check
+        will be done only if you use in some way the `gvar` prior. With
+        the Cholesky solvers the check will be done in all cases.
+    checksym : bool
+        If True (default), check that the prior covariance matrix is
+        symmetric. If False, only half of the matrix is computed.
+    checkfinite : bool
+        If True (default), check that the prior covariance matrix does not
+        contain infs or nans.
+    **kw
+        Additional keyword arguments are passed to the solver.
+        
+        eps : positive float
+            For solvers 'eigcut+', 'eigcut-', 'gersh' and 'maxeigv'. Specifies
+            the threshold for considering small the eigenvalues, relative to
+            the maximum eigenvalue. The default is matrix size * float epsilon.
+        rank : positive integer
+            For the 'lowrank' solver, the target rank. It should be much
+            smaller than the matrix size for the method to be convenient.
+
     """
     
     # TODO maybe checkpos=True is a too strong default. It can quickly grow
@@ -161,59 +211,6 @@ class GP:
     # checked
     
     def __init__(self, covfun, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
-        """
-        
-        Parameters
-        ----------
-        covfun : Kernel
-            An instance of `Kernel` representing the covariance kernel.
-        solver : str
-            A solver used to invert the covariance matrix. See list below for
-            the available solvers. Default is `eigcut+` which is slow but
-            robust.
-        checkpos : bool
-            If True (default), raise a `LinAlgError` if the prior covariance
-            matrix turns out non positive within numerical error. The check
-            will be done only if you use in some way the `gvar` prior. With
-            the Cholesky solvers the check will be done in all cases.
-        checksym : bool
-            If True (default), check that the prior covariance matrix is
-            symmetric. If False, only half of the matrix is computed.
-        checkfinite : bool
-            If True (default), check that the prior covariance matrix does not
-            contain infs or nans.
-        
-        Solvers
-        -------
-        eigcut+ :
-            Promote small eigenvalues to a minimum value (default). What
-            `lsqfit` does by default.
-        eigcut- :
-            Remove small eigenvalues.
-        lowrank :
-            Reduce the rank of the matrix. The complexity is O(n^2 r) where
-            `n` is the matrix size and `r` the required rank, while other
-            algorithms are O(n^3). Slow for small sizes.
-        gersh :
-            Cholesky decomposition after regularizing the matrix with a
-            Gershgorin estimate of the maximum eigenvalue. The fastest of the
-            O(n^3) algorithms.
-        maxeigv :
-            Cholesky decomposition regularizing the matrix with the maximum
-            eigenvalue. Slow for small sizes. Use only for large sizes and if
-            gersh is giving inaccurate results.
-        
-        Keyword arguments
-        -----------------
-        eps : positive float
-            For solvers `eigcut+`, `eigcut-`, `gersh` and `maxeigv`. Specifies
-            the threshold for considering small the eigenvalues, relative to
-            the maximum eigenvalue. The default is matrix size * float epsilon.
-        rank : positive integer
-            For the `lowrank` solver, the target rank. It should be much
-            smaller than the matrix size for the method to be convenient.
-        
-        """
         if not isinstance(covfun, _Kernel.Kernel):
             raise TypeError('covariance function must be of class Kernel')
         self._covfun = covfun
@@ -235,10 +232,11 @@ class GP:
     def addx(self, x, key=None, deriv=0):
         """
         
-        Add points where the gaussian process is evaluated. The GP object
-        keeps the various x arrays in a dictionary. If `x` is an array, you
-        have to specify its dictionary key with the `key` parameter. Otherwise,
-        you can directly pass a dictionary for `x`.
+        Add points where the gaussian process is evaluated.
+        
+        The GP object keeps the various x arrays in a dictionary. If `x` is an
+        array, you have to specify its dictionary key with the `key` parameter.
+        Otherwise, you can directly pass a dictionary for `x`.
         
         To specify that on the given `x` a derivative of the process instead of
         the process itself should be evaluated, use the parameter `deriv`.
@@ -256,12 +254,12 @@ class GP:
         ----------
         x : array or dictionary of arrays
             The points to be added.
-        key :
+        key : hashable
             If `x` is an array, the dictionary key under which `x` is added.
             Can not be specified if `x` is a dictionary.
-        deriv :
-            Derivative specification. A `Deriv` object or something that can
-            be converted to `Deriv` (see Deriv's help).
+        deriv : Deriv-like
+            Derivative specification. A :class:`Deriv` object or something that
+            can be converted to :class:`Deriv`.
         
         """
         if not self._canaddx:
@@ -339,12 +337,15 @@ class GP:
             matrix-multiplied with the process array represented by its key,
             while scalars are just multiplied. Finally, the keys are summed
             over.
-        key :
+        key : hashable
             A new key under which the transformation is placed.
         
+        Notes
+        -----
         The multiplication between the tensors and the process is done with
         np.tensordot with 1-axis contraction. For >2d arrays this is different
-        from numpy's matrix multiplication.
+        from numpy's matrix multiplication, which would act on the
+        second-to-last dimension of the second array.
         
         """
         # TODO axes parameter like np.tensordot to allow fancy contractions
