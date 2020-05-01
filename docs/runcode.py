@@ -13,13 +13,13 @@ pattern = re.compile(r'::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
 def runcode(file):
     with open(file, 'r') as stream:
         text = stream.read()
-    globals = {}
+    globals_dict = {}
     np.random.seed(0)
     for match in pattern.finditer(text):
         codeblock = match.group(1)
         print(codeblock)
         code = '\n'.join(line[4:] for line in codeblock.split('\n'))
-        exec(code, globals, globals)
+        exec(code, globals_dict)
 
 files = sys.argv[1:]
 if not files:

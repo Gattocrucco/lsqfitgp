@@ -18,3 +18,4 @@ repository.
     integrals.rst
     customs.rst
     in.rst
+    out.rst
