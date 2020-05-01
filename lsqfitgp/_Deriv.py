@@ -17,13 +17,30 @@ class Deriv:
     def __new__(cls, *args):
         """
         Deriv(int) -> specified order derivative
+        
         Deriv(str) -> first derivative w.r.t specified variable
+        
         Deriv(iter of str) -> derivative w.r.t specified variables
+        
         Deriv(iter of int, str) -> an int before a str acts as a multiplier
+        
         Deriv(Deriv) -> pass through
         
         Example: Deriv(['a', 'b', 'b', 'c']) is equivalent to
         Deriv(['a', 2, 'b', 'c']).
+        
+        Raises
+        ------
+        TypeError
+            If `*args` is not of the specified form.
+        ValueError
+            If `*args` ends with an integer or if there are consecutive
+            integers.
+        
+        Attributes
+        ----------
+        implicit
+        order
         """
         c = collections.Counter()
         if len(args) == 1:
@@ -48,10 +65,12 @@ class Deriv:
                             c.update([obj])
                     elif isinstance(obj, (int, np.integer)):
                         assert obj >= 0
+                        if integer is not None:
+                            raise ValueError('consecutive integers in iterable')
                         integer = int(obj)
                     else:
                         raise TypeError('objects in iterable must be int or str')
-                if integer:
+                if integer is not None:
                     raise ValueError('dangling derivative order')
             else:
                 raise TypeError('argument must be int, str, or iterable')
@@ -86,4 +105,7 @@ class Deriv:
     
     @property
     def order(self):
+        """
+        The total derivation order, id est the sum of the values.
+        """
         return sum(self._counter.values())

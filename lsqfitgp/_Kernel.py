@@ -462,11 +462,11 @@ def where(condfun, kernel1, kernel2, dim=None):
     
     Make a kernel(x, y) that yields:
     
-      * kernel1(x, y) when condfun(x) and condfun(y) are True
+      * kernel1(x, y) where condfun(x) and condfun(y) are True
     
-      * kernel2(x, y) when condfun(x) and condfun(y) are False
+      * kernel2(x, y) where condfun(x) and condfun(y) are False
     
-      * zero when condfun(x) is different from condfun(y)
+      * zero where condfun(x) is different from condfun(y)
     
     Parameters
     ----------
@@ -509,6 +509,8 @@ def where(condfun, kernel1, kernel2, dim=None):
         def kernel(x, y):
             # TODO this is inefficient, kernels should be computed only on
             # the relevant points
+            # TODO this often produces a very sparse matrix, when I implement
+            # sparse support do it here too
             xcond = condfun(x)
             ycond = condfun(y)
             r = np.where(xcond & ycond, k1(x, y), k2(x, y))

@@ -12,3 +12,4 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     kernel.rst
     kerneldec.rst
     kernelop.rst
+    deriv.rst
