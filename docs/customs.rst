@@ -303,3 +303,41 @@ Is it reasonable that it gets a completely determined result by just counting
 the letters? In general different languages will tend to use more some letters.
 Here the difference is stark, because in Latin there are no j, k, w, x, y at
 all.
+
+So, in the end, it was not a problem that the prior variances where depending
+on the length of the text. But still it feels wrong, we initially stated the
+problem as determining if a text is English, not if it is *a lot of* English.
+
+We can fix this by normalizing the kernel such that the variance is always one.
+It is like replacing a covariance matrix with a correlation matrix. We'll
+use the :class:`Rescaling` kernel::
+
+    kernel = CountLetters()
+    inv_sdev = lambda x: 1 / np.sqrt(kernel(x, x))
+    norm = lgp.Rescaling(stdfun=inv_sdev)
+    gp = lgp.GP(kernel * norm)
+
+So, we instantiated our :class:`CountLetters` kernel, wrote a function
+``inv_sdev`` that computes the inverse of its standard deviation, and used this
+function to rescale the kernel. Now let's run the fit::
+
+    gp.addx(english_texts, 'english')
+    gp.addx(latin_texts, 'latin')
+    gp.addx(debellogallico, 'caesar')
+    gp.addx(paradiselost, 'milton')
+    
+    post = gp.predfromdata({
+        'english': -1 * np.ones(len(english_texts)),
+        'latin': np.ones(len(latin_texts))
+    }, ['caesar', 'milton'])
+    
+    print(post)
+
+Output::
+
+   {'caesar': 0.7311(14),'milton': -1.2688(14)}
+
+This time both means are around one and the standard deviations are the same.
+Moreover, if you look back at the previous result, you'll see that the standard
+deviations have decreased by more than a factor of 10, so it is definitely
+working better.
