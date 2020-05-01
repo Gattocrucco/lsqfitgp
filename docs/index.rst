@@ -24,14 +24,9 @@ To start, read the :ref:`installation` section, and then :ref:`sine`.
     :maxdepth: 2
     :caption: Contents:
     
-    installation.rst
-    sine.rst
-    kernels.rst
-    derivatives.rst
-    integrals.rst
-    customs.rst
-    kernelsref.rst
-
+    userguide.rst
+    reference.rst
+    
 Indices and tables
 ==================
 

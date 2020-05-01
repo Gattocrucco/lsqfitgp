@@ -265,7 +265,7 @@ if they are English or Latin. I'll pick this time::
     """
 
 Since we computed the prior, we have to recreate the :class:`GP` object from
-scratch to add other points (this is not really necessary, it is due to an
+scratch to add other points (this is not for fundamental reasons, it is an
 interface limitation in :mod:`gvar`)::
 
     gp = lgp.GP(CountLetters())
