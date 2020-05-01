@@ -466,7 +466,7 @@ def where(condfun, kernel1, kernel2, dim=None):
     
       * kernel2(x, y) when condfun(x) and condfun(y) are False
     
-      * 0 when condfun(x) is different from condfun(y)
+      * zero when condfun(x) is different from condfun(y)
     
     Parameters
     ----------

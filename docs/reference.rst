@@ -11,3 +11,4 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     kernelsref.rst
     kernel.rst
     kerneldec.rst
+    kernelop.rst
