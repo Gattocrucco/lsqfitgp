@@ -9,3 +9,4 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     :numbered:
 
     kernelsref.rst
+    kernel.rst

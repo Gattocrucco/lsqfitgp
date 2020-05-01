@@ -41,9 +41,10 @@ version = release
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.napoleon',
+    # 'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
-    'sphinx.ext.mathjax'
+    'sphinx.ext.mathjax',
+    'numpydoc'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -69,3 +70,8 @@ html_static_path = ['_static']
 
 
 master_doc = 'index'
+
+autoclass_content = 'both'
+
+numpydoc_class_members_toctree = False
+numpydoc_show_class_members = False

@@ -63,52 +63,46 @@ def _transf_recurse_dtype(transf, x):
         return x
 
 class _KernelBase:
-    """
     
-    Base class for objects representing covariance kernels. A Kernel object
-    is callable, the signature is obj(x, y). Kernel objects can be summed and
-    multiplied between them and with scalars, or raised to power with a scalar
-    exponent.
-    
-    This class can be used directly by passing a callable at initialization, or
-    it can be subclassed. The callable will be called with two arguments x, y
-    that are two broadcastable numpy arrays. It must return Cov[f(x), f(y)]
-    where `f` is the gaussian process.
-    
-    If `x` and `y` are structured arrays, they represent multidimensional
-    input. Kernels can be specified to act only on a field of `x` and `y` or
-    on all of them.
-        
-    The decorator `@kernel` can be used to quickly make subclasses.
-    
-    Methods
-    -------
-    diff :
-        Derivatives of the kernel.
-    
-    """
+    # This class is only used to share implementation between Kernel and
+    # _KernelDeriv, so the docstrings are meant to be read as docstrings of
+    # Kernel. The docstring is all in __init__ otherwise autoclass does not
+    # read it.
     
     def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcebroadcast=False, forcekron=False, derivable=False, **kw):
         """
         
-        Initialize the object with callable `kernel`.
+        Base class for objects representing covariance kernels.
+        
+        A Kernel object is callable, the signature is obj(x, y). Kernel objects
+        can be summed and multiplied between them and with scalars, or raised
+        to power with a scalar exponent.
+    
+        Attributes
+        ----------
+        derivable : int
+            How many times the kernel is derivable. ``sys.maxsize`` if it is
+            smooth.
         
         Parameters
         ----------
         kernel : callable
-            A function with signature `kernel(x, y)` where x and y are two
-            broadcastable numpy arrays which computes the covariance of f(x)
-            with f(y) where f is the gaussian process.
+            A function with signature ``kernel(x, y)``, where `x` and `y` are
+            two broadcastable numpy arrays, which computes the covariance of
+            f(x) with f(y) where f is the gaussian process.
         dim : None or str
-            When the input arrays are structured arrays, if dim=None the kernel
-            will operate on all fields, i.e. it will be passed the whole
+            When the input arrays are structured arrays, if `dim` is None the
+            kernel will operate on all fields, i.e. it will be passed the whole
             arrays. If `dim` is a string, `kernel` will see only the arrays for
-            the field `dim`. If `dim` is a string and the array is not
-            structured, an exception is raised.
-        loc, scale : scalars
+            the field named `dim`. If `dim` is a string and the array is not
+            structured, an exception is raised. If the field for name `dim` has
+            a nontrivial shape, the array passed to `kernel` is still
+            structured but has only field `dim`.
+        loc, scale : scalar
             The inputs to `kernel` are transformed as (x - loc) / scale.
         forcebroadcast : bool
             If True, the inputs to `kernel` will always have the same shape.
+            Default is False.
         forcekron : bool
             If True, when calling `kernel`, if `x` and `y` are structured
             arrays, i.e. if they represent multidimensional input, `kernel` is
@@ -120,8 +114,8 @@ class _KernelBase:
             error checking purposes. Default is False. True means infinitely
             many times derivable. If callable, it is called with the same
             keyword arguments of `kernel`.
-        **kw :
-            Other keyword arguments are passed to `kernel`: kernel(x, y, **kw).
+        **kw
+            Additional keyword arguments are passed to `kernel`.
         
         """
         # TODO linear transformation of input that works with arbitrarily
@@ -208,19 +202,20 @@ class _KernelBase:
         """
         
         Return a Kernel-like object that computes the derivatives of this
-        kernel. The derivatives are computed automatically with `autograd`. If
+        kernel. The derivatives are computed automatically with autograd. If
         `xderiv` and `yderiv` are trivial, this is a no-op.
         
         Parameters
         ----------
-        xderiv, yderiv : Deriv
-            A Deriv object or something that can be converted to a Deriv object.
+        xderiv, yderiv : Deriv-like
+            A :class:`Deriv` object or something that can be converted to a
+            Deriv object.
         
         Returns
         -------
-        diffkernel :
-            A Kernel-like object representing the derivatives of this one.
-            If xderiv == yderiv, it is actually another Kernel.
+        Kernel-like
+            An object representing the derivatives of this one. If ``xderiv ==
+            yderiv``, it is actually another Kernel.
         """
         xderiv = _Deriv.Deriv(xderiv)
         yderiv = _Deriv.Deriv(yderiv)
@@ -337,13 +332,6 @@ class Kernel(_KernelBase):
             return NotImplemented
     
 class IsotropicKernel(Kernel):
-    """
-    
-    Subclass of `Kernel` that represents isotropic kernels, i.e. the result
-    only depends on a distance defined between points. The decorator for
-    making subclasses is `isotropickernel`.
-    
-    """
     
     # TODO add the `distance` parameter to supply an arbitrary distance, maybe
     # allow string keywords for premade distances, like euclidean, hamming.
@@ -351,30 +339,26 @@ class IsotropicKernel(Kernel):
     def __init__(self, kernel, *, input='squared', scale=None, **kw):
         """
         
+        Subclass of :class:`Kernel` for isotropic kernels.
+    
         Parameters
         ----------
         kernel : callable
             A function taking one argument `r2` which is the squared distance
             between x and y, plus optionally keyword arguments.
-        input : str
-            See "input options" below.
+        input : {'squared', 'soft'}
+            If 'squared' (default), `kernel` is passed the squared distance.
+            If 'soft', `kernel` is passed the distance, and the distance of
+            equal points is a small number instead of zero.
         scale : scalar
             The distance is divided by `scale`.
-        **kw :
-            Other keyword arguments are passed to the `Kernel` init.
-        
-        Input options
-        -------------
-        squared :
-            Pass the squared distance (default).
-        soft :
-            Pass the (non-squared) distance, but zeros are replaced by very
-            small numbers in a smooth way.
-        
+        **kw
+            Additional keyword arguments are passed to the :class:`Kernel` init.
+                
         """
         allowed_input = ('squared', 'soft')
         if not (input in allowed_input):
-            raise ValueError('input option `{}` not valid, must be one of {}'.format(input, allowed_input))
+            raise ValueError('input option {!r} not valid, must be one of {!r}'.format(input, allowed_input))
         
         if scale is not None:
             assert np.isscalar(scale)
@@ -495,7 +479,7 @@ def where(condfun, kernel1, kernel2, dim=None):
     
     Returns
     -------
-    kernel: Kernel
+    Kernel
         If both kernel1 and kernel2 are IsotropicKernel, the class is
         IsotropicKernel.
     
