@@ -77,6 +77,8 @@ to have unit variance and roughly unit lengthscale.
         Equivalent to training a neural network with one latent infinite layer.
     Wiener :
         Random walk.
+    WienerIntegral :
+        Integral of the random walk.
     Gibbs :
         A gaussian kernel with a custom variable length scale.
     Periodic :
