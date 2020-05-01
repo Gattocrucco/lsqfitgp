@@ -4,9 +4,6 @@ Other TODOs are scattered in the code. Search for `TODO`.
 
 ## Documentation
 
-The help for gvar Cython-compiled functions misses the signature. Is there an
-automatic way to set it in the docstring?
-
 From numpy's guidelines: avoid the colon in the lists when there's nothing
 after the column. Use optional this way: type, optional. Fixed set of values:
 use braces with default argument first. In returned values list, if there's no
@@ -43,6 +40,8 @@ of adding various kernels and getting the separate prediction for each one.
 
 Accept xarray.DataSet and pandas.DataFrame as inputs. Probably I can't use
 these as core formats due to autograd.
+
+Also awkward arrays may be interesting as input format.
 
 Support taking derivatives in arbitrarily nested dtypes. Switch from the
 mess-tuple format to dictionaries dim->int. Dim can be (a tuple of) str, int,
