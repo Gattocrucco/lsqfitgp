@@ -411,16 +411,23 @@ def _softabs(x):
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
     
-    newclass = type(kernel.__name__, (superclass,), {})
+    if hasattr(kernel, 'pyfunc'): # np.vectorize objects
+        named_object = kernel.pyfunc
+    else:
+        named_object = kernel
+    
+    name = getattr(named_object, '__name__', 'DecoratedKernel')
+    newclass = type(name, (superclass,), {})
     
     def __init__(self, **kw):
         kwargs = prekw.copy()
         kwargs.update(kw)
         super(newclass, self).__init__(kernel, **kwargs)
-    newclass.__wrapped__ = kernel
+    
     newclass.__init__ = __init__
-    newclass.__doc__ = kernel.__doc__
-    newclass.__qualname__ = getattr(kernel, '__qualname__', kernel.__name__)
+    newclass.__wrapped__ = named_object
+    newclass.__doc__ = named_object.__doc__
+    newclass.__qualname__ = getattr(named_object, '__qualname__', name)
     
     return newclass
 
