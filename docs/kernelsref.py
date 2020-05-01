@@ -43,6 +43,15 @@ This means you could use it this way::
     x = np.random.randn(100)
     covmat = kernel(x[:, None], x[None, :])
 
+On multidimensional input, isotropic kernels will compute the euclidean
+distance. In general non-isotropic kernels will act separately on each
+dimension, i.e. :math:`k(x_1,y_1,x_2,y_2) = k(x_1,y_1) k(x_2,y_2)`, apart from
+kernels defined in terms of the dot product.
+
+For all isotropic kernels :math:`k(x, x) = 1`, and the typical lengthscale
+is approximately 1 for default values of the keyword parameters, apart from
+some specific cases like :class:`Constant`.
+
 .. warning::
 
     Taking second or higher order derivatives might give problems with
