@@ -134,6 +134,8 @@ class _KernelBase:
         # fields and slices of array fields. It shall be similar to the Deriv
         # syntax (still not done).
         
+        # TODO allow a list of dim
+        
         assert isinstance(dim, (str, type(None)))
         self._forcebroadcast = bool(forcebroadcast)
         forcekron = bool(forcekron)

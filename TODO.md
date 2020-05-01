@@ -4,8 +4,6 @@ Other TODOs are scattered in the code. Search for `TODO`.
 
 ## Documentation
 
-Write a manual.
-
 The help for gvar Cython-compiled functions misses the signature. Is there an
 automatic way to set it in the docstring?
 
@@ -29,7 +27,7 @@ Check that float32 is respected.
 
 Test recursive dtype support.
 
-It may be that gvar.raniter does not obey np.random.seed, check it.
+Fix the second derivatives kernel bugs (aagh)
 
 ## New functionality
 
@@ -46,7 +44,10 @@ of adding various kernels and getting the separate prediction for each one.
 Accept xarray.DataSet and pandas.DataFrame as inputs. Probably I can't use
 these as core formats due to autograd.
 
-Support taking derivatives in arbitrarily nested dtypes.
+Support taking derivatives in arbitrarily nested dtypes. Switch from the
+mess-tuple format to dictionaries dim->int. Dim can be (a tuple of) str, int,
+ellipsis, slices, the same recursive format I should support in
+`Kernel.__init__`.
 
 Is there a smooth version of the Wiener process? like, softmin(x, y)?
 
@@ -58,49 +59,6 @@ term and a normal hessian on the logdet term.
 
 ### `gvar`-related issues
 
-#### `svd`
-
-`gvar` 11.4 solved the `evalcov_blocks` bottleneck. Now by profiling
-`examples/w.py` I see the bottleneck is in `gvar.svd.__init__`. It is not the
-actual SVD decomposition (why on earth is it doing a SVD instead of
-diagonalizing?), it is just the code in `gvar.svd.__init__`. What is it doing?
-I'm in doubt if trying to optimize `gvar.svd` or just optimizing `gvar.raniter`
-by writing her own decomposition routine. Or maybe `gvar.svd` computes optional
-things that I can disable in `gvar.raniter`.
-
-#### dense `evalcov`
-
-Possible optimization for `evalcov`: if the sparsity is more than something,
-also depending on the absolute size, use a dense matrix multiplication. I tried
-it on a completely dense case with 100 variables and it gave a 16x improvement,
-keeping also into account the conversion of the matrices. Steps:
-
-  * Build the mask as usual reading the indices from `d` attributes, while also
-    counting the total number of elements.
-  
-  * Get the count of primary gvars involved by summing the mask.
-  
-  * Count the number of nonzero entries in `cov` with the mask. Probably
-    requires a new `smat` method.
-    
-  * Using the counts and the number of primary gvars, determine if the dense
-    algorithm would be convenient.
-    
-  * Extract a dense submatrix from `cov` using the mask. Probably requires a
-    new `smat` method, and probably it is convenient to first convert the
-    mask to a mapping, i.e. replace the 1s with the cumsum of the 1s, they then
-    point to the destination index with an offset of +1.
-    
-  * Write `d` elements into a dense matrix, using the mapping as above.
-    Probably requires a new `svec` method, which could be used by the `smat`
-    method above.
-    
-  * Perform the matrix multiplication.
-  
-  * Optionally, as a further optimization, copy only a triangular part of
-    `cov` halving diagonal elements, use `BLAS_xtrmm` for doing the matrix
-    multiplication, and finally take twice the symmetrical part of the result.
-    
 #### sparse `evalcov`
 
 My `evalcov_blocks` code didn't make it into `gvar`, but I could recycle the
