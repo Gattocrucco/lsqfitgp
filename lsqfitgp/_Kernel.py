@@ -216,6 +216,12 @@ class _KernelBase:
         Kernel-like
             An object representing the derivatives of this one. If ``xderiv ==
             yderiv``, it is actually another Kernel.
+        
+        Raises
+        ------
+        RuntimeError
+            The derivative orders are greater than the `derivative` attribute.
+            
         """
         xderiv = _Deriv.Deriv(xderiv)
         yderiv = _Deriv.Deriv(yderiv)
@@ -429,11 +435,11 @@ def _kerneldecoratorimpl(cls, *args, **kw):
 def kernel(*args, **kw):
     """
     
-    Decorator to convert a function to a subclass of `Kernel`. Use it like this:
+    Decorator to convert a function to a subclass of :class:`Kernel`. Example::
     
-    @kernel
-    def MyKernel(x, y, cippa=1, lippa=42, ...):
-        return ... # something computing Cov[f(x), f(y)]
+        @kernel(loc=10) # the default loc will be 10
+        def MyKernel(x, y, cippa=1, lippa=42):
+            return cippa * (x * y) ** lippa
     
     """
     return _kerneldecoratorimpl(Kernel, *args, **kw)
@@ -441,13 +447,12 @@ def kernel(*args, **kw):
 def isotropickernel(*args, **kw):
     """
     
-    Decorator to convert a function to a subclass of `IsotropicKernel`. Use it
-    like this:
+    Decorator to convert a function to a subclass of :class:`IsotropicKernel`.
+    Example::
     
-    @isotropickernel
-    def MyKernel(rsquared, cippa=1, lippa=42, ...):
-        return ...
-        # something computing Cov[f(x), f(y)] where rsquared = ||x - y||^2
+        @isotropickernel(derivable=True)
+        def MyKernel(distsquared, cippa=1, lippa=42):
+            return cippa * np.exp(-distsquared) + lippa
     
     """
     return _kerneldecoratorimpl(IsotropicKernel, *args, **kw)
