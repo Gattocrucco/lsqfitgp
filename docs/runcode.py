@@ -4,6 +4,7 @@ them. Or, run the files specified on the command line."""
 import glob
 import re
 import sys
+import numpy as np
 
 sys.path.insert(0, '..')
 
@@ -13,6 +14,7 @@ def runcode(file):
     with open(file, 'r') as stream:
         text = stream.read()
     globals = {}
+    np.random.seed(0)
     for match in pattern.finditer(text):
         codeblock = match.group(1)
         print(codeblock)

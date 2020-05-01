@@ -17,3 +17,4 @@ repository.
     derivatives.rst
     integrals.rst
     customs.rst
+    in.rst
