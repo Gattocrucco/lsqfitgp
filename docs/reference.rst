@@ -14,3 +14,4 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     kernelop.rst
     deriv.rst
     gp.rst
+    array.rst

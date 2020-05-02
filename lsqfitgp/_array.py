@@ -4,7 +4,12 @@ from ._imports import numpy as np
 from ._imports import isinstance
 
 __all__ = [
-    'StructuredArray'
+    'StructuredArray',
+    'broadcast_shapes',
+    'broadcast',
+    'broadcast_to',
+    'broadcast_arrays',
+    'asarray'
 ]
 
 def _readonlyview(x):
@@ -89,8 +94,8 @@ class StructuredArray:
     """
     Autograd-friendly imitation of a numpy structured array.
     
-    It behaves like a read-only numpy array, with the exception that you can
-    set a whole field.
+    It behaves like a read-only numpy structured array, with the exception that
+    you can set a whole field/subfield.
     
     Examples
     --------
@@ -98,6 +103,19 @@ class StructuredArray:
     >>> a = StructuredArray(a)
     >>> a['f'] = np.arange(3) # this is allowed
     >>> a[1] = (0.3, 0.4) # this raises an error
+        
+    Parameters
+    ----------
+    array : numpy array, StructuredArray
+        A structured array. An array qualifies as structured if
+        ``array.dtype.names is not None``.
+    
+    Notes
+    -----
+    The StructuredArray is a readonly view on the input array. When you
+    change the content of a field of the StructuredArray, however, the
+    reference to the original array for that field is lost.
+    
     """
     
     @classmethod
@@ -118,21 +136,6 @@ class StructuredArray:
         return out
     
     def __new__(cls, array):
-        """
-        Make a new StructuredArray from a numpy array.
-        
-        Parameters
-        ----------
-        array : numpy array, StructuredArray
-            A structured array. An array qualifies as structured if
-            ``array.dtype.names is not None``.
-        
-        Notes
-        -----
-        The StructuredArray is a readonly view on the input array. When you
-        change the content of a field of the StructuredArray, however, the
-        reference to the original array for that field is lost.
-        """
         assert isinstance(array, (np.ndarray, cls))
         assert array.dtype.names is not None
         d = {
