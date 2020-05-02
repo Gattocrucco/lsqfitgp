@@ -75,4 +75,25 @@ time of only 0.1. Let's see how far would it go a priori::
 
 .. image:: out2.png
 
-Not so far as (1, 1) indeed.
+Not so far as (1, 1) indeed. Can we make the task even harder for our walker?
+We can introduce an anticorrelation between the x and y components, such that
+going directly in the top-right direction is unfavored. ::
+
+    corr = -0.99
+    cov = np.array([[1,    corr],
+                    [corr, 1   ]])
+    gp = lgp.GP(lgp.Wiener(dim='time') * lgp.Categorical(dim='coord', cov=cov))
+    gp.addx(x, 'walk')
+    gp.addx(end, 'endpoint')
+    
+    path = gp.predfromdata({'endpoint': [1, 1]}, 'walk')
+    
+    ax.cla()
+    
+    for sample in gvar.raniter(path, 2):
+        ax.plot(sample[0], sample[1])
+    ax.plot([0, 1], [0, 1], '.k')
+    
+    fig.savefig('out3.png')
+
+.. image:: out3.png
