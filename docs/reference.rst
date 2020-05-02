@@ -15,3 +15,4 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     deriv.rst
     gp.rst
     array.rst
+    fit.rst
