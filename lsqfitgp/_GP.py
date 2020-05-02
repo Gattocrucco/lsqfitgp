@@ -121,6 +121,9 @@ class _Transf(_Element):
     
     @classmethod
     def tensormul(cls, tensor, x):
+        """
+        Do the multiplication tensor @ x.
+        """
         if tensor.shape:
             x = np.tensordot(tensor, x, axes=1)
         elif tensor.item != 1:
@@ -208,7 +211,8 @@ class GP:
     # the default is to check only if the matrices are small enough that it is
     # not a problem. Alternative 4: check diagonal blocks.
     # Current behaviour: only the covariance of things added with addx is
-    # checked
+    # checked, and only if gvars are used at some point
+    # Alternative 5: do the check in _solver only on things to be solved
     
     def __init__(self, covfun, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
         if not isinstance(covfun, _Kernel.Kernel):
@@ -216,6 +220,8 @@ class GP:
         self._covfun = covfun
         self._elements = dict() # key -> _Element
         self._canaddx = True
+        # TODO add decompositions svdcut+ and svdcut- that cut the eigenvalues
+        # but keep their sign
         decomp = {
             'eigcut+': _linalg.EigCutFullRank,
             'eigcut-': _linalg.EigCutLowRank,
