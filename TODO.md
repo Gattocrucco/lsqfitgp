@@ -50,10 +50,6 @@ ellipsis, slices, the same recursive format I should support in
 
 Is there a smooth version of the Wiener process? like, softmin(x, y)?
 
-Experiment on using second order corrections in empbayes_fit. I can
-probably half-use the least squares derivative estimation on the residuals
-term and a normal hessian on the logdet term.
-
 ## Optimization
 
 ### `gvar`-related issues

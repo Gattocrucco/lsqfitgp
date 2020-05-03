@@ -19,3 +19,7 @@ repository.
     customs.rst
     in.rst
     out.rst
+    hyper.rst
+
+.. do one on hyperparameters in the input points with multidim
+.. and one on separating the components of the kernel with addtransf

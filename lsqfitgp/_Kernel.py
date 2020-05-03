@@ -130,6 +130,10 @@ class _KernelBase:
         
         # TODO allow a list of dim
         
+        # TODO if derivable is a callable and it returns another callable,
+        # the second callable is called with input points to determine on
+        # which points exactly the kernel is derivable.
+        
         assert isinstance(dim, (str, type(None)))
         self._forcebroadcast = bool(forcebroadcast)
         forcekron = bool(forcekron)
@@ -305,6 +309,9 @@ class Kernel(_KernelBase):
     def derivable(self):
         assert self._derivable[0] == self._derivable[1]
         return self._derivable[0]
+        
+    # TODO when I implement double callable derivable, derivable should
+    # always be a callable, and _binary should propagate it properly.
     
     def _binary(self, value, op):
         if isinstance(value, Kernel):
@@ -320,6 +327,11 @@ class Kernel(_KernelBase):
         else:
             obj = NotImplemented
         return obj
+    
+    # TODO when using autograd, an autograd scalar is an ArrayBox that
+    # has an all-in method __add__ that will be called if the autograd scalar
+    # is the first addend. Then autograd will complain that it can't compute
+    # derivatives w.r.t. a Kernel. Solve this bug.
     
     def __add__(self, value):
         return self._binary(value, lambda k, q: lambda x, y: k(x, y) + q(x, y))
@@ -508,14 +520,21 @@ def where(condfun, kernel1, kernel2, dim=None):
     def kernel_op(k1, k2):
         def kernel(x, y):
             # TODO this is inefficient, kernels should be computed only on
-            # the relevant points
+            # the relevant points. To support this with autograd, make a
+            # custom np.where that uses assignment and define its vjp.
+            
             # TODO this often produces a very sparse matrix, when I implement
-            # sparse support do it here too
+            # sparse support do it here too.
+            
             xcond = condfun(x)
             ycond = condfun(y)
             r = np.where(xcond & ycond, k1(x, y), k2(x, y))
             return np.where(xcond ^ ycond, 0, r)
         return kernel
+    
+    # TODO when I implement double callable derivable, propagate it
+    # properly by overwriting it in the returned object since _binary will
+    # require both kernels to be derivable on a given point.
     
     return kernel1._binary(kernel2, kernel_op)
 

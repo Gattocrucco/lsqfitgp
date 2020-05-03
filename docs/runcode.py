@@ -1,7 +1,6 @@
 """Search for rst files in the current directory and run the python code in
 them. Or, run the files specified on the command line."""
 
-import glob
 import re
 import sys
 import numpy as np
@@ -21,10 +20,6 @@ def runcode(file):
         code = '\n'.join(line[4:] for line in codeblock.split('\n'))
         exec(code, globals_dict)
 
-files = sys.argv[1:]
-if not files:
-    files = glob.glob('*.rst')
-    files.sort()
-for file in files:
+for file in sys.argv[1:]:
     print('running {}...'.format(file))
     runcode(file)

@@ -53,12 +53,15 @@ In [2]: lgp.something?
 ### Building the manual from source
 
 ```sh
-pip install sphinx
+pip install sphinx<2
 cd docs
-python3 kernelsref.py
-python3 runcode.py
 make html
 ```
+
+If you add kernels, run `kernelsref.py` to regenerate `kernelsref.rst`.
+
+If you add a documentation page with code examples, use `runcode.py` to run
+all the code found in code sections in the rst file.
 
 ## Examples
 

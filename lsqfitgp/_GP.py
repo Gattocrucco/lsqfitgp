@@ -354,7 +354,11 @@ class GP:
         second-to-last dimension of the second array.
         
         """
-        # TODO axes parameter like np.tensordot to allow fancy contractions
+        # TODO axes parameter like np.tensordot to allow fancy contractions.
+        
+        # TODO if a tensor is a callable, it is called on the points to get
+        # the tensor. It can only applied on _Points. The callable is called
+        # immediately in addtransf to catch errors.
         
         # Check key.
         if key is None:
@@ -656,6 +660,8 @@ class GP:
             ylist.append(l.reshape(-1))
             keylist.append(key)
         
+        # TODO error checking on the unpacking of givencov
+        
         if givencov is not None:
             covblocks = [
                 [
@@ -681,19 +687,20 @@ class GP:
     def pred(self, given, key=None, givencov=None, fromdata=None, raw=False, keepcorr=None):
         """
         
-        Compute the posterior for the gaussian process, either on all points,
-        on a subset of points, or conditionally from a subset of points on
-        another subset; and either directly from data or from a posterior
-        obtained with a fit. The latter case is for when the gaussian process
-        was used in a fit with other parameters.
+        Compute the posterior.
+        
+        The posterior can be computed either for all points or for a subset,
+        and either directly from data or from a posterior obtained with a fit.
+        The latter case is for when the gaussian process was used in a fit with
+        other parameters.
         
         The output is a collection of gvars, either an array or a dictionary
         of arrays. They are properly correlated with gvars returned by
         `prior` and with the input data/fit.
         
         The input is a dictionary of arrays, `given`, with keys corresponding
-        to the keys in the GP as added by `addx`. You can pass an array if
-        there is only one key in the GP.
+        to the keys in the GP as added by `addx` or `addtransf`. You can pass
+        an array if there is only one key in the GP.
         
         Parameters
         ----------
@@ -701,21 +708,21 @@ class GP:
             The data or fit result for some/all of the points in the GP.
             The arrays can contain either gvars or normal numbers, the latter
             being equivalent to zero-uncertainty gvars.
-        key : None, key or list of keys
+        key : None, key or list of keys, optional
             If None, compute the posterior for all points in the GP (also those
             used in `given`). Otherwise only those specified by key.
-        givencov : array or dictionary of arrays
+        givencov : array or dictionary of arrays, optional
             Covariance matrix of `given`. If not specified, the covariance
             is extracted from `given` with `gvar.evalcov(given)`.
         fromdata : bool
             Mandatory. Specify if the contents of `given` are data or already
             a posterior.
-        raw : bool (default False)
+        raw : bool, optional
             If True, instead of returning a collection of gvars, return
             the mean and the covariance. When the mean is a dictionary, the
             covariance is a dictionary whose keys are pairs of keys of the
-            mean (the same format used by `gvar.evalcov`).
-        keepcorr : bool
+            mean (the same format used by `gvar.evalcov`). Default False.
+        keepcorr : bool, optional
             If True (default), the returned gvars are correlated with the
             prior and the data/fit. If False, they have the correct covariance
             between themselves, but are independent from all other preexisting
@@ -859,9 +866,10 @@ class GP:
     def marginal_likelihood(self, given, givencov=None):
         """
         
-        Compute (the logarithm of) the marginal likelihood given data, i.e. the
-        probability of the data conditioned on the gaussian process prior and
-        data error.
+        Compute the logarithm of the probability of the data.
+        
+        The probability is conditioned on the gaussian process prior and data
+        error. It is also called marginal likelihood or bayes factor.
         
         Unlike `pred()`, you can't compute this with a fit result instead of
         data. If you used the gaussian process as latent variable in a fit,
@@ -884,7 +892,7 @@ class GP:
         
         Returns
         -------
-        logGBF : scalar
+        scalar
             The logarithm of the marginal likelihood.
             
         """        
