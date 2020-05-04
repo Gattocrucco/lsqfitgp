@@ -16,3 +16,5 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     gp.rst
     array.rst
     fit.rst
+
+.. TODO decompositions reference under "Linear Algebra"

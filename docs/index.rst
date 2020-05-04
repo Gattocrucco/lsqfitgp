@@ -18,7 +18,9 @@ functions. If you want to know more about gaussian processes, the book
 is a good reference available for free. However, understanding the technical
 details is not necessary to use the basic functionality of the module.
 
-To start, read the :ref:`installation` section, and then :ref:`sine`.
+To start, read the :ref:`installation` section, and then :ref:`sine`. To report
+bugs or request features, `open an issue
+<https://github.com/Gattocrucco/lsqfitgp/issues>`_ on github.
 
 .. toctree::
     :maxdepth: 2

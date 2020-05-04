@@ -19,7 +19,8 @@ repository.
     customs.rst
     in.rst
     out.rst
+    components.rst
     hyper.rst
 
 .. do one on hyperparameters in the input points with multidim
-.. and one on separating the components of the kernel with addtransf
+.. do one on optimization (solvers)
