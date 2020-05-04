@@ -140,27 +140,27 @@ class KernelTestBase(metaclass=abc.ABCMeta):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable:
-                x = self.random_x_nd(2, **kw)
-                r1 = kernel.diff('f0', 'f0')(x[None, :], x[:, None])
-                r2 = kernel.diff('f0', 0).diff(0, 'f0')(x[None, :], x[:, None])
+                x = self.random_x_nd(2, **kw)[None, :]
+                r1 = kernel.diff('f0', 'f0')(x, x.T)
+                r2 = kernel.diff('f0', 0).diff(0, 'f0')(x, x.T)
                 assert np.allclose(r1, r2)
 
     def test_double_diff_nd_second(self):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable >= 2:
-                x = self.random_x_nd(2, **kw)
-                r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x[None, :], x[:, None])
-                r2 = kernel.diff('f0', 'f0').diff('f1', 'f1')(x[None, :], x[:, None])
+                x = self.random_x_nd(2, **kw)[None, :]
+                r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
+                r2 = kernel.diff('f0', 'f0').diff('f1', 'f1')(x, x.T)
                 assert np.allclose(r1, r2)
 
     def test_double_diff_nd_second_chopped(self):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable >= 2:
-                x = self.random_x_nd(2, **kw)
-                r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x[None, :], x[:, None])
-                r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x[None, :], x[:, None])
+                x = self.random_x_nd(2, **kw)[None, :]
+                r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
+                r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x, x.T)
                 assert np.allclose(r1, r2)
 
     @classmethod

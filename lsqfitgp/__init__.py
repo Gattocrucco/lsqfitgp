@@ -6,7 +6,7 @@ from ._array import *
 from ._fit import *
 from ._Deriv import *
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 __doc__ = """
 

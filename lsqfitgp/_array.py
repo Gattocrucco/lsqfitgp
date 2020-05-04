@@ -153,6 +153,7 @@ class StructuredArray:
                 name: self._dict[name]
                 for name in key
             }
+            return type(self)._fromarrayanddict(self, d)
         else:
             d = {
                 name: x[
@@ -161,10 +162,10 @@ class StructuredArray:
                 ]
                 for name, x in self._dict.items()
             }
-        return type(self)._fromarrayanddict(self, d, readonly=True)
+            return type(self)._fromarrayanddict(self, d, readonly=True)
     
     def __setitem__(self, key, val):
-        if not self._readonly:
+        if self._readonly:
             msg = 'This StructuredArray is read-only, maybe you did '
             msg += '"array[index][label] = ..." instead of '
             msg += '"array[label] = np.array([...])"?'

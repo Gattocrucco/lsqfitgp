@@ -23,4 +23,5 @@ repository.
     hyper.rst
     hyperstruct.rst
 
-.. do one on optimization (solvers)
+.. optimization (solvers)
+.. nonlinear fits with lsqfit
