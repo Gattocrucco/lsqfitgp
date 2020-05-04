@@ -12,6 +12,9 @@ Add Examples sections.
 
 Add copyright and GPL notice to all source code files.
 
+Numpydoc is slow, understand how to use sphinx.ext.napoleon with numpy-style
+docs.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -21,7 +24,16 @@ Check that float32 is respected.
 
 Test recursive dtype support.
 
-Fix the second derivatives kernel bugs (aagh)
+Fix the second derivatives kernel bugs (aagh).
+
+Mark kernel tests that fail as xfails.
+
+Fix too low thresholds in linalg tests.
+
+Import the gvar testsuite to check that the autograd injection works.
+
+gvar.BufferDict should have a prettier repr on the IPython shell. Is there a
+standard way to configure a pretty print?
 
 ## New functionality
 

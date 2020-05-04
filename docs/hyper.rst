@@ -128,6 +128,16 @@ constant::
    :func:`empbayes_fit`, Kernel-scalar operations have to be done with the
    Kernel on the left.
 
+.. note::
+
+   The function `makegp` must be autograd-friendly. This means that operations
+   that involve hyperparameters must always be functional, i.e. you can not
+   first create an array and later assign values to it. Also, if you explicitly
+   use numpy functions, you have to do ``from autograd import numpy`` instead
+   of ``import numpy``. Read the `autograd tutorial
+   <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`_ for
+   detailed information.
+
 Output::
 
    sdev 2.44(81)

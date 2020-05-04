@@ -21,6 +21,6 @@ repository.
     out.rst
     components.rst
     hyper.rst
+    hyperstruct.rst
 
-.. do one on hyperparameters in the input points with multidim
 .. do one on optimization (solvers)

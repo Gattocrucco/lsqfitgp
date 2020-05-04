@@ -29,7 +29,7 @@ def _unflat(x, original):
     elif isinstance(original, gvar.BufferDict):
         return gvar.BufferDict(original, buf=x)
 
-def empbayes_fit(hyperprior, gpfactory, data):
+def empbayes_fit(hyperprior, gpfactory, data, raises=True):
     """
     
     Empirical bayes fit.
@@ -50,6 +50,9 @@ def empbayes_fit(hyperprior, gpfactory, data):
     data : dictionary
         Dictionary of data that is passed to GP.marginal_likelihood on the
         GP object returned by `gpfactory`.
+    raises : bool, optional
+        If True (default), raise an error when the minimization fails.
+        Otherwise, use the last point of the minimization as result.
     
     Returns
     -------
@@ -58,6 +61,11 @@ def empbayes_fit(hyperprior, gpfactory, data):
         the marginal likelihood. The covariance matrix is computed as the
         inverse of the hessian of the marginal likelihood. These gvars do
         not track correlations with the hyperprior or the data.
+
+    Raises
+    ------
+    RuntimeError
+        The minimization failed and `raises` is True.
     
     """
     assert isinstance(data, (dict, gvar.BufferDict)) # TODO duck typing of data
@@ -100,7 +108,7 @@ def empbayes_fit(hyperprior, gpfactory, data):
         return -gp.marginal_likelihood(data) + 1/2 * np.sum(np.square(diagres))
     
     result = optimize.minimize(autograd.value_and_grad(fun), hpmean, jac=True)
-    if not result.success:
+    if raises and not result.success:
         raise RuntimeError('minimization failed: {}'.format(result.message))
     uresult = gvar.gvar(result.x, result.hess_inv)
     return _unflat(uresult, hyperprior)

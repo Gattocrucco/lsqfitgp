@@ -119,7 +119,7 @@ class StructuredArray:
     """
     
     @classmethod
-    def _fromarrayanddict(cls, x, d):
+    def _fromarrayanddict(cls, x, d, readonly=False):
         """
         Create a new StructuredArray, copying the dtype member from `x` and
         using `d` as `_dict` member (no copy). The shape and size are inferred
@@ -133,6 +133,7 @@ class StructuredArray:
         subshape = x.dtype.fields[f0][0].shape
         out.shape = a0.shape[:len(a0.shape) - len(subshape)]
         out.size = np.prod(out.shape)
+        out._readonly = readonly
         return out
     
     def __new__(cls, array):
@@ -160,9 +161,14 @@ class StructuredArray:
                 ]
                 for name, x in self._dict.items()
             }
-        return type(self)._fromarrayanddict(self, d)
+        return type(self)._fromarrayanddict(self, d, readonly=True)
     
     def __setitem__(self, key, val):
+        if not self._readonly:
+            msg = 'This StructuredArray is read-only, maybe you did '
+            msg += '"array[index][label] = ..." instead of '
+            msg += '"array[label] = np.array([...])"?'
+            raise ValueError(msg)
         assert key in self.dtype.names
         assert isinstance(val, (np.ndarray, StructuredArray))
         prev = self._dict[key]
