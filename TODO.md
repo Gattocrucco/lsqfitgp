@@ -26,8 +26,6 @@ Test recursive dtype support.
 
 Fix the second derivatives kernel bugs (aagh).
 
-Mark kernel tests that fail as xfails.
-
 Fix too low thresholds in linalg tests.
 
 Import the gvar testsuite to check that the autograd injection works.
