@@ -91,6 +91,10 @@ def empbayes_fit(hyperprior, gpfactory, data, raises=True):
     # correction on the residuals term and invent something for the logdet
     # term.
     
+    # TODO it raises very often with "Desired error not necessarily achieved
+    # due to precision loss.". Change the default arguments of minimize to make
+    # this less frequent.
+    
     hyperprior = _asarrayorbufferdict(hyperprior)
     flathp = _flat(hyperprior)
     hpcov = gvar.evalcov(flathp)
