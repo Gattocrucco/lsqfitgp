@@ -544,4 +544,4 @@ def where(condfun, kernel1, kernel2, dim=None):
 # choose(lambda comp: comp, [kernel0, kernel1, kernel2, ...], dim='comp')
 # example where `comp` is a string field, and without using `dim`:
 # choose(lambda x: x['comp'], {'a': kernela, 'b': kernelb})
-# define Kernel._nary and make _binary just a wrapper
+# define Kernel._nary using a cycle of _binary

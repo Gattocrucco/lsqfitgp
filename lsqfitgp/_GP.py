@@ -371,8 +371,12 @@ class GP:
         # TODO axes parameter like np.tensordot to allow fancy contractions.
         
         # TODO if a tensor is a callable, it is called on the points to get
-        # the tensor. It can only applied on _Points. The callable is called
+        # the tensor. It can be only applied on _Points. The callable is called
         # immediately in addtransf to catch errors.
+        
+        # TODO with callable transf, it would be nice to take derivatives
+        # on the combined transf @ kernel @ transf.T. Maybe then it is better
+        # to add transformations as a kernel method.
         
         # Check key.
         if key is None:
