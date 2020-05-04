@@ -77,6 +77,14 @@ def _compatible_dtypes(d1, d2):
             return False
     return True
 
+def _array_copy_if_not_readonly(x):
+    """currently not used"""
+    y = _array.asarray(x)
+    if x is y and builtins.isinstance(x, np.ndarray) and x.flags['WRITEABLE']:
+        return np.copy(x)
+    else:
+        return y
+
 class _Element(metaclass=abc.ABCMeta):
     """
     Abstract class for an object holding information associated to a key in a
@@ -234,7 +242,6 @@ class GP:
         self._checksym = bool(checksym)
         self._checkfinite = bool(checkfinite)
     
-    # TODO after I implement block solving, add per-key solver option
     def addx(self, x, key=None, deriv=0):
         """
         
@@ -268,9 +275,16 @@ class GP:
             can be converted to :class:`Deriv`.
         
         """
+        
+        # TODO after I implement block solving, add per-key solver option. It
+        # may not be possible to respect the setting if it is not the sole
+        # key used as data.
+        
+        # TODO add `copy` parameter, default False, to copy the input arrays.
+        
         if not self._canaddx:
             raise RuntimeError('can not add x any more to this process')
-            # TODO remove if I implement the lazy gvar prior
+            # TODO remove if I implement the lazy gvar prior.
         
         deriv = _Deriv.Deriv(deriv)
         

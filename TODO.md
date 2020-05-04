@@ -4,16 +4,13 @@ Other TODOs are scattered in the code. Search for `TODO`.
 
 ## Documentation
 
-From numpy's guidelines: avoid the colon in the lists when there's nothing
-after the column. Use optional this way: type, optional. Fixed set of values:
-use braces with default argument first. In returned values list, if there's no
-meaningful name, just write the type with no colon.
-
 Add Kernel or IsotropicKernel in the kernels list.
 
 Add a Raises section to GP methods that can trigger covariance matrix checks.
 
 Add Examples sections.
+
+Add copyright and GPL notice to all source code files.
 
 ## Fixes and tests
 
