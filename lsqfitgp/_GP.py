@@ -884,10 +884,10 @@ class GP:
     def marginal_likelihood(self, given, givencov=None):
         """
         
-        Compute the logarithm of the probability of the data.
+        Compute the logarithm of the probability of the model.
         
-        The probability is conditioned on the gaussian process prior and data
-        error. It is also called marginal likelihood or bayes factor.
+        The probability is conditioned on the data. It is also called marginal
+        likelihood or bayes factor.
         
         Unlike `pred()`, you can't compute this with a fit result instead of
         data. If you used the gaussian process as latent variable in a fit,
