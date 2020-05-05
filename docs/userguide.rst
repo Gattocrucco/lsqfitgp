@@ -22,6 +22,6 @@ repository.
     components.rst
     hyper.rst
     hyperstruct.rst
+    nonlinear.rst
 
 .. optimization (solvers)
-.. nonlinear fits with lsqfit

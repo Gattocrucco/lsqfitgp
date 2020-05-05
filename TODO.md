@@ -15,6 +15,10 @@ Add copyright and GPL notice to all source code files.
 Numpydoc is slow, understand how to use sphinx.ext.napoleon with numpy-style
 docs.
 
+Interlinks with gvar and lsqfit docs.
+
+Add a module hook. Main page? Reference main page?
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -32,6 +36,8 @@ Import the gvar testsuite to check that the autograd injection works.
 
 gvar.BufferDict should have a prettier repr on the IPython shell. Is there a
 standard way to configure a pretty print?
+
+Make a test that checks predfromdata(x,y) == predfromfit(predfromdata(x,x),y)
 
 ## New functionality
 
