@@ -916,6 +916,10 @@ class GP:
         """        
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = _concatenate_noop(ylist)
+        
+        # TODO maybe I should raise an error when the covariance is specified
+        # with givencov but y contains gvars? Now I'm just ignoring the gvar
+        # covariance.
 
         if ycovblocks is not None:
             ycov = _block_matrix(ycovblocks)

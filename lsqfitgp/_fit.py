@@ -105,6 +105,12 @@ def empbayes_fit(hyperprior, gpfactory, data, raises=True):
     # maybe since this is typically small we could do a diagonalization
     hpmean = gvar.mean(flathp)
     
+    # TODO it may be inefficient that marginal_likelihood gets called every time
+    # with the same data when data is not a callable because it uses evalcov
+    # to extract the covariance of the data. It may easily become the
+    # bottleneck with correlated data. Extract the covariance one time and
+    # pass it to marginal_likelihood in `givencov`.
+    
     def fun(p):
         gp = gpfactory(_unflat(p, hyperprior))
         assert isinstance(gp, _GP.GP)

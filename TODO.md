@@ -39,6 +39,8 @@ standard way to configure a pretty print?
 
 Make a test that checks predfromdata(x,y) == predfromfit(predfromdata(x,x),y)
 
+Make tests for givencov.
+
 ## New functionality
 
 Long-term: move to a variable-oriented approach like gvar instead of the
