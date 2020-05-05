@@ -5,6 +5,13 @@ import re
 import sys
 import numpy as np
 
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import TerminalFormatter
+
+def pyprint(text):
+    print(highlight(text, PythonLexer(), TerminalFormatter()))
+
 sys.path.insert(0, '..')
 
 pattern = re.compile(r'::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
@@ -16,7 +23,8 @@ def runcode(file):
     np.random.seed(0)
     for match in pattern.finditer(text):
         codeblock = match.group(1)
-        print(codeblock)
+        print('---------------------------------------------------------\n')
+        pyprint(codeblock)
         code = '\n'.join(line[4:] for line in codeblock.split('\n'))
         exec(code, globals_dict)
 
