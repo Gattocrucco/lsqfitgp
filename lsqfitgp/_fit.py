@@ -93,7 +93,8 @@ def empbayes_fit(hyperprior, gpfactory, data, raises=True):
     
     # TODO it raises very often with "Desired error not necessarily achieved
     # due to precision loss.". Change the default arguments of minimize to make
-    # this less frequent.
+    # this less frequent, but only after implement the quad-specific
+    # derivatives since maybe they will fix this.
     
     hyperprior = _asarrayorbufferdict(hyperprior)
     flathp = _flat(hyperprior)
