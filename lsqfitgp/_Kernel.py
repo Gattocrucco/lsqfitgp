@@ -227,11 +227,18 @@ class _KernelBase:
             The derivative orders are greater than the `derivative` attribute.
             
         """
+        
+        # TODO maximum dimensionality should be checked too, see PPKernel.
+        
         xderiv = _Deriv.Deriv(xderiv)
         yderiv = _Deriv.Deriv(yderiv)
         
         if not xderiv and not yderiv:
             return self
+            
+        # TODO this derivative order checking is wrong. Example: with a
+        # separable kernel I can take derivatives w.r.t. all fields, and what
+        # matters is the order on each field, not the total.
         
         orders = (xderiv.order, yderiv.order)
         if any(orders[i] > self._derivable[i] for i in range(2)):

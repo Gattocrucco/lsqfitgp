@@ -340,14 +340,16 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     factor = np.sqrt(2 * sx * sy / denom)
     return factor * np.exp(-(x - y) ** 2 / denom)
 
-@isotropickernel(input='soft', derivable=True)
-def Periodic(r, outerscale=1):
+@kernel(derivable=True, forcekron=True)
+def Periodic(x, y, outerscale=1):
     """
     Periodic gaussian kernel.
     
     .. math::
-        k(r) = \\exp \\left(
-        -2 \\left( \\frac {\\sin(r/2)} {\\texttt{outerscale}} \\right)^2
+        k(x, y) = \\exp \\left(
+        -2 \\left(
+        \\frac {\\sin((x - y) / 2)} {\\texttt{outerscale}}
+        \\right)^2
         \\right)
     
     A gaussian kernel over a transformed periodic space. It represents a
@@ -358,9 +360,9 @@ def Periodic(r, outerscale=1):
     """
     assert np.isscalar(outerscale)
     assert outerscale > 0
-    return np.exp(-2 * (np.sin(r / 2) / outerscale) ** 2)
+    return np.exp(-2 * (np.sin((x - y) / 2) / outerscale) ** 2)
 
-@kernel
+@kernel(forcekron=True)
 def Categorical(x, y, cov=None):
     """
     Categorical kernel.
@@ -399,21 +401,21 @@ def Rescaling(x, y, stdfun=None):
         stdfun = lambda x: np.ones_like(x, dtype=float)
     return stdfun(x) * stdfun(y)
 
-@isotropickernel(input='soft', derivable=True)
-def Cos(r):
+@kernel(derivable=True, forcekron=True)
+def Cos(x, y):
     """
     Cosine kernel.
     
     .. math::
-        k(r) = \\cos(r)
+        k(x, y) = \\cos(x - y)
     
     Samples from this kernel are harmonic functions. It can be multiplied with
     another kernel to introduce anticorrelations.
     
     """
-    return np.cos(r)
+    return np.cos(x - y)
 
-@kernel
+@kernel(forcekron=True)
 def FracBrownian(x, y, H=1/2):
     """
     Fractional brownian motion kernel.

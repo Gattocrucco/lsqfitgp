@@ -63,6 +63,9 @@ ellipsis, slices, the same recursive format I should support in
 
 Is there a smooth version of the Wiener process? like, softmin(x, y)?
 
+Non-gaussian likelihoods, accessible with a string optional parameter in
+GP.marginal_likelihood.
+
 ## Optimization
 
 ### `gvar`-related issues
