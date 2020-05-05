@@ -361,6 +361,10 @@ class IsotropicKernel(Kernel):
     # TODO add the `distance` parameter to supply an arbitrary distance, maybe
     # allow string keywords for premade distances, like euclidean, hamming.
     
+    # TODO it is not efficient that the distance is computed separately for
+    # each kernel in a kernel expression, but probably it would be difficult
+    # to support everything without bugs while also computing the distance once.
+    
     def __init__(self, kernel, *, input='squared', scale=None, **kw):
         """
         
