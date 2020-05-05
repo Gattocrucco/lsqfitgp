@@ -23,5 +23,4 @@ repository.
     hyper.rst
     hyperstruct.rst
     nonlinear.rst
-
-.. optimization (solvers)
+    optim.rst
