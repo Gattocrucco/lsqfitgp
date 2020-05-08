@@ -108,20 +108,7 @@ def Polynomial(x, y, exponent=None, sigma0=1):
     assert sigma0 >= 0
     return (_dot(x, y) + sigma0 ** 2) ** exponent
 
-# TODO make a pull request to autograd for kv and kvp.
-# This still does not work with derivatives due to the pole of kv. I need a
-# direct calculation of x ** nu * kv(nu, x).
-# _kvp = extend.primitive(special_noderiv.kvp)
-# extend.defvjp(
-#     _kvp,
-#     lambda ans, v, z, n: lambda g: g * _kvp(v, z, n + 1),
-#     argnums=[1]
-# )
-# _kv = lambda v, z: _kvp(v, z, 0)
-if special is not None:
-    from scipy import special as special_noderiv
-    _kv = special_noderiv.kv
-
+@autograd.extend.primitive
 def _maternp(x, p):
     poly = 1
     for k in reversed(range(p)):
@@ -140,12 +127,10 @@ def _maternp_deriv(x, p):
     poly = poly / (1 - 2 * p) * x
     return np.exp(-x) * poly
 
-if autograd is not None:
-    _maternp = autograd.extend.primitive(_maternp)
-    autograd.extend.defvjp(
-        _maternp,
-        lambda ans, x, p: lambda g: g * _maternp_deriv(x, p)
-    )
+autograd.extend.defvjp(
+    _maternp,
+    lambda ans, x, p: lambda g: g * _maternp_deriv(x, p)
+)
 
 def _matern_derivable(**kw):
     nu = kw.get('nu', None)
@@ -178,7 +163,7 @@ def Matern(r, nu=None):
     if (2 * nu) % 1 == 0:
         return _maternp(x, int(nu - 1/2))
     else:
-        return 2 ** (1 - nu) / special.gamma(nu) * x ** nu * _kv(nu, x)
+        return 2 ** (1 - nu) / special.gamma(nu) * x ** nu * special.kv(nu, x)
 
 @isotropickernel(input='soft')
 def Matern12(r):
@@ -190,15 +175,14 @@ def Matern12(r):
     """
     return np.exp(-r)
 
+@autograd.extend.primitive
 def _matern32(x):
     return (1 + x) * np.exp(-x)
 
-if autograd is not None:
-    _matern32 = autograd.extend.primitive(_matern32)
-    autograd.extend.defvjp(
-        _matern32,
-        lambda ans, x: lambda g: g * -x * np.exp(-x)
-    )
+autograd.extend.defvjp(
+    _matern32,
+    lambda ans, x: lambda g: g * -x * np.exp(-x)
+)
 
 @isotropickernel(input='soft', derivable=1)
 def Matern32(r):
@@ -211,15 +195,14 @@ def Matern32(r):
     """
     return _matern32(np.sqrt(3) * r)
 
+@autograd.extend.primitive
 def _matern52(x):
     return (1 + x * (1 + x/3)) * np.exp(-x)
 
-if autograd is not None:
-    _matern52 = autograd.extend.primitive(_matern52)
-    autograd.extend.defvjp(
-        _matern52,
-        lambda ans, x: lambda g: g * -x/3 * _matern32(x)
-    )
+autograd.extend.defvjp(
+    _matern52,
+    lambda ans, x: lambda g: g * -x/3 * _matern32(x)
+)
 
 @isotropickernel(input='soft', derivable=2)
 def Matern52(r):
@@ -517,14 +500,33 @@ def Taylor(x, y):
     val = 2 * np.sqrt(np.abs(mul))
     return np.where(mul >= 0, special.i0(val), special.j0(val))
 
+@autograd.extend.primitive
 def _bernoulli_poly(n, x):
-    bernoulli = special_noderiv.bernoulli(n)
+    bernoulli = special.bernoulli(n)
     k = np.arange(n + 1)
-    binom = special_noderiv.binom(n, k)
-    coeffs = binom * bernoulli[::-1]
-    return np.sum(coeffs * x[..., None] ** k, axis=-1)
+    binom = special.binom(n, k)
+    coeffs = binom[::-1] * bernoulli
+    out = 0
+    for c in coeffs[:-1]:
+        out += c
+        out *= x
+    out += coeffs[-1]
+    return out
 
-@kernel(forcekron=True, derivable=True)
+autograd.extend.defvjp(
+    _bernoulli_poly,
+    lambda ans, n, x: lambda g: g * (n * _bernoulli_poly(n - 1, x) if n else 0),
+    argnums=[1]
+)
+
+def _fourier_derivable(**kw):
+    n = kw.pop('n', 2)
+    if isinstance(n, (int, np.integer)) and n >= 1:
+        return n - 1
+    else:
+        return False
+
+@kernel(forcekron=True, derivable=_fourier_derivable)
 def Fourier(x, y, n=2):
     """
     Fourier kernel.
@@ -536,14 +538,18 @@ def Fourier(x, y, n=2):
         \\frac {\\sin(2\\pi kx)}{k^n} \\frac {\\sin(2\\pi ky)}{k^n} = \\\\
         &= \\sum_{k=1}^\\infty
         \\frac {\\cos(2\\pi k(x-y))} {k^{2n}} = \\\\
-        &= -\\frac {(-2\\pi)^{2n}} {2(2n)!} B_{2n}(x-y \\mod 1),
+        &= (-1)^{n+1} \\frac {(2\\pi)^{2n}} {2(2n)!} B_{2n}(x-y \\mod 1),
     
     where :math:`B_s(x)` is a Bernoulli polynomial. It is equivalent to fitting
     with a Fourier series of period 1 with independent priors on the
-    coefficients k with mean zero and standard deviation 1/k^n.
+    coefficients k with mean zero and standard deviation 1/k^n. The process is
+    :math:`n - 1` times derivable.
+    
     """
     assert isinstance(n, (int, np.integer))
     assert n >= 1
     s = 2 * n
     diff = (x - y) % 1
-    return -(-2 * np.pi) ** s / (2 * special_noderiv.factorial(s)) * _bernoulli_poly(s, diff)
+    sign0 = -(-1) ** n
+    factor = (2 * np.pi) ** s / (2 * special.factorial(s))
+    return sign0 * factor * _bernoulli_poly(s, diff)

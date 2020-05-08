@@ -27,6 +27,11 @@ if autograd is None:
         pass
     numpy.numpy_boxes = dummy()
     numpy.numpy_boxes.ArrayBox = dummy
+    autograd = dummy()
+    autograd.extend = dummy()
+    autograd.extend.defvjp = lambda *args, **kw: None
+    autograd.extend.defjvp = lambda *args, **kw: None
+    autograd.extend.primitive = lambda fun: fun
 else:
     from autograd import numpy
     scipy = try_import('autograd.scipy')

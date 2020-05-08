@@ -1,4 +1,5 @@
-"""Add vjp of asarray, fix #552 (creating object arrays from lists)"""
+"""Add vjp of asarray, fix #552 (creating object arrays from lists),
+add missing scipy functions."""
 
 import builtins
 
@@ -19,3 +20,29 @@ def array(A, *args, **kwargs):
         return autograd.numpy.numpy_wrapper._array_from_scalar_or_array(args, kwargs, A)
 autograd.numpy.numpy_wrapper.array = array
 autograd.numpy.array = array
+
+try:
+    from scipy import special as special_noderiv
+    from autograd.scipy import special
+    
+    missing_functions = [
+        'bernoulli',
+        'binom',
+        'kv',
+        'kvp',
+        'factorial'
+    ]
+    for f in missing_functions:
+        if not hasattr(special, f):
+            wf = autograd.extend.primitive(getattr(special_noderiv, f))
+            setattr(special, f, wf)
+
+    autograd.extend.defvjp(
+        special.kvp,
+        lambda ans, v, z, n: lambda g: g * special.kvp(v, z, n + 1),
+        argnums=[1]
+    )    
+
+except (ImportError, ModuleNotFoundError):
+    pass
+    

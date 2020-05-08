@@ -209,7 +209,10 @@ test_kwargs = {
     _kernels.Categorical: dict(kwargs_list=[
         dict(cov=matrix_square(np.random.randn(10, 10)))
     ], random_x_fun=lambda **kw: np.random.randint(10, size=100)),
-    _kernels.NNKernel: dict(eps=4 * np.finfo(float).eps)
+    _kernels.NNKernel: dict(eps=4 * np.finfo(float).eps),
+    _kernels.Fourier: dict(kwargs_list=[
+        dict(n=n) for n in range(1, 5)
+    ], eps=1024 * np.finfo(float).eps)
 }
 for kernel in kernels:
     factory_kw = test_kwargs.get(kernel, {})
@@ -268,6 +271,27 @@ def test_wiener_integral():
     r1 = _kernels.Wiener()(x, y)
     r2 = _kernels.WienerIntegral().diff(1, 1)(x, y)
     assert np.allclose(r1, r2)
+
+def bernoulli_poly_handwritten(n, x):
+    return [
+        lambda x: 1,
+        lambda x: x - 1/2,
+        lambda x: x**2 - x + 1/6,
+        lambda x: x**3 - 3/2 * x**2 + 1/2 * x,
+        lambda x: x**4 - 2 * x**3 + x**2 - 1/30,
+        lambda x: x**5 - 5/2 * x**4 + 5/3 * x**3 - 1/6 * x,
+        lambda x: x**6 - 3 * x**5 + 5/2 * x**4 - 1/2 * x**2 + 1/42
+    ][n](x)
+
+def check_bernoulli(n, x):
+    r1 = bernoulli_poly_handwritten(n, x)
+    r2 = _kernels._bernoulli_poly(n, x)
+    assert np.allclose(r1, r2)
+
+def test_bernoulli():
+    for n in range(7):
+        x = np.random.uniform(0, 1, size=100)
+        check_bernoulli(n, x)
 
 import pytest
 

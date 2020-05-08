@@ -169,9 +169,6 @@ class DecompMeta(abc.ABCMeta):
             logdet._autograd = True
             cls.logdet = logdet
 
-if autograd is None:
-    DecompMeta = abc.ABCMeta
-
 class Decomposition(metaclass=DecompMeta):
     """
     
