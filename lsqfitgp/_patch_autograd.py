@@ -30,7 +30,8 @@ try:
         'binom',
         'kv',
         'kvp',
-        'factorial'
+        'factorial',
+        'zeta'
     ]
     for f in missing_functions:
         if not hasattr(special, f):

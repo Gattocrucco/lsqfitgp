@@ -110,10 +110,16 @@ class KernelTestBase(metaclass=abc.ABCMeta):
     #     self.symmetric_offdiagonal(3, 3)
     
     def test_normalized(self):
-        if issubclass(self.kernel_class, _Kernel.IsotropicKernel):
+        stationary = [
+            _kernels.Cos,
+            _kernels.Fourier,
+            _kernels.Periodic
+        ]
+        kernel = self.kernel_class
+        if kernel in stationary or issubclass(kernel, _Kernel.IsotropicKernel):
             for kw in self.kwargs_list:
                 x = self.random_x(**kw)
-                var = self.kernel_class(**kw)(x, x)
+                var = kernel(**kw)(x, x)
                 assert np.allclose(var, 1)
     
     def test_double_diff_scalar_first(self):

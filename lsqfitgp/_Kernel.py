@@ -355,7 +355,11 @@ class Kernel(_KernelBase):
             return self._binary(value, lambda k, q: lambda x, y: k(x, y) ** q(x, y))
         else:
             return NotImplemented
-    
+
+# TODO Add a class StationaryKernel. It should not be a superclass of
+# IsotropicKernel because that holds only for the distances based on the
+# difference.
+
 class IsotropicKernel(Kernel):
     
     # TODO add the `distance` parameter to supply an arbitrary distance, maybe

@@ -532,13 +532,15 @@ def Fourier(x, y, n=2):
     Fourier kernel.
     
     .. math::
-        k(x, y) &= \\sum_{k=1}^\\infty
+        k(x, y) &= \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
         \\frac {\\cos(2\\pi kx)}{k^n} \\frac {\\cos(2\\pi ky)}{k^n}
-        + \\sum_{k=1}^\\infty
+        + \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
         \\frac {\\sin(2\\pi kx)}{k^n} \\frac {\\sin(2\\pi ky)}{k^n} = \\\\
-        &= \\sum_{k=1}^\\infty
+        &= \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
         \\frac {\\cos(2\\pi k(x-y))} {k^{2n}} = \\\\
-        &= (-1)^{n+1} \\frac {(2\\pi)^{2n}} {2(2n)!} B_{2n}(x-y \\mod 1),
+        &= (-1)^{n+1}
+        \\frac1{\\zeta(2n)} \\frac {(2\\pi)^{2n}} {2(2n)!}
+        B_{2n}(x-y \\mod 1),
     
     where :math:`B_s(x)` is a Bernoulli polynomial. It is equivalent to fitting
     with a Fourier series of period 1 with independent priors on the
@@ -551,5 +553,5 @@ def Fourier(x, y, n=2):
     s = 2 * n
     diff = (x - y) % 1
     sign0 = -(-1) ** n
-    factor = (2 * np.pi) ** s / (2 * special.factorial(s))
+    factor = (2 * np.pi) ** s / (2 * special.factorial(s) * special.zeta(s))
     return sign0 * factor * _bernoulli_poly(s, diff)
