@@ -28,7 +28,9 @@ __all__ = [
     'Cos',
     'FracBrownian',
     'PPKernel',
-    'WienerIntegral'
+    'WienerIntegral',
+    'Taylor',
+    'Fourier'
 ]
 
 def _dot(x, y):
@@ -117,8 +119,8 @@ def Polynomial(x, y, exponent=None, sigma0=1):
 # )
 # _kv = lambda v, z: _kvp(v, z, 0)
 if special is not None:
-    from scipy import special
-    _kv = special.kv
+    from scipy import special as special_noderiv
+    _kv = special_noderiv.kv
 
 def _maternp(x, p):
     poly = 1
@@ -408,6 +410,7 @@ def Cos(x, y):
     
     .. math::
         k(x, y) = \\cos(x - y)
+        = \\cos x \\cos y + \\sin x \\sin y
     
     Samples from this kernel are harmonic functions. It can be multiplied with
     another kernel to introduce anticorrelations.
@@ -493,3 +496,54 @@ def WienerIntegral(x, y):
     assert np.all(x >= 0)
     assert np.all(y >= 0)
     return 1/2 * np.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
+
+@kernel(forcekron=True, derivable=True)
+def Taylor(x, y):
+    """
+    Exponential-like power series kernel.
+    
+    .. math::
+        k(x, y) = \\sum_{k=0}^\\infty \\frac {x^k}{k!} \\frac {y^k}{k!}
+        = I_0(2 \\sqrt{xy})
+    
+    It is equivalent to fitting with a Taylor series expansion in zero with
+    independent priors on the coefficients k with mean zero and standard
+    deviation 1/k!.
+    """
+    # TODO what is the "natural" extension of this to multidim? Is forcekron
+    # appropriate?
+    
+    mul = x * y
+    val = 2 * np.sqrt(np.abs(mul))
+    return np.where(mul >= 0, special.i0(val), special.j0(val))
+
+def _bernoulli_poly(n, x):
+    bernoulli = special_noderiv.bernoulli(n)
+    k = np.arange(n + 1)
+    binom = special_noderiv.binom(n, k)
+    coeffs = binom * bernoulli[::-1]
+    return np.sum(coeffs * x[..., None] ** k, axis=-1)
+
+@kernel(forcekron=True, derivable=True)
+def Fourier(x, y, n=2):
+    """
+    Fourier kernel.
+    
+    .. math::
+        k(x, y) &= \\sum_{k=1}^\\infty
+        \\frac {\\cos(2\\pi kx)}{k^n} \\frac {\\cos(2\\pi ky)}{k^n}
+        + \\sum_{k=1}^\\infty
+        \\frac {\\sin(2\\pi kx)}{k^n} \\frac {\\sin(2\\pi ky)}{k^n} = \\\\
+        &= \\sum_{k=1}^\\infty
+        \\frac {\\cos(2\\pi k(x-y))} {k^{2n}} = \\\\
+        &= -\\frac {(-2\\pi)^{2n}} {2(2n)!} B_{2n}(x-y \\mod 1),
+    
+    where :math:`B_s(x)` is a Bernoulli polynomial. It is equivalent to fitting
+    with a Fourier series of period 1 with independent priors on the
+    coefficients k with mean zero and standard deviation 1/k^n.
+    """
+    assert isinstance(n, (int, np.integer))
+    assert n >= 1
+    s = 2 * n
+    diff = (x - y) % 1
+    return -(-2 * np.pi) ** s / (2 * special_noderiv.factorial(s)) * _bernoulli_poly(s, diff)

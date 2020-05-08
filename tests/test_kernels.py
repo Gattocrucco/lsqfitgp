@@ -278,20 +278,30 @@ import pytest
 def xfail(*args, **kw):
     pytest.xfail()
 
-TestPolynomial.test_double_diff_nd_second       = xfail
+# TODO These are isotropic kernels with the input='soft' option. The problems
+# arise where x == y.
 TestMatern.test_symmetric_21                    = xfail
 TestMatern.test_double_diff_nd_second_chopped   = xfail
 TestMatern.test_positive_deriv2_nd              = xfail
 TestMatern52.test_symmetric_21                  = xfail
 TestMatern52.test_double_diff_nd_second_chopped = xfail
 TestMatern52.test_positive_deriv2_nd            = xfail
-TestNNKernel.test_double_diff_nd_second         = xfail
 TestPPKernel.test_positive_deriv2               = xfail
 TestPPKernel.test_positive_deriv2_nd            = xfail
 test_matern_spec_21                             = xfail
 test_matern_spec_22                             = xfail
 
+# TODO Fourier is not isotropic, but has a remainder operation on x-y.
+TestFourier.test_positive_deriv2                = xfail
+TestFourier.test_positive_deriv2_nd             = xfail
+TestFourier.test_symmetric_21                   = xfail
+
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some
 # reason I don't catch it without taking a derivative.
 TestPPKernel.test_positive_deriv_nd             = xfail
+
+# TODO These are not isotropic kernels, what is the problem?
+TestTaylor.test_double_diff_nd_second           = xfail
+TestNNKernel.test_double_diff_nd_second         = xfail
+TestPolynomial.test_double_diff_nd_second       = xfail

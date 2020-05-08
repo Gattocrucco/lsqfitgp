@@ -42,6 +42,7 @@ some specific cases like :class:`Constant`.
 .. autofunction:: Constant
 .. autofunction:: Cos
 .. autofunction:: ExpQuad
+.. autofunction:: Fourier
 .. autofunction:: FracBrownian
 .. autofunction:: GammaExp
 .. autofunction:: Gibbs
@@ -56,6 +57,7 @@ some specific cases like :class:`Constant`.
 .. autofunction:: Polynomial
 .. autofunction:: RatQuad
 .. autofunction:: Rescaling
+.. autofunction:: Taylor
 .. autofunction:: White
 .. autofunction:: Wiener
 .. autofunction:: WienerIntegral

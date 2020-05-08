@@ -28,8 +28,6 @@ Check that float32 is respected.
 
 Test recursive dtype support.
 
-Fix the second derivatives kernel bugs (aagh).
-
 Fix too low thresholds in linalg tests.
 
 Import the gvar testsuite to check that the autograd injection works.
