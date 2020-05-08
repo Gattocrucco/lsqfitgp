@@ -81,3 +81,16 @@ def {}():
     
     if kw1['fromdata'] == kw2['fromdata']:
         exec(fundef)
+
+def test_double_pred():
+    n = 50
+    gp = lgp.GP(lgp.ExpQuad())
+    ax, bx = np.random.randn(2, n)
+    gp.addx(ax, 'a')
+    gp.addx(bx, 'b')
+    m = np.random.randn(n, n)
+    ay = gvar.gvar(np.random.randn(n), m.T @ m)
+    m1, cov1 = gp.predfromdata({'a': ay}, 'b', raw=True)
+    m2, cov2 = gp.predfromfit(gp.predfromdata({'a': ay}, ['a']), 'b', raw=True)
+    assert_close(m1, m2)
+    assert_close_cov(cov1, cov2, 1e-3, 1e-6)

@@ -35,8 +35,6 @@ Import the gvar testsuite to check that the autograd injection works.
 gvar.BufferDict should have a prettier repr on the IPython shell. Is there a
 standard way to configure a pretty print?
 
-Make a test that checks predfromdata(x,y) == predfromfit(predfromdata(x,x),y)
-
 Make tests for givencov.
 
 ## New functionality
