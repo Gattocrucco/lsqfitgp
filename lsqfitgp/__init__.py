@@ -96,6 +96,11 @@ lengthscale.
         Finite support isotropic kernel.
     Rescaling
         Kernel used to change the variance of other kernels.
+    Taylor
+        Exponential-like taylor series.
+    Fourier
+        Kernel for periodic functions, the decay of the Fourier coefficients is
+        adjustable.
 
 Reference: Rasmussen et al. (2006), "Gaussian Processes for Machine Learning".
 
