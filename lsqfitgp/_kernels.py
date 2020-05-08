@@ -190,8 +190,7 @@ def Matern32(r):
     Matérn kernel of order 3/2 (derivable one time).
     
     .. math::
-        k(r) &= (1 + x) \\exp(-x), \\\\
-        x &= \\sqrt3 r
+        k(r) = (1 + x) \\exp(-x), \\quad x = \\sqrt3 r
     """
     return _matern32(np.sqrt(3) * r)
 
@@ -210,8 +209,7 @@ def Matern52(r):
     Matérn kernel of order 5/2 (derivable two times).
     
     .. math::
-        k(r) &= (1 + x + x^2/3) \\exp(-x), \\\\
-        x &= \\sqrt5 r
+        k(r) = (1 + x + x^2/3) \\exp(-x), \\quad x = \\sqrt5 r
     """
     return _matern52(np.sqrt(5) * r)
 

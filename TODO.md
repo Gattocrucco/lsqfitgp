@@ -12,12 +12,7 @@ Add Examples sections.
 
 Add copyright and GPL notice to all source code files.
 
-Numpydoc is slow, understand how to use sphinx.ext.napoleon with numpy-style
-docs.
-
 Interlinks with gvar and lsqfit docs.
-
-Add a module hook. Main page? Reference main page?
 
 ## Fixes and tests
 
