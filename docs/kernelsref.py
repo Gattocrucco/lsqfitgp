@@ -1,3 +1,22 @@
+# lsqfitgp/docs/kernelsref.py
+#
+# Copyright (c) Giacomo Petrillo 2020
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
 """Generate a file with the list of kernels. They are documented using
 autofunction instead of autoclass because they are built using decorators and
 autoclass is not good at supporting that."""
@@ -18,6 +37,8 @@ for name, obj in vars(lgp).items():
 kernels.sort()
 
 out = """\
+.. file generated automatically by lsqfitgp/docs/kernelsref.py
+
 .. currentmodule:: lsqfitgp
 
 .. _kernels:

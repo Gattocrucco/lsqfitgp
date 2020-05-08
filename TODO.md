@@ -10,8 +10,6 @@ Add a Raises section to GP methods that can trigger covariance matrix checks.
 
 Add Examples sections.
 
-Add copyright and GPL notice to all source code files.
-
 Interlinks with gvar and lsqfit docs.
 
 ## Fixes and tests
