@@ -21,6 +21,7 @@
 
 import importlib
 import builtins
+import collections
 
 def try_import(module):
     try:
@@ -67,3 +68,20 @@ if gvar is None:
         pass
     gvar = dummy()
     gvar.BufferDict = dict
+
+elif hasattr(gvar.SVD, '_analyzers') and scipy is None:
+    gvar.SVD._analyzers = collections.OrderedDict([
+        ('numpy_eigh', gvar.SVD._numpy_eigh),
+        ('numpy_svd', gvar.SVD._numpy_svd) 
+    ])
+
+elif hasattr(gvar.SVD, '_analyzers'):
+    def scipy_eigh(x):
+        w, v = linalg.eigh(x)
+        w = numpy.abs(w)
+        si = numpy.argsort(w)
+        return w[si], v.T[si]
+    
+    gvar.SVD._analyzers = collections.OrderedDict([
+        ('scipy_eigh', scipy_eigh)
+    ])
