@@ -42,83 +42,17 @@ the typical bottleneck is taking the samples, i.e. calling
 standard deviation band instead of taking samples, but it is less informative.
 
 I'm working with :mod:`gvar`'s author to make :func:`gvar.raniter` more
-efficient; in the meantime, you can use this quick replacement which is a bit
-faster, although not as robust::
+efficient; in the meantime, you can bypass :mod:`gvar` altogether using the
+`raw` option of :meth:`GP.predfromdata`, which will make it return separately
+the posterior mean and covariance matrix. Here's a version of
+:func:`gvar.raniter` for taking samples from the mean and covariance directly::
 
     import gvar
     from scipy import linalg
     import numpy as np
     import itertools
     
-    def fastraniter(g, n=None):
-    
-        # convert g to a 1-dimensional array flatg
-        if hasattr(g, 'buf'): # a gvar.BufferDict
-            flatg = g.buf
-        elif hasattr(g, 'keys'): # a dict
-            g = gvar.BufferDict(g)
-            flatg = g.buf
-        else: # an array or scalar
-            g = np.array(g, copy=False)
-            flatg = g.reshape(-1)
-        
-        # compute the covariance matrix
-        cov = gvar.evalcov(flatg)
-        
-        # compute the cholesky decomposition
-        maxeigv_bound = np.max(np.sum(np.abs(cov), axis=-1))
-        eps = np.finfo(float).eps
-        cov[np.diag_indices(len(cov))] += len(cov) * eps * maxeigv_bound
-        L = linalg.cholesky(cov, lower=True)
-        
-        # take samples
-        iterable = itertools.count() if n is None else range(n)
-        for _ in iterable:
-            iidsamp = np.random.randn(len(cov))
-            samp = L @ iidsamp
-            
-            # pack the samples with the original shape
-            if hasattr(g, 'keys'):
-                samp = gvar.BufferDict(g, buf=samp)
-            else:
-                samp = samp.reshape(g.shape) if g.shape else samp.item
-            
-            yield samp
-
-Let's benchmark it::
-
-    # make 100 correlated variables
-    n = 100
-    a, b = np.random.randn(2, n, n)
-    cov = a.T @ a
-    mean = np.random.randn(n)
-    x = b @ gvar.gvar(mean, cov)
-    
-    import time
-    
-    start = time.time()
-    for _ in range(10):
-        next(gvar.raniter(x))
-    end = time.time()
-    print('gvar.raniter: {:.3g} s'.format(end - start))
-    
-    start = time.time()
-    for _ in range(10):
-        next(fastraniter(x))
-    end = time.time()
-    print('fastraniter: {:.3g} s'.format(end - start))
-
-Output::
-
-   gvar.raniter: 0.64 s
-   fastraniter: 0.244 s
-
-If this is not enough, you need to bypass :mod:`gvar` altogether using the
-`raw` option of :meth:`GP.predfromdata`, which will make it return separately
-the posterior mean and covariance matrix. Here's a version of `fastraniter` for
-taking samples from the mean and covariance directly::
-
-    def fastraniter_nogvar(mean, cov, n=None):
+    def fastraniter(mean, cov, n=None):
     
         # convert mean and cov to 1d and 2d arrays
         if hasattr(mean, 'keys'): # a dict or gvar.BufferDict
@@ -157,22 +91,40 @@ taking samples from the mean and covariance directly::
             
             yield samp
 
-Benchmark with the mean and covariance of the 100 variables from above::
+Let's benchmark it::
 
-    mean = b @ mean
-    cov = b @ cov @ b.T
+    # make 500 correlated variables
+    n = 500
+    a, b = np.random.randn(2, n, n)
+    cov = a.T @ a
+    mean = np.random.randn(n)
+    x = b @ gvar.gvar(mean, cov)
+    
+    xmean = b @ mean
+    xcov = b @ cov @ b.T
+    
+    import time
+    
+    N = 2
     
     start = time.time()
-    for _ in range(10):
-        next(fastraniter_nogvar(mean, cov))
+    for _ in range(N):
+        next(gvar.raniter(x))
     end = time.time()
-    print('fastraniter_nogvar: {:.3g} s'.format(end - start))
+    print('gvar.raniter: {:.3g} s'.format((end - start) / N))
+    
+    start = time.time()
+    for _ in range(N):
+        next(fastraniter(xmean, xcov))
+    end = time.time()
+    print('fastraniter: {:.3g} s'.format((end - start) / N))
 
 Output::
 
-   fastraniter_nogvar: 0.0137 s
+   gvar.raniter: 1.72 s
+   fastraniter: 0.0262 s
 
-So it is 40x faster than :func:`gvar.raniter`. In general the :class:`GP`
+So it is 50x faster than :func:`gvar.raniter`. In general the :class:`GP`
 methods have options for doing everything without :mod:`gvar`, but don't try to
 use all of them mindlessly before profiling the code to know where the
 bottleneck actually is. Python has the module :mod:`profile` for that, and in

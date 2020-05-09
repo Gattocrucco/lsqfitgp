@@ -61,6 +61,9 @@ GP.marginal_likelihood.
 
 ### `gvar`-related issues
 
+It seems that autograd.numpy.array is taking a lot of time in gvar.raniter
+somewhere.
+
 #### sparse `evalcov`
 
 My `evalcov_blocks` code didn't make it into `gvar`, but I could recycle the
