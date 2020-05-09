@@ -166,7 +166,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         def fun(s, n, b):
             K = self.mat(s, n)
             return self.decompclass(K).quad(b)
-        fungrad = autograd.jacobian(fun)
+        fungrad = autograd.grad(fun)
         for n in range(1, 20):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
@@ -175,6 +175,21 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             invKb = self.solve(K, b)
             sol = -invKb.T @ dK @ invKb
             result = fungrad(s, n, b)
+            assert np.allclose(sol, result, rtol=1e-4)
+
+    def test_quad_matrix_jac(self):
+        def fun(s, n, b):
+            K = self.mat(s, n)
+            return self.decompclass(K).quad(b)
+        funjac = autograd.jacobian(fun)
+        for n in range(1, 20):
+            s = np.exp(np.random.uniform(-1, 1))
+            K = self.mat(s, n)
+            dK = self.matjac(s, n)
+            b = self.randmat(n)
+            invKb = self.solve(K, b)
+            sol = -invKb.T @ dK @ invKb
+            result = funjac(s, n, b)
             assert np.allclose(sol, result, rtol=1e-4)
 
     def test_logdet(self):
