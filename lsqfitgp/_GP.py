@@ -854,6 +854,7 @@ class GP:
             
             mat = ycov if fromdata else 0
             flatout = Kxsx @ self._solver(inkeys, mat).usolve(y - yp) + ysp
+            # TODO _solver.uquad(Kxxs, y - yp)
         
         if raw and not strip:
             meandict = {

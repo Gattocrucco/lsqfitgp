@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import abc
+import functools
 
 from ._imports import numpy as np
 from ._imports import linalg
@@ -100,102 +101,122 @@ class DecompMeta(abc.ABCMeta):
         # For __init__ I can't use an _autograd flag like below to avoid double
         # wrapping because the wrapper is called as super().__init__ in
         # subclasses, so I assign self._K *after* calling old__init__.
+        
         old__init__ = cls.__init__
+        
+        @functools.wraps(old__init__)
         def __init__(self, K, **kw):
             old__init__(self, noautograd(K), **kw)
             self._K = K
+        
         cls.__init__ = __init__
         
-        oldsolve = cls.solve
-        if not hasattr(oldsolve, '_autograd'):
-            @autograd.extend.primitive
-            def solve_autograd(self, K, b):
-                return oldsolve(self, b)
-            def solve_vjp_K(ans, self, K, b):
-                assert ans.shape == b.shape
-                assert b.shape[0] == K.shape[0] == K.shape[1]
-                def vjp(g):
-                    assert g.shape[-len(b.shape):] == b.shape
-                    g = np.moveaxis(g, -len(b.shape), 0)
-                    A = solve_autograd(self, K, g)
-                    B = np.moveaxis(ans, 0, -1)
-                    AB = np.tensordot(A, B, len(b.shape) - 1)
-                    AB = np.moveaxis(AB, 0, -2)
-                    assert AB.shape == g.shape[:-len(b.shape)] + K.shape
-                    return -AB
-                return vjp
-            def solve_vjp_b(ans, self, K, b):
-                assert ans.shape == b.shape
-                assert b.shape[0] == K.shape[0] == K.shape[1]
-                def vjp(g):
-                    assert g.shape[-len(b.shape):] == b.shape
-                    g = np.moveaxis(g, -len(b.shape), 0)
-                    gj = solve_autograd(self, K, g)
-                    gj = np.moveaxis(gj, 0, -len(b.shape))
-                    assert gj.shape == g.shape
-                    return gj
-                return vjp
-            autograd.extend.defvjp(
-                solve_autograd,
-                solve_vjp_K,
-                solve_vjp_b,
-                argnums=[1, 2]
-            )
-            def solve(self, b):
-                return solve_autograd(self, self._K, b)
-            # solve_autograd is used by logdet_vjp, so I store it here in case
-            # logdet but not solve need wrapping in a subclass
-            solve._autograd = solve_autograd
-            cls.solve = solve
-        
-        # TODO write vjp/jvp optimized for quad instead of relying on solve
-        oldquad = cls.quad
-        if not hasattr(oldquad, '_autograd'):
-            def quad(self, b):
-                if isinstance(self._K, np.numpy_boxes.ArrayBox):
-                    return b.T @ self.solve(b)
-                else:
-                    return oldquad(self, b)
-            quad._autograd = True
-            cls.quad = quad
-        
-        oldlogdet = cls.logdet
-        if not hasattr(oldlogdet, '_autograd'):
-            @autograd.extend.primitive
-            def logdet_autograd(self, K):
-                return oldlogdet(self)
-            def logdet_vjp(ans, self, K):
-                assert ans.shape == ()
-                assert K.shape[0] == K.shape[1]
-                def vjp(g):
-                    invK = self.solve._autograd(self, K, np.eye(len(K)))
-                    return g[..., None, None] * invK
-                return vjp
-            autograd.extend.defvjp(
-                logdet_autograd,
-                logdet_vjp,
-                argnums=[1]
-            )
-            # TODO the vjp is bad because it makes a matrix inversion. I would
-            # like to do forward propagation just for the logdet plus the
-            # preceding step, but I don't think autograd supports this.
-            def logdet_jvp(ans, self, K):
-                assert ans.shape == ()
-                assert K.shape[0] == K.shape[1]
-                def jvp(g):
-                    assert g.shape[:2] == K.shape
-                    return np.trace(self.solve._autograd(self, K, g))
-                return jvp
-            autograd.extend.defjvp(
-                logdet_autograd,
-                logdet_jvp,
-                argnums=[1]
-            )
-            def logdet(self):
-                return logdet_autograd(self, self._K)
-            logdet._autograd = True
-            cls.logdet = logdet
+        for name in 'solve', 'quad', 'logdet':
+            meth = getattr(cls, name)
+            if not hasattr(meth, '_autograd'):
+                newmeth = getattr(DecompMeta, 'make_' + name)(meth)
+                newmeth = functools.wraps(meth)(newmeth)
+                if not hasattr(newmeth, '_autograd'):
+                    meth._autograd = True
+                setattr(cls, name, newmeth)
 
+    @staticmethod
+    def make_solve(oldsolve):
+        
+        @autograd.extend.primitive
+        def solve_autograd(self, K, b):
+            return oldsolve(self, b)
+        
+        def solve_vjp_K(ans, self, K, b):
+            assert ans.shape == b.shape
+            assert b.shape[0] == K.shape[0] == K.shape[1]
+            def vjp(g):
+                assert g.shape[-len(b.shape):] == b.shape
+                g = np.moveaxis(g, -len(b.shape), 0)
+                A = solve_autograd(self, K, g)
+                B = np.moveaxis(ans, 0, -1)
+                AB = np.tensordot(A, B, len(b.shape) - 1)
+                AB = np.moveaxis(AB, 0, -2)
+                assert AB.shape == g.shape[:-len(b.shape)] + K.shape
+                return -AB
+            return vjp
+        
+        def solve_vjp_b(ans, self, K, b):
+            assert ans.shape == b.shape
+            assert b.shape[0] == K.shape[0] == K.shape[1]
+            def vjp(g):
+                assert g.shape[-len(b.shape):] == b.shape
+                g = np.moveaxis(g, -len(b.shape), 0)
+                gj = solve_autograd(self, K, g)
+                gj = np.moveaxis(gj, 0, -len(b.shape))
+                assert gj.shape == g.shape
+                return gj
+            return vjp
+        
+        autograd.extend.defvjp(
+            solve_autograd,
+            solve_vjp_K,
+            solve_vjp_b,
+            argnums=[1, 2]
+        )
+        
+        def solve(self, b):
+            return solve_autograd(self, self._K, b)
+        # solve_autograd is used by logdet_vjp, so I store it here in case
+        # logdet but not solve needs wrapping in a subclass
+        solve._autograd = solve_autograd
+        
+        return solve
+    
+    @staticmethod
+    def make_quad(oldquad):
+        # TODO write vjp/jvp optimized for quad instead of relying on solve
+        def quad(self, b):
+            if isinstance(self._K, np.numpy_boxes.ArrayBox):
+                return b.T @ self.solve(b)
+            else:
+                return oldquad(self, b)
+        return quad
+    
+    @staticmethod
+    def make_logdet(oldlogdet):
+        @autograd.extend.primitive
+        def logdet_autograd(self, K):
+            return oldlogdet(self)
+        
+        def logdet_vjp(ans, self, K):
+            assert ans.shape == ()
+            assert K.shape[0] == K.shape[1]
+            def vjp(g):
+                invK = self.solve._autograd(self, K, np.eye(len(K)))
+                return g[..., None, None] * invK
+            return vjp
+        
+        autograd.extend.defvjp(
+            logdet_autograd,
+            logdet_vjp,
+            argnums=[1]
+        )
+        
+        def logdet_jvp(ans, self, K):
+            assert ans.shape == ()
+            assert K.shape[0] == K.shape[1]
+            def jvp(g):
+                assert g.shape[:2] == K.shape
+                return np.trace(self.solve._autograd(self, K, g))
+            return jvp
+        
+        autograd.extend.defjvp(
+            logdet_autograd,
+            logdet_jvp,
+            argnums=[1]
+        )
+        
+        def logdet(self):
+            return logdet_autograd(self, self._K)
+        
+        return logdet
+    
 class Decomposition(metaclass=DecompMeta):
     """
     
