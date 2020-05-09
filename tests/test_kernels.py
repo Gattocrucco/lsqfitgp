@@ -237,7 +237,7 @@ test_kwargs = {
     _kernels.NNKernel: dict(eps=4 * np.finfo(float).eps),
     _kernels.Fourier: dict(kwargs_list=[
         dict(n=n) for n in range(1, 5)
-    ], eps=1024 * np.finfo(float).eps)
+    ], eps=2048 * np.finfo(float).eps)
 }
 for kernel in kernels:
     factory_kw = test_kwargs.get(kernel, {})
