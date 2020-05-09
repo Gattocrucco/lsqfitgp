@@ -1,6 +1,6 @@
 # lsqfitgp/examples/l.py
 #
-# Copyright (c) Giacomo Petrillo 2020
+# Copyright (c) 2020, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
