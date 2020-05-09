@@ -25,16 +25,26 @@ import gvar
 from autograd import numpy as np
 
 __doc__ = """
-Module that replaces gvar.numpy with autograd.numpy.
+Module that replaces gvar.numpy with autograd.numpy, but only for bufferdict
+and ufuncs.
 """
 
 def switch_numpy(module):
-    oldmodule = gvar.numpy
-    gvar.numpy = module 
-    for s in [
-        '_bufferdict', '_gvarcore', '_svec_smat', '_utilities', 
-        'cspline', 'dataset', 'linalg', 'ode', 'powerseries','root'
-        ]:
+    # oldmodule = gvar.numpy
+    # gvar.numpy = module
+    gvar_modules = [
+        '_bufferdict',
+        # '_gvarcore',
+        # '_svec_smat',
+        # '_utilities',
+        # 'cspline',
+        # 'dataset',
+        # 'linalg',
+        # 'ode',
+        # 'powerseries',
+        # 'root',
+    ]
+    for s in gvar_modules:
         if not hasattr(gvar, s):
             print('*** {} not found'.format(s))
             continue 
@@ -43,21 +53,33 @@ def switch_numpy(module):
             gvar_s.numpy = module 
         else:
             print('*** no numpy in', s)
-    return oldmodule 
 
 def switch_functions(module):
-    oldmodule = gvar.numpy
-    gvar.numpy = module 
-    for s in [
-        'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'fabs',
-        'sinh', 'cosh', 'tanh', 'arcsin', 'arccos', 'arctan', 'arctan2',
-        'arcsinh', 'arccosh', 'arctanh', 'square',
-        ]:
+    gvar_ufuncs = [
+        'sin',
+        'cos',
+        'tan',
+        'exp',
+        'log',
+        'sqrt',
+        'fabs',
+        'sinh',
+        'cosh',
+        'tanh',
+        'arcsin',
+        'arccos',
+        'arctan',
+        'arctan2',
+        'arcsinh',
+        'arccosh',
+        'arctanh',
+        'square',
+    ]
+    for s in gvar_ufuncs:
         if not hasattr(gvar, s) or not hasattr(module, s):
             print('*** {} not found'.format(s))
             continue
         setattr(gvar, s, getattr(module, s))
-    return oldmodule
 
 switch_numpy(autograd.numpy)
 switch_functions(autograd.numpy)
