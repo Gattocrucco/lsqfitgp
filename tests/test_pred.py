@@ -80,22 +80,24 @@ for kw1, kw2 in itertools.combinations(kwargs, 2):
     
     fundef = """
 def {}():
-    seed = makeseed()
-    m1, cov1 = pred({}, seed, False)
-    m2, cov2 = pred({}, seed, False)
-    assert_close(m1, m2)
-    assert_close_cov(cov1, cov2, 1e-2, 4e-6)
+    for _ in range(10):
+        seed = makeseed()
+        m1, cov1 = pred({}, seed, False)
+        m2, cov2 = pred({}, seed, False)
+        assert_close(m1, m2)
+        assert_close_cov(cov1, cov2, 4e-3, 3e-6)
 """.format('test_pred_noerr' + postfix(kw1, kw2), kw1, kw2)
     
     exec(fundef)
     
     fundef = """
 def {}():
-    seed = makeseed()
-    m1, cov1 = pred({}, seed, True)
-    m2, cov2 = pred({}, seed, True)
-    assert_close(m1, m2)
-    assert_close_cov(cov1, cov2, 3e-2, 2e-4)
+    for _ in range(10):
+        seed = makeseed()
+        m1, cov1 = pred({}, seed, True)
+        m2, cov2 = pred({}, seed, True)
+        assert_close(m1, m2)
+        assert_close_cov(cov1, cov2, 3e-3, 1e-6)
 """.format('test_pred_err' + postfix(kw1, kw2), kw1, kw2)
     
     if kw1['fromdata'] == kw2['fromdata']:

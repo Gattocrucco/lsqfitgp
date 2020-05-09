@@ -805,10 +805,7 @@ class GP:
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = _concatenate_noop(ylist)
         
-        # I suppose it is good to have Kxxs row-major and Kxsx column-major for
-        # matrix multiplication performance
         Kxxs = self._assemblecovblocks(inkeys, outkeys)
-        Kxsx = Kxxs.T
         
         if ycovblocks is not None:
             ycov = _block_matrix(ycovblocks)
@@ -834,17 +831,18 @@ class GP:
                 mean = solver.solve(Kxxs).T @ ymean
             else:
                 solver = self._solver(inkeys)
-                A = solver.solve(Kxxs).T
                 if np.isscalar(ycov) and ycov == 0:
                     cov = Kxsxs - solver.quad(Kxxs)
                 elif np.isscalar(ycov) or len(ycov.shape) == 1:
+                    A = solver.solve(Kxxs)
                     ycov_mat = np.reshape(ycov, (1, -1))
-                    cov = Kxsxs + (A * ycov_mat) @ A.T - solver.quad(Kxxs)
+                    cov = Kxsxs + (A.T * ycov_mat) @ A - solver.quad(Kxxs)
                 else:
-                    cov = Kxsxs + A @ ycov @ A.T - solver.quad(Kxxs)
+                    A = solver.solve(Kxxs)
+                    cov = Kxsxs + A.T @ ycov @ A - solver.quad(Kxxs)
                 # equivalent formula:
-                # cov = Kxsxs - A @ (Kxx - ycov) @ A.T
-                mean = A @ ymean
+                # cov = Kxsxs - A.T @ (Kxx - ycov) @ A
+                mean = solver.quad(Kxxs, ymean)
             
         else: # (keepcorr and not raw)        
             yplist = [np.reshape(self._prior(key), -1) for key in inkeys]
@@ -853,8 +851,7 @@ class GP:
             ysp = _concatenate_noop(ysplist)
             
             mat = ycov if fromdata else 0
-            flatout = Kxsx @ self._solver(inkeys, mat).usolve(y - yp) + ysp
-            # TODO _solver.uquad(Kxxs, y - yp)
+            flatout = ysp + self._solver(inkeys, mat).quad(Kxxs, y - yp)
         
         if raw and not strip:
             meandict = {

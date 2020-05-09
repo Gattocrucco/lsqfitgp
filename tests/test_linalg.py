@@ -29,7 +29,7 @@ import pytest
 sys.path = ['.'] + sys.path
 from lsqfitgp import _linalg
 
-# TODO test usolve with actual object arrays
+MAXSIZE = 10 + 1
 
 class DecompTestBase(metaclass=abc.ABCMeta):
     
@@ -39,7 +39,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         pass
             
     def randsize(self):
-        return np.random.randint(1, 20)
+        return np.random.randint(1, MAXSIZE)
         
     def randsymmat(self, n):
         O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
@@ -66,7 +66,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         return linalg.solve(K, b)
             
     def test_solve_vec(self):
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
             b = self.randvec(len(K))
             sol = self.solve(K, b)
@@ -78,7 +78,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             K = self.mat(s, n)
             return self.decompclass(K).solve(b)
         funjac = autograd.jacobian(fun)
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -88,7 +88,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             assert np.allclose(sol, result, rtol=1e-3)
 
     def test_solve_matrix(self):
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
             b = self.randmat(len(K))
             sol = self.solve(K, b)
@@ -100,7 +100,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             K = self.mat(s, n)
             return self.decompclass(K).solve(b)
         funjac = autograd.jacobian(fun)
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -114,7 +114,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             K = self.mat(s, n)
             return A @ self.decompclass(K).solve(b)
         funjac = autograd.jacobian(fun)
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -124,30 +124,65 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = funjac(s, n, b, A)
             assert np.allclose(sol, result, rtol=1e-3)
 
-    def test_usolve_vec_gvar(self):
-        for n in range(1, 20):
+    def assert_close_gvar(self, sol, result):
+        diff = np.reshape(sol - result, -1)
+        
+        diffmean = gvar.mean(diff)
+        solcov = gvar.evalcov(gvar.svd(sol))
+        q = diffmean @ linalg.solve(solcov, diffmean, assume_a='pos')
+        assert np.allclose(q, 0, atol=1e-7)
+        
+        diffcov = gvar.evalcov(diff)
+        solmax = np.max(linalg.eigvalsh(solcov))
+        diffmax = np.max(linalg.eigvalsh(diffcov))
+        assert np.allclose(diffmax / solmax, 0)
+    
+    def randvecgvar(self, n):
+        mean = self.randvec(n)
+        xcov = np.linspace(0, 3, n)
+        cov = np.exp(-(xcov.reshape(-1, 1) - xcov.reshape(1, -1)) ** 2)
+        return gvar.gvar(mean, cov)
+
+    def test_solve_vec_gvar(self):
+        for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
-            mean = self.randvec(len(K))
-            xcov = np.linspace(0, 3, len(K))
-            cov = np.exp(-(xcov.reshape(-1, 1) - xcov.reshape(1, -1)) ** 2)
-            b = gvar.gvar(mean, cov)
+            b = self.randvecgvar(n)
             invK = self.solve(K, np.eye(len(K)))
             sol = invK @ b
-            result = self.decompclass(K).usolve(b)
-            diff = result - sol
-            
-            diffmean = gvar.mean(diff)
-            solcov = gvar.evalcov(gvar.svd(sol))
-            q = diffmean @ linalg.solve(solcov, diffmean, assume_a='pos')
-            assert np.allclose(q, 0, atol=1e-7)
-            
-            diffcov = gvar.evalcov(diff)
-            solmax = np.max(linalg.eigvalsh(solcov))
-            diffmax = np.max(linalg.eigvalsh(diffcov))
-            assert np.allclose(diffmax / solmax, 0)
+            result = self.decompclass(K).solve(b)
+            self.assert_close_gvar(sol, result)
     
+    def test_quad_vec_gvar(self):
+        for n in range(1, MAXSIZE):
+            K = self.randsymmat(n)
+            b = self.randvecgvar(n)
+            invK = self.solve(K, np.eye(len(K)))
+            sol = b.T @ invK @ b
+            result = self.decompclass(K).quad(b)
+            self.assert_close_gvar(sol, result)
+    
+    def test_quad_vec_vec_gvar(self):
+        for n in range(1, MAXSIZE):
+            K = self.randsymmat(n)
+            b = self.randvecgvar(n)
+            c = self.randvecgvar(n)
+            invK = self.solve(K, np.eye(len(K)))
+            sol = b.T @ invK @ c
+            result = self.decompclass(K).quad(b, c)
+            self.assert_close_gvar(sol, result)
+
+    def test_quad_matrix_vec_gvar(self):
+        for n in range(1, MAXSIZE):
+            K = self.randsymmat(n)
+            b = self.randvecgvar(n * 3).reshape(n, 3)
+            c = self.randvecgvar(n)
+            invK = self.solve(K, np.eye(len(K)))
+            sol = b.T @ invK @ c
+            result = self.decompclass(K).quad(b, c)
+            self.assert_close_gvar(sol, result)
+
     def test_quad_vec(self):
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
             b = self.randvec(len(K))
             sol = b.T @ self.solve(K, b)
@@ -155,7 +190,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             assert np.allclose(sol, result)
     
     def test_quad_vec_vec(self):
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
             b = self.randvec(len(K))
             c = self.randvec(len(K))
@@ -164,7 +199,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             assert np.allclose(sol, result)
     
     def test_quad_matrix(self):
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
             b = self.randmat(len(K))
             sol = b.T @ self.solve(K, b)
@@ -172,7 +207,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             assert np.allclose(sol, result)
     
     def test_quad_matrix_matrix(self):
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
             b = self.randmat(len(K))
             c = self.randmat(len(K))
@@ -185,7 +220,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             K = self.mat(s, n)
             return self.decompclass(K).quad(b)
         fungrad = autograd.grad(fun)
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -200,7 +235,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             K = self.mat(s, n)
             return self.decompclass(K).quad(b)
         funjac = autograd.jacobian(fun)
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -211,7 +246,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             assert np.allclose(sol, result, rtol=1e-4)
 
     def test_logdet(self):
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
             sol = np.sum(np.log(linalg.eigvalsh(K)))
             result = self.decompclass(K).logdet()
@@ -222,7 +257,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             K = self.mat(s, n)
             return self.decompclass(K).logdet()
         fungrad = autograd.grad(fun)
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -310,14 +345,14 @@ class TestReduceRank(DecompTestBase):
     matjac = autograd.jacobian(mat, 1)
         
     def test_logdet(self):
-        for n in range(1, 20):
+        for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
             sol = np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self._rank:]))
             result = self.decompclass(K).logdet()
             assert np.allclose(sol, result)
 
 def test_solve_triangular():
-    for n in range(1, 20):
+    for n in range(1, MAXSIZE):
         for ndim in range(3):
             for lower in [True, False]:
                 tri = np.tril if lower else np.triu
@@ -367,3 +402,9 @@ class TestBlockChol(BlockDecompTestBase):
     @property
     def subdecompclass(self):
         return _linalg.Chol
+
+class TestBlockDiag(BlockDecompTestBase):
+    
+    @property
+    def subdecompclass(self):
+        return _linalg.Diag

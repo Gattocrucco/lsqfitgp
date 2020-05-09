@@ -64,10 +64,9 @@ from ._imports import sparse
 # TODO add the method Decomposition.correlate to convert a vector of iid
 # variables to a vector of variables with the decomposed matrix as covariance.
 
-# TODO make new decomposition CholGershBal that preconditions the matrix
-# with scipy.linalg.matrix_balance.
-
-# TODO Decomposition.uquad.
+# TODO make CholReg(Chol), then others are subclasses of CholReg, add
+# balancing in CholReg using sqrt(diag) rounded to nearest power of two. The
+# epsilon is chosen by a method that takes as argument the balanced matrix.
 
 def noautograd(x):
     """
@@ -294,7 +293,6 @@ class Decomposition(metaclass=DecompMeta):
     Methods
     -------
     solve
-    usolve
     quad
     logdet
     
@@ -310,22 +308,14 @@ class Decomposition(metaclass=DecompMeta):
     @abc.abstractmethod
     def solve(self, b):
         """
-        Solve the linear system K @ x = b.
-        """
-        pass
-    
-    @abc.abstractmethod
-    def usolve(self, ub):
-        """
-        Solve the linear system K @ x = b where b is possibly an array of
-        gvars.
+        Solve the linear system K @ x = b. `b` can be an array of gvars.
         """
         pass
     
     def quad(self, b, c=None):
         """
         Compute the quadratic form b.T @ inv(K) @ b if c is not specified, else
-        b.T @ inv(K) @ c.
+        b.T @ inv(K) @ c. `b` and `c` can be arrays of gvars.
         """
         if c is None:
             c = b
@@ -348,8 +338,6 @@ class Diag(Decomposition):
     
     def solve(self, b):
         return (self._V / self._w) @ (self._V.T @ b)
-    
-    usolve = solve
     
     def quad(self, b, c=None):
         VTb = self._V.T @ b
@@ -427,6 +415,13 @@ def solve_triangular(a, b, lower=False):
             x[i - 1] /= a[i - 1, i - 1]
     return x
 
+def solve_triangular_auto(a, b, lower=False):
+    """Works with b both object and non-object array"""
+    if b.dtype == object:
+        return solve_triangular(a, b, lower=lower)
+    else:
+        return linalg.solve_triangular(a, b, lower=lower)
+
 class Chol(Decomposition):
     """
     Cholesky decomposition.
@@ -436,19 +431,15 @@ class Chol(Decomposition):
         self._L = linalg.cholesky(K, lower=True, check_finite=False)
     
     def solve(self, b):
-        invLb = linalg.solve_triangular(self._L, b, lower=True)
-        return linalg.solve_triangular(self._L.T, invLb, lower=False)
-    
-    def usolve(self, b):
-        invLb = solve_triangular(self._L, b, lower=True)
-        return solve_triangular(self._L.T, invLb, lower=False)
+        invLb = solve_triangular_auto(self._L, b, lower=True)
+        return solve_triangular_auto(self._L.T, invLb, lower=False)
     
     def quad(self, b, c=None):
-        invLb = linalg.solve_triangular(self._L, b, lower=True)
+        invLb = solve_triangular_auto(self._L, b, lower=True)
         if c is None:
             invLc = invLb
         else:
-            invLc = linalg.solve_triangular(self._L, c, lower=True)
+            invLc = solve_triangular_auto(self._L, c, lower=True)
         return invLb.T @ invLc
     
     def logdet(self):
@@ -538,16 +529,6 @@ class BlockDecomp:
         x = invP.solve(f - tildeS.quad(Q.T, gQTinvPf))
         return np.concatenate([x, y])
     
-    def usolve(self, b):
-        invP = self._invP
-        tildeS = self._tildeS
-        Q = self._Q
-        f = b[:len(Q)]
-        g = b[len(Q):]
-        y = tildeS.usolve(g - Q.T @ invP.usolve(f))
-        x = invP.usolve(f - Q @ y)
-        return np.concatenate([x, y])
-    
     def quad(self, b, c=None):
         invP = self._invP
         tildeS = self._tildeS
@@ -557,7 +538,8 @@ class BlockDecomp:
         QTinvPf = invP.quad(Q, f)
         if c is None:
             fTinvPQtildeSg = tildeS.quad(QTinvPf, g)
-            return invP.quad(f) + tildeS.quad(QTinvPf) - fTinvPQtildeSg - fTinvPQtildeSg.T + tildeS.quad(g)
+            gtildeSQTinvPf = fTinvPQtildeSg.T if fTinvPQtildeSg.shape else fTinvPQtildeSg
+            return invP.quad(f) + tildeS.quad(QTinvPf) - fTinvPQtildeSg - gtildeSQTinvPf + tildeS.quad(g)
         else:
             h = c[:len(Q)]
             i = c[len(Q):]
