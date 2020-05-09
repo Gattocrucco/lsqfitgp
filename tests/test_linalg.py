@@ -154,6 +154,15 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = self.decompclass(K).quad(b)
             assert np.allclose(sol, result)
     
+    def test_quad_vec_vec(self):
+        for n in range(1, 20):
+            K = self.randsymmat(n)
+            b = self.randvec(len(K))
+            c = self.randvec(len(K))
+            sol = b.T @ self.solve(K, c)
+            result = self.decompclass(K).quad(b, c)
+            assert np.allclose(sol, result)
+    
     def test_quad_matrix(self):
         for n in range(1, 20):
             K = self.randsymmat(n)
@@ -162,6 +171,15 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = self.decompclass(K).quad(b)
             assert np.allclose(sol, result)
     
+    def test_quad_matrix_matrix(self):
+        for n in range(1, 20):
+            K = self.randsymmat(n)
+            b = self.randmat(len(K))
+            c = self.randmat(len(K))
+            sol = b.T @ self.solve(K, c)
+            result = self.decompclass(K).quad(b, c)
+            assert np.allclose(sol, result)
+            
     def test_quad_vec_grad(self):
         def fun(s, n, b):
             K = self.mat(s, n)

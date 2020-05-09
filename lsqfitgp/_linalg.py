@@ -17,6 +17,37 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+Decompositions of positive definite matrices. A decomposition object is
+initialized with a matrix and then can solve linear systems for that matrix.
+These classes never check for infs/nans in the matrices.
+
+Classes
+-------
+DecompMeta
+    Metaclass that adds autograd support.
+Decomposition
+    Abstract base class.
+Diag
+    Diagonalization.
+EigCutFullRank
+    Diagonalization rounding up small eigenvalues.
+EigCutLowRank
+    Diagonalization removing small eigenvalues.
+ReduceRank
+    Partial diagonalization with higher eigenvalues only.
+Chol
+    Cholesky decomposition.
+CholMaxEig
+    Cholesky regularized using the maximum eigenvalue.
+CholGersh
+    Cholesky regularized using an estimate of the maximum eigenvalue.
+BlockDecomp
+    Decompose a block matrix.
+
+"""
+
 import abc
 import functools
 
@@ -25,43 +56,10 @@ from ._imports import linalg
 from ._imports import autograd
 from ._imports import sparse
 
-__doc__ = """
-
-Decompositions of positive definite matrices. A decomposition object is
-initialized with a matrix and then can solve linear systems for that matrix.
-These classes never check for infs/nans in the matrices.
-
-Classes
--------
-DecompMeta :
-    Metaclass that adds autograd support.
-Decomposition :
-    Abstract base class.
-Diag :
-    Diagonalization.
-EigCutFullRank :
-    Diagonalization rounding up small eigenvalues.
-EigCutLowRank :
-    Diagonalization removing small eigenvalues.
-ReduceRank :
-    Partial diagonalization with higher eigenvalues only.
-Chol :
-    Cholesky decomposition.
-CholMaxEig :
-    Cholesky regularized using the maximum eigenvalue.
-CholGersh :
-    Cholesky regularized using an estimate of the maximum eigenvalue.
-BlockDecomp :
-    Decompose a block matrix.
-
-"""
-
 # TODO check solve and quad work with >2D b. Probably I need to reshape
 # b to 2D, do the calculation and then reshape back. When it works, write
 # clearly the contraction convention in the docstrings. (Low priority, I never
 # use this in the GP code.)
-
-# TODO add an optional argument c to quad to compute b.T @ inv(K) @ c.
 
 # TODO add the method Decomposition.correlate to convert a vector of iid
 # variables to a vector of variables with the decomposed matrix as covariance.
@@ -93,9 +91,7 @@ class DecompMeta(abc.ABCMeta):
     """
     Metaclass for adding autograd support to subclasses of Decomposition.
     """
-    
-    # TODO add jvps for solve and quad for forward mode
-    
+        
     def __init__(cls, *args):
         
         # For __init__ I can't use an _autograd flag like below to avoid double
@@ -123,6 +119,8 @@ class DecompMeta(abc.ABCMeta):
 
     @staticmethod
     def make_solve(oldsolve):
+        
+        # TODO add jvp
         
         @autograd.extend.primitive
         def solve_autograd(self, K, b):
@@ -239,13 +237,13 @@ class DecompMeta(abc.ABCMeta):
 
         # This hacked solution turned out to be more numerically accurate
         # than the handwritten vjps.
-        def quad(self, b):
-            if isinstance(self._K, BoxClass) or isinstance(b, BoxClass):
-                box = b.T @ self.solve(b)
-                lastbox(box)._value = oldquad(self, noautograd(b))
+        def quad(self, b, c=None):
+            if any(isinstance(x, BoxClass) for x in (self._K, b, c)):
+                box = b.T @ self.solve(b if c is None else c)
+                lastbox(box)._value = oldquad(self, noautograd(b), noautograd(c))
                 return box
             else:
-                return oldquad(self, b)
+                return oldquad(self, b, c)
         
         return quad
     
@@ -324,11 +322,14 @@ class Decomposition(metaclass=DecompMeta):
         """
         pass
     
-    def quad(self, b):
+    def quad(self, b, c=None):
         """
-        Compute the quadratic form b.T @ inv(K) @ b.
+        Compute the quadratic form b.T @ inv(K) @ b if c is not specified, else
+        b.T @ inv(K) @ c.
         """
-        return b.T @ self.solve(b)
+        if c is None:
+            c = b
+        return b.T @ self.solve(c)
     
     @abc.abstractmethod
     def logdet(self):
@@ -350,9 +351,13 @@ class Diag(Decomposition):
     
     usolve = solve
     
-    def quad(self, b):
+    def quad(self, b, c=None):
         VTb = self._V.T @ b
-        return (VTb.T / self._w) @ VTb
+        if c is None:
+            VTc = VTb
+        else:
+            VTc = self._V.T @ c
+        return (VTb.T / self._w) @ VTc
     
     def logdet(self):
         return np.sum(np.log(self._w))
@@ -400,7 +405,9 @@ class ReduceRank(Diag):
 def solve_triangular(a, b, lower=False):
     """
     Pure python implementation of scipy.linalg.solve_triangular for when
-    a or b are object arrays.
+    a or b are object arrays. Differently from the scipy version, it
+    satisfies tensordot(a, solve_triangular(a, b), 1) == b instead of
+    a @ solve_triangular(a, b) == b. It makes a difference only if b is >2D.
     """
     # TODO maybe commit this to gvar.linalg
     # TODO can I raise a LinAlgError if a[i,i] is 0, and still return the
@@ -420,18 +427,6 @@ def solve_triangular(a, b, lower=False):
             x[i - 1] /= a[i - 1, i - 1]
     return x
 
-def grad_chol(L):
-    """
-    Inverse of the Jacobian of the cholesky factor respect to the decomposed
-    matrix, reshaped as a 2D matrix. It should actually work for any
-    decomposition of the type A = L @ L.T, whatever is L. (Not tested.)
-    """
-    n = len(L)
-    I = np.eye(n)
-    s1 = I[:, None, :, None] * L[None, :, None, :]
-    s2 = I[None, :, :, None] * L[:, None, None, :]
-    return (s1 + s2).reshape(2 * (n**2,))
-        
 class Chol(Decomposition):
     """
     Cholesky decomposition.
@@ -448,9 +443,13 @@ class Chol(Decomposition):
         invLb = solve_triangular(self._L, b, lower=True)
         return solve_triangular(self._L.T, invLb, lower=False)
     
-    def quad(self, b):
+    def quad(self, b, c=None):
         invLb = linalg.solve_triangular(self._L, b, lower=True)
-        return invLb.T @ invLb
+        if c is None:
+            invLc = invLb
+        else:
+            invLc = linalg.solve_triangular(self._L, c, lower=True)
+        return invLb.T @ invLc
     
     def logdet(self):
         return 2 * np.sum(np.log(np.diag(self._L)))
@@ -534,8 +533,9 @@ class BlockDecomp:
         Q = self._Q
         f = b[:len(Q)]
         g = b[len(Q):]
-        y = tildeS.solve(g - Q.T @ invP.solve(f)) # TODO invP.quad(Q, f)
-        x = invP.solve(f - Q @ y) # TODO y = tildeS.quad(Q, QTinvPf)
+        gQTinvPf = g - invP.quad(Q, f)
+        y = tildeS.solve(gQTinvPf)
+        x = invP.solve(f - tildeS.quad(Q.T, gQTinvPf))
         return np.concatenate([x, y])
     
     def usolve(self, b):
@@ -548,15 +548,23 @@ class BlockDecomp:
         x = invP.usolve(f - Q @ y)
         return np.concatenate([x, y])
     
-    def quad(self, b):
+    def quad(self, b, c=None):
         invP = self._invP
         tildeS = self._tildeS
         Q = self._Q
         f = b[:len(Q)]
         g = b[len(Q):]
-        QTinvPf = Q.T @ invP.solve(f) # TODO invP.quad(Q, f)
-        fTinvPQtildeSg = QTinvPf.T @ tildeS.solve(g) # tildeS.quad(QTinvPf, g)
-        return invP.quad(f) + tildeS.quad(QTinvPf) - fTinvPQtildeSg - fTinvPQtildeSg.T + tildeS.quad(g)
+        QTinvPf = invP.quad(Q, f)
+        if c is None:
+            fTinvPQtildeSg = tildeS.quad(QTinvPf, g)
+            return invP.quad(f) + tildeS.quad(QTinvPf) - fTinvPQtildeSg - fTinvPQtildeSg.T + tildeS.quad(g)
+        else:
+            h = c[:len(Q)]
+            i = c[len(Q):]
+            QTinvPh = invP.quad(Q, h)
+            fTinvPQtildeSi = tildeS.quad(QTinvPf, i)
+            gTtildeSQTinvPh = tildeS.quad(g, QTinvPh)
+            return invP.quad(f, h) + tildeS.quad(QTinvPf, QTinvPh) - fTinvPQtildeSi - gTtildeSQTinvPh + tildeS.quad(g, i)
 
     def logdet(self):
         return self._invP.logdet() + self._tildeS.logdet()
