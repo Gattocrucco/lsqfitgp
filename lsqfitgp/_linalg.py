@@ -62,6 +62,14 @@ BlockDecomp :
 
 # TODO add an optional argument c to quad to compute b.T @ inv(K) @ c.
 
+# TODO add the method Decomposition.correlate to convert a vector of iid
+# variables to a vector of variables with the decomposed matrix as covariance.
+
+# TODO make new decomposition CholGershBal that preconditions the matrix
+# with scipy.linalg.matrix_balance.
+
+# TODO Decomposition.uquad.
+
 def noautograd(x):
     """
     Unpack an autograd numpy array.
@@ -369,9 +377,6 @@ class CholMaxEig(Chol):
     """
     
     def __init__(self, K, eps=None, **kw):
-        # TODO Should I precondition K *before* computing and adding the
-        # epsilon on the diagonal? In case, there's a function in scipy for
-        # generic rescaling preconditioning.
         w = sparse.linalg.eigsh(K, k=1, which='LM', return_eigenvectors=False)
         eps = self._eps(eps, K, w[0])
         super().__init__(K + np.diag(np.full(len(K), eps)), **kw)
@@ -438,7 +443,7 @@ class BlockDecomp:
         f = b[:len(Q)]
         g = b[len(Q):]
         y = tildeS.solve(g - Q.T @ invP.solve(f)) # TODO invP.quad(Q, f)
-        x = invP.solve(f - Q @ y)
+        x = invP.solve(f - Q @ y) # TODO y = tildeS.quad(Q, QTinvPf)
         return np.concatenate([x, y])
     
     def usolve(self, b):

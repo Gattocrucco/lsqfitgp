@@ -113,15 +113,20 @@ def empbayes_fit(hyperprior, gpfactory, data, raises=True):
     # TODO it raises very often with "Desired error not necessarily achieved
     # due to precision loss.". Change the default arguments of minimize to make
     # this less frequent, but only after implement the quad-specific
-    # derivatives since maybe they will fix this.
+    # derivatives since maybe they will fix this. Another thing that may
+    # matter is the vjp of the logdet, which computes a matrix inverse.
+    # I could do the following: make an internal version of marginal_likelihood
+    # that returns separately the residuals and the logdet term, and do
+    # a backward derivative on the residuals and a forward on the logdet.
     
     hyperprior = _asarrayorbufferdict(hyperprior)
     flathp = _flat(hyperprior)
-    hpcov = gvar.evalcov(flathp)
-    # TODO use evalcov_blocks
+    hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks
     chol = linalg.cholesky(hpcov, lower=True)
-    # TODO regularize hpcov in case it is not numerically positive definite,
-    # maybe since this is typically small we could do a diagonalization
+    
+    # TODO use a decomposition from _linalg after I've implemented
+    # Decomposition.correlate.
+    
     hpmean = gvar.mean(flathp)
     
     # TODO it may be inefficient that marginal_likelihood gets called every time
