@@ -68,6 +68,12 @@ from ._imports import sparse
 # balancing in CholReg using sqrt(diag) rounded to nearest power of two. The
 # epsilon is chosen by a method that takes as argument the balanced matrix.
 
+# TODO optimize the matrix multiplication with gvars. Use these gvar internals:
+# gvar.svec(int size)
+# gvar.svec._assign(float[] values, int[] indices)
+# gvar.gvar(float mean, svec derivs, smat cov)
+# it may require cython to be fast since it's not vectorized
+
 def noautograd(x):
     """
     Unpack an autograd numpy array.

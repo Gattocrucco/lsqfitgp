@@ -548,9 +548,11 @@ class GP:
                 raise np.linalg.LinAlgError(msg)
     
     def _priorpoints(self, key):
+        
         # TODO I think that gvar internals would let me build the prior
         # one block at a time although everything is correlated, but I don't
         # know how to do it. If I do that, remove _canaddx.
+        
         if not hasattr(self, '_priordict'):
             if self._checkpositive:
                 keys = [
@@ -575,6 +577,7 @@ class GP:
             self._priordict = gvar.gvar(mean, cov)
             self._priordict.buf.flags['WRITEABLE'] = False
             self._canaddx = False
+        
         return self._priordict[key]
     
     def _priortransf(self, key):
