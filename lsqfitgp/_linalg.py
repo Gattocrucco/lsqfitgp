@@ -39,6 +39,8 @@ ReduceRank
     Partial diagonalization with higher eigenvalues only.
 Chol
     Cholesky decomposition.
+CholReg
+    Abstract base class for regularized Cholesky decomposition.
 CholMaxEig
     Cholesky regularized using the maximum eigenvalue.
 CholGersh
@@ -64,14 +66,10 @@ from ._imports import sparse
 # TODO add the method Decomposition.correlate to convert a vector of iid
 # variables to a vector of variables with the decomposed matrix as covariance.
 
-# TODO make CholReg(Chol), then others are subclasses of CholReg, add
-# balancing in CholReg using sqrt(diag) rounded to nearest power of two. The
-# epsilon is chosen by a method that takes as argument the balanced matrix.
-
 # TODO optimize the matrix multiplication with gvars. Use these gvar internals:
 # gvar.svec(int size)
 # gvar.svec._assign(float[] values, int[] indices)
-# gvar.gvar(float mean, svec derivs, smat cov)
+# gvar.GVar(float mean, svec derivs, smat cov)
 # it may require cython to be fast since it's not vectorized
 
 def noautograd(x):
@@ -450,27 +448,55 @@ class Chol(Decomposition):
     
     def logdet(self):
         return 2 * np.sum(np.log(np.diag(self._L)))
+
+def _scale(a):
+    """
+    Compute a vector s of powers of 2 such that diag(a / outer(s, s)) ~ 1.
+    """
+    return np.exp2(np.rint(0.5 * np.log2(np.diag(a))))
+
+class CholReg(Chol):
+    """
+    Cholesky decomposition correcting for roundoff. Abstract class.
+    """
     
-    def _eps(self, eps, K, maxeigv):
+    def __init__(self, K, eps=None):
+        s = _scale(K)
+        J = K / s[:, None]
+        J /= s[None, :]
+        self._regularize(J, eps)
+        super().__init__(J)
+        self._L *= s[:, None]
+    
+    @abc.abstractmethod
+    def _regularize(self, mat, eps):
+        """Modify mat in-place to make it positive definite."""
+        pass
+    
+    def _eps(self, eps, mat, maxeigv):
         if eps is None:
-            eps = len(K) * np.finfo(asinexact(K.dtype)).eps
+            eps = len(mat) * np.finfo(asinexact(mat.dtype)).eps
         assert np.isscalar(eps) and 0 <= eps < 1
         return eps * maxeigv
 
-class CholMaxEig(Chol):
+class CholMaxEig(CholReg):
     """
-    Cholesky decomposition. The matrix is corrected for numerical roundoff
-    by adding to the diagonal a small number relative to the maximum eigenvalue.
+    Cholesky decomposition. The matrix is corrected for numerical roundoff by
+    adding to the diagonal a small number relative to the maximum eigenvalue.
     `eps` multiplies this number.
     """
     
-    def __init__(self, K, eps=None, **kw):
-        w = sparse.linalg.eigsh(K, k=1, which='LM', return_eigenvectors=False)
-        eps = self._eps(eps, K, w[0])
-        super().__init__(K + np.diag(np.full(len(K), eps)), **kw)
+    def _regularize(self, mat, eps):
+        w = sparse.linalg.eigsh(mat, k=1, which='LM', return_eigenvectors=False)
+        mat[np.diag_indices(len(mat))] += self._eps(eps, mat, w[0])
 
+def _gershgorin_eigval_bound(mat):
+    """
+    Upper bound on the largest magnitude eigenvalue of the matrix.
+    """
+    return np.max(np.sum(np.abs(mat), axis=1))
 
-class CholGersh(Chol):
+class CholGersh(CholReg):
     """
     Cholesky decomposition. The matrix is corrected for numerical roundoff
     by adding to the diagonal a small number relative to the maximum eigenvalue.
@@ -478,16 +504,9 @@ class CholGersh(Chol):
     with the Gershgorin theorem.
     """
     
-    def __init__(self, K, eps=None, **kw):
-        maxeigv = _gershgorin_eigval_bound(K)
-        eps = self._eps(eps, K, maxeigv)
-        super().__init__(K + np.diag(np.full(len(K), eps)), **kw)
-
-def _gershgorin_eigval_bound(K):
-    """
-    Upper bound on the largest magnitude eigenvalue of the matrix.
-    """
-    return np.max(np.sum(np.abs(K), axis=1))
+    def _regularize(self, mat, eps):
+        maxeigv = _gershgorin_eigval_bound(mat)
+        mat[np.diag_indices(len(mat))] += self._eps(eps, mat, maxeigv)
 
 class BlockDecomp:
     """
