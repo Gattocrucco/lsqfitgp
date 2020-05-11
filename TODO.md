@@ -12,6 +12,9 @@ Add Examples sections.
 
 Interlinks with gvar and lsqfit docs.
 
+Mention that numpy.lib.recfunctions.unstructured_to_structured may be used
+for euclidean multidimensional input.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -146,6 +149,19 @@ Something like pydata/sparse (if that works).
 Option to compute only the diagonal of the output covariance matrix, and
 allow diagonal-only input covariance for data (will be fundamental for
 kronecker). For the output it already works implicitly when using gvars.
+
+Idea: make an array-like class to represent the tensor product of arrays
+without actually computing explicitly the product. Use this class to represent
+a lattice (may not be trivial since the input can be structured), then the
+kernels will operate on it like a numpy array and automatically the output will
+still be a tensor product if all the operations were separable. I think that
+ExpQuad is the only possible case where an apparently non-separable formula is
+actually separable, I could make a quick fix by using forcekron=True, or
+implement an ufunc that is understood by the tensor product class. A more
+elegant but somewhat complicated solution would be to have a sum of arrays
+array-like class that on any ufunc does explicitly the sum but for the
+exponential, and a sum of a tensor product array-like produces a sum of arrays
+array-like.
 
 #### Sparse
 
