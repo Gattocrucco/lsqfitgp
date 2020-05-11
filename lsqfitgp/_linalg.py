@@ -252,6 +252,7 @@ class DecompMeta(abc.ABCMeta):
     
     @staticmethod
     def make_logdet(oldlogdet):
+        
         @autograd.extend.primitive
         def logdet_autograd(self, K):
             return oldlogdet(self)

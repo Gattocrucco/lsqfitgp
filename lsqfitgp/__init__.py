@@ -120,6 +120,8 @@ lengthscale.
     Fourier
         Kernel for periodic functions, the decay of the Fourier coefficients is
         adjustable.
+    OrnsteinUhlenbeck
+        Random walk with non-diverging variance.
 
 Reference: Rasmussen et al. (2006), "Gaussian Processes for Machine Learning".
 

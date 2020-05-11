@@ -231,6 +231,7 @@ test_kwargs = {
     _kernels.Wiener: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.WienerIntegral: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.FracBrownian: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
+    _kernels.OrnsteinUhlenbeck: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.Categorical: dict(kwargs_list=[
         dict(cov=matrix_square(np.random.randn(10, 10)))
     ], random_x_fun=lambda **kw: np.random.randint(10, size=100)),

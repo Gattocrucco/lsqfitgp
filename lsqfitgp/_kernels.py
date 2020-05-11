@@ -49,7 +49,8 @@ __all__ = [
     'PPKernel',
     'WienerIntegral',
     'Taylor',
-    'Fourier'
+    'Fourier',
+    'OrnsteinUhlenbeck'
 ]
 
 def _dot(x, y):
@@ -572,3 +573,19 @@ def Fourier(x, y, n=2):
     sign0 = -(-1) ** n
     factor = (2 * np.pi) ** s / (2 * special.factorial(s) * special.zeta(s))
     return sign0 * factor * _bernoulli_poly(s, diff)
+
+@kernel(forcekron=True)
+def OrnsteinUhlenbeck(x, y):
+    """
+    Ornstein–Uhlenbeck process kernel.
+    
+    .. math::
+        k(x, y) = \\exp(-|x - y|) - \\exp(-(x + y)),
+        \\quad x, y \ge 0
+    
+    It is a random walk plus a negative feedback term that keeps the
+    asymptotical variance constant.
+    """
+    assert np.all(x >= 0)
+    assert np.all(y >= 0)
+    return np.exp(-np.abs(x - y)) - np.exp(-(x + y))

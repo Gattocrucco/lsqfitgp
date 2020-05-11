@@ -31,6 +31,10 @@ __all__ = [
     'asarray'
 ]
 
+# TODO use the __array_function__ mechanism instead of exposing custom
+# functions. Requires numpy >= 1.17. Is it still experimental, or will it stay
+# as it is?
+
 def _readonlyview(x):
     if not builtins.isinstance(x, (StructuredArray, np.numpy_boxes.ArrayBox)):
         x = x.view()
