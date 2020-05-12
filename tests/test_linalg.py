@@ -269,37 +269,57 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     
     # TODO test derivatives w.r.t. b
 
-class TestDiag(DecompTestBase):
+class DecompTestCorr(DecompTestBase):
+    """Tests for `correlate` and `decorrelate` are defined in this
+    separate class because BlockDecomp does not have them."""
+    
+    def test_correlate_eye(self):
+        for n in range(1, MAXSIZE):
+            K = self.randsymmat(n)
+            A = self.decompclass(K).correlate(np.eye(n))
+            Q = A @ A.T
+            assert np.allclose(K, Q)
+    
+    def test_decorrelate_mat(self):
+        for n in range(1, MAXSIZE):
+            K = self.randsymmat(n)
+            b = self.randmat(n)
+            x = self.decompclass(K).decorrelate(b)
+            result = x.T @ x
+            sol = self.decompclass(K).quad(b)
+            assert np.allclose(sol, result)
+
+class TestDiag(DecompTestCorr):
     
     @property
     def decompclass(self):
         return _linalg.Diag
 
-class TestEigCutFullRank(DecompTestBase):
+class TestEigCutFullRank(DecompTestCorr):
     
     @property
     def decompclass(self):
         return _linalg.EigCutFullRank
 
-class TestEigCutLowRank(DecompTestBase):
+class TestEigCutLowRank(DecompTestCorr):
     
     @property
     def decompclass(self):
         return _linalg.EigCutLowRank
 
-class TestChol(DecompTestBase):
+class TestChol(DecompTestCorr):
     
     @property
     def decompclass(self):
         return _linalg.Chol
 
-class TestCholMaxEig(DecompTestBase):
+class TestCholMaxEig(DecompTestCorr):
     
     @property
     def decompclass(self):
         return _linalg.CholMaxEig
 
-class TestCholGersh(DecompTestBase):
+class TestCholGersh(DecompTestCorr):
     
     @property
     def decompclass(self):
@@ -311,7 +331,7 @@ def _noautograd(x):
     else:
         return x
 
-class TestReduceRank(DecompTestBase):
+class TestReduceRank(DecompTestCorr):
     
     @property
     def decompclass(self):
@@ -364,10 +384,6 @@ def test_solve_triangular():
                 check_solve_triangular(A, B, lower)
 
 def check_solve_triangular(A, B, lower):
-    # scipy.linalg.solve_triangular is documented to work with b 1- or
-    # 2-dimensional, but it does not raise an error with b n-dimensional and
-    # the result does not satisfy sum_i A[j,i] * x[i,...] = B[j,...].
-    # TODO understand what solve_triangular does and file a bug report to scipy
     x1 = linalg.solve_triangular(A, B.reshape(B.shape[0], -1), lower=lower).reshape(B.shape)
     assert np.allclose(np.tensordot(A, x1, 1), B)
     x2 = _linalg.solve_triangular(A, B, lower=lower)
@@ -376,7 +392,7 @@ def check_solve_triangular(A, B, lower):
 class BlockDecompTestBase(DecompTestBase):
     """
     Abstract class for testing BlockDecomp. Concrete subclasses must
-    overwrite subdecompclass.
+    overwrite `subdecompclass`.
     """
     
     @property

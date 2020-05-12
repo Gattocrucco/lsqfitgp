@@ -391,8 +391,8 @@ class EigCutFullRank(Diag):
     relative to the largest eigenvalue.
     """
     
-    def __init__(self, K, eps=None, **kw):
-        super().__init__(K, **kw)
+    def __init__(self, K, eps=None):
+        super().__init__(K)
         eps = self._eps(eps)
         self._w[self._w < eps] = eps
             
@@ -402,8 +402,8 @@ class EigCutLowRank(Diag):
     relative to the largest eigenvalue.
     """
     
-    def __init__(self, K, eps=None, **kw):
-        super().__init__(K, **kw)
+    def __init__(self, K, eps=None):
+        super().__init__(K)
         eps = self._eps(eps)
         subset = slice(np.sum(self._w < eps), None) # w is sorted ascending
         self._w = self._w[subset]
@@ -417,6 +417,9 @@ class ReduceRank(Diag):
     def __init__(self, K, rank=1):
         assert isinstance(rank, (int, np.integer)) and rank >= 1
         self._w, self._V = sparse.linalg.eigsh(K, k=rank, which='LM')
+    
+    def correlate(self, b):
+        return super().correlate(b[:len(self._w)])
 
 def solve_triangular(a, b, lower=False):
     """
