@@ -830,22 +830,23 @@ class GP:
             
             if fromdata:
                 solver = self._solver(inkeys, ycov)
-                cov = Kxsxs - solver.quad(Kxxs)
-                mean = solver.solve(Kxxs).T @ ymean
             else:
                 solver = self._solver(inkeys)
+
+            mean = solver.quad(Kxxs, ymean)
+            cov = Kxsxs - solver.quad(Kxxs)
+            
+            if not fromdata:
+                # complete formula: cov = Kxsxs - A.T @ (Kxx - ycov) @ A
                 if np.isscalar(ycov) and ycov == 0:
-                    cov = Kxsxs - solver.quad(Kxxs)
+                    pass
                 elif np.isscalar(ycov) or len(ycov.shape) == 1:
                     A = solver.solve(Kxxs)
                     ycov_mat = np.reshape(ycov, (1, -1))
-                    cov = Kxsxs + (A.T * ycov_mat) @ A - solver.quad(Kxxs)
+                    cov = cov + (A.T * ycov_mat) @ A
                 else:
                     A = solver.solve(Kxxs)
-                    cov = Kxsxs + A.T @ ycov @ A - solver.quad(Kxxs)
-                # equivalent formula:
-                # cov = Kxsxs - A.T @ (Kxx - ycov) @ A
-                mean = solver.quad(Kxxs, ymean)
+                    cov = cov + A.T @ ycov @ A
             
         else: # (keepcorr and not raw)        
             yplist = [np.reshape(self._prior(key), -1) for key in inkeys]
