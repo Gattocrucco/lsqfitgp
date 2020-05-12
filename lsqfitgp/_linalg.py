@@ -63,15 +63,13 @@ from ._imports import sparse
 # clearly the contraction convention in the docstrings. (Low priority, I never
 # use this in the GP code.)
 
-# TODO add the method Decomposition.correlate to convert a vector of iid
-# variables to a vector of variables with the decomposed matrix as covariance,
-# and Decomposition.decorrelate to do the opposite.
-
 # TODO optimize the matrix multiplication with gvars. Use these gvar internals:
 # gvar.svec(int size)
 # gvar.svec._assign(float[] values, int[] indices)
 # gvar.GVar(float mean, svec derivs, smat cov)
 # it may require cython to be fast since it's not vectorized
+
+# TODO investigate using the QR decomposition.
 
 def noautograd(x):
     """
@@ -301,6 +299,8 @@ class Decomposition(metaclass=DecompMeta):
     solve
     quad
     logdet
+    correlate
+    decorrelate
     
     """
     
@@ -333,6 +333,22 @@ class Decomposition(metaclass=DecompMeta):
         Compute log(det(K)).
         """
         pass
+    
+    @abc.abstractmethod
+    def correlate(self, b):
+        """
+        Compute A @ b where K = A @ A.T. If b represents iid variables with
+        unitary variance, A @ b has covariance matrix K.
+        """
+        pass
+    
+    @abc.abstractmethod
+    def decorrelate(self, b):
+        """
+        Solve A @ x = b, where K = A @ A.T. If b represents variables with
+        covariance matrix K, x has identity covariance.
+        """
+        pass
 
 class Diag(Decomposition):
     """
@@ -355,6 +371,12 @@ class Diag(Decomposition):
     
     def logdet(self):
         return np.sum(np.log(self._w))
+    
+    def correlate(self, b):
+        return (self._V * np.sqrt(self._w)) @ b
+    
+    def decorrelate(self, b):
+        return (self._V / np.sqrt(self._w)).T @ b
     
     def _eps(self, eps):
         w = self._w
@@ -450,6 +472,12 @@ class Chol(Decomposition):
     
     def logdet(self):
         return 2 * np.sum(np.log(np.diag(self._L)))
+    
+    def correlate(self, b):
+        return self._L @ b
+    
+    def decorrelate(self, b):
+        return solve_triangular_auto(self._L, b, lower=True)
 
 def _scale(a):
     """
@@ -529,8 +557,8 @@ class BlockDecomp:
         """
         The matrix to be decomposed is
         
-        A = [[P,   Q]
-             [Q.T, S]]
+            K = [[P,   Q]
+                 [Q.T, S]]
         
         Parameters
         ----------
@@ -574,6 +602,3 @@ class BlockDecomp:
             fTinvPQtildeSi = tildeS.quad(QTinvPf, i)
             gTtildeSQTinvPh = tildeS.quad(g, QTinvPh)
             return invP.quad(f, h) + tildeS.quad(QTinvPf, QTinvPh) - fTinvPQtildeSi - gTtildeSQTinvPh + tildeS.quad(g, i)
-
-    def logdet(self):
-        return self._invP.logdet() + self._tildeS.logdet()
