@@ -64,7 +64,8 @@ from ._imports import sparse
 # use this in the GP code.)
 
 # TODO add the method Decomposition.correlate to convert a vector of iid
-# variables to a vector of variables with the decomposed matrix as covariance.
+# variables to a vector of variables with the decomposed matrix as covariance,
+# and Decomposition.decorrelate to do the opposite.
 
 # TODO optimize the matrix multiplication with gvars. Use these gvar internals:
 # gvar.svec(int size)
@@ -425,7 +426,7 @@ def solve_triangular_auto(a, b, lower=False):
     if b.dtype == object:
         return solve_triangular(a, b, lower=lower)
     else:
-        return linalg.solve_triangular(a, b, lower=lower)
+        return linalg.solve_triangular(a, b, lower=lower, check_finite=False)
 
 class Chol(Decomposition):
     """
