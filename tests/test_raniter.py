@@ -66,3 +66,6 @@ def test_raniter_warning():
         next(lgp.raniter(np.zeros(len(cov)), cov))
         assert len(w) == 1
         assert 'positive definite' in str(w[0].message)
+    with warnings.catch_warnings(record=True) as w:
+        next(lgp.raniter(np.zeros(len(cov)), cov, eps=0.1))
+        assert len(w) == 0
