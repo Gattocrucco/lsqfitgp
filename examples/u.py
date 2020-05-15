@@ -53,7 +53,7 @@ prior = {
     'log(time_scale)': gvar.log(gvar.gvar(3, 2))
 }
 datadict = {'data': data, 'fixed_point': [gvar.gvar(0, 1e2)]}
-params = lgp.empbayes_fit(prior, makegp, datadict, raises=False)
+params = lgp.empbayes_fit(prior, makegp, datadict, raises=False).p
 print('time_scale:', params['time_scale'])
 gp = makegp(gvar.mean(params))
 

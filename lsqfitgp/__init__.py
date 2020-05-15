@@ -51,7 +51,7 @@ Functions and classes
     
     GP : class
         Class of objects representing a gaussian process.
-    empbayes_fit : function
+    empbayes_fit : class
         Fit the hyperparameters of a gaussian process.
     StructuredArray : class
         Autograd-friendly wrapper of numpy structured arrays.

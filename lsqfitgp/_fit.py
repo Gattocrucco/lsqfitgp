@@ -19,11 +19,11 @@
 
 from ._imports import gvar
 from ._imports import numpy as np
-from ._imports import linalg
 from ._imports import autograd
 from ._imports import optimize
 
 from . import _GP
+from . import _linalg
 
 __all__ = [
     'empbayes_fit'
@@ -48,102 +48,116 @@ def _unflat(x, original):
     elif isinstance(original, gvar.BufferDict):
         return gvar.BufferDict(original, buf=x)
 
-def empbayes_fit(hyperprior, gpfactory, data, raises=True):
-    """
-    
-    Empirical bayes fit.
-    
-    Maximizes the marginal likelihood of the data with a gaussian process model
-    that depends on hyperparameters.
-    
-    Parameters
-    ----------
-    hyperprior : scalar, array or dictionary of scalars/arrays
-        A collection of gvars representing the prior for the hyperparameters.
-    gpfactory : callable
-        A function with signature gpfactory(hyperparams) -> GP object. The
-        argument `hyperparams` has the same structure of the empbayes_fit
-        argument `hyperprior`. gpfactory must be autograd-friendly, i.e. either
-        use autograd.numpy, autograd.scipy, lsqfitgp.numpy, lsqfit.scipy or
-        gvar instead of plain numpy/scipy.
-    data : dictionary
-        Dictionary of data that is passed to GP.marginal_likelihood on the
-        GP object returned by `gpfactory`.
-    raises : bool, optional
-        If True (default), raise an error when the minimization fails.
-        Otherwise, use the last point of the minimization as result.
-    
-    Returns
-    -------
-    hyperparams : scalar, array or dictionary of scalars/arrays
-        A collection of gvars representing the hyperparameters that maximize
-        the marginal likelihood. The covariance matrix is computed as the
-        inverse of the hessian of the marginal likelihood. These gvars do
-        not track correlations with the hyperprior or the data.
+class empbayes_fit:
 
-    Raises
-    ------
-    RuntimeError
-        The minimization failed and `raises` is True.
+    def __init__(self, hyperprior, gpfactory, data, raises=True, minkw={}, gpfactorykw={}):
+        """
     
-    """
-    assert isinstance(data, (dict, gvar.BufferDict)) # TODO duck typing of data
-    assert callable(gpfactory)
+        Empirical bayes fit.
     
-    # TODO allow data to be a callable that builds data with the hypers,
-    # if it returns only one thing it's `given`, if it returns two it's
-    # `given` and `givencov`.
+        Maximizes the marginal likelihood of the data with a gaussian process
+        model that depends on hyperparameters.
     
-    # TODO add arguments/keyword arguments passed to makegp, and
-    # keyword arguments passed to the minimizer.
+        Parameters
+        ----------
+        hyperprior : scalar, array or dictionary of scalars/arrays
+            A collection of gvars representing the prior for the
+            hyperparameters.
+        gpfactory : callable
+            A function with signature gpfactory(hyperparams) -> GP object. The
+            argument `hyperparams` has the same structure of the empbayes_fit
+            argument `hyperprior`. gpfactory must be autograd-friendly, i.e.
+            either use autograd.numpy, autograd.scipy, lsqfitgp.numpy,
+            lsqfit.scipy or gvar instead of plain numpy/scipy.
+        data : dict or callable
+            Dictionary of data that is passed to `GP.marginal_likelihood` on
+            the GP object returned by `gpfactory`. If a callable, it is called
+            with the same arguments of `gpfactory` and must return either a
+            dictionary or a pair of dictionaries where the second dictionary is
+            passed as `givencov` argument to `GP.marginal_likelihood`.
+        raises : bool, optional
+            If True (default), raise an error when the minimization fails.
+            Otherwise, use the last point of the minimization as result.
+        minkw : dict, optional
+            Keyword arguments passed to `scipy.optimize.minimize`.
+        gpfactorykw : dict, optional
+            Keyword arguments passed to `gpfactory`, and also to `data` if it
+            is a callable.
     
-    # TODO add correlation of the output gvars with the hyperprior, it should
-    # be possible by using the implicit function theorem since we have both
-    # the gradient and the inverse of the hessian.
+        Attributes
+        ----------
+        p : scalar, array or dictionary of scalars/arrays
+            A collection of gvars representing the hyperparameters that
+            maximize the marginal likelihood. The covariance matrix is computed
+            as the inverse of the hessian of the marginal likelihood. These
+            gvars do not track correlations with the hyperprior or the data.
+        minresult : scipy.optimize.OptimizeResult
+            The result object returned by `scipy.optimize.minimize`.
+
+        Raises
+        ------
+        RuntimeError
+            The minimization failed and `raises` is True.
     
-    # TODO convert this function to a class, such that the raw minimizer
-    # result is always accessible as an attribute.
+        """
+        assert callable(gpfactory)
     
-    # TODO add the second order correction. It probably requires more than
-    # the gradient and inv_hess, but maybe by getting a little help from
-    # marginal_likelihood I can use the least-squares optimized second order
-    # correction on the residuals term and invent something for the logdet
-    # term.
+        # TODO would it be meaningful to add correlation of the fit result with
+        # the data and hyperprior?
     
-    # TODO it raises very often with "Desired error not necessarily achieved
-    # due to precision loss.". Change the default arguments of minimize to make
-    # this less frequent, but only after implement the quad-specific
-    # derivatives since maybe they will fix this. Another thing that may
-    # matter is the vjp of the logdet, which computes a matrix inverse.
-    # I could do the following: make an internal version of marginal_likelihood
-    # that returns separately the residuals and the logdet term, and do
-    # a backward derivative on the residuals and a forward on the logdet.
+        # TODO add the second order correction. It probably requires more than
+        # the gradient and inv_hess, but maybe by getting a little help from
+        # marginal_likelihood I can use the least-squares optimized second order
+        # correction on the residuals term and invent something for the logdet
+        # term.
     
-    hyperprior = _asarrayorbufferdict(hyperprior)
-    flathp = _flat(hyperprior)
-    hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks
-    chol = linalg.cholesky(hpcov, lower=True)
+        # TODO it raises very often with "Desired error not necessarily
+        # achieved due to precision loss.". Change the default arguments of
+        # minimize to make this less frequent, but only after implement the
+        # quad-specific derivatives since maybe they will fix this. Another
+        # thing that may matter is the vjp of the logdet, which computes a
+        # matrix inverse. I could do the following: make an internal version of
+        # marginal_likelihood that returns separately the residuals and the
+        # logdet term, and do a backward derivative on the residuals and a
+        # forward on the logdet.
     
-    # TODO use a decomposition from _linalg after I've implemented
-    # Decomposition.correlate.
+        hyperprior = _asarrayorbufferdict(hyperprior)
+        flathp = _flat(hyperprior)
+        hpmean = gvar.mean(flathp)
+        hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks (low priority)
+        hpdec = _linalg.EigCutFullRank(hpcov)
+        
+        if callable(data):
+            cachedargs = None
+        elif _flat(_asarrayorbufferdict(data)).dtype == object:
+            data = gvar.gvar(data)
+            datamean = gvar.mean(data)
+            datacov = gvar.evalcov(data)
+            cachedargs = (datamean, datacov)
+        else:
+            cachedargs = (data,)
     
-    hpmean = gvar.mean(flathp)
+        def fun(p):
+            priorchi2 = hpdec.quad(p - hpmean)
+
+            hp = _unflat(p, hyperprior)
+            gp = gpfactory(hp, **gpfactorykw)
+            assert isinstance(gp, _GP.GP)
+            
+            if not cachedargs:
+                args = data(hp, **gpfactorykw)
+                if not isinstance(args, tuple):
+                    args = (args,)
+            else:
+                args = cachedargs
+            ml = gp.marginal_likelihood(*args)
+            
+            return -ml + 1/2 * priorchi2
     
-    # TODO it may be inefficient that marginal_likelihood gets called every time
-    # with the same data when data is not a callable because it uses evalcov
-    # to extract the covariance of the data. It may easily become the
-    # bottleneck with correlated data. Extract the covariance one time and
-    # pass it to marginal_likelihood in `givencov`.
-    
-    def fun(p):
-        gp = gpfactory(_unflat(p, hyperprior))
-        assert isinstance(gp, _GP.GP)
-        res = p - hpmean
-        diagres = linalg.solve_triangular(chol, res, lower=True)
-        return -gp.marginal_likelihood(data) + 1/2 * np.sum(np.square(diagres))
-    
-    result = optimize.minimize(autograd.value_and_grad(fun), hpmean, jac=True)
-    if raises and not result.success:
-        raise RuntimeError('minimization failed: {}'.format(result.message))
-    uresult = gvar.gvar(result.x, result.hess_inv)
-    return _unflat(uresult, hyperprior)
+        result = optimize.minimize(autograd.value_and_grad(fun), hpmean, jac=True, **minkw)
+        if raises and not result.success:
+            raise RuntimeError('minimization failed: {}'.format(result.message))
+        uresult = gvar.gvar(result.x, result.hess_inv)
+        
+        self.p = _unflat(uresult, hyperprior)
+        self.minresult = result

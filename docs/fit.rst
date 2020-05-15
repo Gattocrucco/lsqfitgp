@@ -24,4 +24,4 @@
 Fitting
 =======
 
-.. autofunction:: empbayes_fit
+.. autoclass:: empbayes_fit

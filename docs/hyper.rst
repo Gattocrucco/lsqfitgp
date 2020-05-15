@@ -59,7 +59,8 @@ Enough chatter already, let's fit this damn `scale` parameter::
         gp.addx(x, 'sine')
         return gp
     hyperprior = {'log(scale)': gvar.log(gvar.gvar(3, 3))}
-    hp = lgp.empbayes_fit(hyperprior, makegp, {'sine': y})
+    fit = lgp.empbayes_fit(hyperprior, makegp, {'sine': y})
+    hp = fit.p
     print(hp['scale'])
 
 Output::
@@ -87,10 +88,10 @@ scale. Something like this is necessary because the scale must be a positive
 number: if we put ``'scale'`` in the hyperprior, the fitting routine would
 explore negative values too, and we would get a loud error from :class:`Kernel`.
 
-Finally, we give everything to the function :func:`empbayes_fit`: the
-hyperprior, the gp-creating function, and a dictionary of data like we would
-pass to :meth:`~GP.predfromdata`. The returned dictionary is the fit result
-for the hyperparameters.
+Finally, we give everything to the class :class:`empbayes_fit`: the hyperprior,
+the gp-creating function, and a dictionary of data like we would pass to
+:meth:`~GP.predfromdata`. The attribute `p` is a dictionary containing the fit
+result for the hyperparameters.
 
 Now that we have found the optimal scale, we can use it to create a gp object
 and take some samples. However, since the hyperparameter has an uncertainty,
@@ -136,7 +137,8 @@ constant::
         'log(scale)': gvar.log(gvar.gvar(3, 3))
     }
     
-    hp = lgp.empbayes_fit(hyperprior, makegp, {'sine': y})
+    fit = lgp.empbayes_fit(hyperprior, makegp, {'sine': y})
+    hp = fit.p
     print('sdev', hp['sdev'])
     print('scale', hp['scale'])
 
@@ -144,7 +146,7 @@ constant::
 
    I did ``lgp.ExpQuad(scale=scale) * variance`` instead of ``variance *
    lgp.ExpQuad(scale=scale)``. The latter would fail due to a bug. When using
-   :func:`empbayes_fit`, Kernel-scalar operations have to be done with the
+   :class:`empbayes_fit`, Kernel-scalar operations have to be done with the
    Kernel on the left.
 
 .. note::
@@ -334,12 +336,12 @@ of having sdev < 1 is 1.5 %, and by doing a more accurate computation that
 keeps into account that the distribution is actually non-gaussian I manage to
 get it to 1.6 %, four times as much as :mod:`lsqfitgp`'s answer, but still low.
 
-What did we learn? First, that :func:`empbayes_fit` is not so accurate, it just
-gives a reasonable estimate of the mean and covariance matrix of the posterior
-for the hyperparameters. This is because it is much faster than, for example,
-:mod:`pymc3` (tipically just starting up :mod:`pymc3` takes more time than
-doing a fit with :mod:`lsqfitgp`). So, when computing sensitive quantities like
-the probability of a tail of the distribution, the result can become quite
+What did we learn? First, that :class:`empbayes_fit` is not so accurate, it
+just gives a reasonable estimate of the mean and covariance matrix of the
+posterior for the hyperparameters. This is because it is much faster than, for
+example, :mod:`pymc3` (tipically just starting up :mod:`pymc3` takes more time
+than doing a fit with :mod:`lsqfitgp`). So, when computing sensitive quantities
+like the probability of a tail of the distribution, the result can become quite
 wrong.
 
 Second, we learned that I was wrong and effectively it is not very likely,
@@ -421,7 +423,8 @@ easy as cheating actually if we use the :class:`Periodic` kernel::
     hprior = {
         'log(period)': gvar.log(2 * np.pi * gvar.gvar(1, 1)),
     }
-    hp = lgp.empbayes_fit(hprior, makegp, {'sine': y})
+    fit = lgp.empbayes_fit(hprior, makegp, {'sine': y})
+    hp = fit.p
     for k, v in hp.items():
         print(k, v)
         wo_log = k[4:-1]

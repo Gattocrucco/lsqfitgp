@@ -71,6 +71,8 @@ from ._imports import sparse
 
 # TODO investigate using the QR decomposition.
 
+# TODO add a class BlockDiagDecomp for decomposing block diagonal matrices.
+
 def noautograd(x):
     """
     Unpack an autograd numpy array.

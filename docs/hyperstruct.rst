@@ -25,9 +25,9 @@ Hyperparameters in the input
 ============================
 
 This section is a bit technical, I will just explain a workaround necessary to
-make :func:`empbayes_fit` work when the hyperparameters enter in the definition
-of the gaussian process from the input points instead of from the kernel
-parameters and the input points are multidimensional.
+make :class:`empbayes_fit` work when the hyperparameters enter in the
+definition of the gaussian process from the input points instead of from the
+kernel parameters and the input points are multidimensional.
 
 Let's say you are investigating on a case of disappeared cats in a village. You
 want to study the correlation between the number of new cars bought per day and
@@ -100,8 +100,9 @@ Let's fit now::
         'func(corr)': gvar.BufferDict.uniform('func', -1, 1),
         'log(scale)': gvar.log(gvar.gvar(3, 1))
     }
-   
-   hp = lgp.empbayes_fit(hprior, makegp, {'data': data})
+
+    fit = lgp.empbayes_fit(hprior, makegp, {'data': data})
+    hp = fit.p
 
 When I run this last piece of code, it fails with::
 
@@ -136,17 +137,18 @@ assigning to fields without breaking autograd::
         
         return gp
     
-    hp = lgp.empbayes_fit(hprior, makegp, {'data': data}, raises=False)
+    fit = lgp.empbayes_fit(hprior, makegp, {'data': data}, raises=False)
         # we use raises=False because the minimizer is a bit picky.
+    hp = fit.p
     
     for k in truehp:
         print(k, truehp[k], hp[k])
 
 Output::
 
-   delay 10 9.87(21)
-   corr 0.7 0.69(12)
-   scale 3 2.962(33)
+   delay 10 10.57(28)
+   corr 0.7 0.66(14)
+   scale 3 2.993(36)
 
 It seems to work. Let's plot some samples::
 

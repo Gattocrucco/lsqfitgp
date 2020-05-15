@@ -135,7 +135,7 @@ some hundreds of datapoints the next bottleneck is probably in
 :meth:`GP.predfromdata`. Making it faster is quick: select a solver different
 from the default one when initializing the :class:`GP` object, like
 ``GP(kernel, solver='gersh')``. This applies also when using
-:func:`empbayes_fit`. And don't forget to disable the positivity check:
+:class:`empbayes_fit`. And don't forget to disable the positivity check:
 ``GP(kernel, solver='gersh', checkpos=False)``.
 
 Finally, if you have written a custom kernel, it may become a bottleneck. For
