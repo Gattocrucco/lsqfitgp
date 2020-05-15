@@ -25,7 +25,7 @@ from ._array import *
 from ._fit import *
 from ._Deriv import *
 
-__version__ = '0.3'
+__version__ = '0.4'
 
 __doc__ = """
 
