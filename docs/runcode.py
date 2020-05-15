@@ -23,6 +23,8 @@ them. Or, run the files specified on the command line."""
 import re
 import sys
 import numpy as np
+from matplotlib import pyplot as plt
+import gvar
 
 from pygments import highlight
 from pygments.lexers import PythonLexer
@@ -38,8 +40,13 @@ pattern = re.compile(r'::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
 def runcode(file):
     with open(file, 'r') as stream:
         text = stream.read()
-    globals_dict = {}
+    
+    # reset working environment
+    plt.close('all')
+    gvar.switch_gvar()
     np.random.seed(0)
+    globals_dict = {}
+    
     for match in pattern.finditer(text):
         codeblock = match.group(1)
         print('---------------------------------------------------------\n')
