@@ -650,7 +650,7 @@ class GP:
         if raw and outkeys is not None:
             return {
                 (row, col):
-                self._covblock(row, col)
+                self._covblock(row, col).reshape(self._elements[row].shape + self._elements[col].shape)
                 for row in outkeys
                 for col in outkeys
             }
