@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
+import warnings
 
 from ._imports import gvar
 from ._imports import numpy as np
@@ -28,7 +29,7 @@ __all__ = [
     'raniter'
 ]
 
-def raniter(mean, cov, n=None):
+def raniter(mean, cov, n=None, eps=None):
     """
     
     Take random samples from a multivariate gaussian.
@@ -45,6 +46,10 @@ def raniter(mean, cov, n=None):
         dictionary with pair of keys from `mean` as keys.
     n : int, optional
         The maximum number of iterations. Default unlimited.
+    eps : float, optional
+        Used to correct the eigenvalues of the matrix to handle non-positivity
+        due to roundoff, relative to the largest eigenvalue. Default is number
+        of variables times floating point epsilon.
     
     Yields
     ------
@@ -78,12 +83,13 @@ def raniter(mean, cov, n=None):
         flatmean = mean.reshape(-1)
         squarecov = cov.reshape(len(flatmean), len(flatmean))
 
-    # compute the cholesky decomposition
-    covdec = _linalg.CholGersh(squarecov)
+    # decompose the covariance matrix
+    try:
+        covdec = _linalg.CholGersh(squarecov, eps=eps)
+    except np.linalg.LinAlgError:
+        warnings.warn('covariance matrix not positive definite with eps={}'.format(eps))
+        covdec = _linalg.EigCutFullRank(squarecov, eps=eps)
     
-    # TODO add a parameter maxeps and if the decomposition fails try it again
-    # until reaching maxeps.
-
     # take samples
     iterable = itertools.count() if n is None else range(n)
     for _ in iterable:

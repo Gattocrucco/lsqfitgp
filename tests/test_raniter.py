@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import warnings
 
 import numpy as np
 from scipy import stats
@@ -58,3 +59,10 @@ def test_raniter_packing():
     np.random.seed(0)
     s2 = next(lgp.raniter(dmean, dcov))
     assert np.array_equal(s1, s2.buf)
+
+def test_raniter_warning():
+    cov = np.array([1, 1.1, 1.1, 1]).reshape(2, 2)
+    with warnings.catch_warnings(record=True) as w:
+        next(lgp.raniter(np.zeros(len(cov)), cov))
+        assert len(w) == 1
+        assert 'positive definite' in str(w[0].message)
