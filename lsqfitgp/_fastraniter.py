@@ -87,8 +87,8 @@ def raniter(mean, cov, n=None):
     # take samples
     iterable = itertools.count() if n is None else range(n)
     for _ in iterable:
-        iidsamp = np.random.randn(len(squarecov))
-        samp = covdec.correlate(iidsamp)
+        iidsamp = np.random.randn(len(flatmean))
+        samp = flatmean + covdec.correlate(iidsamp)
 
         # pack the samples with the original shape
         if hasattr(mean, 'keys'):

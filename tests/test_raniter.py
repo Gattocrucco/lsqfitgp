@@ -32,13 +32,13 @@ def make_mean_cov(n):
     return mean, cov
 
 def test_raniter_randomness():
-    n = 20
+    n = 40
     mean, cov = make_mean_cov(n)
-    samples = list(lgp.raniter(mean, cov, 100))
+    samples = list(lgp.raniter(mean, cov, 200))
     smean = np.mean(samples, axis=0)
     scov = np.cov(samples, rowvar=False, ddof=1)
     w, v = np.linalg.eigh(scov / len(samples))
-    vsm = v.T @ smean
+    vsm = v.T @ (smean - mean)
     eps = n * 1e-12 * np.max(w)
     q = (vsm.T / np.maximum(w, eps)) @ vsm
     assert stats.chi2(n).sf(q) > 1e-5
