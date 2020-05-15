@@ -121,10 +121,10 @@ Let's benchmark it::
 
 Output::
 
-   gvar.raniter: 1.72 s
-   fastraniter: 0.0262 s
+   gvar.raniter: 1.04 s
+   fastraniter: 0.0295 s
 
-So it is 50x faster than :func:`gvar.raniter`. In general the :class:`GP`
+So it is 30x faster than :func:`gvar.raniter`. In general the :class:`GP`
 methods have options for doing everything without :mod:`gvar`, but don't try to
 use all of them mindlessly before profiling the code to know where the
 bottleneck actually is. Python has the module :mod:`profile` for that, and in
