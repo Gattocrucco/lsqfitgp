@@ -44,57 +44,17 @@ standard deviation band instead of taking samples, but it is less informative.
 I'm working with :mod:`gvar`'s author to make :func:`gvar.raniter` more
 efficient; in the meantime, you can bypass :mod:`gvar` altogether using the
 `raw` option of :meth:`GP.predfromdata`, which will make it return separately
-the posterior mean and covariance matrix. Here's a version of
-:func:`gvar.raniter` for taking samples from the mean and covariance directly::
+the posterior mean and covariance matrix, and using :func:`raniter` which
+imitates :func:`gvar.raniter` but takes the mean and covariance separately.
+Let's benchmark::
 
-    import gvar
-    from scipy import linalg
+    import time
     import numpy as np
-    import itertools
+    import gvar
+    import lsqfitgp as lgp
     
-    def fastraniter(mean, cov, n=None):
-    
-        # convert mean and cov to 1d and 2d arrays
-        if hasattr(mean, 'keys'): # a dict or gvar.BufferDict
-            if not hasattr(mean, 'buf'):
-                mean = gvar.BufferDict(mean)
-            flatmean = mean.buf
-            squarecov = np.empty((len(flatmean), len(flatmean)))
-            for k1 in mean:
-                slic1 = mean.slice(k1)
-                for k2 in mean:
-                    slic2 = mean.slice(k2)
-                    squarecov[slic1, slic2] = cov[k1, k2]
-        else: # an array or scalar
-            mean = np.array(mean, copy=False)
-            cov = np.array(cov, copy=False)
-            flatmean = mean.reshape(-1)
-            squarecov = cov.reshape(len(flatmean), len(flatmean))
-        
-        # compute the cholesky decomposition
-        maxeigv_bound = np.max(np.sum(np.abs(squarecov), axis=-1))
-        eps = np.finfo(float).eps
-        squarecov[np.diag_indices(len(squarecov))] += len(squarecov) * eps * maxeigv_bound
-        L = linalg.cholesky(squarecov, lower=True)
-        
-        # take samples
-        iterable = itertools.count() if n is None else range(n)
-        for _ in iterable:
-            iidsamp = np.random.randn(len(squarecov))
-            samp = L @ iidsamp
-            
-            # pack the samples with the original shape
-            if hasattr(mean, 'keys'):
-                samp = gvar.BufferDict(mean, buf=samp)
-            else:
-                samp = samp.reshape(mean.shape) if mean.shape else samp.item
-            
-            yield samp
-
-Let's benchmark it::
-
-    # make 500 correlated variables
-    n = 500
+    # make 1000 correlated variables
+    n = 1000
     a, b = np.random.randn(2, n, n)
     cov = a.T @ a
     mean = np.random.randn(n)
@@ -103,28 +63,25 @@ Let's benchmark it::
     xmean = b @ mean
     xcov = b @ cov @ b.T
     
-    import time
+    def benchmark(N, gen, *args):
+        times = []
+        for _ in range(N):
+            start = time.time()
+            next(gen(*args))
+            end = time.time()
+            times.append(end - start)
+        t = gvar.gvar(np.mean(times), np.std(times, ddof=1))
+        print('{}.{}: {} s'.format(gen.__module__, gen.__name__, t))
     
-    N = 2
-    
-    start = time.time()
-    for _ in range(N):
-        next(gvar.raniter(x))
-    end = time.time()
-    print('gvar.raniter: {:.3g} s'.format((end - start) / N))
-    
-    start = time.time()
-    for _ in range(N):
-        next(fastraniter(xmean, xcov))
-    end = time.time()
-    print('fastraniter: {:.3g} s'.format((end - start) / N))
+    benchmark(3, gvar.raniter, x)
+    benchmark(10, lgp.raniter, xmean, xcov)
 
 Output::
 
-   gvar.raniter: 1.04 s
-   fastraniter: 0.0295 s
+   gvar._utilities.raniter: 0.823(13) s
+   lsqfitgp._fastraniter.raniter: 0.0561(19) s
 
-So it is 30x faster than :func:`gvar.raniter`. In general the :class:`GP`
+So it is 15x faster than :func:`gvar.raniter`. In general the :class:`GP`
 methods have options for doing everything without :mod:`gvar`, but don't try to
 use all of them mindlessly before profiling the code to know where the
 bottleneck actually is. Python has the module :mod:`profile` for that, and in

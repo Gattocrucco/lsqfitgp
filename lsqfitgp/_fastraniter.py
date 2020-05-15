@@ -47,9 +47,9 @@ def raniter(mean, cov, n=None, eps=None):
     n : int, optional
         The maximum number of iterations. Default unlimited.
     eps : float, optional
-        Used to correct the eigenvalues of the matrix to handle non-positivity
-        due to roundoff, relative to the largest eigenvalue. Default is number
-        of variables times floating point epsilon.
+        Used to correct the eigenvalues of the covariance matrix to handle
+        non-positivity due to roundoff, relative to the largest eigenvalue.
+        Default is number of variables times floating point epsilon.
     
     Yields
     ------

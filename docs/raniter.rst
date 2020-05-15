@@ -1,4 +1,4 @@
-.. lsqfitgp/docs/reference.rst
+.. lsqfitgp/docs/raniter.rst
 ..
 .. Copyright (c) 2020, Giacomo Petrillo
 ..
@@ -17,24 +17,9 @@
 .. You should have received a copy of the GNU General Public License
 .. along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-Reference manual
-================
+.. currentmodule:: lsqfitgp
 
-This is a concise report of all the functionality of :mod:`lsqfitgp`. Most of
-this information can also be accessed with the Python help system directly from
-a shell with ``import lsqfitgp; help(lsqfitgp)``.
+Random sampling
+===============
 
-.. toctree::
-    :numbered:
-
-    kernelsref.rst
-    kernel.rst
-    kerneldec.rst
-    kernelop.rst
-    deriv.rst
-    gp.rst
-    array.rst
-    fit.rst
-    raniter.rst
-
-.. TODO decompositions reference under "Linear Algebra"
+.. autofunction:: raniter
