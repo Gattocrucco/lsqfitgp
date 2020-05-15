@@ -607,3 +607,6 @@ class BlockDecomp:
             fTinvPQtildeSi = tildeS.quad(QTinvPf, i)
             gTtildeSQTinvPh = tildeS.quad(g, QTinvPh)
             return invP.quad(f, h) + tildeS.quad(QTinvPf, QTinvPh) - fTinvPQtildeSi - gTtildeSQTinvPh + tildeS.quad(g, i)
+    
+    def logdet(self):
+        return self._invP.logdet() + self._tildeS.logdet()
