@@ -25,7 +25,7 @@ from ._imports import numpy as np
 from . import _linalg
 
 __all__ = [
-    'fastraniter'
+    'raniter'
 ]
 
 def raniter(mean, cov, n=None):
