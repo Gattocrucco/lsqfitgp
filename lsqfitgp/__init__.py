@@ -24,6 +24,7 @@ from ._kernels import *
 from ._array import *
 from ._fit import *
 from ._Deriv import *
+from ._fastraniter import *
 
 __version__ = '0.4'
 
