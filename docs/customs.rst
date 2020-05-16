@@ -24,6 +24,13 @@
 A custom kernel: text classification
 ====================================
 
+.. warning::
+
+   This tutorial was run with an old version of :mod:`lsqfitgp` which had poor
+   numerical accuracy. The uncertainties of the output numbers are wrong, and
+   considerations based on them are random. The results still hold though. I'll
+   soon update the tutorial with the latest release.
+
 In the previous sections of the manual we always used the :class:`ExpQuad`
 kernel. There are many other kernels available in the module; however, it will
 be useful to build at least once our own kernel to understand more about how
@@ -356,7 +363,4 @@ Output::
 
    {'caesar': 0.7311(14),'milton': -1.2688(14)}
 
-This time both means are around one and the standard deviations are the same.
-Moreover, if you look back at the previous result, you'll see that the standard
-deviations have decreased by more than a factor of 10, so it is definitely
-working better.
+This time both means are around one.
