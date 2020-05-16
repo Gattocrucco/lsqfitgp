@@ -29,3 +29,6 @@ def test_prior_raw_shape():
     gp.addx(np.arange(20).reshape(2, 10), 'x')
     cov = gp.prior(raw=True)
     assert cov['x', 'x'].shape == (2, 10, 2, 10)
+    
+    cov = gp.prior('x', raw=True)
+    assert cov.shape == (2, 10, 2, 10)

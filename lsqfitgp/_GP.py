@@ -655,7 +655,7 @@ class GP:
                 for col in outkeys
             }
         elif raw:
-            return self._covblock(key, key)
+            return self._covblock(key, key).reshape(2 * self._elements[key].shape)
         elif outkeys is not None:
             return gvar.BufferDict({
                 key: self._prior(key) for key in outkeys
