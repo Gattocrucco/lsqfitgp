@@ -87,6 +87,20 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = funjac(s, n, b)
             assert np.allclose(sol, result, rtol=1e-3)
 
+    def test_solve_vec_jac_fwd(self):
+        def fun(s, n, b):
+            K = self.mat(s, n)
+            return self.decompclass(K).solve(b)
+        funjac = autograd.deriv(fun)
+        for n in range(1, MAXSIZE):
+            s = np.exp(np.random.uniform(-1, 1))
+            K = self.mat(s, n)
+            dK = self.matjac(s, n)
+            b = self.randvec(n)
+            sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
+            result = funjac(s, n, b)
+            assert np.allclose(sol, result, rtol=1e-3)
+
     def test_solve_matrix(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)

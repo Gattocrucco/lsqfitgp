@@ -163,11 +163,11 @@ class DecompMeta(abc.ABCMeta):
         
         def solve_jvp_K(g, ans, self, K, b):
             assert ans.shape == b.shape
-            assert b.shape[0] == K.shape[0] == K.shape[1]
+            assert ans.shape[0] == K.shape[0] == K.shape[1]
             assert g.shape[:2] == K.shape
             invKg = solve_autograd(self, K, g)
-            ans = ans.reshape(b.shape[0], -1)
-            jvp = -np.tensordot(invKg, ans, axes=(1, 0))
+            ans2D = ans.reshape(ans.shape[0], -1)
+            jvp = -np.tensordot(invKg, ans2D, axes=(1, 0))
             jvp = np.moveaxis(jvp, -1, 1)
             return jvp.reshape(ans.shape + g.shape[2:])
         
