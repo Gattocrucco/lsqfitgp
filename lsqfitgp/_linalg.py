@@ -196,80 +196,132 @@ class DecompMeta(abc.ABCMeta):
     @staticmethod
     def make_quad(oldquad):
         
-        # @autograd.extend.primitive
-        # def quad_autograd(self, K, b):
-        #     return oldquad(self, b)
-        #
-        # def quad_vjp_K(ans, self, K, b):
-        #     bshape = b.shape[1:]
-        #     assert ans.shape == tuple(reversed(bshape)) + bshape
-        #     assert b.shape[0] == K.shape[0] == K.shape[1]
-        #     def vjp(g):
-        #         assert g.shape[len(g.shape) - len(ans.shape):] == ans.shape
-        #         invKb = self.solve._autograd(self, K, b)
-        #
-        #         axes = 2 * (tuple(range(-len(bshape), 0)),)
-        #         ginvKb = np.tensordot(g, invKb, axes)
-        #
-        #         axes = 2 * (tuple(range(-len(bshape) - 1, -1)),)
-        #         ginvKb2 = np.tensordot(ginvKb, invKb.T, axes)
-        #
-        #         assert ginvKb2.shape == g.shape[:len(g.shape) - len(ans.shape)] + K.shape
-        #         return -ginvKb2
-        #     return vjp
-        #
-        # def quad_vjp_b(ans, self, K, b):
-        #     bshape = b.shape[1:]
-        #     assert ans.shape == tuple(reversed(bshape)) + bshape
-        #     assert b.shape[0] == K.shape[0] == K.shape[1]
-        #     def vjp(g):
-        #         assert g.shape[len(g.shape) - len(ans.shape):] == ans.shape
-        #         invKb = self.solve._autograd(self, K, b)
-        #
-        #         axes = (
-        #             tuple(range(-len(bshape) - 1, -2 * len(bshape) - 1, -1)),
-        #             tuple(range(-len(bshape), 0))
-        #         )
-        #         gj = 2 * np.tensordot(g, invKb, axes)
-        #
-        #         gj = np.moveaxis(gj, -1, -len(bshape) - 1)
-        #         assert gj.shape == g.shape[:len(g.shape) - len(ans.shape)] + b.shape
-        #         return gj
-        #     return vjp
-        #
-        # autograd.extend.defvjp(
-        #     quad_autograd,
-        #     quad_vjp_K,
-        #     quad_vjp_b,
-        #     argnums=[1, 2]
-        # )
-        #
-        # def quad(self, b):
-        #     return quad_autograd(self, self._K, b)
-        
+        @autograd.extend.primitive
+        def quad_autograd(self, K, b, c):
+            return oldquad(self, b, c)
+
+        def quad_vjp_K(ans, self, K, b, c):
+            assert b.shape[0] == K.shape[0] == K.shape[1]
+            bshape = b.shape[1:]
+            if c is None:
+                cshape = bshape
+            else:
+                assert c.shape[0] == b.shape[0]
+                cshape = c.shape[1:]
+            assert ans.shape == tuple(reversed(bshape)) + cshape
+
+            def vjp(g):
+                assert g.shape[len(g.shape) - len(ans.shape):] == ans.shape
+                
+                invKb = self.solve._autograd(self, K, b)
+                if c is None:
+                    invKc = invKb
+                else:
+                    invKc = self.solve._autograd(self, K, c)
+
+                axes = 2 * (tuple(range(-len(cshape), 0)),)
+                ginvKc = np.tensordot(g, invKc, axes)
+
+                axes = 2 * (tuple(range(-len(bshape) - 1, -1)),)
+                ginvKcb = np.tensordot(ginvKc, invKb.T, axes)
+
+                assert ginvKcb.shape == g.shape[:len(g.shape) - len(ans.shape)] + K.shape
+                return -ginvKcb
+            return vjp
+
+        def quad_vjp_b(ans, self, K, b, c):
+            assert b.shape[0] == K.shape[0] == K.shape[1]
+            bshape = b.shape[1:]
+            if c is None:
+                cshape = bshape
+            else:
+                assert c.shape[0] == b.shape[0]
+                cshape = c.shape[1:]
+            assert ans.shape == tuple(reversed(bshape)) + cshape
+
+            if c is None:
+                def vjp(g):
+                    glen = len(g.shape) - len(ans.shape)
+                    assert g.shape[glen:] == ans.shape
+            
+                    invKb = self.solve._autograd(self, K, b)
+
+                    axes = 2 * (range(-len(bshape), 0),)
+                    gj1 = np.tensordot(g, invKb, axes)
+
+                    axes = tuple(range(glen))
+                    axes += tuple(reversed(range(glen, len(gj1.shape))))
+                    gj1 = np.transpose(gj1, axes)
+                    assert gj1.shape == g.shape[:glen] + b.shape
+                    
+                    axes = (
+                        tuple(range(-len(bshape) - 1, -2 * len(bshape) - 1, -1)),
+                        tuple(range(-len(bshape), 0))
+                    )
+                    gj2 = np.tensordot(g, invKb, axes)
+
+                    gj2 = np.moveaxis(gj2, -1, -len(bshape) - 1)
+                    assert gj2.shape == gj1.shape
+
+                    return gj1 + gj2
+            else:
+                def vjp(g):
+                    glen = len(g.shape) - len(ans.shape)
+                    assert g.shape[glen:] == ans.shape
+            
+                    invKc = self.solve._autograd(self, K, c)
+
+                    axes = 2 * (range(-len(cshape), 0),)
+                    gj = np.tensordot(g, invKc, axes)
+
+                    axes = tuple(range(glen))
+                    axes += tuple(reversed(range(glen, len(gj.shape))))
+                    gj = np.transpose(gj, axes)
+                    assert gj.shape == g.shape[:glen] + b.shape
+                    return gj
+            
+            return vjp
+
+        def quad_vjp_c(ans, self, K, b, c):
+            assert b.shape[0] == K.shape[0] == K.shape[1]
+            assert c.shape[0] == b.shape[0]
+            bshape = b.shape[1:]
+            cshape = c.shape[1:]
+            assert ans.shape == tuple(reversed(bshape)) + cshape
+
+            def vjp(g):
+                assert g.shape[len(g.shape) - len(ans.shape):] == ans.shape
+            
+                invKb = self.solve._autograd(self, K, b)
+
+                axes = (
+                    tuple(range(-len(cshape) - 1, -len(cshape) - len(bshape) - 1, -1)),
+                    tuple(range(-len(bshape), 0))
+                )
+                gj = np.tensordot(g, invKb, axes)
+
+                gj = np.moveaxis(gj, -1, -len(cshape) - 1)
+                assert gj.shape == g.shape[:len(g.shape) - len(ans.shape)] + c.shape
+                return gj
+            
+            return vjp
+
+        autograd.extend.defvjp(
+            quad_autograd,
+            quad_vjp_K,
+            quad_vjp_b,
+            quad_vjp_c,
+            argnums=[1, 2, 3]
+        )
+
+        def quad(self, b, c=None):
+            return quad_autograd(self, self._K, b, c)
+
         # def quad(self, b):
         #     if isinstance(self._K, np.numpy_boxes.ArrayBox):
         #         return b.T @ self.solve(b)
         #     else:
         #         return oldquad(self, b)
-        
-        BoxClass = np.numpy_boxes.ArrayBox
-
-        def lastbox(x):
-            if not isinstance(x, BoxClass) or not isinstance(x._value, BoxClass):
-                return x
-            else:
-                return lastbox(x._value)
-
-        # This hacked solution turned out to be more numerically accurate
-        # than the handwritten vjps.
-        def quad(self, b, c=None):
-            if any(isinstance(x, BoxClass) for x in (self._K, b, c)):
-                box = b.T @ self.solve(b if c is None else c)
-                lastbox(box)._value = oldquad(self, noautograd(b), noautograd(c))
-                return box
-            else:
-                return oldquad(self, b, c)
         
         return quad
     
