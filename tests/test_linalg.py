@@ -265,6 +265,19 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fungrad(s, n)
             assert np.allclose(sol, result, rtol=1e-4)
     
+    def test_logdet_grad_fwd(self):
+        def fun(s, n):
+            K = self.mat(s, n)
+            return self.decompclass(K).logdet()
+        fungrad = autograd.deriv(fun)
+        for n in range(1, MAXSIZE):
+            s = np.exp(np.random.uniform(-1, 1))
+            K = self.mat(s, n)
+            dK = self.matjac(s, n)
+            sol = np.trace(self.solve(K, dK))
+            result = fungrad(s, n)
+            assert np.allclose(sol, result, rtol=1e-4)
+    
     # TODO test second derivatives
     
     # TODO test derivatives w.r.t. b

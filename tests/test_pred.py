@@ -27,6 +27,8 @@ import gvar
 sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
 
+# TODO add gpkw for setting checksym, checkpos, solvers
+
 def pred(kw, seed, err):
     np.random.seed(seed)
     x = np.random.uniform(-5, 5, size=20)
