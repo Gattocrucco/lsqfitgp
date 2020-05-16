@@ -124,8 +124,6 @@ class DecompMeta(abc.ABCMeta):
     @staticmethod
     def make_solve(oldsolve):
         
-        # TODO add jvp
-        
         @autograd.extend.primitive
         def solve_autograd(self, K, b):
             return oldsolve(self, b)
@@ -163,8 +161,32 @@ class DecompMeta(abc.ABCMeta):
             argnums=[1, 2]
         )
         
+        def solve_jvp_K(g, ans, self, K, b):
+            assert ans.shape == b.shape
+            assert b.shape[0] == K.shape[0] == K.shape[1]
+            assert g.shape[:2] == K.shape
+            invKg = solve_autograd(self, K, g)
+            ans = ans.reshape(b.shape[0], -1)
+            jvp = -np.tensordot(invKg, ans, axes=(1, 0))
+            jvp = np.moveaxis(jvp, -1, 1)
+            return jvp.reshape(ans.shape + g.shape[2:])
+        
+        def solve_jvp_b(g, ans, self, K, b):
+            assert ans.shape == b.shape
+            assert b.shape[0] == K.shape[0] == K.shape[1]
+            assert g.shape[:len(b.shape)] == b.shape
+            return solve_autograd(self, K, g)
+        
+        autograd.extend.defjvp(
+            solve_autograd,
+            solve_jvp_K,
+            solve_jvp_b,
+            argnums=[1, 2]
+        )
+        
         def solve(self, b):
             return solve_autograd(self, self._K, b)
+        
         # solve_autograd is used by logdet_vjp, so I store it here in case
         # logdet but not solve needs wrapping in a subclass
         solve._autograd = solve_autograd
@@ -272,13 +294,11 @@ class DecompMeta(abc.ABCMeta):
             argnums=[1]
         )
         
-        def logdet_jvp(ans, self, K):
+        def logdet_jvp(g, ans, self, K):
             assert ans.shape == ()
             assert K.shape[0] == K.shape[1]
-            def jvp(g):
-                assert g.shape[:2] == K.shape
-                return np.trace(self.solve._autograd(self, K, g))
-            return jvp
+            assert g.shape[:2] == K.shape
+            return np.trace(self.solve._autograd(self, K, g))
         
         autograd.extend.defjvp(
             logdet_autograd,
