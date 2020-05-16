@@ -17,7 +17,7 @@ release: tests examples docscode docs
 	python setup.py sdist bdist_wheel
 
 tests:
-	pytest
+	coverage run -m pytest
 
 EXAMPLES = $(wildcard examples/*.py)
 .PHONY: $(EXAMPLES)
