@@ -18,6 +18,7 @@ release: tests examples docscode docs
 
 tests:
 	coverage run -m pytest
+	coverage html
 
 EXAMPLES = $(wildcard examples/*.py)
 .PHONY: $(EXAMPLES)
