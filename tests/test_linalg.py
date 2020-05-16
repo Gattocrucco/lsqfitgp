@@ -294,7 +294,9 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     
     # TODO test second derivatives
     
-    # TODO test derivatives w.r.t. b
+    # TODO test derivatives w.r.t. b, c
+    
+    # TODO test inv()
 
 class DecompTestCorr(DecompTestBase):
     """Tests for `correlate` and `decorrelate` are defined in this

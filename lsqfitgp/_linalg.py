@@ -363,6 +363,7 @@ class DecompMeta(abc.ABCMeta):
 
         def quad(self, b, c=None):
             return quad_autograd(self, self._K, b, c)
+        quad._autograd = quad_autograd
 
         return quad
     
@@ -377,7 +378,7 @@ class DecompMeta(abc.ABCMeta):
             assert ans.shape == ()
             assert K.shape[0] == K.shape[1]
             def vjp(g):
-                invK = self.solve._autograd(self, K, np.eye(len(K)))
+                invK = self.quad._autograd(self, K, np.eye(len(K)), None)
                 return g[..., None, None] * invK
             return vjp
         
@@ -416,6 +417,7 @@ class Decomposition(metaclass=DecompMeta):
     logdet
     correlate
     decorrelate
+    inv
     
     """
     
@@ -464,6 +466,12 @@ class Decomposition(metaclass=DecompMeta):
         covariance matrix K, x has identity covariance.
         """
         pass
+    
+    def inv(self):
+        """
+        Invert the matrix.
+        """
+        return self.quad(np.eye(len(self._K)))
 
 class Diag(Decomposition):
     """
