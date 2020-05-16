@@ -58,11 +58,6 @@ from ._imports import linalg
 from ._imports import autograd
 from ._imports import sparse
 
-# TODO check solve and quad work with >2D b. Probably I need to reshape
-# b to 2D, do the calculation and then reshape back. When it works, write
-# clearly the contraction convention in the docstrings. (Low priority, I never
-# use this in the GP code.)
-
 # TODO optimize the matrix multiplication with gvars. Use these gvar internals:
 # gvar.svec(int size)
 # gvar.svec._assign(float[] values, int[] indices)
@@ -94,6 +89,9 @@ def asinexact(dtype):
 class DecompMeta(abc.ABCMeta):
     """
     Metaclass for adding autograd support to subclasses of Decomposition.
+    Moreover, it fixes the convention of tensor multiplication by passing
+    the concrete class methods only 2d matrices and then reshaping back the
+    result.
     """
         
     def __init__(cls, *args):
@@ -126,7 +124,8 @@ class DecompMeta(abc.ABCMeta):
         
         @autograd.extend.primitive
         def solve_autograd(self, K, b):
-            return oldsolve(self, b)
+            b2d = b.reshape(b.shape[0], -1)
+            return oldsolve(self, b2d).reshape(b.shape)
         
         def solve_vjp_K(ans, self, K, b):
             assert ans.shape == b.shape
@@ -198,7 +197,14 @@ class DecompMeta(abc.ABCMeta):
         
         @autograd.extend.primitive
         def quad_autograd(self, K, b, c):
-            return oldquad(self, b, c)
+            b2d = b.reshape(b.shape[0], -1)
+            if c is None:
+                outshape = b.shape[1:][::-1] + b.shape[1:]
+                return oldquad(self, b2d).reshape(outshape)
+            else:
+                c2d = c.reshape(c.shape[0], -1)
+                outshape = b.shape[1:][::-1] + c.shape[1:]
+                return oldquad(self, b2d, c2d).reshape(outshape)
 
         def quad_vjp_K(ans, self, K, b, c):
             assert b.shape[0] == K.shape[0] == K.shape[1]
@@ -313,16 +319,51 @@ class DecompMeta(abc.ABCMeta):
             quad_vjp_c,
             argnums=[1, 2, 3]
         )
+        
+        def quad_jvp_K(g, ans, self, K, b, c):
+            if c is None:
+                c = b
+            bshape = b.shape[1:]
+            cshape = c.shape[1:]
+            assert ans.shape == tuple(reversed(bshape)) + cshape
+            assert g.shape[:2] == K.shape
+            g3d = g.reshape(K.shape + (-1,))
+            ginvKc = quad_autograd(self, K, g3d, c)
+            ginvKc = np.moveaxis(ginvKc, 0, -1)
+            ginvKc = ginvKc.reshape(c.shape + g.shape[2:])
+            jvp = -quad_autograd(self, K, b, ginvKc)
+            assert jvp.shape == ans.shape + g.shape[2:]
+            return jvp
+        
+        def quad_jvp_b(g, ans, self, K, b, c):
+            assert g.shape[:len(b.shape)] == b.shape
+            g1d = g.reshape(b.shape + (-1,))
+            if c is None:
+                jvp = quad_autograd(self, K, b, g1d)
+                jvpT = np.moveaxis(jvp.T, 0, -1)
+                jvp = jvp + jvpT
+            else:
+                jvp = quad_autograd(self, K, g1d, c)
+                jvp = np.moveaxis(jvp, 0, -1)
+            return jvp.reshape(ans.shape + g.shape[len(b.shape):])
+        
+        def quad_jvp_c(g, ans, self, K, b, c):
+            assert g.shape[:len(c.shape)] == c.shape
+            jvp = quad_autograd(self, K, b, g)
+            assert jvp.shape == ans.shape + g.shape[len(c.shape):]
+            return jvp
+        
+        autograd.extend.defjvp(
+            quad_autograd,
+            quad_jvp_K,
+            quad_jvp_b,
+            quad_jvp_c,
+            argnums=[1, 2, 3]
+        )
 
         def quad(self, b, c=None):
             return quad_autograd(self, self._K, b, c)
 
-        # def quad(self, b):
-        #     if isinstance(self._K, np.numpy_boxes.ArrayBox):
-        #         return b.T @ self.solve(b)
-        #     else:
-        #         return oldquad(self, b)
-        
         return quad
     
     @staticmethod
