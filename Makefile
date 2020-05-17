@@ -32,4 +32,5 @@ docscode:
 	cd docs && python runcode.py *.rst
 
 docs:
+	cd docs && python kernelsref.py
 	make -C docs html

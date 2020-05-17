@@ -1,3 +1,5 @@
+.. file generated automatically by lsqfitgp/docs/kernelsref.py
+
 .. currentmodule:: lsqfitgp
 
 .. _kernels:
@@ -35,9 +37,9 @@ values of the keyword parameters, apart from some specific cases like
 
 .. warning::
 
-   Taking second or higher order derivatives might give problems with the
-   :class:`Fourier` kernel and isotropic kernels with signature parameter `r`,
-   while those with `r2` won't have any issue.
+    Taking second or higher order derivatives might give problems with the
+    :class:`Fourier` kernel and isotropic kernels with signature parameter `r`,
+    while those with `r2` won't have any issue.
 
 .. autofunction:: Categorical
 .. autofunction:: Constant
@@ -53,6 +55,7 @@ values of the keyword parameters, apart from some specific cases like
 .. autofunction:: Matern32
 .. autofunction:: Matern52
 .. autofunction:: NNKernel
+.. autofunction:: OrnsteinUhlenbeck
 .. autofunction:: PPKernel
 .. autofunction:: Periodic
 .. autofunction:: Polynomial
