@@ -28,6 +28,7 @@ look at the `examples directory
 repository.
 
 .. toctree::
+    :maxdepth: 1
     :numbered:
     
     installation.rst

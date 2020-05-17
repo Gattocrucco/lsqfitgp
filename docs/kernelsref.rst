@@ -41,6 +41,35 @@ values of the keyword parameters, apart from some specific cases like
     :class:`Fourier` kernel and isotropic kernels with signature parameter `r`,
     while those with `r2` won't have any issue.
 
+Index
+-----
+  * :func:`Categorical`
+  * :func:`Constant`
+  * :func:`Cos`
+  * :func:`ExpQuad`
+  * :func:`Fourier`
+  * :func:`FracBrownian`
+  * :func:`GammaExp`
+  * :func:`Gibbs`
+  * :func:`Linear`
+  * :func:`Matern`
+  * :func:`Matern12`
+  * :func:`Matern32`
+  * :func:`Matern52`
+  * :func:`NNKernel`
+  * :func:`OrnsteinUhlenbeck`
+  * :func:`PPKernel`
+  * :func:`Periodic`
+  * :func:`Polynomial`
+  * :func:`RatQuad`
+  * :func:`Rescaling`
+  * :func:`Taylor`
+  * :func:`White`
+  * :func:`Wiener`
+  * :func:`WienerIntegral`
+
+Documentation
+-------------
 .. autofunction:: Categorical
 .. autofunction:: Constant
 .. autofunction:: Cos

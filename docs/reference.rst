@@ -25,6 +25,7 @@ this information can also be accessed with the Python help system directly from
 a shell with ``import lsqfitgp; help(lsqfitgp)``.
 
 .. toctree::
+    :maxdepth: 1
     :numbered:
 
     kernelsref.rst

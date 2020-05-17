@@ -80,7 +80,21 @@ values of the keyword parameters, apart from some specific cases like
     :class:`Fourier` kernel and isotropic kernels with signature parameter `r`,
     while those with `r2` won't have any issue.
 
+Index
+-----
 """
+
+# index of kernels
+for kernel in kernels:
+    out += f"""\
+  * :func:`{kernel}`
+"""
+out += """
+Documentation
+-------------
+"""
+
+# documentation
 for kernel in kernels:
     out += f"""\
 .. autofunction:: {kernel}
