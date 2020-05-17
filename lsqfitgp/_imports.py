@@ -52,6 +52,8 @@ if autograd is None:
     autograd.extend.defvjp = lambda *args, **kw: None
     autograd.extend.defjvp = lambda *args, **kw: None
     autograd.extend.primitive = lambda fun: fun
+    autograd.wrap_util = dummy()
+    autograd.wrap_util.unary_to_nary = lambda fun: fun
 else:
     from autograd import numpy
     scipy = try_import('autograd.scipy')
