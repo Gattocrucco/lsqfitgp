@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Add vjp of asarray, fix #552 (creating object arrays from lists),
+"""Add vjp/jvp of asarray, fix #552 (creating object arrays from lists),
 add missing scipy functions."""
 
 import builtins
@@ -27,6 +27,10 @@ import autograd
 autograd.extend.defvjp(
     autograd.numpy.asarray,
     lambda ans, *args, **kw: lambda g: g
+)
+autograd.extend.defjvp(
+    autograd.numpy.asarray,
+    lambda g, ans, *args, **kw: g
 )
 
 autograd.numpy.numpy_boxes.ArrayBox.item = lambda self: self[(0,) * len(self.shape)]
