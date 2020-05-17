@@ -22,6 +22,7 @@ import sys
 import numpy as np
 import gvar
 from scipy import stats
+import pytest
 
 sys.path.insert(0, '.')
 import lsqfitgp as lgp
@@ -63,7 +64,7 @@ def check_fit(hyperprior, gpfactory, dataerr=None):
     gp = gpfactory(truehp)
     data = next(gvar.raniter(gp.prior()))
     if dataerr:
-        mean = np.zeros_like(data.buf)
+        mean = dataerr * np.random.randn(len(data.buf))
         sdev = np.full_like(mean, dataerr)
         data += gvar.BufferDict(data, buf=gvar.gvar(mean, sdev))
         
@@ -73,14 +74,39 @@ def check_fit(hyperprior, gpfactory, dataerr=None):
     # check fit result against hyperparameters
     chisq_test(fit.p - truehp)
 
+@pytest.mark.xfail
 def test_period():
     hp = {
-        'log(scale)': gvar.log(gvar.gvar(1, 0.2))
+        'log(scale)': gvar.log(gvar.gvar(1, 0.1))
     }
-    x = np.linspace(0, 20, 100)
+    x = np.linspace(0, 20, 10)
     def gpfactory(hp):
         gp = lgp.GP(lgp.Periodic(scale=hp['scale']))
         gp.addx(x, 'x')
         return gp
-    for _ in range(1):
+    for _ in range(10):
+        check_fit(hp, gpfactory)
+
+def test_scale():
+    hp = {
+        'log(scale)': gvar.log(gvar.gvar(3, 0.2))
+    }
+    x = np.linspace(0, 10, 10)
+    def gpfactory(hp):
+        gp = lgp.GP(lgp.ExpQuad(scale=hp['scale']))
+        gp.addx(x, 'x')
+        return gp
+    for _ in range(10):
+        check_fit(hp, gpfactory)
+
+def test_sdev():
+    hp = {
+        'log(sdev)': gvar.log(gvar.gvar(1, 1))
+    }
+    x = np.linspace(0, 5, 10)
+    def gpfactory(hp):
+        gp = lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2)
+        gp.addx(x, 'x')
+        return gp
+    for _ in range(10):
         check_fit(hp, gpfactory)

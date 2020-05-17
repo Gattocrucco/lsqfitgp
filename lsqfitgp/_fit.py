@@ -29,6 +29,15 @@ __all__ = [
     'empbayes_fit'
 ]
 
+@autograd.wrap_util.unary_to_nary
+def jac(fun, x):
+    """Like autograd.jacobian but with forward mode"""
+    jvp = autograd.core.make_jvp(fun, x)
+    ans = fun(x)
+    vs = autograd.extend.vspace(x)
+    grads = map(lambda b: jvp(b)[1], vs.standard_basis())
+    return np.reshape(np.stack(grads, axis=-1), ans.shape + vs.shape)
+
 def _asarrayorbufferdict(x):
     if hasattr(x, 'keys'):
         return gvar.BufferDict(x)
@@ -120,6 +129,10 @@ class empbayes_fit:
         # marginal_likelihood that returns separately the residuals and the
         # logdet term, and do a backward derivative on the residuals and a
         # forward on the logdet.
+        
+        # TODO I don't know really how much the inverse hessian estimated by
+        # BFGS is accurate. Investigate computing the hessian with autograd or
+        # using Gauss-Newton on the residuals and autograd on the logdet.
     
         hyperprior = _asarrayorbufferdict(hyperprior)
         flathp = _flat(hyperprior)
@@ -144,12 +157,12 @@ class empbayes_fit:
             gp = gpfactory(hp, **gpfactorykw)
             assert isinstance(gp, _GP.GP)
             
-            if not cachedargs:
+            if cachedargs:
+                args = cachedargs
+            else:
                 args = data(hp, **gpfactorykw)
                 if not isinstance(args, tuple):
                     args = (args,)
-            else:
-                args = cachedargs
             ml = gp.marginal_likelihood(*args)
             
             return -ml + 1/2 * priorchi2
