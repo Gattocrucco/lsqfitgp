@@ -319,39 +319,38 @@ def test_bernoulli():
         x = np.random.uniform(0, 1, size=100)
         check_bernoulli(n, x)
 
-import pytest
+#####################  XFAILS  #####################
 
-# TODO This is a dirty way of marking an xfail, tests can not Xpass. I didn't
-# manage to mark methods on the subclasses without marking the superclass
-# methods too, and making a wrapper didn't work with "can not collect because
-# it is not a function" (??).
-def xfail(*args, **kw):
-    pytest.xfail()
+import pytest
+import functools
+
+def xfail(cls, meth):
+    impl = getattr(cls, meth)
+    @pytest.mark.xfail
+    @functools.wraps(impl)
+    def newimpl(self):
+        impl(self)
+    setattr(cls, meth, newimpl)
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y.
-TestMatern.test_symmetric_21                    = xfail
-TestMatern.test_double_diff_nd_second_chopped   = xfail
-TestMatern.test_positive_deriv2_nd              = xfail
-TestMatern52.test_symmetric_21                  = xfail
-TestMatern52.test_double_diff_nd_second_chopped = xfail
-TestMatern52.test_positive_deriv2_nd            = xfail
-TestPPKernel.test_positive_deriv2               = xfail
-TestPPKernel.test_positive_deriv2_nd            = xfail
-test_matern_spec_21                             = xfail
-test_matern_spec_22                             = xfail
-
-# TODO Fourier is not isotropic, but has a remainder operation on x-y.
-TestFourier.test_positive_deriv2                = xfail
-TestFourier.test_positive_deriv2_nd             = xfail
-TestFourier.test_symmetric_21                   = xfail
+xfail(TestMatern, 'test_symmetric_21')
+xfail(TestMatern, 'test_double_diff_nd_second_chopped')
+xfail(TestMatern, 'test_positive_deriv2_nd')
+xfail(TestMatern52, 'test_symmetric_21')
+xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
+xfail(TestMatern52, 'test_positive_deriv2_nd')
+xfail(TestPPKernel, 'test_positive_deriv2')
+xfail(TestPPKernel, 'test_positive_deriv2_nd')
+pytest.mark.xfail(test_matern_spec_21)
+pytest.mark.xfail(test_matern_spec_22)
 
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some
 # reason I don't catch it without taking a derivative.
-TestPPKernel.test_positive_deriv_nd             = xfail
+xfail(TestPPKernel, 'test_positive_deriv_nd')
 
 # TODO These are not isotropic kernels, what is the problem?
-TestTaylor.test_double_diff_nd_second           = xfail
-TestNNKernel.test_double_diff_nd_second         = xfail
-TestPolynomial.test_double_diff_nd_second       = xfail
+xfail(TestTaylor, 'test_double_diff_nd_second')
+xfail(TestNNKernel, 'test_double_diff_nd_second')
+xfail(TestPolynomial, 'test_double_diff_nd_second')
