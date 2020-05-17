@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import warnings
+
 from ._imports import gvar
 from ._imports import numpy as np
 from ._imports import autograd
@@ -168,8 +170,14 @@ class empbayes_fit:
             return -ml + 1/2 * priorchi2
     
         result = optimize.minimize(autograd.value_and_grad(fun), hpmean, jac=True, **minkw)
-        if raises and not result.success:
-            raise RuntimeError('minimization failed: {}'.format(result.message))
+        
+        if not result.success:
+            msg = 'minimization failed: {}'.format(result.message)
+            if raises:
+                raise RuntimeError(msg)
+            else:
+                warnings.warn(msg)
+        
         uresult = gvar.gvar(result.x, result.hess_inv)
         
         self.p = _unflat(uresult, hyperprior)
