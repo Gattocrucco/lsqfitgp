@@ -584,7 +584,7 @@ def OrnsteinUhlenbeck(x, y):
     
     .. math::
         k(x, y) = \\exp(-|x - y|) - \\exp(-(x + y)),
-        \\quad x, y \ge 0
+        \\quad x, y \\ge 0
     
     It is a random walk plus a negative feedback term that keeps the
     asymptotical variance constant.
@@ -602,34 +602,29 @@ def _AR2_derivable(**kw):
         return False
 
 @kernel(forcekron=True, derivable=_AR2_derivable)
-def AR2(x, y, gamma=1, omega=1, A=1, B=0):
+def AR2(x, y, gamma=1, B=0):
     """
     Discrete autoregressive process kernel of order 2.
     
     .. math::
         k(x, y) = \\exp(-\\gamma|x - y|)
-        \\big( A\\cos(\\omega|x - y|) + B\\sin(\\omega|x - y|) \\big)
+        \\big( \\cos(x - y) + B \\sin(|x - y|) \\big)
     
     This is the covariance function of a discrete AR(2) process. The kernel is
     valid also for non-integers, however it is different from a continuous
-    autoregressive process. It is derivable only for gamma == B == 0. The
-    parameters must satisfy the condition
-    
-    .. math::
-        A \\ge 0 \\wedge (\\gamma = 0 \\vee |B\\omega| \\le A\\gamma)
+    autoregressive process. The parameters must satisfy the condition
+    :math:`|B| \\le \\gamma`.
     
     Reference: Daniel Foreman-Mackey, Eric Agol, Sivaram Ambikasaran, and Ruth
     Angus: *Fast and Scalable Gaussian Process Modeling With Applications To
     Astronomical Time Series*.
     """
     assert np.isscalar(gamma) and 0 <= gamma < np.inf
-    assert np.isscalar(omega) and 0 <= omega < np.inf
-    assert np.isscalar(A) and np.isfinite(A)
     assert np.isscalar(B) and np.isfinite(B)
-    assert A >= 0 and (gamma == 0 or np.abs(B * omega) <= A * gamma), 'kernel is not positive semidefinite'
+    assert np.abs(B) <= gamma
     diff = x - y
     tau = np.abs(diff)
-    return np.exp(-gamma * tau) * (A * np.cos(omega * diff) + B * np.sin(omega * tau))
+    return np.exp(-gamma * tau) * (np.cos(diff) + B * np.sin(tau))
 
 @kernel(forcekron=True)
 def BrownianBridge(x, y):
@@ -646,29 +641,31 @@ def BrownianBridge(x, y):
     assert np.all(0 <= y) and np.all(y <= 1)
     return np.minimum(x, y) - x * y
 
+# TODO is the brownian bridge with nontrivial hurst index analytical?
+
 @kernel(forcekron=True, derivable=1)
-def Harmonic(x, y, omega=1, Q=1/2):
+def Harmonic(x, y, Q=1):
     """
     Damped stochastically driven harmonic oscillator.
     
     .. math::
         k(x, y) =
-        \\exp\\left( -\\frac {\\omega\\tau} {2 Q} \\right)
+        \\exp\\left( -\\frac {\\tau} {Q} \\right)
         \\begin{cases}
-            \\cosh(\\eta\\omega\\tau) + \\sinh(\\eta\\omega\\tau) / (2\\eta Q)
-            & 0 < Q < 1/2 \\\\
-            1 + \\omega\\tau & Q = 1/2 \\\\
-            \\cos(\\eta\\omega\\tau) + \\sin(\\eta\\omega\\tau) / (2\\eta Q)
-            & Q > 1/2,
+            \\cosh(\\eta\\tau) + \\sinh(\\eta\\tau) / (\\eta Q)
+            & 0 < Q < 1 \\\\
+            1 + \\tau & Q = 1 \\\\
+            \\cos(\\eta\\tau) + \\sin(\\eta\\tau) / (\\eta Q)
+            & Q > 1,
         \\end{cases}
     
-    where :math:`\\tau = |x - y|` and :math:`\\eta = \\sqrt{|1 - 1/(2Q)^2|}`.
+    where :math:`\\tau = |x - y|` and :math:`\\eta = \\sqrt{|1 - 1/Q^2|}`.
     
-    The parameter `omega` is the oscillation angular frequence, while `Q` is
-    the quality factor, i.e. the ratio between the energy stored in the
-    oscillator and the energy lost in each cycle due to damping.
+    The parameter `Q` is the quality factor, i.e. the ratio between the energy
+    stored in the oscillator and the energy lost in each cycle due to damping.
+    The angular frequency is 1.
     
-    In 1D, for `Q` = 1/2 (default) and `omega` = sqrt(3), it is the Matérn 3/2
+    In 1D, for `Q` = 1 (default) and `scale` = sqrt(1/3), it is the Matérn 3/2
     kernel.
     
     Reference: Daniel Foreman-Mackey, Eric Agol, Sivaram Ambikasaran, and Ruth
@@ -676,22 +673,36 @@ def Harmonic(x, y, omega=1, Q=1/2):
     Astronomical Time Series*.
     """
     
-    # TODO this is not derivable w.r.t Q if I cross the 1/2 point.
+    # TODO this is not derivable w.r.t Q if I cross the 1 point. Would it be
+    # sufficient to do _matern32(tau / Q)? Make a test for the continuity of
+    # the derivative at the changepoints.
     
-    assert np.isscalar(omega) and 0 <= omega < np.inf
     assert np.isscalar(Q) and 0 < Q < np.inf
     
-    omegatau = omega * np.abs(x - y + np.finfo(float).eps)
-    result = np.exp(-omegatau / (2 * Q))
-    
-    if Q == 1/2:
-        return result * (1 + omegatau)
-    
-    eta = np.sqrt(np.abs(1 - 1 / np.square(2 * Q)))
-    etaomegatau = eta * omegatau
+    tau = np.abs(x - y + np.finfo(float).eps)
     
     if Q < 1/2:
-        sin, cos = np.sinh, np.cosh
-    else:
-        sin, cos = np.sin, np.cos
-    return result * (cos(etaomegatau) + sin(etaomegatau) / (2 * eta * Q))
+        etaQ = np.sqrt((1 - Q) * (1 + Q))
+        tauQ = tau / Q
+        pexp = np.exp(_sqrt1pm1(-np.square(Q)) * tauQ)
+        mexp = np.exp(-(1 + etaQ) * tauQ)
+        return (pexp + mexp + (pexp - mexp) / etaQ) / 2
+    
+    elif 1/2 <= Q < 1:
+        etaQ = np.sqrt((1 - Q) * (1 + Q))
+        tauQ = tau / Q
+        etatau = etaQ * tauQ
+        return np.exp(-tauQ) * (np.cosh(etatau) + np.sinh(etatau) / etaQ)
+        
+    elif Q == 1:
+        return _matern32(tau)
+    
+    elif Q > 1:
+        etaQ = np.sqrt((Q - 1) * (Q + 1))
+        tauQ = tau / Q
+        etatau = etaQ * tauQ
+        return np.exp(-tauQ) * (np.cos(etatau) + np.sin(etatau) / etaQ)
+
+def _sqrt1pm1(x):
+    """sqrt(1 + x) - 1, numerically stable for small x"""
+    return np.expm1(1/2 * np.log1p(x))

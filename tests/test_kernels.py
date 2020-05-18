@@ -254,10 +254,10 @@ test_kwargs = {
         dict(n=n) for n in range(1, 5)
     ], eps=2048 * np.finfo(float).eps),
     _kernels.AR2: dict(kwargs_list=[
-        dict(), dict(B=1), dict(gamma=0), dict(omega=0)
+        dict(), dict(B=1), dict(gamma=0, B=0), dict(gamma=10)
     ]),
     _kernels.Harmonic: dict(kwargs_list=[
-        dict(), dict(Q=0.1), dict(Q=2.3)
+        dict(), dict(Q=0.01), dict(Q=0.25), dict(Q=0.75), dict(Q=0.99), dict(Q=1), dict(Q=1.01), dict(Q=2)
     ])
 }
 for kernel in kernels:
