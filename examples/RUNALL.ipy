@@ -46,3 +46,5 @@ fig.savefig("plot/u.png")
 fig.savefig("plot/v.png")
 %run w.py
 fig.savefig("plot/w.png")
+%run x.py
+fig.savefig("plot/x.png")
