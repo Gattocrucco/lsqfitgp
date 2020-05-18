@@ -673,9 +673,8 @@ def Harmonic(x, y, Q=1):
     Astronomical Time Series*.
     """
     
-    # TODO this is not derivable w.r.t Q if I cross the 1 point. Would it be
-    # sufficient to do _matern32(tau / Q)? Make a test for the continuity of
-    # the derivative at the changepoints.
+    # TODO Make a test for the continuity of the derivative w.r.t Q at the
+    # changepoints, and also a test for the continuity of the kernel.
     
     assert np.isscalar(Q) and 0 < Q < np.inf
     
@@ -695,7 +694,7 @@ def Harmonic(x, y, Q=1):
         return np.exp(-tauQ) * (np.cosh(etatau) + np.sinh(etatau) / etaQ)
         
     elif Q == 1:
-        return _matern32(tau)
+        return _matern32(tau / Q) # keep the division by Q for autograd
     
     elif Q > 1:
         etaQ = np.sqrt((Q - 1) * (Q + 1))
