@@ -125,17 +125,40 @@ DiagLowRank for low rank matrix + multiple of the identity (multiple rank-1
 updates to the Cholesky factor? Would it be useful anyway? Maybe it's easier
 with QR)
 
+#### Evenly spaced input
+
+With stationary kernels, an evenly spaced input produces a toeplitz matrix,
+which requires O(N) memory and can be solved in O(N^2). If the data has
+uniform independent errors it's still toeplitz.
+
+Add a Toeplitz decomposition to _linalg. Since it's O(N^2) I can save the
+matrix and rerun the solve in every routine, but maybe for numerical accuracy
+and to use gvars it is better to explicitly save a cholesky decomposition.
+Wikipedia says it can be done but it's not in scipy.linalg, let's hope it is in
+LAPACK. This decomposition class does not check the input matrix, it just reads
+the first row.
+
+Add a toeplitz kw to Kernel. Values: False, True, 'auto'. True will complain if
+a non-evenly spaced input comes in. 'auto' will check if the input is compliant
+(before applying forcebroadcast), otherwise proceed as usual. Specific kernels
+need not be aware of this, `__call__` passes them only the necessary points and
+then packs up the result as a toeplitz array-like.
+
+This only applies to stationary kernels and isotropic kernels in 1D. I can
+implement it this way: make an intermediate private Kernel subclass
+_ToeplitzKernel which implements `__call__`, StationaryKernel and
+IsotropicKernel are then subclasses of _ToeplitzKernel.
+
+Add a 'toeplitz' solver to GP. It fails if the matrix is non-toeplitz,
+accepting both toeplitz array-likes and normal matrices to be checked.
+Non-toeplitz solvers print a warning if they receive a toeplitz array-like.
+
 #### Autoregressive processes
 
-Like what Celerite does, it solves 1D GPs in O(nlogn). I think what happens is
-that the specific kernel gives rise to toeplitz covariance matrices. The
-toeplitz solvers in scipy are O(n^2) but still much much faster than a normal
-solve. I have to investigate the numerical accuracy issue, and if there are
-better implementations in LAPACK.
-
-To make this work magically with kernels I have to make an array-like toeplitz
-matrix class. This must work also for non-square matrices since the kernel can
-be called on off-diagonal blocks.
+Like what Celerite does, it solves 1D GPs in O(N). Reference article to cite:
+FAST AND SCALABLE GAUSSIAN PROCESS MODELING WITH APPLICATIONS TO ASTRONOMICAL
+TIME SERIES, Daniel Foreman-Mackey, Eric Agol, Sivaram Ambikasaran, and Ruth
+Angus.
 
 #### Kronecker
 
