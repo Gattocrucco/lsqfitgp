@@ -4,8 +4,6 @@ Other TODOs are scattered in the code. Search for `TODO`.
 
 ## Documentation
 
-Add Kernel or IsotropicKernel in the kernels list.
-
 Add a Raises section to GP methods that can trigger covariance matrix checks.
 
 Add Examples sections.
@@ -24,14 +22,10 @@ Check that float32 is respected.
 
 Test recursive dtype support.
 
-Fix too low thresholds in linalg tests.
-
-Import the gvar testsuite to check that the autograd injection works.
+Lower thresholds in linalg tests.
 
 gvar.BufferDict should have a prettier repr on the IPython shell. Is there a
 standard way to configure a pretty print?
-
-Make tests for givencov.
 
 ## New functionality
 
@@ -44,6 +38,7 @@ gvars.
 
 Invent a simpler alternative to Where/Choose and GP.addtransf for the case
 of adding various kernels and getting the separate prediction for each one.
+Possibly an helper function.
 
 Accept xarray.DataSet and pandas.DataFrame as inputs. Probably I can't use
 these as core formats due to autograd.
@@ -126,10 +121,21 @@ sparse format may not be worth it.
 
 ### Solvers
 
-Fourier kernels. Look at Celerite's algorithms.
-
 DiagLowRank for low rank matrix + multiple of the identity (multiple rank-1
-updates to the Cholesky factor? Would it be useful anyway?)
+updates to the Cholesky factor? Would it be useful anyway? Maybe it's easier
+with QR)
+
+#### Autoregressive processes
+
+Like what Celerite does, it solves 1D GPs in O(nlogn). I think what happens is
+that the specific kernel gives rise to toeplitz covariance matrices. The
+toeplitz solvers in scipy are O(n^2) but still much much faster than a normal
+solve. I have to investigate the numerical accuracy issue, and if there are
+better implementations in LAPACK.
+
+To make this work magically with kernels I have to make an array-like toeplitz
+matrix class. This must work also for non-square matrices since the kernel can
+be called on off-diagonal blocks.
 
 #### Kronecker
 
@@ -175,3 +181,17 @@ the kernel if the result is dense, but not while making prediction.
 Alternative: make pydata/sparse work with autograd. I hope I can inject the
 code into the module so I don't have to rely on a fork. Probably I have to
 define some missing basic functions and define the vjp of the constructors.
+
+#### Using multiple solvers
+
+I have already implemented block matrix solving. This requires a solver for
+each key, so I will add a solver parameter to addx and addtransf.
+
+However there's the need for more fine-grained settings. Say I have a kronecker
+product of a normal matrix and a toeplitz matrix. The toeplitz matrix needs its
+specialized algorithm. Since each special matrix will have its specialized
+algorithm(s), the thing can be done this way: solver can be a tuple of str.
+Solvers are tried from the left until one succedes. If specialized solvers
+appear first in the list, they will be applied on specialized matrices, while
+they will fail on normal matrices which will fall back to another solver. Raise
+warnings if a generic algorithm is applied on a special matrix.

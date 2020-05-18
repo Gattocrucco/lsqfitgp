@@ -130,11 +130,16 @@ class empbayes_fit:
         # matrix inverse. I could do the following: make an internal version of
         # marginal_likelihood that returns separately the residuals and the
         # logdet term, and do a backward derivative on the residuals and a
-        # forward on the logdet.
+        # forward on the logdet. Other option: try another optimization
+        # algorithm.
         
         # TODO I don't know really how much the inverse hessian estimated by
         # BFGS is accurate. Investigate computing the hessian with autograd or
         # using Gauss-Newton on the residuals and autograd on the logdet.
+        
+        # TODO read the minkw options to adapt the usage of the jacobian: if
+        # jac is specified or if the method does not require derivatives do not
+        # take derivatives with autograd.
     
         hyperprior = _asarrayorbufferdict(hyperprior)
         flathp = _flat(hyperprior)
