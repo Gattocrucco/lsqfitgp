@@ -26,7 +26,7 @@ from ._fit import *
 from ._Deriv import *
 from ._fastraniter import *
 
-__version__ = '0.5.1'
+__version__ = '0.6'
 
 __doc__ = """
 
@@ -102,16 +102,22 @@ lengthscale.
         Random walk.
     WienerIntegral
         Integral of the random walk.
+    FracBrownian
+        Fractional Brownian motion, like Wiener but with correlations.
+    OrnsteinUhlenbeck
+        Random walk with asymptotically finite variance.
+    BrownianBridge
+        Random walk which comes back to the starting point.
     Gibbs
         A gaussian kernel with a custom variable length scale.
-    Periodic
-        A periodic gaussian kernel, represents a periodic function.
     Categorical
         Arbitrary covariance matrix over a finite set of values.
     Cos
         A cosine.
-    FracBrownian
-        Fractional Brownian motion, like Wiener but with correlations.
+    AR2
+        Discrete autoregressive process of order 2.
+    Harmonic
+        Stochastically driven damped harmonic oscillator.
     PPKernel
         Finite support isotropic kernel.
     Rescaling
@@ -121,8 +127,8 @@ lengthscale.
     Fourier
         Kernel for periodic functions, the decay of the Fourier coefficients is
         adjustable.
-    OrnsteinUhlenbeck
-        Random walk with non-diverging variance.
+    Periodic
+        A periodic gaussian kernel, represents a periodic function.
 
 Reference: Rasmussen et al. (2006), "Gaussian Processes for Machine Learning".
 
