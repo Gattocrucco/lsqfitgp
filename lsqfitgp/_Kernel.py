@@ -198,11 +198,8 @@ class _KernelBase:
             def _kernel(x, y):
                 x = transf(x)
                 y = transf(y)
-                if x.dtype.names is not None:
-                    fun = lambda x, y: kernel(x, y, **kw)
-                    return _prod_recurse_dtype(fun, x, y)
-                else:
-                    return kernel(x, y, **kw)
+                fun = lambda x, y: kernel(x, y, **kw)
+                return _prod_recurse_dtype(fun, x, y)
         else:
             _kernel = lambda x, y: kernel(transf(x), transf(y), **kw)
         
