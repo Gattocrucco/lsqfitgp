@@ -43,6 +43,8 @@ values of the keyword parameters, apart from some specific cases like
 
 Index
 -----
+  * :func:`AR2`
+  * :func:`BrownianBridge`
   * :func:`Categorical`
   * :func:`Constant`
   * :func:`Cos`
@@ -51,6 +53,7 @@ Index
   * :func:`FracBrownian`
   * :func:`GammaExp`
   * :func:`Gibbs`
+  * :func:`Harmonic`
   * :func:`Linear`
   * :func:`Matern`
   * :func:`Matern12`
@@ -70,6 +73,8 @@ Index
 
 Documentation
 -------------
+.. autofunction:: AR2
+.. autofunction:: BrownianBridge
 .. autofunction:: Categorical
 .. autofunction:: Constant
 .. autofunction:: Cos
@@ -78,6 +83,7 @@ Documentation
 .. autofunction:: FracBrownian
 .. autofunction:: GammaExp
 .. autofunction:: Gibbs
+.. autofunction:: Harmonic
 .. autofunction:: Linear
 .. autofunction:: Matern
 .. autofunction:: Matern12
