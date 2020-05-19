@@ -207,6 +207,11 @@ autograd.extend.defvjp(
     lambda ans, x: lambda g: g * -x * np.exp(-x)
 )
 
+autograd.extend.defjvp(
+    _matern32,
+    lambda g, ans, x: (g.T * (-x * np.exp(-x)).T).T
+)
+
 @isotropickernel(input='soft', derivable=1)
 def Matern32(r):
     """
@@ -695,7 +700,7 @@ def Harmonic(x, y, Q=1):
         return np.exp(-tauQ) * (np.cosh(etatau) + np.sinh(etatau) / etaQ)
         
     elif Q == 1:
-        return _matern32(tau / Q) # keep the division by Q for autograd
+        return _harmonic(tau, Q)
     
     elif Q > 1:
         etaQ = np.sqrt(np.square(Q) - 1)
@@ -706,3 +711,22 @@ def Harmonic(x, y, Q=1):
 def _sqrt1pm1(x):
     """sqrt(1 + x) - 1, numerically stable for small x"""
     return np.expm1(1/2 * np.log1p(x))
+
+def _harmonic(x, Q):
+    return np.exp(-x/Q) * (1 + x + (1 - Q) * x * (1 + x * (1 + x/3)))
+
+# @autograd.extend.primitive
+# def _harmonic(x, Q):
+#     return (1 + x) * np.exp(-x)
+#
+# autograd.extend.defvjp(
+#     _harmonic,
+#     lambda ans, x, Q: lambda g: g * -np.exp(-x/Q) * x * (1 + (Q-1) * (1+x)),
+#     lambda ans, x, Q: lambda g: g * -np.exp(-x) * x ** 3 / 3
+# ) # d/dQ: -np.exp(-x/Q) * (3/Q**2 - 1) * x**3 / (6 * Q**2)
+#
+# autograd.extend.defjvp(
+#     _harmonic,
+#     lambda g, ans, x, Q: (g.T * (-np.exp(-x) * x).T).T,
+#     lambda g, ans, x, Q: (g.T * (-np.exp(-x) * x ** 3 / 3).T).T
+# )

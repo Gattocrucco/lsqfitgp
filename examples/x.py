@@ -29,9 +29,8 @@ x = np.linspace(0, 10, 1000)
 
 eps = 1e-8
 for Q in eps, 0.5 - eps, 0.5 + eps, 1 - eps, 1, 1 + eps, 2:
-    y = lgp.Harmonic(Q=Q)(0, x)
+    y = lgp.Harmonic(Q=Q).diff(1, 1)(0, x)
     ax.plot(x, y, label='Q={}'.format(Q))
 
 ax.legend(loc='best')
-ax.set_yscale('log')
 fig.show()

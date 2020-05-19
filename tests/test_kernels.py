@@ -236,7 +236,7 @@ test_kwargs = {
         dict(nu=0.5), dict(nu=0.6), dict(nu=1.5), dict(nu=2.5)
     ]),
     _kernels.PPKernel: dict(kwargs_list=[
-        dict(q=q, D=D) for q in range(4) for D in range(1, 10)
+        dict(q=q, D=D) for q in range(4) for D in range(1, 6)
     ]),
     _kernels.Polynomial: dict(kwargs_list=[
         dict(exponent=p) for p in range(10)
@@ -309,6 +309,12 @@ def test_matern_spec_21():
 def test_matern_spec_22():
     check_matern_spec(2, 2)
 
+def test_matern32_jvp():
+    x = np.random.randn(100)
+    r1 = autograd.elementwise_grad(_kernels._matern32)(x)
+    r2 = autograd.deriv(_kernels._matern32)(x)
+    assert np.allclose(r1, r2)
+
 def test_wiener_integral():
     """
     Test that the derivative of the Wiener integral is the Wiener.
@@ -339,6 +345,51 @@ def test_bernoulli():
         x = np.random.uniform(0, 1, size=100)
         check_bernoulli(n, x)
 
+def test_celerite_harmonic():
+    """
+    Check that the Celerite kernel is equivalent to the Harmonic kernel when
+    B == gamma.
+    """
+    x = np.random.uniform(-1, 1, size=100)
+    Q = np.random.uniform(1.1, 3)
+    eta = np.sqrt(1 - 1 / Q**2)
+    B = 1 / (eta * Q)
+    r1 = _kernels.Celerite(gamma=B, B=B)(x[:, None], x[None, :])
+    r2 = _kernels.Harmonic(Q=Q, scale=eta)(x[:, None], x[None, :])
+    assert np.allclose(r1, r2)
+
+def check_harmonic_continuous(deriv, Q0, Qderiv=False):
+    eps = 1e-10
+    Q0 = float(Q0)
+    Qs = [(1 - eps) * Q0, Q0, (1 + eps) * Q0]
+    x = np.random.randn(100)
+    results = []
+    for Q in Qs:
+        kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).diff(deriv, deriv)(x[None, :], x[:, None])
+        if Qderiv:
+            kernelf = autograd.deriv(kernelf, 0)
+        results.append(kernelf(Q, x))
+    np.testing.assert_allclose(results[0], results[2], atol=1e-5)
+    np.testing.assert_allclose(results[0], results[1], atol=1e-5)
+    np.testing.assert_allclose(results[1], results[2], atol=1e-5)
+
+def test_harmonic_continuous_12():
+    check_harmonic_continuous(0, 1/2)
+def test_harmonic_continuous_1():
+    check_harmonic_continuous(0, 1)
+def test_harmonic_deriv_continuous_12():
+    check_harmonic_continuous(1, 1/2)
+def test_harmonic_deriv_continuous_1():
+    check_harmonic_continuous(1, 1)
+def test_harmonic_derivQ_continuous_12():
+    check_harmonic_continuous(0, 1/2, True)
+def test_harmonic_derivQ_continuous_1():
+    check_harmonic_continuous(0, 1, True)
+def test_harmonic_deriv_derivQ_continuous_12():
+    check_harmonic_continuous(1, 1/2, True)
+def test_harmonic_deriv_derivQ_continuous_1():
+    check_harmonic_continuous(1, 1, True)
+
 #####################  XFAILS  #####################
 
 import functools
@@ -346,8 +397,9 @@ import functools
 def xfail(cls, meth):
     impl = getattr(cls, meth)
     @pytest.mark.xfail
-    @functools.wraps(impl)
+    @functools.wraps(impl) # `wraps` needed because pytest uses the method name
     def newimpl(self):
+        # wrap because otherwise the superclass method would be marked too
         impl(self)
     setattr(cls, meth, newimpl)
 

@@ -48,12 +48,16 @@ Also awkward arrays may be interesting as input format.
 Support taking derivatives in arbitrarily nested dtypes. Switch from the
 mess-tuple format to dictionaries dim->int. Dim can be (a tuple of) str, int,
 ellipsis, slices, the same recursive format I should support in
-`Kernel.__init__`.
+`Kernel.__init__`. Add a class just for parsing the subfield specification.
 
-Is there a smooth version of the Wiener process? like, softmin(x, y)?
+Is there a smooth version of the Wiener process? like, softmin(x, y)? I tried
+smoothing it with a gaussian but an undoable integrals comes up.
 
 Non-gaussian likelihoods, accessible with a string optional parameter in
 GP.marginal_likelihood.
+
+The fourier transform is a linear operator, can I use it like I'm doing with
+derivatives?
 
 ## Optimization
 
@@ -159,6 +163,9 @@ Like what Celerite does, it solves 1D GPs in O(N). Reference article to cite:
 FAST AND SCALABLE GAUSSIAN PROCESS MODELING WITH APPLICATIONS TO ASTRONOMICAL
 TIME SERIES, Daniel Foreman-Mackey, Eric Agol, Sivaram Ambikasaran, and Ruth
 Angus.
+
+I should make the Celerite kernel a handwritten subclass since it's a
+subalgebra.
 
 #### Kronecker
 
