@@ -474,6 +474,11 @@ def PPKernel(r, q=0, D=1):
     derivable), `D` = 1 (can be used only in 1D).
     
     """
+    
+    # TODO get the general formula for any q.
+    
+    # TODO add error checking on the dimensionality in IsotropicKernel.
+    
     assert isinstance(q, (int, np.integer))
     assert 0 <= q <= 3
     assert isinstance(D, (int, np.integer))

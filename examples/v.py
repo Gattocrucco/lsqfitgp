@@ -36,7 +36,7 @@ kernels = [
     ['NN', lgp.NNKernel(loc=10)],
     ['Fourier(n=1)', lgp.Fourier(n=1, scale=10)],
     ['Fourier(n=2)', lgp.Fourier(n=2, scale=10)],
-    ['AR2', lgp.AR2(gamma=0.1)],
+    ['Celerite', lgp.Celerite(gamma=0.1)],
     ['Harmonic', lgp.Harmonic(Q=10)],
     # ['BrownianBridge', lgp.BrownianBridge()],
     # ['Taylor', lgp.Taylor()]
