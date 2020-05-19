@@ -713,7 +713,10 @@ def _sqrt1pm1(x):
     return np.expm1(1/2 * np.log1p(x))
 
 def _harmonic(x, Q):
-    return np.exp(-x/Q) * (1 + x + (1 - Q) * x * (1 + x * (1 + x/3)))
+    return _matern32(x / Q) + np.exp(-x/Q) * (1 - Q) * np.square(x) * (1 + x/3)
+
+# def _harmonic(x, Q):
+#     return np.exp(-x/Q) * (1 + x + (1 - Q) * x * (1 + x * (1 + x/3)))
 
 # @autograd.extend.primitive
 # def _harmonic(x, Q):
