@@ -43,9 +43,9 @@ values of the keyword parameters, apart from some specific cases like
 
 Index
 -----
-  * :func:`AR2`
   * :func:`BrownianBridge`
   * :func:`Categorical`
+  * :func:`Celerite`
   * :func:`Constant`
   * :func:`Cos`
   * :func:`ExpQuad`
@@ -73,9 +73,9 @@ Index
 
 Documentation
 -------------
-.. autofunction:: AR2
 .. autofunction:: BrownianBridge
 .. autofunction:: Categorical
+.. autofunction:: Celerite
 .. autofunction:: Constant
 .. autofunction:: Cos
 .. autofunction:: ExpQuad

@@ -440,8 +440,11 @@ def _eps(x):
     else:
         return np.finfo(float).eps
 
+def _abs(x):
+    return np.where(x >= 0, x, -x)
+
 def _softabs(x):
-    return np.where(x >= 0, x, -x) + _eps(x)
+    return _abs(x) + _eps(x)
 
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)

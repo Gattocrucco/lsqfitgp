@@ -51,7 +51,7 @@ __all__ = [
     'Taylor',
     'Fourier',
     'OrnsteinUhlenbeck',
-    'AR2',
+    'Celerite',
     'BrownianBridge',
     'Harmonic'
 ]
@@ -593,38 +593,38 @@ def OrnsteinUhlenbeck(x, y):
     assert np.all(y >= 0)
     return np.exp(-np.abs(x - y)) - np.exp(-(x + y))
     
-def _AR2_derivable(**kw):
+def _Celerite_derivable(**kw):
     gamma = kw.get('gamma', 1)
     B = kw.get('B', 0)
-    if np.isscalar(gamma) and np.isscalar(B) and gamma == 0 and B == 0:
-        return True
+    if np.isscalar(gamma) and np.isscalar(B) and B == gamma:
+        return 1
     else:
         return False
 
-@kernel(forcekron=True, derivable=_AR2_derivable)
-def AR2(x, y, gamma=1, B=0):
+@kernel(forcekron=True, derivable=_Celerite_derivable)
+def Celerite(x, y, gamma=1, B=0):
     """
-    Discrete autoregressive process kernel of order 2.
+    Celerite kernel.
     
     .. math::
         k(x, y) = \\exp(-\\gamma|x - y|)
         \\big( \\cos(x - y) + B \\sin(|x - y|) \\big)
     
-    This is the covariance function of a discrete AR(2) process. The kernel is
-    valid also for non-integers, however it is different from a continuous
-    autoregressive process. The parameters must satisfy the condition
-    :math:`|B| \\le \\gamma`.
+    This is the covariance function of an AR(2) process with complex roots. The
+    parameters must satisfy the condition :math:`|B| \\le \\gamma`. For
+    :math:`B = \\gamma` it is equivalent to the :class:`Harmonic` kernel with
+    :math:`\\eta Q = 1/B, Q > 1`, and it is derivable.
     
     Reference: Daniel Foreman-Mackey, Eric Agol, Sivaram Ambikasaran, and Ruth
     Angus: *Fast and Scalable Gaussian Process Modeling With Applications To
     Astronomical Time Series*.
     """
+    
     assert np.isscalar(gamma) and 0 <= gamma < np.inf
     assert np.isscalar(B) and np.isfinite(B)
     assert np.abs(B) <= gamma
-    diff = x - y
-    tau = np.abs(diff)
-    return np.exp(-gamma * tau) * (np.cos(diff) + B * np.sin(tau))
+    tau = _Kernel._abs(x - y)
+    return np.exp(-gamma * tau) * (np.cos(tau) + B * np.sin(tau))
 
 @kernel(forcekron=True)
 def BrownianBridge(x, y):
@@ -679,7 +679,7 @@ def Harmonic(x, y, Q=1):
     
     assert np.isscalar(Q) and 0 < Q < np.inf
     
-    tau = np.abs(x - y + np.finfo(float).eps)
+    tau = _Kernel._abs(x - y)
     
     if Q < 1/2:
         etaQ = np.sqrt((1 - Q) * (1 + Q))
@@ -689,7 +689,7 @@ def Harmonic(x, y, Q=1):
         return (pexp + mexp + (pexp - mexp) / etaQ) / 2
     
     elif 1/2 <= Q < 1:
-        etaQ = np.sqrt((1 - Q) * (1 + Q))
+        etaQ = np.sqrt(1 - np.square(Q))
         tauQ = tau / Q
         etatau = etaQ * tauQ
         return np.exp(-tauQ) * (np.cosh(etatau) + np.sinh(etatau) / etaQ)
@@ -698,7 +698,7 @@ def Harmonic(x, y, Q=1):
         return _matern32(tau / Q) # keep the division by Q for autograd
     
     elif Q > 1:
-        etaQ = np.sqrt((Q - 1) * (Q + 1))
+        etaQ = np.sqrt(np.square(Q) - 1)
         tauQ = tau / Q
         etatau = etaQ * tauQ
         return np.exp(-tauQ) * (np.cos(etatau) + np.sin(etatau) / etaQ)

@@ -136,7 +136,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             _kernels.Cos,
             _kernels.Fourier,
             _kernels.Periodic,
-            _kernels.AR2,
+            _kernels.Celerite,
             _kernels.Harmonic
         ]
         kernel = self.kernel_class
@@ -253,8 +253,8 @@ test_kwargs = {
     _kernels.Fourier: dict(kwargs_list=[
         dict(n=n) for n in range(1, 5)
     ], eps=2048 * np.finfo(float).eps),
-    _kernels.AR2: dict(kwargs_list=[
-        dict(), dict(B=1), dict(gamma=0, B=0), dict(gamma=10)
+    _kernels.Celerite: dict(kwargs_list=[
+        dict(), dict(gamma=1, B=1), dict(gamma=0, B=0), dict(gamma=10, B=0)
     ]),
     _kernels.Harmonic: dict(kwargs_list=[
         dict(), dict(Q=0.01), dict(Q=0.25), dict(Q=0.75), dict(Q=0.99), dict(Q=1), dict(Q=1.01), dict(Q=2)
