@@ -663,7 +663,8 @@ def Harmonic(x, y, Q=1):
     
     The parameter `Q` is the quality factor, i.e. the ratio between the energy
     stored in the oscillator and the energy lost in each cycle due to damping.
-    The angular frequency is 1, i.e. the period is 2π.
+    The angular frequency is 1, i.e. the period is 2π. The process is derivable
+    one time.
     
     In 1D, for `Q` = 1 (default) and `scale` = sqrt(1/3), it is the Matérn 3/2
     kernel.
