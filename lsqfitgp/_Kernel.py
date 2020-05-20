@@ -374,16 +374,29 @@ class Kernel(_KernelBase):
 
 # TODO Add a class StationaryKernel. It should not be a superclass of
 # IsotropicKernel because that holds only for the distances based on the
-# difference.
+# difference. Or maybe I should fix that IsotropicKernel is for distances
+# based on the difference. Or maybe generalize the concept of difference in
+# StationaryKernel, so that it is reasonable that IsotropicKernel has a
+# general concept of distance. Question: the known isotropic kernels
+# effectively work for any distance, or the proofs are only for the 2-norm?
 
 class IsotropicKernel(Kernel):
     
     # TODO add the `distance` parameter to supply an arbitrary distance, maybe
-    # allow string keywords for premade distances, like euclidean, hamming.
+    # allow string keywords for premade distances, like euclidean, hamming,
+    # p-norms.
     
     # TODO it is not efficient that the distance is computed separately for
     # each kernel in a kernel expression, but probably it would be difficult
     # to support everything without bugs while also computing the distance once.
+    # A possible way is adding a keyword argument to the _kernel member
+    # that kernels use to memoize things, the first IsotropicKernel that gets
+    # called puts the distance there. Possible name: _cache.
+    
+    # TODO the scale parameter is specified to divide the distance, which is
+    # currently equivalent to dividing the values. If I introduced
+    # inhomogeneous distances, would it be better to divide the values or the
+    # distance?
     
     def __init__(self, kernel, *, input='squared', scale=None, **kw):
         """
@@ -406,7 +419,7 @@ class IsotropicKernel(Kernel):
                 
         """
         allowed_input = ('squared', 'soft')
-        if not (input in allowed_input):
+        if input not in allowed_input:
             raise ValueError('input option {!r} not valid, must be one of {!r}'.format(input, allowed_input))
         
         if scale is not None:
@@ -414,21 +427,29 @@ class IsotropicKernel(Kernel):
             assert np.isfinite(scale)
             assert scale > 0
         
+        if input == 'soft':
+            func = lambda x, y: _softabs(x - y) ** 2
+        else:
+            func = lambda x, y: (x - y) ** 2
+        
+        transf = lambda q: q
+        if scale is not None:
+            transf = lambda q : q / scale ** 2
+        if input == 'soft':
+            transf0 = transf
+            transf = lambda q: np.sqrt(transf0(q))  
+        
         def function(x, y, **kwargs):
-            if input == 'soft':
-                func = lambda x, y: _softabs(x - y) ** 2
-            else:
-                func = lambda x, y: (x - y) ** 2
             q = _sum_recurse_dtype(func, x, y)
-            if scale is not None:
-                q = q / scale ** 2
-            if input == 'soft':
-                q = np.sqrt(q)
-            return kernel(q, **kwargs)
+            return kernel(transf(q), **kwargs)
         
         super().__init__(function, **kw)
     
     def _binary(self, value, op):
+        
+        # TODO this logic could be made generic and moved to Kernel, since
+        # any subclass I can think of forms a subalgebra.
+        
         obj = super()._binary(value, op)
         if isinstance(obj, Kernel) and isinstance(value, __class__):
             obj.__class__ = __class__
@@ -466,6 +487,9 @@ def _makekernelsubclass(kernel, superclass, **prekw):
     newclass.__wrapped__ = named_object
     newclass.__doc__ = named_object.__doc__
     newclass.__qualname__ = getattr(named_object, '__qualname__', name)
+    
+    # TODO functools.wraps raised an error, but maybe functools.update_wrapper
+    # with appropriate arguments would work even on a class.
     
     return newclass
 

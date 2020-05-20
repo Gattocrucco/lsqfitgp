@@ -301,6 +301,10 @@ def NNKernel(x, y, sigma0=1):
     where `sigma0` sets the dispersion of the centers of the sigmoids.
     
     """
+    
+    # TODO the `2`s in the formula are a bit arbitrary. Remove them or give
+    # motivation relative to the precise formulation of the neural network.
+    
     assert np.isscalar(sigma0)
     assert np.isfinite(sigma0)
     assert sigma0 > 0
@@ -434,13 +438,17 @@ def FracBrownian(x, y, H=1/2):
     
     .. math::
         k(x, y) = \\frac 12 (x^{2H} + y^{2H} - |x-y|^{2H}),
-        \\quad H \\in (0, 1)
+        \\quad H \\in (0, 1), \\quad x, y \\ge 0
     
     For `H` = 1/2 (default) it is the Wiener kernel. For `H` in (0, 1/2) the
     increments are anticorrelated (strong oscillation), for `H` in (1/2, 1)
     the increments are correlated (tends to keep a slope).
     
     """
+    
+    # TODO I think the correlation between successive same step increments
+    # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
+    
     assert np.isscalar(H)
     assert 0 < H < 1
     assert np.all(x >= 0)
@@ -575,10 +583,18 @@ def Fourier(x, y, n=2):
     
     where :math:`B_s(x)` is a Bernoulli polynomial. It is equivalent to fitting
     with a Fourier series of period 1 with independent priors on the
-    coefficients k with mean zero and standard deviation 1/k^n. The process is
-    :math:`n - 1` times derivable.
+    coefficients `k` with mean zero and standard deviation :math:`1/k^n`. The
+    process is :math:`n - 1` times derivable.
+    
+    Note that the :math:`k = 0` term is not included in the summation, so the
+    mean of the process over one period is forced to be zero.
     
     """
+    
+    # TODO maxk parameter to truncate the series. Is the result analytical?
+    
+    # TODO parity = {None, 'even', 'odd'} to keep only sines/cosines.
+    
     assert isinstance(n, (int, np.integer))
     assert n >= 1
     s = 2 * n
@@ -647,11 +663,14 @@ def BrownianBridge(x, y):
     
     It is a Wiener process conditioned on being zero at x = 1.
     """
+    
+    # TODO can this have a Hurst index? I think the kernel would be
+    # (t^2H(1-s) + s^2H(1-t) + s(1-t)^2H + t(1-s)^2H - (t+s) - |t-s|^2H + 2ts)/2
+    # but I have to check if it is correct.
+    
     assert np.all(0 <= x) and np.all(x <= 1)
     assert np.all(0 <= y) and np.all(y <= 1)
     return np.minimum(x, y) - x * y
-
-# TODO is the brownian bridge with nontrivial hurst index analytical?
 
 @kernel(forcekron=True, derivable=1)
 def Harmonic(x, y, Q=1):

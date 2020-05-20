@@ -114,8 +114,8 @@ lengthscale.
         Arbitrary covariance matrix over a finite set of values.
     Cos
         A cosine.
-    AR2
-        Discrete autoregressive process of order 2.
+    Celerite
+        A pair of conjugated complex exponentials.
     Harmonic
         Stochastically driven damped harmonic oscillator.
     PPKernel

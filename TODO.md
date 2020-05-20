@@ -51,10 +51,18 @@ ellipsis, slices, the same recursive format I should support in
 `Kernel.__init__`. Add a class just for parsing the subfield specification.
 
 Is there a smooth version of the Wiener process? like, softmin(x, y)? I tried
-smoothing it with a gaussian but an undoable integrals comes up.
+smoothing it with a gaussian but an undoable integral comes up.
 
 Non-gaussian likelihoods, accessible with a string optional parameter in
 GP.marginal_likelihood.
+
+Student-t processes. There are some limitations. Possible interface: a nu
+parameter in addx. Can I mix different nu in the same fit? Intepreting the
+result would be a bit obscure, raniter will always sample normal distributions.
+
+Kernels I have seen in GPy: periodic Matérn up to a certain k, truncated linear
+max(0, x * y - 1). Graph kernels from pyGP:
+https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html.
 
 ### Fourier
 
@@ -76,6 +84,8 @@ I can do the following:
 Each kernel would need to have its handwritten transformation, with an
 interface like `diff()`. For the Fourier series it makes sense to make a new
 class `PeriodicKernel`, for the transform and DTFT dunno.
+
+I should also add convolutions. Maybe a method `GP.addconv`.
 
 ## Optimization
 
