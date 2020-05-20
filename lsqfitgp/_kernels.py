@@ -671,6 +671,12 @@ def Harmonic(x, y, Q=1):
     
     where :math:`\\tau = |x - y|` and :math:`\\eta = \\sqrt{|1 - 1/Q^2|}`.
     
+    The process is the solution to the stochastic differential equation
+    
+    .. math::   f''(x) + 2/Q f'(x) + f(x) = w(x),
+    
+    where `w` is white noise.
+    
     The parameter `Q` is the quality factor, i.e. the ratio between the energy
     stored in the oscillator and the energy lost in each cycle due to damping.
     The angular frequency is 1, i.e. the period is 2π. The process is derivable
@@ -684,8 +690,10 @@ def Harmonic(x, y, Q=1):
     Astronomical Time Series*.
     """
     
-    # TODO Make a test for the continuity of the derivative w.r.t Q at the
-    # changepoints, and also a test for the continuity of the kernel.
+    # TODO improve and test the numerical accuracy for derivatives near x=0
+    # and Q=1. I don't know if the derivatives have problems away from Q=1.
+    
+    # TODO probably second derivatives w.r.t. Q at Q=1 are wrong.
     
     assert np.isscalar(Q) and 0 < Q < np.inf
     

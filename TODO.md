@@ -56,8 +56,26 @@ smoothing it with a gaussian but an undoable integrals comes up.
 Non-gaussian likelihoods, accessible with a string optional parameter in
 GP.marginal_likelihood.
 
+### Fourier
+
 The fourier transform is a linear operator, can I use it like I'm doing with
-derivatives?
+derivatives? I can't do it for the spectrum of a stationary process because
+as soon as I put data in the posterior is non-stationary. In other words, the
+correlation between a point and a frequency component is 0.
+
+I can do the following:
+
+  * Apply a DFT to a specific key, can be done in addtransf or similar.
+  
+  * Compute the Fourier series of a periodic process (surely doable for the
+    Fourier kernel).
+    
+  * Apply a Fourier transform or a DTFT on a kernel which represents a
+    transient process.
+
+Each kernel would need to have its handwritten transformation, with an
+interface like `diff()`. For the Fourier series it makes sense to make a new
+class `PeriodicKernel`, for the transform and DTFT dunno.
 
 ## Optimization
 
