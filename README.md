@@ -2,7 +2,7 @@
 
 # lsqfitgp
 
-Module for manipulating gaussian processes. Features:
+Python module for manipulating gaussian processes. Features:
 
   * Use [gvar](https://github.com/gplepage/gvar) to keep track transparently of
     correlations between prior, data and posterior.

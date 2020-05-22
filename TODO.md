@@ -13,6 +13,11 @@ Interlinks with gvar and lsqfit docs.
 Mention that numpy.lib.recfunctions.unstructured_to_structured may be used
 for euclidean multidimensional input.
 
+In the manual add an automatically generated index of the examples, with links
+to github, with the docstrings of examples.
+
+Separate the index of kernels by class (after adding StationaryKernel).
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -63,6 +68,12 @@ result would be a bit obscure, raniter will always sample normal distributions.
 Kernels I have seen in GPy: periodic Matérn up to a certain k, truncated linear
 max(0, x * y - 1). Graph kernels from pyGP:
 https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html.
+
+Are there interesting discontinuous processes apart from the white noise?
+
+Can I do something helpful for Riemann manifolds? Like, the wikipedia page for
+processes has a nice brownian motion on a sphere. How could I implement that
+in a generic way which would allow the user to put any process on any manifold?
 
 ### Fourier
 
