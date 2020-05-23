@@ -67,7 +67,8 @@ result would be a bit obscure, raniter will always sample normal distributions.
 
 Kernels I have seen in GPy: periodic Matérn up to a certain k, truncated linear
 max(0, x * y - 1). Graph kernels from pyGP:
-https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html.
+https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html. Kernels from
+GPyTorch: spectral mixture https://arxiv.org/pdf/1302.4245.pdf.
 
 Are there interesting discontinuous processes apart from the white noise?
 
