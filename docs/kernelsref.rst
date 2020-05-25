@@ -43,12 +43,14 @@ values of the keyword parameters, apart from some specific cases like
 
 Index
 -----
+  * :func:`BagOfWords`
   * :func:`BrownianBridge`
   * :func:`Categorical`
   * :func:`Celerite`
   * :func:`Constant`
   * :func:`Cos`
   * :func:`ExpQuad`
+  * :func:`Expon`
   * :func:`Fourier`
   * :func:`FracBrownian`
   * :func:`GammaExp`
@@ -73,12 +75,14 @@ Index
 
 Documentation
 -------------
+.. autofunction:: BagOfWords
 .. autofunction:: BrownianBridge
 .. autofunction:: Categorical
 .. autofunction:: Celerite
 .. autofunction:: Constant
 .. autofunction:: Cos
 .. autofunction:: ExpQuad
+.. autofunction:: Expon
 .. autofunction:: Fourier
 .. autofunction:: FracBrownian
 .. autofunction:: GammaExp

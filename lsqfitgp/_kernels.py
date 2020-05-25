@@ -810,7 +810,23 @@ _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]'
 @kernel(forcekron=True)
 @np.vectorize
 def BagOfWords(x, y):
+    """
+    Bag of words kernel.
+    
+    .. math::
+        k(x, y) &= \\sum_{w \\in \\text{words}} c_w(x) c_w(y), \\\\
+        c_w(x) &= \\text{number of times word $w$ appears in $x$}
+    
+    The words are defined as substrings delimited by spaces or one of the
+    following punctuation characters: ! « » " “ ” ‘ ’ / ( ) ' ? ¡ ¿ „ ‚ < > , ;
+    . : - – —.
+    """
+    
+    # TODO remove np.vectorize and precompute the bags for x and y.
+    
     xbag = collections.Counter(_bow_regexp.split(x))
     ybag = collections.Counter(_bow_regexp.split(y))
+    xbag[''] = 0
+    ybag[''] = 0
     common = set(xbag) & set(ybag)
     return sum(xbag[k] * ybag[k] for k in common)
