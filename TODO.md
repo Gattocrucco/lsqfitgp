@@ -65,12 +65,11 @@ Student-t processes. There are some limitations. Possible interface: a nu
 parameter in addx. Can I mix different nu in the same fit? Intepreting the
 result would be a bit obscure, raniter will always sample normal distributions.
 
-Kernels I have seen in GPy: periodic Matérn up to a certain k, truncated linear
-max(0, x * y - 1). Graph kernels from pyGP:
-https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html. Kernels from
-GPyTorch: spectral mixture https://arxiv.org/pdf/1302.4245.pdf.
+From GPy: periodic Matérn up to a certain k. Graph kernels from pyGPs:
+https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html.
 
-Are there interesting discontinuous processes apart from the white noise?
+Are there interesting discontinuous processes apart from the white noise and
+its integrals?
 
 Can I do something helpful for Riemann manifolds? Like, the wikipedia page for
 processes has a nice brownian motion on a sphere. How could I implement that
@@ -196,6 +195,13 @@ IsotropicKernel are then subclasses of _ToeplitzKernel.
 Add a 'toeplitz' solver to GP. It fails if the matrix is non-toeplitz,
 accepting both toeplitz array-likes and normal matrices to be checked.
 Non-toeplitz solvers print a warning if they receive a toeplitz array-like.
+
+#### Markovian processes
+
+Example: the Wiener kernel is a Markov process, i.e. on the right of a
+datapoint you don't need the datapoints on the left. This means it can be
+solved faster. See how to do this and if it can be integrated smoothly with the
+rest of the library.
 
 #### Autoregressive processes
 
