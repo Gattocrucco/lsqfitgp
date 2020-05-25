@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import warnings
 
 from ._imports import autograd
 from ._imports import numpy as np
@@ -421,12 +422,6 @@ class IsotropicKernel(Kernel):
         allowed_input = ('squared', 'soft')
         if input not in allowed_input:
             raise ValueError('input option {!r} not valid, must be one of {!r}'.format(input, allowed_input))
-        
-        if scale is not None:
-            assert np.isscalar(scale)
-            assert np.isfinite(scale)
-            assert scale > 0
-        
         if input == 'soft':
             func = lambda x, y: _softabs(x - y) ** 2
         else:
@@ -434,6 +429,9 @@ class IsotropicKernel(Kernel):
         
         transf = lambda q: q
         if scale is not None:
+            assert np.isscalar(scale)
+            assert np.isfinite(scale)
+            assert scale > 0
             transf = lambda q : q / scale ** 2
         if input == 'soft':
             transf0 = transf
@@ -461,8 +459,21 @@ def _eps(x):
     else:
         return np.finfo(float).eps
 
+# I define my own version of abs because autograd defines the derivative in 0
+# to be 0, while I need it to be 1 for stationary/isotropic kernels.
+@autograd.extend.primitive
 def _abs(x):
-    return np.where(x >= 0, x, -x)
+    return np.abs(x)
+
+autograd.extend.defvjp(
+    _abs,
+    lambda ans, x: lambda g: g * np.where(x >= 0, 1, -1)
+)
+
+autograd.extend.defjvp(
+    _abs,
+    lambda g, ans, x: (g.T * np.where(x >= 0, 1, -1).T).T
+)
 
 def _softabs(x):
     return _abs(x) + _eps(x)
@@ -478,8 +489,14 @@ def _makekernelsubclass(kernel, superclass, **prekw):
     name = getattr(named_object, '__name__', 'DecoratedKernel')
     newclass = type(name, (superclass,), {})
     
+    prekwset = set(prekw)
     def __init__(self, **kw):
         kwargs = prekw.copy()
+        shared_keys = prekwset & set(kw)
+        if shared_keys:
+            msg = 'overriding init argument(s) ' + ', '.join(shared_keys)
+            msg += ' of kernel ' + name
+            warnings.warn(msg)
         kwargs.update(kw)
         super(newclass, self).__init__(kernel, **kwargs)
     

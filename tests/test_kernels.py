@@ -20,6 +20,7 @@
 import sys
 import inspect
 import abc
+import re
 
 import pytest
 import numpy as np
@@ -229,6 +230,36 @@ def random_nd(size, ndim):
     out = np.empty(size, dtype=[('xyz', float, (ndim,))])
     out['xyz'] = np.random.uniform(-5, 5, size=(size, ndim))
     return out
+
+lipsum = """
+
+Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia
+odio sem nec elit. Curabitur blandit tempus porttitor. Sed posuere consectetur
+est at lobortis. Cras mattis consectetur purus sit amet fermentum.
+
+Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis
+consectetur purus sit amet fermentum. Lorem ipsum dolor sit amet, consectetur
+adipiscing elit. Donec ullamcorper nulla non metus auctor fringilla.
+
+Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec ullamcorper
+nulla non metus auctor fringilla. Praesent commodo cursus magna, vel
+scelerisque nisl consectetur et. Donec id elit non mi porta gravida at eget
+metus. Nullam id dolor id nibh ultricies vehicula ut id elit. Maecenas sed diam
+eget risus varius blandit sit amet non magna.
+
+Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Sed posuere
+consectetur est at lobortis. Donec ullamcorper nulla non metus auctor
+fringilla. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum
+nibh, ut fermentum massa justo sit amet risus. Lorem ipsum dolor sit amet,
+consectetur adipiscing elit. Vivamus sagittis lacus vel augue laoreet rutrum
+faucibus dolor auctor.
+
+"""
+
+lipsum_words = np.array(list(set(re.split(r'\s|[,.]', lipsum.lower()))))
+
+def bow_rand(**kw):
+    return np.array([' '.join(np.random.choice(lipsum_words, 10)) for _ in range(30)])
         
 # Define a concrete subclass of KernelTestBase for each kernel.
 test_kwargs = {
@@ -258,7 +289,8 @@ test_kwargs = {
     ]),
     _kernels.Harmonic: dict(kwargs_list=[
         dict(), dict(Q=0.01), dict(Q=0.25), dict(Q=0.75), dict(Q=0.99), dict(Q=1), dict(Q=1.01), dict(Q=2)
-    ])
+    ]),
+    _kernels.BagOfWords: dict(random_x_fun=bow_rand)
 }
 for kernel in kernels:
     factory_kw = test_kwargs.get(kernel, {})

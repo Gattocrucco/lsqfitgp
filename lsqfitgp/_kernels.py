@@ -17,6 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+import collections
+
 from ._imports import numpy as np
 from ._imports import special
 from ._imports import autograd
@@ -53,7 +56,9 @@ __all__ = [
     'OrnsteinUhlenbeck',
     'Celerite',
     'BrownianBridge',
-    'Harmonic'
+    'Harmonic',
+    'Expon',
+    'BagOfWords'
 ]
 
 def _dot(x, y):
@@ -125,6 +130,10 @@ def Polynomial(x, y, exponent=None, sigma0=1):
     
     In 1D it is equivalent to fitting with a polynomial of degree `exponent`.
     """
+    
+    # TODO this kernel is redundant. It can be too easily obtained as
+    # (Linear() + sigma**2) ** exponent. Remove it.
+    
     assert np.isscalar(exponent)
     assert exponent >= 0
     assert np.isscalar(sigma0)
@@ -161,6 +170,10 @@ def _matern_derivable(**kw):
         return int(nu - 1/2)
     else:
         return False
+
+# TODO I'm using soft input for the Matérn kernels, however for the
+# half-integer case it is probably not necessary to use the softabs. Add an
+# option 'hard' to the IsotropicKernel init and see if it works.
 
 @isotropickernel(input='soft', derivable=_matern_derivable)
 def Matern(r, nu=None):
@@ -485,7 +498,13 @@ def PPKernel(r, q=0, D=1):
     
     # TODO get the general formula for any q.
     
-    # TODO add error checking on the dimensionality in IsotropicKernel.
+    # TODO add error checking on the dimensionality in IsotropicKernel, init
+    # parameter `maxdim`.
+    
+    # TODO compute the kernel only on the nonzero points.
+    
+    # TODO find the nonzero points in O(nlogn) instead of O(n^2) by sorting
+    # the inputs.
     
     assert isinstance(q, (int, np.integer))
     assert 0 <= q <= 3
@@ -515,6 +534,9 @@ def WienerIntegral(x, y):
         \\end{cases}
     
     """
+    
+    # TODO can I generate this algorithmically for arbitrary integration order?
+    
     assert np.all(x >= 0)
     assert np.all(y >= 0)
     return 1/2 * np.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
@@ -613,7 +635,10 @@ def OrnsteinUhlenbeck(x, y):
         \\quad x, y \\ge 0
     
     It is a random walk plus a negative feedback term that keeps the
-    asymptotical variance constant.
+    asymptotical variance constant. It is asymptotically stationary; often the
+    name "Ornstein-Uhlenbeck" is given to the stationary part only, which in
+    1D is the Matérn 1/2 kernel.
+    
     """
     assert np.all(x >= 0)
     assert np.all(y >= 0)
@@ -666,7 +691,7 @@ def BrownianBridge(x, y):
     
     # TODO can this have a Hurst index? I think the kernel would be
     # (t^2H(1-s) + s^2H(1-t) + s(1-t)^2H + t(1-s)^2H - (t+s) - |t-s|^2H + 2ts)/2
-    # but I have to check if it is correct.
+    # but I have to check if it is correct. (In new kernel FracBrownianBridge.)
     
     assert np.all(0 <= x) and np.all(x <= 1)
     assert np.all(0 <= y) and np.all(y <= 1)
@@ -765,3 +790,27 @@ def _harmonic(x, Q):
 #     lambda g, ans, x, Q: (g.T * (-np.exp(-x) * x).T).T,
 #     lambda g, ans, x, Q: (g.T * (-np.exp(-x) * x ** 3 / 3).T).T
 # )
+
+@kernel(forcekron=True)
+def Expon(x, y):
+    """
+    Exponential kernel.
+    
+    .. math::
+        k(x, y) = \\exp(-|x - y|)
+    
+    In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
+    it acts separately while the Matérn kernel is isotropic. It can be obtained
+    with 
+    """
+    return np.exp(-_Kernel._abs(x - y))
+
+_bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]')
+
+@kernel(forcekron=True)
+@np.vectorize
+def BagOfWords(x, y):
+    xbag = collections.Counter(_bow_regexp.split(x))
+    ybag = collections.Counter(_bow_regexp.split(y))
+    common = set(xbag) & set(ybag)
+    return sum(xbag[k] * ybag[k] for k in common)
