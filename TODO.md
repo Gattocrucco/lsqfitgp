@@ -98,6 +98,46 @@ class `PeriodicKernel`, for the transform and DTFT dunno.
 
 I should also add convolutions. Maybe a method `GP.addconv`.
 
+### Classification
+
+I'd like to avoid introducing a different likelihood and Laplace and EP. In the
+user guide I did text classification in my own crappy but quick and still
+statistically well-defined way, well it turns out that technique has been
+studied and it works almost as well, it's in GPML section 6.5 "Least-squares
+Classification".
+
+I can improve it in the following way that won't require significant new code
+but only explanations to the user: for each datapoint give the probability for
+each class instead of the exact class, and map it back to a latent GP datapoint
+with the inverse of the Gaussian CDF. Then the posterior class probability on
+another point is given by Phi(mu/sqrt(1 + sigma^2)), where mu and sigma are the
+mean an sdev of the posterior for the latent GP and Phi is the Gaussian CDF.
+
+Proof: let uppercase letters be the class of each point. Let
+
+    P(A|g_A) = Phi(g_A),
+
+Where g_A is the latent GP variable. Then the posterior for the class on
+another point B is
+
+    P(B|p(A) = p_A) = int dg_B P(B|g_B,p_A) p(g_B|p_A)
+
+Now we assume that B is conditionally independent of p_A, i.e. the dependencies
+are completely expressed by the latent GP, so
+
+    = int dg_B P(B|g_B) p(g_B|g_A) =
+    = int dg_B Phi(g_B) N(g_B; mu, sigma)
+
+Now I use a formula I found on [wikipedia]
+(https://en.wikipedia.org/wiki/Error_function#Integral_of_error_function_with_Gaussian_density_function):
+
+    = Phi(mu / sqrt(1 + sigma^2)).
+
+This does not give the joint probability of various points being in the same
+class. I think it is doable but extending the formula to more than one
+variable is not immediate. I could at least obtain it for two points, so that I
+can compute a sort of "correlation matrix".
+
 ## Optimization
 
 ### `gvar`-related issues
