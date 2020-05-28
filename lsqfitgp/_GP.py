@@ -528,12 +528,22 @@ class GP:
         Return a decomposition of the covariance matrix of the keys in `keys`
         plus the matrix ycov.
         """
+        
         # TODO Block matrix solving. Example: solve a subproblem with kronecker,
-        # another plain. Cache decompositions of blocks. Caching is effective
+        # another plain.
+        
+        # TODO Cache decompositions of blocks. Caching is effective
         # with data if I can reuse the decomposition of Kxx to compute the
         # decomposition of Kxx + ycov, i.e. it works in all cases if ycov is
         # scalar, and in some cases if ycov is diagonal. Is there an efficient
         # way to update a Cholesky decomposition if I add a diagonal matrix?
+        
+        # TODO Check if the matrix is block diagonal. It's O(n^2). It is often
+        # not needed but when it is it makes a difference. A faster and less
+        # thorough check can be done only on off-diagonal key-key blocks being
+        # zero, which may be useful with multi-output or split components. Do
+        # it through a new BlockDiagDecomp decomposition.
+        
         Kxx = self._assemblecovblocks(keys)
         return self._decompclass(Kxx + ycov)
         

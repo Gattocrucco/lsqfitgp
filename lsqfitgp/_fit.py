@@ -140,6 +140,8 @@ class empbayes_fit:
         # TODO read the minkw options to adapt the usage of the jacobian: if
         # jac is specified or if the method does not require derivatives do not
         # take derivatives with autograd.
+        
+        # TODO compute the logGBF for the whole fit.
     
         hyperprior = _asarrayorbufferdict(hyperprior)
         flathp = _flat(hyperprior)
