@@ -45,6 +45,9 @@ CholMaxEig
     Cholesky regularized using the maximum eigenvalue.
 CholGersh
     Cholesky regularized using an estimate of the maximum eigenvalue.
+CholToeplitz
+    Cholesky decomposition of a Toeplitz matrix regularized using an estimate
+    of the maximum eigenvalue.
 BlockDecomp
     Decompose a 2x2 block matrix.
 BlockDiagDecomp
@@ -483,6 +486,9 @@ class Decomposition(metaclass=DecompMeta):
         """
         Invert the matrix.
         """
+        
+        # TODO currently no subclass overrides this, some should probably do.
+        
         return self.quad(np.eye(self.n))
     
     @property
@@ -693,7 +699,7 @@ class CholToeplitz(Chol):
         t = K[0]
         m = _toeplitz_linalg.eigv_bound(t)
         eps = self._eps(eps, t, m)
-        self._L = _toeplitz_linalg.cholesky(K, diageps=eps)
+        self._L = _toeplitz_linalg.cholesky(t, diageps=eps)
 
 class BlockDecomp:
     """

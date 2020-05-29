@@ -27,7 +27,7 @@ import gvar
 import pytest
 
 sys.path = ['.'] + sys.path
-from lsqfitgp import _linalg
+from lsqfitgp import _linalg, _kernels
 
 MAXSIZE = 10 + 1
 
@@ -359,11 +359,24 @@ class TestCholGersh(DecompTestCorr):
     def decompclass(self):
         return _linalg.CholGersh
 
-def _noautograd(x):
-    if isinstance(x, np.numpy_boxes.ArrayBox):
-        return x._value
-    else:
-        return x
+class TestCholToeplitz(DecompTestCorr):
+    
+    @property
+    def decompclass(self):
+        return _linalg.CholToeplitz
+    
+    def randsymmat(self, n):
+        x = np.arange(n)
+        alpha = np.exp(np.random.randn())
+        scale = np.exp(np.random.randn())
+        kernel = _kernels.RatQuad(scale=scale, alpha=alpha)
+        return kernel(x[None, :], x[:, None])
+    
+    def mat(self, s, n):
+        x = np.arange(n)
+        return np.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+    
+    matjac = autograd.jacobian(mat, 1)
 
 class TestReduceRank(DecompTestCorr):
     
@@ -510,7 +523,7 @@ class TestBlockDiagChol(BlockDiagDecompTestBase):
     def subdecompclass(self):
         return _linalg.Chol
 
-class TestBlockDiagDiag(BlockDiagDecompTestBase):
+class TestBlockDiagDiag(BlockDiagDecompTestBase, DecompTestCorr):
     
     @property
     def subdecompclass(self):
