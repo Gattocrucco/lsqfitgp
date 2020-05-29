@@ -833,3 +833,23 @@ def BagOfWords(x, y):
     ybag[''] = 0
     common = set(xbag) & set(ybag)
     return sum(xbag[k] * ybag[k] for k in common)
+
+@kernel(forcekron=True)
+def WeightedGraph(x, y, W=None):
+    """
+    
+    Weighted graph kernel.
+    
+    .. math::
+        k(x, y) = \\sum_{z \\in \\text{nodes}} W_{zx} W_{zy},
+    
+    where :math:`W_{ab}` is the weight connecting node `a` to node `b`. Nodes
+    must be represented by integers and the parameter `W` must be an array such
+    that ``W[a, b]`` is :math:`W_{ab}`.
+    
+    """
+    
+    # If I remember well, fancy indexing puts first the shape of the
+    # index arrays and then the shape of the slices, so this should broadcast
+    # correctly; check.
+    return np.sum(W[:, x] * W[:, y], axis=-1)
