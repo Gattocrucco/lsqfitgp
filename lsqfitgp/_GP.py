@@ -541,8 +541,7 @@ class GP:
         # TODO Check if the matrix is block diagonal. It's O(n^2). It is often
         # not needed but when it is it makes a difference. A faster and less
         # thorough check can be done only on off-diagonal key-key blocks being
-        # zero, which may be useful with multi-output or split components. Do
-        # it through a new BlockDiagDecomp decomposition.
+        # zero, which may be useful with multi-output or split components.
         
         Kxx = self._assemblecovblocks(keys)
         return self._decompclass(Kxx + ycov)

@@ -46,7 +46,9 @@ CholMaxEig
 CholGersh
     Cholesky regularized using an estimate of the maximum eigenvalue.
 BlockDecomp
-    Decompose a block matrix.
+    Decompose a 2x2 block matrix.
+BlockDiagDecomp
+    Decompose a 2x2 diagonal block matrix.
 
 """
 
@@ -58,15 +60,25 @@ from ._imports import linalg
 from ._imports import autograd
 from ._imports import sparse
 
+from . import _toeplitz_linalg
+
 # TODO optimize the matrix multiplication with gvars. Use these gvar internals:
 # gvar.svec(int size)
 # gvar.svec._assign(float[] values, int[] indices)
 # gvar.GVar(float mean, svec derivs, smat cov)
 # it may require cython to be fast since it's not vectorized
 
-# TODO investigate using the QR decomposition.
+# TODO investigate using the QR decomposition. It's twice as fast as
+# diagonalization, it does not require positivity, it allows tweaking the
+# generalized eigenvalues (the diagonal of the triangular factor). Does not
+# support the methods correlate and decorrelate. Low-rank updates already
+# provided by scipy.
 
-# TODO add a class BlockDiagDecomp for decomposing block diagonal matrices.
+# TODO change the class hierarchy in the following way (requires Python 3.6):
+# Decomposition(metaclass=type)
+# DecompAutograd(Decomposition) uses __init_subclass__
+# Diag(DecompAutograd), ...
+# BlockDecomp(Decomposition), ...
 
 def noautograd(x):
     """
@@ -472,6 +484,13 @@ class Decomposition(metaclass=DecompMeta):
         Invert the matrix.
         """
         return self.quad(np.eye(len(self._K)))
+    
+    @property
+    def n(self):
+        """
+        Return n where the decomposed matrix is n x n.
+        """
+        return len(self._K)
 
 class Diag(Decomposition):
     """
@@ -605,6 +624,12 @@ class Chol(Decomposition):
     def decorrelate(self, b):
         return solve_triangular_auto(self._L, b, lower=True)
 
+    def _eps(self, eps, mat, maxeigv):
+        if eps is None:
+            eps = len(mat) * np.finfo(asinexact(mat.dtype)).eps
+        assert np.isscalar(eps) and 0 <= eps < 1
+        return eps * maxeigv
+
 def _scale(a):
     """
     Compute a vector s of powers of 2 such that diag(a / outer(s, s)) ~ 1.
@@ -629,12 +654,6 @@ class CholReg(Chol):
         """Modify mat in-place to make it positive definite."""
         pass
     
-    def _eps(self, eps, mat, maxeigv):
-        if eps is None:
-            eps = len(mat) * np.finfo(asinexact(mat.dtype)).eps
-        assert np.isscalar(eps) and 0 <= eps < 1
-        return eps * maxeigv
-
 class CholMaxEig(CholReg):
     """
     Cholesky decomposition. The matrix is corrected for numerical roundoff by
@@ -663,6 +682,18 @@ class CholGersh(CholReg):
     def _regularize(self, mat, eps):
         maxeigv = _gershgorin_eigval_bound(mat)
         mat[np.diag_indices(len(mat))] += self._eps(eps, mat, maxeigv)
+
+class CholToeplitz(Chol):
+    """
+    Cholesky decomposition of a Toeplitz matrix. Only the first row of the
+    matrix is read.
+    """
+    
+    def __init__(self, K, eps=None):
+        t = K[0]
+        m = _toeplitz_linalg.eigv_bound(t)
+        eps = self._eps(eps, t, m)
+        self._L = _toeplitz_linalg.cholesky(K, diageps=eps)
 
 class BlockDecomp:
     """
@@ -731,3 +762,72 @@ class BlockDecomp:
     
     def logdet(self):
         return self._invP.logdet() + self._tildeS.logdet()
+    
+    @property
+    def n(self):
+        return sum(self._Q.shape)
+
+class BlockDiagDecomp:
+    
+    def __init__(self, A_decomp, B_decomp):
+        """
+        
+        Decomposition of a 2x2 block diagonal matrix.
+        
+        The matrix is
+        
+            [[A  0]
+             [0  B]]
+        
+        Parameters
+        ----------
+        A_decomp, B_decomp: Decomposition
+            Instantiated decompositions of A and B.
+        
+        """
+        self._A = A_decomp
+        self._B = B_decomp
+    
+    def solve(self, b):
+        A = self._A
+        B = self._B
+        An = A.n
+        f = b[:An]
+        g = b[An:]
+        return np.concatenate([A.solve(f), B.solve(g)])
+    
+    def quad(self, b, c=None):
+        A = self._A
+        B = self._B
+        An = A.n
+        f = b[:An]
+        g = b[An:]
+        if c is None:
+            return A.quad(f) + B.quad(g)
+        else:
+            h = c[:An]
+            i = c[An:]
+            return A.quad(f, h) + B.quad(g, i)
+    
+    def logdet(self):
+        return self._A.logdet() + self._B.logdet()
+    
+    def correlate(self, b):
+        A = self._A
+        B = self._B
+        An = A.n
+        f = b[:An]
+        g = b[An:]
+        return np.concatenate([A.correlate(f), B.correlate(g)])
+    
+    def correlate(self, b):
+        A = self._A
+        B = self._B
+        An = A.n
+        f = b[:An]
+        g = b[An:]
+        return np.concatenate([A.decorrelate(f), B.decorrelate(g)])
+
+    @property
+    def n(self):
+        return self._A.n + self._B.n
