@@ -821,7 +821,11 @@ def BagOfWords(x, y):
     . : - – —.
     """
     
-    # TODO remove np.vectorize and precompute the bags for x and y.
+    # TODO precompute the bags for x and y, then call a vectorized private
+    # function.
+    
+    # TODO iterate on the shorter bag and use get on the other instead of
+    # computing set intersection?
     
     xbag = collections.Counter(_bow_regexp.split(x))
     ybag = collections.Counter(_bow_regexp.split(y))
