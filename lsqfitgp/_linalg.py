@@ -831,6 +831,9 @@ class BlockDiagDecomp:
         g = b[An:]
         return np.concatenate([A.decorrelate(f), B.decorrelate(g)])
 
+    def inv(self):
+        return self.quad(np.eye(self.n))     
+    
     @property
     def n(self):
         return self._A.n + self._B.n

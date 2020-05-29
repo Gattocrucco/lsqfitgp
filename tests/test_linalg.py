@@ -458,3 +458,60 @@ class TestBlockDiag(BlockDecompTestBase):
     @property
     def subdecompclass(self):
         return _linalg.Diag
+
+class BlockDiagDecompTestBase(DecompTestBase):
+    """
+    Abstract class for testing BlockDiagDecomp. Concrete subclasses must
+    overwrite `subdecompclass`.
+    """
+    
+    @property
+    @abc.abstractmethod
+    def subdecompclass(self):
+        pass
+    
+    def randsymmat(self, n):
+        p = np.random.randint(1, n) if n > 1 else 0
+        K = np.zeros((n, n))
+        if p > 0:
+            K[:p, :p] = super().randsymmat(p)
+        K[p:, p:] = super().randsymmat(n - p)
+        self._p = p
+        return K
+    
+    def mat(self, s, n):
+        p = n // 2
+        A = super().mat(s, p)
+        B = super().mat(s, n - p)
+        self._p = p
+        return np.concatenate([
+            np.concatenate([A, np.zeros((p, n-p))], axis=1),
+            np.concatenate([np.zeros((n-p, p)), B], axis=1)
+        ])
+            
+    matjac = autograd.jacobian(mat, 1)
+    
+    @property
+    def decompclass(self):
+        def decomp(K):
+            if len(K) == 1:
+                return self.subdecompclass(K)
+            p = self._p
+            assert p < len(K)
+            A = K[:p, :p]
+            B = K[p:, p:]
+            args = (self.subdecompclass(A), self.subdecompclass(B))
+            return _linalg.BlockDiagDecomp(*args)
+        return decomp
+
+class TestBlockDiagChol(BlockDiagDecompTestBase):
+    
+    @property
+    def subdecompclass(self):
+        return _linalg.Chol
+
+class TestBlockDiagDiag(BlockDiagDecompTestBase):
+    
+    @property
+    def subdecompclass(self):
+        return _linalg.Diag
