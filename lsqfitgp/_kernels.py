@@ -636,8 +636,8 @@ def OrnsteinUhlenbeck(x, y):
     
     It is a random walk plus a negative feedback term that keeps the
     asymptotical variance constant. It is asymptotically stationary; often the
-    name "Ornstein-Uhlenbeck" is given to the stationary part only, which in
-    1D is the Matérn 1/2 kernel.
+    name "Ornstein-Uhlenbeck" is given to the stationary part only, which here
+    is provided as :class:`Expon`.
     
     """
     assert np.all(x >= 0)
@@ -800,8 +800,7 @@ def Expon(x, y):
         k(x, y) = \\exp(-|x - y|)
     
     In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
-    it acts separately while the Matérn kernel is isotropic. It can be obtained
-    with 
+    it acts separately while the Matérn kernel is isotropic.
     """
     return np.exp(-_Kernel._abs(x - y))
 
