@@ -292,11 +292,16 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fungrad(s, n)
             assert np.allclose(sol, result, rtol=1e-4)
     
+    def test_inv(self):
+        for n in range(1, MAXSIZE):
+            K = self.randsymmat(n)
+            sol = self.solve(K, np.eye(n))
+            result = self.decompclass(K).inv()
+            np.testing.assert_allclose(sol, result)
+    
     # TODO test second derivatives
     
     # TODO test derivatives w.r.t. b, c
-    
-    # TODO test inv()
 
 class DecompTestCorr(DecompTestBase):
     """Tests for `correlate` and `decorrelate` are defined in this

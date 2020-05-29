@@ -483,7 +483,7 @@ class Decomposition(metaclass=DecompMeta):
         """
         Invert the matrix.
         """
-        return self.quad(np.eye(len(self._K)))
+        return self.quad(np.eye(self.n))
     
     @property
     def n(self):
@@ -762,6 +762,9 @@ class BlockDecomp:
     
     def logdet(self):
         return self._invP.logdet() + self._tildeS.logdet()
+        
+    def inv(self):
+        return self.quad(np.eye(self.n))     
     
     @property
     def n(self):

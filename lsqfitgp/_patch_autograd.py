@@ -18,11 +18,12 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 """Add vjp/jvp of asarray, fix #552 (creating object arrays from lists),
-add missing scipy functions."""
+add missing scipy functions, add numpy.testing"""
 
 import builtins
 
 import autograd
+import numpy as np
 
 autograd.extend.defvjp(
     autograd.numpy.asarray,
@@ -43,6 +44,8 @@ def array(A, *args, **kwargs):
         return autograd.numpy.numpy_wrapper._array_from_scalar_or_array(args, kwargs, A)
 autograd.numpy.numpy_wrapper.array = array
 autograd.numpy.array = array
+
+autograd.numpy.testing = np.testing
 
 try:
     from scipy import special as special_noderiv
