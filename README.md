@@ -1,4 +1,5 @@
 [![Documentation Status](https://readthedocs.org/projects/lsqfitgp/badge/?version=latest)](https://lsqfitgp.readthedocs.io/en/latest/?badge=latest)
+![PyPI](https://img.shields.io/pypi/v/lsqfitgp)
 
 # lsqfitgp
 

@@ -2,17 +2,19 @@
 #
 # Makefile for running tests, prepare and upload a release.
 
-TARGETS = upload release tests examples docscode docs
+RELEASE_TARGETS = tests examples docscode docs
+TARGETS = upload release $(RELEASE_TARGETS)
 
 .PHONY: all $(TARGETS)
 
 all:
 	@echo "available targets: $(TARGETS)"
+	@echo "release = $(RELEASE_TARGETS) (in order)"
 
 upload:
 	twine upload dist/*
 
-release: tests examples docscode docs
+release: $(RELEASE_TARGETS)
 	rm -r dist
 	python setup.py sdist bdist_wheel
 

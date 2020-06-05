@@ -829,7 +829,7 @@ class BlockDiagDecomp:
         g = b[An:]
         return np.concatenate([A.correlate(f), B.correlate(g)])
     
-    def correlate(self, b):
+    def decorrelate(self, b):
         A = self._A
         B = self._B
         An = A.n

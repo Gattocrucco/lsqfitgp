@@ -45,7 +45,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
         eigvals = np.random.uniform(1e-2, 1e2, size=n)
         K = (O * eigvals) @ O.T
-        assert np.allclose(K, K.T)
+        np.testing.assert_allclose(K, K.T)
         return K
     
     def mat(self, s, n):
@@ -71,7 +71,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             b = self.randvec(len(K))
             sol = self.solve(K, b)
             result = self.decompclass(K).solve(b)
-            assert np.allclose(sol, result, rtol=1e-4)
+            np.testing.assert_allclose(sol, result, rtol=1e-4)
     
     def test_solve_vec_jac(self):
         def fun(s, n, b):
@@ -85,7 +85,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             b = self.randvec(n)
             sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
             result = funjac(s, n, b)
-            assert np.allclose(sol, result, rtol=1e-3)
+            np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-10)
 
     def test_solve_vec_jac_fwd(self):
         def fun(s, n, b):
@@ -99,7 +99,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             b = self.randvec(n)
             sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
             result = funjac(s, n, b)
-            assert np.allclose(sol, result, rtol=1e-3)
+            np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-8)
 
     def test_solve_matrix(self):
         for n in range(1, MAXSIZE):
@@ -107,7 +107,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             b = self.randmat(len(K))
             sol = self.solve(K, b)
             result = self.decompclass(K).solve(b)
-            assert np.allclose(sol, result, rtol=1e-4)
+            np.testing.assert_allclose(sol, result, rtol=1e-4)
 
     def test_solve_matrix_jac(self):
         def fun(s, n, b):
@@ -121,7 +121,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             b = self.randmat(n)
             sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
             result = funjac(s, n, b)
-            assert np.allclose(sol, result, rtol=1e-3)
+            np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-10)
 
     def test_solve_matrix_jac_matrix(self):
         def fun(s, n, b, A):
@@ -136,7 +136,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             A = self.randmat(n).T
             sol = -A @ self.solve(K.T, self.solve(K, dK).T).T @ b
             result = funjac(s, n, b, A)
-            assert np.allclose(sol, result, rtol=1e-3)
+            np.testing.assert_allclose(sol, result, rtol=1e-3)
 
     def assert_close_gvar(self, sol, result):
         diff = np.reshape(sol - result, -1)
@@ -144,12 +144,12 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         diffmean = gvar.mean(diff)
         solcov = gvar.evalcov(gvar.svd(sol))
         q = diffmean @ linalg.solve(solcov, diffmean, assume_a='pos')
-        assert np.allclose(q, 0, atol=1e-7)
+        np.testing.assert_allclose(q, 0, atol=1e-7)
         
         diffcov = gvar.evalcov(diff)
         solmax = np.max(linalg.eigvalsh(solcov))
         diffmax = np.max(linalg.eigvalsh(diffcov))
-        assert np.allclose(diffmax / solmax, 0)
+        np.testing.assert_allclose(diffmax / solmax, 0, atol=1e-10)
     
     def randvecgvar(self, n):
         mean = self.randvec(n)
@@ -201,7 +201,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             b = self.randvec(len(K))
             sol = b.T @ self.solve(K, b)
             result = self.decompclass(K).quad(b)
-            assert np.allclose(sol, result)
+            np.testing.assert_allclose(sol, result, rtol=1e-3)
     
     def test_quad_vec_vec(self):
         for n in range(1, MAXSIZE):
@@ -210,7 +210,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             c = self.randvec(len(K))
             sol = b.T @ self.solve(K, c)
             result = self.decompclass(K).quad(b, c)
-            assert np.allclose(sol, result)
+            np.testing.assert_allclose(sol, result)
     
     def test_quad_matrix(self):
         for n in range(1, MAXSIZE):
@@ -218,7 +218,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             b = self.randmat(len(K))
             sol = b.T @ self.solve(K, b)
             result = self.decompclass(K).quad(b)
-            assert np.allclose(sol, result)
+            np.testing.assert_allclose(sol, result)
     
     def test_quad_matrix_matrix(self):
         for n in range(1, MAXSIZE):
@@ -227,7 +227,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             c = self.randmat(len(K))
             sol = b.T @ self.solve(K, c)
             result = self.decompclass(K).quad(b, c)
-            assert np.allclose(sol, result)
+            np.testing.assert_allclose(sol, result)
             
     def test_quad_vec_grad(self):
         def fun(s, n, b):
@@ -242,7 +242,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             invKb = self.solve(K, b)
             sol = -invKb.T @ dK @ invKb
             result = fungrad(s, n, b)
-            assert np.allclose(sol, result, rtol=1e-4)
+            np.testing.assert_allclose(sol, result, rtol=1e-4)
 
     def test_quad_matrix_jac(self):
         def fun(s, n, b):
@@ -257,14 +257,14 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             invKb = self.solve(K, b)
             sol = -invKb.T @ dK @ invKb
             result = funjac(s, n, b)
-            assert np.allclose(sol, result, rtol=1e-4)
+            np.testing.assert_allclose(sol, result, rtol=1e-4)
 
     def test_logdet(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
             sol = np.sum(np.log(linalg.eigvalsh(K)))
             result = self.decompclass(K).logdet()
-            assert np.allclose(sol, result)
+            np.testing.assert_allclose(sol, result, atol=1e-8)
     
     def test_logdet_grad(self):
         def fun(s, n):
@@ -277,7 +277,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             dK = self.matjac(s, n)
             sol = np.trace(self.solve(K, dK))
             result = fungrad(s, n)
-            assert np.allclose(sol, result, rtol=1e-4)
+            np.testing.assert_allclose(sol, result, rtol=1e-4, atol=1e-15)
     
     def test_logdet_grad_fwd(self):
         def fun(s, n):
@@ -290,7 +290,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             dK = self.matjac(s, n)
             sol = np.trace(self.solve(K, dK))
             result = fungrad(s, n)
-            assert np.allclose(sol, result, rtol=1e-4)
+            np.testing.assert_allclose(sol, result, rtol=1e-4, atol=1e-15)
     
     def test_inv(self):
         for n in range(1, MAXSIZE):
@@ -312,7 +312,7 @@ class DecompTestCorr(DecompTestBase):
             K = self.randsymmat(n)
             A = self.decompclass(K).correlate(np.eye(n))
             Q = A @ A.T
-            assert np.allclose(K, Q)
+            np.testing.assert_allclose(K, Q)
     
     def test_decorrelate_mat(self):
         for n in range(1, MAXSIZE):
@@ -321,7 +321,7 @@ class DecompTestCorr(DecompTestBase):
             x = self.decompclass(K).decorrelate(b)
             result = x.T @ x
             sol = self.decompclass(K).quad(b)
-            assert np.allclose(sol, result)
+            np.testing.assert_allclose(sol, result)
 
 class TestDiag(DecompTestCorr):
     
@@ -367,8 +367,8 @@ class TestCholToeplitz(DecompTestCorr):
     
     def randsymmat(self, n):
         x = np.arange(n)
-        alpha = np.exp(np.random.randn())
-        scale = np.exp(np.random.randn())
+        alpha = np.exp(1/3 * np.random.randn())
+        scale = np.exp(1/3 * np.random.randn())
         kernel = _kernels.RatQuad(scale=scale, alpha=alpha)
         return kernel(x[None, :], x[:, None])
     
@@ -397,7 +397,7 @@ class TestReduceRank(DecompTestCorr):
         eigvals = np.random.uniform(1e-2, 1e2, size=self._rank)
         O = O[:, :self._rank]
         K = (O * eigvals) @ O.T
-        assert np.allclose(K, K.T)
+        np.testing.assert_allclose(K, K.T)
         return K
     
     def mat(self, s, n=None):
@@ -416,7 +416,7 @@ class TestReduceRank(DecompTestCorr):
             K = self.randsymmat(n)
             sol = np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self._rank:]))
             result = self.decompclass(K).logdet()
-            assert np.allclose(sol, result)
+            np.testing.assert_allclose(sol, result)
 
 def test_solve_triangular():
     for n in range(1, MAXSIZE):
@@ -432,9 +432,9 @@ def test_solve_triangular():
 
 def check_solve_triangular(A, B, lower):
     x1 = linalg.solve_triangular(A, B.reshape(B.shape[0], -1), lower=lower).reshape(B.shape)
-    assert np.allclose(np.tensordot(A, x1, 1), B)
+    np.testing.assert_allclose(np.tensordot(A, x1, 1), B)
     x2 = _linalg.solve_triangular(A, B, lower=lower)
-    assert np.allclose(x1, x2)
+    np.testing.assert_allclose(x1, x2)
 
 class BlockDecompTestBase(DecompTestBase):
     """
@@ -472,7 +472,7 @@ class TestBlockDiag(BlockDecompTestBase):
     def subdecompclass(self):
         return _linalg.Diag
 
-class BlockDiagDecompTestBase(DecompTestBase):
+class BlockDiagDecompTestBase(DecompTestCorr):
     """
     Abstract class for testing BlockDiagDecomp. Concrete subclasses must
     overwrite `subdecompclass`.
@@ -523,7 +523,7 @@ class TestBlockDiagChol(BlockDiagDecompTestBase):
     def subdecompclass(self):
         return _linalg.Chol
 
-class TestBlockDiagDiag(BlockDiagDecompTestBase, DecompTestCorr):
+class TestBlockDiagDiag(BlockDiagDecompTestBase):
     
     @property
     def subdecompclass(self):
