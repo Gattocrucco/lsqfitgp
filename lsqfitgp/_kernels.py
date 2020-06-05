@@ -401,6 +401,13 @@ def Categorical(x, y, cov=None):
     A kernel over integers from 0 to N-1. The parameter `cov` is the covariance
     matrix of the values.
     """
+    
+    # TODO support an array-like for cov, do not force it to be a numpy
+    # array. In particular I'd like to support sparse matrices, but indexing
+    # with two arrays is not supported for pydata/sparse. I can circumvent it
+    # by flattening cov and converting x and y to flat indices manually. (Make
+    # specific tests when I implement this.)
+    
     assert np.issubdtype(x.dtype, numpy.integer)
     cov = np.array(cov, copy=False)
     assert len(cov.shape) == 2
@@ -536,6 +543,7 @@ def WienerIntegral(x, y):
     """
     
     # TODO can I generate this algorithmically for arbitrary integration order?
+    # If I don't find a closed formula I can use sympy.
     
     assert np.all(x >= 0)
     assert np.all(y >= 0)
@@ -613,9 +621,17 @@ def Fourier(x, y, n=2):
     
     """
     
-    # TODO maxk parameter to truncate the series. Is the result analytical?
+    # TODO maxk parameter to truncate the series. I have to manually sum the
+    # components.
     
-    # TODO parity = {None, 'even', 'odd'} to keep only sines/cosines.
+    # TODO parity = {None, 'even', 'odd'} to keep only sines/cosines. I would
+    # keep the normalization to variance = 1. Maybe this is general and should
+    # be implemented for any kernel as a kernel function, like `where`.
+    
+    # TODO this appears to be less numerically accurate than other kernels.
+    # It's probably the Bernoulli polynomial computation, find out if it is due
+    # to computing the polynomial using the coefficients or if the coefficients
+    # given by scipy are inaccurate.
     
     assert isinstance(n, (int, np.integer))
     assert n >= 1
@@ -816,16 +832,17 @@ def BagOfWords(x, y):
         k(x, y) &= \\sum_{w \\in \\text{words}} c_w(x) c_w(y), \\\\
         c_w(x) &= \\text{number of times word $w$ appears in $x$}
     
-    The words are defined as substrings delimited by spaces or one of the
-    following punctuation characters: ! « » " “ ” ‘ ’ / ( ) ' ? ¡ ¿ „ ‚ < > , ;
-    . : - – —.
+    The words are defined as non-empty substrings delimited by spaces or one of
+    the following punctuation characters: ! « » " “ ” ‘ ’ / ( ) ' ? ¡ ¿ „ ‚ < >
+    , ; . : - – —.
     """
     
     # TODO precompute the bags for x and y, then call a vectorized private
     # function.
     
     # TODO iterate on the shorter bag and use get on the other instead of
-    # computing set intersection?
+    # computing set intersection? Or: convert words to integers and then do
+    # set intersection with sorted arrays?
     
     xbag = collections.Counter(_bow_regexp.split(x))
     ybag = collections.Counter(_bow_regexp.split(y))
@@ -834,22 +851,8 @@ def BagOfWords(x, y):
     common = set(xbag) & set(ybag)
     return sum(xbag[k] * ybag[k] for k in common)
 
-@kernel(forcekron=True)
-def WeightedGraph(x, y, W=None):
-    """
-    
-    Weighted graph kernel.
-    
-    .. math::
-        k(x, y) = \\sum_{z \\in \\text{nodes}} W_{zx} W_{zy},
-    
-    where :math:`W_{ab}` is the weight connecting node `a` to node `b`. Nodes
-    must be represented by integers and the parameter `W` must be an array such
-    that ``W[a, b]`` is :math:`W_{ab}`.
-    
-    """
-    
-    # If I remember well, fancy indexing puts first the shape of the
-    # index arrays and then the shape of the slices, so this should broadcast
-    # correctly; check.
-    return np.sum(W[:, x] * W[:, y], axis=-1)
+# TODO implement the kernels from Smola and Kondor (2003).
+
+# TODO Kernels on graphs from Nicolentzos et al. (2019): see their GraKeL
+# library. Also there was a library for graphs in python, I don't remember the
+# name.
