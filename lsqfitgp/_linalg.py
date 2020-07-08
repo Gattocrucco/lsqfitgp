@@ -25,10 +25,10 @@ These classes never check for infs/nans in the matrices.
 
 Classes
 -------
-DecompMeta
-    Metaclass that adds autograd support.
 Decomposition
     Abstract base class.
+DecompAutograd
+    Abstract subclass that adds autograd support.
 Diag
     Diagonalization.
 EigCutFullRank
@@ -51,7 +51,7 @@ CholToeplitz
 BlockDecomp
     Decompose a 2x2 block matrix.
 BlockDiagDecomp
-    Decompose a 2x2 diagonal block matrix.
+    Decompose a 2x2 block diagonal matrix.
 
 """
 
@@ -77,11 +77,8 @@ from . import _toeplitz_linalg
 # support the methods correlate and decorrelate. Low-rank updates already
 # provided by scipy.
 
-# TODO change the class hierarchy in the following way (requires Python 3.6):
-# Decomposition(metaclass=type)
-# DecompAutograd(Decomposition) uses __init_subclass__
-# Diag(DecompAutograd), ...
-# BlockDecomp(Decomposition), ...
+# TODO rethink the class hierarchy to move correlate and decorrelate in a
+# separate superclass.
 
 def noautograd(x):
     """
@@ -101,15 +98,93 @@ def asinexact(dtype):
     else:
         return np.float64
 
-class DecompMeta(abc.ABCMeta):
+class Decomposition(metaclass=abc.ABCMeta):
     """
-    Metaclass for adding autograd support to subclasses of Decomposition.
+    
+    Abstract base class for positive definite symmetric matrices decomposition.
+    
+    Methods
+    -------
+    solve
+    quad
+    logdet
+    correlate
+    decorrelate
+    inv
+    
+    """
+    
+    @abc.abstractmethod
+    def __init__(self, K):
+        """
+        Decompose matrix K.
+        """
+        pass
+        
+    @abc.abstractmethod
+    def solve(self, b):
+        """
+        Solve the linear system K @ x = b. `b` can be an array of gvars.
+        """
+        pass
+    
+    def quad(self, b, c=None):
+        """
+        Compute the quadratic form b.T @ inv(K) @ b if c is not specified, else
+        b.T @ inv(K) @ c. `b` and `c` can be arrays of gvars.
+        """
+        if c is None:
+            c = b
+        return b.T @ self.solve(c)
+    
+    @abc.abstractmethod
+    def logdet(self):
+        """
+        Compute log(det(K)).
+        """
+        pass
+    
+    @abc.abstractmethod
+    def correlate(self, b):
+        """
+        Compute A @ b where K = A @ A.T. If b represents iid variables with
+        unitary variance, A @ b has covariance matrix K.
+        """
+        pass
+    
+    @abc.abstractmethod
+    def decorrelate(self, b):
+        """
+        Solve A @ x = b, where K = A @ A.T. If b represents variables with
+        covariance matrix K, x has identity covariance.
+        """
+        pass
+    
+    def inv(self):
+        """
+        Invert the matrix.
+        """
+        
+        # TODO currently no subclass overrides this, some should probably do.
+        
+        return self.quad(np.eye(self.n))
+    
+    @property
+    def n(self):
+        """
+        Return n where the decomposed matrix is n x n.
+        """
+        return len(self._K)
+
+class DecompAutograd(Decomposition):
+    """
+    Abstract subclass adding autograd support to subclasses of Decomposition.
     Moreover, it fixes the convention of tensor multiplication by passing
     the concrete class methods only 2d matrices and then reshaping back the
     result.
     """
         
-    def __init__(cls, *args):
+    def __init_subclass__(cls, **kw):
         
         # For __init__ I can't use an _autograd flag like below to avoid double
         # wrapping because the wrapper is called as super().__init__ in
@@ -128,14 +203,16 @@ class DecompMeta(abc.ABCMeta):
             meth = getattr(cls, name)
             if not hasattr(meth, '_autograd'):
                 # print(f'defining {cls.__name__}.{name}')
-                newmeth = getattr(DecompMeta, 'make_' + name)(meth)
+                newmeth = getattr(DecompAutograd, '_make_' + name)(meth)
                 newmeth = functools.wraps(meth)(newmeth)
                 if not hasattr(newmeth, '_autograd'):
                     newmeth._autograd = True
                 setattr(cls, name, newmeth)
+        
+        super().__init_subclass__(**kw)
 
     @staticmethod
-    def make_solve(oldsolve):
+    def _make_solve(oldsolve):
         
         @autograd.extend.primitive
         def solve_autograd(self, K, b):
@@ -208,7 +285,7 @@ class DecompMeta(abc.ABCMeta):
         return solve
     
     @staticmethod
-    def make_quad(oldquad):
+    def _make_quad(oldquad):
         
         @autograd.extend.primitive
         def quad_autograd(self, K, b, c):
@@ -383,7 +460,7 @@ class DecompMeta(abc.ABCMeta):
         return quad
     
     @staticmethod
-    def make_logdet(oldlogdet):
+    def _make_logdet(oldlogdet):
         
         @autograd.extend.primitive
         def logdet_autograd(self, K):
@@ -420,85 +497,7 @@ class DecompMeta(abc.ABCMeta):
         
         return logdet
     
-class Decomposition(metaclass=DecompMeta):
-    """
-    
-    Abstract base class for positive definite symmetric matrices decomposition.
-    
-    Methods
-    -------
-    solve
-    quad
-    logdet
-    correlate
-    decorrelate
-    inv
-    
-    """
-    
-    @abc.abstractmethod
-    def __init__(self, K):
-        """
-        Decompose matrix K.
-        """
-        pass
-        
-    @abc.abstractmethod
-    def solve(self, b):
-        """
-        Solve the linear system K @ x = b. `b` can be an array of gvars.
-        """
-        pass
-    
-    def quad(self, b, c=None):
-        """
-        Compute the quadratic form b.T @ inv(K) @ b if c is not specified, else
-        b.T @ inv(K) @ c. `b` and `c` can be arrays of gvars.
-        """
-        if c is None:
-            c = b
-        return b.T @ self.solve(c)
-    
-    @abc.abstractmethod
-    def logdet(self):
-        """
-        Compute log(det(K)).
-        """
-        pass
-    
-    @abc.abstractmethod
-    def correlate(self, b):
-        """
-        Compute A @ b where K = A @ A.T. If b represents iid variables with
-        unitary variance, A @ b has covariance matrix K.
-        """
-        pass
-    
-    @abc.abstractmethod
-    def decorrelate(self, b):
-        """
-        Solve A @ x = b, where K = A @ A.T. If b represents variables with
-        covariance matrix K, x has identity covariance.
-        """
-        pass
-    
-    def inv(self):
-        """
-        Invert the matrix.
-        """
-        
-        # TODO currently no subclass overrides this, some should probably do.
-        
-        return self.quad(np.eye(self.n))
-    
-    @property
-    def n(self):
-        """
-        Return n where the decomposed matrix is n x n.
-        """
-        return len(self._K)
-
-class Diag(Decomposition):
+class Diag(DecompAutograd):
     """
     Diagonalization.
     """
@@ -601,7 +600,7 @@ def solve_triangular_auto(a, b, lower=False):
     else:
         return linalg.solve_triangular(a, b, lower=lower, check_finite=False)
 
-class Chol(Decomposition):
+class Chol(DecompAutograd):
     """
     Cholesky decomposition.
     """
@@ -701,16 +700,13 @@ class CholToeplitz(Chol):
         eps = self._eps(eps, t, m)
         self._L = _toeplitz_linalg.cholesky(t, diageps=eps)
 
-class BlockDecomp:
+class BlockDecomp(Decomposition):
     """
     Decomposition of a 2x2 symmetric block matrix using decompositions of the
     diagonal blocks.
     
     Reference: Gaussian Processes for Machine Learning, A.3, p. 201.
     """
-    
-    # This is not a subclass of Decomposition because the __init__
-    # signature is different.
     
     # This class can be used only starting from a seed block and adding
     # other blocks one at a time. Would a divide et impera approach be useful
@@ -729,8 +725,8 @@ class BlockDecomp:
             An instantiated decomposition of P.
         S, Q : matrices
             The other blocks.
-        S_decomp_class : DecompMeta
-            A subclass of Decomposition used to decompose S - Q.T P^-1 Q.
+        S_decomp_class : subclass of DecompAutograd
+            A subclass of DecompAutograd used to decompose S - Q.T P^-1 Q.
         """
         self._Q = Q
         self._invP = P_decomp
@@ -768,15 +764,18 @@ class BlockDecomp:
     
     def logdet(self):
         return self._invP.logdet() + self._tildeS.logdet()
-        
-    def inv(self):
-        return self.quad(np.eye(self.n))     
     
+    def correlate(self, b):
+        raise NotImplementedError
+    
+    def decorrelate(self, b):
+        raise NotImplementedError
+        
     @property
     def n(self):
         return sum(self._Q.shape)
 
-class BlockDiagDecomp:
+class BlockDiagDecomp(Decomposition):
     
     def __init__(self, A_decomp, B_decomp):
         """
@@ -837,9 +836,6 @@ class BlockDiagDecomp:
         g = b[An:]
         return np.concatenate([A.decorrelate(f), B.decorrelate(g)])
 
-    def inv(self):
-        return self.quad(np.eye(self.n))     
-    
     @property
     def n(self):
         return self._A.n + self._B.n
