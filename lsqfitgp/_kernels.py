@@ -120,26 +120,6 @@ def Linear(x, y):
     """
     return _dot(x, y)
 
-@kernel(derivable=True)
-def Polynomial(x, y, exponent=None, sigma0=1):
-    """
-    Dot product polynomial kernel.
-    
-    .. math::
-        k(x, y) = (x \\cdot y + \\texttt{sigma0}^2)^\\texttt{exponent}
-    
-    In 1D it is equivalent to fitting with a polynomial of degree `exponent`.
-    """
-    
-    # TODO this kernel is redundant. It can be too easily obtained as
-    # (Linear() + sigma**2) ** exponent. Remove it.
-    
-    assert np.isscalar(exponent)
-    assert exponent >= 0
-    assert np.isscalar(sigma0)
-    assert sigma0 >= 0
-    return (_dot(x, y) + sigma0 ** 2) ** exponent
-
 @autograd.extend.primitive
 def _maternp(x, p):
     poly = 1
