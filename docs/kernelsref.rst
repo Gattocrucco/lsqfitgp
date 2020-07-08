@@ -65,7 +65,6 @@ Index
   * :func:`OrnsteinUhlenbeck`
   * :func:`PPKernel`
   * :func:`Periodic`
-  * :func:`Polynomial`
   * :func:`RatQuad`
   * :func:`Rescaling`
   * :func:`Taylor`
@@ -97,7 +96,6 @@ Documentation
 .. autofunction:: OrnsteinUhlenbeck
 .. autofunction:: PPKernel
 .. autofunction:: Periodic
-.. autofunction:: Polynomial
 .. autofunction:: RatQuad
 .. autofunction:: Rescaling
 .. autofunction:: Taylor
