@@ -80,8 +80,6 @@ lengthscale.
         Equivalent to fitting with a constant.
     Linear
         Equivalent to fitting with a line.
-    Polynomial
-        Equivalent to fitting with a polynomial.
     ExpQuad
         Gaussian kernel.
     White

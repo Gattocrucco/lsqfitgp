@@ -269,9 +269,6 @@ test_kwargs = {
     _kernels.PPKernel: dict(kwargs_list=[
         dict(q=q, D=D) for q in range(4) for D in range(1, 6)
     ]),
-    _kernels.Polynomial: dict(kwargs_list=[
-        dict(exponent=p) for p in range(10)
-    ]),
     _kernels.Wiener: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.WienerIntegral: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.FracBrownian: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),

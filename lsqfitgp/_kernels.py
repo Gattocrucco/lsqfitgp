@@ -34,7 +34,6 @@ __all__ = [
     'White',
     'ExpQuad',
     'Linear',
-    'Polynomial',
     'Matern',
     'Matern12',
     'Matern32',
