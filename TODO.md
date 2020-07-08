@@ -120,7 +120,7 @@ Proof: let uppercase letters be the class of each point. Let
 Where g_A is the latent GP variable. Then the posterior for the class on
 another point B is
 
-    P(B|p(A) = p_A) = int dg_B P(B|g_B,p_A) p(g_B|p_A)
+    P(B|P(A) = p_A) = int dg_B P(B|g_B,p_A) p(g_B|p_A)
 
 Now we assume that B is conditionally independent of p_A, i.e. the dependencies
 are completely expressed by the latent GP, so

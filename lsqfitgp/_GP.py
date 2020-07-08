@@ -256,6 +256,7 @@ class GP:
             'gersh'  : _linalg.CholGersh,
             'maxeigv': _linalg.CholMaxEig
         }[solver]
+        # TODO maxeigv is probably useless, remove it.
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **kw)
         self._checkpositive = bool(checkpos)
         self._checksym = bool(checksym)

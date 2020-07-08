@@ -24,13 +24,6 @@
 A custom kernel: text classification
 ====================================
 
-.. warning::
-
-   This tutorial was run with an old version of :mod:`lsqfitgp` which had poor
-   numerical accuracy. The uncertainties of the output numbers are wrong, and
-   considerations based on them are random. The results still hold though. I'll
-   soon update the tutorial with the latest release.
-
 In the previous sections of the manual we always used the :class:`ExpQuad`
 kernel. There are many other kernels available in the module; however, it will
 be useful to build at least once our own kernel to understand more about how
@@ -317,8 +310,8 @@ is::
 
 Output::
 
-   6.44(18)
-   -1.135(94)
+   6.4436854(48)
+   -1.1356411(14)
 
 It works! The standard deviations are very small compared to the values, so the
 probabilities of the sign are almost exactly 100 % (as a rule of thumb, a
@@ -330,9 +323,28 @@ the letters? In general different languages will tend to use more some letters.
 Here the difference is stark, because in Latin there are no j, k, w, x, y at
 all.
 
-So, in the end, it was not a problem that the prior variances where depending
-on the length of the text. But still it feels wrong, we initially stated the
-problem as determining if a text is English, not if it is *a lot of* English.
+However, there's something that should bother you: the standard deviations are
+not just small, they are *very* small. They're so small that they seem just an
+artefact of the finite precision of floating point computation. Effectively, it
+is so: the correct theorical value of those standard deviations is zero. The
+reason is that we have fit 50 texts with a kernel that uses 26 letters. In
+:ref:`kernelexpl` we said that fitting with a kernel :math:`\sum_i h_i(x)
+h_i(y)` is equivalent to doing a linear least squares fit with parameters
+:math:`p_i` where the model function is :math:`\sum_i p_i h_i(x)`, so we have
+more data than parameters. This would not be a problem *if we had errors on the
+datapoints*, but we put in the -1 and +1 without errors, so it's like solving
+a system of 50 equations for 26 variables.
+
+What are the output numbers then, if the fit is apparently not doable? In this
+case :mod:`lsqfitgp` does something internally which is equivalent to adding a
+very small uniform error to the datapoints. This is how the fit is solved, and
+it is also why we get a very small but non-zero error on the output.
+
+Now to another matter. In the end, it was not a problem that the prior
+variances where depending on the length of the text. But still it feels wrong,
+we initially stated the problem as determining if a text is English, not if it
+is *a lot of* English. We set the datapoints to +1 and -1, Milton comes out as
+roughly -1, while Caesar is +6. So Caesar is... very Latin?
 
 We can fix this by normalizing the kernel such that the variance is always one.
 It is like replacing a covariance matrix with a correlation matrix. We'll
@@ -361,6 +373,6 @@ function to rescale the kernel. Now let's run the fit::
 
 Output::
 
-   {'caesar': 0.7311(14),'milton': -1.2688(14)}
+   {'caesar': 0.7302933637(97),'milton': -1.2692206484(42)}
 
-This time both means are around one.
+This time both means are close to ±1.
