@@ -453,4 +453,3 @@ xfail(TestPPKernel, 'test_positive_deriv_nd')
 # TODO These are not isotropic kernels, what is the problem?
 xfail(TestTaylor, 'test_double_diff_nd_second')
 xfail(TestNNKernel, 'test_double_diff_nd_second')
-xfail(TestPolynomial, 'test_double_diff_nd_second')
