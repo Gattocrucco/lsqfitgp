@@ -39,7 +39,7 @@ setuptools.setup(
         "Development Status :: 4 - Beta",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.1',
+    python_requires='>=3.6',
     install_requires=[
         'numpy',
         'scipy',
