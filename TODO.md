@@ -75,6 +75,11 @@ Can I do something helpful for Riemann manifolds? Like, the wikipedia page for
 processes has a nice brownian motion on a sphere. How could I implement that
 in a generic way which would allow the user to put any process on any manifold?
 
+Bayesian classification: I found only one decent quick-and-lean python package,
+bayesian-optimization, but I'm not satisfied with it nor with its
+documentation. If I don't find out something better I'd like to study the
+matter and write something.
+
 ### Fourier
 
 The fourier transform is a linear operator, can I use it like I'm doing with
@@ -84,12 +89,12 @@ correlation between a point and a frequency component is 0.
 
 I can do the following:
 
-  * Apply a DFT to a specific key, can be done in addtransf or similar.
+  * Apply a DTFT to a specific key, can be done in addtransf or similar.
   
   * Compute the Fourier series of a periodic process (surely doable for the
     Fourier kernel).
     
-  * Apply a Fourier transform or a DTFT on a kernel which represents a
+  * Apply a Fourier transform or a DFT on a kernel which represents a
     transient process.
 
 Each kernel would need to have its handwritten transformation, with an
@@ -104,7 +109,7 @@ I'd like to avoid introducing a different likelihood and Laplace and EP. In the
 user guide I did text classification in my own crappy but quick and still
 statistically well-defined way, well it turns out that technique has been
 studied and it works almost as well, it's in GPML section 6.5 "Least-squares
-Classification".
+Classification". (A blog post on this would be interesting.)
 
 I can improve it in the following way that won't require significant new code
 but only explanations to the user: for each datapoint give the probability for
