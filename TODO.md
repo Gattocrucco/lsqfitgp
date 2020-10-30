@@ -147,6 +147,8 @@ can compute a sort of "correlation matrix".
 
 ### `gvar`-related issues
 
+Lepage has done sone updates after my requests, I should look into it and update the manual accordingly.
+
 #### sparse `evalcov`
 
 My `evalcov_blocks` code didn't make it into `gvar`, but I could recycle the
