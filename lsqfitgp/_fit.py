@@ -79,7 +79,7 @@ class empbayes_fit:
             argument `hyperparams` has the same structure of the empbayes_fit
             argument `hyperprior`. gpfactory must be autograd-friendly, i.e.
             either use autograd.numpy, autograd.scipy, lsqfitgp.numpy,
-            lsqfit.scipy or gvar instead of plain numpy/scipy.
+            lsqfitgp.scipy or gvar instead of plain numpy/scipy.
         data : dict or callable
             Dictionary of data that is passed to `GP.marginal_likelihood` on
             the GP object returned by `gpfactory`. If a callable, it is called
