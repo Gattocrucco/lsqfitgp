@@ -17,8 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Search for rst files in the current directory and run the python code in
-them. Or, run the files specified on the command line."""
+"""Run the python code in the rst files specified on the command line."""
 
 import re
 import sys
