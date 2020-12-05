@@ -95,7 +95,8 @@ I can do the following:
     Fourier kernel).
     
   * Apply a Fourier transform or a DFT on a kernel which represents a
-    transient process.
+    transient process (should be doable for the gaussian kernel rescaled with
+    gaussians).
 
 Each kernel would need to have its handwritten transformation, with an
 interface like `diff()`. For the Fourier series it makes sense to make a new
