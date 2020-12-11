@@ -54,6 +54,8 @@ Support taking derivatives in arbitrarily nested dtypes. Switch from the
 mess-tuple format to dictionaries dim->int. Dim can be (a tuple of) str, int,
 ellipsis, slices, the same recursive format I should support in
 `Kernel.__init__`. Add a class just for parsing the subfield specification.
+Also, call these classes Dim and Dims such that they can be used for other
+things that need a dimension specification, like Fourier transforms.
 
 Is there a smooth version of the Wiener process? like, softmin(x, y)? I tried
 smoothing it with a gaussian but an undoable integral comes up.
