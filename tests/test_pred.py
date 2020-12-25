@@ -99,7 +99,7 @@ def {}():
         m1, cov1 = pred({}, seed, True)
         m2, cov2 = pred({}, seed, True)
         assert_close(m1, m2)
-        assert_close_cov(cov1, cov2, 4e-3, 4e-6)
+        assert_close_cov(cov1, cov2, 4e-3, 5e-6)
 """.format('test_pred_err' + postfix(kw1, kw2), kw1, kw2)
     
     if kw1['fromdata'] == kw2['fromdata']:

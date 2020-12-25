@@ -28,7 +28,7 @@ EXAMPLES = $(wildcard examples/*.py)
 examples: $(EXAMPLES)
 
 $(EXAMPLES):
-	python $@
+	PYTHONPATH=. python $@
 
 docscode:
 	cd docs && python runcode.py *.rst
