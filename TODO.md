@@ -246,6 +246,8 @@ Add a 'toeplitz' solver to GP. It fails if the matrix is non-toeplitz,
 accepting both toeplitz array-likes and normal matrices to be checked.
 Non-toeplitz solvers print a warning if they receive a toeplitz array-like.
 
+Scipy.linalg now has a function to multiply toeplitz matrices.
+
 #### Markovian processes
 
 Example: the Wiener kernel is a Markov process, i.e. on the right of a
