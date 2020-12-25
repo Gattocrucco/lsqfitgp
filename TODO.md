@@ -6,7 +6,7 @@ Other TODOs are scattered in the code. Search for `TODO`.
 
 Add a Raises section to GP methods that can trigger covariance matrix checks.
 
-Add Examples sections.
+Add 'Examples' sections.
 
 Interlinks with gvar and lsqfit docs.
 
