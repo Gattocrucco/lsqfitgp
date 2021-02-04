@@ -10,13 +10,16 @@ Add 'Examples' sections.
 
 Interlinks with gvar and lsqfit docs.
 
-Mention that numpy.lib.recfunctions.unstructured_to_structured may be used
+Mention that `numpy.lib.recfunctions.unstructured_to_structured` may be used
 for euclidean multidimensional input.
 
 In the manual add an automatically generated index of the examples, with links
 to github, with the docstrings of examples.
 
-Separate the index of kernels by class (after adding StationaryKernel).
+Separate the index of kernels by class (after adding `StationaryKernel`).
+
+In the nonlinear fit example, use the gaussian cdf instead of the hyperbolic
+arctangent to make a uniform prior over the interval.
 
 ## Fixes and tests
 
