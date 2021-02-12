@@ -240,6 +240,11 @@ a non-evenly spaced input comes in. 'auto' will check if the input is compliant
 need not be aware of this, `__call__` passes them only the necessary points and
 then packs up the result as a toeplitz array-like.
 
+Checking if input is evenly spaced is nonexact and the user should have control
+over this. Possible interface: GP.addx(..., evenlyspaced=True), convenienced
+to GP.addlinspace(start, stop, num, ...). In some way the x array is marked
+as a linspace.
+
 This only applies to stationary kernels and isotropic kernels in 1D. I can
 implement it this way: make an intermediate private Kernel subclass
 _ToeplitzKernel which implements `__call__`, StationaryKernel and
