@@ -21,6 +21,10 @@ Separate the index of kernels by class (after adding `StationaryKernel`).
 In the nonlinear fit example, use the gaussian cdf instead of the hyperbolic
 arctangent to make a uniform prior over the interval.
 
+A chapter on partial derivatives (after improving the interface).
+
+A chapter on propagation, from simple GP-only to nonlinear with multiple fits.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -94,12 +98,12 @@ correlation between a point and a frequency component is 0.
 
 I can do the following:
 
-  * Apply a DTFT to a specific key, can be done in addtransf or similar.
+  * Apply a DFT to a specific key, can be done in addtransf or similar.
   
   * Compute the Fourier series of a periodic process (surely doable for the
     Fourier kernel).
     
-  * Apply a Fourier transform or a DFT on a kernel which represents a
+  * Apply a Fourier transform or a DTFT on a kernel which represents a
     transient process (should be doable for the gaussian kernel rescaled with
     gaussians).
 
@@ -226,6 +230,9 @@ with QR)
 With stationary kernels, an evenly spaced input produces a toeplitz matrix,
 which requires O(N) memory and can be solved in O(N^2). If the data has
 uniform independent errors it's still toeplitz.
+
+(The prior matrix is not Toeplitz, it is the NxN central submatrix of a 2Nx2N
+Toeplitz matrix.)
 
 Add a Toeplitz decomposition to _linalg. Since it's O(N^2) I can save the
 matrix and rerun the solve in every routine, but maybe for numerical accuracy
