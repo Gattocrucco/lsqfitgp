@@ -25,6 +25,8 @@ A chapter on partial derivatives (after improving the interface).
 
 A chapter on propagation, from simple GP-only to nonlinear with multiple fits.
 
+Use `plt.subplots` instead of `plt.figure` + `fig.subplots`.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
