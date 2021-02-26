@@ -233,9 +233,6 @@ With stationary kernels, an evenly spaced input produces a toeplitz matrix,
 which requires O(N) memory and can be solved in O(N^2). If the data has
 uniform independent errors it's still toeplitz.
 
-(The prior matrix is not Toeplitz, it is the NxN central submatrix of a 2Nx2N
-Toeplitz matrix.)
-
 Add a Toeplitz decomposition to _linalg. Since it's O(N^2) I can save the
 matrix and rerun the solve in every routine, but maybe for numerical accuracy
 and to use gvars it is better to explicitly save a cholesky decomposition.
