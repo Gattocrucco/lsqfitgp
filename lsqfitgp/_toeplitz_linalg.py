@@ -26,7 +26,7 @@ import numpy as np
 def cholesky(t, diageps=None):
     """
     
-    Cholesky decomposition of a Toeplitz matrix.
+    Cholesky decomposition of a symmetric Toeplitz matrix.
     
     Parameters
     ----------
@@ -41,7 +41,24 @@ def cholesky(t, diageps=None):
     L : (N, N) array
         Lower triangular matrix such that toeplitz(t) == L @ L.T.
     
+    Notes
+    -----
+    The reference for the algorithm is:
+        
+        Michael Stewart,
+        Cholesky factorization of semi-definite Toeplitz matrices.
+        Linear Algebra and its Applications,
+        Volume 254, pages 497-525, 1997.
+    
     """
+    
+    # TODO Split the function in an interface and a numba core. Exceptions are
+    # raised by the interface, the core returns the last i.
+    
+    # TODO Make a function to compute L @ M instead of just computing L, and
+    # one to do L^-1 @ M. Both matrix multiplication and triangular solve can
+    # be done one column at a time.
+    
     t = np.asanyarray(t)
     assert len(t.shape) == 1
     if len(t) == 0:
