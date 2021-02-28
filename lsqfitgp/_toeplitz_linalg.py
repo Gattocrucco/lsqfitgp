@@ -59,6 +59,9 @@ def cholesky(t, diageps=None):
     # one to do L^-1 @ M. Both matrix multiplication and triangular solve can
     # be done one column at a time.
     
+    # TODO Probably if I compile this with numba the code as originally
+    # written with explicit indices is faster.
+    
     t = np.asanyarray(t)
     assert len(t.shape) == 1
     if len(t) == 0:
