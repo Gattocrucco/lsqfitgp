@@ -269,6 +269,8 @@ datapoint you don't need the datapoints on the left. This means it can be
 solved faster. See how to do this and if it can be integrated smoothly with the
 rest of the library.
 
+I think what you get is a Kalman filter.
+
 #### Autoregressive processes
 
 Like what Celerite does, it solves 1D GPs in O(N). Reference article to cite:

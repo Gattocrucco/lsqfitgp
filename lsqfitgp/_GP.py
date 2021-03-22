@@ -896,6 +896,7 @@ class GP:
                 key: flatout[slic].reshape(self._elements[key].shape)
                 for key, slic in zip(outkeys, outslices)
             })
+            # TODO A Bufferdict can be initialized directly with the 1D buffer.
         else:
             assert len(outkeys) == 1
             return flatout.reshape(self._elements[outkeys[0]].shape)
@@ -954,7 +955,7 @@ class GP:
         
         # TODO maybe I should raise an error when the covariance is specified
         # with givencov but y contains gvars? Now I'm just ignoring the gvar
-        # covariance.
+        # covariance. Maybe just a warning.
 
         if ycovblocks is not None:
             ycov = _block_matrix(ycovblocks)
