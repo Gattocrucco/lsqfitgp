@@ -586,6 +586,9 @@ def where(condfun, kernel1, kernel2, dim=None):
             if x.dtype.names is None:
                 raise ValueError('kernel called on non-structured array but condition dim="{}"'.format(dim))
             elif x.dtype.fields[dim][0].shape:
+                # TODO should probably use subdtype, such that when the user
+                # explicitly specifies an empty shape the behaviour is the
+                # same as with nontrivial shapes. This applies also to Kernel.
                 return x[[dim]]
             else:
                 return x[dim]
@@ -598,8 +601,13 @@ def where(condfun, kernel1, kernel2, dim=None):
             # the relevant points. To support this with autograd, make a
             # custom np.where that uses assignment and define its vjp.
             
-            # TODO this often produces a very sparse matrix, when I implement
+            # TODO this may produce a very sparse matrix, when I implement
             # sparse support do it here too.
+            
+            # TODO it will probably often be the case that the result is
+            # either dense or all zero. The latter case can be optimized this
+            # way: if it's zero, broadcast a 0-d array to the required shape,
+            # and flag it as all zero with an instance variable.
             
             xcond = condfun(x)
             ycond = condfun(y)
