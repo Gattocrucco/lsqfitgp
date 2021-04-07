@@ -112,6 +112,10 @@ class Decomposition(metaclass=abc.ABCMeta):
     decorrelate
     inv
     
+    Properties
+    ----------
+    n
+    
     """
     
     @abc.abstractmethod

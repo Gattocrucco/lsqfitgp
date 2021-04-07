@@ -956,6 +956,10 @@ class GP:
         # TODO maybe I should raise an error when the covariance is specified
         # with givencov but y contains gvars? Now I'm just ignoring the gvar
         # covariance. Maybe just a warning.
+        
+        # TODO parameter separate:bool to return separately the residuals
+        # and the logdet. A problem with the residuals is that I would use
+        # decomp.decorrelate which is missing in BlockDecomp.
 
         if ycovblocks is not None:
             ycov = _block_matrix(ycovblocks)
