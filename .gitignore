@@ -1,3 +1,7 @@
+# My stuff
+pythonvenv
+note.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

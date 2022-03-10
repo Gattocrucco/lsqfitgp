@@ -8,3 +8,5 @@ sphinx
 numpydoc
 pytest
 coverage
+twine
+wheel

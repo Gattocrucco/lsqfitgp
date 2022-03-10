@@ -26,7 +26,7 @@ from ._fit import *
 from ._Deriv import *
 from ._fastraniter import *
 
-__version__ = '0.6.2'
+__version__ = '0.6.3'
 
 __doc__ = """
 

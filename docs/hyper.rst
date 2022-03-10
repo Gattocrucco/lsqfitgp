@@ -423,7 +423,7 @@ easy as cheating actually if we use the :class:`Periodic` kernel::
     hprior = {
         'log(period)': gvar.log(2 * np.pi * gvar.gvar(1, 1)),
     }
-    fit = lgp.empbayes_fit(hprior, makegp, {'sine': y})
+    fit = lgp.empbayes_fit(hprior, makegp, {'sine': y}, raises=False)
     hp = fit.p
     for k, v in hp.items():
         print(k, v)

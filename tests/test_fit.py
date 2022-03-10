@@ -76,6 +76,7 @@ def check_fit(hyperprior, gpfactory, dataerr=None):
 
 @pytest.mark.xfail
 def test_period():
+    # TODO why was this failing?
     hp = {
         'log(scale)': gvar.log(gvar.gvar(1, 0.1))
     }
