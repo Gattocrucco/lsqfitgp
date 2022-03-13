@@ -89,12 +89,21 @@ erf_jvp = lambda ans, x: lambda g: g * 2 / np.sqrt(np.pi) * np.exp(-x ** 2)
 autograd.extend.defvjp(gvar.erf, erf_jvp)
 autograd.extend.defjvp(gvar.erf, erf_jvp)
 
-if hasattr(gvar.BufferDict, 'extension_fcn'): # old gvar versions
+if hasattr(gvar.BufferDict, 'extension_fcn'):
+    # old gvar versions
     gvar.BufferDict.extension_fcn['log'] = gvar.exp
     gvar.BufferDict.extension_fcn['sqrt'] = gvar.square
     gvar.BufferDict.extension_fcn['erfinv'] = gvar.erf
+elif not hasattr(gvar.BufferDict, 'has_distribution'):
+    # medium gvar versions
+    gvar.BufferDict.add_distribution('log', gvar.exp)
+    gvar.BufferDict.add_distribution('sqrt', gvar.square)
+    gvar.BufferDict.add_distribution('erfinv', gvar.erf)
 else:
-    # TODO this could break in the near future
+    # new gvar versions
+    gvar.BufferDict.del_distribution('log')
+    gvar.BufferDict.del_distribution('sqrt')
+    gvar.BufferDict.del_distribution('erfinv')
     gvar.BufferDict.add_distribution('log', gvar.exp)
     gvar.BufferDict.add_distribution('sqrt', gvar.square)
     gvar.BufferDict.add_distribution('erfinv', gvar.erf)
