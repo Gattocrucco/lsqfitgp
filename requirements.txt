@@ -10,3 +10,4 @@ pytest
 coverage
 twine
 wheel
+ipython
