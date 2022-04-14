@@ -26,7 +26,7 @@ Hyperparameters in the input
 
 This section is a bit technical, I will just explain a workaround necessary to
 make :class:`empbayes_fit` work when the hyperparameters enter in the
-definition of the gaussian process from the input points instead of from the
+definition of the Gaussian process from the input points instead of from the
 kernel parameters and the input points are multidimensional.
 
 Let's say you are investigating on a case of disappeared cats in a village. You

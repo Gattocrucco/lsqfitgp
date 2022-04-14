@@ -30,7 +30,7 @@ of the process values at two different points:
 .. math::
     k(x, y) = \operatorname{Cov}[f(x), f(y)].
 
-So you can imagine the gaussian process as a multivariate gaussian distribution
+So you can imagine the gaussian process as a multivariate Gaussian distribution
 on an infinitely long vector :math:`f(x)`, where :math:`x` is a "continuous
 index", and :math:`k(x, y)` is the covariance matrix.
 
@@ -73,8 +73,8 @@ from an amplitude parameter, i.e. the model is
 .. math::
     y = p h(x) + \varepsilon(x),
 
-where :math:`\varepsilon(x)` is an independent zero mean gaussian distributed
-error. Put a gaussian prior with zero mean and unit variance on the parameter
+where :math:`\varepsilon(x)` is an independent zero mean Gaussian distributed
+error. Put a Gaussian prior with zero mean and unit variance on the parameter
 :math:`p`. What is the prior covariance of :math:`y(x_1)` with :math:`y(x_2)`?
 Let's compute:
 
@@ -84,11 +84,11 @@ Let's compute:
     &= \operatorname{Var}[p] h(x_1) h(x_2) = \\
     &= h(x_1) h(x_2).
 
-This, by definition, is also the prior of a gaussian process fit with kernel
+This, by definition, is also the prior of a Gaussian process fit with kernel
 :math:`h(x_1) h(x_2)`. It can be extended to :math:`y = p_i h_i(x)` to get
 the general kernel from above (exercise). So, have we discovered that a
-gaussian process fit is just a linear least squares fit with priors? Yes! But,
-when thinking in terms of gaussian processes, you normally use an infinite
+Gaussian process fit is just a linear least squares fit with priors? Yes! But,
+when thinking in terms of Gaussian processes, you normally use an infinite
 set of functions :math:`h_i`. You don't even think about it in terms of the
 :math:`h_i`, because the kernel has meaning in itself.
 
@@ -128,7 +128,7 @@ understand if the kernel makes sense before putting the data in.
 
 Looking at the plot, we see the function oscillates rapidly, but the center of
 the oscillation drifts. Effectively, if you think about it, summing two kernels
-is like summing two *independent* gaussian processes: let :math:`f_1` and
+is like summing two *independent* Gaussian processes: let :math:`f_1` and
 :math:`f_2` be processes with kernels :math:`k_1` and :math:`k_2` respectively,
 then the kernel of :math:`f_1 + f_2` is
 

@@ -54,7 +54,7 @@ in its elements.
 
 A thing to notice is that we only used 30 points for the side of the grid. This
 is because 30x30 = 900 and at around 1000 datapoints :mod:`lsqfitgp` starts
-being slow. This is an inherent limitation of gaussian processes, which can be
+being slow. This is an inherent limitation of Gaussian processes, which can be
 only overcome with approximations or specialized algorithms. If you need to
 handle a lot of datapoints, `pymc3
 <https://docs.pymc.io/notebooks/GP-Kron.html>`_ has some support for separable

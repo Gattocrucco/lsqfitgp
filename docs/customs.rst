@@ -32,12 +32,12 @@ kernels work.
 First I will make up a problem for which there's not already a reasonable
 kernel in the module. Let's say we want to recognize automatically the language
 of a text. To keep things simple, we will use only two languages, English and
-Latin. To represent this binary classification problem with a gaussian process,
-we consider a real "score" which is modeled as a gaussian process. Negative
+Latin. To represent this binary classification problem with a Gaussian process,
+we consider a real "score" which is modeled as a Gaussian process. Negative
 scores correspond to English, positive scores correspond to Latin. Example: if
 the prior for a text score is :math:`0 \pm 1`, it means there's 50 %
 probability it's English and 50 % it's Latin. In general we have to integrate a
-gaussian distribution over the negative/positive semiaxis.
+Gaussian distribution over the negative/positive semiaxis.
 
 Without using statistical techniques, writing a language identification program
 is quite simple; we could just put a list of common words for each language and
@@ -161,7 +161,7 @@ articles from the `English <https://en.wikipedia.org/wiki/Special:Random>`_ and
 
 Ok, so we have 25 english texts and 25 latin texts. There's some contamination,
 like the latin wikipedia page on the *Hills Road Sixth Form College*, but this
-is life. Let's put all this in a gaussian process object::
+is life. Let's put all this in a Gaussian process object::
 
     gp = lgp.GP(CountLetters())
     gp.addx(english_texts, 'english')
@@ -239,7 +239,7 @@ standard deviation. Yes, it's measuring the length! The printed electronics
 paragraph is the longest, and in general the Latin ones were shorter. Is this
 a problem? I don't know. Let's see what happens.
 
-To use the gaussian process, I need some other texts which I won't tell to it
+To use the Gaussian process, I need some other texts which I won't tell to it
 if they are English or Latin. I'll pick this time::
 
     debellogallico = """
@@ -315,7 +315,7 @@ Output::
 
 It works! The standard deviations are very small compared to the values, so the
 probabilities of the sign are almost exactly 100 % (as a rule of thumb, a
-gaussian distribution has negligible mass farther than 5 standard deviations
+Gaussian distribution has negligible mass farther than 5 standard deviations
 from the mean).
 
 Is it reasonable that it gets a completely determined result by just counting

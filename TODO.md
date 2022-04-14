@@ -25,8 +25,6 @@ A chapter on propagation, from simple GP-only to nonlinear with multiple fits.
 
 Use `plt.subplots` instead of `plt.figure` + `fig.subplots`.
 
-Nella documentazione, correggere gaussian -> Gaussian.
-
 mi sono accorto che lepage già praticamente faceva la stessa cosa che
 faccio io nell'esempio "y has no errors, marginalization".
 

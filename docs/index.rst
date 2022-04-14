@@ -23,13 +23,13 @@ lsqfitgp
 ========
 
 This is the documentation for the python module :mod:`lsqfitgp`. It provides a
-simple but powerful interface to use gaussian processes for fitting. The code
+simple but powerful interface to use Gaussian processes for fitting. The code
 is open source, available on `github
 <https://github.com/Gattocrucco/lsqfitgp>`_ under the `GNU General Public
 License <https://www.gnu.org/licenses/gpl-3.0.html>`_.
 
-Briefly, gaussian processes are a statistical tool for fitting unknown
-functions. If you want to know more about gaussian processes, the book
+Briefly, Gaussian processes are a statistical tool for fitting unknown
+functions. If you want to know more about Gaussian processes, the book
 `Gaussian Processes for Machine Learning <http://gaussianprocess.org/gpml/>`_
 is a good reference available for free. However, understanding the technical
 details is not necessary to use the basic functionality of the module.

@@ -24,7 +24,7 @@
 Optimization
 ============
 
-There are three main computational steps when doing a gaussian process fit with
+There are three main computational steps when doing a Gaussian process fit with
 :mod:`lsqfitgp`:
 
   * Compute the prior covariance matrix using the kernel. This is :math:`O((n +

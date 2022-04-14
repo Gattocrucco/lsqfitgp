@@ -45,7 +45,7 @@ We won't add errors to the data for now. What we are going to do in the next
 steps is pretending we don't know the data comes from a sine, and letting the
 fit guess a function that passes through the data.
 
-The first step in using a gaussian process is choosing a *kernel function*. Say
+The first step in using a Gaussian process is choosing a *kernel function*. Say
 :math:`f` is the unknown function we want to model. The kernel function
 :math:`k(x, y)` specifies the covariance we expect *a priori* between
 :math:`f(x)` and :math:`f(y)`:
@@ -138,7 +138,7 @@ Now we make a plot of everything::
 Notice that, to plot ``ypred``, we did ``ypred_mean = gvar.mean(ypred)``. This
 is because the output of :meth:`~GP.predfromdata` is not an array of numbers,
 but an array of :class:`gvar.GVar` objects. :class:`GVar` variables represent
-gaussian distributions; :func:`gvar.mean` extracts the mean of the
+Gaussian distributions; :func:`gvar.mean` extracts the mean of the
 distribution. Let's make an error band for the fit by computing the standard
 deviations with :func:`gvar.sdev`::
 
@@ -155,13 +155,13 @@ Let's take a moment to look at the result. First, consider the line giving the
 mean. Between the data points, it goes smoothly from one point to the next. It
 reasonably approximates a sine. However, outside the region with the data it
 goes to zero. This is about a thing I forgot to mention when introducing
-kernels: apart from the variance and correlations, a gaussian process also has
+kernels: apart from the variance and correlations, a Gaussian process also has
 an a priori mean. :mod:`lsqfitgp` always assumes that the a priori mean is
 zero, so, going far from the data, the a posteriori mean should go to zero too.
 
 It would be easy to provide an arbitrary prior mean by first subtracting it
 from the data, and then adding it back to the result. However, I encourage the
-reader to avoid using prior means at all while learning gaussian processes. You
+reader to avoid using prior means at all while learning Gaussian processes. You
 should always think about the links and correlations between the points and the
 general properties of the function instead of focusing on what value or
 specific functional form you expect, and let the data choose the values and
@@ -169,7 +169,7 @@ shape.
 
 Now we look at the band. It is a band of :math:`\pm1\sigma` around the
 posterior mean (:math:`\sigma` stands conventionally for the standard
-deviation). For the gaussian distribution, this interval has a probability of
+deviation). For the Gaussian distribution, this interval has a probability of
 68 %. A :math:`\pm2\sigma` interval would have a probability of 95 %, so this
 means that the fit expects the function to stay most of the time within a band
 twice as large as that plotted, and 2/3 of the time inside the one plotted. So,
@@ -246,7 +246,7 @@ So, after a an oscillation, it still goes back to the prior, as it should. It
 just goes on 3 times as much as before because we set ``scale=3``.
 
 Finally, for completeness, let's see how to add errors to the data. First, we
-generate some gaussian distributed errors with standard deviation 0.2::
+generate some Gaussian distributed errors with standard deviation 0.2::
 
     yerr = 0.2 * np.random.randn(len(y))
     y += yerr
@@ -255,7 +255,7 @@ Then, we build an array of :class:`GVar` variables from ``y``::
 
     gy = gvar.gvar(y, 0.2 * np.ones(len(y)))
 
-Now ``gy`` represents an array of independent gaussian distributions with mean
+Now ``gy`` represents an array of independent Gaussian distributions with mean
 ``y`` and standard deviation 0.2. We then repeat everything as before, but
 using ``gy`` instead of ``y``; we don't even need to recreate the :class:`GP`
 object because we are not modifying the :math:`x` points::

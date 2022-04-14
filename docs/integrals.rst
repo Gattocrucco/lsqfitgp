@@ -64,7 +64,7 @@ we plot::
 
 .. image:: integrals1.png
 
-So, the gaussian process not only can do integrals, it also understands that
+So, the Gaussian process not only can do integrals, it also understands that
 the primitive is defined up to an additive constant.
 
 How can we do a definite integral? There's the easy way, and the easy but not
@@ -108,7 +108,7 @@ by :meth:`~GP.predfromdata`. It becomes useful when there's data to fit against
 the transformed quantities.
 
 Example: you already know the area of the function. Let's try this with a
-gaussian::
+Gaussian::
 
     gaussian = lambda x: 1 / np.sqrt(2 * np.pi) * np.exp(-1/2 * x**2)
     
@@ -137,7 +137,7 @@ gaussian::
 
 .. image:: integrals2.png
 
-It works well, it draws a gaussian. However, had we picked an ugly function
+It works well, it draws a Gaussian. However, had we picked an ugly function
 that is asymmetrical between -2 and 2, the fit would have given the same
 answer. As usual, the choice of the kernel is important for the result:
-apparently an exponential quadratic kernel with ``scale=2`` likes gaussians.
+apparently an exponential quadratic kernel with ``scale=2`` likes Gaussians.

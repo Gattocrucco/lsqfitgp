@@ -24,14 +24,14 @@
 Nonlinear models
 ================
 
-Using :class:`GP` we can define a gaussian process. Using :meth:`GP.addtransf`
+Using :class:`GP` we can define a Gaussian process. Using :meth:`GP.addtransf`
 we can represent finite linear transformations of the process, and we can take
 derivatives with :meth:`GP.addx`. This means that we can only do linear
 operations on the process before putting the data in.
 
 A common non-linear operation is putting a boundary on the possible data
 values. Gaussian distributions don't play nicely with boundaries---they are
-defined on :math:`(-\infty,\infty)`---so it is necessary to map the gaussian
+defined on :math:`(-\infty,\infty)`---so it is necessary to map the Gaussian
 process space to an interval with a nonlinear function.
 
 :mod:`lsqfitgp` is designed to work with the general purpose fitting module
@@ -40,11 +40,11 @@ you want to know more, it has a `good documentation
 <https://lsqfit.readthedocs.io/en/latest/index.html>`_.
 
 Let's see how to fit some data that is constrained in (-1, 1). To map the
-gaussian process space to the data space, we'll use an hyperbolic tangent.
+Gaussian process space to the data space, we'll use an hyperbolic tangent.
 It has the properties :math:`\tanh(\pm\infty) = \pm 1`, :math:`\tanh'(0) = 1`,
 :math:`\tanh(-x) = -\tanh(x)`.
 
-We first define a gaussian process as usual and take a sample from it as fake
+We first define a Gaussian process as usual and take a sample from it as fake
 data. ::
 
     import lsqfitgp as lgp
@@ -64,15 +64,15 @@ Then we map it to (-1, 1)::
 
 Now we'll add errors to the data. If data does not have errors, there's not
 really a problem to start with: you can map the data to :math:`(-\infty,
-\infty)` with :func:`np.arctanh`, do the gaussian process fit, take some
+\infty)` with :func:`np.arctanh`, do the Gaussian process fit, take some
 samples, map the samples back with :func:`np.tanh`.
 
 You may do that even with errors, either at first order using
 :func:`gvar.arctanh`, or by transforming the errors manually yourself. However,
-in that way you would be doing a fit with gaussian errors on the transformed
-data. What we will do is a fit with gaussian errors on the data itself. Another
+in that way you would be doing a fit with Gaussian errors on the transformed
+data. What we will do is a fit with Gaussian errors on the data itself. Another
 case we won't explore in which just transforming the data before the fit is not
-sufficient is when the mapping between the gaussian process and the data
+sufficient is when the mapping between the Gaussian process and the data
 depends on a fit parameter. ::
 
     err = 0.1
@@ -155,8 +155,8 @@ and inject it into a copy of the fit result dictionary::
     fitp['gproc'] = gpplot
 
 This copy-and-replace step is a bit redundant here, it is for when there are
-also other parameters beside the gaussian process. Then we plot both the data
-space and the gaussian process space. ::
+also other parameters beside the Gaussian process. Then we plot both the data
+space and the Gaussian process space. ::
 
     from matplotlib import pyplot as plt
     
@@ -186,7 +186,7 @@ space and the gaussian process space. ::
 
 .. image:: nonlinear1.png
 
-The thing to notice here is that, in the gaussian process space, the samples
+The thing to notice here is that, in the Gaussian process space, the samples
 can get quite far from the points. This is because the nonlinear mapping
 stretches the space near the boundaries. However, in the data space they look
 fine: this is because we did the fit in the data space.

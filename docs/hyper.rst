@@ -31,12 +31,12 @@ a statistical uncertainty on the optimal parameter value.
 
 It is not possible to use what we have seen up to now to fit the `scale`
 parameter, because that parameter goes into the definition of the kernel, and
-the kernel completely specifies the gaussian process. A different scale would
-mean a different kernel and so a different gaussian process.
+the kernel completely specifies the Gaussian process. A different scale would
+mean a different kernel and so a different Gaussian process.
 
 This kind of parameters that reside on a "higher" level and can not be fitted
 are called *hyperparameters*. In this context the "normal" parameters are the
-values of the gaussian process on the points you ask for them with
+values of the Gaussian process on the points you ask for them with
 :meth:`GP.predfromdata`.
 
 From a statistical point of view there's no difference between parameters and
@@ -237,7 +237,7 @@ those points can likely come out even with a wider variance than I thought.
 But I recall the fit saying ``sdev 2.44(81)``. This is :math:`2.4 \pm 0.8`, so
 the uncertainty is a bit wide, but still 1 seems far from the mean. What
 probability is the fit giving to sdev being less than 1? We can compute this by
-integrating the gaussian distribution, with the caveat that the parameter we
+integrating the Gaussian distribution, with the caveat that the parameter we
 actually used in the fit is log(sdev)::
 
     from scipy import stats
@@ -356,7 +356,7 @@ Is there a somewhat clear explanation of this? Yes there is! In
 
 What are the :math:`h_i` for the exponential quadratic kernel? Well, first I
 have to say that I'll actually do an integral instead of a summation, but
-whatever. The solution is, guess what, gaussians:
+whatever. The solution is, guess what, Gaussians:
 
 .. math::
     h_\mu(x) &= \exp(-(x - \mu)^2), \\
@@ -372,11 +372,11 @@ whatever. The solution is, guess what, gaussians:
 
 This means that the fit is trying to redraw the datapoints using a combination
 of gaussians, so it will be happy when the datapoints are similar to a bunch of
-gaussians, such that it doesn't have to figure out a nontrivial mixture of
-many different gaussians that magically gives out precisely our points.
+Gaussians, such that it doesn't have to figure out a nontrivial mixture of
+many different Gaussians that magically gives out precisely our points.
 
-But isn't a sine similar to some gaussians, one up, one down, etc.? Apparently
-so. Let's explore this impression by plotting a sine aligned with a gaussian.
+But isn't a sine similar to some Gaussians, one up, one down, etc.? Apparently
+so. Let's explore this impression by plotting a sine aligned with a Gaussian.
 To align them, I will put the maxima in the same point, and also make them have
 the same second derivative::
 
@@ -395,7 +395,7 @@ the same second derivative::
 
 .. image:: hyper5.png
 
-Ok. Can we get a better alignment? The fit wanted the gaussian to be higher
+Ok. Can we get a better alignment? The fit wanted the Gaussian to be higher
 than the sine, so let's try it::
 
     gauss_large = 3 * np.exp(-1/2 * (x / np.sqrt(3)) ** 2) - 2
@@ -405,8 +405,8 @@ than the sine, so let's try it::
 
 .. image:: hyper6.png
 
-So the fit sees that a sine is more similar to the top of a high gaussian than
-to a gaussian with the same height as the sine.
+So the fit sees that a sine is more similar to the top of a high Gaussian than
+to a Gaussian with the same height as the sine.
 
 We learned a lesson. But now how do we make the fit work? Oh well that's as
 easy as cheating actually if we use the :class:`Periodic` kernel::
