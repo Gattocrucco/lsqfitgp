@@ -28,9 +28,6 @@ Use `plt.subplots` instead of `plt.figure` + `fig.subplots`.
 mi sono accorto che lepage già praticamente faceva la stessa cosa che
 faccio io nell'esempio "y has no errors, marginalization".
 
-nell'intro della documentazione, correggere il link morto con
-https://direct.mit.edu/books/book/2320/Gaussian-Processes-for-Machine-Learning
-
 Nella doc di lsqfitgp, non usare x e y per il kernel perché non si capisce,
 usare x_1 e x_2 . Inoltre usare la maiuscola per Gaussian. Aggiungere che il
 manuale richiede conoscenze di base di algebra lineare e analisi. E aggiungere
