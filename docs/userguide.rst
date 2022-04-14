@@ -38,6 +38,7 @@ repository.
     integrals.rst
     customs.rst
     in.rst
+    partial.rst
     out.rst
     components.rst
     hyper.rst

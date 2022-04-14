@@ -21,8 +21,6 @@ Separate the index of kernels by class (after adding `StationaryKernel`).
 In the nonlinear fit example, use the gaussian cdf instead of the hyperbolic
 arctangent to make a uniform prior over the interval.
 
-A chapter on partial derivatives (after improving the interface).
-
 A chapter on propagation, from simple GP-only to nonlinear with multiple fits.
 
 Use `plt.subplots` instead of `plt.figure` + `fig.subplots`.
@@ -60,6 +58,8 @@ dell'uomo, quindi la probabilità che assegna all'output del saggio, data
 l'opinione umana, è p(x,i|p_H(x,i))=p_H(x,i). Quindi la macchina prende il suo
 posteriore sulle p_H e calcola p(x,i) marginalizzato. Se il GP ha gli
 iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
+
+w.r.t -> w.r.t.
 
 ## Fixes and tests
 
