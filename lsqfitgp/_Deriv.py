@@ -37,9 +37,9 @@ class Deriv:
         """
         Deriv(int) -> specified order derivative
         
-        Deriv(str) -> first derivative w.r.t specified variable
+        Deriv(str) -> first derivative w.r.t. specified variable
         
-        Deriv(iter of str) -> derivative w.r.t specified variables
+        Deriv(iter of str) -> derivative w.r.t. specified variables
         
         Deriv(iter of int, str) -> an int before a str acts as a multiplier
         

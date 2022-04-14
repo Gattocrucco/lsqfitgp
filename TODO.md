@@ -59,8 +59,6 @@ l'opinione umana, è p(x,i|p_H(x,i))=p_H(x,i). Quindi la macchina prende il suo
 posteriore sulle p_H e calcola p(x,i) marginalizzato. Se il GP ha gli
 iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
 
-w.r.t -> w.r.t.
-
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
