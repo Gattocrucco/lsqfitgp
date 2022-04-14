@@ -29,9 +29,9 @@ mi sono accorto che lepage già praticamente faceva la stessa cosa che
 faccio io nell'esempio "y has no errors, marginalization".
 
 Nella doc di lsqfitgp, non usare x e y per il kernel perché non si capisce,
-usare x_1 e x_2 . Inoltre usare la maiuscola per Gaussian. Aggiungere che il
-manuale richiede conoscenze di base di algebra lineare e analisi. E aggiungere
-le virgole dopo i.e. (oppure no? sembra che ormai nessuno le usi)
+usare x_1 e x_2. Aggiungere che il manuale richiede conoscenze di base di
+algebra lineare e analisi. E aggiungere le virgole dopo i.e. (oppure no? sembra
+che ormai nessuno le usi)
 
 In lsqfit il risultato del fit dovrebbe rappresentare una probabilità
 condizionata sui dati. Quindi cosa rappresentano bayesianamente le correlazioni

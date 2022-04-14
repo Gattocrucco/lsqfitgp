@@ -67,7 +67,7 @@ names, or a pair `(order, field name)` as ``deriv`` argument to ``addx``::
     gp.addx(center,  'd2y', deriv=(  2, 'y'))
     gp.addx(center, 'dxdy', deriv=('x', 'y'))
 
-Now we add a grid of points to do the plot and the ask for the prediction::
+Now we add a grid of points to do the plot and then ask for the prediction::
 
     xyplot = np.empty((30, 30), dtype=xydata.dtype)
     xyplot['x'] = np.linspace(0, 1, 30)[:, None]
