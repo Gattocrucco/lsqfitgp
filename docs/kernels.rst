@@ -34,7 +34,7 @@ So you can imagine the gaussian process as a multivariate Gaussian distribution
 on an infinitely long vector :math:`f(x)`, where :math:`x` is a "continuous
 index", and :math:`k(x, y)` is the covariance matrix.
 
-This implies that kernels are symmetric, i.e. :math:`k(x, y) = k(y, x)`. Also,
+This implies that kernels are symmetric, i.e., :math:`k(x, y) = k(y, x)`. Also,
 covariance matrices must be positive semidefinite (if you wonder why, you can
 find an explanation on `wikipedia
 <https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_matrices?>`_).
@@ -68,7 +68,7 @@ in practice with the data?
 
 Let's suppose that you have some data :math:`y(x)` that you want to fit with
 a specific function, that (let's say by chance) we call :math:`h(x)`, apart
-from an amplitude parameter, i.e. the model is
+from an amplitude parameter, i.e., the model is
 
 .. math::
     y = p h(x) + \varepsilon(x),

@@ -92,7 +92,7 @@ its-mplot3d-py>`_::
 We got a nice random surface. The :class:`ExpQuad` kernel just worked out of
 the box with multidimensional input. What kernel are we using really?
 :class:`ExpQuad` is a subclass of :class:`IsotropicKernel`. This means it only
-depends on the distance between points, i.e. it doesn't care what the input is
+depends on the distance between points, i.e., it doesn't care what the input is
 as long as it can apply Pythagoras' theorem. So the kernel we used is:
 
 .. math::

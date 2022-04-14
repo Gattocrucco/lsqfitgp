@@ -67,7 +67,7 @@ from the prior::
 
 .. image:: derivatives1.png
 
-This time we used :meth:`~GP.prior` without arguments, i.e. we did not specify
+This time we used :meth:`~GP.prior` without arguments, i.e., we did not specify
 if we wanted ``'foo'`` or ``'bar'``. If you print ``sample``, you will see it
 is a dictionary-like object, a :class:`gvar.BufferDict`::
 

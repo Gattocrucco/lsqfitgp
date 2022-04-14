@@ -125,6 +125,6 @@ class Deriv:
     @property
     def order(self):
         """
-        The total derivation order, id est the sum of the values.
+        The total derivation order, id est, the sum of the values.
         """
         return sum(self._counter.values())

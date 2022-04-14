@@ -37,7 +37,7 @@ There are three main computational steps when doing a Gaussian process fit with
     `s` is the number of samples taken.
 
 Since usually :math:`m \gg n` because the plot is done on a finely spaced grid,
-the typical bottleneck is taking the samples, i.e. calling
+the typical bottleneck is taking the samples, i.e., calling
 :func:`gvar.raniter`. This problem can be bypassed by plotting only the
 standard deviation band instead of taking samples, but it is less informative.
 

@@ -152,7 +152,7 @@ constant::
 .. note::
 
    The function `makegp` must be autograd-friendly. This means that operations
-   that involve hyperparameters must always be functional, i.e. you can not
+   that involve hyperparameters must always be functional, i.e., you can not
    first create an array and later assign values to it. Also, if you explicitly
    use numpy functions, you have to do ``from autograd import numpy`` instead
    of ``import numpy``. Read the `autograd tutorial
@@ -194,7 +194,7 @@ exponential quadratic correlation.
 So we should deduce that such an oscillation tipically comes out as a small
 oscillation in a more widely varying function. To get a feel of that, let's
 plot a lot of samples from the prior with the hyperparameters I would have
-liked to come out, i.e. I'll use a scale of 2 and a standard deviation of, say,
+liked to come out, i.e., I'll use a scale of 2 and a standard deviation of, say,
 0.7::
 
     gp = makegp({'scale': 2, 'sdev': 0.7})
