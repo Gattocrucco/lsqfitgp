@@ -116,10 +116,8 @@ Now we make a plot of everything::
 
     from matplotlib import pyplot as plt
     
-    fig = plt.figure('lsqfitgp example')
-    fig.clf()
+    fig, ax = plt.subplots(num='lsqfitgp example')
     
-    ax = fig.subplots(1, 1)
     ax.set_title('Gaussian process on a sine')
     ax.set_xlabel('x')
     ax.set_ylabel('y')

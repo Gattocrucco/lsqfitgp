@@ -23,14 +23,12 @@ arctangent to make a uniform prior over the interval.
 
 A chapter on propagation, from simple GP-only to nonlinear with multiple fits.
 
-Use `plt.subplots` instead of `plt.figure` + `fig.subplots`.
-
 mi sono accorto che lepage già praticamente faceva la stessa cosa che
 faccio io nell'esempio "y has no errors, marginalization".
 
-Nella doc di lsqfitgp, non usare x e y per il kernel perché non si capisce,
-usare x_1 e x_2. Aggiungere che il manuale richiede conoscenze di base di
-algebra lineare e analisi.
+Non usare x e y per il kernel perché non si capisce, usare x_1 e x_2.
+Aggiungere che il manuale richiede conoscenze di base di algebra lineare e
+analisi.
 
 In lsqfit il risultato del fit dovrebbe rappresentare una probabilità
 condizionata sui dati. Quindi cosa rappresentano bayesianamente le correlazioni

@@ -160,10 +160,7 @@ space and the Gaussian process space. ::
 
     from matplotlib import pyplot as plt
     
-    fig = plt.figure('lsqfitgp example')
-    fig.clf()
-    fig.set_size_inches(6.4, 7)
-    axs = fig.subplots(2, 1, sharex=True)
+    fig, axs = plt.subplots(2, 1, sharex=True, num='lsqfitgp example', figsize=[6.4, 7])
     
     for sample in gvar.raniter(fitp, 2):
         axs[0].plot(xplot, fcn(sample), color='red', alpha=0.5)

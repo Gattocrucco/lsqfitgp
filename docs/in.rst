@@ -79,9 +79,7 @@ its-mplot3d-py>`_::
 
     from matplotlib import pyplot as plt
     
-    fig = plt.figure('lsqfitgp example')
-    fig.clf()
-    ax = fig.add_subplot(111, projection='3d')
+    fig, ax = plt.subplots(num='lsqfitgp example', subplot_kw=dict(projection='3d'))
     
     ax.plot_surface(xy['x'], xy['y'], sample, cmap='viridis')
     

@@ -49,9 +49,7 @@ Let's see. We first generate some data::
     prior = gp.prior('pinguini')
     y = next(gvar.raniter(prior))
     
-    fig = plt.figure('lsqfitgp example')
-    fig.clf()
-    ax = fig.subplots(1, 1)
+    fig, ax = plt.subplots(num='lsqfitgp example')
     
     ax.plot(x, y, '.k')
     

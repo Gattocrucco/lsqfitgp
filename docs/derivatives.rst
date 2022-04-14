@@ -50,9 +50,7 @@ from the prior::
 
     from matplotlib import pyplot as plt
     
-    fig = plt.figure('lsqfitgp example')
-    fig.clf()
-    ax = fig.subplots(1, 1)
+    fig, ax = plt.subplots(num='lsqfitgp example')
     
     y = gp.prior()
     sample = next(gvar.raniter(y))

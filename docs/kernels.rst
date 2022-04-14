@@ -109,9 +109,7 @@ exponential quadratic kernels with different scales, and see what happens::
     x = np.linspace(-15, 15, 300)
     gp.addx(x, 'baz')
     
-    fig = plt.figure('lsqfitgp example')
-    fig.clf()
-    ax = fig.subplots(1, 1)
+    fig, ax = plt.subplots(num='lsqfitgp example')
     
     y = gp.prior('baz')
     for sample in gvar.raniter(y, 1):

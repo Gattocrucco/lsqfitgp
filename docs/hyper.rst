@@ -99,9 +99,7 @@ we have to sample it too::
 
     from matplotlib import pyplot as plt
     
-    fig = plt.figure('lsqfitgp example')
-    fig.clf()
-    ax = fig.subplots(1, 1)
+    fig, ax = plt.subplots(num='lsqfitgp example')
     
     xplot = np.linspace(-15, 15, 200)
     
@@ -384,9 +382,7 @@ the same second derivative::
     cos = np.cos(x)
     gauss = np.exp(-1/2 * x**2)
     
-    fig = plt.figure('cosgauss')
-    fig.clf()
-    ax = fig.subplots(1, 1)
+    fig, ax = plt.subplots(num='cosgauss')
     
     ax.plot(x, cos)
     ax.plot(x, gauss)

@@ -80,9 +80,7 @@ recovers the correct hyperparameters. ::
     prior = gp.prior('data')
     data = next(gvar.raniter(prior))
     
-    fig = plt.figure('lsqfitgp example')
-    fig.clf()
-    ax = fig.subplots(1, 1)
+    fig, ax = plt.subplots(num='lsqfitgp example')
     
     ax.plot(time, data[0], '.k', label='cats')
     ax.plot(time, data[1], 'xk', label='cars')

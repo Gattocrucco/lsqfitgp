@@ -70,9 +70,7 @@ Just for fun, we'll force the random walk to arrive at the (1, 1) point::
     
     path = gp.predfromdata({'endpoint': [1, 1]}, 'walk')
     
-    fig = plt.figure('lsqfitgp example')
-    fig.clf()
-    ax = fig.subplots(1, 1)
+    fig, ax = plt.subplots(num='lsqfitgp example')
     
     for sample in gvar.raniter(path, 2):
         ax.plot(sample[0], sample[1])
