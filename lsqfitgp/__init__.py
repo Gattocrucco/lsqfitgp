@@ -1,6 +1,6 @@
 # lsqfitgp/__init__.py
 #
-# Copyright (c) 2020, Giacomo Petrillo
+# Copyright (c) 2020, 2022, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
