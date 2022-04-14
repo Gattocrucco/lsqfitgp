@@ -27,6 +27,40 @@ A chapter on propagation, from simple GP-only to nonlinear with multiple fits.
 
 Use `plt.subplots` instead of `plt.figure` + `fig.subplots`.
 
+Nella documentazione, correggere gaussian -> Gaussian.
+
+mi sono accorto che lepage già praticamente faceva la stessa cosa che
+faccio io nell'esempio "y has no errors, marginalization".
+
+nell'intro della documentazione, correggere il link morto con
+https://direct.mit.edu/books/book/2320/Gaussian-Processes-for-Machine-Learning
+
+Nella doc di lsqfitgp, non usare x e y per il kernel perché non si capisce,
+usare x_1 e x_2 . Inoltre usare la maiuscola per Gaussian. Aggiungere che il
+manuale richiede conoscenze di base di algebra lineare e analisi. E aggiungere
+le virgole dopo i.e. (oppure no? sembra che ormai nessuno le usi)
+
+In lsqfit il risultato del fit dovrebbe rappresentare una probabilità
+condizionata sui dati. Quindi cosa rappresentano bayesianamente le correlazioni
+con i dati? E inoltre: se faccio due fit sugli stessi dati, qual è
+l'interpretazione bayesiana della correlazione tra i risultati? Forse queste
+cose è meglio se le studio prima su lsqfitgp che è equivalente a un fit lineare
+e le formule sono analitiche e scritte chiaramente.
+
+Per chiarire la questione della classificazione esatta con i processi
+Gaussiani, posso raccontare una storiella così: ci sono tre personaggi, il Sage
+classifier, lo Human classifier e il Machine classifier. Il Sage è la verità
+personificata ma nessuno lo vede da tempo. Sa il valore logico delle
+proposizioni (x,i) = "l'oggetto i appartiene alla categoria i". Lo Human
+classifier cerca di indovinare cosa sa il Sage, quindi tira fuori delle
+probabilità p(x,i), e anche quelle congiunte p((x,i), (y,j)), etc. Il Machine
+cerca di indovinare cosa direbbe lo Human, e usa il modello con il GP latente
+mappato sulle p(x,i) con la CDF gaussiana. La macchina si fida del giudiziono
+dell'uomo, quindi la probabilità che assegna all'output del saggio, data
+l'opinione umana, è p(x,i|p_H(x,i))=p_H(x,i). Quindi la macchina prende il suo
+posteriore sulle p_H e calcola p(x,i) marginalizzato. Se il GP ha gli
+iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -41,7 +75,55 @@ Lower thresholds in linalg tests.
 gvar.BufferDict should have a prettier repr on the IPython shell. Is there a
 standard way to configure a pretty print?
 
+quando monto il priore gvar, usare fast=True perché tanto so che non sono a
+blocchi
+
+per ovviare al bug della moltiplicazione per scalare del kernel con
+autograd, aggiungere dei metodi pubblici espliciti per comporre i kernel
+
+## Implementation details
+
+Usare l'interfaccia numpy `__array_function__` per `StructuredArray`.
+
+Chiamare GP -> _GPBase e poi fare una sottoclasse GP e mettere tutti i metodi
+di convenienza che non accedono a cose interne in GP.
+
+Usare i template descritti nell'articolo di scikit-hep che era uscito
+sull'arxiv, in particolare per configurare i test con le github actions.
+
 ## New functionality
+
+Dovrebbe essere possibile per l'utente inserire i suoi blocchi della matrice di
+covarianza senza che nessuno gli rompa i coglioni. Anche dopo aver chiamato
+`addx`.
+
+### Bayesian optimization
+
+Bayesian optimization: I found only one decent quick-and-lean python package,
+bayesian-optimization, but I'm not satisfied with it nor with its
+documentation. If I don't find out something better I'd like to study the
+matter and write something.
+
+To use gvar it would be necessary to remove the limitation of not being able to
+create new primary gvars correlated with old ones. Ask Lepage about this.
+
+### Low-rank/regression
+
+Se ho un processo somma di due processi di cui uno ha basso rango, in altre
+parole gp + minimi quadrati lineare, che credo sia quello che si fa di solito
+nel kriging, posso risolvere più efficientemente che gp-style senza modifiche?
+E vorrei anche avere i valori dei parametri minimi quadrati. E voglio che
+funzioni anche se il priore sui parametri non è già diagonalizzato. E anche se
+il priore è uniforme (però rompe la marginal likelihood). (Ci dovrebbe essere
+su GPML.)
+
+aggiungere l'opzione per fittare roba di basso rango a parte usando woodsbury.
+Deve funzionare sia per regressione lineare con covariate e priore arbitrari,
+sia per una componente del kernel di basso rango... forse è chiedere troppo,
+per cominciare accontentiamoci di regressione. Interfaccia?? Visto che voglio
+mettere addkernel, potrei mettere addregres, e poi sommo con addtransf
+
+### New interfaces
 
 Long-term: move to a variable-oriented approach like gvar instead of the
 monolithic GP object I'm doing now. It should be doable because what I'm
@@ -50,9 +132,113 @@ not clear ideas on the interface. It could be based on underlying default
 GP object, like gvar does with its hidden covariance matrix of all primary
 gvars.
 
-Invent a simpler alternative to Where/Choose and GP.addtransf for the case
-of adding various kernels and getting the separate prediction for each one.
-Possibly an helper function.
+Fare delle interfacce di alto livello che siano più specifiche, alcune
+verrebbero bene come sottoclassi di GP, altre come megafunzioni. Magari potrei
+fare anche l'interfaccia plugin per scitkit-learn.
+
+per implementare delle variabili smart gp basandomi su un GP globale,
+posso fare un kernel che si aspetta un array strutturato in cui la prima
+componente è un indice che seleziona il kernel mentre la seconda contiene il
+tipo che serve all'utente. Wait il tipo può cambiare in base al gp... uff... ok
+basta mettere l'opzione in addx per non imporre che le x siano tutte dello
+stesso tipo. Poi bisogna avere il modo per cancellare/ridefinire le variabili
+in un GP per quando faccio assegnamenti temporanei. Le espressioni di gp
+chiamano addtransf. Aspetta: potrei voler fare espressioni sia su processi non
+valutati che valutati. Allora avrei bisogno di una sorta di abstractgp che si
+concretizza quando gli passo le x. Per condizionare uso una funzione globale
+perché devo poter mettere insieme vari gp.
+
+### Efficient sampling
+
+posso implementare correlate/decorrelate per BlockMatrix usando una
+sorta di cholesky a blocchi, l'ho scritto sul quaderno il 5 aprile 2022
+
+se la matrice di covarianza a priori dei punti dove voglio calcolare la
+predizioni è speciale, riesco a fare qualcosa? Ad esempio penso a una griglia
+fitta... forse LOVE (nei preprint salvati) fa qualcosa del genere visto che
+diceva di fare fast sampling delle predizioni? => vedi quaderno 7 aprile 2022,
+c'è anche il caso di dati assunti indipendenti date le predizioni che è
+super-potente.
+
+la cosa che uso per fare il gaussian process con gvar si chiama Matheron's rule
+(https://avt.im/publications/2020/07/09/GP-sampling) Questa cosa forse è un
+modo diverso alla fine di scrivere quello che ho ricavato con schur e woodsbury
+direttamente sulle matrici, che se so invertire velocemente il priore sui test
+point allora sono a posto
+
+forse devo aggiungere a GP stesso i metodi per campionare da un
+posteriore/priore per usare le decomposizioni efficienti. Forse dovrei
+aggiungere un metodo "addcondition" che definisce una nuova variabile come
+condizionata? Pensarci.
+
+### Nonlinear fit
+
+Per fare fit non lineari con lsqfitgp senza lsqfit potrei fare così: uso
+empbayes_fit e in makegp inserisco il jacobiano della trasformazione non
+lineare con addtransf. => No: dovrei sapere il jacobiano in funzione del
+risultato.
+
+voglio poter risolvere la seguente situazione: metto un *posteriore*
+di gp dentro a lsqfit e poi voglio prolungare. Mi sa che predfromfit non
+funziona mica. Forse funziona magicamente a culo usando i gvar che si ricordano
+tutte le correlazioni.
+
+dovrei riimplementare lsqfit.nonlinear_fit per usare le mie decomposizioni e
+cooperare meglio con i processi gaussiani latenti senza passare dalle gvar.
+Quindi devo anche fare una funzione condivisa che mappa il nome della
+decomposizione a una classe Decomp.
+
+### Hyperparameters
+
+In empbayes_fit per fare la propagazione devo mettermi lì e calcolare le
+derivate prime del risultato rispetto ai dati con la funzione implicita quando
+minimizzo la marginal likelihood.
+
+Basak et al 2021 spiega che MLE per gli iperparametri dei GP funziona male,
+cosa di cui mi ero accorto con lsqfitgp. Però non danno delle gran soluzioni,
+bisogna scegliere bene il cambio di variabile sui parametri, e regolarizzare di
+forza la matrice di covarianza a priori (GPy usa fino alla 10^-2 relativo alla
+sigma dei dati). Come si potrebbe risolvere per davvero questo problema? Con
+Bayesian optimization sulla loglikelihood? Però a quel punto va fatta in modo
+robusto o è un serpente che si morde la coda. Andrebbe trovato un modello
+semplice che si fa quasi tutto analitico... ma se sbaglio es. la scala poi non
+becco il minimo, magari ci passo attraverso. Oppure usare un algoritmo ibrido
+che usa minimi quadrati per la parte con i residui e poi qualcos'altro per la
+parte con il logaritmo? L'errore lo posso impostare da una stima di algebra
+lineare numerica dell'errore, c'è in Basak. La sigma e la mu le ottimizzo
+analiticamente come spiegato in Basak.
+
+Posso ottenere il posteriore GP con Laplace quando ci sono gli iperparametri,
+posto che anche sugli iperparametri ho usato Laplace?
+
+In lsqfitgp.empbayes_fit, calcolare la marginal likelihood usando laplace al
+livello 2 come ho fatto in BartGP
+
+### Port to JAX
+
+In sostanza l'unico motivo per cui non posso passare da autograd a JAX in
+lsqfitgp è che voglio lasciare che l'utente usi le funzioni di gvar quando
+scrive la funzione `makegp` in `empbayes_fit`. Se faccio delle classi
+array-like posso usare JAX anche se non posso aggiungere la mia classe a quelle
+supportate chiamando la funzione di JAX in `__array_ufunc__` sull'array interno
+(ad esempio per Toeplitz). (Ma alla fine mi sa che non faccio le classi
+array-like.)
+
+Generazione di codice, così dopo che ho testato un fit lo posso mettere da
+qualche parte. Forse in realtà se uso jax c'è già il jit che gira su gpu e tpu
+e quindi sticazzi.
+
+quando passo a jax e posso usare le hessiane, potrei usare fisher
+scoring per l'ottimizzazione cioè prendere il valore atteso dell'hessiana
+
+per far passare JAX attraverso BufferDict in empbayes_fit, se uso il
+parametro buf posso passare l'array di JAX senza pluggare jax.np dentro il
+codice di gvar. Il problema è come supportare le trasformazioni, quelle invece
+richiedono una funzione che si succhi array di oggetti (no jax) però vorrei che
+supportasse gli array di JAX. Forse bisogna rompere a Lepage, però bisogna che
+venga un meccanismo generico anziché un paciugo che supporta solo JAX.
+
+### Weird input
 
 Accept xarray.DataSet and pandas.DataFrame as inputs. Probably I can't use
 these as core formats due to autograd.
@@ -66,8 +252,12 @@ ellipsis, slices, the same recursive format I should support in
 Also, call these classes Dim and Dims such that they can be used for other
 things that need a dimension specification, like Fourier transforms.
 
-Is there a smooth version of the Wiener process? like, softmin(x, y)? I tried
-smoothing it with a gaussian but an undoable integral comes up.
+Can I do something helpful for Riemann manifolds? Like, the wikipedia page for
+processes has a nice brownian motion on a sphere. How could I implement that
+in a generic way which would allow the user to put any process on any manifold?
+=> has been done now, see Terenin's web page
+
+### Non-Gaussianity
 
 Non-gaussian likelihoods, accessible with a string optional parameter in
 GP.marginal_likelihood.
@@ -76,22 +266,96 @@ Student-t processes. There are some limitations. Possible interface: a nu
 parameter in addx. Can I mix different nu in the same fit? Intepreting the
 result would be a bit obscure, raniter will always sample normal distributions.
 
-From GPy: periodic Matérn up to a certain k. Graph kernels from pyGPs:
-https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html.
+### New kernels
+
+Is there a smooth version of the Wiener process? like, softmin(x, y)? I tried
+smoothing it with a gaussian but an undoable integral comes up.
+
+From GPy: periodic Matérn up to a certain k.
+
+Graph kernels from pyGPs:
+https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html. I also collected
+some articles somewhere.
 
 Are there interesting discontinuous processes apart from the white noise and
 its integrals?
 
-Can I do something helpful for Riemann manifolds? Like, the wikipedia page for
-processes has a nice brownian motion on a sphere. How could I implement that
-in a generic way which would allow the user to put any process on any manifold?
+il kernel "cauchy" (1 + r^alpha)^-beta, 0 < alpha <= 2, beta > 0, è
+ottenibile a partire da quelli definiti? in realtà Cauchy standard sarebbe come
+la Cauchy, cioè alpha=2, beta=1, che equivale al "rational quadratic" per
+alpha=1. Comunque direi che manca, aggiungere GenCauchy. Credo sia isotropico.
+Citare l'articolo che lo introduce.
 
-Bayesian classification: I found only one decent quick-and-lean python package,
-bayesian-optimization, but I'm not satisfied with it nor with its
-documentation. If I don't find out something better I'd like to study the
-matter and write something.
+il kernel Taylor posso ricavarlo analiticamente anche per funzioni
+che vanno giù più velocemente? Tipo (1/k!)^2n si riesce a fare? Scommetterei di
+sì visto che (1/k!)^2 si può
 
-### Fourier
+aggiungere kernel BART con maxdepth, default beta=inf, maxdepth=1. Come input
+prende gli splitting points, e deve avere un class method per ricavare gli
+spitting points dalle X. Per aggiungere il class method usando comunque il
+decoratore, definire _BART con il decoratore e poi sottoclassarlo a BART
+esplicitamente.
+
+fare anche il BART con la formula esplicita per maxdepth = 2 (quaderno 2022 MAR
+12) perché se no è troppo inefficiente. In generale quello con maxdepth
+andrebbe calcolato su pochi punti e poi interpolato, l'interpolazione va fatta
+con attenzione quando beta è piccolo.
+
+Fare la versione del kernel Fourier con solo il seno. Nel caso n=1 viene il
+Brownian bridge.
+
+Circular kernel: 
+https://docs.pymc.io/pymc-examples/examples/gaussian_processes/GP-Circular.html
+
+Kernel stazionario sinc. Qual è la sua diagonalizzazione? (Ho scoperto che
+diagonalizzare il kernel si chiama teorema di Mercer, o decomposizione di
+tizio-caio-nonricordo.)
+
+Kernel rumore rosa, troncato tra due frequenze.
+
+è uscito sull'arxiv un articolo sull'inferenza esatta 1D con matern
+half-integer ("kernel packet"), l'ho scaricato
+
+### Transformations
+
+In `GP.addtransf` vorrei poter moltiplicare element-wise gli array con
+broadcasting anziché fare la contrazione. E vorrei poter fare robe tipo la FFT.
+E la FFT forse non conviene calcolare il jacobiano ma applicarla in qualche
+modo alla matrice di covarianza che devo trasformare. Potrei fare una gerarchia
+di oggetti che rappresentano trasformazioni, e un parametro `defaulttransf` che
+specifica `TensorMul` di default, e un valore del dizionario di input è
+l'argomento dell'`__init__` della trasformazione di default. Probabilmente
+queste classi mi conviene metterle in un nuovo file perché possono diventare
+tante.
+
+`addtransf` deve anche supportare una trasformazione `Reshape`, può venire
+comoda per fare uno stack di cose con il broadcasting, tipo se voglio impilare
+delle derivate in un gradiente. Potrei anche supportare broadcast.
+
+in addtransf può mangiarsi un'espressione costruita con operazioni di
+numpy su placeholder gp['roba']. Però forse è overkill, questa cosa dovrebbe
+risiedere a un livello più alto.
+
+aggiungere Kernel.rescale da usare al posto di rescaling, e poi
+l'opzione mult in addx magari? Però ci starebbe in generale fare trasf a caso
+con addtransf e poi derivare. Il problema è che quando trasformo usando le x
+devo derivare anche quei pezzi, quindi diventa impegnativo tener traccia di
+tutto, mult è più semplice per me e inizialmente direi che va bene. Però devo
+applicare prima mult o deriv? Bisogna poter trasformare in ordine...
+
+#### Sum of components
+
+Invent a simpler alternative to Where/Choose and GP.addtransf for the case
+of adding various kernels and getting the separate prediction for each one.
+Possibly an helper function.
+
+sarebbe molto comodo poter usare kernel separati su varie cose con
+sottointeso che kernel diversi sono indipendenti. Potrei fare un metodo
+addkernel che assegna un nome a un kernel, e poi addx ha un'opzione kernel che
+prende il nome del kernel, kernel=None usa quello dato all'inizializzazione.
+Posso anche non dare un kernel nell'inizializzazione.
+
+#### Fourier
 
 The fourier transform is a linear operator, can I use it like I'm doing with
 derivatives? I can't do it for the spectrum of a stationary process because
@@ -114,6 +378,13 @@ interface like `diff()`. For the Fourier series it makes sense to make a new
 class `PeriodicKernel`, for the transform and DTFT dunno.
 
 I should also add convolutions. Maybe a method `GP.addconv`.
+
+Leggere l'articolo "Efficient Fourier representations of families of Gaussian
+processes".
+
+#### Taylor
+
+Define custom transformations for the "Taylor" kernel.
 
 ### Classification
 
@@ -159,7 +430,12 @@ can compute a sort of "correlation matrix".
 
 ### `gvar`-related issues
 
-Lepage has done sone updates after my requests, I should look into it and update the manual accordingly.
+Lepage has done sone updates after my requests, I should look into it and
+update the manual accordingly.
+
+gvar: gvar.dump(..., add_dependencies=True) per essere efficiente
+dovrebbe salvare una sottomatrice della matrice di covarianza sparsa interna
+anziché usare evalcov_blocks.
 
 #### sparse `evalcov`
 
@@ -225,7 +501,7 @@ sparse format may not be worth it.
 
 DiagLowRank for low rank matrix + multiple of the identity (multiple rank-1
 updates to the Cholesky factor? Would it be useful anyway? Maybe it's easier
-with QR)
+with QR) => Useful with Woodsbury, would be used in combined gp-regression.
 
 #### Evenly spaced input
 
@@ -313,6 +589,18 @@ array-like class that on any ufunc does explicitly the sum but for the
 exponential, and a sum of a tensor product array-like produces a sum of arrays
 array-like.
 
+Per Kronecker, fare come l'ho pensata per Toeplitz: cioè se ne occupa
+totalmente l'oggetto `GP`. C'è un metodo `addgrid` che sa che poi può tenere il
+kernel fattorizzato. Anche in questo caso è l'utente che deve preoccuparsi che
+il kernel sia separabile. In questo modo funziona anche se ho un kernel che non
+è scritto separato ma che sappiamo essere separabile, ad esempio quello
+gaussiano, allo stesso modo in cui posso assumere che un array sia equispaziato
+anche se non lo è alla precisione numerica dei float. Dovrei una gerarchia con
+base InputPoints. Le classi concrete sono `AnyPoints`, `EvenlySpaced`, `Grid`.
+`EvenlySpaced` ha un'opzione `stationary:bool`, `Grid` ha `separable:bool`.
+Queste opzioni vanno messe nell'oggetto `InputPoints` anziché nel `GP` perché
+ad esempio devo poter applicare le opzioni solo a un asse in una griglia.
+
 #### Sparse
 
 Sparse algorithms. Make a custom minimal CSR class that allows an autograd
@@ -325,6 +613,11 @@ the kernel if the result is dense, but not while making prediction.
 Alternative: make pydata/sparse work with autograd. I hope I can inject the
 code into the module so I don't have to rely on a fork. Probably I have to
 define some missing basic functions and define the vjp of the constructors.
+
+#### Sparse inverse (DAG)
+
+gli inducing points li posso indicare scegliendo una variabile
+precedentemente definita con addx/addtransf.
 
 #### Using multiple solvers
 
@@ -340,264 +633,9 @@ appear first in the list, they will be applied on specialized matrices, while
 they will fail on normal matrices which will fall back to another solver. Raise
 warnings if a generic algorithm is applied on a special matrix.
 
-## Dump 2022-04-14
-
-Per fare fit non lineari con lsqfitgp senza lsqfit potrei fare così: uso
-empbayes_fit e in makegp inserisco il jacobiano della trasformazione non
-lineare con addtransf. => No: dovrei sapere il jacobiano in funzione del
-risultato.
-
-In empbayes_fit per fare la propagazione devo mettermi lì e calcolare le
-derivate prime del risultato rispetto ai dati con la funzione implicita quando
-minimizzo la marginal likelihood.
-
-In lsqfit il risultato del fit dovrebbe rappresentare una probabilità
-condizionata sui dati. Quindi cosa rappresentano bayesianamente le correlazioni
-con i dati? E inoltre: se faccio due fit sugli stessi dati, qual è
-l'interpretazione bayesiana della correlazione tra i risultati? Forse queste
-cose è meglio se le studio prima su lsqfitgp che è equivalente a un fit lineare
-e le formule sono analitiche e scritte chiaramente.
-
-In `GP.addtransf` vorrei poter moltiplicare element-wise gli array con
-broadcasting anziché fare la contrazione. E vorrei poter fare robe tipo la FFT.
-E la FFT forse non conviene calcolare il jacobiano ma applicarla in qualche
-modo alla matrice di covarianza che devo trasformare. Potrei fare una gerarchia
-di oggetti che rappresentano trasformazioni, e un parametro `defaulttransf` che
-specifica `TensorMul` di default, e un valore del dizionario di input è
-l'argomento dell'`__init__` della trasformazione di default. Probabilmente
-queste classi mi conviene metterle in un nuovo file perché possono diventare
-tante.
-
-In sostanza l'unico motivo per cui non posso passare da autograd a JAX in
-lsqfitgp è che voglio lasciare che l'utente usi le funzioni di gvar quando
-scrive la funzione `makegp` in `empbayes_fit`. Se faccio delle classi
-array-like posso usare JAX anche se non posso aggiungere la mia classe a quelle
-supportate chiamando la funzione di JAX in `__array_ufunc__` sull'array interno
-(ad esempio per Toeplitz). (Ma alla fine mi sa che non faccio le classi
-array-like.)
-
-Per Kronecker, fare come l'ho pensata per Toeplitz: cioè se ne occupa
-totalmente l'oggetto `GP`. C'è un metodo `addgrid` che sa che poi può tenere il
-kernel fattorizzato. Anche in questo caso è l'utente che deve preoccuparsi che
-il kernel sia separabile. In questo modo funziona anche se ho un kernel che non
-è scritto separato ma che sappiamo essere separabile, ad esempio quello
-gaussiano, allo stesso modo in cui posso assumere che un array sia equispaziato
-anche se non lo è alla precisione numerica dei float. Dovrei una gerarchia con
-base InputPoints. Le classi concrete sono `AnyPoints`, `EvenlySpaced`, `Grid`.
-`EvenlySpaced` ha un'opzione `stationary:bool`, `Grid` ha `separable:bool`.
-Queste opzioni vanno messe nell'oggetto `InputPoints` anziché nel `GP` perché
-ad esempio devo poter applicare le opzioni solo a un asse in una griglia.
-
 L'algoritmo che decide in che ordine risolvere i sistemi lineari a blocchi
 metterlo in una funzione a parte visto che è di applicabilità generale. Prima
 cerco le componenti connesse, cioè decompongo in diagonale a blocchi la
 supermatrice. Poi boh. Sarebbe carino farlo fare a un tesista di informatica,
 perché c'è la questione di ottimizzare una specie di roba ad albero con i pesi
 dati da polinomi convessi vari.
-
-Dovrebbe essere possibile per l'utente inserire i suoi blocchi della matrice di
-covarianza senza che nessuno gli rompa i coglioni. Anche dopo aver chiamato
-`addx`.
-
-`addtransf` deve anche supportare una trasformazione `Reshape`, può venire
-comoda per fare uno stack di cose con il broadcasting, tipo se voglio impilare
-delle derivate in un gradiente. Potrei anche supportare broadcast.
-
-Nella documentazione, correggere gaussian -> Gaussian.
-
-Usare l'interfaccia numpy `__array_function__` per `StructuredArray`.
-
-Kernel rumore rosa, troncato tra due frequenze.
-
-Generazione di codice, così dopo che ho testato un fit lo posso mettere da
-qualche parte. Forse in realtà se uso jax c'è già il jit che gira su gpu e tpu
-e quindi sticazzi.
-
-Basak et al 2021 spiega che MLE per gli iperparametri dei GP funziona male,
-cosa di cui mi ero accorto con lsqfitgp. Però non danno delle gran soluzioni,
-bisogna scegliere bene il cambio di variabile sui parametri, e regolarizzare di
-forza la matrice di covarianza a priori (GPy usa fino alla 10^-2 relativo alla
-sigma dei dati). Come si potrebbe risolvere per davvero questo problema? Con
-Bayesian optimization sulla loglikelihood? Però a quel punto va fatta in modo
-robusto o è un serpente che si morde la coda. Andrebbe trovato un modello
-semplice che si fa quasi tutto analitico... ma se sbaglio es. la scala poi non
-becco il minimo, magari ci passo attraverso. Oppure usare un algoritmo ibrido
-che usa minimi quadrati per la parte con i residui e poi qualcos'altro per la
-parte con il logaritmo? L'errore lo posso impostare da una stima di algebra
-lineare numerica dell'errore, c'è in Basak. La sigma e la mu le ottimizzo
-analiticamente come spiegato in Basak.
-
-Fare delle interfacce di alto livello che siano più specifiche, alcune
-verrebbero bene come sottoclassi di GP, altre come megafunzioni. Magari potrei
-fare anche l'interfaccia plugin per scitkit-learn.
-
-Kernel stazionario sinc. Qual è la sua diagonalizzazione? (Ho scoperto che
-diagonalizzare il kernel si chiama teorema di Mercer, o decomposizione di
-tizio-caio-nonricordo.)
-
-Se ho un processo somma di due processi di cui uno ha basso rango, in altre
-parole gp + minimi quadrati lineare, che credo sia quello che si fa di solito
-nel kriging, posso risolvere più efficientemente che gp-style senza modifiche?
-E vorrei anche avere i valori dei parametri minimi quadrati. E voglio che
-funzioni anche se il priore sui parametri non è già diagonalizzato. E anche se
-il priore è uniforme (però rompe la marginal likelihood). (Ci dovrebbe essere
-su GPML.)
-
-Per chiarire la questione della classificazione esatta con i processi
-Gaussiani, posso raccontare una storiella così: ci sono tre personaggi, il Sage
-classifier, lo Human classifier e il Machine classifier. Il Sage è la verità
-personificata ma nessuno lo vede da tempo. Sa il valore logico delle
-proposizioni (x,i) = "l'oggetto i appartiene alla categoria i". Lo Human
-classifier cerca di indovinare cosa sa il Sage, quindi tira fuori delle
-probabilità p(x,i), e anche quelle congiunte p((x,i), (y,j)), etc. Il Machine
-cerca di indovinare cosa direbbe lo Human, e usa il modello con il GP latente
-mappato sulle p(x,i) con la CDF gaussiana. La macchina si fida del giudiziono
-dell'uomo, quindi la probabilità che assegna all'output del saggio, data
-l'opinione umana, è p(x,i|p_H(x,i))=p_H(x,i). Quindi la macchina prende il suo
-posteriore sulle p_H e calcola p(x,i) marginalizzato. Se il GP ha gli
-iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
-
-Posso ottenere il posteriore GP con Laplace quando ci sono gli iperparametri,
-posto che anche sugli iperparametri ho usato Laplace?
-
-Circular kernel: 
-https://docs.pymc.io/pymc-examples/examples/gaussian_processes/GP-Circular.html
-
-Chiamare GP -> _GPBase e poi fare una sottoclasse GP e mettere tutti i metodi
-di convenienza che non accedono a cose interne in GP.
-
-Fare la versione del kernel Fourier con solo il seno. Nel caso n=1 viene il
-Brownian bridge.
-
-Leggere l'articolo "Efficient Fourier representations of families of Gaussian
-processes".
-
-Nella doc di lsqfitgp, non usare x e y per il kernel perché non si capisce,
-usare x_1 e x_2 . Inoltre usare la maiuscola per Gaussian. Aggiungere che il
-manuale richiede conoscenze di base di algebra lineare e analisi. E aggiungere
-le virgole dopo i.e. (oppure no? sembra che ormai nessuno le usi)
-
-Usare i template descritti nell'articolo di scikit-hep che era uscito
-sull'arxiv, in particolare per configurare i test con le github actions.
-
-quando monto il priore gvar, usare fast=True perché tanto so che non sono a
-blocchi
-
-aggiungere kernel BART con maxdepth, default beta=inf, maxdepth=1. Come input
-prende gli splitting points, e deve avere un class method per ricavare gli
-spitting points dalle X. Per aggiungere il class method usando comunque il
-decoratore, definire _BART con il decoratore e poi sottoclassarlo a BART
-esplicitamente.
-
-fare anche il BART con la formula esplicita per maxdepth = 2 (quaderno 2022 MAR
-12) perché se no è troppo inefficiente. In generale quello con maxdepth
-andrebbe calcolato su pochi punti e poi interpolato, l'interpolazione va fatta
-con attenzione quando beta è piccolo.
-
-In lsqfitgp.empbayes_fit, calcolare la marginal likelihood usando laplace al
-livello 2 come ho fatto in BartGP
-
-è uscito sull'arxiv un articolo sull'inferenza esatta 1D con matern
-half-integer ("kernel packet"), l'ho scaricato
-
-gvar: gvar.dump(..., add_dependencies=True) per essere efficiente
-dovrebbe salvare una sottomatrice della matrice di covarianza sparsa interna
-anziché usare evalcov_blocks.
-
-mi sono accorto che lepage già praticamente faceva la stessa cosa che
-faccio io nell'esempio "y has no errors, marginalization".
-
-in addtransf può mangiarsi un'espressione costruita con operazioni di
-numpy su placeholder gp['roba']. Però forse è overkill, questa cosa dovrebbe
-risiedere a un livello più alto.
-
-per implementare delle variabili smart gp basandomi su un GP globale,
-posso fare un kernel che si aspetta un array strutturato in cui la prima
-componente è un indice che seleziona il kernel mentre la seconda contiene il
-tipo che serve all'utente. Wait il tipo può cambiare in base al gp... uff... ok
-basta mettere l'opzione in addx per non imporre che le x siano tutte dello
-stesso tipo. Poi bisogna avere il modo per cancellare/ridefinire le variabili
-in un GP per quando faccio assegnamenti temporanei. Le espressioni di gp
-chiamano addtransf. Aspetta: potrei voler fare espressioni sia su processi non
-valutati che valutati. Allora avrei bisogno di una sorta di abstractgp che si
-concretizza quando gli passo le x. Per condizionare uso una funzione globale
-perché devo poter mettere insieme vari gp.
-
-voglio poter risolvere la seguente situazione: metto un *posteriore*
-di gp dentro a lsqfit e poi voglio prolungare. Mi sa che predfromfit non
-funziona mica. Forse funziona magicamente a culo usando i gvar che si ricordano
-tutte le correlazioni.
-
-aggiungere Kernel.rescale da usare al posto di rescaling, e poi
-l'opzione mult in addx magari? Però ci starebbe in generale fare trasf a caso
-con addtransf e poi derivare. Il problema è che quando trasformo usando le x
-devo derivare anche quei pezzi, quindi diventa impegnativo tener traccia di
-tutto, mult è più semplice per me e inizialmente direi che va bene. Però devo
-applicare prima mult o deriv? Bisogna poter trasformare in ordine...
-
-nell'intro della documentazione, correggere il link morto con
-https://direct.mit.edu/books/book/2320/Gaussian-Processes-for-Machine-Learning
-
-sarebbe molto comodo poter usare kernel separati su varie cose con
-sottointeso che kernel diversi sono indipendenti. Potrei fare un metodo
-addkernel che assegna un nome a un kernel, e poi addx ha un'opzione kernel che
-prende il nome del kernel, kernel=None usa quello dato all'inizializzazione.
-Posso anche non dare un kernel nell'inizializzazione.
-
-per ovviare al bug della moltiplicazione per scalare del kernel con
-autograd, aggiungere dei metodi pubblici espliciti per comporre i kernel
-
-quando passo a jax e posso usare le hessiane, potrei usare fisher
-scoring per l'ottimizzazione cioè prendere il valore atteso dell'hessiana
-
-gli inducing points li posso indicare scegliendo una variabile
-precedentemente definita con addx/addtransf.
-
-il kernel "cauchy" (1 + r^alpha)^-beta, 0 < alpha <= 2, beta > 0, è
-ottenibile a partire da quelli definiti? in realtà Cauchy standard sarebbe come
-la Cauchy, cioè alpha=2, beta=1, che equivale al "rational quadratic" per
-alpha=1. Comunque direi che manca, aggiungere GenCauchy. Credo sia isotropico.
-Citare l'articolo che lo introduce.
-
-il kernel Taylor posso ricavarlo analiticamente anche per funzioni
-che vanno giù più velocemente? Tipo (1/k!)^2n si riesce a fare? Scommetterei di
-sì visto che (1/k!)^2 si può
-
-posso implementare correlate/decorrelate per BlockMatrix usando una
-sorta di cholesky a blocchi, l'ho scritto sul quaderno il 5 aprile 2022
-
-per far passare JAX attraverso BufferDict in empbayes_fit, se uso il
-parametro buf posso passare l'array di JAX senza pluggare jax.np dentro il
-codice di gvar. Il problema è come supportare le trasformazioni, quelle invece
-richiedono una funzione che si succhi array di oggetti (no jax) però vorrei che
-supportasse gli array di JAX. Forse bisogna rompere a Lepage, però bisogna che
-venga un meccanismo generico anziché un paciugo che supporta solo JAX.
-
-dovrei riimplementare lsqfit.nonlinear_fit per usare le mie decomposizioni e
-cooperare meglio con i processi gaussiani latenti senza passare dalle gvar.
-Quindi devo anche fare una funzione condivisa che mappa il nome della
-decomposizione a una classe Decomp.
-
-aggiungere l'opzione per fittare roba di basso rango a parte usando woodsbury.
-Deve funzionare sia per regressione lineare con covariate e priore arbitrari,
-sia per una componente del kernel di basso rango... forse è chiedere troppo,
-per cominciare accontentiamoci di regressione. Interfaccia?? Visto che voglio
-mettere addkernel, potrei mettere addregres, e poi sommo con addtransf
-
-se la matrice di covarianza a priori dei punti dove voglio calcolare la
-predizioni è speciale, riesco a fare qualcosa? Ad esempio penso a una griglia
-fitta... forse LOVE (nei preprint salvati) fa qualcosa del genere visto che
-diceva di fare fast sampling delle predizioni? => vedi quaderno 7 aprile 2022,
-c'è anche il caso di dati assunti indipendenti date le predizioni che è
-super-potente.
-
-la cosa che uso per fare il gaussian process con gvar si chiama Matheron's rule
-(https://avt.im/publications/2020/07/09/GP-sampling) Questa cosa forse è un
-modo diverso alla fine di scrivere quello che ho ricavato con schur e woodsbury
-direttamente sulle matrici, che se so invertire velocemente il priore sui test
-point allora sono a posto
-
-forse devo aggiungere a GP stesso i metodi per campionare da un
-posteriore/priore per usare le decomposizioni efficienti. Forse dovrei
-aggiungere un metodo "addcondition" che definisce una nuova variabile come
-condizionata? Pensarci.
