@@ -65,9 +65,6 @@ Lower thresholds in linalg tests.
 gvar.BufferDict should have a prettier repr on the IPython shell. Is there a
 standard way to configure a pretty print?
 
-quando monto il priore gvar, usare fast=True perché tanto so che non sono a
-blocchi
-
 per ovviare al bug della moltiplicazione per scalare del kernel con
 autograd, aggiungere dei metodi pubblici espliciti per comporre i kernel
 

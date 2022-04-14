@@ -584,7 +584,7 @@ class GP:
                 for row, x in items
                 for col, y in items
             }
-            self._priordict = gvar.gvar(mean, cov)
+            self._priordict = gvar.gvar(mean, cov, fast=True)
             self._priordict.buf.flags['WRITEABLE'] = False
             self._canaddx = False
         
@@ -889,7 +889,7 @@ class GP:
             return mean, cov
         
         elif not keepcorr:
-            flatout = gvar.gvar(mean, cov)
+            flatout = gvar.gvar(mean, cov, fast=True)
         
         if not strip:
             return gvar.BufferDict({
