@@ -92,7 +92,7 @@ Long index
 
 .. _i:
 
-  * `i.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/i.py>`_: EXAMPLE H.
+  * `i.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/i.py>`_: EXAMPLE I.
 
     Where, due to obscure political reasons, we insist on forgetting
     important details that a reasonable man's mind would be fond of

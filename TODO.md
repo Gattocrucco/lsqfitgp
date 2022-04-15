@@ -51,6 +51,8 @@ iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
 
 ## Fixes and tests
 
+Go through the coverage and add tests to cover untested lines.
+
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
 (quick partial fix: larger eps in `IsotropicKernel.__init__`).
 
@@ -81,6 +83,8 @@ sull'arxiv, in particolare per configurare i test con le github actions.
 Dovrebbe essere possibile per l'utente inserire i suoi blocchi della matrice di
 covarianza senza che nessuno gli rompa i coglioni. Anche dopo aver chiamato
 `addx`.
+
+Add mean functions.
 
 ### Bayesian optimization
 

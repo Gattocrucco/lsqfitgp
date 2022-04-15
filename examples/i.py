@@ -19,7 +19,7 @@
 
 """
 
-                            EXAMPLE H.
+                            EXAMPLE I.
 
     Where, due to obscure political reasons, we insist on forgetting
     important details that a reasonable man's mind would be fond of
