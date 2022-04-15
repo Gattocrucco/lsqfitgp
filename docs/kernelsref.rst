@@ -30,9 +30,9 @@ distance. In general non-isotropic kernels will act separately on each
 dimension, i.e., :math:`k(x_1,y_1,x_2,y_2) = k(x_1,y_1) k(x_2,y_2)`, apart from
 kernels defined in terms of the dot product.
 
-For all isotropic and stationary (i.e., depending only on :math:`x - y`) kernels
-:math:`k(x, x) = 1`, and the typical lengthscale is approximately 1 for default
-values of the keyword parameters, apart from some specific cases like
+For all isotropic and stationary (i.e., depending only on :math:`x - y`)
+kernels :math:`k(x, x) = 1`, and the typical lengthscale is approximately 1 for
+default values of the keyword parameters, apart from some specific cases like
 :class:`Constant`.
 
 .. warning::

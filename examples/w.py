@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE W.
+
+    Where, with limited success, we recover the identity of two
+    mixed functions knowing their speed of variation.
+
+"""
+
 import numpy as np
 from matplotlib import pyplot as plt
 import gvar
@@ -61,10 +70,7 @@ sdev = gvar.sdev(pred)
 samples = list(gvar.raniter(pred, 1))
 
 print('figure...')
-fig = plt.figure('w')
-fig.clf()
-fig.set_size_inches(6, 7)
-axs = fig.subplots(3, 1)
+fig, axs = plt.subplots(3, 1, num='w', clear=True, figsize=[6, 7])
 
 for ax, comp in zip(axs, ['', 'short', 'long']):
     key = 'pred' + comp

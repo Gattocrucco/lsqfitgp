@@ -13,9 +13,6 @@ Interlinks with gvar and lsqfit docs.
 Mention that `numpy.lib.recfunctions.unstructured_to_structured` may be used
 for euclidean multidimensional input.
 
-In the manual add an automatically generated index of the examples, with links
-to github, with the docstrings of examples.
-
 Separate the index of kernels by class (after adding `StationaryKernel`).
 
 In the nonlinear fit example, use the gaussian cdf instead of the hyperbolic
@@ -24,7 +21,8 @@ arctangent to make a uniform prior over the interval.
 A chapter on propagation, from simple GP-only to nonlinear with multiple fits.
 
 mi sono accorto che lepage già praticamente faceva la stessa cosa che
-faccio io nell'esempio "y has no errors, marginalization".
+faccio io nell'esempio "y has no errors, marginalization". Comunque si chiama
+"regola di Matheron".
 
 Non usare x e y per il kernel perché non si capisce, usare x_1 e x_2.
 Aggiungere che il manuale richiede conoscenze di base di algebra lineare e
@@ -92,7 +90,8 @@ documentation. If I don't find out something better I'd like to study the
 matter and write something.
 
 To use gvar it would be necessary to remove the limitation of not being able to
-create new primary gvars correlated with old ones. Ask Lepage about this.
+create new primary gvars correlated with old ones. Ask Lepage about this. => I
+opened an issue on gvar, let's see.
 
 ### Low-rank/regression
 
@@ -156,7 +155,10 @@ point allora sono a posto
 forse devo aggiungere a GP stesso i metodi per campionare da un
 posteriore/priore per usare le decomposizioni efficienti. Forse dovrei
 aggiungere un metodo "addcondition" che definisce una nuova variabile come
-condizionata? Pensarci.
+condizionata? Pensarci. => O forse per non annegare nei metodi è meglio
+resistuire un oggetto "distribuzione" che è in grado di campionare e fare tante
+altre cose... però così ho solo spostato il problema perché già GP e le gvar
+dovrebbero svolgere questo ruolo.
 
 ### Nonlinear fit
 

@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE Q.
+
+    Where we extend a pattern of waves in space, but do not dare
+    look too far from our data.
+
+"""
+
 import lsqfitgp as lgp
 from lsqfitgp import _linalg
 from matplotlib import pyplot as plt
@@ -41,7 +50,7 @@ xdata = makexy(xdata1d, xdata1d)
 xpred = makexy(xpred1d, xpred1d)
 y = np.cos(xdata['x']) * np.cos(xdata['y'])
 
-gp = lgp.GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=3, dim='y'), checkpos=False, solver='gersh')
+gp = lgp.GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=3, dim='y'))
 gp.addx(xdata.reshape(-1), 'pere')
 gp.addx(xpred.reshape(-1), 'banane')
 
@@ -49,18 +58,14 @@ print('fit...')
 m, cov = gp.predfromdata({'pere': y.reshape(-1)}, 'banane', raw=True)
 
 print('samples...')
-# samples = np.random.multivariate_normal(m, cov)
-# dec = _linalg.LowRank(cov, rank=300)
-# samples = m + dec._V @ (np.random.randn(len(dec._w)) * dec._w)
-sample = m + _linalg.CholGersh(cov, eps=1e-5)._L @ np.random.randn(len(m))
+sample = m + _linalg.CholGersh(cov, eps=5e-5).correlate(np.random.randn(len(m)))
 sample = sample.reshape(xpred.shape)
 
 print('plot...')
-fig = plt.figure('q')
-fig.clf()
-ax = fig.add_subplot(111, projection='3d')
+fig, ax = plt.subplots(num='q', clear=True, subplot_kw=dict(projection='3d', computed_zorder=False))
 
-ax.scatter(xdata['x'].reshape(-1), xdata['y'].reshape(-1), y.reshape(-1), color='black')
-ax.plot_surface(xpred['x'], xpred['y'], sample, alpha=0.8)
+ax.scatter(xdata['x'].reshape(-1), xdata['y'].reshape(-1), y.reshape(-1), color='black', zorder=10)
+ax.plot_surface(xpred['x'], xpred['y'], sample, alpha=0.9, cmap='viridis')
+ax.view_init(elev=70, azim=110)
 
 fig.show()

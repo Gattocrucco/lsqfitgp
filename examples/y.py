@@ -18,7 +18,8 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-                           EXAMPLE Y.
+
+                            EXAMPLE Y.
 
     Where a Fourier kernel forces some random samples to have
     zero mean, and forces us to avoid checking its positity.
@@ -43,9 +44,7 @@ m = gvar.mean(u)
 s = gvar.sdev(u)
 cov = gvar.evalcov(u)
 
-fig = plt.figure('y')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='y', clear=True)
 
 patch = ax.fill_between(xpred, m - s, m + s, label='pred', alpha=0.5)
 color = patch.get_facecolor()[0]

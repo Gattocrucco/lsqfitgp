@@ -44,6 +44,7 @@ bugs or request features, `open an issue
     
     userguide.rst
     reference.rst
+    examples.rst
     
 Indices and tables
 ==================

@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE C.
+
+    Where a nonlinear transformation hides the true height of some
+    crosses.
+
+"""
+
 import lsqfitgp as lgp
 import lsqfit
 from matplotlib import pyplot as plt
@@ -70,9 +79,7 @@ ypredalt = fcn('pred', fit.palt)
 
 phipred = gp.predfromfit({'data': fit.p['phi']}, 'pred')
 
-fig = plt.figure('c')
-fig.clf()
-axs = fig.subplots(1, 2)
+fig, axs = plt.subplots(1, 2, num='c', clear=True)
 
 for ax, variable in zip(axs, ['y', 'phi']):
     ax.set_title(variable)

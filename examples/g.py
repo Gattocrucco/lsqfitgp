@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE G.
+
+    Where two ways of expressing one's beliefs are compared and found,
+    satisfactorily, to be quite similar.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -37,9 +46,7 @@ umean, ucov = gp.predfromdata({'data': y}, ['pred', 'predderiv'], raw=True)
 ualt = gp.predfromdata({'data': y}, ['pred', 'predderiv'])
 
 print('figure...')
-fig = plt.figure('g')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='g', clear=True)
 
 colors = dict()
 for label in umean:

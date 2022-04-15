@@ -17,13 +17,20 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE L.
+
+    Where two formulas give the same results and so math triumphs
+    once again.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
 
-fig = plt.figure('l')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='l', clear=True)
 
 x = np.linspace(0, 10, 1000)
 

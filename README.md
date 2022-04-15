@@ -25,8 +25,10 @@ Python module for manipulating gaussian processes. Features:
   
 ## Installation
 
+Python >= 3.6 required. Then:
+
 ```
-pip install lsqfitgp
+$ pip install lsqfitgp
 ```
 
 ## Documentation
@@ -51,26 +53,23 @@ In [1]: lgp?
 In [2]: lgp.something?
 ```
 
-### Building the manual from source
+## Development
+
+Create a virtual environment and install the requirements:
 
 ```sh
-pip install sphinx<2
-cd docs
-make html
+$ python -m venv myenv
+$ . myenv/bin/activate
+(myenv) $ pip install -r requirements.txt
 ```
 
-If you add kernels, run `kernelsref.py` to regenerate `kernelsref.rst`.
+The `Makefile` in the root directory contains targets to build the
+documentation, run the tests, and prepare a release. Run `make` without
+arguments to show the available targets:
 
-If you add a documentation page with code examples, use `runcode.py` to run
-all the code found in code sections in the rst file.
-
-## Examples
-
-In the directory `examples` there are various scripts named with single letters
-(sorry for this nonsense notation). In an IPython shell, you can run
-`examples/RUNALL.ipy` to run all the examples and save the figures on files.
-
-## Tests
-
-The test code is in `tests`. Launch `pytest` in the repository to run all the
-tests. `pytest` can be installed with `pip install pytest`.
+```sh
+$ make
+available targets: upload release tests examples docscode docs
+release = tests examples docscode docs (in order)
+$ make tests # or make examples, or ...
+```

@@ -23,16 +23,18 @@ tests:
 	coverage html
 
 EXAMPLES = $(wildcard examples/*.py)
+EXAMPLES := $(filter-out examples/runexamples.py, $(EXAMPLES))
 .PHONY: $(EXAMPLES)
 
 examples: $(EXAMPLES)
 
 $(EXAMPLES):
-	PYTHONPATH=. python $@
+	PYTHONPATH=. python examples/runexamples.py $@
 
 docscode:
 	cd docs && python runcode.py *.rst
 
 docs:
 	cd docs && python kernelsref.py
+	cd docs && python examplesref.py
 	make -C docs html

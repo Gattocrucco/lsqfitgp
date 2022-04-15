@@ -17,6 +17,16 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE B.
+
+    Where it is discovered that the derivative of the unknown function
+    is orthogonal to the function itself, and furthermore that it is
+    orange instead of blue.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -36,9 +46,7 @@ print('fit...')
 u = gp.pred({'data': y}, ['pred', 'deriv'], fromdata=True)
 
 print('figure...')
-fig = plt.figure('b')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='b', clear=True)
 
 colors = dict()
 for label in u:

@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE M.
+    
+    Where we discover that, unlike elephants, Matérn processes
+    prefer to forget after less than one data step.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 from autograd import numpy as np
@@ -47,11 +56,9 @@ gp.addx(xpred, 'pred')
 m, cov = gp.predfromdata({'data': y}, 'pred', raw=True)
 s = np.sqrt(np.diag(cov))
 
-fig = plt.figure('m')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='m', clear=True)
 
-patch = ax.fill_between(xpred, m - s, m + s, label='pred', alpha=0.5)
+patch = ax.fill_between(xpred, m - s, m + s, label=f'pred (L={result.x[0]:.2g})', alpha=0.5)
 color = patch.get_facecolor()[0]
 simulated_lines = np.random.multivariate_normal(m, cov, size=10)
 ax.plot(xpred, simulated_lines.T, '-', color=color)

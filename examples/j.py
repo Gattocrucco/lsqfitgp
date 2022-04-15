@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE J.
+
+    Where the excessive smoothness of the prediction is found not
+    to satisfy our manly tastes.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -35,9 +44,7 @@ m = gvar.mean(u)
 s = gvar.sdev(u)
 cov = gvar.evalcov(u)
 
-fig = plt.figure('j')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='j', clear=True)
 
 patch = ax.fill_between(xpred, m - s, m + s, label='pred', alpha=0.5)
 color = patch.get_facecolor()[0]

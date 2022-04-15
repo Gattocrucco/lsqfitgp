@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE P.
+
+    Where an overwhelming amount of datapoints is revelead to be
+    nothing more than a pile of ten eigenfunctions.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -40,9 +49,7 @@ m, cov = gp.predfromdata({'pere': y}, 'banane', raw=True)
 s = np.sqrt(np.diag(cov))
 
 print('plot...')
-fig = plt.figure('p')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='p', clear=True)
 
 patch = ax.fill_between(xpred, m - s, m + s, label='pred', alpha=0.5)
 color = patch.get_facecolor()[0]

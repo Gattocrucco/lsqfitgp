@@ -17,20 +17,36 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE X.
+
+    Where the derivatives of an interesting correlation function
+    are put to harsh a trial.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
 
-fig = plt.figure('x')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='x', clear=True)
 
 x = np.linspace(0, 10, 1000)
 
 eps = 1e-8
-for Q in eps, 0.5 - eps, 0.5 + eps, 1 - eps, 1, 1 + eps, 2:
+args = [
+    # Q, kw
+    (eps, {}),
+    (0.5 - eps, {}),
+    (0.5 + eps, dict(linestyle='--')),
+    (1 - eps, {}),
+    (1 + eps, dict(linestyle='--')),
+    (2, {})
+]
+for Q, kw in args:
     y = lgp.Harmonic(Q=Q).diff(1, 1)(0, x)
-    ax.plot(x, y, label='Q={}'.format(Q))
+    ax.plot(x, y, label=f'Q={Q}', **kw)
 
 ax.legend(loc='best')
 fig.show()

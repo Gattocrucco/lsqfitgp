@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE K.
+
+    Where lady K finds out that every gentleman hides his rougher
+    corners in his derivative.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -36,9 +45,7 @@ print('fit...')
 u = gp.pred({'data': y}, ['pred', 'deriv'], fromdata=True)
 
 print('figure...')
-fig = plt.figure('k')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='k', clear=True)
 
 colors = dict()
 for label in u:

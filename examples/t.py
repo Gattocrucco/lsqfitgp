@@ -17,12 +17,22 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE T.
+
+    Where we pretend to discover that two series of events
+    were in fact one the delayed and imperfect copy of the
+    other.
+
+"""
+
+import time as systime
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 from autograd import numpy as np
 import gvar
-from scipy import optimize
-import time as systime
 
 time = np.arange(21)
 x = np.empty((2, len(time)), dtype=[
@@ -78,9 +88,7 @@ gp.addx(xpred, 'B')
 
 pred = gp.predfromdata({'A': data}, 'B')
 
-fig = plt.figure('t')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='t', clear=True)
 
 colors = []
 for i in range(2):

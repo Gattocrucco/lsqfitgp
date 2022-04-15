@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE D.
+
+    Where the primitive of our function takes some freedom to move
+    up and down.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -36,9 +45,7 @@ print('fit...')
 u = gp.predfromdata({'data': y}, ['integral', 'pred'])
 
 print('figure...')
-fig = plt.figure('d')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='d', clear=True)
 
 colors = dict()
 for label in u:

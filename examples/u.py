@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE U.
+
+    Where we infer the temporal scale of a process assuming
+    another process is correlated with its derivative.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -30,7 +39,7 @@ x = np.empty(len(time), dtype=[
     ('label', int)
 ])
 x['time'] = time
-x['label'] = data_deriv
+x['label'] = 1
 
 data_error = 0.05
 data_mean = np.cos(time)
@@ -67,9 +76,7 @@ gp.addx(xpred[1], 1, deriv=(1, 'time'))
 
 pred = gp.predfromdata(datadict, [0, 1])
 
-fig = plt.figure('u')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='u', clear=True)
 
 colors = dict()
 for deriv in pred:

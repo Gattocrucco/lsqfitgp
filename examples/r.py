@@ -17,10 +17,18 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE R.
+
+    Where we decide to introduce a strong anisotropy despite
+    evidence of its absence.
+
+"""
+
 import lsqfitgp as lgp
 from lsqfitgp import _linalg
 from matplotlib import pyplot as plt
-from mpl_toolkits import mplot3d
 import numpy as np
 import gvar
 
@@ -36,30 +44,26 @@ def makegrid(array1d):
 
 xdata = makegrid(xdata1d)
 xpred = makegrid(xpred1d)
-y = np.cos(xdata['x']) * np.cos(xdata['y'])
+z = np.cos(xdata['x']) * np.cos(xdata['y'])
 
-gp = lgp.GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=1, dim='y'), checkpos=False, solver='gersh')
+gp = lgp.GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=1, dim='y'))
 gp.addx(xdata, 'pere')
 gp.addx(xpred, 'banane')
 
 print('fit...')
-m, cov = gp.predfromdata({'pere': y}, 'banane', raw=True)
+m, cov = gp.predfromdata({'pere': z}, 'banane', raw=True)
 
 print('samples...')
-# samples = np.random.multivariate_normal(m, cov)
-# dec = _linalg.LowRank(cov, rank=300)
-# samples = m + dec._V @ (np.random.randn(len(dec._w)) * dec._w)
-samples = m + _linalg.CholGersh(cov, eps=1e-5)._L @ np.random.randn(len(cov))
+samples = m + _linalg.CholGersh(cov, eps=1e-5).correlate(np.random.randn(len(cov)))
 
 print('plot...')
-fig = plt.figure('r')
-fig.clf()
-ax = fig.add_subplot(111, projection='3d')
+fig, ax = plt.subplots(num='r', clear=True, subplot_kw=dict(projection='3d', computed_zorder=False))
 
-ax.scatter(xdata['x'], xdata['y'], y, color='black')
+ax.scatter(xdata['x'], xdata['y'], z, color='black', zorder=10)
 plotxpred = xpred.reshape(len(xpred1d), len(xpred1d))
-ax.plot_surface(plotxpred['x'], plotxpred['y'], samples.reshape(plotxpred.shape), alpha=0.85)
+ax.plot_surface(plotxpred['x'], plotxpred['y'], samples.reshape(plotxpred.shape), alpha=0.85, cmap='viridis')
 
+ax.view_init(elev=60, azim=30)
 for axis in 'xyz':
     exec(f'ax.set_{axis}label("{axis}")')
 

@@ -17,13 +17,20 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE V.
+
+    Where we go on an expedition to survey the many and wondrous
+    kernels that inhabit our software.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
 
-fig = plt.figure('v')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='v', clear=True)
 
 kernels = [
     ['expquad', lgp.ExpQuad()],

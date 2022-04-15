@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE N.
+
+    Where we wonder how much a derivative is allowed to do her own
+    business compared to her mistress.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -31,9 +40,7 @@ for d in derivs:
 
 u = gp.prior()
 
-fig = plt.figure('n')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='n', clear=True)
 
 ax.axhline(0)
 

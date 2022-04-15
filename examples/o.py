@@ -17,6 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE O.
+
+    Where mister N's enquiry is repeated by different means.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -31,9 +39,7 @@ for d in derivs:
 
 cov = gp.prior(raw=True)
 
-fig = plt.figure('o')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='o', clear=True)
 
 colors = dict()
 m = np.zeros(len(x))

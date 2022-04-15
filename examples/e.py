@@ -17,6 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+
+                            EXAMPLE E.
+
+    Where observing both a function and its derivative put some
+    restraint on their behaviour.
+
+"""
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
@@ -38,9 +47,7 @@ print('fit...')
 u = gp.predfromdata({'data': y[0::2], 'dataderiv': y[1::2]}, ['pred', 'predderiv'])
 
 print('figure...')
-fig = plt.figure('e')
-fig.clf()
-ax = fig.subplots(1, 1)
+fig, ax = plt.subplots(num='e', clear=True)
 
 colors = dict()
 for label in u:
