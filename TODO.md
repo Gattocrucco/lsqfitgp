@@ -311,6 +311,15 @@ half-integer ("kernel packet"), l'ho scaricato
 
 ### Transformations
 
+aggiungere Kernel.rescale da usare al posto di rescaling, e poi
+l'opzione mult in addx magari? Però ci starebbe in generale fare trasf a caso
+con addtransf e poi derivare. Il problema è che quando trasformo usando le x
+devo derivare anche quei pezzi, quindi diventa impegnativo tener traccia di
+tutto, mult è più semplice per me e inizialmente direi che va bene. Però devo
+applicare prima mult o deriv? Bisogna poter trasformare in ordine...
+
+#### Finite transformations
+
 In `GP.addtransf` vorrei poter moltiplicare element-wise gli array con
 broadcasting anziché fare la contrazione. E vorrei poter fare robe tipo la FFT.
 E la FFT forse non conviene calcolare il jacobiano ma applicarla in qualche
@@ -327,14 +336,9 @@ delle derivate in un gradiente. Potrei anche supportare broadcast.
 
 in addtransf può mangiarsi un'espressione costruita con operazioni di
 numpy su placeholder gp['roba']. Però forse è overkill, questa cosa dovrebbe
-risiedere a un livello più alto.
-
-aggiungere Kernel.rescale da usare al posto di rescaling, e poi
-l'opzione mult in addx magari? Però ci starebbe in generale fare trasf a caso
-con addtransf e poi derivare. Il problema è che quando trasformo usando le x
-devo derivare anche quei pezzi, quindi diventa impegnativo tener traccia di
-tutto, mult è più semplice per me e inizialmente direi che va bene. Però devo
-applicare prima mult o deriv? Bisogna poter trasformare in ordine...
+risiedere a un livello più alto. => A ben pensarci alla fine viene più
+semplice che ricostruire tutte le operazioni di numpy con una gerarchia di
+classi come scritto sopra.
 
 #### Sum of components
 
@@ -346,7 +350,8 @@ sarebbe molto comodo poter usare kernel separati su varie cose con
 sottointeso che kernel diversi sono indipendenti. Potrei fare un metodo
 addkernel che assegna un nome a un kernel, e poi addx ha un'opzione kernel che
 prende il nome del kernel, kernel=None usa quello dato all'inizializzazione.
-Posso anche non dare un kernel nell'inizializzazione.
+Posso anche non dare un kernel nell'inizializzazione. Forse questo è
+sufficiente a semplificare abbastanza il caso in cui voglio sommare componenti.
 
 #### Fourier
 

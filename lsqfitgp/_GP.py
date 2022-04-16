@@ -136,24 +136,24 @@ class _Points(_Element):
 class _Transf(_Element):
     """Trasformation over other _Element objects"""
     
-    def __init__(self, tensors, shape):
+    def __init__(self, tensors, shape, axes):
         assert isinstance(tensors, dict)
         assert isinstance(shape, tuple)
         self.tensors = tensors # dict key -> array
         self._shape = shape
+        self._axes = axes
     
     @property
     def shape(self):
         return self._shape
     
-    @classmethod
-    def tensormul(cls, tensor, x):
+    def tensormul(self, tensor, x):
         """
         Do the multiplication tensor @ x.
         """
         if tensor.shape:
-            x = np.tensordot(tensor, x, axes=1)
-        elif tensor.item != 1:
+            x = np.tensordot(tensor, x, axes=self._axes)
+        else:
             x = tensor * x
         return x
 
@@ -364,7 +364,7 @@ class GP:
             
             self._elements[key] = _Points(gx, deriv)
         
-    def addtransf(self, tensors, key):
+    def addtransf(self, tensors, key, axes=1):
         """
         
         Apply a linear transformation to already specified process points. The
@@ -379,17 +379,19 @@ class GP:
             over.
         key : hashable
             A new key under which the transformation is placed.
+        axes : int
+            Number of axes to be summed over for matrix multiplication,
+            referring to trailing axes for tensors in `tensors`, and to
+            heading axes for process points. Default 1.
         
         Notes
         -----
         The multiplication between the tensors and the process is done with
-        np.tensordot with 1-axis contraction. For >2d arrays this is different
-        from numpy's matrix multiplication, which would act on the
+        np.tensordot with, by default, 1-axis contraction. For >2d arrays this
+        is different from numpy's matrix multiplication, which would act on the
         second-to-last dimension of the second array.
         
-        """
-        # TODO axes parameter like np.tensordot to allow fancy contractions.
-        
+        """        
         # TODO if a tensor is a callable, it is called on the points to get
         # the tensor. It can be only applied on _Points. The callable is called
         # immediately in addtransf to catch errors.
@@ -398,11 +400,15 @@ class GP:
         # on the combined transf @ kernel @ transf.T. Maybe then it is better
         # to add transformations as a kernel method.
         
+        # Check axes.
+        assert isinstance(axes, int), axes
+        assert axes >= 1, axes
+        
         # Check key.
         if key is None:
             raise ValueError('key can not be None')
         if key in self._elements:
-            raise RuntimeError('key {!r} already in GP'.format(key))
+            raise RuntimeError(f'key {key!r} already in GP')
         
         # Check keys.
         for k in tensors:
@@ -410,24 +416,23 @@ class GP:
                 raise KeyError(k)
         
         # Check tensors and convert them to numpy arrays.
+        tens = {}
         for k, t in tensors.items():
             t = np.array(t, copy=False)
             if not np.issubdtype(t.dtype, np.number):
-                msg = 'tensors[{!r}] has non-numeric dtype {!r}'
-                raise TypeError(msg.format(k, t.dtype))
+                raise TypeError(f'tensors[{k!r}] has non-numeric dtype {t.dtype!r}')
             if self._checkfinite and not np.all(np.isfinite(t)):
-                raise ValueError('tensors[{!r}] contains infs/nans'.format(k))
+                raise ValueError(f'tensors[{k!r}] contains infs/nans')
             rshape = self._elements[k].shape
-            if t.shape and t.shape[-1] != rshape[0]:
-                msg = 'tensors[{!r}].shape = {!r} can not be multiplied with shape {!r}'
-                raise ValueError(msg.format(k, t.shape, rshape))
-            tensors[k] = t
+            if t.shape and t.shape[-axes:] != rshape[:axes]:
+                raise ValueError(f'tensors[{k!r}].shape = {t.shape!r} can not be multiplied with shape {rshape!r} with {axes}-axes contraction')
+            tens[k] = t
         
         # Compute shape.
-        arrays = tensors.values()
-        elements = (self._elements[k] for k in tensors)
+        arrays = tens.values()
+        elements = (self._elements[k] for k in tens)
         shapes = [
-            t.shape[:-1] + e.shape[1:] if t.shape else e.shape
+            t.shape[:-axes] + e.shape[axes:] if t.shape else e.shape
             for t, e in zip(arrays, elements)
         ]
         try:
@@ -439,7 +444,7 @@ class GP:
             msg += ', '.join(repr(e.shape) for e in elements) + ']'
             raise ValueError(msg)
         
-        self._elements[key] = _Transf(tensors, shape)
+        self._elements[key] = _Transf(tens, shape, axes)
     
     def _makecovblock_points(self, xkey, ykey):
         x = self._elements[xkey]
@@ -471,7 +476,7 @@ class GP:
             cov = self._covblock(key, ykey)
             assert cov.shape == (elem.size, y.size)
             cov = cov.reshape(elem.shape + y.shape)
-            cov = type(x).tensormul(tensor, cov)
+            cov = x.tensormul(tensor, cov)
             if covsum is not None:
                 covsum = covsum + cov
             else:
@@ -596,7 +601,7 @@ class GP:
         out = None
         for k, tensor in x.tensors.items():
             prior = self._prior(k)
-            transf = type(x).tensormul(tensor, prior)
+            transf = x.tensormul(tensor, prior)
             if out is None:
                 out = transf
             else:
