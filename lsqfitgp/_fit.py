@@ -66,7 +66,7 @@ class empbayes_fit:
     
         Empirical bayes fit.
     
-        Maximizes the marginal likelihood of the data with a gaussian process
+        Maximizes the marginal likelihood of the data with a Gaussian process
         model that depends on hyperparameters.
     
         Parameters

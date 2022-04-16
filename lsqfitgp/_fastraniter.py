@@ -32,7 +32,7 @@ __all__ = [
 def raniter(mean, cov, n=None, eps=None):
     """
     
-    Take random samples from a multivariate gaussian.
+    Take random samples from a multivariate Gaussian.
     
     This generator mimics the interface of `gvar.raniter`, but takes as input
     the mean and covariance separately instead of a collection of gvars.
@@ -40,7 +40,7 @@ def raniter(mean, cov, n=None, eps=None):
     Parameters
     ----------
     mean : scalar, array, or dictionary of scalars/arrays
-        The mean of the gaussian distribution.
+        The mean of the Gaussian distribution.
     cov : scalar, array, or dictionary of scalars/arrays
         The covariance matrix. If `mean` is a dictionary, `cov` must be a
         dictionary with pair of keys from `mean` as keys.

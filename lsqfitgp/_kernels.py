@@ -164,7 +164,7 @@ def Matern(r, nu=None):
         \\quad \\nu = \\texttt{nu} > 0,
         \\quad x = \\sqrt{2\\nu} r
     
-    The nearest integer below `nu` indicates how many times the gaussian
+    The nearest integer below `nu` indicates how many times the Gaussian
     process is derivable: so for `nu` < 1 it is continuous but not derivable,
     for 1 <= `nu` < 2 it is derivable but has not a decond derivative, etc. The
     half-integer case (nu = 1/2, 3/2, ...) uses internally a simpler formula so
@@ -242,7 +242,7 @@ def GammaExp(r, gamma=1):
         k(r) = \\exp(-r^\\texttt{gamma}), \\quad
         \\texttt{gamma} \\in [0, 2]
     
-    For `gamma` = 2 it is the gaussian kernel, for `gamma` = 1 it is the Matérn
+    For `gamma` = 2 it is the Gaussian kernel, for `gamma` = 1 it is the Matérn
     1/2 kernel, for `gamma` = 0 it is the constant kernel. The process is
     differentiable only for `gamma` = 2, however as `gamma` gets closer to 2
     the variance of the non-derivable component goes to zero.
@@ -261,9 +261,9 @@ def RatQuad(r2, alpha=2):
         k(r) = \\left( 1 + \\frac {r^2} {2 \\alpha} \\right)^{-\\alpha},
         \\quad \\alpha = \\texttt{alpha}
     
-    It is equivalent to a lengthscale mixture of gaussian kernels where the
+    It is equivalent to a lengthscale mixture of Gaussian kernels where the
     scale distribution is a gamma with shape parameter `alpha`. For `alpha` ->
-    infinity, it becomes the gaussian kernel. It is smooth.
+    infinity, it becomes the Gaussian kernel. It is smooth.
     
     """
     assert np.isscalar(alpha)
@@ -288,7 +288,7 @@ def NNKernel(x, y, sigma0=1):
         \\quad q = \\texttt{sigma0}^2
     
     Kernel which is equivalent to a neural network with one infinite hidden
-    layer with gaussian priors on the weights and error function response. In
+    layer with Gaussian priors on the weights and error function response. In
     other words, you can think of the process as a superposition of sigmoids
     where `sigma0` sets the dispersion of the centers of the sigmoids.
     
@@ -333,10 +333,10 @@ def Gibbs(x, y, scalefun=lambda x: 1):
         \\exp \\left( -\\frac {(x - y)^2} {s(x)^2 + s(y)^2} \\right),
         \\quad s = \\texttt{scalefun}.
     
-    Kernel which in some sense is like a gaussian kernel where the scale
+    Kernel which in some sense is like a Gaussian kernel where the scale
     changes at every point. The scale is computed by the parameter `scalefun`
     which must be a callable taking the x array and returning a scale for each
-    point. By default `scalefun` returns a constant so it is a gaussian kernel.
+    point. By default `scalefun` returns a constant so it is a Gaussian kernel.
     
     """
     sx = scalefun(x)
@@ -350,7 +350,7 @@ def Gibbs(x, y, scalefun=lambda x: 1):
 @kernel(derivable=True, forcekron=True)
 def Periodic(x, y, outerscale=1):
     """
-    Periodic gaussian kernel.
+    Periodic Gaussian kernel.
     
     .. math::
         k(x, y) = \\exp \\left(
@@ -359,7 +359,7 @@ def Periodic(x, y, outerscale=1):
         \\right)^2
         \\right)
     
-    A gaussian kernel over a transformed periodic space. It represents a
+    A Gaussian kernel over a transformed periodic space. It represents a
     periodic process. The usual `scale` parameter sets the period, with the
     default `scale` = 1 giving a period of 2π, while the `outerscale` parameter
     sets the length scale of the correlations.

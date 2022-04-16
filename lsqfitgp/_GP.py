@@ -160,12 +160,12 @@ class _Transf(_Element):
 class GP:
     """
     
-    Object that represents a gaussian process over arbitrary input.
+    Object that represents a Gaussian process over arbitrary input.
     
     Methods
     -------
     addx
-        Add points where the gaussian process is evaluated.
+        Add points where the Gaussian process is evaluated.
     addtransf
         Add a linear transformation of the process.
     prior
@@ -265,7 +265,7 @@ class GP:
     def addx(self, x, key=None, deriv=0):
         """
         
-        Add points where the gaussian process is evaluated.
+        Add points where the Gaussian process is evaluated.
         
         The GP object keeps the various x arrays in a dictionary. If `x` is an
         array, you have to specify its dictionary key with the `key` parameter.
@@ -619,7 +619,7 @@ class GP:
         """
         
         Return an array or a dictionary of arrays of gvars representing the
-        prior for the gaussian process. The returned object is not unique but
+        prior for the Gaussian process. The returned object is not unique but
         the gvars stored inside are, so all the correlations are kept between
         objects returned by different calls to `prior`.
         
@@ -741,7 +741,7 @@ class GP:
         
         The posterior can be computed either for all points or for a subset,
         and either directly from data or from a posterior obtained with a fit.
-        The latter case is for when the gaussian process was used in a fit with
+        The latter case is for when the Gaussian process was used in a fit with
         other parameters.
         
         The output is a collection of gvars, either an array or a dictionary
@@ -918,15 +918,15 @@ class GP:
         
         Compute the logarithm of the probability of the data.
         
-        The probability is computed under the gaussian prior and gaussian error
+        The probability is computed under the Gaussian prior and Gaussian error
         model. It is also called marginal likelihood or bayes factor. If `y` is
-        the data and `g` is the gaussian process, this is
+        the data and `g` is the Gaussian process, this is
         
         .. math::
             \\log \\int p(y|g) p(g) \\mathrm{d} g.
         
         Unlike `pred()`, you can't compute this with a fit result instead of
-        data. If you used the gaussian process as latent variable in a fit,
+        data. If you used the Gaussian process as latent variable in a fit,
         use the whole fit to compute the marginal likelihood. E.g. `lsqfit`
         always computes the logGBF (it's the same thing).
         

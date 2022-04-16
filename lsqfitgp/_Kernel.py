@@ -109,7 +109,7 @@ class _KernelBase:
         kernel : callable
             A function with signature ``kernel(x, y)``, where `x` and `y` are
             two broadcastable numpy arrays, which computes the covariance of
-            f(x) with f(y) where f is the gaussian process.
+            f(x) with f(y) where f is the Gaussian process.
         dim : None or str
             When the input arrays are structured arrays, if `dim` is None the
             kernel will operate on all fields, i.e. it will be passed the whole

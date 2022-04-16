@@ -30,17 +30,17 @@ __version__ = '0.6.4'
 
 __doc__ = """
 
-Module to fit gaussian processes with gvar/lsqfit.
+Module to fit Gaussian processes with gvar/lsqfit.
 
 Manual: https://lsqfitgp.readthedocs.io/en/latest
 
-It can both be used standalone to fit data with a gaussian process only, and
+It can both be used standalone to fit data with a Gaussian process only, and
 with lsqfit inside a possibly nonlinear model with other parameters. In lsqfit
 style, all the results will be properly correlated with prior, data, and other
-non-gaussian process parameters in the fit, even when doing conditional
+non-Gaussian process parameters in the fit, even when doing conditional
 prediction.
 
-The main class is `GP`, which represents a gaussian process over arbitrary
+The main class is `GP`, which represents a Gaussian process over arbitrary
 input. It can be used both autonomously and with lsqfit. The inputs/outputs can
 be arrays or dictionaries of arrays. It supports doing inference with the
 derivatives of the process, using `autograd` to compute automatically
@@ -51,9 +51,9 @@ Functions and classes
 ---------------------
     
     GP : class
-        Class of objects representing a gaussian process.
+        Class of objects representing a Gaussian process.
     empbayes_fit : class
-        Fit the hyperparameters of a gaussian process.
+        Fit the hyperparameters of a Gaussian process.
     StructuredArray : class
         Autograd-friendly wrapper of numpy structured arrays.
     where : function
@@ -92,7 +92,7 @@ lengthscale.
         Gamma exponential. Not differentiable, but you can set how close it is
         to being differentiable.
     RatQuad
-        Equivalent to a mixture of gaussian kernels with gamma-distributed
+        Equivalent to a mixture of Gaussian kernels with gamma-distributed
         length scales.
     NNKernel
         Equivalent to training a neural network with one latent infinite layer.
@@ -107,7 +107,7 @@ lengthscale.
     BrownianBridge
         Random walk which comes back to the starting point.
     Gibbs
-        A gaussian kernel with a custom variable length scale.
+        A Gaussian kernel with a custom variable length scale.
     Categorical
         Arbitrary covariance matrix over a finite set of values.
     Cos
@@ -126,7 +126,7 @@ lengthscale.
         Kernel for periodic functions, the decay of the Fourier coefficients is
         adjustable.
     Periodic
-        A periodic gaussian kernel, represents a periodic function.
+        A periodic Gaussian kernel, represents a periodic function.
 
 Reference: Rasmussen et al. (2006), "Gaussian Processes for Machine Learning".
 
