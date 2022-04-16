@@ -173,7 +173,7 @@ space and the Gaussian process space. ::
     ax.errorbar(x, gvar.mean(data), yerr=gvar.sdev(data), fmt='.k', capsize=4)
     
     ax = axs[1]
-    ax.set_title('gaussian process space')
+    ax.set_title('Gaussian process space')
     ax.plot(x, data_gp, '.k', label='true')
     ax.plot(x, np.arctanh(gvar.mean(data)), 'xk', label='with errors, mapped back')
     ax.legend()

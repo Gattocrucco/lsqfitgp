@@ -30,7 +30,7 @@ of the process values at two different points:
 .. math::
     k(x, y) = \operatorname{Cov}[f(x), f(y)].
 
-So you can imagine the gaussian process as a multivariate Gaussian distribution
+So you can imagine the Gaussian process as a multivariate Gaussian distribution
 on an infinitely long vector :math:`f(x)`, where :math:`x` is a "continuous
 index", and :math:`k(x, y)` is the covariance matrix.
 

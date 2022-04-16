@@ -331,7 +331,7 @@ Output::
 So the correct mean and standard deviation for log(sdev) are :math:`0.86 \pm
 0.40`, versus :mod:`lsqfitgp`'s result :math:`0.89 \pm 0.33`. The probability
 of having sdev < 1 is 1.5 %, and by doing a more accurate computation that
-keeps into account that the distribution is actually non-gaussian I manage to
+keeps into account that the distribution is actually non-Gaussian I manage to
 get it to 1.6 %, four times as much as :mod:`lsqfitgp`'s answer, but still low.
 
 What did we learn? First, that :class:`empbayes_fit` is not so accurate, it
@@ -369,7 +369,7 @@ whatever. The solution is, guess what, Gaussians:
     &= \sqrt{\frac\pi2} \exp\left(-\frac12 (x-y)^2 \right).
 
 This means that the fit is trying to redraw the datapoints using a combination
-of gaussians, so it will be happy when the datapoints are similar to a bunch of
+of Gaussians, so it will be happy when the datapoints are similar to a bunch of
 Gaussians, such that it doesn't have to figure out a nontrivial mixture of
 many different Gaussians that magically gives out precisely our points.
 
