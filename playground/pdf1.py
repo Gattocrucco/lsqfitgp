@@ -23,7 +23,7 @@ M = np.random.randn(20, 8, 30)
 
 gp = lgp.GP(kernel)
 
-gp.addx(xdata, 'xbase')
+gp.addx(xdata, 'xbase', deriv='x')
 gp.addtransf({'xbase': M}, 'data', axes=2)
 
 prior = gp.prior(['data', 'xbase'])

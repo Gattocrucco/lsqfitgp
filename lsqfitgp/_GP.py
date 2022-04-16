@@ -279,7 +279,7 @@ class GP:
         change will be reflected on the result. However, after the GP has
         computed internally its covariance matrix, the x are ignored.
         
-        If you use in some way the `gvar` prior, e.g. by calling `prior` or
+        If you use in some way the `gvar` prior, e.g., by calling `prior` or
         `pred` using gvars, you can't call `addx` any more, due to a
         limitation in gvar.
         
@@ -540,7 +540,7 @@ class GP:
         
         # TODO Cache decompositions of blocks. Caching is effective
         # with data if I can reuse the decomposition of Kxx to compute the
-        # decomposition of Kxx + ycov, i.e. it works in all cases if ycov is
+        # decomposition of Kxx + ycov, i.e., it works in all cases if ycov is
         # scalar, and in some cases if ycov is diagonal. Is there an efficient
         # way to update a Cholesky decomposition if I add a diagonal matrix?
         

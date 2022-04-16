@@ -112,7 +112,7 @@ class _KernelBase:
             f(x) with f(y) where f is the Gaussian process.
         dim : None or str
             When the input arrays are structured arrays, if `dim` is None the
-            kernel will operate on all fields, i.e. it will be passed the whole
+            kernel will operate on all fields, i.e., it will be passed the whole
             arrays. If `dim` is a string, `kernel` will see only the arrays for
             the field named `dim`. If `dim` is a string and the array is not
             structured, an exception is raised. If the field for name `dim` has
@@ -125,7 +125,7 @@ class _KernelBase:
             Default is False.
         forcekron : bool
             If True, when calling `kernel`, if `x` and `y` are structured
-            arrays, i.e. if they represent multidimensional input, `kernel` is
+            arrays, i.e., if they represent multidimensional input, `kernel` is
             invoked separately for each dimension, and the result is the
             product. Default False. If `dim` is specified, `forcekron` will
             have no effect.
@@ -152,13 +152,15 @@ class _KernelBase:
         
         # TODO if derivable is a callable and it returns another callable,
         # the second callable is called with input points to determine on
-        # which points exactly the kernel is derivable.
+        # which points exactly the kernel is derivable. (But still returns
+        # a single boolean for an array of points, equivalent to an `all`.)
         
+        # Check simple arguments.
         assert isinstance(dim, (str, type(None)))
         self._forcebroadcast = bool(forcebroadcast)
         forcekron = bool(forcekron)
         
-        # Convert derivable to an integer.
+        # Convert `derivable` to an integer.
         if callable(derivable):
             derivable = derivable(**kw)
         if isinstance(derivable, bool):
@@ -169,14 +171,15 @@ class _KernelBase:
             derivable = sys.maxsize
         else:
             derivable = 0
-        self._derivable = (derivable, derivable)
+        self._minderivable = (derivable, derivable)
+        self._maxderivable = (derivable, derivable)
         
         transf = lambda x: x
         
         if isinstance(dim, str):
             def transf(x):
                 if x.dtype.names is None:
-                    raise ValueError('kernel called on non-structured array but dim="{}"'.format(dim))
+                    raise ValueError(f'kernel called on non-structured array but dim="{dim}"')
                 elif x.dtype.fields[dim][0].shape:
                     return x[[dim]]
                 else:
@@ -195,6 +198,8 @@ class _KernelBase:
             transf2 = transf
             transf = lambda x: _transf_recurse_dtype(lambda x: x / scale, transf2(x))
         
+        # TODO when dim becomes deep, forcekron must apply also to subfields
+        # for consistence. Maybe it should do it now already.
         if dim is None and forcekron:
             def _kernel(x, y):
                 x = transf(x)
@@ -245,21 +250,41 @@ class _KernelBase:
             
         """
         
-        # TODO maximum dimensionality should be checked too, see PPKernel.
+        # TODO maximum dimensionality should be checked too, see PPKernel. But
+        # this would probably fall well under the double callable derivative
+        # case.
+        
+        # TODO to check the derivability precisely, I would need to make a new
+        # class Derivable (somewhat similar to Deriv) that has two separate
+        # counter, `other` and `all`. `all` decrements each time you take a
+        # derivate (w.r.t. any variable) while `other` is the assumed starting
+        # point for variables which still don't have their own counter, which is
+        # copied from `other` and then decremented when deriving w.r.t. that
+        # variable. However this still lacks generality: you would need to also
+        # have groups of variables which behave like `all` or `other` but only
+        # within the group. For example, `all` corresponds to the behavior of
+        # isotropic kernels, `other` to separable ones. And there is also the
+        # case where the user gives a custom nontrivial derivability
+        # specification and then applies the kernel to a subfield, which would
+        # require to prefix the subfield to all variable (group) specifications.
         
         xderiv = _Deriv.Deriv(xderiv)
         yderiv = _Deriv.Deriv(yderiv)
         
         if not xderiv and not yderiv:
             return self
-            
-        # TODO this derivative order checking is wrong. Example: with a
-        # separable kernel I can take derivatives w.r.t. all fields, and what
-        # matters is the order on each field, not the total.
         
+        # Check kernel is derivable.
+        
+        # best case: max derivability + only single variable order matters
+        maxs   = (  xderiv.max,   yderiv.max)
+        if any(  maxs[i] > self._maxderivable[i] for i in range(2)):
+            raise RuntimeError(f'maximum single-variable derivative orders {maxs} greater than kernel maximum {self._maxderivable}')
+        
+        # worst case: min derivability + total derivation order matters
         orders = (xderiv.order, yderiv.order)
-        if any(orders[i] > self._derivable[i] for i in range(2)):
-            raise RuntimeError('derivative orders {} greater than kernel maximum {}'.format(orders, self._derivable))
+        if any(orders[i] > self._minderivable[i] for i in range(2)):
+            warnings.warn(f'total derivative orders {orders} greater than kernel minimum {self._minderivable}')
         
         kernel = self._kernel
         def fun(x, y):
@@ -273,6 +298,10 @@ class _KernelBase:
                             raise TypeError('derivative along non-numeric field "{}"'.format(dim))
             elif not xderiv.implicit or not yderiv.implicit:
                 raise ValueError('explicit derivatives with non-structured array')
+                
+            # TODO I should compute the kernel core outside of here, since
+            # xderiv and yderiv already know if we are in the structured or
+            # unstructured case.
             
             # Handle the non-structured case.
             if x.dtype.names is None:
@@ -321,7 +350,8 @@ class _KernelBase:
         
         cls = Kernel if xderiv == yderiv else _KernelDeriv
         obj = cls(fun, forcebroadcast=True)
-        obj._derivable = tuple(self._derivable[i] - orders[i] for i in range(2))
+        obj._minderivable = tuple(self._minderivable[i] - orders[i] for i in range(2))
+        obj._maxderivable = tuple(self._maxderivable[i] -   maxs[i] for i in range(2))
         return obj
 
 class _KernelDeriv(_KernelBase):
@@ -331,22 +361,28 @@ class Kernel(_KernelBase):
     
     @property
     def derivable(self):
-        assert self._derivable[0] == self._derivable[1]
-        return self._derivable[0]
+        assert self._minderivable[0] == self._minderivable[1]
+        assert self._maxderivable[0] == self._maxderivable[1]
+        if self._minderivable == self._maxderivable:
+            return self._minderivable[0]
+        else:
+            return None
         
-    # TODO when I implement double callable derivable, derivable should
-    # always be a callable, and _binary should propagate it properly.
+    # TODO if I implement double callable derivable, derivable should always be
+    # a callable, and _binary should propagate it properly (with an `and`?).
     
     def _binary(self, value, op):
         if isinstance(value, Kernel):
             obj = Kernel(op(self._kernel, value._kernel))
-            obj._derivable = tuple(np.minimum(self._derivable, value._derivable))
+            obj._minderivable = tuple(np.minimum(self._minderivable, value._minderivable))
+            obj._maxderivable = tuple(np.maximum(self._maxderivable, value._maxderivable))
             obj._forcebroadcast = self._forcebroadcast or value._forcebroadcast
         elif np.isscalar(value):
             assert np.isfinite(value)
             assert value >= 0
             obj = Kernel(op(self._kernel, lambda x, y: value))
-            obj._derivable = self._derivable
+            obj._minderivable = self._minderivable
+            obj._maxderivable = self._maxderivable
             obj._forcebroadcast = self._forcebroadcast
         else:
             obj = NotImplemented

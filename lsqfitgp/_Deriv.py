@@ -60,14 +60,15 @@ class Deriv:
         ----------
         implicit
         order
+        max
         """
         c = collections.Counter()
         if len(args) == 1:
             arg = args[0]
-            if isinstance(arg, Deriv):
+            if isinstance(arg, cls):
                 return arg
             elif isinstance(arg, (int, np.integer)):
-                assert arg >= 0
+                assert arg >= 0, arg
                 if arg:
                     c.update({None: arg})
             elif isinstance(arg, str):
@@ -83,7 +84,7 @@ class Deriv:
                         else:
                             c.update([obj])
                     elif isinstance(obj, (int, np.integer)):
-                        assert obj >= 0
+                        assert obj >= 0, obj
                         if integer is not None:
                             raise ValueError('consecutive integers in iterable')
                         integer = int(obj)
@@ -125,6 +126,13 @@ class Deriv:
     @property
     def order(self):
         """
-        The total derivation order, id est, the sum of the values.
+        The total derivation order, i.e., the sum of the values.
         """
-        return sum(self._counter.values())
+        return self._counter.total()
+    
+    @property
+    def max(self):
+        """
+        The maximum derivation order for any single variable.
+        """
+        return max(self._counter.values())

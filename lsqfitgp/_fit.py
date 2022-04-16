@@ -77,7 +77,7 @@ class empbayes_fit:
         gpfactory : callable
             A function with signature gpfactory(hyperparams) -> GP object. The
             argument `hyperparams` has the same structure of the empbayes_fit
-            argument `hyperprior`. gpfactory must be autograd-friendly, i.e.
+            argument `hyperprior`. gpfactory must be autograd-friendly, i.e.,
             either use autograd.numpy, autograd.scipy, lsqfitgp.numpy,
             lsqfitgp.scipy or gvar instead of plain numpy/scipy.
         data : dict or callable
