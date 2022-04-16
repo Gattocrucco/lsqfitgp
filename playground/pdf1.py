@@ -7,6 +7,8 @@ import gvar
 
 np.random.seed(20220416)
 
+#### DEFINE MODEL ####
+
 xtype = np.dtype([
     ('x'    , float),
     ('gluon', int  ),
@@ -15,36 +17,64 @@ xtype = np.dtype([
 kernel = lgp.ExpQuad(dim='x') * lgp.White(dim='gluon')
 
 xdata = np.empty((8, 30), xtype)
-for i in range(len(xdata)):
-    xdata[i]['gluon'] = i + 1
-    xdata[i]['x'] = np.linspace(0, 1, len(xdata[i]))
+xdata['gluon'] = np.arange(8)[:, None]
+xdata[    'x'] = np.linspace(0, 1, 30)
     
-M = np.random.randn(20, 8, 30)
+M = np.random.randn(20, 8, 30) # xdata -> data transform
+
+xinteg = np.empty((8, 2), xtype)
+xinteg['gluon'] = np.arange(8)[:, None]
+xinteg[    'x'] = [0, 1]
+
+suminteg = np.empty(xinteg.shape)
+suminteg[:, 0] = -1
+suminteg[:, 1] =  1
+
+#### CREATE GP OBJECT ####
 
 gp = lgp.GP(kernel)
 
-gp.addx(xdata, 'xbase', deriv='x')
-gp.addtransf({'xbase': M}, 'data', axes=2)
+gp.addx(xdata, 'xdata', deriv='x')
+gp.addtransf({'xdata': M}, 'data', axes=2)
 
-prior = gp.prior(['data', 'xbase'])
+gp.addx(xinteg, 'xinteg')
+gp.addtransf({'xinteg': suminteg}, 'suminteg', axes=2)
+
+#### GENERATE FAKE DATA ####
+
+prior = gp.predfromdata({
+    'suminteg': 1,
+}, ['data', 'xdata'])
 priorsample = next(gvar.raniter(prior))
 
 datamean = priorsample['data']
 dataerr = np.full_like(datamean, 1)
-data = gvar.gvar(datamean + dataerr * np.random.randn(*dataerr.shape), dataerr)
+datamean = datamean + dataerr * np.random.randn(*dataerr.shape)
+data = gvar.gvar(datamean, dataerr)
 
-pred = gp.predfromdata({'data': data}, ['xbase', 'data'])
+#### FIT ####
+
+pred = gp.predfromdata({
+    'suminteg':    1,
+    'data'    : data,
+}, ['data', 'xdata'])
+
+#### PLOT RESULTS ####
 
 fig, axs = plt.subplots(1, 2, num='pdf1', clear=True, figsize=[9, 4.5])
 axs[0].set_title('PDFs')
 axs[1].set_title('Data')
 
+# check the integral is one with trapezoid rule
+checksum = np.sum((pred['xdata'][:, 1:] + pred['xdata'][:, :-1]) / 2 * np.diff(xdata['x'], axis=1))
+print('should be one:', checksum)
+
 for i in range(len(xdata)):
-    y = pred['xbase'][i]
+    y = pred['xdata'][i]
     m = gvar.mean(y)
     s = gvar.sdev(y)
     axs[0].fill_between(xdata[i]['x'], m - s, m + s, alpha=0.6, facecolor=f'C{i}')
-    y2 = priorsample['xbase'][i]
+    y2 = priorsample['xdata'][i]
     axs[0].plot(xdata[i]['x'], y2, color=f'C{i}')
 
 m = gvar.mean(pred['data'])

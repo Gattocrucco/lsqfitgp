@@ -135,4 +135,4 @@ class Deriv:
         """
         The maximum derivation order for any single variable.
         """
-        return max(self._counter.values())
+        return max(self._counter.values(), default=0)
