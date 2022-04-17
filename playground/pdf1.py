@@ -1,30 +1,33 @@
 """Fit of parton distributions functions (PDFs)"""
 
 import lsqfitgp as lgp
-from autograd import numpy as np
+import numpy as np
 from matplotlib import pyplot as plt
 import gvar
 
 np.random.seed(20220416)
 
 #### DEFINE MODEL ####
+# for each gluon:
+# h ~ GP
+# f = h''
+# int_0^1 dx f(x) = [h'(x)]_0^1 = h'(1) - h'(0)
+# int_0^1 dx x f(x) = [xh'(x) - h(x)]_0^1 = h'(1) - h(1) + h(0)
 
 xtype = np.dtype([
     ('x'    , float),
     ('gluon', int  ),
-    ('multx', bool ),
 ])
 
 kernel = lgp.ExpQuad(dim='x') * lgp.White(dim='gluon')
-kernel *= lgp.Rescaling(stdfun=lambda x: np.where(x['multx'], x['x'] - 1, 1))
 
-xdata = np.zeros((8, 30), xtype)
+xdata = np.empty((8, 30), xtype)
 xdata['gluon'] = np.arange(8)[:, None]
 xdata[    'x'] = np.linspace(0, 1, 30)
     
 M = np.random.randn(20, 8, 30) # xdata -> data transform
 
-xinteg = np.zeros((8, 2), xtype)
+xinteg = np.empty((8, 2), xtype)
 xinteg['gluon'] = np.arange(8)[:, None]
 xinteg[    'x'] = [0, 1]
 
@@ -32,21 +35,23 @@ suminteg = np.empty(xinteg.shape)
 suminteg[:, 0] = -1
 suminteg[:, 1] =  1
 
-xintegx = np.copy(xinteg)
-xintegx['multx'] = True
+xintegx = np.empty(8, xtype)
+xintegx['gluon'] = np.arange(8)
+xintegx[    'x'] = 1
 
 #### CREATE GP OBJECT ####
 
 gp = lgp.GP(kernel)
 
-gp.addx(xdata, 'xdata', deriv='x')
+gp.addx(xdata, 'xdata', deriv=(2, 'x'))
 gp.addtransf({'xdata': M}, 'data', axes=2)
 
-gp.addx(xinteg, 'xinteg')
+gp.addx(xinteg, 'xinteg', deriv='x')
 gp.addtransf({'xinteg': suminteg}, 'suminteg', axes=2)
 
-gp.addx(xintegx, 'xintegx')
-gp.addtransf({'xintegx': suminteg}, 'sumintegx', axes=2)
+gp.addx(xinteg, 'xintegx0')
+gp.addx(xintegx[None], 'xintegx1', deriv='x')
+gp.addtransf({'xintegx1': np.ones((1, 8)), 'xintegx0': -suminteg}, 'sumintegx', axes=2)
 
 #### GENERATE FAKE DATA ####
 

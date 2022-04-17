@@ -8,6 +8,10 @@ import gvar
 np.random.seed(20220417)
 
 #### DEFINE MODEL ####
+# h ~ GP
+# f = h''
+# int_0^1 dx f(x) = [h'(x)]_0^1 = h'(1) - h'(0)
+# int_0^1 dx x f(x) = [xh'(x) - h(x)]_0^1 = h'(1) - h(1) + h(0)
 
 gp = lgp.GP(lgp.ExpQuad())
 
