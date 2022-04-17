@@ -76,7 +76,7 @@ def Constant(r2):
     1 = 1 x 1.
     """
     return np.ones_like(r2)
-    # TODO maybe use dtype=int8 as optimization?
+    # TODO maybe use dtype=int8 as optimization? => not worth it
     
 @isotropickernel
 def White(r2):

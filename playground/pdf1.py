@@ -1,7 +1,7 @@
 """Fit of parton distributions functions (PDFs)"""
 
 import lsqfitgp as lgp
-import numpy as np
+from autograd import numpy as np
 from matplotlib import pyplot as plt
 import gvar
 
@@ -12,23 +12,28 @@ np.random.seed(20220416)
 xtype = np.dtype([
     ('x'    , float),
     ('gluon', int  ),
+    ('multx', bool ),
 ])
 
 kernel = lgp.ExpQuad(dim='x') * lgp.White(dim='gluon')
+kernel *= lgp.Rescaling(stdfun=lambda x: np.where(x['multx'], x['x'] - 1, 1))
 
-xdata = np.empty((8, 30), xtype)
+xdata = np.zeros((8, 30), xtype)
 xdata['gluon'] = np.arange(8)[:, None]
 xdata[    'x'] = np.linspace(0, 1, 30)
     
 M = np.random.randn(20, 8, 30) # xdata -> data transform
 
-xinteg = np.empty((8, 2), xtype)
+xinteg = np.zeros((8, 2), xtype)
 xinteg['gluon'] = np.arange(8)[:, None]
 xinteg[    'x'] = [0, 1]
 
 suminteg = np.empty(xinteg.shape)
 suminteg[:, 0] = -1
 suminteg[:, 1] =  1
+
+xintegx = np.copy(xinteg)
+xintegx['multx'] = True
 
 #### CREATE GP OBJECT ####
 
@@ -40,10 +45,14 @@ gp.addtransf({'xdata': M}, 'data', axes=2)
 gp.addx(xinteg, 'xinteg')
 gp.addtransf({'xinteg': suminteg}, 'suminteg', axes=2)
 
+gp.addx(xintegx, 'xintegx')
+gp.addtransf({'xintegx': suminteg}, 'sumintegx', axes=2)
+
 #### GENERATE FAKE DATA ####
 
 prior = gp.predfromdata({
-    'suminteg': 1,
+    'suminteg' : 1,
+    'sumintegx': 1,
 }, ['data', 'xdata'])
 priorsample = next(gvar.raniter(prior))
 
@@ -52,11 +61,20 @@ dataerr = np.full_like(datamean, 1)
 datamean = datamean + dataerr * np.random.randn(*dataerr.shape)
 data = gvar.gvar(datamean, dataerr)
 
+# check the integral is one with trapezoid rule
+x = xdata['x']
+y = priorsample['xdata']
+checksum = np.sum((      y[:, 1:] +       y[:, :-1]) / 2 * np.diff(x, axis=1))
+print('sum_i int dx   f_i(x) =', checksum)
+checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
+print('sum_i int dx x f_i(x) =', checksum)
+
 #### FIT ####
 
 pred = gp.predfromdata({
-    'suminteg':    1,
-    'data'    : data,
+    'suminteg' :    1,
+    'sumintegx':    1,
+    'data'     : data,
 }, ['data', 'xdata'])
 
 #### PLOT RESULTS ####
@@ -66,8 +84,12 @@ axs[0].set_title('PDFs')
 axs[1].set_title('Data')
 
 # check the integral is one with trapezoid rule
-checksum = np.sum((pred['xdata'][:, 1:] + pred['xdata'][:, :-1]) / 2 * np.diff(xdata['x'], axis=1))
-print('should be one:', checksum)
+x = xdata['x']
+y = pred['xdata']
+checksum = np.sum((      y[:, 1:] +       y[:, :-1]) / 2 * np.diff(x, axis=1))
+print('sum_i int dx   f_i(x) =', checksum)
+checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
+print('sum_i int dx x f_i(x) =', checksum)
 
 for i in range(len(xdata)):
     y = pred['xdata'][i]

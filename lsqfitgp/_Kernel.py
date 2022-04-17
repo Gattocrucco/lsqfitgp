@@ -220,7 +220,7 @@ class _KernelBase:
             x, y = _array.broadcast_arrays(x, y)
         result = self._kernel(x, y)
         assert isinstance(result, (np.ndarray, np.number))
-        assert np.issubdtype(result.dtype, np.number)
+        assert np.issubdtype(result.dtype, np.number), result.dtype
         assert result.shape == shape
         return result
     

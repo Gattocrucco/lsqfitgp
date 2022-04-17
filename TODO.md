@@ -311,12 +311,22 @@ half-integer ("kernel packet"), l'ho scaricato
 
 ### Transformations
 
-aggiungere Kernel.rescale da usare al posto di rescaling, e poi
-l'opzione mult in addx magari? Però ci starebbe in generale fare trasf a caso
-con addtransf e poi derivare. Il problema è che quando trasformo usando le x
-devo derivare anche quei pezzi, quindi diventa impegnativo tener traccia di
-tutto, mult è più semplice per me e inizialmente direi che va bene. Però devo
-applicare prima mult o deriv? Bisogna poter trasformare in ordine...
+Tentative summary of the plan:
+
+  * GP.addproc to add a kernel. Processes are assumed independent between each
+    other. GP.addx requires a process key as input, by default uses the kernel
+    specified at GP initialization (which can be omitted).
+  
+  * GP.addproctransf to sum processes and multiply them by functions of x,
+    like addtransf but for the whole function.
+  
+  * GP.addprocderiv to add a derivative of the process.
+  
+To build the kernel pieces, Kernel.diff and Kernel.rescale (latter to be
+implemented) are applied in sequence recursively. This means that I should
+probably take out the logic out of the kernel core built by Kernel.diff.
+All this would provide 1) simple way of defining sum of components 2) clear
+order of multiplication/derivation.
 
 #### Finite transformations
 
@@ -339,19 +349,6 @@ numpy su placeholder gp['roba']. Però forse è overkill, questa cosa dovrebbe
 risiedere a un livello più alto. => A ben pensarci alla fine viene più
 semplice che ricostruire tutte le operazioni di numpy con una gerarchia di
 classi come scritto sopra.
-
-#### Sum of components
-
-Invent a simpler alternative to Where/Choose and GP.addtransf for the case
-of adding various kernels and getting the separate prediction for each one.
-Possibly an helper function.
-
-sarebbe molto comodo poter usare kernel separati su varie cose con
-sottointeso che kernel diversi sono indipendenti. Potrei fare un metodo
-addkernel che assegna un nome a un kernel, e poi addx ha un'opzione kernel che
-prende il nome del kernel, kernel=None usa quello dato all'inizializzazione.
-Posso anche non dare un kernel nell'inizializzazione. Forse questo è
-sufficiente a semplificare abbastanza il caso in cui voglio sommare componenti.
 
 #### Fourier
 
