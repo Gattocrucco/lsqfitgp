@@ -35,20 +35,6 @@ l'interpretazione bayesiana della correlazione tra i risultati? Forse queste
 cose è meglio se le studio prima su lsqfitgp che è equivalente a un fit lineare
 e le formule sono analitiche e scritte chiaramente.
 
-Per chiarire la questione della classificazione esatta con i processi
-Gaussiani, posso raccontare una storiella così: ci sono tre personaggi, il Sage
-classifier, lo Human classifier e il Machine classifier. Il Sage è la verità
-personificata ma nessuno lo vede da tempo. Sa il valore logico delle
-proposizioni (x,i) = "l'oggetto i appartiene alla categoria i". Lo Human
-classifier cerca di indovinare cosa sa il Sage, quindi tira fuori delle
-probabilità p(x,i), e anche quelle congiunte p((x,i), (y,j)), etc. Il Machine
-cerca di indovinare cosa direbbe lo Human, e usa il modello con il GP latente
-mappato sulle p(x,i) con la CDF gaussiana. La macchina si fida del giudiziono
-dell'uomo, quindi la probabilità che assegna all'output del saggio, data
-l'opinione umana, è p(x,i|p_H(x,i))=p_H(x,i). Quindi la macchina prende il suo
-posteriore sulle p_H e calcola p(x,i) marginalizzato. Se il GP ha gli
-iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
-
 ## Fixes and tests
 
 Go through the coverage and add tests to cover untested lines.
@@ -67,6 +53,10 @@ standard way to configure a pretty print?
 
 per ovviare al bug della moltiplicazione per scalare del kernel con
 autograd, aggiungere dei metodi pubblici espliciti per comporre i kernel
+
+The minimum derivability warnings are annoying because there are a lot of them
+when doing nontrivial things, maybe I should put a warnings filter in GP.pred
+such that at most only one warning is emitted per call.
 
 ## Implementation details
 
@@ -164,6 +154,11 @@ resistuire un oggetto "distribuzione" che è in grado di campionare e fare tante
 altre cose... però così ho solo spostato il problema perché già GP e le gvar
 dovrebbero svolgere questo ruolo.
 
+To sample efficiently from transformations, apply the transformations to the
+sample instead of decomposing the covariance matrix, only if the starting
+covariance matrix is smaller than the transformed one. More complex case:
+parts of these matrices have been already decomposed and are in cache.
+
 ### Nonlinear fit
 
 Per fare fit non lineari con lsqfitgp senza lsqfit potrei fare così: uso
@@ -259,7 +254,30 @@ Student-t processes. There are some limitations. Possible interface: a nu
 parameter in addx. Can I mix different nu in the same fit? Intepreting the
 result would be a bit obscure, raniter will always sample normal distributions.
 
-### New kernels
+### Kernel operations
+
+In general I can apply to a kernel (or more kernels) any function which has
+a Taylor series with nonnegative coefficients. (Got the idea from a seminar by
+Hensman, I think this thing should be standard anyway, although I don't
+remember reading it in Rasmussen's book.)
+
+I can do (positive scalar) ** kernel. Also (positive kernel) ** kernel I think.
+
+Standard functions with positive Taylor coefficients: tan, 1/sin, 1/cos, asin,
+acos, 1/(1-x), exp, -log(1-x), sinh, cosh, atanh.
+
+When doing kernel base power, or in general applying functions which have a
+narrow domain, the kernel must be within bounds. For weakly stationary kernels,
+or in general for bounded variance kernels, it is always possible to rescale
+the kernel into the domain, so it is not really a problem.
+
+How do I implement this? I could overload numpy operations, but not for
+example for 1/(1-x) or -log(1-x). I wouldn't like to entrust the user to do
+operations in the right sequence with a positive Taylor series at the end.
+Simplest way: add operations as Kernel methods. Some numpy ufuncs would
+even recognize this and so for example np.tan(kernel) would work.
+
+### New specific kernels
 
 Is there a smooth version of the Wiener process? like, softmin(x, y)? I tried
 smoothing it with a gaussian but an undoable integral comes up.
@@ -306,9 +324,6 @@ tizio-caio-nonricordo.)
 
 Kernel rumore rosa, troncato tra due frequenze.
 
-è uscito sull'arxiv un articolo sull'inferenza esatta 1D con matern
-half-integer ("kernel packet"), l'ho scaricato
-
 ### Transformations
 
 Tentative summary of the plan:
@@ -344,11 +359,21 @@ tante.
 comoda per fare uno stack di cose con il broadcasting, tipo se voglio impilare
 delle derivate in un gradiente. Potrei anche supportare broadcast.
 
-in addtransf può mangiarsi un'espressione costruita con operazioni di
-numpy su placeholder gp['roba']. Però forse è overkill, questa cosa dovrebbe
-risiedere a un livello più alto. => A ben pensarci alla fine viene più
-semplice che ricostruire tutte le operazioni di numpy con una gerarchia di
-classi come scritto sopra.
+in addtransf può mangiarsi un'espressione costruita con operazioni di numpy su
+placeholder gp['roba']. Però forse è overkill, questa cosa dovrebbe risiedere a
+un livello più alto. => A ben pensarci alla fine viene più semplice che
+ricostruire tutte le operazioni di numpy con una gerarchia di classi come
+scritto sopra. => per farla più semplice e non coinvolgere numpy, posso leggere
+una stringa ed eseguirla in un ambiente controllato in cui le variabili sono
+quelle del GP e ci sono un po' di funzioni equivalenti a quelle di numpy
+definite. Se faccio varie di queste cose poi potrei aggiungere un metodo che
+prende una stringa multiriga e capisce un linguaggio di probabilistic
+programming per specificare tutti i pezzi del processo.
+
+It could be convenient to change the matrix multiplication order based on
+efficiency, like when using backprop vs. forward. Now I'm always doing
+forward. It should be feasible to do backward at least, for when the output
+has less axes than the inputs.
 
 #### Fourier
 
@@ -376,6 +401,11 @@ I should also add convolutions. Maybe a method `GP.addconv`.
 
 Leggere l'articolo "Efficient Fourier representations of families of Gaussian
 processes".
+
+Should I combine someway derivatives, multiplications by functions and Fourier?
+It would be complicated in full generality. I could just implement someway
+Fourier(Derivative) = Multiplication(Fourier), I bet this would turn out
+useful. Also Derivative(Taylor) = Multiplication(Taylor), etc.
 
 #### Taylor
 
@@ -420,6 +450,20 @@ This does not give the joint probability of various points being in the same
 class. I think it is doable but extending the formula to more than one
 variable is not immediate. I could at least obtain it for two points, so that I
 can compute a sort of "correlation matrix".
+
+Per chiarire la questione della classificazione esatta con i processi
+Gaussiani, posso raccontare una storiella così: ci sono tre personaggi, il Sage
+classifier, lo Human classifier e il Machine classifier. Il Sage è la verità
+personificata ma nessuno lo vede da tempo. Sa il valore logico delle
+proposizioni (x,i) = "l'oggetto i appartiene alla categoria i". Lo Human
+classifier cerca di indovinare cosa sa il Sage, quindi tira fuori delle
+probabilità p(x,i), e anche quelle congiunte p((x,i), (y,j)), etc. Il Machine
+cerca di indovinare cosa direbbe lo Human, e usa il modello con il GP latente
+mappato sulle p(x,i) con la CDF gaussiana. La macchina si fida del giudiziono
+dell'uomo, quindi la probabilità che assegna all'output del saggio, data
+l'opinione umana, è p(x,i|p_H(x,i))=p_H(x,i). Quindi la macchina prende il suo
+posteriore sulle p_H e calcola p(x,i) marginalizzato. Se il GP ha gli
+iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
 
 ## Optimization
 
@@ -542,6 +586,9 @@ rest of the library.
 
 I think what you get is a Kalman filter.
 
+In GPstuff they also approximate any stationary 1D process with a sufficient
+number of hidden Markov processes.
+
 #### Autoregressive processes
 
 Like what Celerite does, it solves 1D GPs in O(N). Reference article to cite:
@@ -613,6 +660,11 @@ define some missing basic functions and define the vjp of the constructors.
 
 gli inducing points li posso indicare scegliendo una variabile
 precedentemente definita con addx/addtransf.
+
+#### Matérn 1D
+
+è uscito sull'arxiv un articolo sull'inferenza esatta 1D con matern
+half-integer ("kernel packet"), l'ho scaricato
 
 #### Using multiple solvers
 

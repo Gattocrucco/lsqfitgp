@@ -123,11 +123,12 @@ class _Element(metaclass=abc.ABCMeta):
 class _Points(_Element):
     """Points where the process is evaluated"""
     
-    def __init__(self, x, deriv):
+    def __init__(self, x, deriv, proc):
         assert _isarraylike(x)
         assert isinstance(deriv, _Deriv.Deriv)
         self.x = x
         self.deriv = deriv
+        self.proc = proc
     
     @property
     def shape(self):
@@ -156,6 +157,29 @@ class _Transf(_Element):
         else:
             x = tensor * x
         return x
+
+class _Proc(metaclass=abc.ABCMeta):
+    """
+    Abstract base class for an object holding information about a process
+    in a GP object.
+    """
+    pass
+    
+class _ProcKernel(_Proc):
+    """A process defined with a kernel"""
+    
+    def __init__(self, kernel, deriv=0):
+        assert isinstance(kernel, _Kernel.Kernel)
+        self.kernel = kernel
+        self.deriv = deriv
+    
+class _ProcTransf(_Proc):
+    """A process defined as a linear transformation of other processes"""
+    
+    def __init__(self, ops, deriv):
+        """ops = dict proc key -> callable"""
+        self.ops = ops
+        self.deriv = deriv
 
 class GP:
     """
@@ -241,20 +265,26 @@ class GP:
     # checked, and only if gvars are used at some point
     # Alternative 5: do the check in _solver only on things to be solved
     
-    def __init__(self, covfun, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
+    def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
         if not isinstance(covfun, _Kernel.Kernel):
             raise TypeError('covariance function must be of class Kernel')
-        self._covfun = covfun
         self._elements = dict() # key -> _Element
+        self._procs = dict() # proc key -> _Proc
+        if covfun is not None:
+            self._procs[None] = _ProcKernel(covfun)
+            # TODO maybe I should use a custom singleton instead of None as
+            # key for the default process, in case a weird user wants to use
+            # None as key
         self._canaddx = True
         # TODO add decompositions svdcut+ and svdcut- that cut the eigenvalues
-        # but keep their sign
+        # but keep their sign (don't do it with an actual SVD, use
+        # diagonalization)
         decomp = {
             'eigcut+': _linalg.EigCutFullRank,
             'eigcut-': _linalg.EigCutLowRank,
             'lowrank': _linalg.ReduceRank,
             'gersh'  : _linalg.CholGersh,
-            'maxeigv': _linalg.CholMaxEig
+            'maxeigv': _linalg.CholMaxEig,
         }[solver]
         # TODO maxeigv is probably useless, remove it.
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **kw)
@@ -262,7 +292,29 @@ class GP:
         self._checksym = bool(checksym)
         self._checkfinite = bool(checkfinite)
     
-    def addx(self, x, key=None, deriv=0):
+    def addproc(self, key=None, kernel=None, deriv=0):
+        """
+        
+        Add an independent process.
+        
+        Parameters
+        ----------
+        key : hashable
+            The name that identifies the process in the GP object. If None,
+            sets the default kernel.
+        kernel : Kernel
+            A kernel for the process. If None, use the default kernel. The
+            difference between the default process and a process defined with
+            the default kernel is that, although they have the same kernel,
+            they are independent.
+        deriv : Deriv-like
+            Derivatives to take on the process defined by the kernel.
+                
+        """
+        
+        pass
+    
+    def addx(self, x, key=None, deriv=0, proc=None):
         """
         
         Add points where the Gaussian process is evaluated.
@@ -293,6 +345,9 @@ class GP:
         deriv : Deriv-like
             Derivative specification. A :class:`Deriv` object or something that
             can be converted to :class:`Deriv`.
+        proc : hashable
+            The process to be evaluated on the points. If not specified, use
+            the kernel given at initialization.
         
         """
         
@@ -307,7 +362,10 @@ class GP:
             # TODO remove if I implement the lazy gvar prior.
         
         deriv = _Deriv.Deriv(deriv)
-        
+
+        if proc not in self._procs:
+            raise KeyError(f'process named {proc!r} not found')
+                
         if _isarraylike(x):
             if key is None:
                 raise ValueError('x is array but key is None')
@@ -360,9 +418,9 @@ class GP:
             else:
                 for dim in deriv:
                     if dim not in gx.dtype.names:
-                        raise ValueError('deriv field {!r} not in x'.format(dim))
+                        raise ValueError(f'deriv field {dim!r} not in x')
             
-            self._elements[key] = _Points(gx, deriv)
+            self._elements[key] = _Points(gx, deriv, proc)
         
     def addtransf(self, tensors, key, axes=1):
         """
@@ -399,6 +457,11 @@ class GP:
         # TODO with callable transf, it would be nice to take derivatives
         # on the combined transf @ kernel @ transf.T. Maybe then it is better
         # to add transformations as a kernel method.
+        
+        # Note: it may seem nice that when an array has less axes than `axes`,
+        # the summation would be restricted only on the existing axes. However
+        # this brings about the ambiguous case where only one of the factors has
+        # not enough axes. How many axes do you sum over on the other?
         
         # Check axes.
         assert isinstance(axes, int), axes
@@ -446,12 +509,63 @@ class GP:
         
         self._elements[key] = _Transf(tens, shape, axes)
     
+    def _crosskernel(self, xpkey, ypkey):
+        xp = self._procs[xpkey]
+        yp = self._procs[ypkey]
+        
+        if isinstance(xp, _ProcKernel) and isinstance(yp, _ProcKernel):
+            return self._crosskernel_kernels(xpkey, ypkey)
+        elif isinstance(xp, _ProcTransf):
+            return self._crosskernel_transf_any(xpkey, ypkey)
+        elif isinstance(yp, _ProcTransf):
+            return self._crosskernel_transf_any(ypkey, xpkey)._swap()
+        
+    def _crosskernel_kernels(self, xpkey, ypkey):
+        xp = self._procs[xpkey]
+        yp = self._procs[ypkey]
+        
+        if xp is yp:
+            return xp.kernel.diff(xp.deriv, xp.deriv)
+        else:
+            return None
+    
+    def _crosskernel_transf_any(self, xpkey, ypkey):
+        xp = self._procs[xpkey]
+        yp = self._procs[ypkey]
+        
+        kernelsum = None
+        
+        for pkey, factor in xp.ops:
+            kernel = self._crosskernel(pkey, ypkey)
+            if kernel is None:
+                continue
+            
+            if np.isscalar(factor):
+                factor = lambda x: factor
+            kernel = kernel.rescale(factor, None)
+            
+            if kernelsum is None:
+                kernelsum = kernel
+            else:
+                kernelsum += kernel
+        
+        if kernelsum is not None:
+            kernelsum = kernelsum.diff(xp.deriv, 0)
+        
+        return kernelsum
+    
     def _makecovblock_points(self, xkey, ykey):
         x = self._elements[xkey]
         y = self._elements[ykey]
+        
         assert isinstance(x, _Points)
         assert isinstance(y, _Points)
-        kernel = self._covfun.diff(x.deriv, y.deriv)
+        
+        kernel = self._crosskernel(x.proc, y.proc)
+        if kernel is None:
+            return np.zeros(x.size, y.size)
+        
+        kernel = kernel.diff(x.deriv, y.deriv)
         
         if x is y and not self._checksym:
             indices, back = _triu_indices_and_back(x.size)

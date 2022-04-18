@@ -1,0 +1,95 @@
+La formula con le gvar per il processo gaussiano è
+
+    y* = y*_p + Kxsx (Kxx + Cy)^-1 (y - y_p)
+
+Avevo già controllato che questa formula mi dà la matrice di covarianza
+corretta per y*. Però vengono fuori anche le correlazioni tra y* e y, y_p,
+y*_p. Che cosa rappresentano statisticamente?
+
+Assumiamo che y e y(*)_p siano indipendenti. Allora
+
+    Cov[y*, y*_p] = Cov[y*_p] = Kxsxs
+
+    Cov[y*, y_p] = Cov[-Kxsx (Kxx + Cy)^-1 y_p, y_p] =
+                 = -Kxsx (Kxx + Cy)^-1 Kxx
+    
+    Cov[y*, y] = Kxsx (Kxx + Cy)^-1 Cy
+
+2022-04-17
+==========
+
+Cose da fare per le PDF:
+
+1)  Mi invento io delle funzioni e dei dati dal culo e faccio un fit,
+    solo roba lineare (FATTO)
+2)  Aggiungo roba quadratica (sempre dal culo)
+3)  Aggiungo l'errore sulle M
+4)  Uso delle PDF vere anziché culiche
+5)  Aggiungo i dati veri
+
+2022-04-18
+==========
+
+Come implemento addproc etc.?
+
+1)  Chiamo _KernelDeriv -> _CrossKernel (FATTO)
+1a) Sposto la logica di diff fuori da fun e giro i test (FATTO)
+1b) Modifico diff in modo da tener conto che le x a sinistra possono essere di
+    tipo diverso dalle x a destra (SALTARE)
+2)  Sposto _binary in _KernelBase e tolgo il controllo che gli scalari siano
+    positivi, come classe uso type(self) anziché Kernel (FATTO)
+3)  Sovrascrivo _binary in Kernel controllando che l'eventuale scalare sia
+    positivo e poi chiamo super (FATTO)
+4)  Aggiungo un metodo rescale a _KernelBase, funziona come diff cioè fa
+    trasf. diverse per x e y, se sono diverse (definito con is not) cambia la
+    classe dell'output a _CrossKernel (FATTO)
+5)  Definisco nuove classi _Proc, _ProcKernel, _ProcTransf e _ProcDeriv
+    analoghe di _Element, _Points e _Transf (NON FARE _ProcDeriv) (FATTO)
+5a) Aggiungo un attributo proc di tipo _Proc a _Points (FATTO)
+6)  Definisco _GP._crosskernel che calcola il kernel per due _Points
+    ricorsivamente, con metodi analoghi a quelli che uso per implementare
+    _makecovblock: _crosskernel_kernel_kernel, _crosskernel_transf_any,
+    _crosskernel_deriv_any (NON FARE _deriv) (FATTO)
+7)  _crosskernel_kernel_kernel semplicemente restituisce il kernel se i due
+    _ProcKernel coincidono, altrimenti un sigleton _ZeroCov (FATTO)
+8)  _crosskernel_deriv_any calcola il kernel e poi chiama diff, _ZeroCov viene
+    passato (SALTARE)
+9)  _crosskernel_transf_any cicla sugli elementi calcolando i kernel e
+    combinandoli con _binary, gli _ZeroCov vengono ignorati, gli scalari nulli
+    non producono _ZeroCov altrimenti si incasinano le derivate, alla fine se è
+    uno _ZeroCov viene passato (FATTO)
+10) Aggiungo GP.addproc, addproctransf e addprocderiv, i _Proc vengono infilati
+    in un dizionario apposito, possono avere gli stessi nomi degli x (NON FARE
+    addprocderiv)
+11) Aggiungo proc= ad addx, deriv= continua ad avere la sua implementazione a
+    parte in _Points e _makecovblock_points (FATTO)
+12) Controllo che le x abbiano lo stesso tipo, per adesso (FATTO)
+13) Riimplemento la somma di componenti con questa roba
+
+Problema serio: come faccio a specificare cosa derivare se ogni processo ha la
+sua x? Cioè: le x sono le stesse, oppure ogni processo ha la sua x?
+
+=> Soluzione rapida e parziale: posso derivare solo singoli processi e non le
+trasformazioni. In questo modo continuo ad assumere che le x siano le stesse.
+
+=> Soluzione più completa: quando dico la derivata, devo poter specificare
+rispetto a quale processo, o se derivare rispetto a tutte le x, in generale
+devo poter specificare vari criteri. Forse è troppo complicato e l'utente non
+avrebbe chiaro cosa sta facendo.
+
+L'interfaccia elegante sarebbe questa: quando definisco una trasformazione dei
+processi, devo dire se le x sono le stesse o sono diverse. In formule, devo
+distinguere
+
+    h(x) = f(x) + g(x)
+
+da
+
+    h(x, y) = f(x) + g(y)
+
+Un modo sensato sarebbe proprio leggersi una stringa del genere. Una versione
+più accroccata intermedia sarebbe che un'opzione di addproctransf che mi
+permette di dire se le x sono tutte le stesse o sono diverse, per fare
+combinazioni più strane chiamare più volte addproctransf. Se sono le stesse poi
+addx controlla che metti dentro x con lo stesso dtype. Poi però devo inventarmi
+un modo di propagare queste informazioni fino a _KernelBase.diff.

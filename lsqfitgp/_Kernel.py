@@ -19,6 +19,7 @@
 
 import sys
 import warnings
+import copy
 
 from ._imports import autograd
 from ._imports import numpy as np
@@ -85,7 +86,7 @@ def _transf_recurse_dtype(transf, x):
 class _KernelBase:
     
     # This class is only used to share implementation between Kernel and
-    # _KernelDeriv, so the docstrings are meant to be read as docstrings of
+    # _CrossKernel, so the docstrings are meant to be read as docstrings of
     # Kernel. The docstring is all in __init__ otherwise autoclass does not
     # read it.
     
@@ -224,6 +225,97 @@ class _KernelBase:
         assert result.shape == shape
         return result
     
+    def _binary(self, value, op):
+        if isinstance(value, _KernelBase):
+            obj = _KernelBase(op(self._kernel, value._kernel))
+            obj._minderivable = tuple(np.minimum(self._minderivable, value._minderivable))
+            obj._maxderivable = tuple(np.maximum(self._maxderivable, value._maxderivable))
+            obj._forcebroadcast = self._forcebroadcast or value._forcebroadcast
+        elif np.isscalar(value):
+            assert np.isfinite(value), value
+            obj = _KernelBase(op(self._kernel, lambda x, y: value))
+            obj._minderivable = self._minderivable
+            obj._maxderivable = self._maxderivable
+            obj._forcebroadcast = self._forcebroadcast
+        else:
+            obj = NotImplemented
+        return obj
+    
+    # TODO when using autograd, an autograd scalar is an ArrayBox that
+    # has an all-in method __add__ that will be called if the autograd scalar
+    # is the first addend. Then autograd will complain that it can't compute
+    # derivatives w.r.t. a Kernel. Solve this bug.
+    
+    def __add__(self, value):
+        return self._binary(value, lambda k, q: lambda x, y: k(x, y) + q(x, y))
+    
+    __radd__ = __add__
+    
+    def __mul__(self, value):
+        return self._binary(value, lambda k, q: lambda x, y: k(x, y) * q(x, y))
+    
+    __rmul__ = __mul__
+    
+    def __pow__(self, value):
+        if np.isscalar(value):
+            return self._binary(value, lambda k, q: lambda x, y: k(x, y) ** q(x, y))
+        else:
+            return NotImplemented
+
+    def _swap(self):
+        """permute the arguments (cross kernels are not symmetric)"""
+        obj = copy.copy(self)
+        kernel = obj._kernel
+        obj._kernel = lambda x, y: kernel(y, x)
+        obj._minderivable = obj._minderivable[::-1]
+        obj._maxderivable = obj._maxderivable[::-1]
+        return obj
+    
+    def rescale(self, xfun=None, yfun=None):
+        """
+        
+        Multiply the kernel by functions of its arguments.
+        
+        .. math::
+            h(x, y) = f(x) k(x, y) g(y)
+        
+        Parameters
+        ----------
+        xfun, yfun : callable or None
+            Functions from the type of the arguments of the kernel to scalar.
+            If both are None, this is a no-op.
+        
+        Returns
+        -------
+        h : Kernel-like
+            The rescaled kernel. If xfun is yfun, it is a Kernel object,
+            otherwise a Kernel-like one.
+        
+        """
+        
+        # TODO option to specify derivability of xfun and yfun, to avoid
+        # zeroing _minderivable
+        
+        if xfun is None and xfun is None:
+            return self
+        
+        kernel = self._kernel
+        
+        if xfun is None:
+            def fun(x, y):
+                return yfun(y) * kernel(x, y)
+        elif yfun is None:
+            def fun(x, y):
+                return xfun(x) * kernel(x, y)
+        else:
+            def fun(x, y):
+                return xfun(x) * yfun(y) * kernel(x, y)
+        
+        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else _CrossKernel
+        obj = cls(fun, forcebroadcast=self._forcebroadcast)
+        obj._maxderivable = self._maxderivable
+        return obj
+    
     def diff(self, xderiv, yderiv):
         """
         
@@ -256,7 +348,7 @@ class _KernelBase:
         
         # TODO to check the derivability precisely, I would need to make a new
         # class Derivable (somewhat similar to Deriv) that has two separate
-        # counter, `other` and `all`. `all` decrements each time you take a
+        # counters, `other` and `all`. `all` decrements each time you take a
         # derivate (w.r.t. any variable) while `other` is the assumed starting
         # point for variables which still don't have their own counter, which is
         # copied from `other` and then decremented when deriving w.r.t. that
@@ -286,75 +378,81 @@ class _KernelBase:
         if any(orders[i] > self._minderivable[i] for i in range(2)):
             warnings.warn(f'total derivative orders {orders} greater than kernel minimum {self._minderivable}')
         
-        kernel = self._kernel
-        def fun(x, y):
-            # Check derivatives are ok for x and y.
+        # Check derivatives are ok for x and y.
+        def check(x, y):
             if x.dtype.names is not None:
                 for deriv in xderiv, yderiv:
                     for dim in deriv:
                         if dim not in x.dtype.names:
-                            raise ValueError('derivative along missing field "{}"'.format(dim))
+                            raise ValueError(f'derivative along missing field {dim!r}')
                         if not np.issubdtype(x.dtype.fields[dim][0], np.number):
-                            raise TypeError('derivative along non-numeric field "{}"'.format(dim))
+                            raise TypeError(f'derivative along non-numeric field {dim!r}')
             elif not xderiv.implicit or not yderiv.implicit:
                 raise ValueError('explicit derivatives with non-structured array')
                 
-            # TODO I should compute the kernel core outside of here, since
-            # xderiv and yderiv already know if we are in the structured or
-            # unstructured case.
+        # Handle the non-structured case.
+        if xderiv.implicit and yderiv.implicit:
             
-            # Handle the non-structured case.
-            if x.dtype.names is None:
-                f = kernel
-                for _ in range(xderiv.order):
-                    f = autograd.elementwise_grad(f, 0)
-                for _ in range(yderiv.order):
-                    f = autograd.elementwise_grad(f, 1)
+            f = self._kernel
+            for _ in range(xderiv.order):
+                f = autograd.elementwise_grad(f, 0)
+            for _ in range(yderiv.order):
+                f = autograd.elementwise_grad(f, 1)
+            
+            def fun(x, y):
+                check(x, y)
                 if xderiv:
                     x = _asfloat(x)
                 if yderiv:
                     y = _asfloat(y)
                 return f(x, y)
-                
-            # Autograd-friendly wrap of structured arrays.
-            if xderiv:
-                x = _array.StructuredArray(x)
-            if yderiv:
-                y = _array.StructuredArray(y)
+        
+        # Structured case.
+        else:
             
             # Wrap of kernel with derivable arguments only.
-            def f(*args):
+            kernel = self._kernel
+            def f(x, y, *args):
                 i = -1
                 for i, dim in enumerate(xderiv):
                     x[dim] = args[i]
                 for j, dim in enumerate(yderiv):
                     y[dim] = args[1 + i + j]
                 return kernel(x, y)
-            
+                
             # Make derivatives.
             i = -1
             for i, dim in enumerate(xderiv):
                 for _ in range(xderiv[dim]):
-                    f = autograd.elementwise_grad(f, i)
+                    f = autograd.elementwise_grad(f, 2 + i)
             for j, dim in enumerate(yderiv):
                 for _ in range(yderiv[dim]):
-                    f = autograd.elementwise_grad(f, 1 + i + j)
+                    f = autograd.elementwise_grad(f, 2 + 1 + i + j)
             
-            # Make argument list and call function.
-            args = []
-            for dim in xderiv:
-                args.append(_asfloat(x[dim]))
-            for dim in yderiv:
-                args.append(_asfloat(y[dim]))
-            return f(*args)
+            def fun(x, y):
+                check(x, y)
+                                
+                # Autograd-friendly wrap of structured arrays.
+                if xderiv:
+                    x = _array.StructuredArray(x)
+                if yderiv:
+                    y = _array.StructuredArray(y)
+            
+                # Make argument list and call function.
+                args = []
+                for dim in xderiv:
+                    args.append(_asfloat(x[dim]))
+                for dim in yderiv:
+                    args.append(_asfloat(y[dim]))
+                return f(x, y, *args)
         
-        cls = Kernel if xderiv == yderiv else _KernelDeriv
+        cls = Kernel if xderiv == yderiv and isinstance(self, Kernel) else _CrossKernel
         obj = cls(fun, forcebroadcast=True)
         obj._minderivable = tuple(self._minderivable[i] - orders[i] for i in range(2))
         obj._maxderivable = tuple(self._maxderivable[i] -   maxs[i] for i in range(2))
         return obj
 
-class _KernelDeriv(_KernelBase):
+class _CrossKernel(_KernelBase):
     pass
     
 class Kernel(_KernelBase):
@@ -372,43 +470,19 @@ class Kernel(_KernelBase):
     # a callable, and _binary should propagate it properly (with an `and`?).
     
     def _binary(self, value, op):
+        # redefine _KernelBase._binary to forbid Kernel-_CrossKernel operations
+        # and multiplication by negative scalar
         if isinstance(value, Kernel):
-            obj = Kernel(op(self._kernel, value._kernel))
-            obj._minderivable = tuple(np.minimum(self._minderivable, value._minderivable))
-            obj._maxderivable = tuple(np.maximum(self._maxderivable, value._maxderivable))
-            obj._forcebroadcast = self._forcebroadcast or value._forcebroadcast
+            obj = super(Kernel, self)._binary(value, op)
+            obj.__class__ = Kernel
         elif np.isscalar(value):
-            assert np.isfinite(value)
-            assert value >= 0
-            obj = Kernel(op(self._kernel, lambda x, y: value))
-            obj._minderivable = self._minderivable
-            obj._maxderivable = self._maxderivable
-            obj._forcebroadcast = self._forcebroadcast
+            assert value >= 0, value
+            obj = super(Kernel, self)._binary(value, op)
+            obj.__class__ = Kernel
         else:
             obj = NotImplemented
         return obj
     
-    # TODO when using autograd, an autograd scalar is an ArrayBox that
-    # has an all-in method __add__ that will be called if the autograd scalar
-    # is the first addend. Then autograd will complain that it can't compute
-    # derivatives w.r.t. a Kernel. Solve this bug.
-    
-    def __add__(self, value):
-        return self._binary(value, lambda k, q: lambda x, y: k(x, y) + q(x, y))
-    
-    __radd__ = __add__
-    
-    def __mul__(self, value):
-        return self._binary(value, lambda k, q: lambda x, y: k(x, y) * q(x, y))
-    
-    __rmul__ = __mul__
-    
-    def __pow__(self, value):
-        if np.isscalar(value):
-            return self._binary(value, lambda k, q: lambda x, y: k(x, y) ** q(x, y))
-        else:
-            return NotImplemented
-
 # TODO Add a class StationaryKernel. It should not be a superclass of
 # IsotropicKernel because that holds only for the distances based on the
 # difference. Or maybe I should fix that IsotropicKernel is for distances
