@@ -64,7 +64,7 @@ Come implemento addproc etc.?
 11) Aggiungo proc= ad addx, deriv= continua ad avere la sua implementazione a
     parte in _Points e _makecovblock_points (FATTO)
 12) Controllo che le x abbiano lo stesso tipo, per adesso (FATTO)
-13) Riimplemento la somma di componenti con questa roba
+13) Riimplemento la somma di componenti con questa roba (FATTO)
 
 Problema serio: come faccio a specificare cosa derivare se ogni processo ha la
 sua x? Cioè: le x sono le stesse, oppure ogni processo ha la sua x?
