@@ -128,7 +128,8 @@ class Deriv:
         """
         The total derivation order, i.e., the sum of the values.
         """
-        return self._counter.total()
+        # return self._counter.total() # works only in Python >=3.10
+        return sum(self._counter.values())
     
     @property
     def max(self):
