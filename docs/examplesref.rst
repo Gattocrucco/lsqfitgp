@@ -12,7 +12,7 @@ repository. The links point to the file preview on github.
 
 Short index
 -----------
-a_ b_ c_ d_ e_ f_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ q_ r_ s_ t_ u_ v_ w_ x_ y_ 
+a_ b_ c_ d_ e_ f_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
 
 Long index
 ----------
@@ -243,4 +243,13 @@ Long index
     zero mean, and forces us to avoid checking its positity.
     
     .. image:: ../examples/plot/y.png
+
+.. _z:
+
+  * `z.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/z.py>`_: EXAMPLE Z.
+
+    Where we sail in an infinite dimensional space to sum two
+    numbers.
+    
+    .. image:: ../examples/plot/z.png
 

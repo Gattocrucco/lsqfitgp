@@ -266,11 +266,11 @@ class GP:
     # Alternative 5: do the check in _solver only on things to be solved
     
     def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
-        if not isinstance(covfun, _Kernel.Kernel):
-            raise TypeError('covariance function must be of class Kernel')
         self._elements = dict() # key -> _Element
         self._procs = dict() # proc key -> _Proc
         if covfun is not None:
+            if not isinstance(covfun, _Kernel.Kernel):
+                raise TypeError('covariance function must be of class Kernel')
             self._procs[None] = _ProcKernel(covfun)
             # TODO maybe I should use a custom singleton instead of None as
             # key for the default process, in case a weird user wants to use
@@ -292,27 +292,72 @@ class GP:
         self._checksym = bool(checksym)
         self._checkfinite = bool(checkfinite)
     
-    def addproc(self, key=None, kernel=None, deriv=0):
+    def addproc(self, kernel=None, key=None, deriv=0):
         """
         
         Add an independent process.
         
         Parameters
         ----------
-        key : hashable
-            The name that identifies the process in the GP object. If None,
-            sets the default kernel.
         kernel : Kernel
             A kernel for the process. If None, use the default kernel. The
             difference between the default process and a process defined with
             the default kernel is that, although they have the same kernel,
             they are independent.
+        key : hashable
+            The name that identifies the process in the GP object. If None,
+            sets the default kernel.
         deriv : Deriv-like
             Derivatives to take on the process defined by the kernel.
                 
         """
         
-        pass
+        if key in self._procs:
+            raise KeyError(f'process key {key!r} already used in GP')
+        
+        if kernel is None:
+            kernel = self._procs[None].kernel
+        
+        deriv = _Deriv.Deriv(deriv)
+        
+        self._procs[key] = _ProcKernel(kernel, deriv)
+    
+    def addproctransf(self, ops, key, deriv=0):
+        """
+        
+        Define a new process as a linear combination of other processes.
+        
+        Let f_i(x), i = 1, 2, ... be already defined processes, and g_i(x) be
+        deterministic functions. The new process is defined as
+        
+            h(x) = g_1(x) f_1(x) + g_2(x) f_2(x) + ...
+        
+        Parameters
+        ----------
+        ops : dict
+            A dictionary mapping process keys to scalars or scalar
+            functions. The functions must take an argument of the same kind
+            of the domain of the process.
+        key : hashable
+            The name that identifies the new process in the GP object.
+        deriv : Deriv-like
+            The linear combination is derived as specified by this
+            parameter.
+        
+        """
+        
+        for k, func in ops.items():
+            if k not in self._procs:
+                raise KeyError(f'process key {k!r} not in GP object')
+            if not np.isscalar(func) and not callable(func):
+                raise TypeError(f'object of type {type(func)!r} for key {k!r} is neither scalar nor callable')
+        
+        if key in self._procs:
+            raise KeyError(f'process key {key!r} already used in GP')
+        
+        deriv = _Deriv.Deriv(deriv)
+        
+        self._procs[key] = _ProcTransf(ops, deriv)
     
     def addx(self, x, key=None, deriv=0, proc=None):
         """
@@ -535,13 +580,14 @@ class GP:
         
         kernelsum = None
         
-        for pkey, factor in xp.ops:
+        for pkey, factor in xp.ops.items():
             kernel = self._crosskernel(pkey, ypkey)
             if kernel is None:
                 continue
             
             if np.isscalar(factor):
-                factor = lambda x: factor
+                scalar = factor
+                factor = lambda x: scalar
             kernel = kernel.rescale(factor, None)
             
             if kernelsum is None:
@@ -563,7 +609,7 @@ class GP:
         
         kernel = self._crosskernel(x.proc, y.proc)
         if kernel is None:
-            return np.zeros(x.size, y.size)
+            return np.zeros((x.size, y.size))
         
         kernel = kernel.diff(x.deriv, y.deriv)
         

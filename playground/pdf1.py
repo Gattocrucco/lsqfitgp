@@ -82,12 +82,6 @@ pred = gp.predfromdata({
     'data'     : data,
 }, ['data', 'xdata'])
 
-#### PLOT RESULTS ####
-
-fig, axs = plt.subplots(1, 2, num='pdf1', clear=True, figsize=[9, 4.5])
-axs[0].set_title('PDFs')
-axs[1].set_title('Data')
-
 # check the integral is one with trapezoid rule
 x = xdata['x']
 y = pred['xdata']
@@ -95,6 +89,12 @@ checksum = np.sum((      y[:, 1:] +       y[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx   f_i(x) =', checksum)
 checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx x f_i(x) =', checksum)
+
+#### PLOT RESULTS ####
+
+fig, axs = plt.subplots(1, 2, num='pdf1', clear=True, figsize=[9, 4.5])
+axs[0].set_title('PDFs')
+axs[1].set_title('Data')
 
 for i in range(len(xdata)):
     y = pred['xdata'][i]

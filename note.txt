@@ -60,7 +60,7 @@ Come implemento addproc etc.?
     uno _ZeroCov viene passato (FATTO)
 10) Aggiungo GP.addproc, addproctransf e addprocderiv, i _Proc vengono infilati
     in un dizionario apposito, possono avere gli stessi nomi degli x (NON FARE
-    addprocderiv)
+    addprocderiv) (FATTO)
 11) Aggiungo proc= ad addx, deriv= continua ad avere la sua implementazione a
     parte in _Points e _makecovblock_points (FATTO)
 12) Controllo che le x abbiano lo stesso tipo, per adesso (FATTO)
@@ -93,3 +93,28 @@ permette di dire se le x sono tutte le stesse o sono diverse, per fare
 combinazioni più strane chiamare più volte addproctransf. Se sono le stesse poi
 addx controlla che metti dentro x con lo stesso dtype. Poi però devo inventarmi
 un modo di propagare queste informazioni fino a _KernelBase.diff.
+
+--------
+
+What calculation should I do to bypass the limitation that new gvars can not be
+correlated with old gvars?
+
+Old = x, new = y
+
+Desired covariance matrix:
+
+    V = [ V_xx   V_xy]
+        [ V_yx   V_yy]
+
+z = auxiliary variables, as many as y, independent of x
+
+I have to write y as a combination of z and x:
+
+    y = Az + Bx
+
+Cov[x, y] = Cov[x, Bx] = V_xx B^T = V_xy   ==>  B^T = V_xx^-1 V_xy
+Cov[y, y] = Cov[Az, Az] + Cov[Bx, Bx] = A V_zz A^T + B V_xx B_T = V_yy  ==>
+    ==>  A V_zz A^T = V_yy - V_yx V_xx^-1 V_xy = V/V_xx
+
+I can choose A = I and then V_zz = V/V_xx. I have to decompose V_xx.
+
