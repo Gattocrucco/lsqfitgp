@@ -12,15 +12,15 @@ np.random.seed(20220416)
 #### COMPONENTS ####
 
 flavor = np.array([
-    (-4, 'cbar' ), # 0
-    (-3, 'sbar' ), # 1
-    (-2, 'ubar' ), # 2
-    (-1, 'dbar' ), # 3
-    (21, 'gluon'), # 4
-    ( 1, 'd'    ), # 5
-    ( 2, 'u'    ), # 6
-    ( 3, 's'    ), # 7
-    ( 4, 'c'    ), # 8
+    ( 1, 'd'    ), # 0
+    (-1, 'dbar' ), # 1
+    ( 2, 'u'    ), # 2
+    (-2, 'ubar' ), # 3
+    ( 3, 's'    ), # 4
+    (-3, 'sbar' ), # 5
+    ( 4, 'c'    ), # 6
+    (-4, 'cbar' ), # 7
+    (21, 'gluon'), # 8
 ], 'i8, U16')
 
 pid  = flavor['f0']
@@ -31,18 +31,19 @@ nx    = 30
 ndata = 20
 
 indices = dict(
-    d = [5, 3],
-    u = [6, 2],
-    s = [7, 1],
-    c = [8, 0],
+    d = [0, 1],
+    u = [2, 3],
+    s = [4, 5],
+    c = [6, 7],
 )
 
 #### MODEL ####
 # for each component of the proton:
 # h ~ GP
 # f = h''  (f is the PDF)
+# for the momentum sum rule:
 # int_0^1 dx x f(x) = [xh'(x) - h(x)]_0^1
-# for the sum rules:
+# for the flavor sum rules:
 # int_0^1 dx (f_i(x) - f_j(x)) = [h_i'(x) - h_j'(x)]_0^1
 
 xtype = np.dtype([
@@ -94,7 +95,7 @@ gp.addtransf({'xdata': M}, 'data', axes=2)
 gp.addx(xinteg, 'xmomrule', proc='primitive of xf(x)')
 gp.addtransf({'xmomrule': suminteg}, 'momrule', axes=2)
 
-# sum rules
+# quark sum rules
 qdiff = np.array([1, -1])[:, None]
 for quark in 'ducs':
     idx = indices[quark]
@@ -113,11 +114,19 @@ dataerr = np.full_like(datamean, 1)
 datamean = datamean + dataerr * np.random.randn(*dataerr.shape)
 data = gvar.gvar(datamean, dataerr)
 
-# check the integral is one with trapezoid rule
-x = xdata['x']
-y = priorsample['xdata']
-checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
-print('sum_i int dx x f_i(x) =', checksum)
+# check sum rules approximately with trapezoid rule
+def check_integrals(x, y):
+    checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
+    print('sum_i int dx x f_i(x) =', checksum)
+    for q in 'ducs':
+        idx = indices[q]
+        qx = x[idx]
+        qy = y[idx]
+        checksum = np.sum(qdiff * (qy[:, 1:] + qy[:, :-1]) / 2 * np.diff(qx, axis=1))
+        print(f'sum_i={q}{q}bar int dx f_i(x) =', checksum)
+
+print('check integrals in fake data:')
+check_integrals(xdata['x'], priorsample['xdata'])
 
 #### FIT ####
 
@@ -125,25 +134,33 @@ pred = gp.predfromdata(dict(**constraints, **{
     'data': data,
 }), ['data', 'xdata'])
 
-# check the integral is one with trapezoid rule
-x = xdata['x']
-y = pred['xdata']
-checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
-print('sum_i int dx x f_i(x) =', checksum)
+print('check integrals in fit:')
+check_integrals(xdata['x'], pred['xdata'])
 
 #### PLOT RESULTS ####
 
-fig, axs = plt.subplots(1, 2, num='pdf2', clear=True, figsize=[9, 4.5])
+fig, axs = plt.subplots(1, 2, num='pdf3', clear=True, figsize=[9, 4.5])
 axs[0].set_title('PDFs')
 axs[1].set_title('Data')
 
-for i in range(len(xdata)):
-    y = pred['xdata'][i]
-    m = gvar.mean(y)
-    s = gvar.sdev(y)
-    axs[0].fill_between(xdata[i]['x'], m - s, m + s, alpha=0.6, facecolor=f'C{i}', label=name[i])
-    y2 = priorsample['xdata'][i]
-    axs[0].plot(xdata[i]['x'], y2, color=f'C{i}')
+for i in range(nflav):
+    
+    x = xdata[i]['x']
+    ypdf = pred['xdata'][i]
+    ydata = priorsample['xdata'][i]
+    m = gvar.mean(ypdf)
+    s = gvar.sdev(ypdf)
+    
+    color = 'C' + str(i // 2)
+    if i % 2:
+        kw = dict(hatch='//////', edgecolor=color, facecolor='none')
+        kwp = dict(color=color, linestyle='--')
+    else:
+        kw = dict(alpha=0.6, facecolor=color)
+        kwp = dict(color=color)
+    
+    axs[0].fill_between(x, m - s, m + s, label=name[i], **kw)
+    axs[0].plot(x, ydata, **kwp)
 
 axs[0].legend(fontsize='small')
 
