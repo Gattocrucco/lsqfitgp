@@ -6,7 +6,7 @@ Other TODOs are scattered in the code. Search for `TODO`.
 
 Add a Raises section to GP methods that can trigger covariance matrix checks.
 
-Add 'Examples' sections.
+Add 'Examples' sections in docstrings
 
 Interlinks with gvar and lsqfit docs.
 
@@ -85,7 +85,10 @@ matter and write something.
 
 To use gvar it would be necessary to remove the limitation of not being able to
 create new primary gvars correlated with old ones. Ask Lepage about this. => I
-opened an issue on gvar, let's see.
+opened an issue on gvar, let's see. => It is also the case that when doing
+hyperparameter optimization, the GP must be recomputed from scratch anyway.
+However the limitation still hinders usage in a way that is imperscrutable to
+the user.
 
 ### Low-rank/regression
 
@@ -127,6 +130,9 @@ chiamano addtransf. Aspetta: potrei voler fare espressioni sia su processi non
 valutati che valutati. Allora avrei bisogno di una sorta di abstractgp che si
 concretizza quando gli passo le x. Per condizionare uso una funzione globale
 perché devo poter mettere insieme vari gp.
+
+If I do the interface with a hidden global GP, use a context manager like
+pymc3. Maybe this would also be useful for gvar.
 
 ### Efficient sampling
 
@@ -202,6 +208,9 @@ posto che anche sugli iperparametri ho usato Laplace?
 In lsqfitgp.empbayes_fit, calcolare la marginal likelihood usando laplace al
 livello 2 come ho fatto in BartGP
 
+Option to set starting point (would be useful for Bayesian optimization to
+start from previous parameter values)
+
 ### Port to JAX
 
 In sostanza l'unico motivo per cui non posso passare da autograd a JAX in
@@ -241,9 +250,12 @@ Also, call these classes Dim and Dims such that they can be used for other
 things that need a dimension specification, like Fourier transforms.
 
 Can I do something helpful for Riemann manifolds? Like, the wikipedia page for
-processes has a nice brownian motion on a sphere. How could I implement that
-in a generic way which would allow the user to put any process on any manifold?
-=> has been done now, see Terenin's web page
+processes has a nice brownian motion on a sphere. How could I implement that in
+a generic way which would allow the user to put any process on any manifold? =>
+has been done now, see Terenin's web page. For vector fields they didn't manage
+more than the naive embedding, but for scalar fields they solved the problem.
+=> Wait, Terenin's doing an *input* manifold, random walk on sphere is *output*
+manifold, it's different.
 
 ### Non-Gaussianity
 
@@ -326,22 +338,21 @@ Kernel rumore rosa, troncato tra due frequenze.
 
 ### Transformations
 
-Tentative summary of the plan:
+#### Pointwise infinite transformations
 
-  * GP.addproc to add a kernel. Processes are assumed independent between each
-    other. GP.addx requires a process key as input, by default uses the kernel
-    specified at GP initialization (which can be omitted).
-  
-  * GP.addproctransf to sum processes and multiply them by functions of x,
-    like addtransf but for the whole function.
-  
-  * GP.addprocderiv to add a derivative of the process.
-  
-To build the kernel pieces, Kernel.diff and Kernel.rescale (latter to be
-implemented) are applied in sequence recursively. This means that I should
-probably take out the logic out of the kernel core built by Kernel.diff.
-All this would provide 1) simple way of defining sum of components 2) clear
-order of multiplication/derivation.
+It would be convienent to be able to do the following: define a tensor-shaped
+process. Example: take a gradient. Currently this must be managed manually by
+the user, putting the tensor indices in the domain type, and then evaluating
+the process on an appropriately shaped array of points, for each separate set
+of points. I think it is appropriate that the kernels work on scalar processes
+only and that the tensor indices must be represented explicitly in the domain
+because this avoids shape-related bugs and is the most general and easier to
+think about way when writing the kernel. So the functionality should be added
+at the level of `GP`. To work with non-independent components, however, it
+would be necessary that the `GP` method forcibly sets some fields of x based on
+a rule. A simpler alternative would be to add a `shape` parameter to `addproc`,
+assuming independent processes, and add the possibility of (constant) matrices
+as factors in `addproctransf`.
 
 #### Finite transformations
 
@@ -373,7 +384,11 @@ programming per specificare tutti i pezzi del processo.
 It could be convenient to change the matrix multiplication order based on
 efficiency, like when using backprop vs. forward. Now I'm always doing
 forward. It should be feasible to do backward at least, for when the output
-has less axes than the inputs.
+has less axes than the inputs. The concrete recurring case would be
+sums/integrals constraints.
+
+It would be convenient if in `addtransf` you could also index the arrays. Would
+fit naturally with the numpy-based interface.
 
 #### Fourier
 
@@ -535,6 +550,14 @@ if only the lower triangular part is stored.
 
 Storing only the lower part should only have benefits. Using a compressed
 sparse format may not be worth it.
+
+Memory problem: gvar doesn't allow old correlation matrices which are not used
+anymore to be garbage collected, because they are all stored in the single
+global covariance matrix. switch_gvar doesn't solve this because it keeps a
+chronology of all the matrices, and anyway it can't be used if you have stopped
+using all gvars created to that point. => If one cares about efficiency, he
+probably won't use gvar in critical paths that are repeated over and over, so
+the point may be moot.
 
 ### Solvers
 

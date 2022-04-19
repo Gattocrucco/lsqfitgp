@@ -57,18 +57,19 @@ Let's see. We first generate some data::
 
 .. image:: components1.png
 
-We made a mixture of two exponential quadratic and took a sample from the prior
-as data. Generating fake data from the prior is a good way to make sure that
-the fit will make sense with the data.
+We made a mixture of two exponential quadratics and took a sample from the
+prior as data. Generating fake data from the prior is a good way to make sure
+that the fit will make sense with the data.
 
 Now we setup a fit with an additional integer input dimension that indicates
-the component::
+the component, similarly to what we did in :ref:`multiout`::
 
-    xcomp = np.empty((2, len(x)), dtype=[
-        ('x', float),
-        ('comp', int)
+    xtype = np.dtype([
+        ('x'   , float),
+        ('comp', int  ),
     ])
-    xcomp['x'] = x  # broadcasting aligns the last axes
+    xcomp = np.empty((2, len(x)), xtype)
+    xcomp['x'   ] = x  # broadcasting aligns the last axes
     xcomp['comp'] = np.array([0, 1])[:, None]
 
 We need to make a kernel that changes based on the value in the ``'comp'``
@@ -95,7 +96,7 @@ Now we add separately the two components and sum them with
 
 We can now proceed as usual to get the posterior on other points::
 
-    xplot = np.empty((2, 200), dtype=xcomp.dtype)
+    xplot = np.empty((2, 200), dtype=xtype)
     xplot['x'] = np.linspace(-10, 10, xplot.shape[1])
     xplot['comp'] = np.array([0, 1])[:, None]
     
@@ -174,3 +175,84 @@ on the sum as before::
     fig.savefig('components3.png')
 
 .. image:: components3.png
+
+This version of the code was shorter and less redundant than the one we started
+with, but it's not very intuitive. We still have to take care manually of
+indicating which component we are using by setting appropriately the ``'comp'``
+field in the `x` arrays each time, and each time, for each set of points we
+want to consider, we have to sum the two components after evaluating them
+separately. There is another set of methods in :class:`GP` designed to make
+this kind of thing quicker. Let's see. We start by creating a :class:`GP`
+object *without specifying a kernel*::
+
+    gp = lgp.GP()
+
+Then we add separately the two kernels to the object using :meth:`GP.addproc`::
+
+    gp.addproc(kernel1, 'long')
+    gp.addproc(kernel2, 'short')
+
+Now the two names ``'long'`` and ``'short'`` stand for *independent* processes
+with their respective kernels. (These names reside in a namespace separate
+from the one used by :meth:`GP.addx` and :meth:`GP.addtransf`.) Now we use
+these to define their sum *as a process* instead of summing them after
+evaluation on specific points::
+
+    gp.addproctransf({'long': 1, 'short': 1}, 'sum')
+
+The method :meth:`GP.addproctransf` is analogous to :meth:`GP.addtransf` but
+works for the whole process at once. What we are doing mathematically is the
+following:
+
+.. math::
+    \operatorname{sum}(x) \equiv 1 \cdot \operatorname{long}(x) +
+                                 1 \cdot \operatorname{short}(x).
+
+Now that we have defined the components, we evaluate them on the points::
+
+    x = np.linspace(-10, 10, 21)
+    xplot = np.linspace(-10, 10, 200)
+    
+    gp.addx(x, 'datalong' , proc='long' )
+    gp.addx(x, 'datashort', proc='short')
+    gp.addx(x, 'datasum'  , proc='sum'  )
+    
+    gp.addx(xplot, 'plotlong' , proc='long' )
+    gp.addx(xplot, 'plotshort', proc='short')
+    gp.addx(xplot, 'plotsum'  , proc='sum'  )
+
+We specified the processes using the ``proc`` parameter of :meth:`GP.addx`.
+Then we continue as before::
+
+    dataprior = gp.prior(['datalong', 'datashort', 'datasum'])
+    y = next(gvar.raniter(dataprior))
+    
+    post = gp.predfromdata({
+        'datasum': y['datasum']
+    }, ['plotlong', 'plotshort', 'plotsum'])
+    
+    ax.cla()
+    
+    for sample in gvar.raniter(post, 2):
+        line, = ax.plot(xplot, sample['plotsum'])
+        color = line.get_color()
+        ax.plot(xplot, sample['plotlong'], '--', color=color)
+        ax.plot(xplot, sample['plotshort'], ':', color=color)
+    
+    for marker, key in zip(['x', '+', '.'], ['long', 'short', 'sum']):
+        ax.plot(x, y['data' + key], color='black', marker=marker, label=key, linestyle='')
+    ax.legend()
+    
+    fig.savefig('components4.png')
+
+.. image:: components4.png
+
+If there was this more convenient way of dealing with latent components, why
+didn't we introduce it right away? The reason is that it is not as general as
+managing the components manually with an explicit field. :meth:`GP.addproc`
+defines processes which are independent of each other; to have nontrivial a
+priori correlations it is necessary to put the process index in the domain such
+that kernel can manipulate it. We did this at the end of :ref:`multiout` when
+we introduced an anticorrelation between the random walk components by
+multiplying the kernel with ``lgp.Categorical(dim='coord', cov=[[1, -0.99],
+[-0.99, 1]])``.

@@ -117,4 +117,3 @@ Cov[y, y] = Cov[Az, Az] + Cov[Bx, Bx] = A V_zz A^T + B V_xx B_T = V_yy  ==>
     ==>  A V_zz A^T = V_yy - V_yx V_xx^-1 V_xy = V/V_xx
 
 I can choose A = I and then V_zz = V/V_xx. I have to decompose V_xx.
-

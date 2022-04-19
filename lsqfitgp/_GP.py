@@ -191,7 +191,11 @@ class GP:
     addx
         Add points where the Gaussian process is evaluated.
     addtransf
-        Add a linear transformation of the process.
+        Define a linear transformation of the evaluated process.
+    addproc
+        Define a new independent component of the process.
+    addproctransf
+        Define a linear transformation of the process.
     prior
         Compute the prior for the process.
     pred
@@ -264,6 +268,11 @@ class GP:
     # Current behaviour: only the covariance of things added with addx is
     # checked, and only if gvars are used at some point
     # Alternative 5: do the check in _solver only on things to be solved
+    
+    # TODO maybe the default should be solver='eigcut-' because it adds less
+    # noise. It is moot anyway if the plot is done sampling with gvar.raniter
+    # or lgp.raninter because they do add their own noise. But this will be
+    # solved when I add GP sampling methods.
     
     def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
         self._elements = dict() # key -> _Element
