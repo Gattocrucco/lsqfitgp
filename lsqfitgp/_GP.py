@@ -268,6 +268,7 @@ class GP:
     def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
         self._elements = dict() # key -> _Element
         self._procs = dict() # proc key -> _Proc
+        self._kernels = dict() # (proc key, proc key) -> _KernelBase
         if covfun is not None:
             if not isinstance(covfun, _Kernel.Kernel):
                 raise TypeError('covariance function must be of class Kernel')
@@ -555,15 +556,29 @@ class GP:
         self._elements[key] = _Transf(tens, shape, axes)
     
     def _crosskernel(self, xpkey, ypkey):
+        
+        # Check if the kernel is in cache.
+        notfound = 0 # can't use None because it means "no correlation"
+        cache = self._kernels.get((xpkey, ypkey), notfound)
+        if cache is not notfound:
+            return cache
+        
+        # Compute the kernel.
         xp = self._procs[xpkey]
         yp = self._procs[ypkey]
         
         if isinstance(xp, _ProcKernel) and isinstance(yp, _ProcKernel):
-            return self._crosskernel_kernels(xpkey, ypkey)
+            kernel = self._crosskernel_kernels(xpkey, ypkey)
         elif isinstance(xp, _ProcTransf):
-            return self._crosskernel_transf_any(xpkey, ypkey)
+            kernel = self._crosskernel_transf_any(xpkey, ypkey)
         elif isinstance(yp, _ProcTransf):
-            return self._crosskernel_transf_any(ypkey, xpkey)._swap()
+            kernel = self._crosskernel_transf_any(ypkey, xpkey)._swap()
+        
+        # Save cache.
+        self._kernels[xpkey, ypkey] = kernel
+        self._kernels[ypkey, xpkey] = kernel if kernel is None else kernel._swap()
+        
+        return kernel
         
     def _crosskernel_kernels(self, xpkey, ypkey):
         xp = self._procs[xpkey]
