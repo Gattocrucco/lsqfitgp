@@ -211,6 +211,10 @@ livello 2 come ho fatto in BartGP
 Option to set starting point (would be useful for Bayesian optimization to
 start from previous parameter values)
 
+summary method in empbayes_fit like lsqfit.nonlinear_fit
+
+last gp computed in minimization as meangp attribute in empbayes_fit
+
 ### Port to JAX
 
 In sostanza l'unico motivo per cui non posso passare da autograd a JAX in
@@ -709,3 +713,7 @@ cerco le componenti connesse, cioè decompongo in diagonale a blocchi la
 supermatrice. Poi boh. Sarebbe carino farlo fare a un tesista di informatica,
 perché c'è la questione di ottimizzare una specie di roba ad albero con i pesi
 dati da polinomi convessi vari.
+
+### Hyperparameters
+
+Try to use empbayes_fit without recreating the GP object each time.

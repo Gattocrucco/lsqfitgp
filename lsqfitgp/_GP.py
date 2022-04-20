@@ -666,7 +666,7 @@ class GP:
             else:
                 covsum = cov
         assert covsum.shape == x.shape + y.shape
-        return covsum.reshape(x.size, y.size)
+        return covsum.reshape((x.size, y.size)) # !don't leave out the ()!
             
     def _makecovblock(self, xkey, ykey):
         x = self._elements[xkey]
