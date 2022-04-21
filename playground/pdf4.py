@@ -1,4 +1,4 @@
-"""Fit of parton distributions functions (PDFs)
+"""Fit of parton distribution functions (PDFs)
 
 Like pdf3, but with hyperparameters"""
 
@@ -51,11 +51,14 @@ xtype = np.dtype([
     ('pid', int  ),
 ])
 
+# fitting both scale and variance with weak priors is a bad idea, but whatever
 hyperprior = {
-    'log(scale)': gvar.log(gvar.gvar(1, 1)),
+    'log(scale)': gvar.log(gvar.gvar(0.5, 0.5)),
+    'log(ampl)' : gvar.log(gvar.gvar(1, 1)),
+    'log(alpha)': gvar.log(gvar.gvar(2, 1)),
 }
 def makekernel(hp):
-    return lgp.ExpQuad(dim='x', scale=hp['scale']) * lgp.White(dim='pid')
+    return lgp.RatQuad(dim='x', scale=hp['scale'], alpha=hp['alpha']) * lgp.White(dim='pid') * hp['ampl'] ** 2
 
 xdata = np.empty((nflav, nx), xtype)
 xdata['pid'] = pid[:, None]
@@ -145,9 +148,20 @@ information = dict(constraints)
 information.update({
     'data': data,
 })
-fit = lgp.empbayes_fit(hyperprior, makegp, information)
+fit = lgp.empbayes_fit(hyperprior, makegp, information, raises=False)
+
+def bufferdict_iter(d):
+    for k in d:
+        yield k
+        m = d.extension_pattern.match(k)
+        if m and d.has_distribution(m.group(1)):
+            yield m.group(2)
+gvar.BufferDict.allkeys = bufferdict_iter
+
 print('hyperparameters:')
-print(fit.p)
+for k in fit.p.allkeys():
+    d = fit.p[k] - hpsample[k]
+    print(f'{k:10}: fit {fit.p[k]} true {hpsample[k]:5.2g} diff {d}')
 
 gp = makegp(gvar.mean(fit.p))
 pred = gp.predfromdata(information, ['data', 'xdata'])
