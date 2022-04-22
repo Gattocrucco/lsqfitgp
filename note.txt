@@ -88,7 +88,7 @@ da
     h(x, y) = f(x) + g(y)
 
 Un modo sensato sarebbe proprio leggersi una stringa del genere. Una versione
-più accroccata intermedia sarebbe che un'opzione di addproctransf che mi
+più accroccata intermedia sarebbe un'opzione di addproctransf che mi
 permette di dire se le x sono tutte le stesse o sono diverse, per fare
 combinazioni più strane chiamare più volte addproctransf. Se sono le stesse poi
 addx controlla che metti dentro x con lo stesso dtype. Poi però devo inventarmi
@@ -117,3 +117,30 @@ Cov[y, y] = Cov[Az, Az] + Cov[Bx, Bx] = A V_zz A^T + B V_xx B_T = V_yy  ==>
     ==>  A V_zz A^T = V_yy - V_yx V_xx^-1 V_xy = V/V_xx
 
 I can choose A = I and then V_zz = V/V_xx. I have to decompose V_xx.
+
+2022-04-22
+==========
+
+The nonlinear fit isn't working. With enough quadratic data the fitted data
+(even the linear one) is far from the actual data, but even with one single
+nonlinear point the fit starts to fail in some places.
+
+Is this a bug or an excess of nonlinearity?
+
+In the latter case, I expect that reducing the errors on the quadratic data
+should effectively linearize it. Then, provided I start the fit already in the
+correct neighborhood, it should work.
+
+=> tried: it's even worse!
+
+I'm combining 9 latent points into one single quadratic datapoint. Maybe even
+if the error on the datapoint is small, the freedom left to the latent points
+makes their nonlinear bias large.
+
+=> Using only one point as quadratic input, still does not work at all. This
+suggests it is a trivial bug of some sort.
+
+Bug found: I was passing the prior through the nonlinear function and then
+sampling, instead of sampling and then passing the sample through the nonlinear
+function. Since the prior is wide, it was being affected a lot by the
+nonlinearity.

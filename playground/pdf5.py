@@ -29,9 +29,9 @@ name = flavor['f1']
 
 nflav  = len(flavor)
 nx     = 30
-ndata  = 20
-nx2    = 1  # must be <= nx
-ndata2 = 1
+ndata  = 10
+nx2    = 30  # must be <= nx
+ndata2 = 10
 
 indices = dict(
     # quark, antiquark
@@ -64,7 +64,7 @@ xdata[  'x'] = np.linspace(0, 1, nx)
 M = np.random.randn(ndata, nflav, nx) # linear map PDF(X) -> data
 
 A = np.random.randn(ndata2, nflav, nx2, nx2)
-M2 = np.einsum('ijkl,ijml->ijkm', A, A) # quadratic map PDF(X) -> data2
+M2 = np.einsum('dfxz,dfyz->dfxy', A, A) # quadratic map PDF(X) -> data2
 
 xinteg = np.empty((nflav, 2), xtype)
 xinteg['pid'] = pid[:, None]
@@ -116,7 +116,7 @@ for quark in 'ducs':
 def fcn(params):
     
     xdata = params['xdata']
-    # data2 = gvar_einsum('dfxy,fx,fy->d', M2, xdata, xdata)
+    # data2 = np.einsum('dfxy,fx,fy->d', M2, xdata, xdata)
     xdata2 = xdata[:, None, :nx2] * xdata[:, :nx2, None]
     data2 = np.tensordot(M2, xdata2, axes=3)
     
@@ -126,17 +126,16 @@ params_prior = gp.predfromdata(constraints, ['xdata', 'data'])
 
 #### GENERATE FAKE DATA ####
 
-prior = fcn(params_prior)
-prior['xdata'] = params_prior['xdata']
-priorsample = next(gvar.raniter(prior))
+priorsample = next(gvar.raniter(params_prior))
+fcnsample = fcn(priorsample)
 
 datamean = gvar.BufferDict({
-    'data' : priorsample['data' ],
-    'data2': priorsample['data2'],
+    'data' : fcnsample['data' ],
+    'data2': fcnsample['data2'],
 })
 dataerr = gvar.BufferDict({
-    'data' : 1 * np.ones(ndata),
-    'data2': 1 * np.ones(ndata2),
+    'data' : np.full(ndata ,   1),
+    'data2': np.full(ndata2, 100),
 })
 datamean.buf += dataerr.buf * np.random.randn(*dataerr.buf.shape)
 data = gvar.gvar(datamean, dataerr)
@@ -157,8 +156,9 @@ check_integrals(xdata['x'], priorsample['xdata'])
 
 #### FIT ####
 
-fit = lsqfit.nonlinear_fit(data, fcn, params_prior, p0=priorsample, tol=(1e-10, 1e-10, 1e-16), verbose=2)
+fit = lsqfit.nonlinear_fit(data, fcn, params_prior, verbose=2)
 print(fit.format(maxline=True))
+print(fit.format(maxline=-1))
 
 pred = fcn(fit.p)
 
@@ -200,18 +200,7 @@ for ax, label in zip(axs[1:], ['data', 'data2']):
     x = np.arange(len(m))
     ax.fill_between(x, m - s, m + s, step='mid', color='lightgray')
     ax.errorbar(x, datamean[label], dataerr[label], color='black', linestyle='', capsize=2)
+    ax.plot(x, fcnsample[label], drawstyle='steps-mid', color='black')
 
+fig.tight_layout()
 fig.show()
-
-#### DEBUG STUFF ####
-
-ytrue  = priorsample['xdata'][:, 0]
-yprior = prior      ['xdata'][:, 0]
-yfit   = fit.p      ['xdata'][:, 0]
-delta = yfit - ytrue
-z = gvar.mean(delta) / gvar.sdev(delta)
-
-print(f'{"prior":>11}{"true":>8}{"fit":>12}{"z":>8}{"M2":>8}')
-print(50 * '-')
-for i in range(nflav):
-    print(f'{yprior[i]:>11}{ytrue[i]:8.2f}{yfit[i]:>12}{z[i]:8.1f}{M2[0,i,0,0]:8.2f}')

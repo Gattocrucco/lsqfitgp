@@ -35,6 +35,9 @@ l'interpretazione bayesiana della correlazione tra i risultati? Forse queste
 cose è meglio se le studio prima su lsqfitgp che è equivalente a un fit lineare
 e le formule sono analitiche e scritte chiaramente.
 
+In the nonlinear model chapter, after generating fake data, add a remark that
+the nonlinear transformation must be applied *after* sampling the prior.
+
 ## Fixes and tests
 
 Go through the coverage and add tests to cover untested lines.
@@ -181,6 +184,12 @@ dovrei riimplementare lsqfit.nonlinear_fit per usare le mie decomposizioni e
 cooperare meglio con i processi gaussiani latenti senza passare dalle gvar.
 Quindi devo anche fare una funzione condivisa che mappa il nome della
 decomposizione a una classe Decomp.
+
+I think the second order correction would be useful, however it can be
+computationally heavy in general. Maybe if I can write the bias correction as
+the gradient of something then I can use backprop and it becomes efficient? The
+formula is similar to a gradient but actually has indices in the wrong places
+to be one.
 
 ### Hyperparameters
 
