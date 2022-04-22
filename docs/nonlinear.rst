@@ -40,7 +40,7 @@ you want to know more, it has a `good documentation
 <https://lsqfit.readthedocs.io/en/latest/index.html>`_.
 
 Let's see how to fit some data that is constrained in (-1, 1). To map the
-Gaussian process space to the data space, we'll use an hyperbolic tangent.
+Gaussian process space to the data space, we'll use a hyperbolic tangent.
 It has the properties :math:`\tanh(\pm\infty) = \pm 1`, :math:`\tanh'(0) = 1`,
 :math:`\tanh(-x) = -\tanh(x)`.
 
@@ -56,11 +56,18 @@ data. ::
     x = np.arange(15)
     gp.addx(x, 'data')
     
-    data_gp = next(gvar.raniter(gp.prior('data')))
+    data_gp = gvar.sample(gp.prior('data'))
 
 Then we map it to (-1, 1)::
 
     data = np.tanh(data_gp)
+
+Note that we first sampled the latent Gaussian process obtaining ``data_gp``,
+and then passed it through our nonlinear function to obtain the fake data. A
+possibly serious mistake would be to do the converse, first passing the prior
+through the nonlinear function, with ``np.tanh(gp.prior('data'))``, and then
+sampling from it. To see this intuitively, consider that in the latter case the
+fake data would not satisfy the requirement of being bounded within (-1, 1).
 
 Now we'll add errors to the data. If data does not have errors, there's not
 really a problem to start with: you can map the data to :math:`(-\infty,
@@ -147,16 +154,25 @@ Output::
      svdcut/n = 1e-12/0    tol = (1e-08,1e-10,1e-10*)    (itns/time = 29/0.2)
      fitter = scipy_least_squares    method = trf
 
-Let's plot everything. First we compute the posterior on the `xplot` points,
-and inject it into a copy of the fit result dictionary::
+Let's plot everything. First we compute the posterior on the ``xplot`` points::
 
     gpplot = gp.predfromfit({'data': fit.p['gproc']}, 'plot')
-    fitp = dict(fit.p)
+
+This time we use :meth:`GP.predfromfit` instead of the usual
+:meth:`GP.predfromdata`. This method takes into account that the distribution
+represented by ``fit.p['gproc']`` is not the uncertainty of some datapoints,
+but is already the distribution of some points of our process. We want to
+"extend" ``fit.p['gproc']``, not condition on it.
+
+Then we inject the extended posterior into a copy of the fit result dictionary::
+
+    fitp = dict(fit.p)     # dict() makes a copy of fit.p
     fitp['gproc'] = gpplot
 
-This copy-and-replace step is a bit redundant here, it is for when there are
-also other parameters beside the Gaussian process. Then we plot both the data
-space and the Gaussian process space. ::
+(This copy-and-replace step is a bit redundant here, it is for when there are
+also other parameters beside the Gaussian process, and we do not want to modify
+the fit result dictionary for good bookkeeping practice.) Then we plot both the
+data space and the Gaussian process space. ::
 
     from matplotlib import pyplot as plt
     

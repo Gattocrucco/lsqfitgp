@@ -16,7 +16,8 @@ for euclidean multidimensional input.
 Separate the index of kernels by class (after adding `StationaryKernel`).
 
 In the nonlinear fit example, use the gaussian cdf instead of the hyperbolic
-arctangent to make a uniform prior over the interval.
+arctangent to make a uniform prior over the interval. => Or maybe explain
+what distribution `tanh` entails.
 
 A chapter on propagation, from simple GP-only to nonlinear with multiple fits.
 
@@ -37,10 +38,14 @@ l'interpretazione bayesiana della correlazione tra i risultati? Forse queste
 cose è meglio se le studio prima su lsqfitgp che è equivalente a un fit lineare
 e le formule sono analitiche e scritte chiaramente.
 
-In the nonlinear model chapter, after generating fake data, add a remark that
-the nonlinear transformation must be applied *after* sampling the prior.
-
 Add coverage checking with badge. Can I do it with github actions?
+
+After Lepage adds `BufferDict.allkeys`, update the nonlinear example.
+
+Explain somewhere how to combine processes defined on different variables. I
+don't know if this actually works seamlessly, derivatives may break. Surely it
+is a bit unelegant due to addx enforcing dtype uniformity. => I should stop
+enforcing uniformity after I make sure everything works with derivatives.
 
 ## Fixes and tests
 

@@ -78,7 +78,7 @@ recovers the correct hyperparameters. ::
     
     gp = makegp(truehp)
     prior = gp.prior('data')
-    data = next(gvar.raniter(prior))
+    data = gvar.sample(prior)
     
     fig, ax = plt.subplots(num='lsqfitgp example')
     

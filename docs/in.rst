@@ -71,7 +71,7 @@ prior. ::
     gp.addx(xy, 'foo')
     
     prior = gp.prior('foo')
-    sample = next(gvar.raniter(prior))
+    sample = gvar.sample(prior)
 
 We plot the sample following the `matplotlib 3d tutorial
 <https://matplotlib.org/tutorials/toolkits/mplot3d.html#sphx-glr-tutorials-toolk
@@ -105,7 +105,7 @@ quadratic along :math:`y`::
     gp.addx(xy, 'foo')
     
     prior = gp.prior('foo')
-    sample = next(gvar.raniter(prior))
+    sample = gvar.sample(prior)
     
     ax.cla()
     ax.plot_surface(xy['x'], xy['y'], sample, cmap='viridis')
@@ -137,7 +137,7 @@ the appropriate length. ::
     gp.addx(xy, 'foo')
     
     prior = gp.prior('foo')
-    sample = next(gvar.raniter(prior))
+    sample = gvar.sample(prior)
     
     ax.cla()
     ax.plot_surface(xy['foo'][..., 0], xy['foo'][..., 1], sample, cmap='viridis')

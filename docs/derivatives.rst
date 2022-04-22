@@ -53,7 +53,7 @@ from the prior::
     fig, ax = plt.subplots(num='lsqfitgp example')
     
     y = gp.prior()
-    sample = next(gvar.raniter(y))
+    sample = gvar.sample(y)
     
     ax.plot(x, sample['foo'], label='function')
     ax.plot(x, sample['bar'], label='derivative', linestyle='--')

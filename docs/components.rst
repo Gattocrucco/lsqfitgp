@@ -47,7 +47,7 @@ Let's see. We first generate some data::
     gp.addx(x, 'pinguini')
     
     prior = gp.prior('pinguini')
-    y = next(gvar.raniter(prior))
+    y = gvar.sample(prior)
     
     fig, ax = plt.subplots(num='lsqfitgp example')
     
@@ -154,7 +154,7 @@ on the sum as before::
     addxcomp(xplot, 'plot')
     
     dataprior = gp.prior(['data' + k for k in keys])
-    y = next(gvar.raniter(dataprior))
+    y = gvar.sample(dataprior)
     
     post = gp.predfromdata({
         'datasum': y['datasum']
@@ -225,7 +225,7 @@ We specified the processes using the ``proc`` parameter of :meth:`GP.addx`.
 Then we continue as before::
 
     dataprior = gp.prior(['datalong', 'datashort', 'datasum'])
-    y = next(gvar.raniter(dataprior))
+    y = gvar.sample(dataprior)
     
     post = gp.predfromdata({
         'datasum': y['datasum']
