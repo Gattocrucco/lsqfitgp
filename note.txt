@@ -144,3 +144,13 @@ Bug found: I was passing the prior through the nonlinear function and then
 sampling, instead of sampling and then passing the sample through the nonlinear
 function. Since the prior is wide, it was being affected a lot by the
 nonlinearity.
+
+--------
+
+Next thing to do: pdf6.py, fit hyperparameters and quadratic data together. I
+foresee that it will be slow because I can't take derivatives through lsqfit
+with autograd. I should read how lsqfit.empbayes_fit is implemented.
+
+Actually, I could first add errors to M and M2 instead of fitting kernel
+hyperparameters.
+

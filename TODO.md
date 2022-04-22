@@ -20,9 +20,11 @@ arctangent to make a uniform prior over the interval.
 
 A chapter on propagation, from simple GP-only to nonlinear with multiple fits.
 
-mi sono accorto che lepage già praticamente faceva la stessa cosa che
-faccio io nell'esempio "y has no errors, marginalization". Comunque si chiama
-"regola di Matheron".
+mi sono accorto che lepage già praticamente faceva la stessa cosa che faccio io
+nell'esempio "y has no errors, marginalization". Comunque si chiama "regola di
+Matheron". I wonder if Lepage knows that what he's doing is a special case of
+Gaussian processes, maybe he's reinventing everything himself because he's
+smart.
 
 Non usare x e y per il kernel perché non si capisce, usare x_1 e x_2.
 Aggiungere che il manuale richiede conoscenze di base di algebra lineare e
@@ -37,6 +39,8 @@ e le formule sono analitiche e scritte chiaramente.
 
 In the nonlinear model chapter, after generating fake data, add a remark that
 the nonlinear transformation must be applied *after* sampling the prior.
+
+Add coverage checking with badge. Can I do it with github actions?
 
 ## Fixes and tests
 
@@ -398,7 +402,8 @@ It could be convenient to change the matrix multiplication order based on
 efficiency, like when using backprop vs. forward. Now I'm always doing
 forward. It should be feasible to do backward at least, for when the output
 has less axes than the inputs. The concrete recurring case would be
-sums/integrals constraints.
+sums/integrals constraints. => Maybe opt_einsum has algorithms to do more
+complicated optimization.
 
 It would be convenient if in `addtransf` you could also index the arrays. Would
 fit naturally with the numpy-based interface.

@@ -55,9 +55,11 @@ In [2]: lgp.something?
 
 ## Development
 
-Create a virtual environment and install the requirements:
+Clone the repository, create a virtual environment and install the requirements:
 
 ```sh
+$ git clone https://github.com/Gattocrucco/lsqfitgp.git
+$ cd lsqfitgp
 $ python -m venv myenv
 $ . myenv/bin/activate
 (myenv) $ pip install -r requirements.txt
