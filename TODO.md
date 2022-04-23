@@ -40,7 +40,7 @@ e le formule sono analitiche e scritte chiaramente.
 
 Add coverage checking with badge. Can I do it with github actions?
 
-After Lepage adds `BufferDict.allkeys`, update the nonlinear example.
+After Lepage adds `BufferDict.allkeys`, update the docs.
 
 Explain somewhere how to combine processes defined on different variables. I
 don't know if this actually works seamlessly, derivatives may break. Surely it

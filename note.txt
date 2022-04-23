@@ -154,3 +154,11 @@ with autograd. I should read how lsqfit.empbayes_fit is implemented.
 Actually, I could first add errors to M and M2 instead of fitting kernel
 hyperparameters.
 
+2022-04-23
+==========
+
+I must also devise a convenient extension of predfromfit for the case where I
+condition on some stuff with predfromdata and on some other with lsqfit. For
+the time being, since the sum rule constraints are exact, I think that
+conditioning twice is valid (but I should check to be sure, maybe add a test
+case).
