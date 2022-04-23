@@ -70,6 +70,9 @@ The minimum derivability warnings are annoying because there are a lot of them
 when doing nontrivial things, maybe I should put a warnings filter in GP.pred
 such that at most only one warning is emitted per call.
 
+Check that conditioning multiple times with zero errors does not change the
+result.
+
 ## Implementation details
 
 Usare l'interfaccia numpy `__array_function__` per `StructuredArray`.

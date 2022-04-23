@@ -162,3 +162,27 @@ condition on some stuff with predfromdata and on some other with lsqfit. For
 the time being, since the sum rule constraints are exact, I think that
 conditioning twice is valid (but I should check to be sure, maybe add a test
 case).
+
+--------
+
+The fit with the errors on M is not working. Two alternative explanations:
+
+  * It can't work because there is too much uncertainty. But I would expect the
+    fit to return an appropriately large sdev in this case, which is not
+    happening.
+
+  * The sheer amount of the M parameters (2700) makes the minimization "happy"
+    too early because M is easy to fit.
+
+To check this, I can hold M fixed to its mean (different from the true value
+used to generate the data) without fitting it. If the result I get is still
+nonsense, then probably it's a statistical and not a numerical problem.
+
+=> The fit makes sense. This indicates that it's a numerical problem. Possible
+quick hack: very low termination tolerance.
+
+=> The quick fix didn't work, but starting from the true values gives a good
+result, which confirms it is a numerical problem.
+
+Anyway now I found out that in the actual problem M is actually parametrized by
+just a few numbers despite being a large matrix, so whatever.

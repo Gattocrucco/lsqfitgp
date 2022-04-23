@@ -32,6 +32,7 @@ nx     = 30
 ndata  = 10
 nx2    = 30  # must be <= nx
 ndata2 = 10
+rankmcov = 9 # rank of the covariance matrix of the theory error
 
 indices = dict(
     # quark, antiquark
@@ -57,17 +58,20 @@ xtype = np.dtype([
 
 kernel = lgp.ExpQuad(dim='x') * lgp.White(dim='pid')
 
+# grid of points to which we apply the transformation
 xdata = np.empty((nflav, nx), xtype)
 xdata['pid'] = pid[:, None]
 xdata[  'x'] = np.linspace(0, 1, nx)
 
-M = np.random.randn(ndata, nflav, nx) # linear map PDF(X) -> data
-# Msdev = np.full_like(Mtrue, 0.01)
-# Mmean = Mtrue + Msdev * np.random.randn(*Merr.shape)
-# M = gvar.gvar(Mean, Msdev)
+# linear map PDF(X) -> data
+Mcomps = np.random.randn(rankmcov, ndata, nflav, nx) / np.sqrt(rankmcov * nflav * nx)
+Mparams = gvar.gvar(np.random.randn(rankmcov), np.full(rankmcov, 0.1))
+M = lambda params: np.tensordot(params, Mcomps, 1)
 
-A = np.random.randn(ndata2, nflav, nx2, nx2)
-M2 = np.einsum('dfxz,dfyz->dfxy', A, A) # quadratic map PDF(X) -> data2
+# quadratic map PDF(X) -> data2
+M2 = np.random.randn(ndata2, nflav, nx2, nx2) / np.sqrt(2 * nflav * nx2 * nx2)
+M2 = (M2 + np.swapaxes(M2, -1, -2)) / 2
+# M2 = np.einsum('dfxz,dfyz->dfxy', A, A)
 # Why am I using a positive definite M2? Habit I guess.
 
 xinteg = np.empty((nflav, 2), xtype)
@@ -100,7 +104,7 @@ gp.addproctransf({
 
 # data
 gp.addx(xdata, 'xdata', proc='f')
-gp.addtransf({'xdata': M}, 'data', axes=2)
+gp.addtransf({'xdata': M(gvar.mean(Mparams))}, 'data', axes=2)
 
 # total momentum rule
 gp.addx(xinteg, 'xmomrule', proc='primitive of xf(x)')
@@ -120,7 +124,10 @@ for quark in 'ducs':
 def fcn(params):
     
     xdata = params['xdata']
-    data = np.tensordot(M, xdata, 2)
+    Mparams = params['Mparams']
+    
+    data = np.tensordot(M(Mparams), xdata, 2)
+    
     # data2 = np.einsum('dfxy,fx,fy->d', M2, xdata, xdata)
     xdata2 = xdata[:, None, :nx2] * xdata[:, :nx2, None]
     data2 = np.tensordot(M2, xdata2, 3)
@@ -128,6 +135,7 @@ def fcn(params):
     return dict(data=data, data2=data2)
 
 params_prior = gp.predfromdata(constraints, ['xdata'])
+params_prior['Mparams'] = Mparams
 
 #### GENERATE FAKE DATA ####
 
@@ -139,8 +147,8 @@ datamean = gvar.BufferDict({
     'data2': fcnsample['data2'],
 })
 dataerr = gvar.BufferDict({
-    'data' : np.full(ndata ,   1),
-    'data2': np.full(ndata2, 100),
+    'data' : np.full(ndata , 0.1),
+    'data2': np.full(ndata2, 0.1),
 })
 datamean.buf += dataerr.buf * np.random.randn(*dataerr.buf.shape)
 data = gvar.gvar(datamean, dataerr)
@@ -162,11 +170,11 @@ check_integrals(xdata['x'], priorsample['xdata'])
 #### FIT ####
 
 # find the minimization starting point with a simplified version of the fit
-easyfit = gp.predfromdata(dict(data=data['data'], **constraints), list(params_prior.keys()))
+easyfit = gp.predfromdata(dict(data=data['data'], **constraints), ['xdata'])
 p0 = gvar.mean(easyfit)
 
 fit = lsqfit.nonlinear_fit(data, fcn, params_prior, p0=p0, verbose=2)
-print(fit.format(maxline=True))
+print(fit.format(maxline=True, pstyle='v'))
 print(fit.format(maxline=-1))
 
 pred = fcn(fit.p)
@@ -176,10 +184,12 @@ check_integrals(xdata['x'], fit.p['xdata'])
 
 #### PLOT RESULTS ####
 
-fig, axs = plt.subplots(1, 3, num='pdf6', clear=True, figsize=[12, 4.5])
+fig, axs = plt.subplots(2, 2, num='pdf6', clear=True, figsize=[9, 8])
+axs = axs.flat
 axs[0].set_title('PDFs')
 axs[1].set_title('Data')
 axs[2].set_title('Data (quadratic)')
+axs[3].set_title('M parameters')
 
 for i in range(nflav):
     
@@ -202,14 +212,26 @@ for i in range(nflav):
 
 axs[0].legend(fontsize='small')
 
-for ax, label in zip(axs[1:], ['data', 'data2']):
+for ax, label in zip(axs[1:3], ['data', 'data2']):
     
     m = gvar.mean(pred[label])
     s = gvar.sdev(pred[label]) if len(m) else []
     x = np.arange(len(m))
-    ax.fill_between(x, m - s, m + s, step='mid', color='lightgray')
-    ax.errorbar(x, datamean[label], dataerr[label], color='black', linestyle='', capsize=2)
-    ax.plot(x, fcnsample[label], drawstyle='steps-mid', color='black')
+    ax.fill_between(x, m - s, m + s, step='mid', color='lightgray', label='fit')
+    ax.errorbar(x, datamean[label], dataerr[label], color='black', linestyle='', capsize=2, label='data')
+    ax.plot(x, fcnsample[label], drawstyle='steps-mid', color='black', label='truth')
+
+axs[1].legend()
+
+ax = axs[3]
+p = fit.p['Mparams']
+m = gvar.mean(p)
+s = gvar.sdev(p) if len(m) else []
+x = np.arange(len(m))
+ax.fill_between(x, m - s, m + s, step='mid', color='lightgray')
+p = params_prior['Mparams']
+ax.errorbar(x, gvar.mean(p), gvar.sdev(p), color='black', linestyle='', capsize=2)
+ax.plot(x, priorsample['Mparams'], drawstyle='steps-mid', color='black')
 
 fig.tight_layout()
 fig.show()
