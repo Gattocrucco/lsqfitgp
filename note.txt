@@ -219,3 +219,13 @@ If I did things manually, maybe I could take into account that the jacobian is
 split in two blocks, one the identity and one dense, and then multiplied by
 something. If this something is a diagonalization instead of cholesky then
 maybe I can obtain the svd of the jacobian.
+
+2022-04-25
+==========
+
+If I set p0 in fitargs of lsqfit.empbayes_fit, will it still adapt p0
+automatically? => Yes, it works.
+
+Idea: since I know the components of M and M2, could I first transform the grid
+of points for each component? => Maybe it is not doable for the quadratic data,
+and moreover in the real problem there are more datapoints than grid points.

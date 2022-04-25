@@ -17,7 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Run the scripts given on the command line and saves the figures produced."""
+"""Run the scripts given on the command line and saves the figures produced
+in the same directory of each corresponding script."""
 
 import sys
 import os

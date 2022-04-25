@@ -1,12 +1,14 @@
 """Fit of parton distributions functions (PDFs)
 
-Like pdf5, but with uncertainties on M and M2"""
+Like pdf6, but with hyperparameters"""
 
 import lsqfitgp as lgp
 import numpy as np
+from scipy import linalg
 from matplotlib import pyplot as plt
 import gvar
 import lsqfit
+import time
 
 np.random.seed(20220416)
 
@@ -61,7 +63,11 @@ xtype = np.dtype([
     ('pid', int  ),
 ])
 
-kernel = lgp.ExpQuad(dim='x') * lgp.White(dim='pid')
+hyperprior = {
+    'log(scale)': np.log(gvar.gvar(0.5, 0.5)),
+}
+def makekernel(hp):
+    return lgp.ExpQuad(dim='x', scale=hp['scale']) * lgp.White(dim='pid')
 
 # grid of points to which we apply the transformation
 xdata = np.empty((nflav, nx), xtype)
@@ -91,6 +97,9 @@ suminteg = np.empty(xinteg.shape)
 suminteg[:, 0] = -1
 suminteg[:, 1] =  1
 
+# matrix to subtract two quarks
+qdiff = np.array([1, -1])[:, None]
+
 constraints = {
     'momrule': 1,
     'uubar'  : 2,
@@ -101,38 +110,41 @@ constraints = {
 
 #### GP OBJECT ####
 
-gp = lgp.GP()
+def makegp(hp):
+    gp = lgp.GP()
 
-gp.addproc(kernel, 'h')
-gp.addproctransf({'h': 1}, 'primitive', deriv='x'     )
-gp.addproctransf({'h': 1}, 'f'        , deriv=(2, 'x'))
-gp.addproctransf({
-    'primitive': lambda x: x['x'],
-    'h'        : -1,
-}, 'primitive of xf(x)')
+    kernel = makekernel(hp)
+    
+    gp.addproc(kernel, 'h')
+    gp.addproctransf({'h': 1}, 'primitive', deriv='x'     )
+    gp.addproctransf({'h': 1}, 'f'        , deriv=(2, 'x'))
+    gp.addproctransf({
+        'primitive': lambda x: x['x'],
+        'h'        : -1,
+    }, 'primitive of xf(x)')
 
-gp.addx(xdata, 'xdata', proc='f')
+    gp.addx(xdata, 'xdata', proc='f')
 
-# linear data (used for warmup fit)
-gp.addtransf({'xdata': M(gvar.mean(Mparams))}, 'data', axes=2)
+    # linear data (used for warmup fit)
+    gp.addtransf({'xdata': M(gvar.mean(Mparams))}, 'data', axes=2)
 
-# total momentum rule
-gp.addx(xinteg, 'xmomrule', proc='primitive of xf(x)')
-gp.addtransf({'xmomrule': suminteg}, 'momrule', axes=2)
+    # total momentum rule
+    gp.addx(xinteg, 'xmomrule', proc='primitive of xf(x)')
+    gp.addtransf({'xmomrule': suminteg}, 'momrule', axes=2)
 
-# quark sum rules
-qdiff = np.array([1, -1])[:, None] # vector to subtract two quarks
-for quark in 'ducs':
-    idx = indices[quark] # [quark, antiquark] indices
-    label = f'{quark}{quark}bar' # the one appearing in `constraints`
-    xlabel = f'x{label}'
-    gp.addx(xinteg[idx], xlabel, proc='primitive')
-    gp.addtransf({xlabel: suminteg[idx] * qdiff}, label, axes=2)
+    # quark sum rules
+    for quark in 'ducs':
+        idx = indices[quark] # [quark, antiquark] indices
+        label = f'{quark}{quark}bar' # the one appearing in `constraints`
+        xlabel = f'x{label}'
+        gp.addx(xinteg[idx], xlabel, proc='primitive')
+        gp.addtransf({xlabel: suminteg[idx] * qdiff}, label, axes=2)
+    
+    return gp
     
 #### NONLINEAR FUNCTION ####
 
 def fcn(params):
-    
     xdata = params['xdata']
     Mparams = params['Mparams']
     M2params = params['M2params']
@@ -146,18 +158,24 @@ def fcn(params):
     
     return dict(data=data, data2=data2)
 
-prior = gp.predfromdata(constraints, ['xdata'])
-prior['Mparams'] = Mparams
-prior['M2params'] = M2params
+def makeprior(gp):
+    prior = gp.predfromdata(constraints, ['xdata'])
+    prior['Mparams'] = Mparams
+    prior['M2params'] = M2params
+    return prior
 
 #### FAKE DATA ####
 
-trueparams = gvar.sample(prior)
-truedata = gvar.BufferDict(fcn(trueparams))
+truehp = gvar.sample(hyperprior)
+truegp = makegp(truehp)
+trueparams = gvar.sample(makeprior(truegp))
+truedata = fcn(trueparams)
 
-dataerr = np.full_like(truedata.buf, 0.1)
-datamean = truedata.buf + dataerr * np.random.randn(*dataerr.shape)
-data = gvar.BufferDict(truedata, buf=gvar.gvar(datamean, dataerr))
+dataerr = {
+    k: np.full_like(v, 0.1 * (np.max(v) - np.min(v)))
+    for k, v in truedata.items()
+}
+data = gvar.make_fake_data(gvar.gvar(truedata, dataerr))
 
 # check sum rules approximately with trapezoid rule
 def check_integrals(x, y):
@@ -176,21 +194,64 @@ check_integrals(xdata['x'], trueparams['xdata'])
 #### FIT ####
 
 # find the minimization starting point with a simplified version of the fit
-easyfit = gp.predfromdata(dict(data=data['data'], **constraints), ['xdata'])
+easyfit = truegp.predfromdata(dict(data=data['data'], **constraints), ['xdata'])
 p0 = gvar.mean(easyfit)
 
-fit = lsqfit.nonlinear_fit(data, fcn, prior, p0=p0, verbose=2)
+hyperprior = gvar.BufferDict(hyperprior)
+hypermean = gvar.mean(hyperprior.buf)
+hypercov = gvar.evalcov(hyperprior.buf)
+hyperchol = linalg.cholesky(hypercov)
+
+i = 0
+lasttime = time.time()
+def analyzer(hp):
+    global i, lasttime
+    i += 1
+    now = time.time()
+    interval = now - lasttime
+    print(f'iteration {i:3d} ({interval:#.2g} s): {hp}')
+    lasttime = now
+
+def fitargs(hp):
+    analyzer(hp)
+    gp = makegp(hp)
+    prior = makeprior(gp)
+    args = dict(
+        data = data,
+        fcn = fcn,
+        prior = prior,
+        p0 = p0,
+    )
+    residuals = linalg.solve_triangular(hyperchol, hp.buf - hypermean)
+    plausibility = -1/2 * (residuals @ residuals)
+    return args, plausibility
+
+z0 = gvar.mean(hyperprior)
+fit, fithp = lsqfit.empbayes_fit(z0, fitargs)
 print(fit.format(maxline=True, pstyle='v'))
 print(fit.format(maxline=-1))
 
+gp = makegp(fithp)
+prior = makeprior(gp)
 pred = fcn(fit.p)
 
 print('check integrals in fit:')
 check_integrals(xdata['x'], fit.p['xdata'])
 
+def allkeys(d):
+    for k in d:
+        yield k
+        m = d.extension_pattern.match(k)
+        if m and d.has_distribution(m.group(1)):
+            yield m.group(2)
+
+print('\nhyperparameters (true, fitted):')
+for k in allkeys(fithp):
+    print(f'{k}: {truehp[k]:#.2g}\t{fithp[k]:#.2g}')
+
 #### PLOT RESULTS ####
 
-fig, axs = plt.subplots(2, 3, num='pdf6', clear=True, figsize=[13, 8])
+fig, axs = plt.subplots(2, 3, num='pdf7', clear=True, figsize=[13, 8])
 axs[0, 0].set_title('PDFs')
 axs[1, 0].set_title('PDFs')
 axs[0, 1].set_title('Data')

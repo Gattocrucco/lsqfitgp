@@ -70,6 +70,11 @@ such that at most only one warning is emitted per call.
 Check that conditioning multiple times with zero errors does not change the
 result.
 
+I should port to gvar the formatting function I wrote for uncertainties-cpp,
+adapt it for format-strings, and then propose it as enhancement to gvar.
+The new function would be used only if specifying a nonempty format string,
+such that old tests continue to print the expected text.
+
 ## Implementation details
 
 Usare l'interfaccia numpy `__array_function__` per `StructuredArray`.
@@ -203,6 +208,10 @@ to be one.
 When there are many parameters, it may be more convenient to compute the
 jacobian backward for the model function instead of forward for the whole
 residuals function, and then apply manually the whitening.
+
+When I do minimization over a nonlinear minimization, is it feasible to
+compute the derivative w.r.t. the covariance matrix? Otherwise I would have to
+resort to dicrete derivatives (very very slow with many hyperparameters!)
 
 ### Hyperparameters
 
