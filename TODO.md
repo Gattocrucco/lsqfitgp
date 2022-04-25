@@ -209,9 +209,11 @@ When there are many parameters, it may be more convenient to compute the
 jacobian backward for the model function instead of forward for the whole
 residuals function, and then apply manually the whitening.
 
-When I do minimization over a nonlinear minimization, is it feasible to
-compute the derivative w.r.t. the covariance matrix? Otherwise I would have to
-resort to dicrete derivatives (very very slow with many hyperparameters!)
+When I do minimization over a nonlinear minimization, is it feasible to compute
+the derivative w.r.t. the covariance matrix? Otherwise I would have to resort
+to dicrete derivatives (very very slow with many hyperparameters!) => It is
+probably fine if I compute the derivative with the local linearization in the
+minimum, like I'm doing in lsqfitgp.empbayes_fit.
 
 ### Hyperparameters
 
@@ -330,6 +332,8 @@ example for 1/(1-x) or -log(1-x). I wouldn't like to entrust the user to do
 operations in the right sequence with a positive Taylor series at the end.
 Simplest way: add operations as Kernel methods. Some numpy ufuncs would
 even recognize this and so for example np.tan(kernel) would work.
+
+Look at what the Schoenberg theorem is (seen in seminar by Théo Galy-Fajou)
 
 ### New specific kernels
 
