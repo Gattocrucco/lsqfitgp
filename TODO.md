@@ -60,9 +60,6 @@ Test recursive dtype support.
 
 Lower thresholds in linalg tests.
 
-gvar.BufferDict should have a prettier repr on the IPython shell. Is there a
-standard way to configure a pretty print?
-
 per ovviare al bug della moltiplicazione per scalare del kernel con
 autograd, aggiungere dei metodi pubblici espliciti per comporre i kernel
 
@@ -203,6 +200,10 @@ the gradient of something then I can use backprop and it becomes efficient? The
 formula is similar to a gradient but actually has indices in the wrong places
 to be one.
 
+When there are many parameters, it may be more convenient to compute the
+jacobian backward for the model function instead of forward for the whole
+residuals function, and then apply manually the whitening.
+
 ### Hyperparameters
 
 In empbayes_fit per fare la propagazione devo mettermi lì e calcolare le
@@ -258,7 +259,14 @@ parametro buf posso passare l'array di JAX senza pluggare jax.np dentro il
 codice di gvar. Il problema è come supportare le trasformazioni, quelle invece
 richiedono una funzione che si succhi array di oggetti (no jax) però vorrei che
 supportasse gli array di JAX. Forse bisogna rompere a Lepage, però bisogna che
-venga un meccanismo generico anziché un paciugo che supporta solo JAX.
+venga un meccanismo generico anziché un paciugo che supporta solo JAX. =>
+Actually it is not possible with the current BufferDict implementation
+to pass through a JAX array, because BufferDict attempts a numpy array
+conversion
+
+I could write a function that converts a JAX function to a gvar function. Then
+I could do a version of lsqfit.nonlinear_fit that provides the gvar version of
+the jax function provided by the user.
 
 ### Weird input
 
@@ -448,9 +456,17 @@ It would be complicated in full generality. I could just implement someway
 Fourier(Derivative) = Multiplication(Fourier), I bet this would turn out
 useful. Also Derivative(Taylor) = Multiplication(Taylor), etc.
 
-#### Taylor
+#### Other infinite transformations
 
-Define custom transformations for the "Taylor" kernel.
+Taylor: write a custom transformation for the `Taylor` kernel.
+
+Mellin transform?
+
+Any orthogonal complete set that admits an analytically summable series with a
+family of random access sequences of coefficients is ok.
+
+In general I could write a method "diagonalization" that generates
+cross-covariances with a basis that diagonalizes a kernel.
 
 ### Classification
 

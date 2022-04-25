@@ -22,8 +22,8 @@ Cose da fare per le PDF:
 
 1)  Mi invento io delle funzioni e dei dati dal culo e faccio un fit,
     solo roba lineare (FATTO)
-2)  Aggiungo roba quadratica (sempre dal culo)
-3)  Aggiungo l'errore sulle M
+2)  Aggiungo roba quadratica (sempre dal culo) (FATTO)
+3)  Aggiungo l'errore sulle M (FATTO)
 4)  Uso delle PDF vere anziché culiche
 5)  Aggiungo i dati veri
 
@@ -186,3 +186,36 @@ result, which confirms it is a numerical problem.
 
 Anyway now I found out that in the actual problem M is actually parametrized by
 just a few numbers despite being a large matrix, so whatever.
+
+To do next time: pdf7.py, i.e., fit hyperparameters on top of nonlinear fit
+(will be damn slow!)
+
+Following steps:
+  * pdf8.py scale the number of datapoints/parameters to a realistic one
+  * pdf9.py change the fake data, the grids and the kernel to realistic ones
+
+--------
+
+I did a quick benchmark of pdf6. Most of the time is spent in evaluating the
+jacobian of the model function with gvar. Time per call:
+
+    fcn(floats): 200 us
+    fcn(gvars): 230 ms
+    forward jacobian with jax: 30 ms
+    backward jacobian with jax: 3 ms
+    jacobian with autograd: seconds
+
+I don't expect to find a way to easily optimize the gvar calculation. 7 times
+slower than the compiled jax version seems already quite good considering it's
+naive sparse operations.
+
+The other half of the time spent by the fit is computing as svd in trf, I
+assume it's the svd of the jacobian. So even optimizing the derivative
+calculation would give at most a factor of two. Maybe there are other faster
+methods in least_squares for a large dense jacobian? => maybe lm? look also
+into GSL
+
+If I did things manually, maybe I could take into account that the jacobian is
+split in two blocks, one the identity and one dense, and then multiplied by
+something. If this something is a diagonalization instead of cholesky then
+maybe I can obtain the svd of the jacobian.

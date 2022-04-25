@@ -59,7 +59,8 @@ only overcome with approximations or specialized algorithms. If you need to
 handle a lot of datapoints, `pymc3
 <https://docs.pymc.io/notebooks/GP-Kron.html>`_ has some support for separable
 kernels on grids, while `celerite
-<https://celerite.readthedocs.io/en/stable/>`_ implements Fourier kernels in 1D.
+<https://celerite.readthedocs.io/en/stable/>`_ implements harmonic oscillators
+in 1D.
 
 Now we put ``xy`` into a :class:`GP` as usual and extract a sample from the
 prior. ::
