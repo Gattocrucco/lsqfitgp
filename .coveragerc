@@ -1,7 +1,0 @@
-[run]
-branch=True
-source =
-    lsqfitgp
-
-[report]
-show_missing=True

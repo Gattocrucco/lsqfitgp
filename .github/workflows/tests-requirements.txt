@@ -1,7 +1,0 @@
-numpy
-scipy
-gvar
-lsqfit
-autograd
-pytest
-coverage
