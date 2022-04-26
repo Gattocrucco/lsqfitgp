@@ -1,6 +1,6 @@
 [![Documentation Status](https://readthedocs.org/projects/lsqfitgp/badge/?version=latest)](https://lsqfitgp.readthedocs.io/en/latest/?badge=latest)
-![PyPI](https://img.shields.io/pypi/v/lsqfitgp)
-![Tests](https://github.com/Gattocrucco/lsqfitgp/actions/workflows/tests.yml/badge.svg)
+[![PyPI](https://img.shields.io/pypi/v/lsqfitgp)](https://pypi.org/project/lsqfitgp/)
+[![Tests](https://github.com/Gattocrucco/lsqfitgp/actions/workflows/tests.yml/badge.svg)](https://github.com/Gattocrucco/lsqfitgp/actions/workflows/tests.yml)
 
 # lsqfitgp
 
