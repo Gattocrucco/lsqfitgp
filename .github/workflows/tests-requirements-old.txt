@@ -1,0 +1,7 @@
+numpy<1.16
+scipy<1.1
+gvar<11
+lsqfit<12
+autograd
+pytest
+coverage
