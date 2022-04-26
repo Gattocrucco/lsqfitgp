@@ -42,8 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      # - name: Checkout repository
-      #   uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
       - name: Get coverage report
         uses: actions/download-artifact@v3
         with:
@@ -54,15 +54,9 @@ jobs:
           pwd
           ls
           ls htmlcov
-      - name: Move files into directory structure
-        run: |
-          mkdir public
-          mv htmlcov public/
-      - name: List files again
-        run: |
-          ls public
-          ls public/htmlcov
       - name: Copy report to github pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          folder: htmlcov
+          target-folder: htmlcov
