@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest] #, windows-latest, macos-latest]
         python-version: ["3.10"]
 
     steps:
@@ -30,8 +30,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r .github/workflows/tests-requirements.txt
     - name: Test with pytest
-      run: |
-        make tests
+      run: make tests
     - name: Save coverage report
       uses: actions/upload-artifact@v3
       with:
@@ -47,6 +46,9 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: coverage-report-ubuntu-latest-py3.10
+      - run: |
+          pwd
+          ls -al
       - name: Copy coverage to github pages
         uses: crazy-max/ghaction-github-pages@v2.6.0
         with:

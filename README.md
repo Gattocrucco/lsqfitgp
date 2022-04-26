@@ -76,3 +76,7 @@ available targets: upload release tests examples docscode docs
 release = tests examples docscode docs (in order)
 $ make tests # or make examples, or ...
 ```
+
+The tests are run on each push and the resulting coverage report is visible
+online [here](https://gattocrucco.github.io/lsqfitgp/htmlcov/). To browse it
+locally after `make tests`, open `htmlcov/index.html` in your browser.
