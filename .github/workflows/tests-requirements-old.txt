@@ -1,6 +1,6 @@
-numpy<1.16
-scipy<1.1
-gvar<11
+numpy<1.19
+scipy<1.4
+gvar==11.4
 lsqfit<12
 autograd
 pytest
