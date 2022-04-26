@@ -38,7 +38,9 @@ l'interpretazione bayesiana della correlazione tra i risultati? Forse queste
 cose è meglio se le studio prima su lsqfitgp che è equivalente a un fit lineare
 e le formule sono analitiche e scritte chiaramente.
 
-Add coverage checking with badge. Can I do it with github actions?
+Add coverage checking with badge. Can I do it with github actions? Also add
+automatic run of tests, possibly also with minimum supported versions of the
+dependencies.
 
 After Lepage adds `BufferDict.allkeys`, update the docs.
 
