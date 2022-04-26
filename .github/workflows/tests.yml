@@ -55,7 +55,7 @@ jobs:
           ls -a
           ls -a htmlcov
       - name: Remove gitignore file
-        run: rm .gitignore
+        run: rm htmlcov/.gitignore
       - name: Copy report to github pages
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
