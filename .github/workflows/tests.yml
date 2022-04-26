@@ -52,8 +52,10 @@ jobs:
       - name: List files
         run: |
           pwd
-          ls
-          ls htmlcov
+          ls -a
+          ls -a htmlcov
+      - name: Remove gitignore file
+        run: rm .gitignore
       - name: Copy report to github pages
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
