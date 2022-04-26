@@ -35,7 +35,7 @@ def make_mean_cov(n):
 def test_raniter_randomness():
     n = 40
     mean, cov = make_mean_cov(n)
-    samples = list(lgp.raniter(mean, cov, 200))
+    samples = list(lgp.raniter(mean, cov, 10 * n))
     smean = np.mean(samples, axis=0)
     scov = np.cov(samples, rowvar=False, ddof=1)
     w, v = np.linalg.eigh(scov / len(samples))
