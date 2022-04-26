@@ -54,7 +54,7 @@ def pred(kw, seed, err):
     return mean, cov
 
 def assert_close(x, y):
-    assert np.allclose(x, y)
+    np.testing.assert_allclose(x, y, rtol=1e-05, atol=1e-08)
 
 def assert_close_cov(a, b, stol, mtol):
     assert np.sqrt(np.sum((a - b) ** 2) / a.size) < stol
@@ -99,7 +99,7 @@ def {}():
         m1, cov1 = pred({}, seed, True)
         m2, cov2 = pred({}, seed, True)
         assert_close(m1, m2)
-        assert_close_cov(cov1, cov2, 4e-3, 5e-6)
+        assert_close_cov(cov1, cov2, 5e-3, 5e-6)
 """.format('test_pred_err' + postfix(kw1, kw2), kw1, kw2)
     
     if kw1['fromdata'] == kw2['fromdata']:
@@ -115,5 +115,5 @@ def test_double_pred():
     ay = gvar.gvar(np.random.randn(n), m.T @ m)
     m1, cov1 = gp.predfromdata({'a': ay}, 'b', raw=True)
     m2, cov2 = gp.predfromfit(gp.predfromdata({'a': ay}, ['a']), 'b', raw=True)
-    assert_close(m1, m2)
-    assert_close_cov(cov1, cov2, 1e-3, 1e-6)
+    assert_close(m2, m1)
+    assert_close_cov(cov2, cov1, 1e-3, 1e-6)
