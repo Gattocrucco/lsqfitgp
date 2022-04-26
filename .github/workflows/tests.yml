@@ -46,6 +46,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: coverage-report-ubuntu-latest-py3.10
+          path: htmlcov
       - run: |
           pwd
           ls -al
