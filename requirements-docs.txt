@@ -1,0 +1,8 @@
+numpy
+scipy
+matplotlib
+gvar
+lsqfit
+autograd
+sphinx
+numpydoc

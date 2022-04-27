@@ -54,6 +54,9 @@ directory in gh-pages. Advantages compared to readthedocs:
     without keeping images commited to the repository and stop worrying about
     changing matplotlib version and rng generators
 
+=> Almost ok apart from the last figure in components.rst. But example z
+works fine. ???
+
 ## Fixes and tests
 
 Go through the coverage and add tests to cover untested lines.
