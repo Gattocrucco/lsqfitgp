@@ -108,7 +108,7 @@ jobs:
   postcov:
 
     runs-on: ubuntu-latest
-    needs: [tests, docs]
+    needs: [tests]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -126,9 +126,19 @@ jobs:
           name: coverage
       - name: List files
         run: |
+          pwd
           ls -a
+          ls lsqfitgp
+      - name: Print coverage debug
+        run: |
+          coverage debug config
+          coverage debug sys
+          coverage debug data
       - name: Generate coverage report
-        run: make covreport
+        # run: make covreport
+        run: |
+          coverage combine
+          coverage html --show-contexts --ignore-errors
       - name: Remove gitignore file
         run: rm htmlcov/.gitignore
       - name: Copy report to github pages
