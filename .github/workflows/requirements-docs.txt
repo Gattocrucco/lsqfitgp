@@ -6,3 +6,4 @@ lsqfit
 autograd
 sphinx
 numpydoc
+coverage
