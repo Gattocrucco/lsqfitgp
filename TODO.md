@@ -45,6 +45,15 @@ don't know if this actually works seamlessly, derivatives may break. Surely it
 is a bit unelegant due to addx enforcing dtype uniformity. => I should stop
 enforcing uniformity after I make sure everything works with derivatives.
 
+Write a github CI job that builds the documentation and puts it in a new
+directory in gh-pages. Advantages compared to readthedocs:
+
+  * I can use the latest version of sphinx and install all dependencies
+  * I can stop mocking up everything in `lsqfitgp/_imports.py`
+  * I can run examples and documentation code to build the documentation
+    without keeping images commited to the repository and stop worrying about
+    changing matplotlib version and rng generators
+
 ## Fixes and tests
 
 Go through the coverage and add tests to cover untested lines.
@@ -80,8 +89,10 @@ Usare l'interfaccia numpy `__array_function__` per `StructuredArray`.
 Chiamare GP -> _GPBase e poi fare una sottoclasse GP e mettere tutti i metodi
 di convenienza che non accedono a cose interne in GP.
 
-Usare i template descritti nell'articolo di scikit-hep che era uscito
-sull'arxiv, in particolare per configurare i test con le github actions.
+Fare una github action che carica la release su PyPI quando faccio la release
+su github. => Non è che però è un rischio? In questo modo il mio account
+github controllerebbe cosa finisce su PyPI perché dovrei metterci le chiavi di
+accesso. Dovrei attivare l'autenticazione a due fattori.
 
 ## New functionality
 
