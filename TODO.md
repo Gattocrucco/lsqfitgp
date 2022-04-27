@@ -58,7 +58,8 @@ does not show this behaviour, it's linear as expected. => Update: the cholesky
 decomp seems to take 250 ms in gvar.raniter too, but already in the first
 call. Idea: my laptop has 2 "efficiency cores", maybe it's using them in a
 weird way I can't predict. But why wouldn't this happen when I just call
-linalg.cholesky?
+linalg.cholesky? => Activity monitor shows I'm using all cores when running
+a timeit of lgp.raniter, so nope.
 
 ## Fixes and tests
 
