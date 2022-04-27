@@ -20,8 +20,8 @@
 import itertools
 import warnings
 
-from ._imports import gvar
-from ._imports import numpy as np
+import gvar
+from autograd import numpy as np
 
 from . import _linalg
 

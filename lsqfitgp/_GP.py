@@ -22,10 +22,10 @@ import sys
 import builtins
 import abc
 
-from ._imports import gvar
-from ._imports import numpy as np
-from ._imports import linalg
-from ._imports import isinstance
+import gvar
+from autograd import numpy as np
+from autograd.scipy import linalg
+from autograd.builtins import isinstance
 
 from . import _Kernel
 from . import _linalg

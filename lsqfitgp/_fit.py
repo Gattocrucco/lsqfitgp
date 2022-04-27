@@ -19,10 +19,10 @@
 
 import warnings
 
-from ._imports import gvar
-from ._imports import numpy as np
-from ._imports import autograd
-from ._imports import optimize
+import gvar
+import autograd
+from autograd import numpy as np
+from scipy import optimize
 
 from . import _GP
 from . import _linalg

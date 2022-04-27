@@ -58,10 +58,10 @@ BlockDiagDecomp
 import abc
 import functools
 
-from ._imports import numpy as np
-from ._imports import linalg
-from ._imports import autograd
-from ._imports import sparse
+import autograd
+from autograd import numpy as np
+from scipy import linalg
+from scipy import sparse
 
 from . import _toeplitz_linalg
 

@@ -19,7 +19,7 @@
 
 import collections
 
-from ._imports import numpy as np
+from autograd import numpy as np
 
 __all__ = [
     'Deriv'

@@ -17,17 +17,18 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import builtins
-
-# do not use _imports here, because _imports imports this module
-import autograd
-import gvar
-from autograd import numpy as np
-
-__doc__ = """
+"""
 Module that replaces gvar.numpy with autograd.numpy, but only for bufferdict
 and ufuncs.
 """
+
+import builtins
+
+import autograd
+import gvar
+from autograd import numpy as np
+import numpy
+from scipy import linalg
 
 def switch_numpy(module):
     # oldmodule = gvar.numpy
@@ -107,3 +108,12 @@ else:
     gvar.BufferDict.add_distribution('log', gvar.exp)
     gvar.BufferDict.add_distribution('sqrt', gvar.square)
     gvar.BufferDict.add_distribution('erfinv', gvar.erf)
+
+if hasattr(gvar.SVD, '_analyzers'):
+    def scipy_eigh(x):
+        w, v = linalg.eigh(x)
+        w = numpy.abs(w)
+        si = numpy.argsort(w)
+        return w[si], v.T[si]
+    
+    gvar.SVD._analyzers = dict(scipy_eigh=scipy_eigh)

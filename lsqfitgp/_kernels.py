@@ -20,9 +20,9 @@
 import re
 import collections
 
-from ._imports import numpy as np
-from ._imports import special
-from ._imports import autograd
+import autograd
+from autograd import numpy as np
+from autograd.scipy import special
 import numpy # to bypass autograd
 
 from . import _array

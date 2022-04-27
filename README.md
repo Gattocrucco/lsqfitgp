@@ -71,13 +71,13 @@ arguments to show the available targets:
 
 ```sh
 $ make
-available targets: upload release tests examples docscode docs
+available targets: upload release tests examples docscode docs covreport
 release = tests examples docscode docs (in order)
 $ make tests # or make examples, or ...
 ```
 
-The unit tests are run on each push and the resulting coverage report is
-published online at
+The tests are run on each push and the resulting coverage report is published
+online at
 [gattocrucco.github.io/lsqfitgp/htmlcov](https://gattocrucco.github.io/lsqfitgp/htmlcov/).
-To browse it locally after `make tests`, open `htmlcov/index.html` in your
-browser.
+To browse it locally after `make tests` etc., do `make covreport` and open
+`htmlcov/index.html` in your browser.

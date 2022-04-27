@@ -47,29 +47,24 @@ autograd.numpy.array = array
 
 autograd.numpy.testing = np.testing
 
-try:
-    from scipy import special as special_noderiv
-    from autograd.scipy import special
-    
-    missing_functions = [
-        'bernoulli',
-        'binom',
-        'kv',
-        'kvp',
-        'factorial',
-        'zeta'
-    ]
-    for f in missing_functions:
-        if not hasattr(special, f):
-            wf = autograd.extend.primitive(getattr(special_noderiv, f))
-            setattr(special, f, wf)
+from scipy import special as special_noderiv
+from autograd.scipy import special
 
-    autograd.extend.defvjp(
-        special.kvp,
-        lambda ans, v, z, n: lambda g: g * special.kvp(v, z, n + 1),
-        argnums=[1]
-    )    
+missing_functions = [
+    'bernoulli',
+    'binom',
+    'kv',
+    'kvp',
+    'factorial',
+    'zeta'
+]
+for f in missing_functions:
+    if not hasattr(special, f):
+        wf = autograd.extend.primitive(getattr(special_noderiv, f))
+        setattr(special, f, wf)
 
-except (ImportError, ModuleNotFoundError):
-    pass
-    
+autograd.extend.defvjp(
+    special.kvp,
+    lambda ans, v, z, n: lambda g: g * special.kvp(v, z, n + 1),
+    argnums=[1]
+)    

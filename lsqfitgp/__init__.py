@@ -17,7 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from ._imports import numpy, scipy # keep this first
+from . import _patch_autograd
+from . import _gvar_autograd
+
+from autograd import numpy, scipy
+
 from ._GP import *
 from ._Kernel import *
 from ._kernels import *

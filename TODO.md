@@ -45,6 +45,9 @@ don't know if this actually works seamlessly, derivatives may break. Surely it
 is a bit unelegant due to addx enforcing dtype uniformity. => I should stop
 enforcing uniformity after I make sure everything works with derivatives.
 
+Check again the raniter example because gvar.raniter seems to have gotten
+much faster.
+
 ## Fixes and tests
 
 Go through the coverage and add tests to cover untested lines.

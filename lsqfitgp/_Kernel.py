@@ -21,9 +21,9 @@ import sys
 import warnings
 import copy
 
-from ._imports import autograd
-from ._imports import numpy as np
-from ._imports import isinstance
+import autograd
+from autograd import numpy as np
+from autograd.builtins import isinstance
 
 from . import _array
 from . import _Deriv
