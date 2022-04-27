@@ -32,7 +32,7 @@ __doc__ = """
 
 Module to fit Gaussian processes with gvar/lsqfit.
 
-Manual: https://lsqfitgp.readthedocs.io/en/latest
+Manual: https://gattocrucco.github.io/lsqfitgp/docs
 
 It can both be used standalone to fit data with a Gaussian process only, and
 with lsqfit inside a possibly nonlinear model with other parameters. In lsqfit

@@ -45,18 +45,6 @@ don't know if this actually works seamlessly, derivatives may break. Surely it
 is a bit unelegant due to addx enforcing dtype uniformity. => I should stop
 enforcing uniformity after I make sure everything works with derivatives.
 
-Write a github CI job that builds the documentation and puts it in a new
-directory in gh-pages. Advantages compared to readthedocs:
-
-  * I can use the latest version of sphinx and install all dependencies
-  * I can stop mocking up everything in `lsqfitgp/_imports.py`
-  * I can run examples and documentation code to build the documentation
-    without keeping images commited to the repository and stop worrying about
-    changing matplotlib version and rng generators
-
-=> Almost ok apart from the last figure in components.rst. But example z
-works fine. ???
-
 ## Fixes and tests
 
 Go through the coverage and add tests to cover untested lines.
