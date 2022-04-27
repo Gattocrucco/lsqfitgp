@@ -21,7 +21,7 @@ release: $(RELEASE_TARGETS)
 	python setup.py sdist bdist_wheel
 
 tests:
-	coverage run --context=tests$(COVERAGE_SUFFIX) --data-file=.coverage.tests$(COVERAGE_SUFFIX) -m pytest
+	COVERAGE_FILE=.coverage.tests$(COVERAGE_SUFFIX) coverage run --context=tests$(COVERAGE_SUFFIX) -m pytest
 
 EXAMPLES = $(wildcard examples/*.py)
 EXAMPLES := $(filter-out examples/runexamples.py, $(EXAMPLES))
@@ -30,10 +30,10 @@ EXAMPLES := $(filter-out examples/runexamples.py, $(EXAMPLES))
 examples: $(EXAMPLES)
 
 $(EXAMPLES):
-	coverage run --context=examples$(COVERAGE_SUFFIX) --data-file=.coverage.examples$(COVERAGE_SUFFIX) examples/runexamples.py $@
+	COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) coverage run --context=examples$(COVERAGE_SUFFIX) examples/runexamples.py $@
 
 docscode:
-	cd docs && coverage run --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX) --data-file=../.coverage.docs$(COVERAGE_SUFFIX) runcode.py *.rst
+	COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) cd docs && coverage run --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX) runcode.py *.rst
 
 docs:
 	cd docs && python kernelsref.py
