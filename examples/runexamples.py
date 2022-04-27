@@ -47,6 +47,8 @@ for file in sys.argv[1:]:
     path, name = os.path.split(file)
     base, _ = os.path.splitext(name)
     prefix = os.path.join(path, 'plot', base)
+    directory, _ = os.path.split(prefix)
+    os.makedirs(directory, exist_ok=True)
     for num in nums:
         fig = plt.figure(num)
         suffix = f'-{num}' if num > 1 else ''
