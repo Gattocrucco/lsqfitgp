@@ -75,7 +75,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
                 continue
             d = (deriv, 'f0') if nd else deriv
             cov = kernel.diff(d, d)(x[None, :], x[:, None])
-            assert np.allclose(cov, cov.T)
+            np.testing.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-8)
             eigv = linalg.eigvalsh(cov)
             assert np.min(eigv) >= -len(cov) * self.eps * np.max(eigv)
     

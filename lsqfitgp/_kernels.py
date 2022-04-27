@@ -601,19 +601,24 @@ def Fourier(x, y, n=2):
     """
     
     # TODO maxk parameter to truncate the series. I have to manually sum the
-    # components.
+    # components? => Bad idea then.
     
     # TODO parity = {None, 'even', 'odd'} to keep only sines/cosines. I would
     # keep the normalization to variance = 1. Maybe this is general and should
-    # be implemented for any kernel as a kernel function, like `where`.
+    # be implemented for any kernel as a kernel function, like `where`. =>
+    # Bad idea probably.
     
     # TODO this appears to be less numerically accurate than other kernels.
     # It's probably the Bernoulli polynomial computation, find out if it is due
     # to computing the polynomial using the coefficients or if the coefficients
     # given by scipy are inaccurate.
     
-    assert isinstance(n, (int, np.integer))
-    assert n >= 1
+    # TODO once I've seen TestFourier.test_positive_deriv2_nd fail with
+    # slightly nonsymmetric covariance matrix. What??? I would expect it to
+    # be exactly symmetric even numerically!
+    
+    assert isinstance(n, (int, np.integer)), type(n)
+    assert n >= 1, n
     s = 2 * n
     diff = (x - y) % 1
     sign0 = -(-1) ** n
