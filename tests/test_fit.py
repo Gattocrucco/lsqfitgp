@@ -42,8 +42,9 @@ def quad(A, v):
     utv = u.T @ v
     eps = len(A) * 1e-12 * np.max(w)
     return (utv.T / np.maximum(w, eps)) @ utv
+    # TODO maybe low-rank is better?
 
-def chisq_test(g, alpha=2e-5):
+def chisq_test(g, alpha=1e-5):
     """chisquare test on g being 0"""
     g = flat(g)
     mean = gvar.mean(g)

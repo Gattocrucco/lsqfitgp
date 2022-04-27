@@ -58,7 +58,7 @@ print('fit...')
 m, cov = gp.predfromdata({'pere': y.reshape(-1)}, 'banane', raw=True)
 
 print('samples...')
-sample = m + _linalg.CholGersh(cov, eps=5e-5).correlate(np.random.randn(len(m)))
+sample = m + _linalg.CholGersh(cov, eps=1e-4).correlate(np.random.randn(len(m)))
 sample = sample.reshape(xpred.shape)
 
 print('plot...')

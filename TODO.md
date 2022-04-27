@@ -632,6 +632,11 @@ DiagLowRank for low rank matrix + multiple of the identity (multiple rank-1
 updates to the Cholesky factor? Would it be useful anyway? Maybe it's easier
 with QR) => Useful with Woodsbury, would be used in combined gp-regression.
 
+Can I use the LDL decomposition? On 1000x1000 with scipy.linalg on my laptop,
+it is 5x slower than cholesky and 5x faster than diagonalization. It would
+avoid positivity problems compared to cholesky. Is it less numerically stable?
+Why is it slower?
+
 #### Evenly spaced input
 
 With stationary kernels, an evenly spaced input produces a toeplitz matrix,
