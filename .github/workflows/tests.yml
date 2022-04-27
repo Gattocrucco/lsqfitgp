@@ -88,7 +88,7 @@ jobs:
       - name: Generate documentation
         run: make docs
       - name: Copy documentation to github pages
-        if: github.event_name == push
+        if: github.event_name == 'push'
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
           branch: gh-pages
@@ -132,7 +132,7 @@ jobs:
       - name: Remove gitignore file
         run: rm htmlcov/.gitignore
       - name: Copy report to github pages
-        if: github.event_name == push
+        if: github.event_name == 'push'
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
           branch: gh-pages
