@@ -1,4 +1,3 @@
-[![Documentation Status](https://readthedocs.org/projects/lsqfitgp/badge/?version=latest)](https://lsqfitgp.readthedocs.io/en/latest/?badge=latest)
 [![PyPI](https://img.shields.io/pypi/v/lsqfitgp)](https://pypi.org/project/lsqfitgp/)
 [![Tests](https://github.com/Gattocrucco/lsqfitgp/actions/workflows/tests.yml/badge.svg)](https://github.com/Gattocrucco/lsqfitgp/actions/workflows/tests.yml)
 
@@ -34,10 +33,10 @@ $ pip install lsqfitgp
 
 ## Documentation
 
-The manual is available on
-[readthedocs](https://lsqfitgp.readthedocs.io/en/latest/index.html). All the
-code is documented with docstrings, so you can also use the Python help system
-directly from the shell:
+The complete manual is available online at
+[gattocrucco.github.io/lsqfitgp/docs](https://gattocrucco.github.io/lsqfitgp/docs).
+All the code is documented with docstrings, so you can also use the Python help
+system directly from the shell:
 
 ```python
 >>> import lsqfitgp as lgp
@@ -77,6 +76,8 @@ release = tests examples docscode docs (in order)
 $ make tests # or make examples, or ...
 ```
 
-The tests are run on each push and the resulting coverage report is visible
-online [here](https://gattocrucco.github.io/lsqfitgp/htmlcov/). To browse it
-locally after `make tests`, open `htmlcov/index.html` in your browser.
+The unit tests are run on each push and the resulting coverage report is
+published online at
+[gattocrucco.github.io/lsqfitgp/htmlcov](https://gattocrucco.github.io/lsqfitgp/htmlcov/).
+To browse it locally after `make tests`, open `htmlcov/index.html` in your
+browser.

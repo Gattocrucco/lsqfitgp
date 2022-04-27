@@ -107,6 +107,7 @@ jobs:
   docs:
 
     runs-on: macos-latest
+    # run on macos because of a linux bug which breaks docs/components4.png
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
