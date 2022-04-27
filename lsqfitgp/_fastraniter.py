@@ -21,7 +21,7 @@ import itertools
 import warnings
 
 import gvar
-from autograd import numpy as np
+import numpy as np
 
 from . import _linalg
 

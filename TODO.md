@@ -45,8 +45,20 @@ don't know if this actually works seamlessly, derivatives may break. Surely it
 is a bit unelegant due to addx enforcing dtype uniformity. => I should stop
 enforcing uniformity after I make sure everything works with derivatives.
 
-Check again the raniter example because gvar.raniter seems to have gotten
-much faster.
+Check again the raniter example because gvar.raniter seems to have gotten much
+faster. => Actually it's lgp.raniter who's gotten slower! The cholesky
+decomposition now takes only 10 ms on 1000x1000 compared to 50 ms on my old
+laptop. However next(lgp.raniter(,)) takes 270 ms. Profiling shows that it's
+indeed the cholesky decomposition who is taking up most of the time. WTF??
+Moreover profiling one single execution shows it takes about 15 ms, while
+profiling a cycle shows about 250 ms per cycle. WTF????? A cycle with two
+executions is sufficient to jump from 15 ms to 250 ms. It works this way even
+if I call lgp.raniter one or two times between two time calls. gvar.raniter
+does not show this behaviour, it's linear as expected. => Update: the cholesky
+decomp seems to take 250 ms in gvar.raniter too, but already in the first
+call. Idea: my laptop has 2 "efficiency cores", maybe it's using them in a
+weird way I can't predict. But why wouldn't this happen when I just call
+linalg.cholesky?
 
 ## Fixes and tests
 
