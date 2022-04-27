@@ -33,7 +33,7 @@ $(EXAMPLES):
 	COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) coverage run --context=examples$(COVERAGE_SUFFIX) examples/runexamples.py $@
 
 docscode:
-	COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) cd docs && coverage run --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX) runcode.py *.rst
+	cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) coverage run --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX) runcode.py *.rst
 
 docs:
 	cd docs && python kernelsref.py
