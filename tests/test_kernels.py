@@ -65,7 +65,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
     
     @property
     def eps(self):
-        return 10 * np.finfo(float).eps
+        return 100 * np.finfo(float).eps
     
     def positive(self, deriv, nd=False):
         for kw in self.kwargs_list:
