@@ -75,7 +75,7 @@ def _isarraylike(x):
 def _isdictlike(x):
     return isinstance(x, (dict, gvar.BufferDict))
 
-def _compatible_dtypes(d1, d2):
+def _compatible_dtypes(d1, d2): # pragma: no cover
     """
     Function to check x arrays datatypes passed to GP.addx. If the dtype is
     structured, it checks the structure of the fields is the same, but allows
@@ -96,7 +96,7 @@ def _compatible_dtypes(d1, d2):
             return False
     return True
 
-def _array_copy_if_not_readonly(x):
+def _array_copy_if_not_readonly(x): # pragma: no cover
     """currently not used"""
     y = _array.asarray(x)
     if x is y and builtins.isinstance(x, np.ndarray) and x.flags['WRITEABLE']:
@@ -112,7 +112,7 @@ class _Element(metaclass=abc.ABCMeta):
     
     @property
     @abc.abstractmethod
-    def shape(self):
+    def shape(self): # pragma: no cover
         """Output shape"""
         pass
     

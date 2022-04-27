@@ -112,3 +112,7 @@ def test_sdev():
         return gp
     for _ in range(10):
         check_fit(hp, gpfactory)
+    # TODO once I've seen the chi2 check fail with sf(q) = 1e-8. Is this
+    # a minimization problem or the posterior distribution of log(sdev) which
+    # has a very heavy tail? The distribution of sdev**2 should be a scaled
+    # inverse chisquared

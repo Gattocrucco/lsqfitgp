@@ -85,6 +85,11 @@ su github. => Non è che però è un rischio? In questo modo il mio account
 github controllerebbe cosa finisce su PyPI perché dovrei metterci le chiavi di
 accesso. Dovrei attivare l'autenticazione a due fattori.
 
+Save as artifact the coverage file instead of the coverage report, do it for
+examples and documentation code too, then merge them in postcov and do three
+separate reports or an annotated report which says which sets executed the line.
+Combine also different OSes/versions.
+
 ## New functionality
 
 Dovrebbe essere possibile per l'utente inserire i suoi blocchi della matrice di

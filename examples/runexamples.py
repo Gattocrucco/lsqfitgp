@@ -28,6 +28,7 @@ from matplotlib import pyplot as plt
 import gvar
 
 sys.path.insert(0, '..') # to import lsqfitgp if run from examples/
+sys.path.insert(0, '.')
 
 for file in sys.argv[1:]:
     print('running {}...'.format(file))
@@ -52,4 +53,6 @@ for file in sys.argv[1:]:
     for num in nums:
         fig = plt.figure(num)
         suffix = f'-{num}' if num > 1 else ''
-        fig.savefig(f'{prefix}{suffix}.png')
+        out = f'{prefix}{suffix}.png'
+        print(f'runexamples.py: write {out}')
+        fig.savefig(out)
