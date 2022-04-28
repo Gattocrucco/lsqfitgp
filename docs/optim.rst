@@ -40,52 +40,16 @@ Since usually :math:`m \gg n` because the plot is done on a finely spaced grid,
 the typical bottleneck is taking the samples, i.e., calling
 :func:`gvar.raniter`. This problem can be bypassed by plotting only the
 standard deviation band instead of taking samples, but it is less informative.
+To make :func:`gvar.raniter` faster, use its ``eps`` option: ``gvar.raniter(x,
+eps=1e-12)``. This forces it to use a Cholesky decomposition instead of a
+diagonalization.
 
-I'm working with :mod:`gvar`'s author to make :func:`gvar.raniter` more
-efficient; in the meantime, you can bypass :mod:`gvar` altogether using the
-`raw` option of :meth:`GP.predfromdata`, which will make it return separately
-the posterior mean and covariance matrix, and using :func:`raniter` which
-imitates :func:`gvar.raniter` but takes the mean and covariance separately.
-Let's benchmark::
-
-    import time
-    import numpy as np
-    import gvar
-    import lsqfitgp as lgp
-    
-    # make 1000 correlated variables
-    n = 1000
-    a, b = np.random.randn(2, n, n)
-    cov = a.T @ a
-    mean = np.random.randn(n)
-    x = b @ gvar.gvar(mean, cov)
-    
-    xmean = b @ mean
-    xcov = b @ cov @ b.T
-    
-    def benchmark(N, gen, *args):
-        times = []
-        for _ in range(N):
-            start = time.time()
-            next(gen(*args))
-            end = time.time()
-            times.append(end - start)
-        t = gvar.gvar(np.mean(times), np.std(times, ddof=1))
-        print('{}.{}: {} s'.format(gen.__module__, gen.__name__, t))
-    
-    benchmark(3, gvar.raniter, x)
-    benchmark(10, lgp.raniter, xmean, xcov)
-
-Output::
-
-   gvar._utilities.raniter: 0.823(13) s
-   lsqfitgp._fastraniter.raniter: 0.0561(19) s
-
-So it is 15x faster than :func:`gvar.raniter`. In general the :class:`GP`
-methods have options for doing everything without :mod:`gvar`, but don't try to
-use all of them mindlessly before profiling the code to know where the
-bottleneck actually is. Python has the module :mod:`profile` for that, and in
-an IPython shell you can use ``%run -p``.
+In general the :class:`GP` methods have options for doing everything without
+:mod:`gvar`, but don't try to use all of them mindlessly before profiling the
+code to know where the bottleneck actually is. Python has the module
+:mod:`cProfile` for that, and in an IPython shell you can use ``%run -p``. If
+you opt out of gvars, you can use :func:`lsqfitgp.raniter` to draw samples from
+an explicit mean vector and covariance matrix instead of :func:`gvar.raniter`.
 
 Once you have solved eventual :mod:`gvar`-related issues, if you have at least
 some hundreds of datapoints the next bottleneck is probably in
