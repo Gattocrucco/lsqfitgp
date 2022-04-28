@@ -61,6 +61,10 @@ weird way I can't predict. But why wouldn't this happen when I just call
 linalg.cholesky? => Activity monitor shows I'm using all cores when running
 a timeit of lgp.raniter, so nope.
 
+When I'm finished with the PDF tests, move them to examples. Maybe I should
+simplify in some way or skip altogether the slower ones to avoid clogging the
+CI.
+
 ## Fixes and tests
 
 Go through the coverage and add tests to cover untested lines.

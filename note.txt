@@ -340,3 +340,11 @@ Sigma-T-V basis, so I should use it. I could also do like they are doing with
 neural networks and multiply a base process by x^-a (1-x)^b, but only Sigma
 and g, while the others would get (1-x)^b. Should I let each process have its
 own b? Dunno.
+
+--------
+
+I'm having a problem with pdf8, the fit fails due to zeros in the covariance
+matrix. The zeros must be numerical. I think it is due to the absurdly high
+priors and data I'm putting in due to the divergence of Sigma(x) and g(x).
+I should define the transformation w.r.t. x*Sigma and x*g probably, and only
+use x from 1e-5 or 1e-4 onward for data.
