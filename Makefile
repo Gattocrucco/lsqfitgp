@@ -42,4 +42,4 @@ docs:
 
 covreport:
 	coverage combine
-	coverage html --show-contexts
+	coverage html
