@@ -286,15 +286,17 @@ e quindi sticazzi.
 quando passo a jax e posso usare le hessiane, potrei usare fisher
 scoring per l'ottimizzazione cioè prendere il valore atteso dell'hessiana
 
-per far passare JAX attraverso BufferDict in empbayes_fit, se uso il
-parametro buf posso passare l'array di JAX senza pluggare jax.np dentro il
-codice di gvar. Il problema è come supportare le trasformazioni, quelle invece
-richiedono una funzione che si succhi array di oggetti (no jax) però vorrei che
+per far passare JAX attraverso BufferDict in empbayes_fit, se uso il parametro
+buf posso passare l'array di JAX senza pluggare jax.np dentro il codice di
+gvar. Il problema è come supportare le trasformazioni, quelle invece richiedono
+una funzione che si succhi array di oggetti (no jax) però vorrei che
 supportasse gli array di JAX. Forse bisogna rompere a Lepage, però bisogna che
 venga un meccanismo generico anziché un paciugo che supporta solo JAX. =>
-Actually it is not possible with the current BufferDict implementation
-to pass through a JAX array, because BufferDict attempts a numpy array
-conversion
+Actually it is not possible with the current BufferDict implementation to pass
+through a JAX array, because BufferDict attempts a numpy array conversion =>
+For the BufferDict transformations, I could write a decorator that converts a
+jax.numpy function to a function working both for JAX and gvars, while for the
+BufferDict buf conversion, I could hack BufferDict internals from lsqfitgp.
 
 I could write a function that converts a JAX function to a gvar function. Then
 I could do a version of lsqfit.nonlinear_fit that provides the gvar version of
