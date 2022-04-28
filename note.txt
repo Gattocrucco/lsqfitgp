@@ -305,19 +305,19 @@ The gluon g is left alone. Then
     Sigma = sum_q q+
     V     = sum_q q-
     
-    T3  = u+ - d+
-    T8  = u+ + d+ - 2s+
-    T15 = u+ + d+ + s+ - 3c+
-
     V3  = u- - d-
     V8  = u- + d- - 2s-
     V15 = u- + d- + s- - 3c-
     
-So the Vs are like the Ts but with q- instead of q+. The constraints are:
+    T3  = u+ - d+
+    T8  = u+ + d+ - 2s+
+    T15 = u+ + d+ + s+ - 3c+
+
+So the Ts are like the Vs but with q+ instead of q-. The constraints are:
 
     For all f: f(1) = 0
 
-    Total momentum: sum_f x f(x) = 1
+    Total momentum: int dx x (Sigma(x) + g(x)) = 1
 
     The integrals of the Vs are
         V   3
@@ -330,3 +330,13 @@ So the Vs are like the Ts but with q- instead of q+. The constraints are:
     For g and Sigma: x^2 f(x) -> 0 for x -> 0
     
     For Vs and Ts: x f(x) -> 0 for x -> 0
+
+2022-04-28
+==========
+
+How should I parameterize the PDFs in the fit? I should pick the basis which
+makes the kernel easier to write. The divergent behaviour is specified in the
+Sigma-T-V basis, so I should use it. I could also do like they are doing with
+neural networks and multiply a base process by x^-a (1-x)^b, but only Sigma
+and g, while the others would get (1-x)^b. Should I let each process have its
+own b? Dunno.

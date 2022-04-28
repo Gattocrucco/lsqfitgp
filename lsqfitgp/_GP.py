@@ -581,7 +581,8 @@ class GP:
         elif isinstance(xp, _ProcTransf):
             kernel = self._crosskernel_transf_any(xpkey, ypkey)
         elif isinstance(yp, _ProcTransf):
-            kernel = self._crosskernel_transf_any(ypkey, xpkey)._swap()
+            kernel = self._crosskernel_transf_any(ypkey, xpkey)
+            kernel = kernel if kernel is None else kernel._swap()
         
         # Save cache.
         self._kernels[xpkey, ypkey] = kernel
