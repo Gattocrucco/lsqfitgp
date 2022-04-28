@@ -51,52 +51,16 @@ additional points where the posterior is computed.</p></li>
 <p>Since usually <span class="math notranslate nohighlight">\(m \gg n\)</span> because the plot is done on a finely spaced grid,
 the typical bottleneck is taking the samples, i.e., calling
 <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code>. This problem can be bypassed by plotting only the
-standard deviation band instead of taking samples, but it is less informative.</p>
-<p>I’m working with <code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>’s author to make <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code> more
-efficient; in the meantime, you can bypass <code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code> altogether using the
-<cite>raw</cite> option of <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code></a>, which will make it return separately
-the posterior mean and covariance matrix, and using <a class="reference internal" href="raniter.html#lsqfitgp.raniter" title="lsqfitgp.raniter"><code class="xref py py-func docutils literal notranslate"><span class="pre">raniter()</span></code></a> which
-imitates <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code> but takes the mean and covariance separately.
-Let’s benchmark:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">gvar</span>
-<span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
-
-<span class="c1"># make 1000 correlated variables</span>
-<span class="n">n</span> <span class="o">=</span> <span class="mi">1000</span>
-<span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
-<span class="n">cov</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">a</span>
-<span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">b</span> <span class="o">@</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">cov</span><span class="p">)</span>
-
-<span class="n">xmean</span> <span class="o">=</span> <span class="n">b</span> <span class="o">@</span> <span class="n">mean</span>
-<span class="n">xcov</span> <span class="o">=</span> <span class="n">b</span> <span class="o">@</span> <span class="n">cov</span> <span class="o">@</span> <span class="n">b</span><span class="o">.</span><span class="n">T</span>
-
-<span class="k">def</span> <span class="nf">benchmark</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">gen</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-    <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-        <span class="nb">next</span><span class="p">(</span><span class="n">gen</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
-        <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-        <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">: </span><span class="si">{}</span><span class="s1"> s&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gen</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span> <span class="n">gen</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
-
-<span class="n">benchmark</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-<span class="n">benchmark</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">lgp</span><span class="o">.</span><span class="n">raniter</span><span class="p">,</span> <span class="n">xmean</span><span class="p">,</span> <span class="n">xcov</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gvar</span><span class="o">.</span><span class="n">_utilities</span><span class="o">.</span><span class="n">raniter</span><span class="p">:</span> <span class="mf">0.823</span><span class="p">(</span><span class="mi">13</span><span class="p">)</span> <span class="n">s</span>
-<span class="n">lsqfitgp</span><span class="o">.</span><span class="n">_fastraniter</span><span class="o">.</span><span class="n">raniter</span><span class="p">:</span> <span class="mf">0.0561</span><span class="p">(</span><span class="mi">19</span><span class="p">)</span> <span class="n">s</span>
-</pre></div>
-</div>
-<p>So it is 15x faster than <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code>. In general the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>
-methods have options for doing everything without <code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>, but don’t try to
-use all of them mindlessly before profiling the code to know where the
-bottleneck actually is. Python has the module <code class="xref py py-mod docutils literal notranslate"><span class="pre">profile</span></code> for that, and in
-an IPython shell you can use <code class="docutils literal notranslate"><span class="pre">%run</span> <span class="pre">-p</span></code>.</p>
+standard deviation band instead of taking samples, but it is less informative.
+To make <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code> faster, use its <code class="docutils literal notranslate"><span class="pre">eps</span></code> option: <code class="docutils literal notranslate"><span class="pre">gvar.raniter(x,</span>
+<span class="pre">eps=1e-12)</span></code>. This forces it to use a Cholesky decomposition instead of a
+diagonalization.</p>
+<p>In general the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> methods have options for doing everything without
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>, but don’t try to use all of them mindlessly before profiling the
+code to know where the bottleneck actually is. Python has the module
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">cProfile</span></code> for that, and in an IPython shell you can use <code class="docutils literal notranslate"><span class="pre">%run</span> <span class="pre">-p</span></code>. If
+you opt out of gvars, you can use <a class="reference internal" href="raniter.html#lsqfitgp.raniter" title="lsqfitgp.raniter"><code class="xref py py-func docutils literal notranslate"><span class="pre">lsqfitgp.raniter()</span></code></a> to draw samples from
+an explicit mean vector and covariance matrix instead of <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code>.</p>
 <p>Once you have solved eventual <code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>-related issues, if you have at least
 some hundreds of datapoints the next bottleneck is probably in
 <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code></a>. Making it faster is quick: select a solver different
