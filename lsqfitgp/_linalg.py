@@ -119,14 +119,14 @@ class Decomposition(metaclass=abc.ABCMeta):
     """
     
     @abc.abstractmethod
-    def __init__(self, K):
+    def __init__(self, K): # pragma: no cover
         """
         Decompose matrix K.
         """
         pass
         
     @abc.abstractmethod
-    def solve(self, b):
+    def solve(self, b): # pragma: no cover
         """
         Solve the linear system K @ x = b. `b` can be an array of gvars.
         """
@@ -142,14 +142,14 @@ class Decomposition(metaclass=abc.ABCMeta):
         return b.T @ self.solve(c)
     
     @abc.abstractmethod
-    def logdet(self):
+    def logdet(self): # pragma: no cover
         """
         Compute log(det(K)).
         """
         pass
     
     @abc.abstractmethod
-    def correlate(self, b):
+    def correlate(self, b): # pragma: no cover
         """
         Compute A @ b where K = A @ A.T. If b represents iid variables with
         unitary variance, A @ b has covariance matrix K.
@@ -157,7 +157,7 @@ class Decomposition(metaclass=abc.ABCMeta):
         pass
     
     @abc.abstractmethod
-    def decorrelate(self, b):
+    def decorrelate(self, b): # pragma: no cover
         """
         Solve A @ x = b, where K = A @ A.T. If b represents variables with
         covariance matrix K, x has identity covariance.
@@ -659,7 +659,7 @@ class CholReg(Chol):
         self._L *= s[:, None]
     
     @abc.abstractmethod
-    def _regularize(self, mat, eps):
+    def _regularize(self, mat, eps): # pragma: no cover
         """Modify mat in-place to make it positive definite."""
         pass
     
