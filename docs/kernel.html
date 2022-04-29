@@ -77,10 +77,11 @@ invoked separately for each dimension, and the result is the
 product. Default False. If <cite>dim</cite> is specified, <cite>forcekron</cite> will
 have no effect.</p>
 </dd>
-<dt><strong>derivable</strong><span class="classifier">bool, int or callable</span></dt><dd><p>Specifies how many times the kernel can be derived, just for
+<dt><strong>derivable</strong><span class="classifier">bool, int, None, or callable</span></dt><dd><p>Specifies how many times the kernel can be derived, just for
 error checking purposes. Default is False. True means infinitely
 many times derivable. If callable, it is called with the same
-keyword arguments of <cite>kernel</cite>.</p>
+keyword arguments of <cite>kernel</cite>. If None it means that the
+degree of derivability is unknown.</p>
 </dd>
 <dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to <cite>kernel</cite>.</p>
 </dd>
