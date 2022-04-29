@@ -118,6 +118,13 @@ covarianza senza che nessuno gli rompa i coglioni. Anche dopo aver chiamato
 
 Add mean functions.
 
+Add transformations of x points. This must be provided instead of letting the
+user apply the transformation herself when passing the points to GP.addx
+because in the latter case the derivatives are taken w.r.t. the transformed x
+instead of x. The expected behavior is the one where the transformations are
+defined as part of the kernel, so they should be implemented in Kernel.
+Possible interface: Kernel.xtransf(callable x -> transfx).
+
 ### Bayesian optimization
 
 Bayesian optimization: I found only one decent quick-and-lean python package,
@@ -239,6 +246,8 @@ the derivative w.r.t. the covariance matrix? Otherwise I would have to resort
 to dicrete derivatives (very very slow with many hyperparameters!) => It is
 probably fine if I compute the derivative with the local linearization in the
 minimum, like I'm doing in lsqfitgp.empbayes_fit.
+
+Is there a reasonable way to support zero errors in prior/data?
 
 ### Hyperparameters
 
@@ -362,7 +371,7 @@ even recognize this and so for example np.tan(kernel) would work.
 
 Look at what the Schoenberg theorem is (seen in seminar by Théo Galy-Fajou)
 
-### New specific kernels
+### New specific kernels/kernel options
 
 Is there a smooth version of the Wiener process? like, softmin(x, y)? I tried
 smoothing it with a gaussian but an undoable integral comes up.
@@ -408,6 +417,10 @@ diagonalizzare il kernel si chiama teorema di Mercer, o decomposizione di
 tizio-caio-nonricordo.)
 
 Kernel rumore rosa, troncato tra due frequenze.
+
+Add order: int >= 0 parameter to Gibbs that rescales the kernel by
+(s(x)s(y))^order, useful when taking derivatives to have the derivative of
+order `order` with constant variance (check this is actually the case).
 
 ### Transformations
 

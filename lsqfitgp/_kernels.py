@@ -323,7 +323,7 @@ def Wiener(x, y):
     assert np.all(y >= 0)
     return np.minimum(x, y)
 
-@kernel(forcekron=True)
+@kernel(forcekron=True, derivable=None)
 def Gibbs(x, y, scalefun=lambda x: 1):
     """
     Gibbs kernel.
@@ -336,7 +336,11 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     Kernel which in some sense is like a Gaussian kernel where the scale
     changes at every point. The scale is computed by the parameter `scalefun`
     which must be a callable taking the x array and returning a scale for each
-    point. By default `scalefun` returns a constant so it is a Gaussian kernel.
+    point. By default `scalefun` returns 1 so it is a Gaussian kernel.
+    
+    Consider that the default parameter `scale` acts before `scalefun`, so
+    for example if `scalefun(x) = x` then `scale` has no effect. You should
+    include all rescalings in `scalefun` to avoid surprises.
     
     """
     sx = scalefun(x)

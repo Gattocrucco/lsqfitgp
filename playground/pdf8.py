@@ -6,7 +6,7 @@ import time
 
 import lsqfitgp as lgp
 import numpy as np
-from scipy import linalg
+from scipy import linalg, interpolate
 from matplotlib import pyplot as plt
 import gvar
 import lsqfit
@@ -42,8 +42,10 @@ pmtoev = np.array([
 qnames  = ['d' , 'dbar', 'u' , 'ubar', 's' , 'sbar', 'c' , 'cbar']
 pmnames = ['d+', 'd-'  , 'u+', 'u-'  , 's+', 's-'  , 'c+', 'c-'  ]
 evnames = ['Sigma', 'V', 'V3', 'V8', 'V15', 'T3', 'T8', 'T15']
+pnames  = evnames + ['g']
+tpnames = ['xSigma'] + evnames[1:] + ['xg']
 
-nflav = 9
+nflav = len(pnames)
 
 # linear data
 ndata     = 10 # number of datapoints
@@ -53,6 +55,7 @@ rankmcov  =  9 # rank of the covariance matrix of the theory error
 ndata2    = 10
 rankmcov2 =  9
 
+# grid used for DGLAP evolution
 grid = np.array([
     1.9999999999999954e-07, # start logspace
     3.034304765867952e-07,
@@ -106,9 +109,15 @@ grid = np.array([
     1, # end linspace
 ])
 
-nx = len(grid)
+# grid used for data
+datagrid = grid[0:-1] # exclude 1 since f(1) = 0 and zero errors upset the fit
+nx = len(datagrid)
 
-#### MODEL ####
+# grid used for plot
+gridinterp = interpolate.interp1d(np.linspace(0, 1, len(grid)), grid)
+plotgrid = gridinterp(np.linspace(0, 1, 200))
+
+#### GAUSSIAN PROCESS ####
 # f1 ~ GP
 # Sigma(x) = f1'(x) / x
 # f2 ~ GP
@@ -125,7 +134,8 @@ nx = len(grid)
 # [Sigma, g, V*, T*](1) = 0
 
 # matrix to stack processes
-stackgrid = np.einsum('ab,ij->abij', np.eye(nflav), np.eye(nx))
+stackplotgrid = np.einsum('ab,ij->abij', np.eye(nflav), np.eye(len(plotgrid)))
+stackdatagrid = np.einsum('ab,ij->abij', np.eye(nflav), np.eye(len(datagrid)))
 
 # transformation from evolution to flavor basis
 evtoq = linalg.inv(pmtoev @ qtopm)
@@ -134,43 +144,33 @@ hyperprior = {
     'log(scale)': np.log(gvar.gvar(0.5, 0.5)),
 }
 
-def makegp(hp):
+def makegp(hp, quick=False):
     gp = lgp.GP()
-
-    kernel = lgp.ExpQuad(scale=hp['scale'])
+    
+    eps = grid[0]
+    scalefun = lambda x: hp['scale'] * (x + eps)
+    kernel = lgp.Gibbs(scalefun=scalefun)
+    kernel_prim = kernel.rescale(scalefun, scalefun)
     
     # define evolution basis PDFs (and their primitives)
-    gp.addproc(kernel, 'f1')
-    gp.addproctransf({'f1': 1}, "f1'", deriv=1)
-    gp.addproctransf({"f1'": lambda x: 1/x}, 'Sigma')
-    gp.addproc(kernel, 'f2')
-    gp.addproctransf({'f2': 1}, "f2'", deriv=1)
-    gp.addproctransf({"f2'": lambda x: 1/x}, 'g')
+    gp.addproc(kernel_prim, 'f1')
+    gp.addproctransf({'f1': 1}, "xSigma", deriv=1)
+    gp.addproc(kernel_prim, 'f2')
+    gp.addproctransf({'f2': 1}, "xg", deriv=1)
     gp.addproctransf({'f1': 1, 'f2': 1}, 'f12')
     for suffix in ['', '3', '8', '15']:
-        gp.addproc(kernel, 'f' + suffix)
+        gp.addproc(kernel_prim, 'f' + suffix)
         gp.addproctransf({'f' + suffix: 1}, 'V' + suffix, deriv=1)
         if suffix != '':
             gp.addproc(kernel, 'T' + suffix)
     
-    # define flavor basis PDFs
-    for qi, qproc in enumerate(qnames):
-        gp.addproctransf({
-            eproc: evtoq[qi, ei]
-            for ei, eproc in enumerate(evnames)
-        }, qproc)
-    
     # define a matrix of PDF values over the x grid
-    for proc in evnames + ['g']:
-        gp.addx(grid, proc + '-grid', proc=proc)
+    for proc in tpnames:
+        gp.addx(datagrid, proc + '-datagrid', proc=proc)
     gp.addtransf({
-        proc + '-grid': stackgrid[i]
-        for i, proc in enumerate(evnames + ['g'])
-    }, 'grid', 1)
-
-    # linear data (used for warmup fit)
-    global M_mean
-    gp.addtransf({'grid': M_mean}, 'data', axes=2)
+        proc + '-datagrid': stackdatagrid[i]
+        for i, proc in enumerate(tpnames)
+    }, 'datagrid', 1)
 
     # definite integrals
     for proc in ['f12', 'f', 'f3', 'f8', 'f15']:
@@ -178,31 +178,54 @@ def makegp(hp):
         gp.addtransf({proc + '-endpoints': [-1, 1]}, proc + '-diff')
     
     # right endpoint
-    for proc in evnames + ['g']:
+    for proc in tpnames:
         gp.addx(1, f'{proc}(1)', proc=proc)
     
+    if not quick:
+        
+        # linear data (used for warmup fit)
+        global M_mean
+        gp.addtransf({'datagrid': M_mean}, 'data', axes=2)
+    
+        # define flavor basis PDFs
+        gp.addproctransf({"xSigma": lambda x: 1 / x}, 'Sigma')
+        gp.addproctransf({"xg": lambda x: 1 / x}, 'g')
+        for qi, qproc in enumerate(qnames):
+            gp.addproctransf({
+                eproc: evtoq[qi, ei]
+                for ei, eproc in enumerate(evnames)
+            }, qproc)
+    
+        # define a matrix of PDF values over the plot grid
+        for proc in tpnames:
+            gp.addx(plotgrid, proc + '-plotgrid', proc=proc)
+        gp.addtransf({
+            proc + '-plotgrid': stackplotgrid[i]
+            for i, proc in enumerate(tpnames)
+        }, 'plotgrid', 1)
+
     return gp
 
 constraints = {
-    'f12-diff': 1,
-    'f-diff'  : 3,
-    'f3-diff' : 1,
-    'f8-diff' : 3,
-    'f15-diff': 3,
-    'Sigma(1)': 0,
-    'V(1)'    : 0,
-    'V3(1)'   : 0,
-    'V8(1)'   : 0,
-    'V15(1)'  : 0,
-    'T3(1)'   : 0,
-    'T8(1)'   : 0,
-    'T15(1)'  : 0,
-    'g(1)'    : 0,
+    'f12-diff' : 1,
+    'f-diff'   : 3,
+    'f3-diff'  : 1,
+    'f8-diff'  : 3,
+    'f15-diff' : 3,
+    'xSigma(1)': 0,
+    'V(1)'     : 0,
+    'V3(1)'    : 0,
+    'V8(1)'    : 0,
+    'V15(1)'   : 0,
+    'T3(1)'    : 0,
+    'T8(1)'    : 0,
+    'T15(1)'   : 0,
+    'xg(1)'    : 0,
 }
     
 #### NONLINEAR FUNCTION ####
 
-# linear map PDF(xdata) -> data
+# linear map PDF(grid) -> data
 Mcomps = np.random.randn(rankmcov, ndata, nflav, nx)
 Mcomps /= np.sqrt(Mcomps.size / ndata)
 Mparams = gvar.gvar(np.random.randn(rankmcov), np.full(rankmcov, 0.1))
@@ -210,7 +233,7 @@ M = lambda params: np.tensordot(params, Mcomps, 1)
 
 M_mean = M(gvar.mean(Mparams)) # used in makegp()
 
-# quadratic map PDF(xdata) -> data2
+# quadratic map PDF(grid) -> data2
 M2comps = np.random.randn(rankmcov2, ndata2, nflav, nx, nx)
 M2comps /= 2 * np.sqrt(M2comps.size / ndata2)
 M2comps = (M2comps + np.swapaxes(M2comps, -1, -2)) / 2
@@ -218,21 +241,24 @@ M2params = gvar.gvar(np.random.randn(rankmcov2), np.full(rankmcov2, 0.1))
 M2 = lambda params: np.tensordot(params, M2comps, 1)
 
 def fcn(params):
-    grid = params['grid']
+    datagrid = params['datagrid']
     Mparams = params['Mparams']
     M2params = params['M2params']
     
-    data = np.tensordot(M(Mparams), grid, 2)
+    data = np.tensordot(M(Mparams), datagrid, 2)
     
-    # data2 = np.einsum('dfxy,fx,fy->d', M2, grid, grid)
+    # data2 = np.einsum('dfxy,fx,fy->d', M2, datagrid, datagrid)
     # np.einsum does not work with gvar
-    grid2 = grid[:, None, :] * grid[:, :, None]
+    grid2 = datagrid[:, None, :] * datagrid[:, :, None]
     data2 = np.tensordot(M2(M2params), grid2, 3)
     
     return dict(data=data, data2=data2)
 
-def makeprior(gp):
-    prior = gp.predfromdata(constraints, ['grid'])
+def makeprior(gp, plot=False):
+    out = ['datagrid']
+    if plot:
+        out += ['plotgrid']
+    prior = gp.predfromdata(constraints, out)
     prior['Mparams'] = Mparams
     prior['M2params'] = M2params
     return prior
@@ -241,7 +267,8 @@ def makeprior(gp):
 
 truehp = gvar.sample(hyperprior)
 truegp = makegp(truehp)
-trueparams = gvar.sample(makeprior(truegp))
+trueprior = makeprior(truegp, plot=True)
+trueparams = gvar.sample(trueprior)
 truedata = fcn(trueparams)
 
 dataerr = {
@@ -250,24 +277,23 @@ dataerr = {
 }
 data = gvar.make_fake_data(gvar.gvar(truedata, dataerr))
 
-# check sum rules approximately with trapezoid rule
 def check_constraints(y):
-    x = grid
-    integ = np.sum((y[:, 1:] + y[:, :-1]) / 2 * np.diff(x), 1)
-    xinteg = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x), 1)
-    print('int dx x (Sigma(x) + g(x)) =', xinteg[0] + xinteg[-1])
+    # integrate approximately with trapezoid rule
+    integ = np.sum((y[:, 1:] + y[:, :-1]) / 2 * np.diff(plotgrid), 1)
+    print('int dx x (Sigma(x) + g(x)) =', integ[0] + integ[-1])
     for i in range(1, 5):
-        print(f'int dx {evnames[i]}(x) =', integ[i])
-    for i, name in enumerate(evnames + ['g']):
+        print(f'int dx {tpnames[i]}(x) =', integ[i])
+    for i, name in enumerate(tpnames):
         print(f'{name}(1) =', y[i, -1])
 
 print('\ncheck constraints in fake data:')
-check_constraints(trueparams['grid'])
+check_constraints(trueparams['plotgrid'])
 
 #### FIT ####
 
 # find the minimization starting point with a simplified version of the fit
-easyfit = truegp.predfromdata(dict(data=data['data'], **constraints), ['grid'])
+meangp = makegp(gvar.mean(hyperprior))
+easyfit = meangp.predfromdata(dict(data=data['data'], **constraints), ['datagrid'])
 p0 = gvar.mean(easyfit)
 
 hyperprior = gvar.BufferDict(hyperprior)
@@ -287,7 +313,7 @@ def analyzer(hp):
 
 def fitargs(hp):
     analyzer(hp)
-    gp = makegp(hp)
+    gp = makegp(hp, quick=True)
     prior = makeprior(gp)
     args = dict(
         data = data,
@@ -307,9 +333,10 @@ print(fit.format(maxline=-1))
 gp = makegp(fithp)
 prior = makeprior(gp)
 pred = fcn(fit.p)
+fitgrid = gp.predfromfit(dict(datagrid=fit.p['datagrid'], **constraints), 'plotgrid')
 
 print('\ncheck constraints in fit:')
-check_constraints(fit.p['grid'])
+check_constraints(fitgrid)
 
 def allkeys(d):
     for k in d:
@@ -324,7 +351,7 @@ for k in allkeys(fithp):
 
 #### PLOT RESULTS ####
 
-fig, axs = plt.subplots(2, 3, num='pdf8', clear=True, figsize=[13, 8])
+fig, axs = plt.subplots(2, 3, num='pdf8', clear=True, figsize=[13, 8], gridspec_kw=dict(width_ratios=[2, 1, 1]))
 axs[0, 0].set_title('PDFs')
 axs[1, 0].set_title('PDFs')
 axs[0, 1].set_title('Data')
@@ -332,29 +359,21 @@ axs[1, 1].set_title('Data (quadratic)')
 axs[0, 2].set_title('M parameters')
 axs[1, 2].set_title('M2 parameters')
 
-ax = axs[0, 0]
-
 for i in range(nflav):
     
-    if i >= 4:
+    if i < 5:
+        ax = axs[0, 0]
+    else:
         ax = axs[1, 0]
     
-    x = grid
-    ypdf = fit.p['grid'][i]
-    ydata = trueparams['grid'][i]
+    ypdf = fitgrid[i]
     m = gvar.mean(ypdf)
     s = gvar.sdev(ypdf)
-    
-    color = 'C' + str(i // 2)
-    if i % 2:
-        kw = dict(hatch='//////', edgecolor=color, facecolor='none')
-        kwp = dict(color=color, linestyle='--')
-    else:
-        kw = dict(alpha=0.6, facecolor=color)
-        kwp = dict(color=color)
-    
-    ax.fill_between(x, m - s, m + s, label=(evnames + ['g'])[i], **kw)
-    ax.plot(x, ydata, **kwp)
+    ax.fill_between(plotgrid, m - s, m + s, label=tpnames[i], alpha=0.6, facecolor=f'C{i}')
+
+    ax.plot(plotgrid, trueparams['plotgrid'][i], color=f'C{i}')
+
+    ax.set_xscale('log')
 
 for ax in axs[:, 0]:
     ax.legend(fontsize='small')

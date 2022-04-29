@@ -130,11 +130,12 @@ class _KernelBase:
             invoked separately for each dimension, and the result is the
             product. Default False. If `dim` is specified, `forcekron` will
             have no effect.
-        derivable : bool, int or callable
+        derivable : bool, int, None, or callable
             Specifies how many times the kernel can be derived, just for
             error checking purposes. Default is False. True means infinitely
             many times derivable. If callable, it is called with the same
-            keyword arguments of `kernel`.
+            keyword arguments of `kernel`. If None it means that the
+            degree of derivability is unknown.
         **kw
             Additional keyword arguments are passed to `kernel`.
         
@@ -164,7 +165,9 @@ class _KernelBase:
         # Convert `derivable` to an integer.
         if callable(derivable):
             derivable = derivable(**kw)
-        if isinstance(derivable, bool):
+        if derivable is None:
+            derivable = (0, sys.maxsize)
+        elif isinstance(derivable, bool):
             derivable = sys.maxsize if derivable else 0
         elif isinstance(derivable, (int, np.integer)):
             assert derivable >= 0
@@ -172,8 +175,10 @@ class _KernelBase:
             derivable = sys.maxsize
         else:
             derivable = 0
-        self._minderivable = (derivable, derivable)
-        self._maxderivable = (derivable, derivable)
+        if not isinstance(derivable, tuple):
+            derivable = (derivable, derivable)
+        self._minderivable = (derivable[0], derivable[0])
+        self._maxderivable = (derivable[1], derivable[1])
         
         transf = lambda x: x
         
