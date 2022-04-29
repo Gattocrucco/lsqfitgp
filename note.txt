@@ -348,3 +348,22 @@ matrix. The zeros must be numerical. I think it is due to the absurdly high
 priors and data I'm putting in due to the divergence of Sigma(x) and g(x).
 I should define the transformation w.r.t. x*Sigma and x*g probably, and only
 use x from 1e-5 or 1e-4 onward for data.
+
+2022-04-29
+==========
+
+In the end the main problem with pdf8.py was the zero error on f(1) due to the
+constraint.
+
+To do next time: implement Kernel.xtransf and use a linear interpolation of the
+grid with ExpQuad instead of Gibbs(scalefun=x). But before that check the order
+thing of the Gibbs kernel.
+
+Implement a decomp parameter to lgp.raniter to see if eigcut- solves the
+rough samples problem of gvar.sample (the corresponding functionality in
+gvar.sample is broken).
+
+I want to let xSigma and xg go power-like for x->0 with an exponent between
+-1 and 1. The most convenient way is defining them as some process rescaled by
+x^a, but this messes up the integrals. How do I fix this? What I need in
+general is a kernel for a process whose derivative goes like x^a.

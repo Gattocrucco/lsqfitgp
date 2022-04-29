@@ -68,6 +68,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
         return 100 * np.finfo(float).eps
     
     def positive(self, deriv, nd=False):
+        donesomething = False
         for kw in self.kwargs_list:
             x = self.random_x_nd(2, **kw) if nd else self.random_x(**kw)
             kernel = self.kernel_class(**kw)
@@ -78,6 +79,9 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             np.testing.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7)
             eigv = linalg.eigvalsh(cov)
             assert np.min(eigv) >= -len(cov) * self.eps * np.max(eigv)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
     
     def test_positive(self):
         self.positive(0)
@@ -98,6 +102,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
         self.positive(2, True)
     
     def symmetric_offdiagonal(self, xderiv, yderiv):
+        donesomething = False
         for kw in self.kwargs_list:
             x = self.random_x(**kw)[None, :]
             if xderiv == yderiv:
@@ -110,6 +115,9 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             b1 = kernel.diff(xderiv, yderiv)(x, y)
             b2 = kernel.diff(yderiv, xderiv)(y, x)
             assert np.allclose(b1, b2)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
 
     def test_symmetric_00(self):
         self.symmetric_offdiagonal(0, 0)
@@ -150,16 +158,21 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             pytest.skip()
     
     def test_double_diff_scalar_first(self):
+        donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
-            if not kernel.derivable:
+            if kernel.derivable < 1:
                 continue
             x = self.random_x(**kw)
             r1 = kernel.diff(1, 1)(x[None, :], x[:, None])
             r2 = kernel.diff(1, 0).diff(0, 1)(x[None, :], x[:, None])
             assert np.allclose(r1, r2)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
     
     def test_double_diff_scalar_second(self):
+        donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 2:
@@ -168,8 +181,12 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
             r2 = kernel.diff(1, 1).diff(1, 1)(x[None, :], x[:, None])
             assert np.allclose(r1, r2)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
     
     def test_double_diff_scalar_second_chopped(self):
+        donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 2:
@@ -178,18 +195,26 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
             r2 = kernel.diff(2, 0).diff(0, 2)(x[None, :], x[:, None])
             assert np.allclose(r1, r2)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
     
     def test_double_diff_nd_first(self):
+        donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
-            if not kernel.derivable:
+            if kernel.derivable < 1:
                 continue
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff('f0', 'f0')(x, x.T)
             r2 = kernel.diff('f0', 0).diff(0, 'f0')(x, x.T)
             assert np.allclose(r1, r2)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
 
     def test_double_diff_nd_second(self):
+        donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 2:
@@ -198,8 +223,12 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f0').diff('f1', 'f1')(x, x.T)
             assert np.allclose(r1, r2)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
 
     def test_double_diff_nd_second_chopped(self):
+        donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 2:
@@ -208,6 +237,9 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x, x.T)
             assert np.allclose(r1, r2)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
 
     @classmethod
     def make_subclass(cls, kernel_class, kwargs_list=None, random_x_fun=None, eps=None):
@@ -287,7 +319,8 @@ test_kwargs = {
     _kernels.Harmonic: dict(kwargs_list=[
         dict(), dict(Q=0.01), dict(Q=0.25), dict(Q=0.75), dict(Q=0.99), dict(Q=1), dict(Q=1.01), dict(Q=2)
     ]),
-    _kernels.BagOfWords: dict(random_x_fun=bow_rand)
+    _kernels.BagOfWords: dict(random_x_fun=bow_rand),
+    _kernels.Gibbs: dict(kwargs_list=[dict(derivable=True)]),
 }
 for kernel in kernels:
     factory_kw = test_kwargs.get(kernel, {})
