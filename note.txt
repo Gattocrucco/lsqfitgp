@@ -367,3 +367,66 @@ I want to let xSigma and xg go power-like for x->0 with an exponent between
 -1 and 1. The most convenient way is defining them as some process rescaled by
 x^a, but this messes up the integrals. How do I fix this? What I need in
 general is a kernel for a process whose derivative goes like x^a.
+
+--------
+
+Tentative:
+
+    f ~ GP
+
+And the correlation length of f(x) is x (uniform in log(x)), so
+
+    f'(x) ~ 1/x
+
+Where now with ~ we mean "goes like" instead of "is distributed as". So
+defining the transformed process
+
+    g(x) = x^(a+1)/(a+2) f(x)
+
+We have
+    
+    g'(x) = x^a (a+1)/(a+2) f(x) + x^(a+1)/(a+2) f'(x) ~
+          ~ (a+1 + 1)/(a+2) (x^a 1 + x^(a+1)/x) =
+          = x^a
+
+Then we take g'(x) to be x Sigma(x) or x g(x).
+
+--------
+
+More generally, let w(x) be the change of variable that makes the correlation
+length constant. Then the scale function w.r.t. x is
+
+    s(x) = 1/|w'(x)|.
+
+So if f(x) ~ 1, we have f'(x) ~ 1/s(x). Let g(x) be the primitive of x Sigma(x)
+or x g(x), which we define as
+
+    g(x) = u(x) f(x)
+
+for a generic factor u(x) which we want to determine such that
+
+    g'(x) ~ x^a.
+
+We have
+
+    g'(x) = u'(x) f(x) + u(x) f'(x) ~
+          ~ u'(x) + u(x)/s(x) =             (assuming w'(x) > 0)
+          = u'(x) + w'(x) u(x) = x^a
+    
+This differential equation has the solution
+
+    u(x) = exp(-w(x)) (int dx x^a exp(w(x)) + constant)
+
+To check that we can reobtain the previous result, let
+    
+    s(x) = x  =>  w(x) = log(x),
+
+then
+    
+    u(x) = 1/x (int dx x^a x + c) =
+         = 1/x (x^(a+2) / (a+2) + c) =
+         = x^(a+1)/(a+2) + c/x
+
+Requiring a finite u(0) to have an integrable g'(x), we have
+
+    g(x) = x^(a+1)/(a+2) f(x)   q.e.d.
