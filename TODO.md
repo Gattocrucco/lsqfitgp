@@ -65,6 +65,8 @@ When I'm finished with the PDF tests, move them to examples. Maybe I should
 simplify in some way or skip altogether the slower ones to avoid clogging the
 CI.
 
+Add references for all the kernels.
+
 ## Fixes and tests
 
 Go through the coverage and add tests to cover untested lines.
@@ -92,6 +94,15 @@ I should port to gvar the formatting function I wrote for uncertainties-cpp,
 adapt it for format-strings, and then propose it as enhancement to gvar.
 The new function would be used only if specifying a nonempty format string,
 such that old tests continue to print the expected text.
+
+In the chapter on integration the samples are very noisy. Some trials with
+playground/integrals.py told me that the problem is not gvar.raniter but the
+solver used in the prediction. Using eigcut- with a high enough eps makes the
+samples smooth, but the result is very sensitive on the choice of cut, and the
+samples change shape macroscopically. From this I guess that the problem is
+that important eigenvectors of the posterior covariance matrix are not smooth.
+
+Does pred works with empty given? It should allow it and behave like prior.
 
 ## Implementation details
 
@@ -124,6 +135,25 @@ because in the latter case the derivatives are taken w.r.t. the transformed x
 instead of x. The expected behavior is the one where the transformations are
 defined as part of the kernel, so they should be implemented in Kernel.
 Possible interface: Kernel.xtransf(callable x -> transfx).
+
+### More generic conditioning interface
+
+Other newer projects similar to mine (JuliaGaussianProcesses, tinygp) have a
+conditioning method returning a new GP object instead of returning directly the
+prediction. I hadn't done something like that because I want to keep the GP
+object monolithic to be able to apply nontrivial optimizations with multiple
+conditionings, but to add the sampling methods it would be very convenient to
+have something like that instead of duplicating everything.
+
+I could have a method addcond analogous to pred. Compared to caching, this
+solves the problem of not caching when the data errors are not defined in the
+GP. Then pred and sample can accept a cond label instead of a dictionary as
+given which points to a store with a cache. Internally both sample and pred
+would call an internal part of addcond that does not define an explicit
+variable.
+
+Or, once I have caching (see below in "optimization"), sample and pred could
+share a lot of internals and the cache would avoid decomposing matrices twice.
 
 ### Bayesian optimization
 
@@ -193,7 +223,7 @@ predizioni è speciale, riesco a fare qualcosa? Ad esempio penso a una griglia
 fitta... forse LOVE (nei preprint salvati) fa qualcosa del genere visto che
 diceva di fare fast sampling delle predizioni? => vedi quaderno 7 aprile 2022,
 c'è anche il caso di dati assunti indipendenti date le predizioni che è
-super-potente.
+super-potente. => This thing could also solve the rough samples problem.
 
 la cosa che uso per fare il gaussian process con gvar si chiama Matheron's rule
 (https://avt.im/publications/2020/07/09/GP-sampling) Questa cosa forse è un
@@ -664,6 +694,31 @@ Can I use the LDL decomposition? On 1000x1000 with scipy.linalg on my laptop,
 it is 5x slower than cholesky and 5x faster than diagonalization. It would
 avoid positivity problems compared to cholesky. Is it less numerically stable?
 Why is it slower?
+
+Tentative interface for optimizations: addx and addtransf have a flags: str
+parameter that accepts options either in short form (single uppercase letters)
+or long form (comma separated words) specifying assumed properties of the
+corresponding covariance matrix. A more generic method addflags can set the
+flags of both diagonal and out of diagonal blocks. Flags by default are None,
+when set they become immutable, even if set to an empty string, and calling
+addflags raises an exception.
+
+An interface to be designed allows to specify a DAG between the defined
+variables, defining directed links and conditional properties (conditional
+independence within, deterministic links). Maybe this would require more
+hands-on control by the user instead of trying to all optimizations
+automatically, I'm not sure.
+
+When conditioning on data with errors the cache does not work. To use the cache
+the errors must be specified as a part of the process and added as a
+transformation. To do this conveniently it would be useful to have a method
+addcov that just adds a specified covariance matrix. It should admit a
+gvar-style dictionary of arrays to specify at once various variables and their
+cross blocks.
+
+When a covariance block flag or a DAG assumption is not used, emit a warning.
+Can be implemented by flagging the individual objects with "done", false by
+default, and the checking is something was not used in the blocks involved.
 
 #### Evenly spaced input
 

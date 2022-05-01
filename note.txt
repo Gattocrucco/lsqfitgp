@@ -430,3 +430,15 @@ then
 Requiring a finite u(0) to have an integrable g'(x), we have
 
     g(x) = x^(a+1)/(a+2) f(x)   q.e.d.
+
+2022-05-01
+==========
+
+pdf8.py works fitting exponents for xSigma and xg. To do next time: increase
+the allowed range of exponents (use a uniform prior), use a realistic number
+of datapoints (see above), save the history of hyperparameters and marginal
+likelihood in the minimization to estimate the hessian with a fit in the end.
+Maybe first implement the hessian thing with a simpler fit.
+
+Once I have this I'd say I can stop for a while on the PDFs and maybe port
+lsqfitgp to JAX and do other improvements to be able to optimize the fit.

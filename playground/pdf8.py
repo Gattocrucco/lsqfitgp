@@ -118,19 +118,23 @@ gridinterp = interpolate.interp1d(np.linspace(0, 1, len(grid)), grid)
 plotgrid = gridinterp(np.linspace(0, 1, 200))
 
 #### GAUSSIAN PROCESS ####
-# f1 ~ GP
-# Sigma(x) = f1'(x) / x
-# f2 ~ GP
-# g(x) = f2'(x) / x
-# f12 = f1 + f2
-# f12(0) - f12(1) = 1
-# fi ~ GP
+# Ti ~ GP
+#
+# fi ~ GP with sdev ~ x to compensate the scale ~ 1/x
 # Vi = fi'
 # f(1) - f(0) = 3
 # f3(1) - f3(0) = 1
 # f8(1) - f8(0) = 3
 # f15(1) - f15(0) = 3
-# Ti ~ GP
+#
+# f1 ~ GP   (WITHOUT scale compensation)
+# tf1(x) = x^(a+1)/(a+2) f1(x)   <--- scale comp. is x^(a+1) instead of x^a,
+#                                     to avoid doing x^a with a < 0 in x = 0
+# Sigma(x) = tf1'(x) / x    (such that x Sigma(x) ~ x^a)
+# the same with f2, tf2, g
+# tf12 = tf1 + tf2
+# tf12(0) - tf12(1) = 1
+#
 # [Sigma, g, V*, T*](1) = 0
 
 # matrix to stack processes
@@ -141,7 +145,9 @@ stackdatagrid = np.einsum('ab,ij->abij', np.eye(nflav), np.eye(len(datagrid)))
 evtoq = linalg.inv(pmtoev @ qtopm)
 
 hyperprior = {
-    'log(scale)': np.log(gvar.gvar(0.5, 0.5)),
+    'log(scale)' : np.log(gvar.gvar(0.5, 0.5)),
+    'alpha_Sigma': gvar.gvar(0, 0.1),
+    'alpha_g'    : gvar.gvar(0, 0.1),
 }
 
 def makegp(hp, quick=False):
@@ -152,17 +158,27 @@ def makegp(hp, quick=False):
     kernel = lgp.Gibbs(scalefun=scalefun)
     kernel_prim = kernel.rescale(scalefun, scalefun)
     
-    # define evolution basis PDFs (and their primitives)
-    gp.addproc(kernel_prim, 'f1')
-    gp.addproctransf({'f1': 1}, "xSigma", deriv=1)
-    gp.addproc(kernel_prim, 'f2')
-    gp.addproctransf({'f2': 1}, "xg", deriv=1)
-    gp.addproctransf({'f1': 1, 'f2': 1}, 'f12')
+    # define Ts and Vs
     for suffix in ['', '3', '8', '15']:
-        gp.addproc(kernel_prim, 'f' + suffix)
-        gp.addproctransf({'f' + suffix: 1}, 'V' + suffix, deriv=1)
         if suffix != '':
             gp.addproc(kernel, 'T' + suffix)
+        gp.addproc(kernel_prim, 'f' + suffix)
+        gp.addproctransf({'f' + suffix: 1}, 'V' + suffix, deriv=1)
+    
+    # define xSigma
+    gp.addproc(kernel, 'f1')
+    a = hp['alpha_Sigma']
+    gp.addproctransf({'f1': lambda x: x ** (a + 1) / (a + 2)}, 'tf1')
+    gp.addproctransf({'tf1': 1}, "xSigma", deriv=1)
+    
+    # define xg
+    gp.addproc(kernel, 'f2')
+    a = hp['alpha_g']
+    gp.addproctransf({'f2': lambda x: x ** (a + 1) / (a + 2)}, 'tf2')
+    gp.addproctransf({'tf2': 1}, "xg", deriv=1)
+    
+    # define primitive of xSigma + xg
+    gp.addproctransf({'tf1': 1, 'tf2': 1}, 'tf12')
     
     # define a matrix of PDF values over the x grid
     for proc in tpnames:
@@ -173,7 +189,7 @@ def makegp(hp, quick=False):
     }, 'datagrid', 1)
 
     # definite integrals
-    for proc in ['f12', 'f', 'f3', 'f8', 'f15']:
+    for proc in ['tf12', 'f', 'f3', 'f8', 'f15']:
         gp.addx([0, 1], proc + '-endpoints', proc=proc)
         gp.addtransf({proc + '-endpoints': [-1, 1]}, proc + '-diff')
     
@@ -207,7 +223,7 @@ def makegp(hp, quick=False):
     return gp
 
 constraints = {
-    'f12-diff' : 1,
+    'tf12-diff' : 1,
     'f-diff'   : 3,
     'f3-diff'  : 1,
     'f8-diff'  : 3,
@@ -324,8 +340,12 @@ def fitargs(hp):
     residuals = linalg.solve_triangular(hyperchol, hp.buf - hypermean)
     plausibility = -1/2 * (residuals @ residuals)
     return args, plausibility
+    
+print('\ntrue hyperparameters:')
+print(truehp)
 
-z0 = gvar.mean(hyperprior)
+print('\nfit:')
+z0 = gvar.sample(hyperprior)
 fit, fithp = lsqfit.empbayes_fit(z0, fitargs)
 print(fit.format(maxline=True, pstyle='v'))
 print(fit.format(maxline=-1))
