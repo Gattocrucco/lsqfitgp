@@ -59,10 +59,6 @@ weird way I can't predict. But why wouldn't this happen when I just call
 linalg.cholesky? => Activity monitor shows I'm using all cores when running
 a timeit of lgp.raniter, so nope.
 
-When I'm finished with the PDF tests, move them to examples. Maybe I should
-simplify in some way or skip altogether the slower ones to avoid clogging the
-CI.
-
 Add references for all the kernels.
 
 ## Fixes and tests
@@ -114,11 +110,6 @@ su github. => Non è che però è un rischio? In questo modo il mio account
 github controllerebbe cosa finisce su PyPI perché dovrei metterci le chiavi di
 accesso. Dovrei attivare l'autenticazione a due fattori.
 
-Save as artifact the coverage file instead of the coverage report, do it for
-examples and documentation code too, then merge them in postcov and do three
-separate reports or an annotated report which says which sets executed the line.
-Combine also different OSes/versions.
-
 ## New functionality
 
 Dovrebbe essere possibile per l'utente inserire i suoi blocchi della matrice di
@@ -126,13 +117,6 @@ covarianza senza che nessuno gli rompa i coglioni. Anche dopo aver chiamato
 `addx`.
 
 Add mean functions.
-
-Add transformations of x points. This must be provided instead of letting the
-user apply the transformation herself when passing the points to GP.addx
-because in the latter case the derivatives are taken w.r.t. the transformed x
-instead of x. The expected behavior is the one where the transformations are
-defined as part of the kernel, so they should be implemented in Kernel.
-Possible interface: Kernel.xtransf(callable x -> transfx).
 
 ### More generic conditioning interface
 

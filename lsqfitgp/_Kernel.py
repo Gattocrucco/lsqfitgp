@@ -85,9 +85,9 @@ def _transf_recurse_dtype(transf, x):
 
 class _KernelBase:
     
-    # This class is only used to share implementation between Kernel and
+    # This class is only used to share the implementation between Kernel and
     # _CrossKernel, so the docstrings are meant to be read as docstrings of
-    # Kernel. The docstring is all in __init__ otherwise autoclass does not
+    # Kernel. The docstring is all in __init__ otherwise autoclass would not
     # read it.
     
     def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcebroadcast=False, forcekron=False, derivable=False, **kw):
@@ -101,9 +101,10 @@ class _KernelBase:
     
         Attributes
         ----------
-        derivable : int
-            How many times the kernel is derivable. ``sys.maxsize`` if it is
-            smooth.
+        derivable : int or None
+            How many times the process represented by the kernel is derivable.
+            ``sys.maxsize`` if it is smooth. ``None`` if the derivability is
+            unknown.
         
         Parameters
         ----------
@@ -139,6 +140,12 @@ class _KernelBase:
         **kw
             Additional keyword arguments are passed to `kernel`.
         
+        Methods
+        -------
+        rescale : multiply the kernel by some functions
+        diff : take derivatives of the kernel
+        xtransf : transform the inputs to the kernel
+        
         """
         # TODO linear transformation of input that works with arbitrarily
         # nested dtypes. Use an array/dictionary of arrays/dictionaries etc.
@@ -156,6 +163,8 @@ class _KernelBase:
         # the second callable is called with input points to determine on
         # which points exactly the kernel is derivable. (But still returns
         # a single boolean for an array of points, equivalent to an `all`.)
+        
+        # TODO the default derivable could be None instead of 0.
         
         # Check simple arguments.
         assert isinstance(dim, (str, type(None)))
@@ -275,8 +284,10 @@ class _KernelBase:
         obj._minderivable = obj._minderivable[::-1]
         obj._maxderivable = obj._maxderivable[::-1]
         return obj
+        
+        # TODO make _CrossKernel and _swap public
     
-    def rescale(self, xfun=None, yfun=None):
+    def rescale(self, xfun, yfun):
         """
         
         Multiply the kernel by functions of its arguments.
@@ -293,7 +304,7 @@ class _KernelBase:
         Returns
         -------
         h : Kernel-like
-            The rescaled kernel. If xfun is yfun, it is a Kernel object,
+            The rescaled kernel. If ``xfun is yfun``, it is a Kernel object,
             otherwise a Kernel-like one.
         
         """
@@ -301,7 +312,7 @@ class _KernelBase:
         # TODO option to specify derivability of xfun and yfun, to avoid
         # zeroing _minderivable
         
-        if xfun is None and xfun is None:
+        if xfun is None and yfun is None:
             return self
         
         kernel = self._kernel
@@ -321,12 +332,62 @@ class _KernelBase:
         obj._maxderivable = self._maxderivable
         return obj
     
+    def xtransf(self, xfun, yfun):
+        """
+        
+        Transform the inputs of the kernel.
+        
+        .. math::
+            h(x, y) = k(f(x), g(y))
+        
+        Parameters
+        ----------
+        xfun, yfun : callable or None
+            Functions mapping a new kind of input to the kind of input
+            accepted by the kernel. If both are None, this is a no-op.
+        
+        Returns
+        -------
+        h : Kernel-like
+            The transformed kernel. If ``xfun is yfun``, it is a Kernel object,
+            otherwise a Kernel-like one.
+        
+        """
+        
+        # TODO option to specify derivability of xfun and yfun, to avoid
+        # zeroing _minderivable
+        
+        if xfun is None and yfun is None:
+            return self
+        
+        kernel = self._kernel
+        
+        if xfun is None:
+            def fun(x, y):
+                return kernel(x, yfun(y))
+        elif yfun is None:
+            def fun(x, y):
+                return kernel(xfun(x), y)
+        else:
+            def fun(x, y):
+                return kernel(xfun(x), yfun(y))
+        
+        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else _CrossKernel
+        obj = cls(fun, forcebroadcast=self._forcebroadcast)
+        obj._maxderivable = self._maxderivable
+        return obj
+
     def diff(self, xderiv, yderiv):
         """
         
         Return a Kernel-like object that computes the derivatives of this
         kernel. The derivatives are computed automatically with autograd. If
         `xderiv` and `yderiv` are trivial, this is a no-op.
+        
+        .. math::
+            h(x, y) = \\frac{\\partial^n}{\\partial x^n}
+                      \\frac{\\partial^m}{\\partial y^m}
+                      k(x, y)
         
         Parameters
         ----------
@@ -336,7 +397,7 @@ class _KernelBase:
         
         Returns
         -------
-        Kernel-like
+        h : Kernel-like
             An object representing the derivatives of this one. If ``xderiv ==
             yderiv``, it is actually another Kernel.
         
