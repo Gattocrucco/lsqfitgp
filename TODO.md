@@ -112,10 +112,6 @@ accesso. Dovrei attivare l'autenticazione a due fattori.
 
 ## New functionality
 
-Dovrebbe essere possibile per l'utente inserire i suoi blocchi della matrice di
-covarianza senza che nessuno gli rompa i coglioni. Anche dopo aver chiamato
-`addx`.
-
 Add mean functions.
 
 ### More generic conditioning interface

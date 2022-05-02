@@ -153,10 +153,21 @@ class _Transf(_Element):
         Do the multiplication tensor @ x.
         """
         if tensor.shape:
-            x = np.tensordot(tensor, x, axes=self._axes)
+            return np.tensordot(tensor, x, axes=self._axes)
         else:
-            x = tensor * x
-        return x
+            return tensor * x
+
+class _Cov(_Element):
+    """User-provided covariance matrix block(s)"""
+    
+    def __init__(self, blocks, shape):
+        """blocks = dict (key, key) -> matrices"""
+        self.blocks = blocks
+        self._shape = shape
+    
+    @property
+    def shape(self):
+        return self._shape
 
 class _Proc(metaclass=abc.ABCMeta):
     """
@@ -180,6 +191,14 @@ class _ProcTransf(_Proc):
         """ops = dict proc key -> callable"""
         self.ops = ops
         self.deriv = deriv
+        
+class DefaultProcess:
+    """Object used as key for the default process in GP objects"""
+    pass
+
+class _ZeroKernel:
+    """Object representing a null kernel"""
+    pass
 
 class GP:
     """
@@ -192,6 +211,8 @@ class GP:
         Add points where the Gaussian process is evaluated.
     addtransf
         Define a linear transformation of the evaluated process.
+    addcov
+        Introduce a set of user-provided prior covariance matrix blocks.
     addproc
         Define a new independent component of the process.
     addproctransf
@@ -209,8 +230,9 @@ class GP:
     
     Parameters
     ----------
-    covfun : Kernel
-        An instance of `Kernel` representing the covariance kernel.
+    covfun : Kernel or None
+        An instance of `Kernel` representing the covariance kernel of the
+        default process of the GP object. It can be left unspecified.
     solver : str
         A solver used to invert the covariance matrix. See list below for
         the available solvers. Default is `eigcut+` which is slow but
@@ -228,10 +250,6 @@ class GP:
             Cholesky decomposition after regularizing the matrix with a
             Gershgorin estimate of the maximum eigenvalue. The fastest of the
             O(n^3) algorithms.
-        'maxeigv'
-            Cholesky decomposition regularizing the matrix with the maximum
-            eigenvalue. Slow for small sizes. Use only for large sizes and if
-            'gersh' is giving inaccurate results.
     
     checkpos : bool
         If True (default), raise a `LinAlgError` if the prior covariance
@@ -276,15 +294,14 @@ class GP:
     
     def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
         self._elements = dict() # key -> _Element
+        self._covblocks = dict() # (key, key) -> matrix
         self._procs = dict() # proc key -> _Proc
         self._kernels = dict() # (proc key, proc key) -> _KernelBase
+        self._decompcache = dict() # tuple of keys -> _Decomp
         if covfun is not None:
             if not isinstance(covfun, _Kernel.Kernel):
                 raise TypeError('covariance function must be of class Kernel')
-            self._procs[None] = _ProcKernel(covfun)
-            # TODO maybe I should use a custom singleton instead of None as
-            # key for the default process, in case a weird user wants to use
-            # None as key
+            self._procs[DefaultProcess] = _ProcKernel(covfun)
         self._canaddx = True
         # TODO add decompositions svdcut+ and svdcut- that cut the eigenvalues
         # but keep their sign (don't do it with an actual SVD, use
@@ -294,15 +311,14 @@ class GP:
             'eigcut-': _linalg.EigCutLowRank,
             'lowrank': _linalg.ReduceRank,
             'gersh'  : _linalg.CholGersh,
-            'maxeigv': _linalg.CholMaxEig,
         }[solver]
-        # TODO maxeigv is probably useless, remove it.
+        # TODO rename gersh -> chol?
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **kw)
         self._checkpositive = bool(checkpos)
         self._checksym = bool(checksym)
         self._checkfinite = bool(checkfinite)
     
-    def addproc(self, kernel=None, key=None, deriv=0):
+    def addproc(self, kernel=None, key=DefaultProcess, deriv=0):
         """
         
         Add an independent process.
@@ -315,8 +331,8 @@ class GP:
             the default kernel is that, although they have the same kernel,
             they are independent.
         key : hashable
-            The name that identifies the process in the GP object. If None,
-            sets the default kernel.
+            The name that identifies the process in the GP object. If not
+            specified, sets the kernel of the default process.
         deriv : Deriv-like
             Derivatives to take on the process defined by the kernel.
                 
@@ -326,7 +342,7 @@ class GP:
             raise KeyError(f'process key {key!r} already used in GP')
         
         if kernel is None:
-            kernel = self._procs[None].kernel
+            kernel = self._procs[DefaultProcess].kernel
         
         deriv = _Deriv.Deriv(deriv)
         
@@ -369,7 +385,7 @@ class GP:
         
         self._procs[key] = _ProcTransf(ops, deriv)
     
-    def addx(self, x, key=None, deriv=0, proc=None):
+    def addx(self, x, key=None, deriv=0, proc=DefaultProcess):
         """
         
         Add points where the Gaussian process is evaluated.
@@ -402,7 +418,7 @@ class GP:
             can be converted to :class:`Deriv`.
         proc : hashable
             The process to be evaluated on the points. If not specified, use
-            the kernel given at initialization.
+            the default process.
         
         """
         
@@ -447,6 +463,8 @@ class GP:
             # Check it is not empty.
             if not gx.size:
                 raise ValueError('x[{!r}] is empty'.format(key))
+                # TODO it would be elegant to support empty arrays, but how
+                # many things would break down from here?
 
             # Check dtype is compatible with previous arrays.
             # TODO since we never concatenate arrays we could allow a less
@@ -564,12 +582,119 @@ class GP:
         
         self._elements[key] = _Transf(tens, shape, axes)
     
+    def addcov(self, covblocks, key=None):
+        """
+        
+        Add user-defined prior covariance matrix blocks.
+        
+        Covariance matrices defined with `addcov` represent arbitrary finite
+        zero-mean Gaussian variables, assumed independent from all other
+        variables in the GP object.
+                
+        Parameters
+        ----------
+        covblocks : array or dictionary of arrays
+            If an array: a covariance matrix (or tensor) to be added under key
+            `key`. If a dictionary: a mapping from pairs of keys to the
+            corresponding covariance matrix blocks. A missing off-diagonal
+            block in the dictionary is interpreted as a matrix of zeros.
+        key : hashable
+            If `covblocks` is an array, the dictionary key under which
+            `covblocks` is added. Can not be specified if `covblocks` is a
+            dictionary.
+        
+        Raises
+        ------
+        RuntimeError :
+            A key is already used in the GP.
+        ValueError :
+            `covblocks` and/or `key` are malformed or inconsistent.
+        
+        """
+        
+        if not self._canaddx:
+            raise RuntimeError('can not add x any more to this process')
+            # TODO remove if I implement the lazy gvar prior.
+        
+        # Check type of `covblocks` and standardize it to dictionary.
+        if _isarraylike(covblocks):
+            if key is None:
+                raise ValueError('covblocks is array but key is None')
+            covblocks = {(key, key): covblocks}
+        elif _isdictlike(covblocks):
+            if key is not None:
+                raise ValueError('can not specify key if covblocks is a dictionary')
+            if None in covblocks:
+                raise ValueError('None key in covblocks not allowed')
+        else:
+            raise TypeError('covblocks must be array or dict')
+        
+        # Convert blocks to numpy arrays and determine shapes from diagonal
+        # blocks.
+        shapes = {}
+        preblocks = {}
+        for keys, block in covblocks.items():
+            for key in keys:
+                if key in self._elements:
+                    raise RuntimeError(f'key {key!r} already in GP')
+            xkey, ykey = keys
+            block = np.asarray(block)
+            if xkey == ykey:
+                if block.ndim % 2 == 1:
+                    raise ValueError(f'diagonal block {key!r} has odd number of axes')
+                half = block.ndim // 2
+                head = block.shape[:half]
+                tail = block.shape[half:]
+                if head != tail:
+                    raise ValueError(f'shape {block.shape!r} of diagonal block {key!r} is not symmetric')
+                if self._checksym:
+                    if not np.allclose(block, block.T):
+                        raise ValueError(f'diagonal block {key!r} is not symmetric')
+                shapes[xkey] = head
+            preblocks[keys] = block
+        
+        # Reshape blocks to square matrices and check that the shapes of out of
+        # diagonal blocks match those of diagonal ones.
+        blocks = {}
+        for keys, block in preblocks.items():
+            xkey, ykey = keys
+            if xkey == ykey:
+                size = np.prod(shapes[xkey], dtype=int)
+                blocks[keys] = block.reshape((size, size))
+            else:
+                for key in keys:
+                    if key not in shapes:
+                        raise ValueError(f'key {key!r} from off-diagonal block {keys!r} not found in diagonal blocks')
+                eshape = shapes[xkey] + shapes[ykey]
+                if block.shape != eshape:
+                    raise ValueError(f'shape {block.shape!r} of block {keys!r} is not {eshape!r} as expected from diagonal blocks')
+                xsize = np.prod(shapes[xkey], dtype=int)
+                ysize = np.prod(shapes[ykey], dtype=int)
+                block = block.reshape((xsize, ysize))
+                blocks[keys] = block
+                revkeys = (ykey, xkey)
+                blockT = preblocks.get(revkeys)
+                if blockT is None:
+                    blocks[revkeys] = block.T
+        
+        # Check symmetry of out of diagonal blocks.
+        if self._checksym:
+            for keys, block in blocks.items():
+                xkey, ykey = keys
+                if xkey != ykey:
+                    blockT = blocks[ykey, xkey]
+                    if not np.allclose(block.T, blockT):
+                        raise ValueError(f'block {keys!r} is not the transpose of block {revkeys!r}')
+        
+        # Create _Cov objects.
+        for key, shape in shapes.items():
+            self._elements[key] = _Cov(blocks, shape)
+
     def _crosskernel(self, xpkey, ypkey):
         
         # Check if the kernel is in cache.
-        notfound = 0 # can't use None because it means "no correlation"
-        cache = self._kernels.get((xpkey, ypkey), notfound)
-        if cache is not notfound:
+        cache = self._kernels.get((xpkey, ypkey))
+        if cache is not None:
             return cache
         
         # Compute the kernel.
@@ -582,11 +707,11 @@ class GP:
             kernel = self._crosskernel_transf_any(xpkey, ypkey)
         elif isinstance(yp, _ProcTransf):
             kernel = self._crosskernel_transf_any(ypkey, xpkey)
-            kernel = kernel if kernel is None else kernel._swap()
+            kernel = kernel if kernel is _ZeroKernel else kernel._swap()
         
         # Save cache.
         self._kernels[xpkey, ypkey] = kernel
-        self._kernels[ypkey, xpkey] = kernel if kernel is None else kernel._swap()
+        self._kernels[ypkey, xpkey] = kernel if kernel is _ZeroKernel else kernel._swap()
         
         return kernel
         
@@ -597,17 +722,17 @@ class GP:
         if xp is yp:
             return xp.kernel.diff(xp.deriv, xp.deriv)
         else:
-            return None
+            return _ZeroKernel
     
     def _crosskernel_transf_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]
         yp = self._procs[ypkey]
         
-        kernelsum = None
+        kernelsum = _ZeroKernel
         
         for pkey, factor in xp.ops.items():
             kernel = self._crosskernel(pkey, ypkey)
-            if kernel is None:
+            if kernel is _ZeroKernel:
                 continue
             
             if np.isscalar(factor):
@@ -615,12 +740,12 @@ class GP:
                 factor = lambda x: scalar
             kernel = kernel.rescale(factor, None)
             
-            if kernelsum is None:
+            if kernelsum is _ZeroKernel:
                 kernelsum = kernel
             else:
                 kernelsum += kernel
         
-        if kernelsum is not None:
+        if kernelsum is not _ZeroKernel:
             kernelsum = kernelsum.diff(xp.deriv, 0)
         
         return kernelsum
@@ -634,6 +759,7 @@ class GP:
         
         kernel = self._crosskernel(x.proc, y.proc)
         if kernel is None:
+            # TODO handle zero cov block efficiently
             return np.zeros((x.size, y.size))
         
         kernel = kernel.diff(x.deriv, y.deriv)
@@ -679,6 +805,11 @@ class GP:
         elif isinstance(y, _Transf):
             cov = self._makecovblock_transf_any(ykey, xkey)
             cov = cov.T
+        elif isinstance(x, _Cov) and isinstance(y, _Cov) and x.blocks is y.blocks and (xkey, ykey) in x.blocks:
+            cov = x.blocks[xkey, ykey]
+        else:
+            # TODO handle zero cov block efficiently
+            cov = np.zeros((x.size, y.size))
 
         if self._checkfinite and not np.all(np.isfinite(cov)):
             raise RuntimeError('covariance block {!r} is not finite'.format((xkey, ykey)))
@@ -687,10 +818,7 @@ class GP:
 
         return cov
 
-    def _covblock(self, row, col):
-        if not hasattr(self, '_covblocks'):
-            self._covblocks = dict() # (key1, key2) -> matrix
-        
+    def _covblock(self, row, col):        
         if (row, col) not in self._covblocks:
             block = self._makecovblock(row, col)
             _linalg.noautograd(block).flags['WRITEABLE'] = False
@@ -714,7 +842,7 @@ class GP:
         ]
         return _block_matrix(blocks)
     
-    def _solver(self, keys, ycov=0):
+    def _solver(self, keys, ycov=None):
         """
         Return a decomposition of the covariance matrix of the keys in `keys`
         plus the matrix ycov.
@@ -734,8 +862,28 @@ class GP:
         # thorough check can be done only on off-diagonal key-key blocks being
         # zero, which may be useful with multi-output or split components.
         
+        keys = tuple(keys)
+        
+        # Check if decomposition is in cache.
+        if ycov is None:
+            cache = self._decompcache.get(keys)
+            if cache is not None:
+                return cache
+            # TODO use frozenset(keys) instead of tuple(keys) to make cache
+            # work when order changes, but I have to permute the decomposition
+            # to make that work. Needs an ad-hoc class in _linalg.
+        
+        # Compute decomposition.
         Kxx = self._assemblecovblocks(keys)
-        return self._decompclass(Kxx + ycov)
+        if ycov is not None:
+            Kxx = Kxx + ycov
+        decomp = self._decompclass(Kxx)
+        
+        # Cache decomposition.
+        if ycov is None:
+            self._decompcache[keys] = decomp
+        
+        return decomp
         
     def _checkpos(self, cov):
         eigv = linalg.eigvalsh(_linalg.noautograd(cov))
@@ -751,7 +899,8 @@ class GP:
         
         # TODO I think that gvar internals would let me build the prior
         # one block at a time although everything is correlated, but I don't
-        # know how to do it. If I do that, remove _canaddx.
+        # know how to do it. If I do that, remove _canaddx. => Lepage is
+        # working on it.
         
         if not hasattr(self, '_priordict'):
             if self._checkpositive:
