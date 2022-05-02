@@ -507,6 +507,10 @@ complicated optimization.
 It would be convenient if in `addtransf` you could also index the arrays. Would
 fit naturally with the numpy-based interface.
 
+`pred` should notice when the conditioning is on a transformed variable that
+starts from a lower dimensional set of variables and thus the prior covariance
+matrix is rank deficient.
+
 #### Fourier
 
 The fourier transform is a linear operator, can I use it like I'm doing with
@@ -610,11 +614,15 @@ iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
 ### `gvar`-related issues
 
 Lepage has done sone updates after my requests, I should look into it and
-update the manual accordingly.
+update the manual accordingly. => Use all_keys.
 
 gvar: gvar.dump(..., add_dependencies=True) per essere efficiente
 dovrebbe salvare una sottomatrice della matrice di covarianza sparsa interna
 anziché usare evalcov_blocks.
+
+gvar.make_fake_data seems to be using evalcov instead of evalcov_blocks,
+making it inefficient with many variables with a diagonal covariance matrix,
+which is a common case with data.
 
 #### sparse `evalcov`
 

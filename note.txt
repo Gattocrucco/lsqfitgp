@@ -442,3 +442,22 @@ Maybe first implement the hessian thing with a simpler fit.
 
 Once I have this I'd say I can stop for a while on the PDFs and maybe port
 lsqfitgp to JAX and do other improvements to be able to optimize the fit.
+
+2022-05-02
+==========
+
+New piece of information: there aren't only linear and quadratic data, there's
+also ratios and other stuff. How many of them?
+
+I won't do the hessian because lsqfit.empbayes_fit does not let me pass
+parameters to scipy.minimize so I can't collect the target outputs with
+options=dict(return_all=True).
+
+Fit with many datapoints started at 11:15. => First iteration ended at 11:45.
+Thus the complete fit would require about 60 hours. The bottleneck appears to
+be the jacobian calculation with gvar, in particular the quadratic data tensor
+contraction which sums along a 50x50x9 = 22500 axis.
+
+How do I solve this problem?
+    1) Verify that this is the bottleneck.
+    2) Wrap fcn using gvar_function and compute the jacobian with jax.
