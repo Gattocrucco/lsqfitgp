@@ -38,8 +38,6 @@ l'interpretazione bayesiana della correlazione tra i risultati? Forse queste
 cose è meglio se le studio prima su lsqfitgp che è equivalente a un fit lineare
 e le formule sono analitiche e scritte chiaramente.
 
-After Lepage adds `BufferDict.allkeys`, update the docs.
-
 Explain somewhere how to combine processes defined on different variables. I
 don't know if this actually works seamlessly, derivatives may break. Surely it
 is a bit unelegant due to addx enforcing dtype uniformity. => I should stop
@@ -612,9 +610,6 @@ iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
 ## Optimization
 
 ### `gvar`-related issues
-
-Lepage has done sone updates after my requests, I should look into it and
-update the manual accordingly. => Use all_keys.
 
 gvar: gvar.dump(..., add_dependencies=True) per essere efficiente
 dovrebbe salvare una sottomatrice della matrice di covarianza sparsa interna
