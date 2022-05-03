@@ -193,9 +193,6 @@ pymc3. Maybe this would also be useful for gvar.
 
 ### Efficient sampling
 
-posso implementare correlate/decorrelate per BlockMatrix usando una
-sorta di cholesky a blocchi, l'ho scritto sul quaderno il 5 aprile 2022
-
 se la matrice di covarianza a priori dei punti dove voglio calcolare la
 predizioni è speciale, riesco a fare qualcosa? Ad esempio penso a una griglia
 fitta... forse LOVE (nei preprint salvati) fa qualcosa del genere visto che

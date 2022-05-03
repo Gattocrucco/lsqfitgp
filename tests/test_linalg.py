@@ -305,7 +305,8 @@ class DecompTestBase(metaclass=abc.ABCMeta):
 
 class DecompTestCorr(DecompTestBase):
     """Tests for `correlate` and `decorrelate` are defined in this
-    separate class because BlockDecomp does not have them."""
+    separate class because BlockDecomp once did not have them, now it has
+    but I've left the code around"""
     
     def test_correlate_eye(self):
         for n in range(1, MAXSIZE):
@@ -442,7 +443,7 @@ def check_solve_triangular(A, B, lower):
     x2 = _linalg.solve_triangular(A, B, lower=lower)
     np.testing.assert_allclose(x1, x2)
 
-class BlockDecompTestBase(DecompTestBase):
+class BlockDecompTestBase(DecompTestCorr):
     """
     Abstract class for testing BlockDecomp. Concrete subclasses must
     overwrite `subdecompclass`.

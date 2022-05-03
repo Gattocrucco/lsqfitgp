@@ -81,9 +81,6 @@ from . import _toeplitz_linalg
 # support the methods correlate and decorrelate. Low-rank updates already
 # provided by scipy.
 
-# TODO rethink the class hierarchy to move correlate and decorrelate in a
-# separate superclass.
-
 def noautograd(x):
     """
     Unpack an autograd numpy array.
@@ -611,7 +608,7 @@ def solve_triangular(a, b, lower=False):
     # TODO maybe commit this to gvar.linalg
     # TODO can I raise a LinAlgError if a[i,i] is 0, and still return the
     # result and have it assigned to a variable using try...finally inside this
-    # function?
+    # function? => Probably not
     x = np.copy(b)
     a = a.reshape(a.shape + (1,) * len(x.shape[1:]))
     if lower:
@@ -734,6 +731,8 @@ class BlockDecomp(Decomposition):
     # other blocks one at a time. Would a divide et impera approach be useful
     # for my case?
     
+    # TODO is it more efficient to make this a subclass of DecompAutograd?
+    
     def __init__(self, P_decomp, S, Q, S_decomp_class):
         """
         The matrix to be decomposed is
@@ -747,8 +746,8 @@ class BlockDecomp(Decomposition):
             An instantiated decomposition of P.
         S, Q : matrices
             The other blocks.
-        S_decomp_class : subclass of DecompAutograd
-            A subclass of DecompAutograd used to decompose S - Q.T P^-1 Q.
+        S_decomp_class : subclass of Decomposition
+            A subclass of Decomposition used to decompose S - Q.T P^-1 Q.
         """
         self._Q = Q
         self._invP = P_decomp
@@ -788,16 +787,42 @@ class BlockDecomp(Decomposition):
         return self._invP.logdet() + self._tildeS.logdet()
     
     def correlate(self, b):
-        raise NotImplementedError
+        # Block Cholesky decomposition:
+        # K = [P    Q] = L L^T
+        #     [Q^T  S]
+        # L = [A   ]
+        #     [B  C]
+        # AA^T = P
+        # AB^T = Q  ==>  B^T = A^-1Q
+        # BB^T + CC^T = S  ==>  CC^T = S - Q^T P^-1 Q
+        invP = self._invP
+        tildeS = self._tildeS
+        Q = self._Q
+        f = b[:len(Q)]
+        g = b[len(Q):]
+        x = invP.correlate(f)
+        y = np.tensordot(invP.decorrelate(Q).T, f, 1) + tildeS.correlate(g)
+        return np.concatenate([x, y])
     
     def decorrelate(self, b):
-        raise NotImplementedError
+        # L^-1 = [   A^-1         ]
+        #        [-C^-1BA^-1  C^-1]
+        invP = self._invP
+        tildeS = self._tildeS
+        Q = self._Q
+        f = b[:len(Q)]
+        g = b[len(Q):]
+        x = invP.decorrelate(f)
+        y = tildeS.decorrelate(g - invP.quad(Q, f))
+        return np.concatenate([x, y])
         
     @property
     def n(self):
         return sum(self._Q.shape)
 
 class BlockDiagDecomp(Decomposition):
+    
+    # TODO allow NxN instead of 2x2?
     
     def __init__(self, A_decomp, B_decomp):
         """

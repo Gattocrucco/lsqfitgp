@@ -300,17 +300,14 @@ class GP:
     def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
         self._elements = dict() # key -> _Element
         self._covblocks = dict() # (key, key) -> matrix
+        self._decompcache = dict() # tuple of keys -> Decomposition
         self._procs = dict() # proc key -> _Proc
         self._kernels = dict() # (proc key, proc key) -> _KernelBase
-        self._decompcache = dict() # tuple of keys -> _Decomp
         if covfun is not None:
             if not isinstance(covfun, _Kernel.Kernel):
                 raise TypeError('covariance function must be of class Kernel')
             self._procs[DefaultProcess] = _ProcKernel(covfun)
         self._canaddx = True
-        # TODO add decompositions svdcut+ and svdcut- that cut the eigenvalues
-        # but keep their sign (don't do it with an actual SVD, use
-        # diagonalization)
         decomp = {
             'eigcut+': _linalg.EigCutFullRank,
             'eigcut-': _linalg.EigCutLowRank,
