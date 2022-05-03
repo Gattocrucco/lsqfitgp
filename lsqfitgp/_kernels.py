@@ -78,7 +78,7 @@ def Constant(r2):
     return np.ones_like(r2)
     # TODO maybe use dtype=int8 as optimization? => not worth it
     
-@isotropickernel
+@isotropickernel(derivable=False)
 def White(r2):
     """
     White noise kernel.
@@ -180,7 +180,7 @@ def Matern(r, nu=None):
     else:
         return 2 ** (1 - nu) / special.gamma(nu) * x ** nu * special.kv(nu, x)
 
-@isotropickernel(input='soft')
+@isotropickernel(input='soft', derivable=False)
 def Matern12(r):
     """
     Matérn kernel of order 1/2 (continuous, not derivable).
@@ -232,8 +232,11 @@ def Matern52(r):
         k(r) = (1 + x + x^2/3) \\exp(-x), \\quad x = \\sqrt5 r
     """
     return _matern52(np.sqrt(5) * r)
+    
+def _gammaexp_derivable(gamma=1):
+    return gamma == 2
 
-@isotropickernel(input='soft')
+@isotropickernel(input='soft', derivable=_gammaexp_derivable)
 def GammaExp(r, gamma=1):
     """
     Gamma exponential kernel.
@@ -308,7 +311,7 @@ def NNKernel(x, y, sigma0=1):
     # augmented vector even if x and y are transformed, unless I support q
     # being a vector or an additional parameter.
 
-@kernel(forcekron=True)
+@kernel(forcekron=True, derivable=False)
 def Wiener(x, y):
     """
     Wiener kernel.
@@ -373,7 +376,7 @@ def Periodic(delta, outerscale=1):
     assert outerscale > 0
     return np.exp(-2 * (np.sin(delta / 2) / outerscale) ** 2)
 
-@kernel(forcekron=True)
+@kernel(forcekron=True, derivable=False)
 def Categorical(x, y, cov=None):
     """
     Categorical kernel.
@@ -434,7 +437,7 @@ def Cos(delta):
     """
     return np.cos(delta)
 
-@kernel(forcekron=True)
+@kernel(forcekron=True, derivable=False)
 def FracBrownian(x, y, H=1/2):
     """
     Fractional brownian motion kernel.
@@ -674,7 +677,7 @@ class Fourier(_FourierBase):
         obj._maxderivable = self._maxderivable
         return obj
 
-@kernel(forcekron=True)
+@kernel(forcekron=True, derivable=False)
 def OrnsteinUhlenbeck(x, y):
     """
     Ornstein-Uhlenbeck process kernel.
@@ -726,7 +729,7 @@ def Celerite(x, y, gamma=1, B=0):
     tau = _Kernel._abs(x - y)
     return np.exp(-gamma * tau) * (np.cos(tau) + B * np.sin(tau))
 
-@kernel(forcekron=True)
+@kernel(forcekron=True, derivable=False)
 def BrownianBridge(x, y):
     """
     Brownian bridge kernel.
@@ -840,7 +843,7 @@ def _harmonic(x, Q):
 #     lambda g, ans, x, Q: (g.T * (-np.exp(-x) * x ** 3 / 3).T).T
 # )
 
-@stationarykernel(forcekron=True)
+@stationarykernel(forcekron=True, derivable=False)
 def Expon(delta):
     """
     Exponential kernel.
@@ -855,7 +858,7 @@ def Expon(delta):
 
 _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]')
 
-@kernel(forcekron=True)
+@kernel(forcekron=True, derivable=False)
 @np.vectorize
 def BagOfWords(x, y):
     """

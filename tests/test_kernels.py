@@ -321,6 +321,7 @@ test_kwargs = {
     ]),
     _kernels.BagOfWords: dict(random_x_fun=bow_rand),
     _kernels.Gibbs: dict(kwargs_list=[dict(derivable=True)]),
+    _kernels.Rescaling: dict(kwargs_list=[dict(derivable=True)])
 }
 for kernel in kernels:
     factory_kw = test_kwargs.get(kernel, {})
