@@ -200,6 +200,18 @@ smaller than the matrix size for the method to be convenient.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproctransf" title="lsqfitgp.GP.addproctransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproctransf</span></code></a>(ops, key[, deriv])</p></td>
 <td><p>Define a new process as a linear combination of other processes.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addkernelop" title="lsqfitgp.GP.addkernelop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addkernelop</span></code></a>(method, arg, key[, proc])</p></td>
+<td><p>Define a new process as the transformation of an existing one.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocderiv" title="lsqfitgp.GP.addprocderiv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocderiv</span></code></a>(deriv, key[, proc])</p></td>
+<td><p>Define a new process as the derivative of an existing one.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocxtransf" title="lsqfitgp.GP.addprocxtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocxtransf</span></code></a>(transf, key[, proc])</p></td>
+<td><p>Define a new process by transforming the inputs of another one.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocrescale" title="lsqfitgp.GP.addprocrescale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocrescale</span></code></a>(scalefun, key[, proc])</p></td>
+<td><p>Define a new process as a rescaling of an existing one.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prior</span></code></a>([key, raw])</p></td>
 <td><p>Return an array or a dictionary of arrays of gvars representing the prior for the Gaussian process.</p></td>
 </tr>
@@ -250,6 +262,28 @@ dictionary.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addkernelop">
+<span class="sig-name descname"><span class="pre">addkernelop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addkernelop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process as the transformation of an existing one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>method</strong><span class="classifier">str</span></dt><dd><p>A method of <cite>Kernel</cite> taking two arguments which returns a
+transformed kernel.</p>
+</dd>
+<dt><strong>arg</strong><span class="classifier">object</span></dt><dd><p>A valid argument to the method.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>Key for the new process.</p>
+</dd>
+<dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>Key of the process to be transformed. If not specified, use the
+default process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addproc">
 <span class="sig-name descname"><span class="pre">addproc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv=0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add an independent process.</p>
@@ -265,6 +299,48 @@ they are independent.</p>
 specified, sets the kernel of the default process.</p>
 </dd>
 <dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>Derivatives to take on the process defined by the kernel.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addprocderiv">
+<span class="sig-name descname"><span class="pre">addprocderiv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deriv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocderiv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process as the derivative of an existing one.</p>
+<div class="math notranslate nohighlight">
+\[g(x) = \frac{\partial^n}{\partial x^n} f(x)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>Derivation order.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The key of the new process.</p>
+</dd>
+<dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>The key of the process to be derived. If not specified, use the
+default process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addprocrescale">
+<span class="sig-name descname"><span class="pre">addprocrescale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scalefun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocrescale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process as a rescaling of an existing one.</p>
+<div class="math notranslate nohighlight">
+\[g(x) = s(x)f(x)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>scalefun</strong><span class="classifier">callable</span></dt><dd><p>A function from the domain of the process to a scalar.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The key of the new process.</p>
+</dd>
+<dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>The key of the process to be transformed. If not specified, use the
+default process.</p>
 </dd>
 </dl>
 </dd>
@@ -291,6 +367,28 @@ of the domain of the process.</p>
 </dd>
 <dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>The linear combination is derived as specified by this
 parameter.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addprocxtransf">
+<span class="sig-name descname"><span class="pre">addprocxtransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocxtransf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process by transforming the inputs of another one.</p>
+<div class="math notranslate nohighlight">
+\[g(x) = f(T(x))\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transf</strong><span class="classifier">callable</span></dt><dd><p>A function mapping the new kind input to the input expected by the
+transformed process.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The key of the new process.</p>
+</dd>
+<dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>The key of the process to be transformed. If not specified, use the
+default process.</p>
 </dd>
 </dl>
 </dd>
