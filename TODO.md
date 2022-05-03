@@ -79,7 +79,7 @@ autograd, aggiungere dei metodi pubblici espliciti per comporre i kernel
 
 The minimum derivability warnings are annoying because there are a lot of them
 when doing nontrivial things, maybe I should put a warnings filter in GP.pred
-such that at most only one warning is emitted per call.
+such that at most only one warning is emitted per call. => Or maybe not
 
 Check that conditioning multiple times with zero errors does not change the
 result.

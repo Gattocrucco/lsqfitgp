@@ -311,6 +311,8 @@ class GP:
     # Current behaviour: only the covariance of things added with addx is
     # checked, and only if gvars are used at some point
     # Alternative 5: do the check in _solver only on things to be solved
+    # => Idea: do the full check even when not using gvars, only on
+    # non-transformed variables, but issue a warning if the system is large
     
     # TODO maybe the default should be solver='eigcut-' because it adds less
     # noise. It is moot anyway if the plot is done sampling with gvar.raniter
@@ -862,8 +864,7 @@ class GP:
                 continue
             
             if np.isscalar(factor):
-                scalar = factor
-                factor = lambda x: scalar
+                factor = lambda x, factor=factor: factor
             kernel = kernel.rescale(factor, None)
             
             if kernelsum is _ZeroKernel:
@@ -912,14 +913,14 @@ class GP:
         
         if x is y and not self._checksym:
             indices, back = _triu_indices_and_back(x.size)
-            x = x.x.reshape(-1)[indices]
-            y = y.x.reshape(-1)[indices]
-            halfcov = kernel(x, y)
+            ax = np.broadcast_to(x.x.reshape(-1)[:, None], (x.x.size, y.x.size))[indices]
+            ay = np.broadcast_to(y.x.reshape(-1)[None, :], (x.x.size, y.x.size))[indices]
+            halfcov = kernel(ax, ay)
             cov = halfcov[back]
         else:
-            x = x.x.reshape(-1)[:, None]
-            y = y.x.reshape(-1)[None, :]
-            cov = kernel(x, y)
+            ax = x.x.reshape(-1)[:, None]
+            ay = y.x.reshape(-1)[None, :]
+            cov = kernel(ax, ay)
         
         return cov
     
@@ -1041,7 +1042,7 @@ class GP:
                 msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
                 raise np.linalg.LinAlgError(msg)
     
-    def _priorpoints(self, key):
+    def _priorpointscov(self, key):
         
         # TODO I think that gvar internals would let me build the prior
         # one block at a time although everything is correlated, but I don't
@@ -1052,13 +1053,13 @@ class GP:
             if self._checkpositive:
                 keys = [
                     k for k, v in self._elements.items()
-                    if isinstance(v, _Points)
+                    if isinstance(v, (_Points, _Cov))
                 ]
                 fullcov = self._assemblecovblocks(list(keys))
                 self._checkpos(fullcov)
             items = [
                 (k, v) for k, v in self._elements.items()
-                if isinstance(v, _Points)
+                if isinstance(v, (_Points, _Cov))
             ]
             mean = {
                 key: np.zeros(x.shape)
@@ -1092,8 +1093,8 @@ class GP:
         prior = getattr(self, '_priordict', {}).get(key, None)
         if prior is None:
             x = self._elements[key]
-            if isinstance(x, _Points):
-                prior = self._priorpoints(key)
+            if isinstance(x, (_Points, _Cov)):
+                prior = self._priorpointscov(key)
                 # _priorpoints already caches the result
             elif isinstance(x, _Transf):
                 prior = self._priortransf(key)

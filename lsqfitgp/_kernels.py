@@ -641,7 +641,9 @@ class Fourier(_FourierBase):
     # preserved, for example this implementation of `fourier` is broken as soon
     # as a transformation is applied to the kernel. Linear transformations
     # should transform not only the kernel but also its transformations. I
-    # have to think how to make this work in full generality.
+    # have to think how to make this work in full generality. => Tentative
+    # design: loc, scale, dim, etc. must become standalone methods and
+    # appropriately transform the other transformation methods.
     
     def fourier(self, dox, doy):
         
