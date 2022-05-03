@@ -594,11 +594,11 @@ def Fourier(delta, n=2):
         \\frac {\\cos(2\\pi k(x-y))} {k^{2n}} = \\\\
         &= (-1)^{n+1}
         \\frac1{\\zeta(2n)} \\frac {(2\\pi)^{2n}} {2(2n)!}
-        B_{2n}(x-y \\mod 1),
+        B_{2n}(x-y \\bmod 1),
     
     where :math:`B_s(x)` is a Bernoulli polynomial. It is equivalent to fitting
     with a Fourier series of period 1 with independent priors on the
-    coefficients `k` with mean zero and standard deviation :math:`1/k^n`. The
+    coefficients with mean zero and standard deviation :math:`1/k^n`. The
     process is :math:`n - 1` times derivable.
     
     Note that the :math:`k = 0` term is not included in the summation, so the
@@ -607,12 +607,7 @@ def Fourier(delta, n=2):
     """
     
     # TODO maxk parameter to truncate the series. I have to manually sum the
-    # components? => Bad idea then.
-    
-    # TODO parity = {None, 'even', 'odd'} to keep only sines/cosines. I would
-    # keep the normalization to variance = 1. Maybe this is general and should
-    # be implemented for any kernel as a kernel function, like `where`. =>
-    # Bad idea probably.
+    # components? => Bad idea then. => Can I sum analitically the residual?
     
     # TODO this appears to be less numerically accurate than other kernels.
     # It's probably the Bernoulli polynomial computation, find out if it is due

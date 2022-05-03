@@ -174,10 +174,13 @@ class _Proc(metaclass=abc.ABCMeta):
     Abstract base class for an object holding information about a process
     in a GP object.
     """
-    pass
+    
+    @abc.abstractmethod
+    def __init__(self): # pragma: no cover
+        pass
     
 class _ProcKernel(_Proc):
-    """A process defined with a kernel"""
+    """An independent process defined with a kernel"""
     
     def __init__(self, kernel, deriv=0):
         assert isinstance(kernel, _Kernel.Kernel)
@@ -191,6 +194,15 @@ class _ProcTransf(_Proc):
         """ops = dict proc key -> callable"""
         self.ops = ops
         self.deriv = deriv
+
+class _ProcKernelOp(_Proc):
+    """A process defined by an operation on the kernel of another process"""
+    
+    def __init__(self, proc, method, arg):
+        """proc = proc key, method = Kernel method, arg = argument to method"""
+        self.proc = proc
+        self.method = method
+        self.arg = arg
         
 class DefaultProcess:
     """Object used as key for the default process in GP objects"""
@@ -217,6 +229,14 @@ class GP:
         Define a new independent component of the process.
     addproctransf
         Define a linear transformation of the process.
+    addkernelop
+        Define a transformation of the process through a kernel method.
+    addprocderiv
+        Define a derivative of the process.
+    addprocxtransf
+        Define a process with transformed inputs.
+    addprocrescale
+        Define a rescaled process.
     prior
         Compute the prior for the process.
     pred
@@ -387,6 +407,102 @@ class GP:
         deriv = _Deriv.Deriv(deriv)
         
         self._procs[key] = _ProcTransf(ops, deriv)
+    
+    def addkernelop(self, method, arg, key, proc=DefaultProcess):
+        """
+        
+        Define a new process as the transformation of an existing one.
+        
+        Parameters
+        ----------
+        method : str
+            A method of `Kernel` taking two arguments which returns a
+            transformed kernel.
+        arg : object
+            A valid argument to the method.
+        key : hashable
+            Key for the new process.
+        proc : hashable
+            Key of the process to be transformed. If not specified, use the
+            default process.
+        
+        """
+        
+        if not hasattr(_Kernel.Kernel, method):
+            raise ValueError(f'Kernel has not attribute {method!r}')
+        if key in self._procs:
+            raise KeyError(f'process key {key!r} already used in GP')
+        if proc not in self._procs:
+            raise ValueError(f'process {proc!r} not found')
+                
+        self._procs[key] = _ProcKernelOp(proc, method, arg)
+    
+    def addprocderiv(self, deriv, key, proc=DefaultProcess):
+        """
+        
+        Define a new process as the derivative of an existing one.
+        
+        .. math::
+            g(x) = \\frac{\\partial^n}{\\partial x^n} f(x)
+        
+        Parameters
+        ----------
+        deriv : Deriv-like
+            Derivation order.
+        key : hashable
+            The key of the new process.
+        proc : hashable
+            The key of the process to be derived. If not specified, use the
+            default process.
+        
+        """
+        deriv = _Deriv._Deriv(deriv)
+        self.addkernelop('diff', deriv, key, proc)
+    
+    def addprocxtransf(self, transf, key, proc=DefaultProcess):
+        """
+        
+        Define a new process by transforming the inputs of another one.
+        
+        .. math::
+            g(x) = f(T(x))
+        
+        Parameters
+        ----------
+        transf : callable
+            A function mapping the new kind input to the input expected by the
+            transformed process.
+        key : hashable
+            The key of the new process.
+        proc : hashable
+            The key of the process to be transformed. If not specified, use the
+            default process.
+        
+        """
+        assert callable(transf)
+        self.addkernelop('xtransf', transf, key, proc)
+    
+    def addprocrescale(self, scalefun, key, proc=DefaultProcess):
+        """
+        
+        Define a new process as a rescaling of an existing one.
+        
+        .. math::
+            g(x) = s(x)f(x)
+        
+        Parameters
+        ----------
+        scalefun : callable
+            A function from the domain of the process to a scalar.
+        key : hashable
+            The key of the new process.
+        proc : hashable
+            The key of the process to be transformed. If not specified, use the
+            default process.
+        
+        """
+        assert callable(scalefun)
+        self.addkernelop('rescale', scalefun, key, proc)
     
     def addx(self, x, key=None, deriv=0, proc=DefaultProcess):
         """
@@ -711,6 +827,13 @@ class GP:
         elif isinstance(yp, _ProcTransf):
             kernel = self._crosskernel_transf_any(ypkey, xpkey)
             kernel = kernel if kernel is _ZeroKernel else kernel._swap()
+        elif isinstance(xp, _ProcKernelOp):
+            kernel = self._crosskernel_op_any(xpkey, ypkey)
+        elif isinstance(yp, _ProcKernelOp):
+            kernel = self._crosskernel_op_any(ypkey, xpkey)
+            kernel = kernel if kernel is _ZeroKernel else kernel._swap()
+        else:
+            raise TypeError(f'unrecognized process types {type(xp)!r} and {type(yp)!r}')
         
         # Save cache.
         self._kernels[xpkey, ypkey] = kernel
@@ -752,6 +875,26 @@ class GP:
             kernelsum = kernelsum.diff(xp.deriv, 0)
         
         return kernelsum
+    
+    def _crosskernel_op_any(self, xpkey, ypkey):
+        xp = self._procs[xpkey]
+        yp = self._procs[ypkey]
+        
+        if xp is yp:
+            basekernel = self._crosskernel(xp.proc, xp.proc)
+            # In principle I could avoid handling this case separately but it
+            # will probably allow simplifications in how I implement nontrivial
+            # transformations in Kernel, I won't need to support taking a
+            # transformation in two steps.
+        else:
+            basekernel = self._crosskernel(xp.proc, ypkey)
+        
+        if basekernel is _ZeroKernel:
+            return _ZeroKernel
+        elif xp is yp:
+            return getattr(basekernel, xp.method)(xp.arg, xp.arg)
+        else:
+            return getattr(basekernel, xp.method)(xp.arg, None)
     
     def _makecovblock_points(self, xkey, ykey):
         x = self._elements[xkey]

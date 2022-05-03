@@ -399,6 +399,9 @@ Citare l'articolo che lo introduce.
 il kernel Taylor posso ricavarlo analiticamente anche per funzioni
 che vanno giù più velocemente? Tipo (1/k!)^2n si riesce a fare? Scommetterei di
 sì visto che (1/k!)^2 si può
+=> WolframAlpha says:
+    `sum_k=0^oo x^k/(k!)^n = 0_F_(n-1)([], [1]*(n-1), x)`
+But scipy.special does not implement the generalized hypergeometric function.
 
 aggiungere kernel BART con maxdepth, default beta=inf, maxdepth=1. Come input
 prende gli splitting points, e deve avere un class method per ricavare gli
