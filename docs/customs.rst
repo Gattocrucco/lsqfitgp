@@ -94,6 +94,8 @@ counts, and then sums over all letters. We then applied two decorators:
 ``np.vectorize``, which applies the function to each text in ``x`` and ``y``
 when they are arrays instead of single texts, and ``lgp.kernel``, which marks
 the function as a kernel for :mod:`lsqfitgp`. The decorator order matters!
+First we transform the function to make it work on arrays, and only then we
+can apply ``@lgp.kernel`` to mark it as a kernel.
 
 Note that this function is disastrously inefficient, I just wrote it to be as
 clear as possible.

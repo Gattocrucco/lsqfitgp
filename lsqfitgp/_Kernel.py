@@ -95,7 +95,7 @@ class _KernelBase:
     # Kernel. The docstring is all in __init__ otherwise autoclass would not
     # read it.
     
-    def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcebroadcast=False, forcekron=False, derivable=False, **kw):
+    def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcebroadcast=False, forcekron=False, derivable=None, saveargs=False, **kw):
         """
         
         Base class for objects representing covariance kernels.
@@ -137,11 +137,14 @@ class _KernelBase:
             product. Default False. If `dim` is specified, `forcekron` will
             have no effect.
         derivable : bool, int, None, or callable
-            Specifies how many times the kernel can be derived, just for
-            error checking purposes. Default is False. True means infinitely
-            many times derivable. If callable, it is called with the same
-            keyword arguments of `kernel`. If None it means that the
-            degree of derivability is unknown.
+            Specifies how many times the kernel can be derived, only for error
+            checking purposes. True means infinitely many times derivable. If
+            callable, it is called with the same keyword arguments of `kernel`.
+            If None (default) it means that the degree of derivability is
+            unknown.
+        saveargs : bool
+            If True, save the all the initialization arguments in a
+            dictionary under the attribute `initargs`. Default False.
         **kw
             Additional keyword arguments are passed to `kernel`.
         
@@ -150,6 +153,8 @@ class _KernelBase:
         rescale : multiply the kernel by some functions
         diff : take derivatives of the kernel
         xtransf : transform the inputs to the kernel
+        fourier : take the Fourier series
+        taylor : take the Taylor series
         
         """
         # TODO linear transformation of input that works with arbitrarily
@@ -170,6 +175,19 @@ class _KernelBase:
         # a single boolean for an array of points, equivalent to an `all`.)
         
         # TODO the default derivable could be None instead of 0.
+        
+        if saveargs:
+            self.initargs = dict(
+                dim=dim,
+                loc=loc,
+                scale=scale,
+                forcebroadcast=forcebroadcast,
+                forcekron=forcekron,
+                derivable=derivable,
+                **kw,
+            )
+        else:
+            self.initargs = None
         
         # Check simple arguments.
         assert isinstance(dim, (str, type(None)))
@@ -290,7 +308,7 @@ class _KernelBase:
         obj._maxderivable = obj._maxderivable[::-1]
         return obj
         
-        # TODO make _CrossKernel and _swap public
+        # TODO make _CrossKernel and _swap public?
     
     def rescale(self, xfun, yfun):
         """
@@ -522,6 +540,67 @@ class _KernelBase:
         obj._minderivable = tuple(self._minderivable[i] - orders[i] for i in range(2))
         obj._maxderivable = tuple(self._maxderivable[i] -   maxs[i] for i in range(2))
         return obj
+    
+    def fourier(self, dox, doy):
+        """
+        
+        Compute the Fourier series of the kernel.
+        
+        .. math::
+            h(k, y) = \\begin{cases}
+                \\frac2T \\int_0^T \\mathrm dx\\, k(x, y)
+                \\cos\\left(\\frac{2\\pi}T \\frac k2 x\\right)
+                & \\text{if $k$ is even} \\\\
+                \\frac2T \\int_0^T \\mathrm dx\\, k(x, y)
+                \\sin\\left(\\frac{2\\pi}T \\frac{k+1}2 x\\right)
+                & \\text{if $k$ is odd}
+            \\end{cases}
+        
+        The period `T` is implicit in the definition of the kernel.
+        
+        Parameters
+        ----------
+        dox, doy : bool
+            Specify if to compute the series w.r.t. x, y or both. If both are
+            False, this is a no-op.
+        
+        Returns
+        -------
+        h : Kernel-like
+            A Kernel-like object computing the Fourier series. If dox and
+            doy are equal, it is a Kernel.
+        
+        """
+        
+        raise NotImplementedError
+    
+    def taylor(self, dox, doy):
+        """
+        
+        Compute the Taylor series of the kernel.
+        
+        .. math::
+            h(k, y) = \\left.
+                \\frac{\\partial^k}{\\partial x^k} k(x, y)
+            \\right|_{x_0}
+        
+        The expansion point `x0` is implicit in the definition of the kernel.
+        
+        Parameters
+        ----------
+        dox, doy : bool
+            Specify if to compute the series w.r.t. x, y or both. If both are
+            False, this is a no-op.
+        
+        Returns
+        -------
+        h : Kernel-like
+            A Kernel-like object computing the Taylor series. If dox and
+            doy are equal, it is a Kernel.
+        
+        """
+        
+        raise NotImplementedError
 
 class _CrossKernel(_KernelBase):
     pass

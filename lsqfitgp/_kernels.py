@@ -580,8 +580,8 @@ def _fourier_derivable(**kw):
     else:
         return False
 
-@stationarykernel(forcekron=True, derivable=_fourier_derivable)
-def Fourier(delta, n=2):
+@stationarykernel(forcekron=True, derivable=_fourier_derivable, saveargs=True)
+def _FourierBase(delta, n=2):
     """
     Fourier kernel.
     
@@ -598,8 +598,9 @@ def Fourier(delta, n=2):
     
     where :math:`B_s(x)` is a Bernoulli polynomial. It is equivalent to fitting
     with a Fourier series of period 1 with independent priors on the
-    coefficients with mean zero and standard deviation :math:`1/k^n`. The
-    process is :math:`n - 1` times derivable.
+    coefficients with mean zero and variance
+    :math:`1/(\\zeta(2n)k^{2n})`. The process is :math:`n - 1` times
+    derivable.
     
     Note that the :math:`k = 0` term is not included in the summation, so the
     mean of the process over one period is forced to be zero.
@@ -618,6 +619,9 @@ def Fourier(delta, n=2):
     # slightly nonsymmetric covariance matrix. What??? I would expect it to
     # be exactly symmetric even numerically!
     
+    # TODO add constant as option, otherwise I can't compute the Fourier
+    # series when I add a constant.
+    
     assert isinstance(n, (int, np.integer)), type(n)
     assert n >= 1, n
     s = 2 * n
@@ -625,6 +629,50 @@ def Fourier(delta, n=2):
     sign0 = -(-1) ** n
     factor = (2 * np.pi) ** s / (2 * special.factorial(s) * special.zeta(s))
     return sign0 * factor * _bernoulli_poly(s, diff)
+
+class Fourier(_FourierBase):
+    
+    # TODO write a method of _KernelBase that makes a new kernel from the
+    # current one to be used as starting point by all the transformation
+    # methods. It should have an option on how much the subclass should be
+    # preserved, for example this implementation of `fourier` is broken as soon
+    # as a transformation is applied to the kernel. Linear transformations
+    # should transform not only the kernel but also its transformations. I
+    # have to think how to make this work in full generality.
+    
+    def fourier(self, dox, doy):
+        
+        # TODO problem: this ignores completely loc and scale. Write a static
+        # _KernelBase method that applies loc and scale to a kernel core, use
+        # it in __init__ and here.
+        
+        if not dox and not doy:
+            return self
+        
+        n = self.initargs['n']
+        s = 2 * n
+        
+        if dox and doy:
+            def kernel(k, q):
+                order = np.ceil(k / 2)
+                return np.where((k == q) & (k > 0), 1 / (order ** s * special.zeta(s)), 0)
+        
+        def kernel(k, y):
+            order = np.ceil(k / 2)
+            odd = k % 2
+            arg = 2 * np.pi * order * y
+            denom = np.sqrt(special.zeta(s))
+            return np.where(k > 0, np.where(odd, np.sin(arg), np.cos(arg)), 0) / denom
+        
+        if doy:
+            kernel0 = kernel
+            kernel = lambda x, q: kernel0(q, x)
+        
+        cls = Kernel if dox == doy and isinstance(self, Kernel) else _CrossKernel
+        obj = cls(kernel, forcebroadcast=self._forcebroadcast)
+        obj.initargs = self.initargs
+        obj._maxderivable = self._maxderivable
+        return obj
 
 @kernel(forcekron=True)
 def OrnsteinUhlenbeck(x, y):
