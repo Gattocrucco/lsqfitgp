@@ -234,19 +234,23 @@ class GP:
         An instance of `Kernel` representing the covariance kernel of the
         default process of the GP object. It can be left unspecified.
     solver : str
-        A solver used to invert the covariance matrix. See list below for
-        the available solvers. Default is `eigcut+` which is slow but
+        The algorithm used to decompose the prior covariance matrix. See list
+        below for the available solvers. Default is `eigcut+` which is slow but
         robust.
         
         'eigcut+'
-            Promote small eigenvalues to a minimum value.
+            Promote small (or negative) eigenvalues to a minimum value.
         'eigcut-'
+            Remove small (or negative) eigenvalues.
+        'svdcut+'
+            Promote small eigenvalues to a minimum value, keeping their sign.
+        'svdcut-'
             Remove small eigenvalues.
         'lowrank'
             Reduce the rank of the matrix. The complexity is O(n^2 r) where
             `n` is the matrix size and `r` the required rank, while other
             algorithms are O(n^3). Slow for small sizes.
-        'gersh'
+        'chol'
             Cholesky decomposition after regularizing the matrix with a
             Gershgorin estimate of the maximum eigenvalue. The fastest of the
             O(n^3) algorithms.
@@ -266,9 +270,10 @@ class GP:
         Additional keyword arguments are passed to the solver.
         
         eps : positive float
-            For solvers 'eigcut+', 'eigcut-', 'gersh' and 'maxeigv'. Specifies
-            the threshold for considering small the eigenvalues, relative to
-            the maximum eigenvalue. The default is matrix size * float epsilon.
+            For solvers 'eigcut+', 'eigcut-', 'svdcut+', 'svdcut-', 'chol'.
+            Specifies the threshold for considering small the eigenvalues,
+            relative to the maximum eigenvalue. The default is matrix size *
+            float epsilon.
         rank : positive integer
             For the 'lowrank' solver, the target rank. It should be much
             smaller than the matrix size for the method to be convenient.
@@ -309,10 +314,11 @@ class GP:
         decomp = {
             'eigcut+': _linalg.EigCutFullRank,
             'eigcut-': _linalg.EigCutLowRank,
+            'svdcut+': _linalg.SVDCutFullRank,
+            'svdcut-': _linalg.SVDCutLowRank,
             'lowrank': _linalg.ReduceRank,
-            'gersh'  : _linalg.CholGersh,
+            'chol'   : _linalg.CholGersh,
         }[solver]
-        # TODO rename gersh -> chol?
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **kw)
         self._checkpositive = bool(checkpos)
         self._checksym = bool(checksym)

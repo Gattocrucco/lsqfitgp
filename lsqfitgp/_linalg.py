@@ -32,8 +32,12 @@ DecompAutograd
 Diag
     Diagonalization.
 EigCutFullRank
-    Diagonalization rounding up small eigenvalues.
+    Diagonalization rounding up small (or negative) eigenvalues.
 EigCutLowRank
+    Diagonalization removing small (or negative) eigenvalues.
+SVDCutFullRank
+    Diagonalization rounding up small eigenvalues, keeping their sign.
+SVDCutLowRank
     Diagonalization removing small eigenvalues.
 ReduceRank
     Partial diagonalization with higher eigenvalues only.
@@ -560,6 +564,31 @@ class EigCutLowRank(Diag):
         self._w = self._w[subset]
         self._V = self._V[:, subset]
         
+class SVDCutFullRank(Diag):
+    """
+    Diagonalization. Eigenvalues below `eps` in absolute value are set to
+    `eps` with their sign, where `eps` is relative to the largest eigenvalue.
+    """
+    
+    def __init__(self, K, eps=None):
+        super().__init__(K)
+        eps = self._eps(eps)
+        cond = np.abs(self._w) < eps
+        self._w[cond] = eps * np.sign(self._w[cond])
+        
+class SVDCutLowRank(Diag):
+    """
+    Diagonalization. Eigenvalues below `eps` in absolute value are removed,
+    where `eps` is relative to the largest eigenvalue.
+    """
+    
+    def __init__(self, K, eps=None):
+        super().__init__(K)
+        eps = self._eps(eps)
+        subset = np.abs(self._w) >= eps
+        self._w = self._w[subset]
+        self._V = self._V[:, subset]
+
 class ReduceRank(Diag):
     """
     Keep only the first `rank` higher eigenmodes.
@@ -663,17 +692,6 @@ class CholReg(Chol):
         """Modify mat in-place to make it positive definite."""
         pass
     
-class CholMaxEig(CholReg):
-    """
-    Cholesky decomposition. The matrix is corrected for numerical roundoff by
-    adding to the diagonal a small number relative to the maximum eigenvalue.
-    `eps` multiplies this number.
-    """
-    
-    def _regularize(self, mat, eps):
-        w = sparse.linalg.eigsh(mat, k=1, which='LM', return_eigenvectors=False)
-        mat[np.diag_indices(len(mat))] += self._eps(eps, mat, w[0])
-
 def _gershgorin_eigval_bound(mat):
     """
     Upper bound on the largest magnitude eigenvalue of the matrix.

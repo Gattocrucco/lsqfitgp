@@ -341,17 +341,23 @@ class TestEigCutLowRank(DecompTestCorr):
     def decompclass(self):
         return _linalg.EigCutLowRank
 
+class TestSVDCutFullRank(DecompTestCorr):
+    
+    @property
+    def decompclass(self):
+        return _linalg.SVDCutFullRank
+
+class TestSVDCutLowRank(DecompTestCorr):
+    
+    @property
+    def decompclass(self):
+        return _linalg.SVDCutLowRank
+
 class TestChol(DecompTestCorr):
     
     @property
     def decompclass(self):
         return _linalg.Chol
-
-class TestCholMaxEig(DecompTestCorr):
-    
-    @property
-    def decompclass(self):
-        return _linalg.CholMaxEig
 
 class TestCholGersh(DecompTestCorr):
     
