@@ -692,29 +692,15 @@ independence within, deterministic links). Maybe this would require more
 hands-on control by the user instead of trying to all optimizations
 automatically, I'm not sure.
 
-When conditioning on data with errors the cache does not work. To use the cache
-the errors must be specified as a part of the process and added as a
-transformation. To do this conveniently it would be useful to have a method
-addcov that just adds a specified covariance matrix. It should admit a
-gvar-style dictionary of arrays to specify at once various variables and their
-cross blocks.
-
 When a covariance block flag or a DAG assumption is not used, emit a warning.
 Can be implemented by flagging the individual objects with "done", false by
-default, and the checking is something was not used in the blocks involved.
+default, and then checking if something was not used in the blocks involved.
 
 #### Evenly spaced input
 
 With stationary kernels, an evenly spaced input produces a toeplitz matrix,
 which requires O(N) memory and can be solved in O(N^2). If the data has
 uniform independent errors it's still toeplitz.
-
-Add a Toeplitz decomposition to _linalg. Since it's O(N^2) I can save the
-matrix and rerun the solve in every routine, but maybe for numerical accuracy
-and to use gvars it is better to explicitly save a cholesky decomposition.
-Wikipedia says it can be done but it's not in scipy.linalg, let's hope it is in
-LAPACK. This decomposition class does not check the input matrix, it just reads
-the first row.
 
 Add a toeplitz kw to Kernel. Values: False, True, 'auto'. True will complain if
 a non-evenly spaced input comes in. 'auto' will check if the input is compliant

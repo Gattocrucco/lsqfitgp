@@ -758,7 +758,7 @@ class GP:
         assert isinstance(y, _Points)
         
         kernel = self._crosskernel(x.proc, y.proc)
-        if kernel is None:
+        if kernel is _ZeroKernel:
             # TODO handle zero cov block efficiently
             return np.zeros((x.size, y.size))
         
