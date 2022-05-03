@@ -421,10 +421,8 @@ easy as cheating actually if we use the :class:`Periodic` kernel::
     }
     fit = lgp.empbayes_fit(hprior, makegp, {'sine': y}, raises=False)
     hp = fit.p
-    for k, v in hp.items():
-        print(k, v)
-        wo_log = k[4:-1]
-        print(wo_log, hp[wo_log])
+    for k in hp.all_keys():
+        print(k, hp[k])
     
     ax.cla()
     

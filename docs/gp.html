@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>6. Gaussian process class &#8212; lsqfitgp 0.7 documentation</title>
+    <title>6. Gaussian process class &#8212; lsqfitgp 0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -25,11 +25,95 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head><body>
-  
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">lsqfitgp</a></h1>
 
-    <div class="document">
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="userguide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">1. Kernels reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">2. Generic kernel classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">3. Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelop.html">4. Kernel operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deriv.html">5. Derivative specification</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">6. Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fit.html">8. Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="reference.html">Reference manual</a><ul>
+      <li>Previous: <a href="deriv.html" title="previous chapter"><span class="section-number">5. </span>Derivative specification</a></li>
+      <li>Next: <a href="array.html" title="next chapter"><span class="section-number">7. </span>Structured arrays wrapping</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
       <div class="documentwrapper">
         <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="deriv.html" title="Previous document"><span class="section-number">5. </span>Derivative specification</a>
+        </li>
+        <li>
+          <a href="array.html" title="Next document"><span class="section-number">7. </span>Structured arrays wrapping</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
           
 
           <div class="body" role="main">
@@ -43,27 +127,28 @@
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
-<dt><strong>covfun</strong><span class="classifier">Kernel</span></dt><dd><p>An instance of <cite>Kernel</cite> representing the covariance kernel.</p>
+<dt><strong>covfun</strong><span class="classifier">Kernel or None</span></dt><dd><p>An instance of <cite>Kernel</cite> representing the covariance kernel of the
+default process of the GP object. It can be left unspecified.</p>
 </dd>
-<dt><strong>solver</strong><span class="classifier">str</span></dt><dd><p>A solver used to invert the covariance matrix. See list below for
-the available solvers. Default is <cite>eigcut+</cite> which is slow but
+<dt><strong>solver</strong><span class="classifier">str</span></dt><dd><p>The algorithm used to decompose the prior covariance matrix. See list
+below for the available solvers. Default is <cite>eigcut+</cite> which is slow but
 robust.</p>
 <dl class="simple">
-<dt>‘eigcut+’</dt><dd><p>Promote small eigenvalues to a minimum value.</p>
+<dt>‘eigcut+’</dt><dd><p>Promote small (or negative) eigenvalues to a minimum value.</p>
 </dd>
-<dt>‘eigcut-’</dt><dd><p>Remove small eigenvalues.</p>
+<dt>‘eigcut-’</dt><dd><p>Remove small (or negative) eigenvalues.</p>
+</dd>
+<dt>‘svdcut+’</dt><dd><p>Promote small eigenvalues to a minimum value, keeping their sign.</p>
+</dd>
+<dt>‘svdcut-’</dt><dd><p>Remove small eigenvalues.</p>
 </dd>
 <dt>‘lowrank’</dt><dd><p>Reduce the rank of the matrix. The complexity is O(n^2 r) where
 <cite>n</cite> is the matrix size and <cite>r</cite> the required rank, while other
 algorithms are O(n^3). Slow for small sizes.</p>
 </dd>
-<dt>‘gersh’</dt><dd><p>Cholesky decomposition after regularizing the matrix with a
+<dt>‘chol’</dt><dd><p>Cholesky decomposition after regularizing the matrix with a
 Gershgorin estimate of the maximum eigenvalue. The fastest of the
 O(n^3) algorithms.</p>
-</dd>
-<dt>‘maxeigv’</dt><dd><p>Cholesky decomposition regularizing the matrix with the maximum
-eigenvalue. Slow for small sizes. Use only for large sizes and if
-‘gersh’ is giving inaccurate results.</p>
 </dd>
 </dl>
 </dd>
@@ -80,9 +165,10 @@ contain infs or nans.</p>
 </dd>
 <dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the solver.</p>
 <dl class="simple">
-<dt>eps<span class="classifier">positive float</span></dt><dd><p>For solvers ‘eigcut+’, ‘eigcut-’, ‘gersh’ and ‘maxeigv’. Specifies
-the threshold for considering small the eigenvalues, relative to
-the maximum eigenvalue. The default is matrix size * float epsilon.</p>
+<dt>eps<span class="classifier">positive float</span></dt><dd><p>For solvers ‘eigcut+’, ‘eigcut-’, ‘svdcut+’, ‘svdcut-’, ‘chol’.
+Specifies the threshold for considering small the eigenvalues,
+relative to the maximum eigenvalue. The default is matrix size *
+float epsilon.</p>
 </dd>
 <dt>rank<span class="classifier">positive integer</span></dt><dd><p>For the ‘lowrank’ solver, the target rank. It should be much
 smaller than the matrix size for the method to be convenient.</p>
@@ -105,32 +191,67 @@ smaller than the matrix size for the method to be convenient.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addtransf</span></code></a>(tensors, key[, axes])</p></td>
 <td><p>Apply a linear transformation to already specified process points.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproc" title="lsqfitgp.GP.addproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproc</span></code></a>([kernel, key, deriv])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addcov" title="lsqfitgp.GP.addcov"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addcov</span></code></a>(covblocks[, key])</p></td>
+<td><p>Add user-defined prior covariance matrix blocks.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproc" title="lsqfitgp.GP.addproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproc</span></code></a>([kernel, key, deriv])</p></td>
 <td><p>Add an independent process.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproctransf" title="lsqfitgp.GP.addproctransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproctransf</span></code></a>(ops, key[, deriv])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproctransf" title="lsqfitgp.GP.addproctransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproctransf</span></code></a>(ops, key[, deriv])</p></td>
 <td><p>Define a new process as a linear combination of other processes.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prior</span></code></a>([key, raw])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prior</span></code></a>([key, raw])</p></td>
 <td><p>Return an array or a dictionary of arrays of gvars representing the prior for the Gaussian process.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.pred" title="lsqfitgp.GP.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(given[, key, givencov, fromdata, raw, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.pred" title="lsqfitgp.GP.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(given[, key, givencov, fromdata, raw, ...])</p></td>
 <td><p>Compute the posterior.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromfit" title="lsqfitgp.GP.predfromfit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromfit</span></code></a>(*args, **kw)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromfit" title="lsqfitgp.GP.predfromfit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromfit</span></code></a>(*args, **kw)</p></td>
 <td><p>Like <cite>pred</cite> with <cite>fromdata=False</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromdata</span></code></a>(*args, **kw)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromdata</span></code></a>(*args, **kw)</p></td>
 <td><p>Like <cite>pred</cite> with <cite>fromdata=True</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">marginal_likelihood</span></code></a>(given[, givencov])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">marginal_likelihood</span></code></a>(given[, givencov])</p></td>
 <td><p>Compute the logarithm of the probability of the data.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addcov">
+<span class="sig-name descname"><span class="pre">addcov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covblocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addcov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add user-defined prior covariance matrix blocks.</p>
+<p>Covariance matrices defined with <cite>addcov</cite> represent arbitrary finite
+zero-mean Gaussian variables, assumed independent from all other
+variables in the GP object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>covblocks</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>If an array: a covariance matrix (or tensor) to be added under key
+<cite>key</cite>. If a dictionary: a mapping from pairs of keys to the
+corresponding covariance matrix blocks. A missing off-diagonal
+block in the dictionary is interpreted as a matrix of zeros.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>If <cite>covblocks</cite> is an array, the dictionary key under which
+<cite>covblocks</cite> is added. Can not be specified if <cite>covblocks</cite> is a
+dictionary.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>RuntimeError</strong><span class="classifier"></span></dt><dd><p>A key is already used in the GP.</p>
+</dd>
+<dt><strong>ValueError</strong><span class="classifier"></span></dt><dd><p><cite>covblocks</cite> and/or <cite>key</cite> are malformed or inconsistent.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addproc">
-<span class="sig-name descname"><span class="pre">addproc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproc" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addproc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv=0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add an independent process.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -140,8 +261,8 @@ difference between the default process and a process defined with
 the default kernel is that, although they have the same kernel,
 they are independent.</p>
 </dd>
-<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the process in the GP object. If None,
-sets the default kernel.</p>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the process in the GP object. If not
+specified, sets the kernel of the default process.</p>
 </dd>
 <dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>Derivatives to take on the process defined by the kernel.</p>
 </dd>
@@ -207,7 +328,7 @@ second-to-last dimension of the second array.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addx">
-<span class="sig-name descname"><span class="pre">addx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addx" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addx" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add points where the Gaussian process is evaluated.</p>
 <p>The GP object keeps the various x arrays in a dictionary. If <cite>x</cite> is an
 array, you have to specify its dictionary key with the <cite>key</cite> parameter.
@@ -233,7 +354,7 @@ Can not be specified if <cite>x</cite> is a dictionary.</p>
 can be converted to <a class="reference internal" href="deriv.html#lsqfitgp.Deriv" title="lsqfitgp.Deriv"><code class="xref py py-class docutils literal notranslate"><span class="pre">Deriv</span></code></a>.</p>
 </dd>
 <dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>The process to be evaluated on the points. If not specified, use
-the kernel given at initialization.</p>
+the default process.</p>
 </dd>
 </dl>
 </dd>
@@ -388,72 +509,26 @@ Default False.</p>
 
 
           </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="deriv.html" title="Previous document"><span class="section-number">5. </span>Derivative specification</a>
+        </li>
+        <li>
+          <a href="array.html" title="Next document"><span class="section-number">7. </span>Structured arrays wrapping</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
           
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">lsqfitgp</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="userguide.html">User guide</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference manual</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">1. Kernels reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernel.html">2. Generic kernel classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">3. Kernel decorators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernelop.html">4. Kernel operations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deriv.html">5. Derivative specification</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">6. Gaussian process class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fit.html">8. Fitting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  <li><a href="reference.html">Reference manual</a><ul>
-      <li>Previous: <a href="deriv.html" title="previous chapter"><span class="section-number">5. </span>Derivative specification</a></li>
-      <li>Next: <a href="array.html" title="next chapter"><span class="section-number">7. </span>Structured arrays wrapping</a></li>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
+    <div class="clearer"></div>
+  </div>
     <div class="footer">
       &copy;2020-2022, Giacomo Petrillo.
       

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>5. Derivative specification &#8212; lsqfitgp 0.7 documentation</title>
+    <title>5. Derivative specification &#8212; lsqfitgp 0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -24,66 +24,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head><body>
-  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          
-
-          <div class="body" role="main">
-            
-  <section id="derivative-specification">
-<span id="deriv"></span><h1><span class="section-number">5. </span>Derivative specification<a class="headerlink" href="#derivative-specification" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="lsqfitgp.Deriv">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">specified</span> <span class="pre">order</span> <span class="pre">derivative</span></span></span><a class="headerlink" href="#lsqfitgp.Deriv" title="Permalink to this definition">¶</a></dt>
-<dd><p>Class for specifying derivatives. Behaves like a dictionary str -&gt; int,
-where the keys represent variables and values the derivation order. An
-empty Deriv means no derivatives. A Deriv with one single key None means
-that the variable is implicit.</p>
-<p>Deriv(str) -&gt; first derivative w.r.t. specified variable</p>
-<p>Deriv(iter of str) -&gt; derivative w.r.t. specified variables</p>
-<p>Deriv(iter of int, str) -&gt; an int before a str acts as a multiplier</p>
-<p>Deriv(Deriv) -&gt; pass through</p>
-<p>Example: Deriv([‘a’, ‘b’, ‘b’, ‘c’]) is equivalent to
-Deriv([‘a’, 2, ‘b’, ‘c’]).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><dl class="simple">
-<dt>TypeError</dt><dd><p>If <cite>*args</cite> is not of the specified form.</p>
-</dd>
-<dt>ValueError</dt><dd><p>If <cite>*args</cite> ends with an integer or if there are consecutive
-integers.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Attributes</dt>
-<dd class="field-even"><dl class="simple">
-<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">implicit</span></code></dt><dd><p>True if the derivative is trivial or the variable is implicit.</p>
-</dd>
-<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">order</span></code></dt><dd><p>The total derivation order, i.e., the sum of the values.</p>
-</dd>
-<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code></dt><dd><p>The maximum derivation order for any single variable.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-</section>
-
-
-          </div>
-          
-        </div>
-      </div>
+  <div class="document">
+    
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
 <h1 class="logo"><a href="index.html">lsqfitgp</a></h1>
 
 
 
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
 
 
 
@@ -139,8 +96,89 @@ integers.</p>
 
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernelop.html" title="Previous document"><span class="section-number">4. </span>Kernel operations</a>
+        </li>
+        <li>
+          <a href="gp.html" title="Next document"><span class="section-number">6. </span>Gaussian process class</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="derivative-specification">
+<span id="deriv"></span><h1><span class="section-number">5. </span>Derivative specification<a class="headerlink" href="#derivative-specification" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.Deriv">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">specified</span> <span class="pre">order</span> <span class="pre">derivative</span></span></span><a class="headerlink" href="#lsqfitgp.Deriv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for specifying derivatives. Behaves like a dictionary str -&gt; int,
+where the keys represent variables and values the derivation order. An
+empty Deriv means no derivatives. A Deriv with one single key None means
+that the variable is implicit.</p>
+<p>Deriv(str) -&gt; first derivative w.r.t. specified variable</p>
+<p>Deriv(iter of str) -&gt; derivative w.r.t. specified variables</p>
+<p>Deriv(iter of int, str) -&gt; an int before a str acts as a multiplier</p>
+<p>Deriv(Deriv) -&gt; pass through</p>
+<p>Example: Deriv([‘a’, ‘b’, ‘b’, ‘c’]) is equivalent to
+Deriv([‘a’, 2, ‘b’, ‘c’]).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><dl class="simple">
+<dt>TypeError</dt><dd><p>If <cite>*args</cite> is not of the specified form.</p>
+</dd>
+<dt>ValueError</dt><dd><p>If <cite>*args</cite> ends with an integer or if there are consecutive
+integers.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">implicit</span></code></dt><dd><p>True if the derivative is trivial or the variable is implicit.</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">order</span></code></dt><dd><p>The total derivation order, i.e., the sum of the values.</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code></dt><dd><p>The maximum derivation order for any single variable.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernelop.html" title="Previous document"><span class="section-number">4. </span>Kernel operations</a>
+        </li>
+        <li>
+          <a href="gp.html" title="Next document"><span class="section-number">6. </span>Gaussian process class</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
     <div class="footer">
       &copy;2020-2022, Giacomo Petrillo.
       

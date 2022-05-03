@@ -22,21 +22,18 @@
 Generic kernel classes
 ======================
 
-All kernels in :mod:`lsqfitgp` are subclasses of :class:`Kernel` or
-:class:`IsotropicKernel` (which is itself a subclass of :class:`Kernel`).
+All kernels in :mod:`lsqfitgp` are subclasses of :class:`Kernel`,
+:class:`StationaryKernel` or :class:`IsotropicKernel` (which are themselves
+subclasses of :class:`Kernel`).
 
-The two general classes can be used directly by instantiating them with a
+The three general classes can be used directly by instantiating them with a
 callable which will do the actual computation. However, this can be done in a
-simpler and more functional way using the decorators :func:`kernel` and
-:func:`isotropickernel`.
-
-Kernel
-------
+simpler and more functional way using the decorators :func:`kernel`,
+:func:`stationarykernel` and :func:`isotropickernel`.
 
 .. autoclass:: Kernel
-    :inherited-members: diff
-    
-IsotropicKernel
----------------
+    :inherited-members:
+
+.. autoclass:: StationaryKernel    
 
 .. autoclass:: IsotropicKernel
