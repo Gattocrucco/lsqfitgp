@@ -101,7 +101,7 @@ def test_scale():
         gp.addx(x, 'x')
         return gp
     for _ in range(10):
-        check_fit(hp, gpfactory)
+        check_fit(hp, gpfactory, alpha=1e-7)
 
 def test_sdev():
     hp = {

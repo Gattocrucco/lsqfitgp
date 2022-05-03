@@ -30,7 +30,7 @@ from ._fit import *
 from ._Deriv import *
 from ._fastraniter import *
 
-__version__ = '0.7'
+__version__ = '0.8'
 
 __doc__ = """
 
@@ -68,17 +68,18 @@ Functions and classes
 Kernels
 -------
 
-The covariance kernels are represented by subclasses of class `Kernel`. There's
-also `IsotropicKernel` for covariance functions that depend only on the
-distance between the arguments. Kernel objects can be summed, multiplied and
-raised to a power.
+The covariance functions are represented by subclasses of class `Kernel`. There
+are also `IsotropicKernel` for covariance functions that depend only on the
+distance between the arguments, and `StationaryKernel` for kernels that depend
+only on the difference. Kernel objects can be summed, multiplied and raised to
+a power.
 
-To make a custom kernel, you can instantiate one of the two general classes by
-passing them a function, or subclass them. For convenience, decorators `kernel`
-and `isotropickernel` are provided to convert a function to a covariance
-kernel. Otherwise, use one of the already available subclasses listed below.
-Isotropic kernels are normalized to have unit variance and roughly unit
-lengthscale.
+To make a custom kernel, you can instantiate one of the three general classes
+by passing them a function, or subclass them. For convenience, decorators
+`kernel`, `stationarykernel` and `isotropickernel` are provided to convert a
+function to a covariance function. Otherwise, use one of the already available
+subclasses listed below. Isotropic and stationary kernels are normalized to
+have unit variance and roughly unit lengthscale.
 
     Constant
         Equivalent to fitting with a constant.

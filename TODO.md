@@ -427,6 +427,11 @@ Add order: int >= 0 parameter to Gibbs that rescales the kernel by
 (s(x)s(y))^order, useful when taking derivatives to have the derivative of
 order `order` with constant variance (check this is actually the case).
 
+Implement the kernels from Smola and Kondor (2003).
+
+Kernels on graphs from Nicolentzos et al. (2019): see their GraKeL library.
+Also there was a library for graphs in python, I don't remember the name.
+
 ### Transformations
 
 #### Pointwise infinite transformations

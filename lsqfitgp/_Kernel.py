@@ -30,8 +30,10 @@ from . import _Deriv
 
 __all__ = [
     'Kernel',
+    'StationaryKernel',
     'IsotropicKernel',
     'kernel',
+    'stationarykernel',
     'isotropickernel',
     'where'
 ]
@@ -74,13 +76,16 @@ def _prod_recurse_dtype(fun, *args):
     times = lambda a, b: a * b
     return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=np.prod)
 
-def _transf_recurse_dtype(transf, x):
+def _transf_recurse_dtype(transf, x, *args):
     if x.dtype.names is None:
-        return transf(x)
+        return transf(x, *args)
     else:
         x = _array.StructuredArray(x)
+        # TODO this would overwrite StructuredArrays passed by the user, but
+        # it's unlikely to be a problem in practice
         for name in x.dtype.names:
-            x[name] = _transf_recurse_dtype(transf, x[name])
+            newargs = tuple(y[name] for y in args)
+            x[name] = _transf_recurse_dtype(transf, x[name], *newargs)
         return x
 
 class _KernelBase:
@@ -549,19 +554,68 @@ class Kernel(_KernelBase):
             obj = NotImplemented
         return obj
     
-# TODO Add a class StationaryKernel. It should not be a superclass of
-# IsotropicKernel because that holds only for the distances based on the
-# difference. Or maybe I should fix that IsotropicKernel is for distances
-# based on the difference. Or maybe generalize the concept of difference in
-# StationaryKernel, so that it is reasonable that IsotropicKernel has a
-# general concept of distance. Question: the known isotropic kernels
-# effectively work for any distance, or the proofs are only for the 2-norm?
+class StationaryKernel(Kernel):
 
-class IsotropicKernel(Kernel):
+    def _binary(self, value, op):
+        
+        # TODO this logic could be made generic and moved to Kernel, since
+        # any subclass I can think of forms a subalgebra.
+        
+        # TODO make some unit tests checking that Kernel classes are
+        # propagated properly
+        
+        obj = super()._binary(value, op)
+        if isinstance(obj, Kernel) and isinstance(value, __class__):
+            obj.__class__ = __class__
+        return obj
+
+    def __init__(self, kernel, *, input='signed', scale=None, **kw):
+        """
+        
+        Subclass of :class:`Kernel` for isotropic kernels.
+    
+        Parameters
+        ----------
+        kernel : callable
+            A function taking one argument `delta` which is the difference
+            between x and y, plus optionally keyword arguments.
+        input : {'signed', 'soft'}
+            If 'signed' (default), `kernel` is passed the bare difference. If
+            'soft', `kernel` is passed the absolute value of the difference,
+            and the difference of equal points is a small number instead of
+            zero.
+        scale : scalar
+            The difference is divided by `scale`.
+        **kw
+            Additional keyword arguments are passed to the :class:`Kernel` init.
+                
+        """
+        if input == 'soft':
+            func = lambda x, y: _softabs(x - y)
+        elif input == 'signed':
+            func = lambda x, y: x - y
+        else:
+            raise KeyError(input)
+        
+        transf = lambda q: q
+        if scale is not None:
+            assert np.isscalar(scale)
+            assert np.isfinite(scale)
+            assert scale > 0
+            transf = lambda q : q / scale
+        
+        def function(x, y, **kwargs):
+            q = _transf_recurse_dtype(func, x, y)
+            return kernel(transf(q), **kwargs)
+        
+        Kernel.__init__(self, function, **kw)
+
+class IsotropicKernel(StationaryKernel):
     
     # TODO add the `distance` parameter to supply an arbitrary distance, maybe
     # allow string keywords for premade distances, like euclidean, hamming,
-    # p-norms.
+    # p-norms. Question: the known isotropic kernels effectively work for any
+    # distance, or the proofs are only for the 2-norm?
     
     # TODO it is not efficient that the distance is computed separately for
     # each kernel in a kernel expression, but probably it would be difficult
@@ -595,13 +649,12 @@ class IsotropicKernel(Kernel):
             Additional keyword arguments are passed to the :class:`Kernel` init.
                 
         """
-        allowed_input = ('squared', 'soft')
-        if input not in allowed_input:
-            raise ValueError('input option {!r} not valid, must be one of {!r}'.format(input, allowed_input))
         if input == 'soft':
             func = lambda x, y: _softabs(x - y) ** 2
-        else:
+        elif input == 'squared':
             func = lambda x, y: (x - y) ** 2
+        else:
+            raise KeyError(input)
         
         transf = lambda q: q
         if scale is not None:
@@ -611,24 +664,16 @@ class IsotropicKernel(Kernel):
             transf = lambda q : q / scale ** 2
         if input == 'soft':
             transf0 = transf
-            transf = lambda q: np.sqrt(transf0(q))  
+            transf = lambda q: np.sqrt(transf0(q))
+            # I do square and then square root because I first have to
+            # compute the sum of squares
         
         def function(x, y, **kwargs):
             q = _sum_recurse_dtype(func, x, y)
             return kernel(transf(q), **kwargs)
         
-        super().__init__(function, **kw)
+        Kernel.__init__(self, function, **kw)
     
-    def _binary(self, value, op):
-        
-        # TODO this logic could be made generic and moved to Kernel, since
-        # any subclass I can think of forms a subalgebra.
-        
-        obj = super()._binary(value, op)
-        if isinstance(obj, Kernel) and isinstance(value, __class__):
-            obj.__class__ = __class__
-        return obj
-
 def _eps(x):
     if np.issubdtype(x.dtype, np.inexact):
         return np.finfo(x.dtype).eps
@@ -706,6 +751,22 @@ def kernel(*args, **kw):
     
     """
     return _kerneldecoratorimpl(Kernel, *args, **kw)
+
+def stationarykernel(*args, **kw):
+    """
+    
+    Decorator to convert a function to a subclass of :class:`StationaryKernel`.
+    Example::
+    
+        @stationarykernel(input='soft')
+        def MyKernel(absdelta, cippa=1, lippa=42):
+            return cippa * sum(
+                np.exp(-absdelta[name] / lippa)
+                for name in absdelta.dtype.names
+            )
+    
+    """
+    return _kerneldecoratorimpl(StationaryKernel, *args, **kw)
 
 def isotropickernel(*args, **kw):
     """

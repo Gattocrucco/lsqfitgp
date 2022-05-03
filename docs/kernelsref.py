@@ -29,10 +29,13 @@ import sys
 sys.path = ['.', '..'] + sys.path
 import lsqfitgp as lgp
 
+classes = (lgp.IsotropicKernel, lgp.StationaryKernel, lgp.Kernel     )
+titles  = ('Isotropic kernels', 'Stationary kernels', 'Other kernels')
+
 kernels = []
 for name, obj in vars(lgp).items():
     if inspect.isclass(obj) and issubclass(obj, lgp.Kernel):
-        if obj not in (lgp.Kernel, lgp.IsotropicKernel):
+        if obj not in classes:
             kernels.append(name)
 kernels.sort()
 
@@ -49,11 +52,12 @@ Kernels reference
 This is a list of all the specific kernels implemented in :mod:`lsqfitgp`.
 
 Kernels are reported with a simplified signature where the positional arguments
-are `r` or `r2` if the kernel is isotropic, or `x`, `y` if it isn't, and with
-only the keyword arguments specific to the kernel. All kernels also understand
-the general keyword arguments of :class:`Kernel` or :class:`IsotropicKernel`,
-while there are no positional arguments when instantiating the kernel and the
-call signature of instances is always `x`, `y`.
+are `r` or `r2` if the kernel is isotropic, `delta` if it is stationary, or
+`x`, `y` for generic kernels, and with only the keyword arguments specific to
+the kernel. All kernels also understand the general keyword arguments of
+:class:`Kernel` or :class:`IsotropicKernel`, while there are no positional
+arguments when instantiating the kernel and the call signature of instances is
+always `x`, `y`.
 
 Example: the kernel :class:`GammaExp` is listed as ``GammaExp(r, gamma=1)``.
 This means you could use it this way::
@@ -85,10 +89,18 @@ Index
 """
 
 # index of kernels
-for kernel in kernels:
-    out += f"""\
+for superclass, title in zip(classes, titles):
+    out += f"""
+{title}
+{'^' * len(title)}
+"""
+    for kernel in kernels:
+        obj = getattr(lgp, kernel)
+        if superclass in obj.__bases__:
+            out += f"""\
   * :func:`{kernel}`
 """
+
 out += """
 Documentation
 -------------

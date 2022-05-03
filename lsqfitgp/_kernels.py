@@ -27,7 +27,7 @@ import numpy # to bypass autograd
 
 from . import _array
 from . import _Kernel
-from ._Kernel import kernel, isotropickernel
+from ._Kernel import kernel, stationarykernel, isotropickernel
 
 __all__ = [
     'Constant',
@@ -57,7 +57,7 @@ __all__ = [
     'BrownianBridge',
     'Harmonic',
     'Expon',
-    'BagOfWords'
+    'BagOfWords',
 ]
 
 def _dot(x, y):
@@ -351,8 +351,8 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     factor = np.sqrt(2 * sx * sy / denom)
     return factor * np.exp(-(x - y) ** 2 / denom)
 
-@kernel(derivable=True, forcekron=True)
-def Periodic(x, y, outerscale=1):
+@stationarykernel(derivable=True, forcekron=True)
+def Periodic(delta, outerscale=1):
     """
     Periodic Gaussian kernel.
     
@@ -371,7 +371,7 @@ def Periodic(x, y, outerscale=1):
     """
     assert np.isscalar(outerscale)
     assert outerscale > 0
-    return np.exp(-2 * (np.sin((x - y) / 2) / outerscale) ** 2)
+    return np.exp(-2 * (np.sin(delta / 2) / outerscale) ** 2)
 
 @kernel(forcekron=True)
 def Categorical(x, y, cov=None):
@@ -419,8 +419,8 @@ def Rescaling(x, y, stdfun=None):
         stdfun = lambda x: np.ones_like(x, dtype=float)
     return stdfun(x) * stdfun(y)
 
-@kernel(derivable=True, forcekron=True)
-def Cos(x, y):
+@stationarykernel(derivable=True, forcekron=True)
+def Cos(delta):
     """
     Cosine kernel.
     
@@ -432,7 +432,7 @@ def Cos(x, y):
     another kernel to introduce anticorrelations.
     
     """
-    return np.cos(x - y)
+    return np.cos(delta)
 
 @kernel(forcekron=True)
 def FracBrownian(x, y, H=1/2):
@@ -528,6 +528,8 @@ def WienerIntegral(x, y):
     # TODO can I generate this algorithmically for arbitrary integration order?
     # If I don't find a closed formula I can use sympy.
     
+    # TODO write formula in terms of min(x, y) and max(x, y).
+    
     assert np.all(x >= 0)
     assert np.all(y >= 0)
     return 1/2 * np.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
@@ -578,8 +580,8 @@ def _fourier_derivable(**kw):
     else:
         return False
 
-@kernel(forcekron=True, derivable=_fourier_derivable)
-def Fourier(x, y, n=2):
+@stationarykernel(forcekron=True, derivable=_fourier_derivable)
+def Fourier(delta, n=2):
     """
     Fourier kernel.
     
@@ -624,7 +626,7 @@ def Fourier(x, y, n=2):
     assert isinstance(n, (int, np.integer)), type(n)
     assert n >= 1, n
     s = 2 * n
-    diff = (x - y) % 1
+    diff = delta % 1
     sign0 = -(-1) ** n
     factor = (2 * np.pi) ** s / (2 * special.factorial(s) * special.zeta(s))
     return sign0 * factor * _bernoulli_poly(s, diff)
@@ -701,8 +703,8 @@ def BrownianBridge(x, y):
     assert np.all(0 <= y) and np.all(y <= 1)
     return np.minimum(x, y) - x * y
 
-@kernel(forcekron=True, derivable=1)
-def Harmonic(x, y, Q=1):
+@stationarykernel(forcekron=True, derivable=1)
+def Harmonic(delta, Q=1):
     """
     Damped stochastically driven harmonic oscillator kernel.
     
@@ -745,7 +747,7 @@ def Harmonic(x, y, Q=1):
     
     assert np.isscalar(Q) and 0 < Q < np.inf
     
-    tau = _Kernel._abs(x - y)
+    tau = _Kernel._abs(delta)
     
     if Q < 1/2:
         etaQ = np.sqrt((1 - Q) * (1 + Q))
@@ -795,8 +797,8 @@ def _harmonic(x, Q):
 #     lambda g, ans, x, Q: (g.T * (-np.exp(-x) * x ** 3 / 3).T).T
 # )
 
-@kernel(forcekron=True)
-def Expon(x, y):
+@stationarykernel(forcekron=True)
+def Expon(delta):
     """
     Exponential kernel.
     
@@ -806,7 +808,7 @@ def Expon(x, y):
     In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
     it acts separately while the Matérn kernel is isotropic.
     """
-    return np.exp(-_Kernel._abs(x - y))
+    return np.exp(-_Kernel._abs(delta))
 
 _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]')
 
@@ -838,9 +840,3 @@ def BagOfWords(x, y):
     ybag[''] = 0
     common = set(xbag) & set(ybag)
     return sum(xbag[k] * ybag[k] for k in common)
-
-# TODO implement the kernels from Smola and Kondor (2003).
-
-# TODO Kernels on graphs from Nicolentzos et al. (2019): see their GraKeL
-# library. Also there was a library for graphs in python, I don't remember the
-# name.

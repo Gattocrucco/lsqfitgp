@@ -32,4 +32,6 @@ subclass.
 
 .. autofunction:: kernel
 
+.. autofunction:: stationarykernel
+
 .. autofunction:: isotropickernel
