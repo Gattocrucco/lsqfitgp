@@ -186,7 +186,9 @@ other text. Texts with a lot of “a” will be much a-correlated between them.<
 counts, and then sums over all letters. We then applied two decorators:
 <code class="docutils literal notranslate"><span class="pre">np.vectorize</span></code>, which applies the function to each text in <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>
 when they are arrays instead of single texts, and <code class="docutils literal notranslate"><span class="pre">lgp.kernel</span></code>, which marks
-the function as a kernel for <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>. The decorator order matters!</p>
+the function as a kernel for <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>. The decorator order matters!
+First we transform the function to make it work on arrays, and only then we
+can apply <code class="docutils literal notranslate"><span class="pre">&#64;lgp.kernel</span></code> to mark it as a kernel.</p>
 <p>Note that this function is disastrously inefficient, I just wrote it to be as
 clear as possible.</p>
 <p>Now we need some texts. I’ll just copy-paste the first paragraph of random

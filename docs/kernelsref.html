@@ -176,7 +176,6 @@ while those with <cite>r2</cite> won’t have any issue.</p>
 <div><ul class="simple">
 <li><p><a class="reference internal" href="#lsqfitgp.Cos" title="lsqfitgp.Cos"><code class="xref py py-func docutils literal notranslate"><span class="pre">Cos()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Expon" title="lsqfitgp.Expon"><code class="xref py py-func docutils literal notranslate"><span class="pre">Expon()</span></code></a></p></li>
-<li><p><a class="reference internal" href="#lsqfitgp.Fourier" title="lsqfitgp.Fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">Fourier()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Harmonic" title="lsqfitgp.Harmonic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Harmonic()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Periodic" title="lsqfitgp.Periodic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Periodic()</span></code></a></p></li>
 </ul>
@@ -312,8 +311,9 @@ it acts separately while the Matérn kernel is isotropic.</p>
 B_{2n}(x-y \bmod 1),\end{split}\]</div>
 <p>where <span class="math notranslate nohighlight">\(B_s(x)\)</span> is a Bernoulli polynomial. It is equivalent to fitting
 with a Fourier series of period 1 with independent priors on the
-coefficients with mean zero and standard deviation <span class="math notranslate nohighlight">\(1/k^n\)</span>. The
-process is <span class="math notranslate nohighlight">\(n - 1\)</span> times derivable.</p>
+coefficients with mean zero and variance
+<span class="math notranslate nohighlight">\(1/(\zeta(2n)k^{2n})\)</span>. The process is <span class="math notranslate nohighlight">\(n - 1\)</span> times
+derivable.</p>
 <p>Note that the <span class="math notranslate nohighlight">\(k = 0\)</span> term is not included in the summation, so the
 mean of the process over one period is forced to be zero.</p>
 </dd></dl>

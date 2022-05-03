@@ -62,7 +62,6 @@ Stationary kernels
 ^^^^^^^^^^^^^^^^^^
   * :func:`Cos`
   * :func:`Expon`
-  * :func:`Fourier`
   * :func:`Harmonic`
   * :func:`Periodic`
 
