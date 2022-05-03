@@ -326,7 +326,7 @@ def Wiener(x, y):
     assert np.all(y >= 0)
     return np.minimum(x, y)
 
-@kernel(forcekron=True, derivable=None)
+@kernel(forcekron=True)
 def Gibbs(x, y, scalefun=lambda x: 1):
     """
     Gibbs kernel.
