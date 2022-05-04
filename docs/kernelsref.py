@@ -89,17 +89,20 @@ Index
 """
 
 # index of kernels
+kernels2 = list(kernels)
+kernels = kernels[::-1]
 for superclass, title in zip(classes, titles):
     out += f"""
 {title}
 {'^' * len(title)}
 """
-    for kernel in kernels:
-        obj = getattr(lgp, kernel)
-        if superclass in obj.__bases__:
+    for i in reversed(range(len(kernels))):
+        obj = getattr(lgp, kernels[i])
+        if issubclass(obj, superclass):
             out += f"""\
-  * :func:`{kernel}`
+  * :func:`{kernels[i]}`
 """
+            del kernels[i]
 
 out += """
 Documentation
@@ -107,7 +110,7 @@ Documentation
 """
 
 # documentation
-for kernel in kernels:
+for kernel in kernels2:
     out += f"""\
 .. autofunction:: {kernel}
 """

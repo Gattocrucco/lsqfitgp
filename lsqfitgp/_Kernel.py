@@ -134,8 +134,8 @@ class _KernelBase:
             If True, when calling `kernel`, if `x` and `y` are structured
             arrays, i.e., if they represent multidimensional input, `kernel` is
             invoked separately for each dimension, and the result is the
-            product. Default False. If `dim` is specified, `forcekron` will
-            have no effect.
+            product. Default False. The selection indicated by `dim` limits the
+            dimensions over which `forcekron` applies.
         derivable : bool, int, None, or callable
             Specifies how many times the kernel can be derived, only for error
             checking purposes. True means infinitely many times derivable. If
@@ -238,7 +238,7 @@ class _KernelBase:
         
         # TODO when dim becomes deep, forcekron must apply also to subfields
         # for consistence. Maybe it should do it now already.
-        if dim is None and forcekron:
+        if forcekron:
             def _kernel(x, y):
                 x = transf(x)
                 y = transf(y)
@@ -259,7 +259,7 @@ class _KernelBase:
         result = self._kernel(x, y)
         assert isinstance(result, (np.ndarray, np.number))
         assert np.issubdtype(result.dtype, np.number), result.dtype
-        assert result.shape == shape
+        assert result.shape == shape, (result.shape, shape)
         return result
     
     def _binary(self, value, op):
@@ -571,7 +571,8 @@ class _KernelBase:
             doy are equal, it is a Kernel.
         
         """
-        
+        if not dox and not doy:
+            return self
         raise NotImplementedError
     
     def taylor(self, dox, doy):
@@ -598,8 +599,9 @@ class _KernelBase:
             A Kernel-like object computing the Taylor series. If dox and
             doy are equal, it is a Kernel.
         
-        """
-        
+        """ 
+        if not dox and not doy:
+            return self
         raise NotImplementedError
 
 class _CrossKernel(_KernelBase):

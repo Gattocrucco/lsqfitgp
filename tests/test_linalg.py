@@ -144,6 +144,9 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         diffmean = gvar.mean(diff)
         solcov = gvar.evalcov(gvar.svd(sol))
         q = diffmean @ linalg.solve(solcov, diffmean, assume_a='pos')
+        # once I got:
+        # LinAlgWarning: Ill-conditioned matrix (rcond=5.70425e-17): result may
+        # not be accurate.
         np.testing.assert_allclose(q, 0, atol=1e-7)
         
         diffcov = gvar.evalcov(diff)

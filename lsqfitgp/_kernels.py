@@ -419,7 +419,8 @@ def Rescaling(x, y, stdfun=None):
     
     """
     if stdfun is None:
-        stdfun = lambda x: np.ones_like(x, dtype=float)
+        stdfun = lambda x: np.ones(x.shape)
+        # do not use np.ones_like because it does not recognize StructuredArray
     return stdfun(x) * stdfun(y)
 
 @stationarykernel(derivable=True, forcekron=True)
@@ -643,7 +644,10 @@ class Fourier(_FourierBase):
     # should transform not only the kernel but also its transformations. I
     # have to think how to make this work in full generality. => Tentative
     # design: loc, scale, dim, etc. must become standalone methods and
-    # appropriately transform the other transformation methods.
+    # appropriately transform the other transformation methods. Alternative:
+    # interface for providing the internals of the transformations, separately
+    # for cross and symmetric cases, and it's always the Kernel method that
+    # manages everything like it is for __call__.
     
     def fourier(self, dox, doy):
         
@@ -706,8 +710,8 @@ def _Celerite_derivable(**kw):
     else:
         return False
 
-@kernel(forcekron=True, derivable=_Celerite_derivable)
-def Celerite(x, y, gamma=1, B=0):
+@stationarykernel(forcekron=True, derivable=_Celerite_derivable)
+def Celerite(delta, gamma=1, B=0):
     """
     Celerite kernel.
     
@@ -728,7 +732,8 @@ def Celerite(x, y, gamma=1, B=0):
     assert np.isscalar(gamma) and 0 <= gamma < np.inf
     assert np.isscalar(B) and np.isfinite(B)
     assert np.abs(B) <= gamma
-    tau = _Kernel._abs(x - y)
+    tau = _Kernel._abs(delta)
+    # TODO option input='abs' in StationaryKernel
     return np.exp(-gamma * tau) * (np.cos(tau) + B * np.sin(tau))
 
 @kernel(forcekron=True, derivable=False)
