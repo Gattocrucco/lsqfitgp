@@ -59,7 +59,7 @@ Enough chatter already, let's fit this damn `scale` parameter::
         gp.addx(x, 'sine')
         return gp
     hyperprior = {'log(scale)': gvar.log(gvar.gvar(3, 3))}
-    fit = lgp.empbayes_fit(hyperprior, makegp, {'sine': y})
+    fit = lgp.empbayes_fit(hyperprior, makegp, {'sine': y}, raises=False)
     hp = fit.p
     print(hp['scale'])
 
@@ -135,7 +135,7 @@ constant::
         'log(scale)': gvar.log(gvar.gvar(3, 3))
     }
     
-    fit = lgp.empbayes_fit(hyperprior, makegp, {'sine': y})
+    fit = lgp.empbayes_fit(hyperprior, makegp, {'sine': y}, raises=False)
     hp = fit.p
     print('sdev', hp['sdev'])
     print('scale', hp['scale'])

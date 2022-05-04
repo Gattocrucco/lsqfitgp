@@ -224,7 +224,7 @@ smaller than the matrix size for the method to be convenient.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromdata</span></code></a>(*args, **kw)</p></td>
 <td><p>Like <cite>pred</cite> with <cite>fromdata=True</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">marginal_likelihood</span></code></a>(given[, givencov])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">marginal_likelihood</span></code></a>(given[, givencov, separate])</p></td>
 <td><p>Compute the logarithm of the probability of the data.</p></td>
 </tr>
 </tbody>
@@ -461,7 +461,7 @@ the default process.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.marginal_likelihood">
-<span class="sig-name descname"><span class="pre">marginal_likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">given</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givencov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.marginal_likelihood" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">marginal_likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">given</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givencov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.marginal_likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the logarithm of the probability of the data.</p>
 <p>The probability is computed under the Gaussian prior and Gaussian error
 model. It is also called marginal likelihood or bayes factor. If <cite>y</cite> is
@@ -472,24 +472,35 @@ the data and <cite>g</cite> is the Gaussian process, this is</p>
 data. If you used the Gaussian process as latent variable in a fit,
 use the whole fit to compute the marginal likelihood. E.g. <cite>lsqfit</cite>
 always computes the logGBF (it’s the same thing).</p>
-<p>The input is an array or dictionary of arrays, <cite>given</cite>. You can pass an
-array only if the GP has only one key. The contents of <cite>given</cite>
-represent the input data.</p>
+<p>The input is an array or dictionary of arrays, <cite>given</cite>. The contents of
+<cite>given</cite> represent the input data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>given</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>The data for some/all of the points in the GP. The arrays can
+<dt><strong>given</strong><span class="classifier">dictionary of arrays</span></dt><dd><p>The data for some/all of the points in the GP. The arrays can
 contain either gvars or normal numbers, the latter being
 equivalent to zero-uncertainty gvars.</p>
 </dd>
-<dt><strong>givencov</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>Covariance matrix of <cite>given</cite>. If not specified, the covariance
+<dt><strong>givencov</strong><span class="classifier">dictionary of arrays, optional</span></dt><dd><p>Covariance matrix of <cite>given</cite>. If not specified, the covariance
 is extracted from <cite>given</cite> with <cite>gvar.evalcov(given)</cite>.</p>
+</dd>
+<dt><strong>separate</strong><span class="classifier">bool</span></dt><dd><p>If True, return separately the logdet term and the residuals term.
+Default False.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl class="simple">
-<dt>scalar</dt><dd><p>The logarithm of the marginal likelihood.</p>
+<dt>If <code class="docutils literal notranslate"><span class="pre">separate</span> <span class="pre">==</span> <span class="pre">False</span></code> (default):</dt><dd></dd>
+<dt><strong>logp</strong><span class="classifier">scalar</span></dt><dd><p>The logarithm of the marginal likelihood.</p>
+</dd>
+<dt>If <code class="docutils literal notranslate"><span class="pre">separate</span> <span class="pre">==</span> <span class="pre">True</span></code>:</dt><dd></dd>
+<dt><strong>logdet</strong><span class="classifier">scalar</span></dt><dd><p>The term of the marginal likelihood containing the logarithm of
+the determinant of the prior covariance matrix, without the -1/2
+factor.</p>
+</dd>
+<dt><strong>residuals</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>A vector whose 2-norm multiplied by -1/2 gives the other term of
+the marginal likelihood.</p>
 </dd>
 </dl>
 </dd>
@@ -508,19 +519,18 @@ other parameters.</p>
 of arrays. They are properly correlated with gvars returned by
 <cite>prior</cite> and with the input data/fit.</p>
 <p>The input is a dictionary of arrays, <cite>given</cite>, with keys corresponding
-to the keys in the GP as added by <cite>addx</cite> or <cite>addtransf</cite>. You can pass
-an array if there is only one key in the GP.</p>
+to the keys in the GP as added by <cite>addx</cite> or <cite>addtransf</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>given</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>The data or fit result for some/all of the points in the GP.
+<dt><strong>given</strong><span class="classifier">dictionary of arrays</span></dt><dd><p>The data or fit result for some/all of the points in the GP.
 The arrays can contain either gvars or normal numbers, the latter
 being equivalent to zero-uncertainty gvars.</p>
 </dd>
 <dt><strong>key</strong><span class="classifier">None, key or list of keys, optional</span></dt><dd><p>If None, compute the posterior for all points in the GP (also those
 used in <cite>given</cite>). Otherwise only those specified by key.</p>
 </dd>
-<dt><strong>givencov</strong><span class="classifier">array or dictionary of arrays, optional</span></dt><dd><p>Covariance matrix of <cite>given</cite>. If not specified, the covariance
+<dt><strong>givencov</strong><span class="classifier">dictionary of arrays, optional</span></dt><dd><p>Covariance matrix of <cite>given</cite>. If not specified, the covariance
 is extracted from <cite>given</cite> with <cite>gvar.evalcov(given)</cite>.</p>
 </dd>
 <dt><strong>fromdata</strong><span class="classifier">bool</span></dt><dd><p>Mandatory. Specify if the contents of <cite>given</cite> are data or already

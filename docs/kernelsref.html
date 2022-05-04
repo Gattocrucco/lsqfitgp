@@ -174,8 +174,10 @@ while those with <cite>r2</cite> won’t have any issue.</p>
 <h3><span class="section-number">1.1.2. </span>Stationary kernels<a class="headerlink" href="#stationary-kernels" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
+<li><p><a class="reference internal" href="#lsqfitgp.Celerite" title="lsqfitgp.Celerite"><code class="xref py py-func docutils literal notranslate"><span class="pre">Celerite()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Cos" title="lsqfitgp.Cos"><code class="xref py py-func docutils literal notranslate"><span class="pre">Cos()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Expon" title="lsqfitgp.Expon"><code class="xref py py-func docutils literal notranslate"><span class="pre">Expon()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Fourier" title="lsqfitgp.Fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">Fourier()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Harmonic" title="lsqfitgp.Harmonic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Harmonic()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Periodic" title="lsqfitgp.Periodic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Periodic()</span></code></a></p></li>
 </ul>
@@ -188,7 +190,6 @@ while those with <cite>r2</cite> won’t have any issue.</p>
 <li><p><a class="reference internal" href="#lsqfitgp.BagOfWords" title="lsqfitgp.BagOfWords"><code class="xref py py-func docutils literal notranslate"><span class="pre">BagOfWords()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.BrownianBridge" title="lsqfitgp.BrownianBridge"><code class="xref py py-func docutils literal notranslate"><span class="pre">BrownianBridge()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Categorical" title="lsqfitgp.Categorical"><code class="xref py py-func docutils literal notranslate"><span class="pre">Categorical()</span></code></a></p></li>
-<li><p><a class="reference internal" href="#lsqfitgp.Celerite" title="lsqfitgp.Celerite"><code class="xref py py-func docutils literal notranslate"><span class="pre">Celerite()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.FracBrownian" title="lsqfitgp.FracBrownian"><code class="xref py py-func docutils literal notranslate"><span class="pre">FracBrownian()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Gibbs" title="lsqfitgp.Gibbs"><code class="xref py py-func docutils literal notranslate"><span class="pre">Gibbs()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Linear" title="lsqfitgp.Linear"><code class="xref py py-func docutils literal notranslate"><span class="pre">Linear()</span></code></a></p></li>
@@ -238,7 +239,7 @@ matrix of the values.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Celerite">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Celerite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Celerite" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Celerite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Celerite" title="Permalink to this definition">¶</a></dt>
 <dd><p>Celerite kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \exp(-\gamma|x - y|)

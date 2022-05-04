@@ -130,6 +130,7 @@ that the variable is implicit.</p>
 <p>Deriv(iter of str) -&gt; derivative w.r.t. specified variables</p>
 <p>Deriv(iter of int, str) -&gt; an int before a str acts as a multiplier</p>
 <p>Deriv(Deriv) -&gt; pass through</p>
+<p>Deriv(None) -&gt; Deriv(0)</p>
 <p>Example: Deriv([‘a’, ‘b’, ‘b’, ‘c’]) is equivalent to
 Deriv([‘a’, 2, ‘b’, ‘c’]).</p>
 <dl class="field-list simple">
