@@ -21,6 +21,7 @@ import itertools
 import sys
 import builtins
 import abc
+import warnings
 
 import gvar
 from autograd import numpy as np
@@ -435,7 +436,7 @@ class GP:
         if key in self._procs:
             raise KeyError(f'process key {key!r} already used in GP')
         if proc not in self._procs:
-            raise ValueError(f'process {proc!r} not found')
+            raise KeyError(f'process {proc!r} not found')
                 
         self._procs[key] = _ProcKernelOp(proc, method, arg)
     
@@ -458,7 +459,7 @@ class GP:
             default process.
         
         """
-        deriv = _Deriv._Deriv(deriv)
+        deriv = _Deriv.Deriv(deriv)
         self.addkernelop('diff', deriv, key, proc)
     
     def addprocxtransf(self, transf, key, proc=DefaultProcess):
@@ -572,7 +573,7 @@ class GP:
         
         for key in x:
             if key in self._elements:
-                raise RuntimeError('key {!r} already in GP'.format(key))
+                raise KeyError('key {!r} already in GP'.format(key))
             
             gx = x[key]
             
@@ -594,6 +595,9 @@ class GP:
             # through without being really ever useful. What would make sense
             # is checking the dtype structure matches recursively and check
             # concrete dtypes of fields can be casted.
+            # TODO result_type is too lax. Examples: str, float -> str,
+            # object, float -> object. I should use something like the
+            # ordering function in updowncast.py.
             if hasattr(self, '_dtype'):
                 try:
                     self._dtype = np.result_type(self._dtype, gx.dtype)
@@ -665,7 +669,7 @@ class GP:
         if key is None:
             raise ValueError('key can not be None')
         if key in self._elements:
-            raise RuntimeError(f'key {key!r} already in GP')
+            raise KeyError(f'key {key!r} already in GP')
         
         # Check keys.
         for k in tensors:
@@ -757,7 +761,7 @@ class GP:
         for keys, block in covblocks.items():
             for key in keys:
                 if key in self._elements:
-                    raise RuntimeError(f'key {key!r} already in GP')
+                    raise KeyError(f'key {key!r} already in GP')
             xkey, ykey = keys
             block = np.asarray(block)
             if xkey == ykey:
@@ -778,6 +782,8 @@ class GP:
         # diagonal blocks match those of diagonal ones.
         blocks = {}
         for keys, block in preblocks.items():
+            if self._checkfinite and not np.all(np.isfinite(block)):
+                raise ValueError(f'block {keys!r} not finite')
             xkey, ykey = keys
             if xkey == ykey:
                 size = np.prod(shapes[xkey], dtype=int)
@@ -785,7 +791,7 @@ class GP:
             else:
                 for key in keys:
                     if key not in shapes:
-                        raise ValueError(f'key {key!r} from off-diagonal block {keys!r} not found in diagonal blocks')
+                        raise KeyError(f'key {key!r} from off-diagonal block {keys!r} not found in diagonal blocks')
                 eshape = shapes[xkey] + shapes[ykey]
                 if block.shape != eshape:
                     raise ValueError(f'shape {block.shape!r} of block {keys!r} is not {eshape!r} as expected from diagonal blocks')
@@ -1033,6 +1039,10 @@ class GP:
         return decomp
         
     def _checkpos(self, cov):
+        # faster but less trivial options for checking positivity:
+        # 1) cholesky + eps, if fails it's not positive
+        # 2) ldlt, check each 2x2 block     <--- probably best? is it stable?
+        # 3) QR, check diagonal of R
         eigv = linalg.eigvalsh(_linalg.noautograd(cov))
         mineigv = np.min(eigv)
         if mineigv < 0:
@@ -1049,30 +1059,33 @@ class GP:
         # know how to do it. If I do that, remove _canaddx. => Lepage is
         # working on it.
         
-        if not hasattr(self, '_priordict'):
-            if self._checkpositive:
-                keys = [
-                    k for k, v in self._elements.items()
-                    if isinstance(v, (_Points, _Cov))
-                ]
-                fullcov = self._assemblecovblocks(list(keys))
-                self._checkpos(fullcov)
-            items = [
-                (k, v) for k, v in self._elements.items()
+        assert not hasattr(self, '_priordict')
+        # caching is managed by _prior and since we have to create all gvars
+        # at once this method can be called only the first time
+        
+        if self._checkpositive:
+            keys = [
+                k for k, v in self._elements.items()
                 if isinstance(v, (_Points, _Cov))
             ]
-            mean = {
-                key: np.zeros(x.shape)
-                for key, x in items
-            }
-            cov = {
-                (row, col): self._covblock(row, col).reshape(x.shape + y.shape)
-                for row, x in items
-                for col, y in items
-            }
-            self._priordict = gvar.gvar(mean, cov, fast=True)
-            self._priordict.buf.flags['WRITEABLE'] = False
-            self._canaddx = False
+            fullcov = self._assemblecovblocks(list(keys))
+            self._checkpos(fullcov)
+        items = [
+            (k, v) for k, v in self._elements.items()
+            if isinstance(v, (_Points, _Cov))
+        ]
+        mean = {
+            key: np.zeros(x.shape)
+            for key, x in items
+        }
+        cov = {
+            (row, col): self._covblock(row, col).reshape(x.shape + y.shape)
+            for row, x in items
+            for col, y in items
+        }
+        self._priordict = gvar.gvar(mean, cov, fast=True)
+        self._priordict.buf.flags['WRITEABLE'] = False
+        self._canaddx = False
         
         return self._priordict[key]
     
@@ -1099,6 +1112,8 @@ class GP:
             elif isinstance(x, _Transf):
                 prior = self._priortransf(key)
                 self._priordict[key] = prior
+            else:
+                raise TypeError(type(x))
         return prior
     
     def prior(self, key=None, raw=False):
@@ -1160,23 +1175,11 @@ class GP:
             return self._prior(key)
         
     def _flatgiven(self, given, givencov):
-        # TODO duck typing of given with hasattr(keys)
-        if _isarraylike_nostructured(given):
-            if len(self._elements) == 1:
-                given = {key: given for key in self._elements}
-                assert len(given) == 1
-                if givencov is not None:
-                    assert _isarraylike_nostructured(givencov)
-                    givencov = {(key, key): givencov for key in given}
-            else:
-                raise ValueError('`given` is an array but GP has multiple keys, provide a dictionary')
-            
-        elif _isdictlike(given):
-            if givencov is not None:
-                assert _isdictlike(givencov)
-            
-        else:
-            raise TypeError('`given` must be array or dict')
+        
+        if not hasattr(given, 'keys'):
+            raise TypeError('`given` must be dict')
+        if givencov is not None and not hasattr(givencov, 'keys'):
+            raise TypeError('`givenconv` must be None or dict')
         
         ylist = []
         keylist = []
@@ -1191,14 +1194,16 @@ class GP:
                 raise ValueError(msg.format(key, l.shape, shape))
             if l.dtype != object and not np.issubdtype(l.dtype, np.number):
                 msg = 'given[{!r}] has non-numerical dtype {!r}'
-                raise ValueError(msg.format(key, l.dtype))
+                raise TypeError(msg.format(key, l.dtype))
             
             ylist.append(l.reshape(-1))
             keylist.append(key)
         
         # TODO error checking on the unpacking of givencov
         
-        if givencov is not None:
+        if givencov is None:
+            covblocks = None
+        else:
             covblocks = [
                 [
                     givencov[keylist[i], keylist[j]].reshape(ylist[i].shape + ylist[j].shape)
@@ -1206,8 +1211,6 @@ class GP:
                 ]
                 for i in range(len(keylist))
             ]
-        else:
-            covblocks = None
             
         return ylist, keylist, covblocks
     
@@ -1235,19 +1238,18 @@ class GP:
         `prior` and with the input data/fit.
         
         The input is a dictionary of arrays, `given`, with keys corresponding
-        to the keys in the GP as added by `addx` or `addtransf`. You can pass
-        an array if there is only one key in the GP.
+        to the keys in the GP as added by `addx` or `addtransf`.
         
         Parameters
         ----------
-        given : array or dictionary of arrays
+        given : dictionary of arrays
             The data or fit result for some/all of the points in the GP.
             The arrays can contain either gvars or normal numbers, the latter
             being equivalent to zero-uncertainty gvars.
         key : None, key or list of keys, optional
             If None, compute the posterior for all points in the GP (also those
             used in `given`). Otherwise only those specified by key.
-        givencov : array or dictionary of arrays, optional
+        givencov : dictionary of arrays, optional
             Covariance matrix of `given`. If not specified, the covariance
             is extracted from `given` with `gvar.evalcov(given)`.
         fromdata : bool
@@ -1310,19 +1312,23 @@ class GP:
             ycov = _block_matrix(ycovblocks)
         elif (fromdata or raw or not keepcorr) and y.dtype == object:
             ycov = gvar.evalcov(gvar.gvar(y))
-            # TODO use evalcov_blocks when it becomes fast enough
+            # TODO use evalcov_blocks
+        else:
+            ycov = None
+            
+        if raw or not keepcorr or self._checkfinite:
+            ymean = gvar.mean(y)
+        if self._checkfinite and not np.all(np.isfinite(ymean)):
+            raise ValueError('mean of `given` is not finite')
+        if ycov is not None:
             if self._checkfinite and not np.all(np.isfinite(ycov)):
                 raise ValueError('covariance matrix of `given` is not finite')
-        else:
-            ycov = 0
+            if self._checksym and not np.allclose(ycov, ycov.T):
+                raise ValueError('covariance matrix of `given` is not symmetric')
         
         if raw or not keepcorr:
             
             Kxsxs = self._assemblecovblocks(outkeys)
-            
-            ymean = gvar.mean(y)
-            if self._checkfinite and not np.all(np.isfinite(ymean)):
-                raise ValueError('mean of `given` is not finite')
             
             if fromdata:
                 solver = self._solver(inkeys, ycov)
@@ -1334,12 +1340,8 @@ class GP:
             
             if not fromdata:
                 # complete formula: cov = Kxsxs - A.T @ (Kxx - ycov) @ A
-                if np.isscalar(ycov) and ycov == 0:
+                if ycov is None:
                     pass
-                elif np.isscalar(ycov) or len(ycov.shape) == 1:
-                    A = solver.solve(Kxxs)
-                    ycov_mat = np.reshape(ycov, (1, -1))
-                    cov = cov + (A.T * ycov_mat) @ A
                 else:
                     A = solver.solve(Kxxs)
                     cov = cov + A.T @ ycov @ A
@@ -1350,7 +1352,7 @@ class GP:
             yp = _concatenate_noop(yplist)
             ysp = _concatenate_noop(ysplist)
             
-            mat = ycov if fromdata else 0
+            mat = ycov if fromdata else None
             flatout = ysp + self._solver(inkeys, mat).quad(Kxxs, y - yp)
         
         if raw and not strip:
@@ -1382,7 +1384,7 @@ class GP:
                 key: flatout[slic].reshape(self._elements[key].shape)
                 for key, slic in zip(outkeys, outslices)
             })
-            # TODO A Bufferdict can be initialized directly with the 1D buffer.
+            # TODO A Bufferdict can be initialized directly with the 1D buffer
         else:
             assert len(outkeys) == 1
             return flatout.reshape(self._elements[outkeys[0]].shape)
@@ -1399,7 +1401,7 @@ class GP:
         """
         return self.pred(*args, fromdata=True, **kw)
 
-    def marginal_likelihood(self, given, givencov=None):
+    def marginal_likelihood(self, given, givencov=None, separate=False):
         """
         
         Compute the logarithm of the probability of the data.
@@ -1416,52 +1418,67 @@ class GP:
         use the whole fit to compute the marginal likelihood. E.g. `lsqfit`
         always computes the logGBF (it's the same thing).
         
-        The input is an array or dictionary of arrays, `given`. You can pass an
-        array only if the GP has only one key. The contents of `given`
-        represent the input data.
+        The input is an array or dictionary of arrays, `given`. The contents of
+        `given` represent the input data.
                 
         Parameters
         ----------
-        given : array or dictionary of arrays
+        given : dictionary of arrays
             The data for some/all of the points in the GP. The arrays can
             contain either gvars or normal numbers, the latter being
             equivalent to zero-uncertainty gvars.
-        givencov : array or dictionary of arrays
+        givencov : dictionary of arrays, optional
             Covariance matrix of `given`. If not specified, the covariance
             is extracted from `given` with `gvar.evalcov(given)`.
+        separate : bool
+            If True, return separately the logdet term and the residuals term.
+            Default False.
         
         Returns
         -------
-        scalar
+        If ``separate == False`` (default):
+        
+        logp : scalar
             The logarithm of the marginal likelihood.
+        
+        If ``separate == True``:
             
+        logdet : scalar
+            The term of the marginal likelihood containing the logarithm of
+            the determinant of the prior covariance matrix, without the -1/2
+            factor.
+        residuals : array or dictionary of arrays
+            A vector whose 2-norm multiplied by -1/2 gives the other term of
+            the marginal likelihood.
         """        
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = _concatenate_noop(ylist)
         
-        # TODO maybe I should raise an error when the covariance is specified
-        # with givencov but y contains gvars? Now I'm just ignoring the gvar
-        # covariance. Maybe just a warning.
-        
-        # TODO parameter separate:bool to return separately the residuals
-        # and the logdet. A problem with the residuals is that I would use
-        # decomp.decorrelate which is missing in BlockDecomp.
-
         if ycovblocks is not None:
             ycov = _block_matrix(ycovblocks)
+            if y.dtype == object:
+                warnings.warn(f'covariance matrix may have been specified both explicitly and with gvars; the explicit one will be used')
             ymean = gvar.mean(y)
         elif y.dtype == object:
             gvary = gvar.gvar(y)
             ycov = gvar.evalcov(gvary)
             ymean = gvar.mean(gvary)
         else:
-            ycov = 0
+            ycov = None
             ymean = y
         
         if self._checkfinite and not np.all(np.isfinite(ymean)):
             raise ValueError('mean of `given` is not finite')
-        if self._checkfinite and not np.all(np.isfinite(ycov)):
-            raise ValueError('covariance matrix of `given` is not finite')
+        if ycov is not None:
+            if self._checkfinite and not np.all(np.isfinite(ycov)):
+                raise ValueError('covariance matrix of `given` is not finite')
+            if self._checksym and not np.allclose(ycov, ycov.T):
+                raise ValueError('covariance matrix of `given` is not symmetric')
         
         decomp = self._solver(inkeys, ycov)
-        return -1/2 * (decomp.quad(ymean) + decomp.logdet() + len(y) * np.log(2 * np.pi))
+        logdet = decomp.logdet() + len(y) * np.log(2 * np.pi)
+        if separate:
+            residuals = decomp.decorrelate(ymean)
+            return logdet, residuals
+        else:
+            return -1/2 * (decomp.quad(ymean) + logdet)

@@ -45,6 +45,8 @@ class Deriv:
         
         Deriv(Deriv) -> pass through
         
+        Deriv(None) -> Deriv(0)
+        
         Example: Deriv(['a', 'b', 'b', 'c']) is equivalent to
         Deriv(['a', 2, 'b', 'c']).
         
@@ -92,8 +94,8 @@ class Deriv:
                         raise TypeError('objects in iterable must be int or str')
                 if integer is not None:
                     raise ValueError('dangling derivative order')
-            else:
-                raise TypeError('argument must be int, str, or iterable')
+            elif arg is not None:
+                raise TypeError('argument must be None, int, str, or iterable')
         elif len(args) != 0:
             raise ValueError(len(args))
         assert all(c.values())
