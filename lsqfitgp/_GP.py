@@ -208,6 +208,9 @@ class _ProcKernelOp(_Proc):
 class DefaultProcess:
     """Object used as key for the default process in GP objects"""
     pass
+    # TODO make a singleton superclass/metaclass such that
+    # 1) the representation is the name
+    # 2) it can not be instantiated
 
 class _ZeroKernel:
     """Object representing a null kernel"""

@@ -59,9 +59,8 @@ a timeit of lgp.raniter, so nope.
 
 Add references for all the kernels.
 
-Add version to the title and upload documentation both to docs/ and
-docs-version/. Then put a chronology of versions into the index page as raw
-html with relative links.
+Put a chronology of versions into the index page as raw html with relative
+links.
 
 ## Fixes and tests
 
@@ -378,6 +377,56 @@ even recognize this and so for example np.tan(kernel) would work.
 
 Look at what the Schoenberg theorem is (seen in seminar by Théo Galy-Fajou)
 
+Tentative coherent implementation of transformations and their compositions:
+Each transformation is implemented by a method of the kernel. Kernel provides
+three decorators for methods: unarytransf, binarytransf, outputtransf,
+inputtransf. The marked method shall return a callable that is used as the core
+kernel for the new Kernel object returned. unarytransf is for transformations
+that only act on the kernel output, as for example exp(k(x, y)). binarytransf
+likewise is for operations on two kernels at a time, like k(x, y) + q(x, y).
+outputtransf is for operations that correspond to linear transformations of the
+process defined by the kernel, like f(x)k(x, y)f(y). inputtransf is for
+transformations of the arguments of the kernel, k(f(x), f(y)). The difference
+between unary/binary/input and output is that the latter category actually
+needs two (three for cross-kernels) core implementations, acting only on one
+argument or on both arguments; so in practice the corresponding decorators
+actually need to be a family of decorators similar to @property. Example:
+
+```python
+class Cippa(Kernel):
+    @outputtransf
+    def mytransf(self):
+        f = lambda x: x ** 2
+        k = self._kernel
+        return lambda x, y: f(x) * f(y) * k(x, y)
+    @mytransf.left # raises if the method name is different from mytransf
+    def mytransf(self):
+        f = lambda x: x ** 2
+        k = self._kernel
+        return lambda x, y: f(x) * k(x, y)
+    # now transf.right is defined implicitly in terms of left if not given, but
+    # only on kernels and not on crosskernels
+```
+
+See `playground/methdec.py` for a sketch of the implementation. The next issue
+then is changing the transformations themselves as other transformations are
+applied. Example: apply a translation and then fourier. The translation must
+modify the fourier implementation to take into account the translation. Other
+example: non-linear + fourier. In this case the non-linear transf. should in
+some way disable the fourier transformation. To this end, I would define a
+class method that can be used within the implementation of the transformations
+to list the transformations defined and possibly wrap and redefine them. The
+class method would list through the methods and search for a store attribute
+set by the decorators, then fetch from it the implementations.
+
+Instead of forbidding Kernel-CrossKernel operations, make Kernel a subclass
+of CrossKernel, implement a generic subclass permanence system in _binary
+and then let GP raise an error when it receives a CrossKernel.
+
+I can use `__kwdefaults__` to get the default values of kernel parameters
+when I decorate them, such that callable derivable and initargs would always
+know all the parameters.
+
 ### New specific kernels/kernel options
 
 Is there a smooth version of the Wiener process? like, softmin(x, y)? I tried
@@ -430,12 +479,19 @@ Kernel rumore rosa, troncato tra due frequenze.
 
 Add order: int >= 0 parameter to Gibbs that rescales the kernel by
 (s(x)s(y))^order, useful when taking derivatives to have the derivative of
-order `order` with constant variance (check this is actually the case).
+order `order` with constant variance (check this is actually the case). =>
+This is very generic so maybe it does not belong to the Gibbs? But the Gibbs
+is the only one accepting directly the scale instead of the corresponding
+transformation.
 
 Implement the kernels from Smola and Kondor (2003).
 
 Kernels on graphs from Nicolentzos et al. (2019): see their GraKeL library.
 Also there was a library for graphs in python, I don't remember the name.
+
+Classes: RandomWalkKernel, PeriodicKernel (che non è una sottoclasse di
+StationaryKernel, perché in linea di principio può anche essere non
+stazionario, lo aggiungo con ereditarietà multipla solo come flag)
 
 ### Transformations
 
@@ -457,30 +513,16 @@ as factors in `addproctransf`.
 
 #### Finite transformations
 
-In `GP.addtransf` vorrei poter moltiplicare element-wise gli array con
-broadcasting anziché fare la contrazione. E vorrei poter fare robe tipo la FFT.
-E la FFT forse non conviene calcolare il jacobiano ma applicarla in qualche
-modo alla matrice di covarianza che devo trasformare. Potrei fare una gerarchia
-di oggetti che rappresentano trasformazioni, e un parametro `defaulttransf` che
-specifica `TensorMul` di default, e un valore del dizionario di input è
-l'argomento dell'`__init__` della trasformazione di default. Probabilmente
-queste classi mi conviene metterle in un nuovo file perché possono diventare
-tante.
-
-`addtransf` deve anche supportare una trasformazione `Reshape`, può venire
-comoda per fare uno stack di cose con il broadcasting, tipo se voglio impilare
-delle derivate in un gradiente. Potrei anche supportare broadcast.
-
-in addtransf può mangiarsi un'espressione costruita con operazioni di numpy su
-placeholder gp['roba']. Però forse è overkill, questa cosa dovrebbe risiedere a
-un livello più alto. => A ben pensarci alla fine viene più semplice che
-ricostruire tutte le operazioni di numpy con una gerarchia di classi come
-scritto sopra. => per farla più semplice e non coinvolgere numpy, posso leggere
-una stringa ed eseguirla in un ambiente controllato in cui le variabili sono
-quelle del GP e ci sono un po' di funzioni equivalenti a quelle di numpy
-definite. Se faccio varie di queste cose poi potrei aggiungere un metodo che
-prende una stringa multiriga e capisce un linguaggio di probabilistic
-programming per specificare tutti i pezzi del processo.
+More general alternatives to `addtransf`:
+ 1) Let `GP[key]` be a class representing the key that overloads numpy with
+    `__array_function__` and `__array_ufunc__`, that builds a forward
+    transformation of covariance matrices with lambdas.
+ 2) Take in a string which is executed in an environment with some
+    numpy-like functions and where the keys are variables. The syntax would
+    be cleaner than the numpy-based version.
+ 3) I could do something like `addkernelop`: a method that applies a
+    generalized ufunc to the covariance matrix appropriately. Hopefully this
+    would work at once for stacking, indexing, fft, convolution...
 
 It could be convenient to change the matrix multiplication order based on
 efficiency, like when using backprop vs. forward. Now I'm always doing
@@ -489,36 +531,14 @@ has less axes than the inputs. The concrete recurring case would be
 sums/integrals constraints. => Maybe opt_einsum has algorithms to do more
 complicated optimization.
 
-It would be convenient if in `addtransf` you could also index the arrays. Would
-fit naturally with the numpy-based interface.
-
 `pred` should notice when the conditioning is on a transformed variable that
 starts from a lower dimensional set of variables and thus the prior covariance
 matrix is rank deficient.
 
 #### Fourier
-
-The fourier transform is a linear operator, can I use it like I'm doing with
-derivatives? I can't do it for the spectrum of a stationary process because
-as soon as I put data in the posterior is non-stationary. In other words, the
-correlation between a point and a frequency component is 0.
-
-I can do the following:
-
-  * Apply a DFT to a specific key, can be done in addtransf or similar.
   
-  * Compute the Fourier series of a periodic process (surely doable for the
-    Fourier kernel).
-    
-  * Apply a Fourier transform or a DTFT on a kernel which represents a
-    transient process (should be doable for the gaussian kernel rescaled with
-    gaussians).
-
-Each kernel would need to have its handwritten transformation, with an
-interface like `diff()`. For the Fourier series it makes sense to make a new
-class `PeriodicKernel`, for the transform and DTFT dunno.
-
-I should also add convolutions. Maybe a method `GP.addconv`.
+Apply a Fourier transform or a DTFT on a kernel which represents a transient
+process (should be doable for the gaussian kernel rescaled with gaussians).
 
 Leggere l'articolo "Efficient Fourier representations of families of Gaussian
 processes".
@@ -528,9 +548,22 @@ It would be complicated in full generality. I could just implement someway
 Fourier(Derivative) = Multiplication(Fourier), I bet this would turn out
 useful. Also Derivative(Taylor) = Multiplication(Taylor), etc.
 
-#### Other infinite transformations
+#### Taylor
 
-Taylor: write a custom transformation for the `Taylor` kernel.
+In general a kernel derived from a white Taylor coefficients series can be
+written as
+
+    k(x, y) = sum_k=0^oo c(k)x^k c(k)y^k =
+            = sum_k=0^oo (xy)^k c^2(k)
+
+Thus any function with nonnegative Taylor coefficients is a valid kernel if
+evaluated in `xy`. This also follows from the fact that `x,y->xy` is positive
+definite and positive coefficients functions produce other positive definite
+kernels. So any univariate kernel operation applied to the 1D dot product
+kernel that has analytically known Taylor coefficients is a valid candidate to
+implement the Taylor transformation.
+
+#### Other infinite transformations
 
 Mellin transform?
 
@@ -538,7 +571,8 @@ Any orthogonal complete set that admits an analytically summable series with a
 family of random access sequences of coefficients is ok.
 
 In general I could write a method "diagonalization" that generates
-cross-covariances with a basis that diagonalizes a kernel.
+cross-covariances with a numerable basis that diagonalizes a kernel. This would
+be useful for sparse approximations.
 
 ### Classification
 

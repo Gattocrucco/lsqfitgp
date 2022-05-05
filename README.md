@@ -1,5 +1,4 @@
 [![PyPI](https://img.shields.io/pypi/v/lsqfitgp)](https://pypi.org/project/lsqfitgp/)
-[![Tests](https://github.com/Gattocrucco/lsqfitgp/actions/workflows/tests.yml/badge.svg)](https://github.com/Gattocrucco/lsqfitgp/actions/workflows/tests.yml)
 
 # lsqfitgp
 
