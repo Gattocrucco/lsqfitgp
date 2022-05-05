@@ -29,6 +29,7 @@ import autograd.test_util
 from scipy import linalg
 
 sys.path = ['.'] + sys.path
+import lsqfitgp as lgp
 from lsqfitgp import _kernels, _Kernel
 
 # Make list of Kernel concrete subclasses.
@@ -469,6 +470,26 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             donesomething = True
         if not donesomething:
             pytest.skip()
+    
+    def test_fourier(self):
+        for kw in self.kwargs_list:
+            kernel = self.kernel_class(**kw)
+            try:
+                kernel.fourier(True, True)
+            except NotImplementedError:
+                pytest.skip()
+            x = np.linspace(0, 1, 100)
+            gp = lgp.GP(kernel)
+            gp.addkernelop('fourier', True, 'F')
+            gp.addx(x, 'x')
+            gp.addx(1, 's1', proc='F')
+            gp.addx(2, 'c1', proc='F')
+            ms, cs = gp.predfromdata(dict(s1=1, c1=0), 'x', raw=True)
+            mc, cc = gp.predfromdata(dict(c1=1, s1=0), 'x', raw=True)
+            np.testing.assert_allclose(ms, np.sin(2 * np.pi * x))
+            np.testing.assert_allclose(mc, np.cos(2 * np.pi * x))
+            np.testing.assert_allclose(np.diag(cs), cs[0, 0])
+            np.testing.assert_allclose(np.diag(cc), cc[0, 0])
 
     @classmethod
     def make_subclass(cls, kernel_class, kwargs_list=None, random_x_fun=None, eps=None):
@@ -710,6 +731,11 @@ def test_transf_not_implemented():
 def test_abs_jvp():
     autograd.test_util.check_jvp(_Kernel._abs, 1.)
     autograd.test_util.check_jvp(_Kernel._abs, -1.)
+
+def test_matern_derivatives():
+    for p in range(10):
+        x = np.linspace(0, 10, 100)
+        autograd.test_util.check_grads(_kernels._maternp, modes=['rev'])(x, p)
 
 #####################  XFAILS  #####################
 

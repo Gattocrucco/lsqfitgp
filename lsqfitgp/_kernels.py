@@ -464,11 +464,7 @@ def FracBrownian(x, y, H=1/2):
     return 1/2 * (x ** H2 + y ** H2 - np.abs(x - y) ** H2)
 
 def _ppkernel_derivable(**kw):
-    q = kw.pop('q', 0)
-    if isinstance(q, (int, np.integer)):
-        return q
-    else:
-        return 0
+    return kw.get('q', 0)
 
 @isotropickernel(input='soft', derivable=_ppkernel_derivable)
 def PPKernel(r, q=0, D=1):
@@ -514,6 +510,8 @@ def PPKernel(r, q=0, D=1):
         poly = 1 + r * (j + 2 + r * ((1/3 * j +  4/3) * j + 1))
     elif q == 3:
         poly = 1 + r * (j + 3 + r * ((2/5 * j + 12/5) * j + 3 + r * (((1/15 * j + 3/5) * j + 23/15) * j + 1)))
+    else:
+        raise NotImplementedError
     return np.where(x > 0, x ** (j + q) * poly, 0)
 
 @kernel(derivable=1, forcekron=True)
@@ -584,11 +582,7 @@ autograd.extend.defvjp(
 )
 
 def _fourier_derivable(**kw):
-    n = kw.pop('n', 2)
-    if isinstance(n, (int, np.integer)) and n >= 1:
-        return n - 1
-    else:
-        return False
+    return kw.get('n', 2) - 1
 
 @stationarykernel(forcekron=True, derivable=_fourier_derivable, saveargs=True)
 def _FourierBase(delta, n=2):
@@ -655,26 +649,27 @@ class Fourier(_FourierBase):
         if not dox and not doy:
             return self
         
-        n = self.initargs['n']
+        n = self.initargs.get('n', 2)
         s = 2 * n
         
         if dox and doy:
             def kernel(k, q):
                 order = np.ceil(k / 2)
-                return np.where((k == q) & (k > 0), 1 / (order ** s * special.zeta(s)), 0)
+                denom = order ** s * special.zeta(s)
+                return np.where((k == q) & (k > 0), 1 / denom, 0)
         
-        def kernel(k, y):
-            order = np.ceil(k / 2)
-            odd = k % 2
-            arg = 2 * np.pi * order * y
-            denom = np.sqrt(special.zeta(s))
-            return np.where(k > 0, np.where(odd, np.sin(arg), np.cos(arg)), 0) / denom
+        else:
+            def kernel(k, y):
+                order = np.ceil(k / 2)
+                denom = order ** s * special.zeta(s)
+                odd = k % 2
+                arg = 2 * np.pi * order * y
+                return np.where(k > 0, np.where(odd, np.sin(arg), np.cos(arg)) / denom, 0)
         
-        if doy:
-            kernel0 = kernel
-            kernel = lambda x, q: kernel0(q, x)
+            if doy:
+                kernel = lambda x, q, kernel=kernel: kernel(q, x)
         
-        cls = Kernel if dox == doy and isinstance(self, Kernel) else _CrossKernel
+        cls = _Kernel.Kernel if dox == doy and isinstance(self, _Kernel.Kernel) else _Kernel._CrossKernel
         obj = cls(kernel, forcebroadcast=self._forcebroadcast)
         obj.initargs = self.initargs
         obj._maxderivable = self._maxderivable
@@ -815,7 +810,7 @@ def Harmonic(delta, Q=1):
     elif Q == 1:
         return _harmonic(tau, Q)
     
-    elif Q > 1:
+    else: # Q > 1
         etaQ = np.sqrt(np.square(Q) - 1)
         tauQ = tau / Q
         etatau = etaQ * tauQ
