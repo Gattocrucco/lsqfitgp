@@ -1,0 +1,294 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>3. More on kernels &#8212; lsqfitgp 0.8 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="4. Taking derivatives" href="derivatives.html" />
+    <link rel="prev" title="2. First example: a sine" href="sine.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">lsqfitgp 0.8</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="userguide.html">User guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">1. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sine.html">2. First example: a sine</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">3. More on kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivatives.html">4. Taking derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrals.html">5. Taking integrals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customs.html">6. A custom kernel: text classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="in.html">7. Multidimensional input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="partial.html">8. Partial derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="out.html">9. Multidimensional output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components.html">10. Splitting components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyper.html">11. Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyperstruct.html">12. Hyperparameters in the input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nonlinear.html">13. Nonlinear models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optim.html">14. Optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">Reference manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="userguide.html">User guide</a><ul>
+      <li>Previous: <a href="sine.html" title="previous chapter"><span class="section-number">2. </span>First example: a sine</a></li>
+      <li>Next: <a href="derivatives.html" title="next chapter"><span class="section-number">4. </span>Taking derivatives</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="sine.html" title="Previous document"><span class="section-number">2. </span>First example: a sine</a>
+        </li>
+        <li>
+          <a href="derivatives.html" title="Next document"><span class="section-number">4. </span>Taking derivatives</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="more-on-kernels">
+<span id="kernelexpl"></span><h1><span class="section-number">3. </span>More on kernels<a class="headerlink" href="#more-on-kernels" title="Permalink to this headline">¶</a></h1>
+<p>In <a class="reference internal" href="sine.html#sine"><span class="std std-ref">First example: a sine</span></a>, we defined the kernel as the function that gives the covariance
+of the process values at two different points:</p>
+<div class="math notranslate nohighlight">
+\[k(x, y) = \operatorname{Cov}[f(x), f(y)].\]</div>
+<p>So you can imagine the Gaussian process as a multivariate Gaussian distribution
+on an infinitely long vector <span class="math notranslate nohighlight">\(f(x)\)</span>, where <span class="math notranslate nohighlight">\(x\)</span> is a “continuous
+index”, and <span class="math notranslate nohighlight">\(k(x, y)\)</span> is the covariance matrix.</p>
+<p>This implies that kernels are symmetric, i.e., <span class="math notranslate nohighlight">\(k(x, y) = k(y, x)\)</span>. Also,
+covariance matrices must be positive semidefinite (if you wonder why, you can
+find an explanation on <a class="reference external" href="https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_matrices?">wikipedia</a>).
+For kernels, this means that, for <em>any</em> function <span class="math notranslate nohighlight">\(g\)</span>,</p>
+<div class="math notranslate nohighlight">
+\[\int_{-\infty}^\infty \mathrm dx \mathrm dy\, g(x) k(x, y) g(y) \ge 0.\]</div>
+<p>This is the reason why you can’t pick any two-variable symmetric function as
+kernel. So, how do you build valid kernels? Luckily, there are some simple
+rules that allow to make kernels out of other kernels:</p>
+<ul class="simple">
+<li><p>The sum of kernels is a kernel.</p></li>
+<li><p>The product of kernels is a kernel.</p></li>
+<li><p>A kernel raised to a power is a kernel.</p></li>
+</ul>
+<p>Now we need a set of fundamental kernels. There is a class of functions that
+can be easily shown to be positive semidefinite (exercise for the reader):
+<span class="math notranslate nohighlight">\(k(x, y) = h(x) h(y)\)</span> for some function <span class="math notranslate nohighlight">\(h\)</span>. In fact, it can be
+shown that <em>any</em> kernel can be written as</p>
+<div class="math notranslate nohighlight">
+\[k(x, y) = \sum_i h_i(x) h_i(y)\]</div>
+<p>for some possibly infinite set of functions <span class="math notranslate nohighlight">\(h_i\)</span>.</p>
+<p>Ok, but if I use a kernel of the form <span class="math notranslate nohighlight">\(h(x) h(y)\)</span>, how will it behave
+in practice with the data?</p>
+<p>Let’s suppose that you have some data <span class="math notranslate nohighlight">\(y(x)\)</span> that you want to fit with
+a specific function, that (let’s say by chance) we call <span class="math notranslate nohighlight">\(h(x)\)</span>, apart
+from an amplitude parameter, i.e., the model is</p>
+<div class="math notranslate nohighlight">
+\[y = p h(x) + \varepsilon(x),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\varepsilon(x)\)</span> is an independent zero mean Gaussian distributed
+error. Put a Gaussian prior with zero mean and unit variance on the parameter
+<span class="math notranslate nohighlight">\(p\)</span>. What is the prior covariance of <span class="math notranslate nohighlight">\(y(x_1)\)</span> with <span class="math notranslate nohighlight">\(y(x_2)\)</span>?
+Let’s compute:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\operatorname{Cov}[y(x_1), y(x_2)] &amp;=
+\operatorname{Cov}[p h(x_1) + \varepsilon(x_1), p h(x_2) + \varepsilon(x_2)] = \\
+&amp;= \operatorname{Var}[p] h(x_1) h(x_2) = \\
+&amp;= h(x_1) h(x_2).\end{split}\]</div>
+<p>This, by definition, is also the prior of a Gaussian process fit with kernel
+<span class="math notranslate nohighlight">\(h(x_1) h(x_2)\)</span>. It can be extended to <span class="math notranslate nohighlight">\(y = p_i h_i(x)\)</span> to get
+the general kernel from above (exercise). So, have we discovered that a
+Gaussian process fit is just a linear least squares fit with priors? Yes! But,
+when thinking in terms of Gaussian processes, you normally use an infinite
+set of functions <span class="math notranslate nohighlight">\(h_i\)</span>. You don’t even think about it in terms of the
+<span class="math notranslate nohighlight">\(h_i\)</span>, because the kernel has meaning in itself.</p>
+<p>Let’s now build some feeling for how kernels behave. In <a class="reference internal" href="sine.html#sine"><span class="std std-ref">First example: a sine</span></a> we always
+used the <a class="reference internal" href="kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a> kernel (booring). To start, we will sum two
+exponential quadratic kernels with different scales, and see what happens:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">gvar</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="n">kernel</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">kernel</span> <span class="o">+=</span> <span class="mi">3</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># we also multiply the scale=10</span>
+                                       <span class="c1"># kernel to see it better</span>
+<span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">)</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;baz&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;kernels1.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/kernels1.png" src="_images/kernels1.png" />
+<p>First thing to notice, we introduced another <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> method:
+<a class="reference internal" href="gp.html#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prior()</span></code></a>. It returns an array of <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables representing
+the prior. In general it is useful to plot some samples from the prior to
+understand if the kernel makes sense before putting the data in.</p>
+<p>Looking at the plot, we see the function oscillates rapidly, but the center of
+the oscillation drifts. Effectively, if you think about it, summing two kernels
+is like summing two <em>independent</em> Gaussian processes: let <span class="math notranslate nohighlight">\(f_1\)</span> and
+<span class="math notranslate nohighlight">\(f_2\)</span> be processes with kernels <span class="math notranslate nohighlight">\(k_1\)</span> and <span class="math notranslate nohighlight">\(k_2\)</span> respectively,
+then the kernel of <span class="math notranslate nohighlight">\(f_1 + f_2\)</span> is</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}k(x, y) &amp;= \operatorname{Cov}[f_1(x) + f_2(x), f_1(y) + f_2(y)] = \\
+        &amp;= \operatorname{Cov}[f_1(x), f_1(y)] +
+           \operatorname{Cov}[f_2(x), f_2(y)] = \\
+        &amp;= k_1(x, y) + k_2(x, y).\end{split}\]</div>
+<p>So we are looking at the sum of two processes, one <code class="docutils literal notranslate"><span class="pre">ExpQuad(scale=0.3)</span></code>
+and one <code class="docutils literal notranslate"><span class="pre">ExpQuad(scale=10)</span></code>.</p>
+<p>Let’s now multiply kernels. The <span class="math notranslate nohighlight">\(h(x)h(y)\)</span> kernel is implemented in
+<a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> as <a class="reference internal" href="kernelsref.html#lsqfitgp.Rescaling" title="lsqfitgp.Rescaling"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rescaling</span></code></a>. We multiply it by an exponential
+quadratic:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lorentz</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">kernel</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">()</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">stdfun</span><span class="o">=</span><span class="n">lorentz</span><span class="p">)</span>
+<span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;baz&#39;</span><span class="p">)</span>
+<span class="n">sample</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;kernels2.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/kernels2.png" src="_images/kernels2.png" />
+<p>The function oscillates, but the oscillations are suppressed going away from
+zero. This is because the function we defined, <code class="docutils literal notranslate"><span class="pre">lorentz</span></code>, goes to zero for
+<span class="math notranslate nohighlight">\(x\to\pm\infty\)</span>. Let’s plot a band delimited by <span class="math notranslate nohighlight">\(\pm\)</span> that
+function, and the band of the standard deviation of <code class="docutils literal notranslate"><span class="pre">y</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;yellow&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;kernels3.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/kernels3.png" src="_images/kernels3.png" />
+<p>We see only one green band, because it is a perfect match! We have rescaled the
+standard deviations of the prior with the function <code class="docutils literal notranslate"><span class="pre">lorentz</span></code>, without
+changing the correlations. Since the <a class="reference internal" href="kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a> prior variance is 1
+everywhere, after the multiplication it just matches <code class="docutils literal notranslate"><span class="pre">lorentz(x)</span></code>.</p>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="sine.html" title="Previous document"><span class="section-number">2. </span>First example: a sine</a>
+        </li>
+        <li>
+          <a href="derivatives.html" title="Next document"><span class="section-number">4. </span>Taking derivatives</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020-2022, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/kernels.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

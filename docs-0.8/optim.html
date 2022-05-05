@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>14. Optimization &#8212; lsqfitgp 0.8 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Reference manual" href="reference.html" />
+    <link rel="prev" title="13. Nonlinear models" href="nonlinear.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">lsqfitgp 0.8</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="userguide.html">User guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">1. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sine.html">2. First example: a sine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html">3. More on kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivatives.html">4. Taking derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrals.html">5. Taking integrals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customs.html">6. A custom kernel: text classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="in.html">7. Multidimensional input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="partial.html">8. Partial derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="out.html">9. Multidimensional output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components.html">10. Splitting components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyper.html">11. Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyperstruct.html">12. Hyperparameters in the input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nonlinear.html">13. Nonlinear models</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">14. Optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">Reference manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="userguide.html">User guide</a><ul>
+      <li>Previous: <a href="nonlinear.html" title="previous chapter"><span class="section-number">13. </span>Nonlinear models</a></li>
+      <li>Next: <a href="reference.html" title="next chapter">Reference manual</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="nonlinear.html" title="Previous document"><span class="section-number">13. </span>Nonlinear models</a>
+        </li>
+        <li>
+          <a href="reference.html" title="Next document">Reference manual</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="optimization">
+<span id="optim"></span><h1><span class="section-number">14. </span>Optimization<a class="headerlink" href="#optimization" title="Permalink to this headline">¶</a></h1>
+<p>There are three main computational steps when doing a Gaussian process fit with
+<a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Compute the prior covariance matrix using the kernel. This is <span class="math notranslate nohighlight">\(O((n +
+m)^2)\)</span> where <cite>n</cite> is the number of datapoints and <cite>m</cite> the number of
+additional points where the posterior is computed.</p></li>
+<li><p>Solve a linear system of size <cite>n</cite>. This is <span class="math notranslate nohighlight">\(O(n^3)\)</span>.</p></li>
+<li><p>Take random samples from the posterior. This is <span class="math notranslate nohighlight">\(O(m^3 + s)\)</span> where
+<cite>s</cite> is the number of samples taken.</p></li>
+</ul>
+</div></blockquote>
+<p>Since usually <span class="math notranslate nohighlight">\(m \gg n\)</span> because the plot is done on a finely spaced grid,
+the typical bottleneck is taking the samples, i.e., calling
+<code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code>. This problem can be bypassed by plotting only the
+standard deviation band instead of taking samples, but it is less informative.
+To make <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code> faster, use its <code class="docutils literal notranslate"><span class="pre">eps</span></code> option: <code class="docutils literal notranslate"><span class="pre">gvar.raniter(x,</span>
+<span class="pre">eps=1e-12)</span></code>. This forces it to use a Cholesky decomposition instead of a
+diagonalization.</p>
+<p>In general the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> methods have options for doing everything without
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>, but don’t try to use all of them mindlessly before profiling the
+code to know where the bottleneck actually is. Python has the module
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">cProfile</span></code> for that, and in an IPython shell you can use <code class="docutils literal notranslate"><span class="pre">%run</span> <span class="pre">-p</span></code>. If
+you opt out of gvars, you can use <a class="reference internal" href="raniter.html#lsqfitgp.raniter" title="lsqfitgp.raniter"><code class="xref py py-func docutils literal notranslate"><span class="pre">lsqfitgp.raniter()</span></code></a> to draw samples from
+an explicit mean vector and covariance matrix instead of <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code>.</p>
+<p>Once you have solved eventual <code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>-related issues, if you have at least
+some hundreds of datapoints the next bottleneck is probably in
+<a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code></a>. Making it faster is quick: select a solver different
+from the default one when initializing the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object, like
+<code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol')</span></code>. This applies also when using
+<a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a>. And don’t forget to disable the positivity check:
+<code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol',</span> <span class="pre">checkpos=False)</span></code>.</p>
+<p>Finally, if you have written a custom kernel, it may become a bottleneck. For
+example the letter counting kernel in <a class="reference internal" href="customs.html#customs"><span class="std std-ref">A custom kernel: text classification</span></a> was very slow. A quick
+way to get a 2x improvement is disabling the symmetry check in <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>:
+<code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">checksym=False)</span></code>.</p>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="nonlinear.html" title="Previous document"><span class="section-number">13. </span>Nonlinear models</a>
+        </li>
+        <li>
+          <a href="reference.html" title="Next document">Reference manual</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020-2022, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/optim.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
