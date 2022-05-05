@@ -412,6 +412,21 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             c2 = k2(y, x)
             np.testing.assert_equal(c1, c2)
     
+    def test_fourier_swap(self):
+        for kw in self.kwargs_list:
+            kernel = self.kernel_class(**kw)
+            try:
+                kernel.fourier(True, None)
+            except NotImplementedError:
+                pytest.skip()
+            x = self.random_x(**kw)[:, None]
+            k = np.arange(1, 11)[None, :]
+            k1 = kernel.fourier(True, None)
+            k2 = kernel.fourier(None, True)
+            c1 = k1(k, x)
+            c2 = k2(x, k)
+            np.testing.assert_equal(c1, c2)
+
     def test_xtransf_swap(self):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
