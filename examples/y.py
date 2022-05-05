@@ -22,7 +22,7 @@
                             EXAMPLE Y.
 
     Where a Fourier kernel forces some random samples to have
-    zero mean, and forces us to avoid checking its positity.
+    zero mean.
 
 """
 
@@ -35,7 +35,7 @@ xdata = np.linspace(0, 1, 10)
 xpred = np.linspace(0, 1, 500)
 y = np.ones_like(xdata)
 
-gp = lgp.GP(lgp.Fourier(n=2), checkpos=False) # try checkpos=True if you dare!
+gp = lgp.GP(lgp.Fourier(n=2))
 gp.addx(xdata, 'pere')
 gp.addx(xpred, 'banane')
 
