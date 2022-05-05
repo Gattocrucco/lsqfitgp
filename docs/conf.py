@@ -52,7 +52,7 @@ copyright = year + ', ' + author
 import lsqfitgp
 release = lsqfitgp.__version__
 version = release
-
+project += ' ' + version
 
 # -- General configuration ---------------------------------------------------
 
@@ -81,6 +81,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # a list of builtin themes.
 #
 html_theme = 'alabaster'
+
+html_title = f'{project} documentation'
 
 html_theme_options = dict(
     description = 'A general purpose Gaussian process regression module',

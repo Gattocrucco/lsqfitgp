@@ -461,3 +461,11 @@ contraction which sums along a 50x50x9 = 22500 axis.
 How do I solve this problem?
     1) Verify that this is the bottleneck.
     2) Wrap fcn using gvar_function and compute the jacobian with jax.
+
+2022-05-05
+==========
+
+Commands to get the version number:
+
+grep __version__ lsqfitgp/__init__.py | sed -e "s/__version__ = //" -e "s/'//" -e "s/'//"
+python -c 'import lsqfitgp;print(lsqfitgp.__version__)'
