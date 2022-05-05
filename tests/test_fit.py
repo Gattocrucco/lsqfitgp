@@ -20,6 +20,7 @@
 import sys
 
 import numpy as np
+from autograd import numpy as anp
 import gvar
 from scipy import stats
 import pytest
@@ -59,11 +60,11 @@ def check_fit(hyperprior, gpfactory, dataerr=None, alpha=1e-5):
     are compatible with the ones used to generate the data"""
     
     # generate hyperparameters
-    truehp = next(gvar.raniter(hyperprior))
+    truehp = gvar.sample(hyperprior)
     
     # generate data
     gp = gpfactory(truehp)
-    data = next(gvar.raniter(gp.prior()))
+    data = gvar.sample(gp.prior())
     if dataerr:
         mean = dataerr * np.random.randn(len(data.buf))
         sdev = np.full_like(mean, dataerr)
@@ -118,3 +119,38 @@ def test_sdev():
     # a minimization problem or the posterior distribution of log(sdev) which
     # has a very heavy tail? The distribution of sdev**2 should be a scaled
     # inverse chisquared
+
+def test_flat():
+    hp = gvar.BufferDict({
+        'log(sdev)': gvar.log(gvar.gvar(1, 1))
+    })
+    x = np.linspace(0, 5, 10)
+    def gpfactory1(hp):
+        gp = lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2)
+        gp.addx(x, 'x')
+        return gp
+    def gpfactory2(hp):
+        gp = lgp.GP(lgp.ExpQuad() * anp.exp(hp[0]) ** 2)
+        gp.addx(x, 'x')
+        return gp
+    def gpfactory3(hp):
+        gp = lgp.GP(lgp.ExpQuad() * anp.exp(hp) ** 2)
+        gp.addx(x, 'x')
+        return gp
+    truehp = gvar.sample(hp)
+    truegp = gpfactory1(truehp)
+    trueprior = truegp.prior()
+    data = gvar.sample(trueprior)
+    fit1 = lgp.empbayes_fit(hp, gpfactory1, data)
+    fit2 = lgp.empbayes_fit(hp.buf, gpfactory2, data)
+    fit3 = lgp.empbayes_fit(hp.buf[0], gpfactory3, data)
+    m1 = gvar.mean(fit1.p.buf[0])
+    c1 = gvar.evalcov(fit1.p.buf[0])
+    m2 = gvar.mean(fit2.p[0])
+    c2 = gvar.evalcov(fit2.p[0])
+    m3 = gvar.mean(fit3.p)
+    c3 = gvar.evalcov(fit3.p)
+    np.testing.assert_allclose(m1, m2)
+    np.testing.assert_allclose(m1, m3)
+    np.testing.assert_allclose(c1, c2)
+    np.testing.assert_allclose(c1, c3)

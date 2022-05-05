@@ -32,8 +32,8 @@ __all__ = [
 ]
 
 @autograd.wrap_util.unary_to_nary
-def jac(fun, x):
-    """Like autograd.jacobian but with forward mode"""
+def jac(fun, x): # pragma: no cover
+    """Like autograd.jacobian but with forward mode, currently not used"""
     jvp = autograd.core.make_jvp(fun, x)
     ans = fun(x)
     vs = autograd.extend.vspace(x)
@@ -55,7 +55,7 @@ def _flat(x):
 def _unflat(x, original):
     if isinstance(original, np.ndarray):
         out = x.reshape(original.shape)
-        return out if out.shape else out.item
+        return out if out.shape else out.item()
     elif isinstance(original, gvar.BufferDict):
         return gvar.BufferDict(original, buf=x)
 
