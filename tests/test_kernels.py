@@ -251,17 +251,13 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             pytest.skip()
     
     def test_implicit_fields(self):
-        kernel = self.kernel_class
-        if issubclass(kernel, _Kernel.IsotropicKernel):
-            for kw in self.kwargs_list:
-                x1 = self.random_x_nd(3, **kw)[:, None]
-                x2 = self.make_x_nd_implicit(x1)
-                covfun = kernel(**kw)
-                c1 = covfun(x1, x1.T)
-                c2 = covfun(x2, x2.T)
-                np.testing.assert_equal(c1, c2)
-        else:
-            pytest.skip()
+        for kw in self.kwargs_list:
+            x1 = self.random_x_nd(3, **kw)[:, None]
+            x2 = self.make_x_nd_implicit(x1)
+            covfun = self.kernel_class(**kw)
+            c1 = covfun(x1, x1.T)
+            c2 = covfun(x2, x2.T)
+            np.testing.assert_equal(c1, c2)
     
     def test_loc_scale_nd(self):
         kernel = self.kernel_class
@@ -359,7 +355,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
     
     def test_soft_input(self):
         kernel = self.kernel_class
-        if _Kernel.StationaryKernel in kernel.__bases__:
+        if issubclass(kernel, _Kernel.StationaryKernel) and not issubclass(kernel, _Kernel.IsotropicKernel):
             for kw in self.kwargs_list:
                 x1 = self.random_x(**kw)
                 x2 = x1 - 1 / np.pi
@@ -371,7 +367,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
                 kw = dict(kw)
                 kw.update(input='soft')
                 c2 = kernel(**kw)(x1, x2)
-                np.testing.assert_allclose(c1, c2, atol=1e-15, rtol=1e-15)
+                np.testing.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
         else:
             pytest.skip()
     
@@ -749,8 +745,3 @@ xfail(TestPPKernel, 'test_positive_deriv_nd')
 # TODO These are not isotropic kernels, what is the problem?
 xfail(TestTaylor, 'test_double_diff_nd_second')
 xfail(TestNNKernel, 'test_double_diff_nd_second')
-
-# TODO Not serious failures, the comparison is exact for all kernels but
-# Fourier.
-xfail(TestFourier, 'test_rescale_swap')
-xfail(TestFourier, 'test_xtransf_swap')

@@ -13,8 +13,6 @@ Interlinks with gvar and lsqfit docs.
 Mention that `numpy.lib.recfunctions.unstructured_to_structured` may be used
 for euclidean multidimensional input.
 
-Separate the index of kernels by class (after adding `StationaryKernel`).
-
 In the nonlinear fit example, use the gaussian cdf instead of the hyperbolic
 arctangent to make a uniform prior over the interval. => Or maybe explain
 what distribution `tanh` entails.
@@ -61,9 +59,11 @@ a timeit of lgp.raniter, so nope.
 
 Add references for all the kernels.
 
-## Fixes and tests
+Add version to the title and upload documentation both to docs/ and
+docs-version/. Then put a chronology of versions into the index page as raw
+html with relative links.
 
-Go through the coverage and add tests to cover untested lines.
+## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
 (quick partial fix: larger eps in `IsotropicKernel.__init__`).
@@ -100,7 +100,9 @@ Does pred works with empty given? It should allow it and behave like prior.
 
 ## Implementation details
 
-Usare l'interfaccia numpy `__array_function__` per `StructuredArray`.
+Usare l'interfaccia numpy `__array_function__` per `StructuredArray`, and
+add an `__array__` method that raises an exception such that StructuredArrays
+are not silently converted to 0d object arrays like it happened in Rescaling.
 
 Chiamare GP -> _GPBase e poi fare una sottoclasse GP e mettere tutti i metodi
 di convenienza che non accedono a cose interne in GP.

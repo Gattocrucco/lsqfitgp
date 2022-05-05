@@ -560,15 +560,21 @@ def Taylor(x, y):
 
 @autograd.extend.primitive
 def _bernoulli_poly(n, x):
+    # takes x mod 1
     bernoulli = special.bernoulli(n)
     k = np.arange(n + 1)
     binom = special.binom(n, k)
     coeffs = binom[::-1] * bernoulli
-    out = 0
+    x = x % 1
+    cond = x < 0.5
+    x = np.where(cond, x, 1 - x)
+    out = 0. * x # to handle the case n == 0
     for c in coeffs[:-1]:
         out += c
         out *= x
     out += coeffs[-1]
+    if n % 2 == 1:
+        out *= np.where(cond, 1, -1)
     return out
 
 autograd.extend.defvjp(
@@ -614,25 +620,16 @@ def _FourierBase(delta, n=2):
     # TODO maxk parameter to truncate the series. I have to manually sum the
     # components? => Bad idea then. => Can I sum analitically the residual?
     
-    # TODO this appears to be less numerically accurate than other kernels.
-    # It's probably the Bernoulli polynomial computation, find out if it is due
-    # to computing the polynomial using the coefficients or if the coefficients
-    # given by scipy are inaccurate.
-    
-    # TODO once I've seen TestFourier.test_positive_deriv2_nd fail with
-    # slightly nonsymmetric covariance matrix. What??? I would expect it to
-    # be exactly symmetric even numerically!
-    
     # TODO add constant as option, otherwise I can't compute the Fourier
-    # series when I add a constant.
+    # series when I add a constant. => Maybe this will be solved when I
+    # improve the transformations system.
     
     assert isinstance(n, (int, np.integer)), type(n)
-    assert n >= 1, n
+    assert n >= 1, n # TODO I could allow n == 0 to be a constant kernel
     s = 2 * n
-    diff = delta % 1
     sign0 = -(-1) ** n
     factor = (2 * np.pi) ** s / (2 * special.factorial(s) * special.zeta(s))
-    return sign0 * factor * _bernoulli_poly(s, diff)
+    return sign0 * factor * _bernoulli_poly(s, delta)
 
 class Fourier(_FourierBase):
     
