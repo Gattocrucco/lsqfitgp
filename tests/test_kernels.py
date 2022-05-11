@@ -293,9 +293,10 @@ class KernelTestBase(metaclass=abc.ABCMeta):
         for kw in self.kwargs_list:
             x1 = self.random_x_nd(3, **kw)[:, None]
             x2 = x1['f0']
-            dtype = x1.dtype.fields['f0'][0]
-            x3 = np.empty(x1.shape, [('f0', dtype, (1,))])
-            x3['f0'] = x2[..., None]
+            # dtype = x1.dtype.fields['f0'][0]
+            # x3 = np.empty(x1.shape, [('f0', dtype, (1,))])
+            # x3['f0'] = x2[..., None]
+            x3 = self.make_x_nd_implicit(x1[['f0']])
             c1 = self.kernel_class(dim='f0', **kw)(x1, x1.T)
             c2 = self.kernel_class(**kw)(x2, x2.T)
             c3 = self.kernel_class(dim='f0', **kw)(x3, x3.T)

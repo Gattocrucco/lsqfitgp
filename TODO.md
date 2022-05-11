@@ -59,8 +59,19 @@ a timeit of lgp.raniter, so nope.
 
 Add references for all the kernels.
 
-Put a chronology of versions into the index page as raw html with relative
-links.
+Put a chronology of versions into an index page at the root of github pages.
+
+Add an "Andvanced guide" after the User guide, the first chapters would be
+-kernel operations -fourier series -taylor series (taylor afterward because
+it has a richer set of kernels implementing but they must be obtained with
+transformations) -user defined kernels
+
+In the kernel reference add automatically flags for all the supported
+transformations. For loc, scale and other standard stuff striket' them if not
+supported. To do this leanly, I need to have the transformation method raise
+NotImplementedError right away instead of letting the core callable do it: thus
+the implementation methods shall return NotImplemented in place of a callable
+to disable the transformations.
 
 ## Fixes and tests
 
@@ -276,7 +287,7 @@ lineare numerica dell'errore, c'è in Basak. La sigma e la mu le ottimizzo
 analiticamente come spiegato in Basak.
 
 Posso ottenere il posteriore GP con Laplace quando ci sono gli iperparametri,
-posto che anche sugli iperparametri ho usato Laplace?
+posto che anche sugli iperparametri ho usato Laplace? (I think not)
 
 In lsqfitgp.empbayes_fit, calcolare la marginal likelihood usando laplace al
 livello 2 come ho fatto in BartGP
@@ -287,6 +298,16 @@ start from previous parameter values)
 summary method in empbayes_fit like lsqfit.nonlinear_fit
 
 last gp computed in minimization as meangp attribute in empbayes_fit
+
+The marginal likelihood minimization often complains about "loss of precision".
+I suspect this is due to the log determinant term. It is not well defined
+because the regularization I apply to the matrix changes its value, maybe
+that's the problem? How should I regularize to have a smooth logdet without
+adding a swamp of white noise like GPy and pymc3? Maybe I could add white noise
+only for the logdet term. Most decompositions should support adding a multiple
+of the identity.
+
+Can I use Fisher scoring instead of the actual hessian and jacobian?
 
 ### Port to JAX
 
@@ -359,10 +380,11 @@ a Taylor series with nonnegative coefficients. (Got the idea from a seminar by
 Hensman, I think this thing should be standard anyway, although I don't
 remember reading it in Rasmussen's book.)
 
-I can do (positive scalar) ** kernel. Also (positive kernel) ** kernel I think.
+I can do (positive scalar) ** kernel (=> implement Kernel.__rpow__). Also
+(positive kernel) ** kernel I think.
 
 Standard functions with positive Taylor coefficients: tan, 1/sin, 1/cos, asin,
-acos, 1/(1-x), exp, -log(1-x), sinh, cosh, atanh.
+acos, 1/(1-x), exp, -log(1-x), sinh, cosh, atanh, I_a (real a > -1).
 
 When doing kernel base power, or in general applying functions which have a
 narrow domain, the kernel must be within bounds. For weakly stationary kernels,
@@ -417,15 +439,61 @@ some way disable the fourier transformation. To this end, I would define a
 class method that can be used within the implementation of the transformations
 to list the transformations defined and possibly wrap and redefine them. The
 class method would list through the methods and search for a store attribute
-set by the decorators, then fetch from it the implementations.
+set by the decorators, then fetch from it the implementations. The
+generic implementations can go in `_KernelBase`, then the basic versions are
+instantiated in `CrossKernel`. `Kernel` just acts as a "middleman" used to
+flag symmetric covariance functions.
+
+=> Actually, this interface is still crap. It does not support order and
+variable specifications like `diff`. So the method must take in the two
+arguments, and the decorator has a keyword argument for a class (or callable in
+general) used to preprocess the arguments and then do the no-op check (in any
+case None works). To support dimensions in `fourier` it is sufficient to use in
+the computation the variable we are acting on, assuming the kernel is separable
+(currently true for `Fourier`), and keep the other kernel factors unaltered.
+Logically, it should be the implementation of the `forcekron` inputtransf that
+modifies the `fourier` implementation to act separately. In general this works
+for any linear transformation that has a concept of applying to a subvariable,
+so maybe it should be a more specific category than `outputtransf`, maybe
+`diffliketransf`.
+
+Maybe for elegance and encapsulation the user-provided implementation function
+should take in the core kernel instead of `self`, and always be passed the
+keyword-only arguments used in the initialization of the kernel, updating the
+`__kwdefaults__` of the core. Tentative interface:
+
+```python
+class Cippa(Kernel):
+    @diffliketransf
+    def rescale(kernel, fx, fy, **kw):
+        if fy is None:
+            return lambda x, y: fx(x) * kernel(x, y)
+        if fx is None:
+            return lambda x, y: fy(y) * kernel(x, y)
+        return lambda x, y: fx(x) * fy(y) * kernel(x, y)
+    @diffliketransf(swap=True) # swap = if one is None, pass first the non-None
+    def rescale(kernel, fx, fy, **kw):
+        if fy is None:
+            return lambda x, y: fx(x) * kernel(x, y)
+        return lambda x, y: fx(x) * fy(y) * kernel(x, y)
+    @diffliketransf(incls=lambda f: (lambda x: 1) if f is None else f)
+    # incls = callable used to preprocess the arguments
+    def rescale(kernel, fx, fy, **kw):
+        return lambda x, y: fx(x) * fy(y) * kernel(x, y)
+```
 
 Instead of forbidding Kernel-CrossKernel operations, make Kernel a subclass
 of CrossKernel, implement a generic subclass permanence system in _binary
-and then let GP raise an error when it receives a CrossKernel.
+and then let GP raise an error when it receives a CrossKernel. Maybe binary
+should be another decorator which I apply to __add__, __mult__ and __pow__.
 
 I can use `__kwdefaults__` to get the default values of kernel parameters
 when I decorate them, such that callable derivable and initargs would always
 know all the parameters.
+
+`forcebroadcast` should be a transformation and transform the core kernel once
+instead of being applied in __call__, which should just check if the arrays
+are broadcastable.
 
 ### New specific kernels/kernel options
 
@@ -563,6 +631,13 @@ kernels. So any univariate kernel operation applied to the 1D dot product
 kernel that has analytically known Taylor coefficients is a valid candidate to
 implement the Taylor transformation.
 
+Thus I should redefine the Taylor kernel to be `xy` and make it such that the
+Taylor transformation remains properly defined as kernel operations are applied
+to it.
+
+How would this work in multiple dimensions? Does it amount just to start from
+the dot product kernel?
+
 #### Other infinite transformations
 
 Mellin transform?
@@ -574,7 +649,7 @@ In general I could write a method "diagonalization" that generates
 cross-covariances with a numerable basis that diagonalizes a kernel. This would
 be useful for sparse approximations.
 
-### Classification
+### Discrete likelihoods
 
 I'd like to avoid introducing a different likelihood and Laplace and EP. In the
 user guide I did text classification in my own crappy but quick and still
@@ -627,6 +702,9 @@ dell'uomo, quindi la probabilità che assegna all'output del saggio, data
 l'opinione umana, è p(x,i|p_H(x,i))=p_H(x,i). Quindi la macchina prende il suo
 posteriore sulle p_H e calcola p(x,i) marginalizzato. Se il GP ha gli
 iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
+
+For Poisson I can take the square root. How good is it? Ref. Casella-Berger,
+pag. 563, ex. 11.1-11.
 
 ## Optimization
 
