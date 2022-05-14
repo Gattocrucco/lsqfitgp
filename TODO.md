@@ -59,8 +59,6 @@ a timeit of lgp.raniter, so nope.
 
 Add references for all the kernels.
 
-Put a chronology of versions into an index page at the root of github pages.
-
 Add an "Andvanced guide" after the User guide, the first chapters would be
 -kernel operations -fourier series -taylor series (taylor afterward because
 it has a richer set of kernels implementing but they must be obtained with
@@ -89,7 +87,10 @@ autograd, aggiungere dei metodi pubblici espliciti per comporre i kernel
 
 The minimum derivability warnings are annoying because there are a lot of them
 when doing nontrivial things, maybe I should put a warnings filter in GP.pred
-such that at most only one warning is emitted per call. => Or maybe not
+such that at most only one warning is emitted per call. => Or maybe not => Add
+initialization parameter `verbose` that sets this kind of things. I imagine
+that the automatical solving strategy algorithm will emit lots of useful
+messages/warnings about what it has decided to do.
 
 Check that conditioning multiple times with zero errors does not change the
 result.
@@ -495,6 +496,10 @@ know all the parameters.
 instead of being applied in __call__, which should just check if the arrays
 are broadcastable.
 
+Replace `forcekron` with `forcesep` with possible values None, 'prod', 'sum'.
+This because I can make diff-like transformations act separately automatically
+in both cases.
+
 ### New specific kernels/kernel options
 
 Is there a smooth version of the Wiener process? like, softmin(x, y)? I tried
@@ -601,7 +606,9 @@ complicated optimization.
 
 `pred` should notice when the conditioning is on a transformed variable that
 starts from a lower dimensional set of variables and thus the prior covariance
-matrix is rank deficient.
+matrix is rank deficient. => Actually, it is sufficient to find a "bottleneck"
+somewhere along the matrix multiplications, not necessarily in the starting
+matrix.
 
 #### Fourier
   
@@ -648,6 +655,12 @@ family of random access sequences of coefficients is ok.
 In general I could write a method "diagonalization" that generates
 cross-covariances with a numerable basis that diagonalizes a kernel. This would
 be useful for sparse approximations.
+
+
+RatQuad is a gamma scale mixture of ExpQuad, so I could implement the
+corresponding transformation easily. In general series of kernels support this.
+=> Wait, nope: being an integral, the individual expquad processes have zero
+variance.
 
 ### Discrete likelihoods
 

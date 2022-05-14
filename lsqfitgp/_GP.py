@@ -205,15 +205,22 @@ class _ProcKernelOp(_Proc):
         self.method = method
         self.arg = arg
         
-class DefaultProcess:
-    """Object used as key for the default process in GP objects"""
-    pass
-    # TODO make a singleton superclass/metaclass such that
-    # 1) the representation is the name
-    # 2) it can not be instantiated
+class _SingletonMeta(type):
+    
+    def __repr__(cls):
+        return cls.__name__
 
-class _ZeroKernel:
-    """Object representing a null kernel"""
+class _Singleton(metaclass=_SingletonMeta):
+    
+    def __new__(cls):
+        raise NotImplementedError(f"{cls.__name__} can not be instantiated")
+
+class DefaultProcess(_Singleton):
+    """Singleton used as key for the default process in GP objects"""
+    pass
+
+class _ZeroKernel(_Singleton):
+    """Singleton representing a null kernel"""
     pass
 
 class GP:
@@ -318,10 +325,10 @@ class GP:
     # => Idea: do the full check even when not using gvars, only on
     # non-transformed variables, but issue a warning if the system is large
     
-    # TODO maybe the default should be solver='eigcut-' because it adds less
-    # noise. It is moot anyway if the plot is done sampling with gvar.raniter
-    # or lgp.raninter because they do add their own noise. But this will be
-    # solved when I add GP sampling methods.
+    # TODO maybe the default should be solver='eigcut-' (or 'svdcut-'?) because
+    # it adds less noise. It is moot anyway if the plot is done sampling with
+    # gvar.raniter or lgp.raninter because they do add their own noise. But this
+    # will be solved when I add GP sampling methods.
     
     def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
         self._elements = dict() # key -> _Element
