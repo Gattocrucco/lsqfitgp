@@ -109,6 +109,14 @@ that important eigenvectors of the posterior covariance matrix are not smooth.
 
 Does pred works with empty given? It should allow it and behave like prior.
 
+Gvar minor bug:
+```python
+In [35]: gvar.BufferDict(dtype=object)
+Out[35]: BufferDict({'dtype': <class 'object'>})
+```
+
+Other gvar bug: see `playground/gvarreadonly.py`
+
 ## Implementation details
 
 Usare l'interfaccia numpy `__array_function__` per `StructuredArray`, and

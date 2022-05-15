@@ -495,7 +495,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             except NotImplementedError:
                 pytest.skip()
             x = np.linspace(0, 1, 100)
-            gp = lgp.GP(kernel)
+            gp = lgp.GP(kernel, posepsfac=200)
             gp.addkernelop('fourier', True, 'F')
             gp.addx(x, 'x')
             gp.addx(1, 's1', proc='F')

@@ -287,16 +287,18 @@ class GP:
             O(n^3) algorithms.
     
     checkpos : bool
-        If True (default), raise a `LinAlgError` if the prior covariance
-        matrix turns out non positive within numerical error. The check
-        will be done only if you use in some way the `gvar` prior. With
-        the Cholesky solvers the check will be done in all cases.
+        If True (default), raise a `LinAlgError` if the prior covariance matrix
+        turns out non positive within numerical error. With the Cholesky
+        solvers the check will be done in all cases.
     checksym : bool
         If True (default), check that the prior covariance matrix is
         symmetric. If False, only half of the matrix is computed.
     checkfinite : bool
         If True (default), check that the prior covariance matrix does not
         contain infs or nans.
+    posepsfac : number
+        The threshold used to check if the prior covariance matrix is positive
+        definite is multiplied by this factor (default 1).
     **kw
         Additional keyword arguments are passed to the solver.
         
@@ -330,9 +332,10 @@ class GP:
     # gvar.raniter or lgp.raninter because they do add their own noise. But this
     # will be solved when I add GP sampling methods.
     
-    def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, **kw):
+    def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, posepsfac=1, **kw):
         self._elements = dict() # key -> _Element
         self._covblocks = dict() # (key, key) -> matrix
+        self._priordict = gvar.BufferDict({}, dtype=object) # key -> gvar array (shaped)
         self._decompcache = dict() # tuple of keys -> Decomposition
         self._procs = dict() # proc key -> _Proc
         self._kernels = dict() # (proc key, proc key) -> _KernelBase
@@ -340,7 +343,6 @@ class GP:
             if not isinstance(covfun, _Kernel.Kernel):
                 raise TypeError('covariance function must be of class Kernel')
             self._procs[DefaultProcess] = _ProcKernel(covfun)
-        self._canaddx = True
         decomp = {
             'eigcut+': _linalg.EigCutFullRank,
             'eigcut-': _linalg.EigCutLowRank,
@@ -351,6 +353,8 @@ class GP:
         }[solver]
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **kw)
         self._checkpositive = bool(checkpos)
+        self._checkpositive_todo = True
+        self._posepsfac = float(posepsfac)
         self._checksym = bool(checksym)
         self._checkfinite = bool(checkfinite)
     
@@ -534,10 +538,6 @@ class GP:
         change will be reflected on the result. However, after the GP has
         computed internally its covariance matrix, the x are ignored.
         
-        If you use in some way the `gvar` prior, e.g., by calling `prior` or
-        `pred` using gvars, you can't call `addx` any more, due to a
-        limitation in gvar.
-        
         Parameters
         ----------
         x : array or dictionary of arrays
@@ -559,10 +559,6 @@ class GP:
         # key used as data.
         
         # TODO add `copy` parameter, default False, to copy the input arrays.
-        
-        if not self._canaddx:
-            raise RuntimeError('can not add x any more to this process')
-            # TODO remove if I implement the lazy gvar prior.
         
         deriv = _Deriv.Deriv(deriv)
 
@@ -722,9 +718,9 @@ class GP:
         
         Add user-defined prior covariance matrix blocks.
         
-        Covariance matrices defined with `addcov` represent arbitrary finite
-        zero-mean Gaussian variables, assumed independent from all other
-        variables in the GP object.
+        Covariance matrices defined with `addcov` represent arbitrary
+        finite-dimensional zero-mean Gaussian variables, assumed independent
+        from all other variables in the GP object.
                 
         Parameters
         ----------
@@ -747,9 +743,8 @@ class GP:
         
         """
         
-        if not self._canaddx:
-            raise RuntimeError('can not add x any more to this process')
-            # TODO remove if I implement the lazy gvar prior.
+        # TODO maybe allow passing only the lower/upper triangular part for
+        # the diagonal blocks, like I meta-allow for out of diagonal blocks?
         
         # Check type of `covblocks` and standardize it to dictionary.
         if _isarraylike(covblocks):
@@ -769,6 +764,7 @@ class GP:
         shapes = {}
         preblocks = {}
         for keys, block in covblocks.items():
+            # TODO maybe check that keys is a 2-tuple
             for key in keys:
                 if key in self._elements:
                     raise KeyError(f'key {key!r} already in GP')
@@ -901,7 +897,7 @@ class GP:
             basekernel = self._crosskernel(xp.proc, xp.proc)
             # In principle I could avoid handling this case separately but it
             # will probably allow simplifications in how I implement nontrivial
-            # transformations in Kernel, I won't need to support taking a
+            # transformations in Kernel: I won't need to support taking a
             # transformation in two steps.
         else:
             basekernel = self._crosskernel(xp.proc, ypkey)
@@ -981,10 +977,21 @@ class GP:
 
         return cov
 
-    def _covblock(self, row, col):        
+    def _covblock(self, row, col):
+        
+        if self._checkpositive and self._checkpositive_todo:
+            self._checkpositive_todo = False
+            keys = [
+                k for k, v in self._elements.items()
+                if isinstance(v, (_Points, _Cov))
+            ]
+            fullcov = self._assemblecovblocks(list(keys))
+            self._checkpos(fullcov)
+            
         if (row, col) not in self._covblocks:
             block = self._makecovblock(row, col)
-            _linalg.noautograd(block).flags['WRITEABLE'] = False
+            # _linalg.noautograd(block).flags['WRITEABLE'] = False
+            # TODO gives problems to gvar.gvar, ask Lepage to solve the bug
             if row != col:
                 if self._checksym:
                     blockT = self._makecovblock(col, row)
@@ -1013,12 +1020,6 @@ class GP:
         
         # TODO Block matrix solving. Example: solve a subproblem with kronecker,
         # another plain.
-        
-        # TODO Cache decompositions of blocks. Caching is effective
-        # with data if I can reuse the decomposition of Kxx to compute the
-        # decomposition of Kxx + ycov, i.e., it works in all cases if ycov is
-        # scalar, and in some cases if ycov is diagonal. Is there an efficient
-        # way to update a Cholesky decomposition if I add a diagonal matrix?
         
         # TODO Check if the matrix is block diagonal. It's O(n^2). It is often
         # not needed but when it is it makes a difference. A faster and less
@@ -1056,7 +1057,7 @@ class GP:
         eigv = linalg.eigvalsh(_linalg.noautograd(cov))
         mineigv = np.min(eigv)
         if mineigv < 0:
-            bound = -len(cov) * np.finfo(float).eps * np.max(eigv)
+            bound = -len(cov) * np.finfo(float).eps * np.max(eigv) * self._posepsfac
             if mineigv < bound:
                 msg = 'covariance matrix is not positive definite: '
                 msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
@@ -1064,40 +1065,34 @@ class GP:
     
     def _priorpointscov(self, key):
         
-        # TODO I think that gvar internals would let me build the prior
-        # one block at a time although everything is correlated, but I don't
-        # know how to do it. If I do that, remove _canaddx. => Lepage is
-        # working on it.
-        
-        assert not hasattr(self, '_priordict')
-        # caching is managed by _prior and since we have to create all gvars
-        # at once this method can be called only the first time
-        
-        if self._checkpositive:
-            keys = [
-                k for k, v in self._elements.items()
-                if isinstance(v, (_Points, _Cov))
-            ]
-            fullcov = self._assemblecovblocks(list(keys))
-            self._checkpos(fullcov)
-        items = [
-            (k, v) for k, v in self._elements.items()
-            if isinstance(v, (_Points, _Cov))
+        x = self._elements[key]
+        classes = (_Points, _Cov)
+        assert isinstance(x, classes)
+        mean = np.zeros(x.size)
+        cov = self._covblock(key, key).astype(float, copy=False)
+        assert cov.shape == 2 * mean.shape, cov.shape
+
+        # get preexisting primary gvars to be correlated with the new ones
+        preitems = [
+            k
+            for k, px in self._elements.items()
+            if isinstance(px, classes)
+            and k in self._priordict
         ]
-        mean = {
-            key: np.zeros(x.shape)
-            for key, x in items
-        }
-        cov = {
-            (row, col): self._covblock(row, col).reshape(x.shape + y.shape)
-            for row, x in items
-            for col, y in items
-        }
-        self._priordict = gvar.gvar(mean, cov, fast=True)
-        self._priordict.buf.flags['WRITEABLE'] = False
-        self._canaddx = False
+        if preitems:
+            prex = _concatenate_noop([
+                np.reshape(self._priordict[k], -1)
+                for k in preitems
+            ])
+            precov = _concatenate_noop([
+                self._covblock(k, key).astype(float, copy=False)
+                for k in preitems
+            ])
+            g = gvar.gvar(mean, cov, prex, precov, fast=True)
+        else:
+            g = gvar.gvar(mean, cov, fast=True)
         
-        return self._priordict[key]
+        return g.reshape(x.shape)
     
     def _priortransf(self, key):
         x = self._elements[key]
@@ -1113,17 +1108,16 @@ class GP:
         return out
     
     def _prior(self, key):
-        prior = getattr(self, '_priordict', {}).get(key, None)
+        prior = self._priordict.get(key, None)
         if prior is None:
             x = self._elements[key]
             if isinstance(x, (_Points, _Cov)):
                 prior = self._priorpointscov(key)
-                # _priorpoints already caches the result
             elif isinstance(x, _Transf):
                 prior = self._priortransf(key)
-                self._priordict[key] = prior
             else:
                 raise TypeError(type(x))
+            self._priordict[key] = prior
         return prior
     
     def prior(self, key=None, raw=False):

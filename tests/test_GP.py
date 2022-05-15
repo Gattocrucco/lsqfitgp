@@ -205,16 +205,6 @@ def test_addprocrescale():
     np.testing.assert_allclose(prior[0, 0], prior[1, 1], rtol=1e-15)
     np.testing.assert_allclose(prior[0, 0], prior[0, 1], rtol=1e-15)
 
-def test_noaddx():
-    gp = lgp.GP(lgp.ExpQuad())
-    x = np.arange(20)
-    gp.addx(x, 0)
-    gp.prior()
-    with pytest.raises(RuntimeError):
-        gp.addx(x, 1)
-    with pytest.raises(RuntimeError):
-        gp.addcov(1, 2)
-
 def test_missing_proc():
     gp = lgp.GP()
     with pytest.raises(KeyError):
@@ -449,11 +439,11 @@ def test_makecovblock_checks():
     with pytest.raises(RuntimeError):
         gp.prior(raw=True)
     
-    gp = lgp.GP(checksym=False)
+    gp = lgp.GP(checksym=False, checkpos=False)
     gp.addcov(a, 0)
     gp.prior(raw=True)
     
-    gp = lgp.GP(checkfinite=False)
+    gp = lgp.GP(checkfinite=False, checkpos=False)
     gp.addcov(m, 0)
     gp.prior(raw=True)
 
@@ -619,3 +609,9 @@ def test_marginal_likelihood_gvar():
     ml1 = gp.marginal_likelihood({0: gvar.gvar(y, m)})
     ml2 = gp.marginal_likelihood({0: y}, {(0, 0): m})
     np.testing.assert_allclose(ml2, ml1, rtol=1e-15)
+
+def test_singleton():
+    dp = lgp._GP.DefaultProcess
+    assert repr(dp) == 'DefaultProcess'
+    with pytest.raises(NotImplementedError):
+        dp()
