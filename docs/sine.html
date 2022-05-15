@@ -300,13 +300,10 @@ let’s do everything again, rescaling by a factor of 3:</p>
 all follow the same path, and they continue to oscillate in a reasonable way
 also outside from the datapoints. But what further away? Let’s make a plot
 from -20 to 20:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xpred_long</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xpred_long</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
 
-<span class="n">xpred_long</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xpred_long</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
-
-<span class="n">ypred</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
+<span class="n">ypred</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
 
@@ -334,7 +331,7 @@ generate some Gaussian distributed errors with standard deviation 0.2:</p>
 <code class="docutils literal notranslate"><span class="pre">y</span></code> and standard deviation 0.2. We then repeat everything as before, but
 using <code class="docutils literal notranslate"><span class="pre">gy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">y</span></code>; we don’t even need to recreate the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>
 object because we are not modifying the <span class="math notranslate nohighlight">\(x\)</span> points:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ypred</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="n">gy</span><span class="p">},</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ypred</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="n">gy</span><span class="p">},</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
 

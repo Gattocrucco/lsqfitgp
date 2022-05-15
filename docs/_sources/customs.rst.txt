@@ -284,14 +284,7 @@ if they are English or Latin. I'll pick this time::
         Above th' Aonian mount, while it pursues
         Things unattempted yet in prose or rhyme.
     """
-
-Since we computed the prior, we have to recreate the :class:`GP` object from
-scratch to add other points (this is not for fundamental reasons, it is an
-interface limitation in :mod:`gvar`)::
-
-    gp = lgp.GP(CountLetters())
-    gp.addx(english_texts, 'english')
-    gp.addx(latin_texts, 'latin')
+    
     gp.addx(debellogallico, 'caesar')
     gp.addx(paradiselost, 'milton')
 
@@ -375,6 +368,6 @@ function to rescale the kernel. Now let's run the fit::
 
 Output::
 
-   {'caesar': 0.7302933637(97),'milton': -1.2692206484(42)}
+   {'caesar': 0.729684638(16), 'milton': -1.268445800(24)}
 
 This time both means are close to ±1.
