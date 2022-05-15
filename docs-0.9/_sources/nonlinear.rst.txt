@@ -86,11 +86,9 @@ depends on a fit parameter. ::
     data += err * np.random.randn(len(data))
     data = gvar.gvar(data, np.full_like(data, err))
 
-We then prepare a :class:`GP` object for the fit::
+Then as usual we add a finer grid of points where we will compute the
+prediction::
 
-    gp = lgp.GP(lgp.ExpQuad())
-    gp.addx(x, 'data')
-    
     xplot = np.linspace(-10, 25, 200)
     gp.addx(xplot, 'plot')
 

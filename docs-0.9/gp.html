@@ -122,7 +122,7 @@
 <span id="gp"></span><h1><span class="section-number">6. </span>Gaussian process class<a class="headerlink" href="#gaussian-process-class" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.GP">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkfinite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkfinite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posepsfac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Object that represents a Gaussian process over arbitrary input.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
@@ -152,16 +152,18 @@ O(n^3) algorithms.</p>
 </dd>
 </dl>
 </dd>
-<dt><strong>checkpos</strong><span class="classifier">bool</span></dt><dd><p>If True (default), raise a <cite>LinAlgError</cite> if the prior covariance
-matrix turns out non positive within numerical error. The check
-will be done only if you use in some way the <cite>gvar</cite> prior. With
-the Cholesky solvers the check will be done in all cases.</p>
+<dt><strong>checkpos</strong><span class="classifier">bool</span></dt><dd><p>If True (default), raise a <cite>LinAlgError</cite> if the prior covariance matrix
+turns out non positive within numerical error. With the Cholesky
+solvers the check will be done in all cases.</p>
 </dd>
 <dt><strong>checksym</strong><span class="classifier">bool</span></dt><dd><p>If True (default), check that the prior covariance matrix is
 symmetric. If False, only half of the matrix is computed.</p>
 </dd>
 <dt><strong>checkfinite</strong><span class="classifier">bool</span></dt><dd><p>If True (default), check that the prior covariance matrix does not
 contain infs or nans.</p>
+</dd>
+<dt><strong>posepsfac</strong><span class="classifier">number</span></dt><dd><p>The threshold used to check if the prior covariance matrix is positive
+definite is multiplied by this factor (default 1).</p>
 </dd>
 <dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the solver.</p>
 <dl class="simple">
@@ -233,9 +235,9 @@ smaller than the matrix size for the method to be convenient.</p>
 <dt class="sig sig-object py" id="lsqfitgp.GP.addcov">
 <span class="sig-name descname"><span class="pre">addcov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covblocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addcov" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add user-defined prior covariance matrix blocks.</p>
-<p>Covariance matrices defined with <cite>addcov</cite> represent arbitrary finite
-zero-mean Gaussian variables, assumed independent from all other
-variables in the GP object.</p>
+<p>Covariance matrices defined with <cite>addcov</cite> represent arbitrary
+finite-dimensional zero-mean Gaussian variables, assumed independent
+from all other variables in the GP object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
@@ -263,7 +265,7 @@ dictionary.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addkernelop">
-<span class="sig-name descname"><span class="pre">addkernelop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addkernelop" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addkernelop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addkernelop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Define a new process as the transformation of an existing one.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -285,7 +287,7 @@ default process.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addproc">
-<span class="sig-name descname"><span class="pre">addproc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv=0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproc" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addproc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add an independent process.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -307,7 +309,7 @@ specified, sets the kernel of the default process.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addprocderiv">
-<span class="sig-name descname"><span class="pre">addprocderiv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deriv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocderiv" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addprocderiv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deriv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocderiv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Define a new process as the derivative of an existing one.</p>
 <div class="math notranslate nohighlight">
 \[g(x) = \frac{\partial^n}{\partial x^n} f(x)\]</div>
@@ -328,7 +330,7 @@ default process.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addprocrescale">
-<span class="sig-name descname"><span class="pre">addprocrescale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scalefun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocrescale" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addprocrescale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scalefun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocrescale" title="Permalink to this definition">¶</a></dt>
 <dd><p>Define a new process as a rescaling of an existing one.</p>
 <div class="math notranslate nohighlight">
 \[g(x) = s(x)f(x)\]</div>
@@ -375,7 +377,7 @@ parameter.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addprocxtransf">
-<span class="sig-name descname"><span class="pre">addprocxtransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocxtransf" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addprocxtransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocxtransf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Define a new process by transforming the inputs of another one.</p>
 <div class="math notranslate nohighlight">
 \[g(x) = f(T(x))\]</div>
@@ -426,7 +428,7 @@ second-to-last dimension of the second array.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addx">
-<span class="sig-name descname"><span class="pre">addx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc=&lt;class</span> <span class="pre">'lsqfitgp._GP.DefaultProcess'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addx" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addx" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add points where the Gaussian process is evaluated.</p>
 <p>The GP object keeps the various x arrays in a dictionary. If <cite>x</cite> is an
 array, you have to specify its dictionary key with the <cite>key</cite> parameter.
@@ -437,9 +439,6 @@ the process itself should be evaluated, use the parameter <cite>deriv</cite>.</p
 you change their contents before doing something with the GP, the
 change will be reflected on the result. However, after the GP has
 computed internally its covariance matrix, the x are ignored.</p>
-<p>If you use in some way the <cite>gvar</cite> prior, e.g., by calling <cite>prior</cite> or
-<cite>pred</cite> using gvars, you can’t call <cite>addx</cite> any more, due to a
-limitation in gvar.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">

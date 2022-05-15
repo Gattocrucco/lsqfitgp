@@ -372,14 +372,7 @@ if they are English or Latin. I’ll pick this time:</p>
 <span class="s2">    Above th&#39; Aonian mount, while it pursues</span>
 <span class="s2">    Things unattempted yet in prose or rhyme.</span>
 <span class="s2">&quot;&quot;&quot;</span>
-</pre></div>
-</div>
-<p>Since we computed the prior, we have to recreate the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object from
-scratch to add other points (this is not for fundamental reasons, it is an
-interface limitation in <code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">CountLetters</span><span class="p">())</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">english_texts</span><span class="p">,</span> <span class="s1">&#39;english&#39;</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">latin_texts</span><span class="p">,</span> <span class="s1">&#39;latin&#39;</span><span class="p">)</span>
+
 <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">debellogallico</span><span class="p">,</span> <span class="s1">&#39;caesar&#39;</span><span class="p">)</span>
 <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">paradiselost</span><span class="p">,</span> <span class="s1">&#39;milton&#39;</span><span class="p">)</span>
 </pre></div>
@@ -458,7 +451,7 @@ function to rescale the kernel. Now let’s run the fit:</p>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;caesar&#39;</span><span class="p">:</span> <span class="mf">0.7302933637</span><span class="p">(</span><span class="mi">97</span><span class="p">),</span><span class="s1">&#39;milton&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.2692206484</span><span class="p">(</span><span class="mi">42</span><span class="p">)}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;caesar&#39;</span><span class="p">:</span> <span class="mf">0.729684638</span><span class="p">(</span><span class="mi">16</span><span class="p">),</span> <span class="s1">&#39;milton&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.268445800</span><span class="p">(</span><span class="mi">24</span><span class="p">)}</span>
 </pre></div>
 </div>
 <p>This time both means are close to ±1.</p>
