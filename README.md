@@ -52,6 +52,9 @@ In [1]: lgp?
 In [2]: lgp.something?
 ```
 
+To access the manual for older versions, use the index at
+[gattocrucco.github.io/lsqfitgp](https://gattocrucco.github.io/lsqfitgp).
+
 ## Development
 
 Clone the repository, create a virtual environment and install the requirements:
