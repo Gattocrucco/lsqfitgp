@@ -309,7 +309,9 @@ adding a swamp of white noise like GPy and pymc3? Maybe I could add white noise
 only for the logdet term. Most decompositions should support adding a multiple
 of the identity.
 
-Can I use Fisher scoring instead of the actual hessian and jacobian?
+Can I use Fisher scoring instead of the actual hessian and jacobian? => This
+might be known as "natural gradients" in the machine learning literature but
+I'm not sure.
 
 ### Port to JAX
 
