@@ -1,6 +1,6 @@
 numpy<1.19
 scipy<1.4
-gvar==11.4
+gvar==11.10 # first version to support gvar.gvar(y, ycov, x, xycov)
 lsqfit<12
 autograd
 pytest

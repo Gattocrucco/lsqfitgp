@@ -222,13 +222,10 @@ all follow the same path, and they continue to oscillate in a reasonable way
 also outside from the datapoints. But what further away? Let's make a plot
 from -20 to 20::
 
-    gp = lgp.GP(lgp.ExpQuad(scale=3))
-    gp.addx(x, 'foo')
-    
     xpred_long = np.linspace(-20, 20, 200)
-    gp.addx(xpred_long, 'bar')
+    gp.addx(xpred_long, 'baz')
     
-    ypred = gp.predfromdata({'foo': y}, 'bar')
+    ypred = gp.predfromdata({'foo': y}, 'baz')
     
     ax.cla()
     
@@ -258,7 +255,7 @@ Now ``gy`` represents an array of independent Gaussian distributions with mean
 using ``gy`` instead of ``y``; we don't even need to recreate the :class:`GP`
 object because we are not modifying the :math:`x` points::
 
-    ypred = gp.predfromdata({'foo': gy}, 'bar')
+    ypred = gp.predfromdata({'foo': gy}, 'baz')
     
     ax.cla()
     
