@@ -161,13 +161,6 @@ bayesian-optimization, but I'm not satisfied with it nor with its
 documentation. If I don't find out something better I'd like to study the
 matter and write something.
 
-To use gvar it would be necessary to remove the limitation of not being able to
-create new primary gvars correlated with old ones. Ask Lepage about this. => I
-opened an issue on gvar, let's see. => It is also the case that when doing
-hyperparameter optimization, the GP must be recomputed from scratch anyway.
-However the limitation still hinders usage in a way that is imperscrutable to
-the user.
-
 ### Low-rank/regression
 
 Se ho un processo somma di due processi di cui uno ha basso rango, in altre
