@@ -95,11 +95,6 @@ messages/warnings about what it has decided to do.
 Check that conditioning multiple times with zero errors does not change the
 result.
 
-I should port to gvar the formatting function I wrote for uncertainties-cpp,
-adapt it for format-strings, and then propose it as enhancement to gvar.
-The new function would be used only if specifying a nonempty format string,
-such that old tests continue to print the expected text.
-
 In the chapter on integration the samples are very noisy. Some trials with
 playground/integrals.py told me that the problem is not gvar.raniter but the
 solver used in the prediction. Using eigcut- with a high enough eps makes the
@@ -108,14 +103,6 @@ samples change shape macroscopically. From this I guess that the problem is
 that important eigenvectors of the posterior covariance matrix are not smooth.
 
 Does pred works with empty given? It should allow it and behave like prior.
-
-Gvar minor bug:
-```python
-In [35]: gvar.BufferDict(dtype=object)
-Out[35]: BufferDict({'dtype': <class 'object'>})
-```
-
-Other gvar bug: see `playground/gvarreadonly.py`
 
 ## Implementation details
 
@@ -129,7 +116,8 @@ di convenienza che non accedono a cose interne in GP.
 Fare una github action che carica la release su PyPI quando faccio la release
 su github. => Non è che però è un rischio? In questo modo il mio account
 github controllerebbe cosa finisce su PyPI perché dovrei metterci le chiavi di
-accesso. Dovrei attivare l'autenticazione a due fattori.
+accesso. Dovrei attivare l'autenticazione a due fattori. => Vantaggio: potrei
+testare anche l'installazione da PyPI dopo aver caricato la release.
 
 ## New functionality
 
