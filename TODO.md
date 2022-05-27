@@ -104,6 +104,15 @@ that important eigenvectors of the posterior covariance matrix are not smooth.
 
 Does pred works with empty given? It should allow it and behave like prior.
 
+According to the coverage report, empbayes_fit.__init__ is not executed while
+running examples. This is wrong because, for example, pdf4.py uses it. What's
+up?
+
+Currently the positivity check is done only on the first call to predfromdata,
+on all non-transformed blocks. This means that if I add other blocks afterward
+they are not checked. Maybe a more coherent behaviour would be to check all
+blocks involved in the conditioning, on every conditioning.
+
 ## Implementation details
 
 Usare l'interfaccia numpy `__array_function__` per `StructuredArray`, and

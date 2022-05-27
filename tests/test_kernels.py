@@ -767,7 +767,7 @@ def xfail(cls, meth):
     setattr(cls, meth, newimpl)
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
-# arise where x == y.
+# arise where x == y. => After porting JAX, I can use make_jaxpr to debug.
 xfail(TestMatern, 'test_symmetric_21')
 xfail(TestMatern, 'test_double_diff_nd_second_chopped')
 xfail(TestMatern, 'test_positive_deriv2_nd')
