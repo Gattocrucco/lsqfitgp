@@ -62,8 +62,9 @@ BlockDiagDecomp
 import abc
 import functools
 
-import autograd
-from autograd import numpy as np
+import jax
+from jax import numpy as jnp
+import numpy as np
 from scipy import linalg
 from scipy import sparse
 

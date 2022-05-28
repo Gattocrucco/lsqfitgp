@@ -59,7 +59,7 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreducto
             dtype = x.dtype.fields[name][0]
             if dtype.shape:
                 axis = tuple(range(-len(dtype.shape), 0))
-                red = jnpreductor if isinstace(red, jnp.ndarray) else npreductor
+                red = jnpreductor if isinstance(red, jnp.ndarray) else npreductor
                 result = red(result, axis=axis)
             
             if acc is None:
@@ -260,8 +260,7 @@ class _KernelBase:
             y = y.reshape(-1)
         result = self._kernel(x, y)
         if self._forcebroadcast:
-            x = x.reshape(shape)
-            y = y.reshape(shape)
+            result = result.reshape(shape)
         assert isinstance(result, (np.ndarray, np.number, jnp.ndarray))
         assert np.issubdtype(result.dtype, np.number), result.dtype
         assert result.shape == shape, (result.shape, shape)

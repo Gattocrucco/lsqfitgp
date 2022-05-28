@@ -1010,7 +1010,7 @@ class GP:
             [self._covblock(row, col) for col in colkeys]
             for row in rowkeys
         ]
-        return _block_matrix(blocks)
+        return _block_noop(blocks)
     
     def _solver(self, keys, ycov=None):
         """
@@ -1461,7 +1461,7 @@ class GP:
         y = _concatenate_noop(ylist)
         
         if ycovblocks is not None:
-            ycov = _block_matrix(ycovblocks)
+            ycov = _block_noop(ycovblocks)
             if y.dtype == object:
                 warnings.warn(f'covariance matrix may have been specified both explicitly and with gvars; the explicit one will be used')
             ymean = gvar.mean(y)

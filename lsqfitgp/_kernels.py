@@ -202,9 +202,10 @@ def _matern32(x):
     return (1 + x) * jnp.exp(-x)
 
 def _matern32_fwd(x):
-    return _matern32(x), ()
+    return _matern32(x), (x,)
 
 def _matern32_bwd(res, g):
+    x, = res
     return (g * -x * jnp.exp(-x),)
 
 _matern32.defvjp(_matern32_fwd, _matern32_bwd)
@@ -566,7 +567,7 @@ def Taylor(x, y):
     
     mul = x * y
     val = 2 * jnp.sqrt(np.abs(mul))
-    return jnp.where(mul >= 0, jspecial.i0(val), jspecial.j0(val))
+    return np.where(mul >= 0, special.i0(val), special.j0(val))
 
 @jax.custom_vjp
 def _bernoulli_poly(n, x):
