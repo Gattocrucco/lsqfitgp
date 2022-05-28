@@ -23,6 +23,7 @@ import functools
 import jax
 import gvar
 from jax import numpy as jnp
+from jax.scipy import special as jspecial
 import numpy as np
 from scipy import linalg
 

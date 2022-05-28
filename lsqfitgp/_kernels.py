@@ -568,7 +568,7 @@ def Taylor(x, y):
     val = 2 * jnp.sqrt(np.abs(mul))
     return jnp.where(mul >= 0, jspecial.i0(val), jspecial.j0(val))
 
-@jax.custom_jvp
+@jax.custom_vjp
 def _bernoulli_poly(n, x):
     # takes x mod 1
     bernoulli = special.bernoulli(n)
@@ -592,7 +592,7 @@ def _bernoulli_poly_fwd(n, x):
 
 def _bernoulli_poly_bwd(res, g):
     n, = res
-    return (None, g * (n * _bernoulli_poly(n - 1, x) if n else 0)
+    return (None, g * (n * _bernoulli_poly(n - 1, x) if n else 0))
 
 _bernoulli_poly.defvjp(_bernoulli_poly_fwd, _bernoulli_poly_bwd)
 
