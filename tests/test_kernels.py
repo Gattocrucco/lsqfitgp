@@ -41,10 +41,10 @@ for name, obj in vars(_kernels).items():
             continue
         kernels.append(obj)
 
-pytestmark = pytest.mark.filterwarnings(*[
+pytestmark = pytest.mark.filterwarnings(
     r'ignore:overriding init argument\(s\)',
     r'ignore:Output seems independent of input',
-])
+)
 
 class KernelTestBase(metaclass=abc.ABCMeta):
     """

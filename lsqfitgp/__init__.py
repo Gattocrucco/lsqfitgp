@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import _patch_autograd
-from . import _gvar_autograd
+from . import _patch_jax
+from . import _patch_gvar
 
-from autograd import numpy, scipy
+from jax import numpy, scipy
 
 from ._GP import *
 from ._Kernel import *
@@ -30,7 +30,7 @@ from ._fit import *
 from ._Deriv import *
 from ._fastraniter import *
 
-__version__ = '0.9'
+__version__ = '0.10'
 
 __doc__ = """
 

@@ -20,13 +20,15 @@
 import re
 import collections
 
-import autograd
-from autograd import numpy as np
-from autograd.scipy import special
-import numpy # to bypass autograd
+import jax
+import numpy as np
+from jax import numpy as jnp
+from jax.scipy import special as jspecial
+from scipy import special
 
 from . import _array
 from . import _Kernel
+from . import _linalg
 from ._Kernel import kernel, stationarykernel, isotropickernel
 
 __all__ = [
@@ -75,8 +77,9 @@ def Constant(r2):
     to fitting with an horizontal line. This can be seen also by observing that
     1 = 1 x 1.
     """
-    return np.ones_like(r2)
-    # TODO maybe use dtype=int8 as optimization? => not worth it
+    return _linalg.choose_numpy(r2).ones(r2.shape)
+    # TODO add support for input that doesn't have a distance but
+    # just equality, like for example non-numerical input.
     
 @isotropickernel(derivable=False)
 def White(r2):
@@ -91,7 +94,7 @@ def White(r2):
     """
     # TODO add support for input that doesn't have a distance but
     # just equality, like for example non-numerical input.
-    return np.where(r2 == 0, 1, 0)
+    return _linalg.choose_numpy(r2).where(r2 == 0, 1, 0)
 
 @isotropickernel(derivable=True)
 def ExpQuad(r2):
@@ -105,7 +108,7 @@ def ExpQuad(r2):
     strongly suppressed under a certain wavelength, and correlations are
     strongly suppressed over a certain distance.
     """
-    return np.exp(-1/2 * r2)
+    return _linalg.choose_numpy(r2).exp(-1/2 * r2)
 
 @kernel(derivable=True)
 def Linear(x, y):
@@ -119,29 +122,32 @@ def Linear(x, y):
     """
     return _dot(x, y)
 
-@autograd.extend.primitive
+@jax.custom_vjp
 def _maternp(x, p):
     poly = 1
     for k in reversed(range(p)):
         c_kp1_over_ck = (p - k) / ((2 * p - k) * (k + 1))
         poly *= c_kp1_over_ck * 2 * x
         poly += 1
-    return np.exp(-x) * poly
+    return jnp.exp(-x) * poly
 
 def _maternp_deriv(x, p):
     if p == 0:
-        return -np.exp(-x)
+        return -jnp.exp(-x)
     poly = 1
     for k in reversed(range(1, p)):
         c_kp1_over_ck = (p - k) / ((2 * p - k - 1) * k)
         poly = 1 + poly * c_kp1_over_ck * 2 * x
     poly = poly / (1 - 2 * p) * x
-    return np.exp(-x) * poly
+    return jnp.exp(-x) * poly
 
-autograd.extend.defvjp(
-    _maternp,
-    lambda ans, x, p: lambda g: g * _maternp_deriv(x, p)
-)
+def _maternp_fwd(x, p):
+    return _maternp(x, p), ()
+
+def _maternp_bwd(res, g):
+    return (g * _maternp_deriv(x, p), None)
+
+_maternp.defvjp(_maternp_fwd, _maternp_bwd)
 
 def _matern_derivable(**kw):
     nu = kw.get('nu', None)
@@ -174,7 +180,7 @@ def Matern(r, nu=None):
     """
     assert np.isscalar(nu)
     assert nu > 0
-    x = np.sqrt(2 * nu) * r
+    x = jnp.sqrt(2 * nu) * r
     if (2 * nu) % 1 == 0:
         return _maternp(x, int(nu - 1/2))
     else:
@@ -188,20 +194,23 @@ def Matern12(r):
     .. math::
         k(r) = \\exp(-r)
     """
-    return np.exp(-r)
+    return jnp.exp(-r)
 
-@autograd.extend.primitive
+@jax.custom_vjp
+@jax.custom_jvp
 def _matern32(x):
-    return (1 + x) * np.exp(-x)
+    return (1 + x) * jnp.exp(-x)
 
-autograd.extend.defvjp(
-    _matern32,
-    lambda ans, x: lambda g: g * -x * np.exp(-x)
-)
+def _matern32_fwd(x):
+    return _matern32(x), ()
 
-autograd.extend.defjvp(
-    _matern32,
-    lambda g, ans, x: (g.T * (-x * np.exp(-x)).T).T
+def _matern32_bwd(res, g):
+    return (g * -x * jnp.exp(-x),)
+
+_matern32.defvjp(_matern32_fwd, _matern32_bwd)
+
+_matern32.defjvps(
+    lambda g, ans, x: (g.T * (-x * jnp.exp(-x)).T).T
 )
 
 @isotropickernel(input='soft', derivable=1)
@@ -214,14 +223,17 @@ def Matern32(r):
     """
     return _matern32(np.sqrt(3) * r)
 
-@autograd.extend.primitive
+@jax.custom_vjp
 def _matern52(x):
-    return (1 + x * (1 + x/3)) * np.exp(-x)
+    return (1 + x * (1 + x/3)) * jnp.exp(-x)
 
-autograd.extend.defvjp(
-    _matern52,
-    lambda ans, x: lambda g: g * -x/3 * _matern32(x)
-)
+def _matern52_fwd(x):
+    return _matern52(x), ()
+
+def _matern52_bwd(res, g):
+    return (g * -x/3 * _matern32(x),)
+
+_matern52.defvjp(_matern52_fwd, _matern52_bwd)
 
 @isotropickernel(input='soft', derivable=2)
 def Matern52(r):
@@ -251,9 +263,9 @@ def GammaExp(r, gamma=1):
     the variance of the non-derivable component goes to zero.
 
     """
-    assert np.isscalar(gamma)
+    assert jnp.isscalar(gamma)
     assert 0 <= gamma <= 2
-    return np.exp(-(r ** gamma))
+    return jnp.exp(-(r ** gamma))
 
 @isotropickernel(derivable=True)
 def RatQuad(r2, alpha=2):
@@ -269,7 +281,7 @@ def RatQuad(r2, alpha=2):
     infinity, it becomes the Gaussian kernel. It is smooth.
     
     """
-    assert np.isscalar(alpha)
+    assert jnp.isscalar(alpha)
     assert 0 < alpha < np.inf
     return (1 + r2 / (2 * alpha)) ** -alpha
 
@@ -300,12 +312,12 @@ def NNKernel(x, y, sigma0=1):
     # TODO the `2`s in the formula are a bit arbitrary. Remove them or give
     # motivation relative to the precise formulation of the neural network.
     
-    assert np.isscalar(sigma0)
-    assert np.isfinite(sigma0)
+    assert jnp.isscalar(sigma0)
+    assert jnp.isfinite(sigma0)
     assert sigma0 > 0
     q = sigma0 ** 2
     denom = (1 + 2 * (q + _dot(x, x))) * (1 + 2 * (q + _dot(y, y)))
-    return 2/np.pi * np.arcsin(2 * (q + _dot(x, y)) / denom)
+    return 2/np.pi * jnp.arcsin(2 * (q + _dot(x, y)) / denom)
     
     # TODO this is not fully equivalent to an arbitrary transformation on the
     # augmented vector even if x and y are transformed, unless I support q
@@ -322,9 +334,9 @@ def Wiener(x, y):
     A kernel representing a non-differentiable random walk starting at 0.
     
     """
-    assert np.all(x >= 0)
-    assert np.all(y >= 0)
-    return np.minimum(x, y)
+    assert jnp.all(x >= 0)
+    assert jnp.all(y >= 0)
+    return jnp.minimum(x, y)
 
 @kernel(forcekron=True)
 def Gibbs(x, y, scalefun=lambda x: 1):
@@ -348,11 +360,11 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     """
     sx = scalefun(x)
     sy = scalefun(y)
-    assert np.all(sx > 0)
-    assert np.all(sy > 0)
+    assert jnp.all(sx > 0)
+    assert jnp.all(sy > 0)
     denom = sx ** 2 + sy ** 2
-    factor = np.sqrt(2 * sx * sy / denom)
-    return factor * np.exp(-(x - y) ** 2 / denom)
+    factor = jnp.sqrt(2 * sx * sy / denom)
+    return factor * jnp.exp(-(x - y) ** 2 / denom)
 
 @stationarykernel(derivable=True, forcekron=True)
 def Periodic(delta, outerscale=1):
@@ -372,9 +384,9 @@ def Periodic(delta, outerscale=1):
     sets the length scale of the correlations.
     
     """
-    assert np.isscalar(outerscale)
+    assert jnp.isscalar(outerscale)
     assert outerscale > 0
-    return np.exp(-2 * (np.sin(delta / 2) / outerscale) ** 2)
+    return jnp.exp(-2 * (jnp.sin(delta / 2) / outerscale) ** 2)
 
 @kernel(forcekron=True, derivable=False)
 def Categorical(x, y, cov=None):
@@ -395,10 +407,10 @@ def Categorical(x, y, cov=None):
     # specific tests when I implement this.)
     
     assert np.issubdtype(x.dtype, numpy.integer)
-    cov = np.array(cov, copy=False)
+    cov = jnp.array(cov, copy=False)
     assert len(cov.shape) == 2
     assert cov.shape[0] == cov.shape[1]
-    assert np.allclose(cov, cov.T)
+    assert jnp.allclose(cov, cov.T)
     return cov[x, y]
 
 @kernel
@@ -419,7 +431,7 @@ def Rescaling(x, y, stdfun=None):
     
     """
     if stdfun is None:
-        stdfun = lambda x: np.ones(x.shape)
+        stdfun = lambda x: jnp.ones(x.shape)
         # do not use np.ones_like because it does not recognize StructuredArray
     return stdfun(x) * stdfun(y)
 
@@ -436,7 +448,7 @@ def Cos(delta):
     another kernel to introduce anticorrelations.
     
     """
-    return np.cos(delta)
+    return jnp.cos(delta)
 
 @kernel(forcekron=True, derivable=False)
 def FracBrownian(x, y, H=1/2):
@@ -456,12 +468,12 @@ def FracBrownian(x, y, H=1/2):
     # TODO I think the correlation between successive same step increments
     # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
     
-    assert np.isscalar(H)
+    assert jnp.isscalar(H)
     assert 0 < H < 1
-    assert np.all(x >= 0)
-    assert np.all(y >= 0)
+    assert jnp.all(x >= 0)
+    assert jnp.all(y >= 0)
     H2 = 2 * H
-    return 1/2 * (x ** H2 + y ** H2 - np.abs(x - y) ** H2)
+    return 1/2 * (x ** H2 + y ** H2 - jnp.abs(x - y) ** H2)
 
 def _ppkernel_derivable(**kw):
     return kw.get('q', 0)
@@ -512,7 +524,7 @@ def PPKernel(r, q=0, D=1):
         poly = 1 + r * (j + 3 + r * ((2/5 * j + 12/5) * j + 3 + r * (((1/15 * j + 3/5) * j + 23/15) * j + 1)))
     else:
         raise NotImplementedError
-    return np.where(x > 0, x ** (j + q) * poly, 0)
+    return jnp.where(x > 0, x ** (j + q) * poly, 0)
 
 @kernel(derivable=1, forcekron=True)
 def WienerIntegral(x, y):
@@ -532,9 +544,9 @@ def WienerIntegral(x, y):
     
     # TODO write formula in terms of min(x, y) and max(x, y).
     
-    assert np.all(x >= 0)
-    assert np.all(y >= 0)
-    return 1/2 * np.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
+    assert jnp.all(x >= 0)
+    assert jnp.all(y >= 0)
+    return 1/2 * jnp.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
 
 @kernel(forcekron=True, derivable=True)
 def Taylor(x, y):
@@ -553,10 +565,10 @@ def Taylor(x, y):
     # appropriate?
     
     mul = x * y
-    val = 2 * np.sqrt(np.abs(mul))
-    return np.where(mul >= 0, special.i0(val), special.j0(val))
+    val = 2 * jnp.sqrt(np.abs(mul))
+    return jnp.where(mul >= 0, jspecial.i0(val), jspecial.j0(val))
 
-@autograd.extend.primitive
+@jax.custom_jvp
 def _bernoulli_poly(n, x):
     # takes x mod 1
     bernoulli = special.bernoulli(n)
@@ -565,21 +577,24 @@ def _bernoulli_poly(n, x):
     coeffs = binom[::-1] * bernoulli
     x = x % 1
     cond = x < 0.5
-    x = np.where(cond, x, 1 - x)
+    x = jnp.where(cond, x, 1 - x)
     out = 0. * x # to handle the case n == 0
     for c in coeffs[:-1]:
         out += c
         out *= x
     out += coeffs[-1]
     if n % 2 == 1:
-        out *= np.where(cond, 1, -1)
+        out *= jnp.where(cond, 1, -1)
     return out
 
-autograd.extend.defvjp(
-    _bernoulli_poly,
-    lambda ans, n, x: lambda g: g * (n * _bernoulli_poly(n - 1, x) if n else 0),
-    argnums=[1]
-)
+def _bernoulli_poly_fwd(n, x):
+    return _bernoulli_poly(n, x), (n,)
+
+def _bernoulli_poly_bwd(res, g):
+    n, = res
+    return (None, g * (n * _bernoulli_poly(n - 1, x) if n else 0)
+
+_bernoulli_poly.defvjp(_bernoulli_poly_fwd, _bernoulli_poly_bwd)
 
 def _fourier_derivable(**kw):
     return kw.get('n', 2) - 1
@@ -690,9 +705,9 @@ def OrnsteinUhlenbeck(x, y):
     is provided as :class:`Expon`.
     
     """
-    assert np.all(x >= 0)
-    assert np.all(y >= 0)
-    return np.exp(-np.abs(x - y)) - np.exp(-(x + y))
+    assert jnp.all(x >= 0)
+    assert jnp.all(y >= 0)
+    return jnp.exp(-jnp.abs(x - y)) - jnp.exp(-(x + y))
     
 def _Celerite_derivable(**kw):
     gamma = kw.get('gamma', 1)
@@ -724,9 +739,9 @@ def Celerite(delta, gamma=1, B=0):
     assert np.isscalar(gamma) and 0 <= gamma < np.inf
     assert np.isscalar(B) and np.isfinite(B)
     assert np.abs(B) <= gamma
-    tau = _Kernel._abs(delta)
+    tau = jnp.abs(delta)
     # TODO option input='abs' in StationaryKernel
-    return np.exp(-gamma * tau) * (np.cos(tau) + B * np.sin(tau))
+    return jnp.exp(-gamma * tau) * (jnp.cos(tau) + B * jnp.sin(tau))
 
 @kernel(forcekron=True, derivable=False)
 def BrownianBridge(x, y):
@@ -744,9 +759,9 @@ def BrownianBridge(x, y):
     # (t^2H(1-s) + s^2H(1-t) + s(1-t)^2H + t(1-s)^2H - (t+s) - |t-s|^2H + 2ts)/2
     # but I have to check if it is correct. (In new kernel FracBrownianBridge.)
     
-    assert np.all(0 <= x) and np.all(x <= 1)
-    assert np.all(0 <= y) and np.all(y <= 1)
-    return np.minimum(x, y) - x * y
+    assert jnp.all(0 <= x) and jnp.all(x <= 1)
+    assert jnp.all(0 <= y) and jnp.all(y <= 1)
+    return jnp.minimum(x, y) - x * y
 
 @stationarykernel(forcekron=True, derivable=1)
 def Harmonic(delta, Q=1):
@@ -792,36 +807,36 @@ def Harmonic(delta, Q=1):
     
     assert np.isscalar(Q) and 0 < Q < np.inf
     
-    tau = _Kernel._abs(delta)
+    tau = jnp.abs(delta)
     
     if Q < 1/2:
         etaQ = np.sqrt((1 - Q) * (1 + Q))
         tauQ = tau / Q
-        pexp = np.exp(_sqrt1pm1(-np.square(Q)) * tauQ)
-        mexp = np.exp(-(1 + etaQ) * tauQ)
+        pexp = jnp.exp(_sqrt1pm1(-jnp.square(Q)) * tauQ)
+        mexp = jnp.exp(-(1 + etaQ) * tauQ)
         return (pexp + mexp + (pexp - mexp) / etaQ) / 2
     
     elif 1/2 <= Q < 1:
-        etaQ = np.sqrt(1 - np.square(Q))
+        etaQ = jnp.sqrt(1 - jnp.square(Q))
         tauQ = tau / Q
         etatau = etaQ * tauQ
-        return np.exp(-tauQ) * (np.cosh(etatau) + np.sinh(etatau) / etaQ)
+        return jnp.exp(-tauQ) * (jnp.cosh(etatau) + jnp.sinh(etatau) / etaQ)
         
     elif Q == 1:
         return _harmonic(tau, Q)
     
     else: # Q > 1
-        etaQ = np.sqrt(np.square(Q) - 1)
+        etaQ = jnp.sqrt(np.square(Q) - 1)
         tauQ = tau / Q
         etatau = etaQ * tauQ
-        return np.exp(-tauQ) * (np.cos(etatau) + np.sin(etatau) / etaQ)
+        return jnp.exp(-tauQ) * (jnp.cos(etatau) + jnp.sin(etatau) / etaQ)
 
 def _sqrt1pm1(x):
     """sqrt(1 + x) - 1, numerically stable for small x"""
-    return np.expm1(1/2 * np.log1p(x))
+    return jnp.expm1(1/2 * jnp.log1p(x))
 
 def _harmonic(x, Q):
-    return _matern32(x / Q) + np.exp(-x/Q) * (1 - Q) * np.square(x) * (1 + x/3)
+    return _matern32(x / Q) + jnp.exp(-x/Q) * (1 - Q) * jnp.square(x) * (1 + x/3)
 
 # def _harmonic(x, Q):
 #     return np.exp(-x/Q) * (1 + x + (1 - Q) * x * (1 + x * (1 + x/3)))
@@ -853,7 +868,7 @@ def Expon(delta):
     In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
     it acts separately while the Matérn kernel is isotropic.
     """
-    return np.exp(-_Kernel._abs(delta))
+    return np.exp(-jnp.abs(delta))
 
 _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]')
 

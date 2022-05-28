@@ -19,14 +19,13 @@
 
 import itertools
 import sys
-import builtins
 import abc
 import warnings
 
 import gvar
-from autograd import numpy as np
-from autograd.scipy import linalg
-from autograd.builtins import isinstance
+import numpy as np
+from jax import numpy as jnp
+from scipy import linalg
 
 from . import _Kernel
 from . import _linalg
@@ -34,18 +33,28 @@ from . import _array
 from . import _Deriv
 
 __all__ = [
-    'GP'
+    'GP',
 ]
 
 def _concatenate_noop(alist, **kw):
     """
-    Like np.concatenate, but does not make a copy when concatenating only one
-    array.
+    Like np.concatenate but avoids a copy if there is only one array.
     """
-    if len(alist) == 1:
+    if isinstance(alist[0], jnp.ndarray):
+        return jnp.concatenate(alist, **kw) # jax's already noop
+    elif len(alist) == 1:
         return np.array(alist[0], copy=False)
     else:
         return np.concatenate(alist, **kw)
+
+def _block_noop(blocks):
+    """
+    Like np.block but avoids a copy if there is only one block.
+    """
+    if isinstance(blocks[0][0], jnp.ndarray):
+        return jax.block(blocks)
+    else:
+        return _concatenate_noop([_concatenate_noop(row, axis=1) for row in blocks], axis=0)
 
 def _triu_indices_and_back(n):
     """
@@ -59,16 +68,8 @@ def _triu_indices_and_back(n):
     q[tuple(reversed(indices))] = a
     return indices, q
 
-def _block_matrix(blocks):
-    """
-    Like np.block, but is autograd-friendly and avoids a copy when there is
-    only one block.
-    """
-    return _concatenate_noop([_concatenate_noop(row, axis=1) for row in blocks], axis=0)
-    # TODO make a bug report to autograd because np.block does not work
-
 def _isarraylike_nostructured(x):
-    return np.isscalar(x) or isinstance(x, (list, tuple, np.ndarray))
+    return np.isscalar(x) or jnp.isscalar(x) or isinstance(x, (list, tuple, np.ndarray, jnp.ndarray))
 
 def _isarraylike(x):
     return _isarraylike_nostructured(x) or isinstance(x, _array.StructuredArray)
@@ -92,7 +93,7 @@ def _compatible_dtypes(d1, d2): # pragma: no cover
                 return False
     else:
         try:
-            np.result_type(d1, d2)
+            np.result_type(d1, d2) # TODO not strict enough!
         except TypeError:
             return False
     return True
@@ -100,7 +101,7 @@ def _compatible_dtypes(d1, d2): # pragma: no cover
 def _array_copy_if_not_readonly(x): # pragma: no cover
     """currently not used"""
     y = _array.asarray(x)
-    if x is y and builtins.isinstance(x, np.ndarray) and x.flags['WRITEABLE']:
+    if x is y and isinstance(x, np.ndarray) and x.flags['WRITEABLE']:
         return np.copy(x)
     else:
         return y
@@ -154,7 +155,7 @@ class _Transf(_Element):
         Do the multiplication tensor @ x.
         """
         if tensor.shape:
-            return np.tensordot(tensor, x, axes=self._axes)
+            return _linalg.choose_numpy(tensor, x).tensordot(tensor, x, axes=self._axes)
         else:
             return tensor * x
 
@@ -554,9 +555,8 @@ class GP:
         
         """
         
-        # TODO after I implement block solving, add per-key solver option. It
-        # may not be possible to respect the setting if it is not the sole
-        # key used as data.
+        # TODO after I implement block solving, add per-key covariance matrix
+        # flags.
         
         # TODO add `copy` parameter, default False, to copy the input arrays.
         
@@ -685,7 +685,7 @@ class GP:
         # Check tensors and convert them to numpy arrays.
         tens = {}
         for k, t in tensors.items():
-            t = np.array(t, copy=False)
+            t = _linalg.choose_numpy(t).array(t, copy=False)
             if not np.issubdtype(t.dtype, np.number):
                 raise TypeError(f'tensors[{k!r}] has non-numeric dtype {t.dtype!r}')
             if self._checkfinite and not np.all(np.isfinite(t)):
@@ -769,7 +769,7 @@ class GP:
                 if key in self._elements:
                     raise KeyError(f'key {key!r} already in GP')
             xkey, ykey = keys
-            block = np.asarray(block)
+            block = _linalg.choose_numpy(block).array(block, copy=False)
             if xkey == ykey:
                 if block.ndim % 2 == 1:
                     raise ValueError(f'diagonal block {key!r} has odd number of axes')
@@ -816,7 +816,7 @@ class GP:
                 xkey, ykey = keys
                 if xkey != ykey:
                     blockT = blocks[ykey, xkey]
-                    if not np.allclose(block.T, blockT):
+                    if not _linalg.choose_numpy(block, blockT).allclose(block.T, blockT):
                         raise ValueError(f'block {keys!r} is not the transpose of block {revkeys!r}')
         
         # Create _Cov objects.
@@ -925,8 +925,8 @@ class GP:
         
         if x is y and not self._checksym:
             indices, back = _triu_indices_and_back(x.size)
-            ax = np.broadcast_to(x.x.reshape(-1)[:, None], (x.x.size, y.x.size))[indices]
-            ay = np.broadcast_to(y.x.reshape(-1)[None, :], (x.x.size, y.x.size))[indices]
+            ax = _linalg.choose_numpy(x.x).broadcast_to(x.x.reshape(-1)[:, None], (x.x.size, y.x.size))[indices]
+            ay = _linalg.choose_numpy(y.x).broadcast_to(y.x.reshape(-1)[None, :], (x.x.size, y.x.size))[indices]
             halfcov = kernel(ax, ay)
             cov = halfcov[back]
         else:
@@ -952,7 +952,7 @@ class GP:
             else:
                 covsum = cov
         assert covsum.shape == x.shape + y.shape
-        return covsum.reshape((x.size, y.size)) # !don't leave out the ()!
+        return covsum.reshape((x.size, y.size)) # don't leave out the ()!
             
     def _makecovblock(self, xkey, ykey):
         x = self._elements[xkey]
@@ -991,11 +991,11 @@ class GP:
         if (row, col) not in self._covblocks:
             block = self._makecovblock(row, col)
             # _linalg.noautograd(block).flags['WRITEABLE'] = False
-            # TODO gives problems to gvar.gvar, ask Lepage to solve the bug
+            # TODO gives problems to gvar.gvar, wait for Lepage to solve the bug
             if row != col:
                 if self._checksym:
                     blockT = self._makecovblock(col, row)
-                    if not np.allclose(block.T, blockT):
+                    if not _linalg.choose_numpy(block, blockT).allclose(block.T, blockT):
                         msg = 'covariance block {!r} is not symmetric'
                         raise RuntimeError(msg.format((row, col)))
                 self._covblocks[col, row] = block.T
@@ -1054,7 +1054,7 @@ class GP:
         # 1) cholesky + eps, if fails it's not positive
         # 2) ldlt, check each 2x2 block     <--- probably best? is it stable?
         # 3) QR, check diagonal of R
-        eigv = linalg.eigvalsh(_linalg.noautograd(cov))
+        eigv = linalg.eigvalsh(_linalg.nojax(cov))
         mineigv = np.min(eigv)
         if mineigv < 0:
             bound = -len(cov) * np.finfo(float).eps * np.max(eigv) * self._posepsfac
@@ -1313,7 +1313,7 @@ class GP:
         Kxxs = self._assemblecovblocks(inkeys, outkeys)
         
         if ycovblocks is not None:
-            ycov = _block_matrix(ycovblocks)
+            ycov = _block_noop(ycovblocks)
         elif (fromdata or raw or not keepcorr) and y.dtype == object:
             ycov = gvar.evalcov(gvar.gvar(y))
             # TODO use evalcov_blocks
@@ -1322,12 +1322,12 @@ class GP:
             
         if raw or not keepcorr or self._checkfinite:
             ymean = gvar.mean(y)
-        if self._checkfinite and not np.all(np.isfinite(ymean)):
+        if self._checkfinite and not _linalg.choose_numpy(ymean).all(_linalg.choose_numpy(ymean).isfinite(ymean)):
             raise ValueError('mean of `given` is not finite')
         if ycov is not None:
-            if self._checkfinite and not np.all(np.isfinite(ycov)):
+            if self._checkfinite and not _linalg.choose_numpy(ycov).all(_linalg.choose_numpy(ycov).isfinite(ycov)):
                 raise ValueError('covariance matrix of `given` is not finite')
-            if self._checksym and not np.allclose(ycov, ycov.T):
+            if self._checksym and not _linalg.choose_numpy(ycov).allclose(ycov, ycov.T):
                 raise ValueError('covariance matrix of `given` is not symmetric')
         
         if raw or not keepcorr:
@@ -1343,7 +1343,9 @@ class GP:
             cov = Kxsxs - solver.quad(Kxxs)
             
             if not fromdata:
-                # complete formula: cov = Kxsxs - A.T @ (Kxx - ycov) @ A
+                # complete formula:
+                # A = Kxx^-1 @ Kxxs
+                # cov = Kxsxs - A.T @ (Kxx - ycov) @ A
                 if ycov is None:
                     pass
                 else:
@@ -1471,12 +1473,12 @@ class GP:
             ycov = None
             ymean = y
         
-        if self._checkfinite and not np.all(np.isfinite(ymean)):
+        if self._checkfinite and not _linalg.choose_numpy(ymean).all(_linalg.choose_numpy(ymean).isfinite(ymean)):
             raise ValueError('mean of `given` is not finite')
         if ycov is not None:
-            if self._checkfinite and not np.all(np.isfinite(ycov)):
+            if self._checkfinite and not _linalg.choose_numpy(ycov).all(_linalg.choose_numpy(ycov).isfinite(ycov)):
                 raise ValueError('covariance matrix of `given` is not finite')
-            if self._checksym and not np.allclose(ycov, ycov.T):
+            if self._checksym and not _linalg.choose_numpy(ycov).allclose(ycov, ycov.T):
                 raise ValueError('covariance matrix of `given` is not symmetric')
         
         decomp = self._solver(inkeys, ycov)

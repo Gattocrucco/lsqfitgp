@@ -21,12 +21,13 @@ import sys
 import warnings
 import copy
 
-import autograd
-from autograd import numpy as np
-from autograd.builtins import isinstance
+import jax
+import numpy as np
+from jax import numpy as jnp
 
 from . import _array
 from . import _Deriv
+from . import _linalg
 
 __all__ = [
     'Kernel',
@@ -35,16 +36,16 @@ __all__ = [
     'kernel',
     'stationarykernel',
     'isotropickernel',
-    'where'
+    'where',
 ]
 
 def _asfloat(x):
     if not np.issubdtype(x.dtype, np.floating):
-        return np.array(x, dtype=float, subok=True)
+        return x.astype(float)
     else:
         return x
 
-def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None):
+def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreductor=None):
     x = args[0]
     if x.dtype.names is None:
         return fun(*args)
@@ -52,13 +53,14 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None):
         acc = None
         for name in x.dtype.names:
             recargs = (arg[name] for arg in args)
-            reckw = dict(reductor=reductor, npreductor=npreductor)
+            reckw = dict(reductor=reductor, npreductor=npreductor, jnpreductor=jnpreductor)
             result = _reduce_recurse_dtype(fun, *recargs, **reckw)
             
             dtype = x.dtype.fields[name][0]
             if dtype.shape:
                 axis = tuple(range(-len(dtype.shape), 0))
-                result = npreductor(result, axis=axis)
+                red = jnpreductor if isinstace(red, jnp.ndarray) else npreductor
+                result = red(result, axis=axis)
             
             if acc is None:
                 acc = result
@@ -70,11 +72,11 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None):
 
 def _sum_recurse_dtype(fun, *args):
     plus = lambda a, b: a + b
-    return _reduce_recurse_dtype(fun, *args, reductor=plus, npreductor=np.sum)
+    return _reduce_recurse_dtype(fun, *args, reductor=plus, npreductor=np.sum, jnpreductor=jnp.sum)
 
 def _prod_recurse_dtype(fun, *args):
     times = lambda a, b: a * b
-    return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=np.prod)
+    return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=np.prod, jnpreductor=jnp.prod)
 
 def _transf_recurse_dtype(transf, x, *args):
     if x.dtype.names is None:
@@ -226,15 +228,13 @@ class _KernelBase:
         if loc is not None:
             assert np.isscalar(loc)
             assert np.isfinite(loc)
-            transf1 = transf
-            transf = lambda x: _transf_recurse_dtype(lambda x: x - loc, transf1(x))
+            transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x - loc, transf(x))
         
         if scale is not None:
             assert np.isscalar(scale)
             assert np.isfinite(scale)
             assert scale > 0
-            transf2 = transf
-            transf = lambda x: _transf_recurse_dtype(lambda x: x / scale, transf2(x))
+            transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x / scale, transf(x))
         
         # TODO when dim becomes deep, forcekron must apply also to subfields
         # for consistence. Maybe it should do it now already.
@@ -256,8 +256,13 @@ class _KernelBase:
         shape = _array.broadcast(x, y).shape
         if self._forcebroadcast:
             x, y = _array.broadcast_arrays(x, y)
+            x = x.reshape(-1)
+            y = y.reshape(-1)
         result = self._kernel(x, y)
-        assert isinstance(result, (np.ndarray, np.number))
+        if self._forcebroadcast:
+            x = x.reshape(shape)
+            y = y.reshape(shape)
+        assert isinstance(result, (np.ndarray, np.number, jnp.ndarray))
         assert np.issubdtype(result.dtype, np.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
         return result
@@ -281,7 +286,8 @@ class _KernelBase:
     # TODO when using autograd, an autograd scalar is an ArrayBox that
     # has an all-in method __add__ that will be called if the autograd scalar
     # is the first addend. Then autograd will complain that it can't compute
-    # derivatives w.r.t. a Kernel. Solve this bug.
+    # derivatives w.r.t. a Kernel. Solve this bug. => Is it still happening
+    # with JAX?
     
     def __add__(self, value):
         return self._binary(value, lambda k, q: lambda x, y: k(x, y) + q(x, y))
@@ -484,9 +490,9 @@ class _KernelBase:
             
             f = self._kernel
             for _ in range(xderiv.order):
-                f = autograd.elementwise_grad(f, 0)
+                f = jax.vmap(jax.grad(f, 0))
             for _ in range(yderiv.order):
-                f = autograd.elementwise_grad(f, 1)
+                f = jax.vmap(jax.grad(f, 1))
             
             def fun(x, y):
                 check(x, y)
@@ -513,15 +519,15 @@ class _KernelBase:
             i = -1
             for i, dim in enumerate(xderiv):
                 for _ in range(xderiv[dim]):
-                    f = autograd.elementwise_grad(f, 2 + i)
+                    f = jax.vmap(jax.grad(f, 2 + i))
             for j, dim in enumerate(yderiv):
                 for _ in range(yderiv[dim]):
-                    f = autograd.elementwise_grad(f, 2 + 1 + i + j)
+                    f = jax.vmap(jax.grad(f, 2 + 1 + i + j))
             
             def fun(x, y):
                 check(x, y)
                                 
-                # Autograd-friendly wrap of structured arrays.
+                # JAX-friendly wrap of structured arrays.
                 if xderiv:
                     x = _array.StructuredArray(x)
                 if yderiv:
@@ -744,8 +750,7 @@ class IsotropicKernel(StationaryKernel):
             assert scale > 0
             transf = lambda q : q / scale ** 2
         if input == 'soft':
-            transf0 = transf
-            transf = lambda q: np.sqrt(transf0(q))
+            transf = lambda q, transf=transf: _linalg.choose_numpy(q).sqrt(transf(q))
             # I do square and then square root because I first have to
             # compute the sum of squares
         
@@ -761,24 +766,8 @@ def _eps(x):
     else:
         return np.finfo(float).eps
 
-# I define my own version of abs because autograd defines the derivative in 0
-# to be 0, while I need it to be 1 for stationary/isotropic kernels.
-@autograd.extend.primitive
-def _abs(x):
-    return np.abs(x)
-
-autograd.extend.defvjp(
-    _abs,
-    lambda ans, x: lambda g: g * np.where(x >= 0, 1, -1)
-)
-
-autograd.extend.defjvp(
-    _abs,
-    lambda g, ans, x: (g.T * np.where(x >= 0, 1, -1).T).T
-)
-
 def _softabs(x):
-    return _abs(x) + _eps(x)
+    return _linalg.choose_numpy(x).abs(x) + _eps(x)
 
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
@@ -910,8 +899,7 @@ def where(condfun, kernel1, kernel2, dim=None):
                 return x[[dim]]
             else:
                 return x[dim]
-        condfun0 = condfun
-        condfun = lambda x: condfun0(transf(x))
+        condfun = lambda x, condfun=condfun: condfun(transf(x))
     
     def kernel_op(k1, k2):
         def kernel(x, y):

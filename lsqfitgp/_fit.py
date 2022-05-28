@@ -20,25 +20,16 @@
 import warnings
 
 import gvar
-import autograd
-from autograd import numpy as np
+import jax
+from jax import numpy as jnp
 from scipy import optimize
 
 from . import _GP
 from . import _linalg
 
 __all__ = [
-    'empbayes_fit'
+    'empbayes_fit',
 ]
-
-@autograd.wrap_util.unary_to_nary
-def jac(fun, x): # pragma: no cover
-    """Like autograd.jacobian but with forward mode, currently not used"""
-    jvp = autograd.core.make_jvp(fun, x)
-    ans = fun(x)
-    vs = autograd.extend.vspace(x)
-    grads = map(lambda b: jvp(b)[1], vs.standard_basis())
-    return np.reshape(np.stack(grads, axis=-1), ans.shape + vs.shape)
 
 def _asarrayorbufferdict(x):
     if hasattr(x, 'keys'):
@@ -57,7 +48,14 @@ def _unflat(x, original):
         out = x.reshape(original.shape)
         return out if out.shape else out.item()
     elif isinstance(original, gvar.BufferDict):
-        return gvar.BufferDict(original, buf=x)
+        # normally I would do BufferDict(original, buf=x) but it does not work
+        # with JAX tracers
+        b = gvar.BufferDict(original)
+        b._extension = {}
+        b._buf = x
+        # TODO b.buf = x does not work because BufferDict checks that the
+        # array is a numpy array.
+        return b
 
 class empbayes_fit:
 
@@ -123,15 +121,14 @@ class empbayes_fit:
         # term.
     
         # TODO it raises very often with "Desired error not necessarily
-        # achieved due to precision loss.". Change the default arguments of
-        # minimize to make this less frequent, but only after implement the
-        # quad-specific derivatives since maybe they will fix this. Another
-        # thing that may matter is the vjp of the logdet, which computes a
-        # matrix inverse. I could do the following: make an internal version of
-        # marginal_likelihood that returns separately the residuals and the
-        # logdet term, and do a backward derivative on the residuals and a
-        # forward on the logdet. Other option: try another optimization
-        # algorithm.
+        # achieved due to precision loss.". I tried doing a forward grad on
+        # the logdet but does not fix the problem. I still suspect it's the
+        # logdet, maybe the value itself and not the derivative, because as the
+        # matrix changes the regularization can change a lot the value of the
+        # logdet. How do I stabilize it?
+        
+        # TODO use the split marginal likelihood to compute the gradient of
+        # the logdet in forward mode.
         
         # TODO I don't know really how much the inverse hessian estimated by
         # BFGS is accurate. Investigate computing the hessian with autograd or
@@ -176,7 +173,7 @@ class empbayes_fit:
             
             return -ml + 1/2 * priorchi2
     
-        result = optimize.minimize(autograd.value_and_grad(fun), hpmean, jac=True, **minkw)
+        result = optimize.minimize(jax.value_and_grad(fun), hpmean, jac=True, **minkw)
         
         if not result.success:
             msg = 'minimization failed: {}'.format(result.message)

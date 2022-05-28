@@ -19,10 +19,10 @@
 
 import collections
 
-from autograd import numpy as np
+import numpy as np
 
 __all__ = [
-    'Deriv'
+    'Deriv',
 ]
 
 class Deriv:

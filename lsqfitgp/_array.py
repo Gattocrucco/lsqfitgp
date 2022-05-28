@@ -17,10 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import builtins
-
-from autograd import numpy as np
-from autograd.builtins import isinstance
+import numpy as np
+from jax import numpy as jnp
 
 __all__ = [
     'StructuredArray',
@@ -28,7 +26,7 @@ __all__ = [
     'broadcast',
     'broadcast_to',
     'broadcast_arrays',
-    'asarray'
+    'asarray',
 ]
 
 # TODO use the __array_function__ mechanism instead of exposing custom
@@ -36,7 +34,7 @@ __all__ = [
 # as it is?
 
 def _readonlyview(x):
-    if not builtins.isinstance(x, (StructuredArray, np.numpy_boxes.ArrayBox)):
+    if not isinstance(x, (StructuredArray, jnp.ndarray)):
         x = x.view()
         x.flags['WRITEABLE'] = False
     return x
@@ -115,7 +113,7 @@ def asarray(x, **kw):
 
 class StructuredArray:
     """
-    Autograd-friendly imitation of a numpy structured array.
+    JAX-friendly imitation of a numpy structured array.
     
     It behaves like a read-only numpy structured array, with the exception that
     you can set a whole field/subfield.
@@ -194,7 +192,7 @@ class StructuredArray:
             msg += '"array[label] = np.array([...])"?'
             raise ValueError(msg)
         assert key in self.dtype.names
-        assert isinstance(val, (np.ndarray, StructuredArray))
+        assert isinstance(val, (np.ndarray, jnp.ndarray, StructuredArray))
         prev = self._dict[key]
         # TODO support casting and broadcasting
         assert prev.dtype == val.dtype

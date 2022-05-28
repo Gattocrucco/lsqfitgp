@@ -81,6 +81,12 @@ from . import _toeplitz_linalg
 # support the methods correlate and decorrelate. Low-rank updates already
 # provided by scipy.
 
+def choose_numpy(*args):
+    if any(isinstance(x, jnp.ndarray) for x in args):
+        return jnp
+    else:
+        return np
+
 def noautograd(x):
     """
     Unpack an autograd numpy array.
