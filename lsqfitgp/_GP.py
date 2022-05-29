@@ -1069,7 +1069,7 @@ class GP:
         classes = (_Points, _Cov)
         assert isinstance(x, classes)
         mean = np.zeros(x.size)
-        cov = self._covblock(key, key).astype(float, copy=False)
+        cov = self._covblock(key, key).astype(float)
         assert cov.shape == 2 * mean.shape, cov.shape
 
         # get preexisting primary gvars to be correlated with the new ones
@@ -1085,7 +1085,7 @@ class GP:
                 for k in preitems
             ])
             precov = _concatenate_noop([
-                self._covblock(k, key).astype(float, copy=False)
+                self._covblock(k, key).astype(float)
                 for k in preitems
             ])
             g = gvar.gvar(mean, cov, prex, precov, fast=True)

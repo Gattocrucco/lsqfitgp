@@ -483,15 +483,24 @@ class _KernelBase:
                             raise TypeError(f'derivative along non-numeric field {dim!r}')
             elif not xderiv.implicit or not yderiv.implicit:
                 raise ValueError('explicit derivatives with non-structured array')
-                
+        
+        # Wrapper for applying jax.vmap multiple times, in case this method
+        # is called again on the same object.
+        def nvmap(f):
+            def newf(*args):
+                return f(*(jnp.atleast_1d(x) for x in args))[0]
+            return newf
+        
         # Handle the non-structured case.
         if xderiv.implicit and yderiv.implicit:
             
             f = self._kernel
+            f = nvmap(f)
             for _ in range(xderiv.order):
-                f = jax.vmap(jax.grad(f, 0))
+                f = jax.grad(f, 0)
             for _ in range(yderiv.order):
-                f = jax.vmap(jax.grad(f, 1))
+                f = jax.grad(f, 1)
+            f = jax.vmap(f)
             
             def fun(x, y):
                 check(x, y)
@@ -518,10 +527,12 @@ class _KernelBase:
             i = -1
             for i, dim in enumerate(xderiv):
                 for _ in range(xderiv[dim]):
-                    f = jax.vmap(jax.grad(f, 2 + i))
+                    f = jax.grad(f, 2 + i)
             for j, dim in enumerate(yderiv):
                 for _ in range(yderiv[dim]):
-                    f = jax.vmap(jax.grad(f, 2 + 1 + i + j))
+                    f = jax.grad(f, 2 + 1 + i + j)
+            f = jax.vmap(f) # TODO use in_axes to avoid touching x and y, or
+            # maybe it is simpler to use keyword arguments
             
             def fun(x, y):
                 check(x, y)
