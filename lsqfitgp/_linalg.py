@@ -27,8 +27,8 @@ Classes
 -------
 Decomposition
     Abstract base class.
-DecompAutograd
-    Abstract subclass that adds autograd support.
+DecompAutoDiff
+    Abstract subclass that adds JAX support.
 Diag
     Diagonalization.
 EigCutFullRank
@@ -44,9 +44,7 @@ ReduceRank
 Chol
     Cholesky decomposition.
 CholReg
-    Abstract base class for regularized Cholesky decomposition.
-CholMaxEig
-    Cholesky regularized using the maximum eigenvalue.
+    Abstract class for regularized Cholesky decomposition.
 CholGersh
     Cholesky regularized using an estimate of the maximum eigenvalue.
 CholToeplitz
@@ -67,6 +65,7 @@ from jax import numpy as jnp
 import numpy as np
 from scipy import linalg
 from scipy import sparse
+from jax.scipy import linalg as jlinalg
 
 from . import _toeplitz_linalg
 
@@ -76,24 +75,18 @@ from . import _toeplitz_linalg
 # gvar.GVar(float mean, svec derivs, smat cov)
 # it may require cython to be fast since it's not vectorized
 
-# TODO investigate using the QR decomposition. It's twice as fast as
-# diagonalization, it does not require positivity, it allows tweaking the
-# generalized eigenvalues (the diagonal of the triangular factor). Does not
-# support the methods correlate and decorrelate. Low-rank updates already
-# provided by scipy.
-
 def choose_numpy(*args):
     if any(isinstance(x, jnp.ndarray) for x in args):
         return jnp
     else:
         return np
 
-def noautograd(x):
+def nojax(x):
     """
-    Unpack an autograd numpy array.
+    Unpack a JAX tracer.
     """
-    if isinstance(x, np.numpy_boxes.ArrayBox):
-        return noautograd(x._value)
+    if isinstance(x, jax.core.Tracer):
+        return nojax(x.primal)
     else:
         return x
 
@@ -188,9 +181,9 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         return len(self._K)
 
-class DecompAutograd(Decomposition):
+class DecompAutoDiff(Decomposition):
     """
-    Abstract subclass adding autograd support to subclasses of Decomposition.
+    Abstract subclass adding JAX support to subclasses of Decomposition.
     Moreover, it fixes the convention of tensor multiplication by passing
     the concrete class methods only 2d matrices and then reshaping back the
     result.
@@ -198,7 +191,7 @@ class DecompAutograd(Decomposition):
         
     def __init_subclass__(cls, **kw):
         
-        # For __init__ I can't use an _autograd flag like below to avoid double
+        # For __init__ I can't use an _autodiff flag like below to avoid double
         # wrapping because the wrapper is called as super().__init__ in
         # subclasses, so I assign self._K *after* calling old__init__.
         
@@ -206,19 +199,19 @@ class DecompAutograd(Decomposition):
         
         @functools.wraps(old__init__)
         def __init__(self, K, **kw):
-            old__init__(self, noautograd(K), **kw)
+            old__init__(self, nojax(K), **kw)
             self._K = K
         
         cls.__init__ = __init__
         
         for name in 'solve', 'quad', 'logdet':
             meth = getattr(cls, name)
-            if not hasattr(meth, '_autograd'):
+            if not hasattr(meth, '_autodiff'):
                 # print(f'defining {cls.__name__}.{name}')
-                newmeth = getattr(DecompAutograd, '_make_' + name)(meth)
+                newmeth = getattr(DecompAutoDiff, '_make_' + name)(meth)
                 newmeth = functools.wraps(meth)(newmeth)
-                if not hasattr(newmeth, '_autograd'):
-                    newmeth._autograd = True
+                if not hasattr(newmeth, '_autodiff'):
+                    newmeth._autodiff = True
                 setattr(cls, name, newmeth)
         
         super().__init_subclass__(**kw)
@@ -226,8 +219,9 @@ class DecompAutograd(Decomposition):
     @staticmethod
     def _make_solve(oldsolve):
         
-        @autograd.extend.primitive
-        def solve_autograd(self, K, b):
+        @jax.custom_jvp
+        @jax.custom_vjp
+        def solve_autodiff(self, K, b):
             b2d = b.reshape(b.shape[0], -1)
             return oldsolve(self, b2d).reshape(b.shape)
         
@@ -236,11 +230,11 @@ class DecompAutograd(Decomposition):
             assert b.shape[0] == K.shape[0] == K.shape[1]
             def vjp(g):
                 assert g.shape[-len(b.shape):] == b.shape
-                g = np.moveaxis(g, -len(b.shape), 0)
-                A = solve_autograd(self, K, g)
-                B = np.moveaxis(ans, 0, -1)
-                AB = np.tensordot(A, B, len(b.shape) - 1)
-                AB = np.moveaxis(AB, 0, -2)
+                g = jnp.moveaxis(g, -len(b.shape), 0)
+                A = solve_autodiff(self, K, g)
+                B = jnp.moveaxis(ans, 0, -1)
+                AB = jnp.tensordot(A, B, len(b.shape) - 1)
+                AB = jnp.moveaxis(AB, 0, -2)
                 assert AB.shape == g.shape[:-len(b.shape)] + K.shape
                 return -AB
             return vjp
@@ -250,57 +244,59 @@ class DecompAutograd(Decomposition):
             assert b.shape[0] == K.shape[0] == K.shape[1]
             def vjp(g):
                 assert g.shape[-len(b.shape):] == b.shape
-                g = np.moveaxis(g, -len(b.shape), 0)
-                gj = solve_autograd(self, K, g)
-                gj = np.moveaxis(gj, 0, -len(b.shape))
+                g = jnp.moveaxis(g, -len(b.shape), 0)
+                gj = solve_autodiff(self, K, g)
+                gj = jnp.moveaxis(gj, 0, -len(b.shape))
                 assert gj.shape == g.shape
                 return gj
             return vjp
         
-        autograd.extend.defvjp(
-            solve_autograd,
-            solve_vjp_K,
-            solve_vjp_b,
-            argnums=[1, 2]
-        )
+        def solve_fwd(self, K, b):
+            ans = solve_autodiff(self, K, b)
+            return ans, (ans, self, K, b)
+        
+        def solve_bwd(res, g):
+            return None, solve_vjp_K(*res)(g), solve_vjp_b(*res)(g)
+        
+        solve_autodiff.defvjp(solve_fwd, solve_bwd)
         
         def solve_jvp_K(g, ans, self, K, b):
             assert ans.shape == b.shape
             assert ans.shape[0] == K.shape[0] == K.shape[1]
             assert g.shape[:2] == K.shape
-            invKg = solve_autograd(self, K, g)
+            invKg = solve_autodiff(self, K, g)
             ans2D = ans.reshape(ans.shape[0], -1)
-            jvp = -np.tensordot(invKg, ans2D, axes=(1, 0))
-            jvp = np.moveaxis(jvp, -1, 1)
+            jvp = -jnp.tensordot(invKg, ans2D, axes=(1, 0))
+            jvp = jnp.moveaxis(jvp, -1, 1)
             return jvp.reshape(ans.shape + g.shape[2:])
         
         def solve_jvp_b(g, ans, self, K, b):
             assert ans.shape == b.shape
             assert b.shape[0] == K.shape[0] == K.shape[1]
             assert g.shape[:len(b.shape)] == b.shape
-            return solve_autograd(self, K, g)
+            return solve_autodiff(self, K, g)
         
-        autograd.extend.defjvp(
-            solve_autograd,
+        solve_autodiff.defjvps(
+            None,
             solve_jvp_K,
             solve_jvp_b,
-            argnums=[1, 2]
         )
         
         def solve(self, b):
-            return solve_autograd(self, self._K, b)
+            return solve_autodiff(self, self._K, b)
         
-        # solve_autograd is used by logdet_vjp, so I store it here in case
+        # solve_autodiff is used by logdet_vjp, so I store it here in case
         # logdet but not solve needs wrapping in a subclass
-        solve._autograd = solve_autograd
+        solve._autodiff = solve_autodiff
         
         return solve
     
     @staticmethod
     def _make_quad(oldquad):
         
-        @autograd.extend.primitive
-        def quad_autograd(self, K, b, c):
+        @jax.custom_jvp
+        @jax.custom_vjp
+        def quad_autodiff(self, K, b, c):
             b2d = b.reshape(b.shape[0], -1)
             if c is None:
                 outshape = b.shape[1:][::-1] + b.shape[1:]
@@ -323,17 +319,17 @@ class DecompAutograd(Decomposition):
             def vjp(g):
                 assert g.shape[len(g.shape) - len(ans.shape):] == ans.shape
                 
-                invKb = self.solve._autograd(self, K, b)
+                invKb = self.solve._autodiff(self, K, b)
                 if c is None:
                     invKc = invKb
                 else:
-                    invKc = self.solve._autograd(self, K, c)
+                    invKc = self.solve._autodiff(self, K, c)
 
                 axes = 2 * (tuple(range(-len(cshape), 0)),)
-                ginvKc = np.tensordot(g, invKc, axes)
+                ginvKc = jnp.tensordot(g, invKc, axes)
 
                 axes = 2 * (tuple(range(-len(bshape) - 1, -1)),)
-                ginvKcb = np.tensordot(ginvKc, invKb.T, axes)
+                ginvKcb = jnp.tensordot(ginvKc, invKb.T, axes)
 
                 assert ginvKcb.shape == g.shape[:len(g.shape) - len(ans.shape)] + K.shape
                 return -ginvKcb
@@ -354,23 +350,23 @@ class DecompAutograd(Decomposition):
                     glen = len(g.shape) - len(ans.shape)
                     assert g.shape[glen:] == ans.shape
             
-                    invKb = self.solve._autograd(self, K, b)
+                    invKb = self.solve._autodiff(self, K, b)
 
                     axes = 2 * (range(-len(bshape), 0),)
-                    gj1 = np.tensordot(g, invKb, axes)
+                    gj1 = jnp.tensordot(g, invKb, axes)
 
                     axes = tuple(range(glen))
                     axes += tuple(reversed(range(glen, len(gj1.shape))))
-                    gj1 = np.transpose(gj1, axes)
+                    gj1 = jnp.transpose(gj1, axes)
                     assert gj1.shape == g.shape[:glen] + b.shape
                     
                     axes = (
                         tuple(range(-len(bshape) - 1, -2 * len(bshape) - 1, -1)),
                         tuple(range(-len(bshape), 0))
                     )
-                    gj2 = np.tensordot(g, invKb, axes)
+                    gj2 = jnp.tensordot(g, invKb, axes)
 
-                    gj2 = np.moveaxis(gj2, -1, -len(bshape) - 1)
+                    gj2 = jnp.moveaxis(gj2, -1, -len(bshape) - 1)
                     assert gj2.shape == gj1.shape
 
                     return gj1 + gj2
@@ -379,14 +375,14 @@ class DecompAutograd(Decomposition):
                     glen = len(g.shape) - len(ans.shape)
                     assert g.shape[glen:] == ans.shape
             
-                    invKc = self.solve._autograd(self, K, c)
+                    invKc = self.solve._autodiff(self, K, c)
 
                     axes = 2 * (range(-len(cshape), 0),)
-                    gj = np.tensordot(g, invKc, axes)
+                    gj = jnp.tensordot(g, invKc, axes)
 
                     axes = tuple(range(glen))
                     axes += tuple(reversed(range(glen, len(gj.shape))))
-                    gj = np.transpose(gj, axes)
+                    gj = jnp.transpose(gj, axes)
                     assert gj.shape == g.shape[:glen] + b.shape
                     return gj
             
@@ -402,27 +398,28 @@ class DecompAutograd(Decomposition):
             def vjp(g):
                 assert g.shape[len(g.shape) - len(ans.shape):] == ans.shape
             
-                invKb = self.solve._autograd(self, K, b)
+                invKb = self.solve._autodiff(self, K, b)
 
                 axes = (
                     tuple(range(-len(cshape) - 1, -len(cshape) - len(bshape) - 1, -1)),
                     tuple(range(-len(bshape), 0))
                 )
-                gj = np.tensordot(g, invKb, axes)
+                gj = jnp.tensordot(g, invKb, axes)
 
-                gj = np.moveaxis(gj, -1, -len(cshape) - 1)
+                gj = jnp.moveaxis(gj, -1, -len(cshape) - 1)
                 assert gj.shape == g.shape[:len(g.shape) - len(ans.shape)] + c.shape
                 return gj
             
             return vjp
-
-        autograd.extend.defvjp(
-            quad_autograd,
-            quad_vjp_K,
-            quad_vjp_b,
-            quad_vjp_c,
-            argnums=[1, 2, 3]
-        )
+        
+        def quad_fwd(ans, self, K, b, c):
+            ans = quad_autodiff(self, K, b, c)
+            return ans, (ans, self, K, b, c)
+        
+        def quad_bwd(res, g):
+            return None, quad_vjp_K(*res)(g), quad_vjp_b(*res)(g), quad_vjp_c(*res)(g)
+        
+        quad_autodiff.defvjp(quad_fwd, quad_bwd)
         
         def quad_jvp_K(g, ans, self, K, b, c):
             if c is None:
@@ -432,10 +429,10 @@ class DecompAutograd(Decomposition):
             assert ans.shape == tuple(reversed(bshape)) + cshape
             assert g.shape[:2] == K.shape
             g3d = g.reshape(K.shape + (-1,))
-            ginvKc = quad_autograd(self, K, g3d, c)
+            ginvKc = quad_autodiff(self, K, g3d, c)
             ginvKc = np.moveaxis(ginvKc, 0, -1)
             ginvKc = ginvKc.reshape(c.shape + g.shape[2:])
-            jvp = -quad_autograd(self, K, b, ginvKc)
+            jvp = -quad_autodiff(self, K, b, ginvKc)
             assert jvp.shape == ans.shape + g.shape[2:]
             return jvp
         
@@ -443,73 +440,75 @@ class DecompAutograd(Decomposition):
             assert g.shape[:len(b.shape)] == b.shape
             g1d = g.reshape(b.shape + (-1,))
             if c is None:
-                jvp = quad_autograd(self, K, b, g1d)
+                jvp = quad_autodiff(self, K, b, g1d)
                 jvpT = np.moveaxis(jvp.T, 0, -1)
                 jvp = jvp + jvpT
             else:
-                jvp = quad_autograd(self, K, g1d, c)
+                jvp = quad_autodiff(self, K, g1d, c)
                 jvp = np.moveaxis(jvp, 0, -1)
             return jvp.reshape(ans.shape + g.shape[len(b.shape):])
         
         def quad_jvp_c(g, ans, self, K, b, c):
             assert g.shape[:len(c.shape)] == c.shape
-            jvp = quad_autograd(self, K, b, g)
+            jvp = quad_autodiff(self, K, b, g)
             assert jvp.shape == ans.shape + g.shape[len(c.shape):]
             return jvp
         
-        autograd.extend.defjvp(
-            quad_autograd,
+        quad_autodiff.defjvps(
+            None,
             quad_jvp_K,
             quad_jvp_b,
             quad_jvp_c,
-            argnums=[1, 2, 3]
         )
 
         def quad(self, b, c=None):
-            return quad_autograd(self, self._K, b, c)
-        quad._autograd = quad_autograd
+            return quad_autodiff(self, self._K, b, c)
+        quad._autodiff = quad_autodiff
 
         return quad
     
     @staticmethod
     def _make_logdet(oldlogdet):
         
-        @autograd.extend.primitive
-        def logdet_autograd(self, K):
+        @jax.custom_vjp
+        @jax.custom_jvp
+        def logdet_autodiff(self, K):
             return oldlogdet(self)
         
         def logdet_vjp(ans, self, K):
             assert ans.shape == ()
             assert K.shape[0] == K.shape[1]
             def vjp(g):
-                invK = self.quad._autograd(self, K, np.eye(len(K)), None)
+                invK = self.quad._autodiff(self, K, jnp.eye(len(K)), None)
                 return g[..., None, None] * invK
             return vjp
         
-        autograd.extend.defvjp(
-            logdet_autograd,
-            logdet_vjp,
-            argnums=[1]
-        )
+        def logdet_fwd(self, K):
+            ans = logdet_autodiff(self, K)
+            return ans, (ans, self, K)
+            
+        def logdet_bwd(res, g):
+            return None, logdet_vjp(*res)(g)
         
+        logdet_autodiff.defvjp(logdet_fwd, logdet_bwd)
+                
         def logdet_jvp(g, ans, self, K):
             assert ans.shape == ()
             assert K.shape[0] == K.shape[1]
             assert g.shape[:2] == K.shape
-            return np.trace(self.solve._autograd(self, K, g))
+            return jnp.trace(self.solve._autodiff(self, K, g))
         
-        autograd.extend.defjvp(
-            logdet_autograd,
+        logdet_autodiff.defjvps(
+            None,
             logdet_jvp,
-            argnums=[1]
         )
         
         def logdet(self):
-            return logdet_autograd(self, self._K)
+            return logdet_autodiff(self, self._K)
         
         return logdet
     
-class Diag(DecompAutograd):
+class Diag(DecompAutoDiff):
     """
     Diagonalization.
     """
@@ -529,7 +528,7 @@ class Diag(DecompAutograd):
         return (VTb.T / self._w) @ VTc
     
     def logdet(self):
-        return np.sum(np.log(self._w))
+        return jnp.sum(jnp.log(self._w))
     
     def correlate(self, b):
         return (self._V * np.sqrt(self._w)) @ b
@@ -634,10 +633,12 @@ def solve_triangular_auto(a, b, lower=False):
     """Works with b both object and non-object array"""
     if b.dtype == object:
         return solve_triangular(a, b, lower=lower)
+    elif isinstance(a, jnp.ndarray) or isinstance(b, jnp.ndarray):
+        return jlinalg.solve_triangular(a, b, lower=lower, check_finite=False)
     else:
         return linalg.solve_triangular(a, b, lower=lower, check_finite=False)
 
-class Chol(DecompAutograd):
+class Chol(DecompAutoDiff):
     """
     Cholesky decomposition.
     """
@@ -738,7 +739,7 @@ class BlockDecomp(Decomposition):
     # other blocks one at a time. Would a divide et impera approach be useful
     # for my case?
     
-    # TODO is it more efficient to make this a subclass of DecompAutograd?
+    # TODO is it more efficient to make this a subclass of DecompAutoDiff?
     
     def __init__(self, P_decomp, S, Q, S_decomp_class):
         """
@@ -769,7 +770,7 @@ class BlockDecomp(Decomposition):
         gQTinvPf = g - invP.quad(Q, f)
         y = tildeS.solve(gQTinvPf)
         x = invP.solve(f - tildeS.quad(Q.T, gQTinvPf))
-        return np.concatenate([x, y])
+        return jnp.concatenate([x, y])
     
     def quad(self, b, c=None):
         invP = self._invP
@@ -856,7 +857,7 @@ class BlockDiagDecomp(Decomposition):
         An = A.n
         f = b[:An]
         g = b[An:]
-        return np.concatenate([A.solve(f), B.solve(g)])
+        return jnp.concatenate([A.solve(f), B.solve(g)])
     
     def quad(self, b, c=None):
         A = self._A
