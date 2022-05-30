@@ -11,3 +11,6 @@ coverage
 twine
 wheel
 ipython
+ipdb
+jax
+jaxlib

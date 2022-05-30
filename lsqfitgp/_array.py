@@ -19,6 +19,7 @@
 
 import numpy as np
 from jax import numpy as jnp
+from jax import tree_util
 
 __all__ = [
     'StructuredArray',
@@ -65,6 +66,7 @@ def _broadcast_shapes_2(s1, s2):
 def broadcast_shapes(shapes):
     """
     Return the broadcasted shape from a list of shapes.
+    ! added to numpy since 1.20.0
     """
     out = ()
     for shape in shapes:
@@ -111,6 +113,7 @@ def asarray(x, **kw):
     else:
         return np.asarray(x)
 
+@tree_util.register_pytree_node_class
 class StructuredArray:
     """
     JAX-friendly imitation of a numpy structured array.
@@ -222,3 +225,50 @@ class StructuredArray:
             for name, x in self._dict.items()
         }
         return type(self)._fromarrayanddict(self, d)
+    
+    def tree_flatten(self):
+        """JAX PyTree encoder"""
+        children = tuple(self._dict.values())
+        aux_data = dict(
+            keys = tuple(self._dict.keys()),
+            dtype = self.dtype,
+            shape = self.shape,
+            size = self.size,
+            _readonly = self._readonly,
+        )
+        return children, aux_data
+    
+    @classmethod
+    def tree_unflatten(cls, aux_data, children):
+        """JAX PyTree decoder"""
+        obj = super().__new__(cls)
+        for attr, val in aux_data.items():
+            if attr != 'keys':
+                setattr(obj, attr, val)
+        obj._dict = dict(zip(aux_data['keys'], children))
+        return obj
+    
+    def __repr__(self):
+        # code from gvar https://github.com/gplepage/gvar
+        # bufferdict.pyx:BufferDict:__str__
+        out = 'StructuredArray({'
+
+        listrepr = [(repr(k), repr(v)) for k, v in self._dict.items()]
+        newlinemode = any('\n' in rv for _, rv in listrepr)
+        
+        for rk, rv in listrepr:
+            if not newlinemode:
+                out += '{}: {}, '.format(rk, rv)
+            elif '\n' in rv:
+                rv = rv.replace('\n', '\n    ')
+                out += '\n    {}:\n    {},'.format(rk, rv)
+            else:
+                out += '\n    {}: {},'.format(rk, rv)
+                
+        if out.endswith(', '):
+            out = out[:-2]
+        elif newlinemode:
+            out += '\n'
+        out += '})'
+        
+        return out

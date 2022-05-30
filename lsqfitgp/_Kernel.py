@@ -497,9 +497,9 @@ class _KernelBase:
             f = self._kernel
             f = nvmap(f)
             for _ in range(xderiv.order):
-                f = jax.grad(f, 0)
+                f = jax.jacfwd(f, 0)
             for _ in range(yderiv.order):
-                f = jax.grad(f, 1)
+                f = jax.jacfwd(f, 1)
             f = jax.vmap(f)
             
             def fun(x, y):
@@ -527,21 +527,19 @@ class _KernelBase:
             i = -1
             for i, dim in enumerate(xderiv):
                 for _ in range(xderiv[dim]):
-                    f = jax.grad(f, 2 + i)
+                    f = jax.jacfwd(f, 2 + i)
             for j, dim in enumerate(yderiv):
                 for _ in range(yderiv[dim]):
-                    f = jax.grad(f, 2 + 1 + i + j)
-            f = jax.vmap(f) # TODO use in_axes to avoid touching x and y, or
-            # maybe it is simpler to use keyword arguments
+                    f = jax.jacfwd(f, 2 + 1 + i + j)
+            # in_axes = (None, None) + (0,) * (len(xderiv) + len(yderiv))
+            f = jax.vmap(f)
             
             def fun(x, y):
                 check(x, y)
                                 
                 # JAX-friendly wrap of structured arrays.
-                if xderiv:
-                    x = _array.StructuredArray(x)
-                if yderiv:
-                    y = _array.StructuredArray(y)
+                x = _array.StructuredArray(x)
+                y = _array.StructuredArray(y)
             
                 # Make argument list and call function.
                 args = []
