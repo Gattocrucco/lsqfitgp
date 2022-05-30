@@ -85,16 +85,12 @@ def choose_numpy(*args):
 
 def notracer(x):
     """
-    Unpack a JAX tracer.
+    Unpack a JAX differentiation tracer.
     """
     if isinstance(x, jax.core.Tracer):
-        return notracer(x.primal)
+        return notracer(x.primal) # won't work for jit (intentional)
     else:
         return x
-
-def nojax(x):
-    warnings.warn('nojax is deprecated, use notracer')
-    return notracer(x)
 
 def asinexact(dtype):
     """
@@ -549,14 +545,15 @@ class Diag(DecompAutoDiff):
     
     def quad(self, b, c=None):
         VTb = self._V.T @ b
+        VTbw = VTb.T / self._w
         if c is None:
             VTc = VTb
         elif c.dtype == object:
             VTc = numpy.array(self._V).T @ c
-            return numpy.array(VTb.T / self._w) @ VTc
+            VTbw = numpy.array(VTbw)
         else:
             VTc = self._V.T @ c
-            return (VTb.T / self._w) @ VTc
+        return VTbw @ VTc
     
     def logdet(self):
         return jnp.sum(jnp.log(self._w))

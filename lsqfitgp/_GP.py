@@ -1054,7 +1054,7 @@ class GP:
         # 1) cholesky + eps, if fails it's not positive
         # 2) ldlt, check each 2x2 block     <--- probably best? is it stable?
         # 3) QR, check diagonal of R
-        eigv = linalg.eigvalsh(_linalg.nojax(cov))
+        eigv = linalg.eigvalsh(_linalg.notracer(cov))
         mineigv = np.min(eigv)
         if mineigv < 0:
             bound = -len(cov) * np.finfo(float).eps * np.max(eigv) * self._posepsfac
