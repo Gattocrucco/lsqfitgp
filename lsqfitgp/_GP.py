@@ -1385,6 +1385,9 @@ class GP:
             return mean, cov
         
         elif not keepcorr:
+            
+            cov = np.array(cov) # TODO workaround for gvar issue #27
+            
             flatout = gvar.gvar(mean, cov, fast=True)
         
         if not strip:
