@@ -465,9 +465,9 @@ class DecompAutoDiff(Decomposition):
             K_dot, b_dot, c_dot = tangents
             ans = quad_autodiff(self, K, b, c)
             return ans, (
-                quad_jvp_K(K_dot, ans, self, K, b, c) +
-                quad_jvp_b(b_dot, ans, self, K, b, c) +
-                quad_jvp_c(c_dot, ans, self, K, b, c)
+                quad_jvp_K(K_dot, ans, self, K, b, c)
+                + quad_jvp_b(b_dot, ans, self, K, b, c)
+                + quad_jvp_c(c_dot, ans, self, K, b, c)
             )
             
         @quad_autodiff_cnone.defjvp

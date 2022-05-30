@@ -28,17 +28,18 @@
 
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
-from autograd import numpy as np
+from jax import numpy as jnp
+import numpy as np
 import gvar
 from scipy import optimize
-import autograd
+import jax
 
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 500)
 y = np.sin(xdata)
 
 def makegp(par):
-    scale = np.exp(par[0])
+    scale = jnp.exp(par[0])
     return lgp.GP(lgp.Matern52(scale=scale))
 
 def fun(par):
@@ -46,7 +47,7 @@ def fun(par):
     gp.addx(xdata, 'data')
     return -gp.marginal_likelihood({'data': y})
 
-result = optimize.minimize(fun, np.log([5]), jac=autograd.grad(fun))
+result = optimize.minimize(fun, np.log([5]), jac=jax.jacfwd(fun))
 print(result)
 
 gp = makegp(result.x)

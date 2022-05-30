@@ -196,23 +196,11 @@ def Matern12(r):
     """
     return jnp.exp(-r)
 
-@jax.custom_vjp
 @jax.custom_jvp
 def _matern32(x):
     return (1 + x) * jnp.exp(-x)
 
-def _matern32_fwd(x):
-    return _matern32(x), (x,)
-
-def _matern32_bwd(res, g):
-    x, = res
-    return (g * -x * jnp.exp(-x),)
-
-_matern32.defvjp(_matern32_fwd, _matern32_bwd)
-
-_matern32.defjvps(
-    lambda g, ans, x: (g.T * (-x * jnp.exp(-x)).T).T
-)
+_matern32.defjvps(lambda g, ans, x: (g.T * (-x * jnp.exp(-x)).T).T)
 
 @isotropickernel(input='soft', derivable=1)
 def Matern32(r):
@@ -224,17 +212,11 @@ def Matern32(r):
     """
     return _matern32(np.sqrt(3) * r)
 
-@jax.custom_vjp
+@jax.custom_jvp
 def _matern52(x):
     return (1 + x * (1 + x/3)) * jnp.exp(-x)
 
-def _matern52_fwd(x):
-    return _matern52(x), ()
-
-def _matern52_bwd(res, g):
-    return (g * -x/3 * _matern32(x),)
-
-_matern52.defvjp(_matern52_fwd, _matern52_bwd)
+_matern52.defjvps(lambda g, ans, x: (g.T * (-x/3 * _matern32(x)).T).T)
 
 @isotropickernel(input='soft', derivable=2)
 def Matern52(r):

@@ -24,9 +24,6 @@ import builtins
 
 import numpy as np
 
-from scipy import special as special_noderiv
-from autograd.scipy import special
-
 # TODO kv is currently not implemented in JAX, I have to define a primitive
 # and try to use the scipy cython implementation of kvp as XLA translation
 # implementation

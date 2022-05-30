@@ -755,12 +755,12 @@ class IsotropicKernel(StationaryKernel):
         
         transf = lambda q: q
         if scale is not None:
-            assert np.isscalar(scale)
-            assert np.isfinite(scale)
+            assert jnp.isscalar(scale) or scale.shape == ()
+            assert jnp.isfinite(scale)
             assert scale > 0
             transf = lambda q : q / scale ** 2
         if input == 'soft':
-            transf = lambda q, transf=transf: _linalg.choose_numpy(q).sqrt(transf(q))
+            transf = lambda q, transf=transf: jnp.sqrt(transf(q))
             # I do square and then square root because I first have to
             # compute the sum of squares
         

@@ -968,11 +968,11 @@ class GP:
             cov = x.blocks[xkey, ykey]
         else:
             # TODO handle zero cov block efficiently
-            cov = np.zeros((x.size, y.size))
+            cov = jnp.zeros((x.size, y.size))
 
-        if self._checkfinite and not np.all(np.isfinite(cov)):
+        if self._checkfinite and not jnp.all(jnp.isfinite(cov)):
             raise RuntimeError('covariance block {!r} is not finite'.format((xkey, ykey)))
-        if self._checksym and xkey == ykey and not np.allclose(cov, cov.T):
+        if self._checksym and xkey == ykey and not jnp.allclose(cov, cov.T):
             raise RuntimeError('covariance block {!r} is not symmetric'.format((xkey, ykey)))
 
         return cov
