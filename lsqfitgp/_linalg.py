@@ -413,6 +413,11 @@ class DecompAutoDiff(Decomposition):
         #
         # quad_autodiff.defvjp(quad_fwd, quad_bwd)
         
+        # TODO currently backward derivatives don't work because when
+        # transposing quad's jvp into a vjp somehow it's like a nonlinear
+        # function of the tangent is evaluated. Probably happens in
+        # quad_jvp_K but I don't know how.
+        
         @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def quad_autodiff(self, K, b, c):
             b2d = b.reshape(b.shape[0], -1)
@@ -627,7 +632,7 @@ class ReduceRank(Diag):
     """
     
     def __init__(self, K, rank=1):
-        assert isinstance(rank, (int, np.integer)) and rank >= 1
+        assert isinstance(rank, (int, jnp.integer)) and rank >= 1
         self._w, self._V = sparse.linalg.eigsh(K, k=rank, which='LM')
     
     def correlate(self, b):
