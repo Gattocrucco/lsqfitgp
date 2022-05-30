@@ -52,7 +52,7 @@ def _block_noop(blocks):
     Like np.block but avoids a copy if there is only one block.
     """
     if isinstance(blocks[0][0], jnp.ndarray):
-        return jax.block(blocks)
+        return jnp.block(blocks)
     else:
         return _concatenate_noop([_concatenate_noop(row, axis=1) for row in blocks], axis=0)
 
@@ -1071,6 +1071,8 @@ class GP:
         mean = np.zeros(x.size)
         cov = self._covblock(key, key).astype(float)
         assert cov.shape == 2 * mean.shape, cov.shape
+        
+        cov = np.array(cov) # TODO workaround for gvar issue #27
 
         # get preexisting primary gvars to be correlated with the new ones
         preitems = [
@@ -1080,11 +1082,11 @@ class GP:
             and k in self._priordict
         ]
         if preitems:
-            prex = _concatenate_noop([
+            prex = np.concatenate([
                 np.reshape(self._priordict[k], -1)
                 for k in preitems
             ])
-            precov = _concatenate_noop([
+            precov = np.concatenate([
                 self._covblock(k, key).astype(float)
                 for k in preitems
             ])

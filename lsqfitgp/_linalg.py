@@ -59,13 +59,15 @@ BlockDiagDecomp
 
 import abc
 import functools
+import warnings
 
 import jax
 from jax import numpy as jnp
-import numpy as np
+import numpy
 from scipy import linalg
 from scipy import sparse
 from jax.scipy import linalg as jlinalg
+import gvar
 
 from . import _toeplitz_linalg
 
@@ -79,25 +81,29 @@ def choose_numpy(*args):
     if any(isinstance(x, jnp.ndarray) for x in args):
         return jnp
     else:
-        return np
+        return numpy
 
-def nojax(x):
+def notracer(x):
     """
     Unpack a JAX tracer.
     """
     if isinstance(x, jax.core.Tracer):
-        return nojax(x.primal)
+        return notracer(x.primal)
     else:
         return x
+
+def nojax(x):
+    warnings.warn('nojax is deprecated, use notracer')
+    return notracer(x)
 
 def asinexact(dtype):
     """
     Return dtype if it is inexact, else float64.
     """
-    if np.issubdtype(dtype, np.inexact):
+    if jnp.issubdtype(dtype, jnp.inexact):
         return dtype
     else:
-        return np.float64
+        return jnp.float64
 
 class Decomposition(metaclass=abc.ABCMeta):
     """
@@ -129,14 +135,14 @@ class Decomposition(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def solve(self, b): # pragma: no cover
         """
-        Solve the linear system K @ x = b. `b` can be an array of gvars.
+        Solve the linear system K @ x = b.
         """
         pass
     
     def quad(self, b, c=None):
         """
         Compute the quadratic form b.T @ inv(K) @ b if c is not specified, else
-        b.T @ inv(K) @ c. `b` and `c` can be arrays of gvars.
+        b.T @ inv(K) @ c. `c` can be an array of gvars.
         """
         if c is None:
             c = b
@@ -172,7 +178,7 @@ class Decomposition(metaclass=abc.ABCMeta):
         
         # TODO currently no subclass overrides this, some should probably do.
         
-        return self.quad(np.eye(self.n))
+        return self.quad(jnp.eye(self.n))
     
     @property
     def n(self):
@@ -199,7 +205,7 @@ class DecompAutoDiff(Decomposition):
         
         @functools.wraps(old__init__)
         def __init__(self, K, **kw):
-            old__init__(self, nojax(K), **kw)
+            old__init__(self, notracer(K), **kw)
             self._K = K
         
         cls.__init__ = __init__
@@ -254,7 +260,7 @@ class DecompAutoDiff(Decomposition):
         #
         # solve_autodiff.defvjp(solve_fwd, solve_bwd)
         
-        @functools.partial(jax.custom_jvp, nondiff_argnums=0)
+        @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def solve_autodiff(self, K, b):
             b2d = b.reshape(b.shape[0], -1)
             return oldsolve(self, b2d).reshape(b.shape)
@@ -280,7 +286,10 @@ class DecompAutoDiff(Decomposition):
             K, b = primals
             K_dot, b_dot = tangents
             ans = solve_autodiff(self, K, b)
-            return ans, solve_jvp_K(K_dot, ans, self, K, b), solve_vjp_b(b_dot, ans, self, K, b)
+            return ans, (
+                solve_jvp_K(K_dot, ans, self, K, b) +
+                solve_jvp_b(b_dot, ans, self, K, b)
+            )
         
         def solve(self, b):
             return solve_autodiff(self, self._K, b)
@@ -408,16 +417,18 @@ class DecompAutoDiff(Decomposition):
         #
         # quad_autodiff.defvjp(quad_fwd, quad_bwd)
         
-        @functools.partial(jax.custom_jvp, nondiff_argnums=0)
+        @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def quad_autodiff(self, K, b, c):
             b2d = b.reshape(b.shape[0], -1)
-            if c is None:
-                outshape = b.shape[1:][::-1] + b.shape[1:]
-                return oldquad(self, b2d).reshape(outshape)
-            else:
-                c2d = c.reshape(c.shape[0], -1)
-                outshape = b.shape[1:][::-1] + c.shape[1:]
-                return oldquad(self, b2d, c2d).reshape(outshape)
+            c2d = c.reshape(c.shape[0], -1)
+            outshape = b.shape[1:][::-1] + c.shape[1:]
+            return oldquad(self, b2d, c2d).reshape(outshape)
+
+        @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
+        def quad_autodiff_cnone(self, K, b):
+            b2d = b.reshape(b.shape[0], -1)
+            outshape = b.shape[1:][::-1] + b.shape[1:]
+            return oldquad(self, b2d).reshape(outshape)
 
         def quad_jvp_K(g, ans, self, K, b, c):
             if c is None:
@@ -428,7 +439,7 @@ class DecompAutoDiff(Decomposition):
             assert g.shape[:2] == K.shape
             g3d = g.reshape(K.shape + (-1,))
             ginvKc = quad_autodiff(self, K, g3d, c)
-            ginvKc = np.moveaxis(ginvKc, 0, -1)
+            ginvKc = jnp.moveaxis(ginvKc, 0, -1)
             ginvKc = ginvKc.reshape(c.shape + g.shape[2:])
             jvp = -quad_autodiff(self, K, b, ginvKc)
             assert jvp.shape == ans.shape + g.shape[2:]
@@ -439,11 +450,11 @@ class DecompAutoDiff(Decomposition):
             g1d = g.reshape(b.shape + (-1,))
             if c is None:
                 jvp = quad_autodiff(self, K, b, g1d)
-                jvpT = np.moveaxis(jvp.T, 0, -1)
+                jvpT = jnp.moveaxis(jvp.T, 0, -1)
                 jvp = jvp + jvpT
             else:
                 jvp = quad_autodiff(self, K, g1d, c)
-                jvp = np.moveaxis(jvp, 0, -1)
+                jvp = jnp.moveaxis(jvp, 0, -1)
             return jvp.reshape(ans.shape + g.shape[len(b.shape):])
         
         def quad_jvp_c(g, ans, self, K, b, c):
@@ -457,15 +468,28 @@ class DecompAutoDiff(Decomposition):
             K, b, c = primals
             K_dot, b_dot, c_dot = tangents
             ans = quad_autodiff(self, K, b, c)
-            return (
-                ans,
-                quad_jvp_K(K_dot, ans, self, K, b, c),
-                quad_jvp_b(K_dot, ans, self, K, b, c),
-                quad_jvp_c(K_dot, ans, self, K, b, c),
+            return ans, (
+                quad_jvp_K(K_dot, ans, self, K, b, c) +
+                quad_jvp_b(b_dot, ans, self, K, b, c) +
+                quad_jvp_c(c_dot, ans, self, K, b, c)
             )
             
+        @quad_autodiff_cnone.defjvp
+        def quad_cnone_jvp(self, primals, tangents):
+            K, b = primals
+            K_dot, b_dot = tangents
+            ans = quad_autodiff_cnone(self, K, b)
+            return ans, (
+                quad_jvp_K(K_dot, ans, self, K, b, None) +
+                quad_jvp_b(b_dot, ans, self, K, b, None)
+            )
+
         def quad(self, b, c=None):
-            return quad_autodiff(self, self._K, b, c)
+            if c is None:
+                return quad_autodiff_cnone(self, self._K, b)
+            else:
+                return quad_autodiff(self, self._K, b, c)
+        
         quad._autodiff = quad_autodiff
 
         return quad
@@ -490,7 +514,7 @@ class DecompAutoDiff(Decomposition):
         #
         # logdet_autodiff.defvjp(logdet_fwd, logdet_bwd)
 
-        @functools.partial(jax.custom_jvp, nondiff_argnums=0)
+        @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def logdet_autodiff(self, K):
             return oldlogdet(self)
                         
@@ -518,7 +542,7 @@ class Diag(DecompAutoDiff):
     """
     
     def __init__(self, K):
-        self._w, self._V = linalg.eigh(K, check_finite=False)
+        self._w, self._V = jlinalg.eigh(K, check_finite=False)
     
     def solve(self, b):
         return (self._V / self._w) @ (self._V.T @ b)
@@ -527,25 +551,28 @@ class Diag(DecompAutoDiff):
         VTb = self._V.T @ b
         if c is None:
             VTc = VTb
+        elif c.dtype == object:
+            VTc = numpy.array(self._V).T @ c
+            return numpy.array(VTb.T / self._w) @ VTc
         else:
             VTc = self._V.T @ c
-        return (VTb.T / self._w) @ VTc
+            return (VTb.T / self._w) @ VTc
     
     def logdet(self):
         return jnp.sum(jnp.log(self._w))
     
     def correlate(self, b):
-        return (self._V * np.sqrt(self._w)) @ b
+        return (self._V * jnp.sqrt(self._w)) @ b
     
     def decorrelate(self, b):
-        return (self._V / np.sqrt(self._w)).T @ b
+        return (self._V / jnp.sqrt(self._w)).T @ b
     
     def _eps(self, eps):
         w = self._w
         if eps is None:
-            eps = len(w) * np.finfo(asinexact(w.dtype)).eps
-        assert np.isscalar(eps) and 0 <= eps < 1
-        return eps * np.max(w)
+            eps = len(w) * jnp.finfo(asinexact(w.dtype)).eps
+        assert jnp.isscalar(eps) and 0 <= eps < 1
+        return eps * jnp.max(w)
 
 class EigCutFullRank(Diag):
     """
@@ -556,7 +583,7 @@ class EigCutFullRank(Diag):
     def __init__(self, K, eps=None):
         super().__init__(K)
         eps = self._eps(eps)
-        self._w[self._w < eps] = eps
+        self._w = jnp.where(self._w < eps, eps, self._w)
             
 class EigCutLowRank(Diag):
     """
@@ -570,6 +597,7 @@ class EigCutLowRank(Diag):
         subset = slice(np.sum(self._w < eps), None) # w is sorted ascending
         self._w = self._w[subset]
         self._V = self._V[:, subset]
+        # TODO jax's jit won't like this. fix: set entries to zero.
         
 class SVDCutFullRank(Diag):
     """
