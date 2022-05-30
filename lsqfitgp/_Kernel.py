@@ -484,17 +484,16 @@ class _KernelBase:
             elif not xderiv.implicit or not yderiv.implicit:
                 raise ValueError('explicit derivatives with non-structured array')
         
-        # Wrapper for applying jax.vmap multiple times, in case this method
-        # is called again on the same object.
-        def nvmap(f):
-            def newf(*args):
-                return f(*(jnp.atleast_1d(x) for x in args))[0]
-            return newf
         
         # Handle the non-structured case.
         if xderiv.implicit and yderiv.implicit:
             
             f = self._kernel
+            # wrapper for applying jax.vmap multiple times
+            def nvmap(f):
+                def newf(*args):
+                    return f(*(jnp.atleast_1d(x) for x in args))[0]
+                return newf
             f = nvmap(f)
             for _ in range(xderiv.order):
                 f = jax.jacfwd(f, 0)
@@ -521,7 +520,14 @@ class _KernelBase:
                     x[dim] = args[i]
                 for j, dim in enumerate(yderiv):
                     y[dim] = args[1 + i + j]
-                return kernel(x, y)
+                # we will apply vmap so x and y are scalars, but kernel may
+                # contain an older vmap
+                x = x.reshape(-1)
+                y = y.reshape(-1)
+                assert x.shape == y.shape == (1,)
+                rt = kernel(x, y)
+                assert rt.shape == (1,)
+                return rt[0]
                 
             # Make derivatives.
             i = -1
@@ -531,7 +537,6 @@ class _KernelBase:
             for j, dim in enumerate(yderiv):
                 for _ in range(yderiv[dim]):
                     f = jax.jacfwd(f, 2 + 1 + i + j)
-            # in_axes = (None, None) + (0,) * (len(xderiv) + len(yderiv))
             f = jax.vmap(f)
             
             def fun(x, y):
