@@ -680,7 +680,7 @@ class Chol(DecompAutoDiff):
     """
     
     def __init__(self, K):
-        self._L = linalg.cholesky(K, lower=True, check_finite=False)
+        self._L = jlinalg.cholesky(K, lower=True, check_finite=False)
     
     def solve(self, b):
         invLb = solve_triangular_auto(self._L, b, lower=True)
@@ -695,7 +695,7 @@ class Chol(DecompAutoDiff):
         return invLb.T @ invLc
     
     def logdet(self):
-        return 2 * np.sum(np.log(np.diag(self._L)))
+        return 2 * jnp.sum(jnp.log(jnp.diag(self._L)))
     
     def correlate(self, b):
         return self._L @ b
@@ -705,15 +705,15 @@ class Chol(DecompAutoDiff):
 
     def _eps(self, eps, mat, maxeigv):
         if eps is None:
-            eps = len(mat) * np.finfo(asinexact(mat.dtype)).eps
-        assert np.isscalar(eps) and 0 <= eps < 1
+            eps = len(mat) * jnp.finfo(asinexact(mat.dtype)).eps
+        assert 0 <= eps < 1
         return eps * maxeigv
 
 def _scale(a):
     """
     Compute a vector s of powers of 2 such that diag(a / outer(s, s)) ~ 1.
     """
-    return np.exp2(np.rint(0.5 * np.log2(np.diag(a))))
+    return jnp.exp2(jnp.rint(0.5 * jnp.log2(jnp.diag(a))))
 
 class CholReg(Chol):
     """
@@ -722,34 +722,33 @@ class CholReg(Chol):
     
     def __init__(self, K, eps=None):
         s = _scale(K)
-        J = K / s[:, None]
-        J /= s[None, :]
-        self._regularize(J, eps)
+        J = K / jnp.outer(s, s)
+        J = self._regularize(J, eps)
         super().__init__(J)
-        self._L *= s[:, None]
+        self._L = self._L * s[:, None]
     
     @abc.abstractmethod
     def _regularize(self, mat, eps): # pragma: no cover
-        """Modify mat in-place to make it positive definite."""
+        """Modify mat to make it numerically positive definite."""
         pass
     
 def _gershgorin_eigval_bound(mat):
     """
     Upper bound on the largest magnitude eigenvalue of the matrix.
     """
-    return np.max(np.sum(np.abs(mat), axis=1))
+    return jnp.max(jnp.sum(jnp.abs(mat), axis=1))
 
 class CholGersh(CholReg):
     """
     Cholesky decomposition. The matrix is corrected for numerical roundoff
     by adding to the diagonal a small number relative to the maximum eigenvalue.
     `eps` multiplies this number. The maximum eigenvalue is estimated
-    with the Gershgorin theorem.
+    with Gershgorin's theorem.
     """
     
     def _regularize(self, mat, eps):
         maxeigv = _gershgorin_eigval_bound(mat)
-        mat[np.diag_indices(len(mat))] += self._eps(eps, mat, maxeigv)
+        return mat + jnp.diag(jnp.broadcast_to(self._eps(eps, mat, maxeigv), len(mat)))
 
 class CholToeplitz(Chol):
     """
