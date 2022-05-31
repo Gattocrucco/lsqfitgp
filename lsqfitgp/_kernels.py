@@ -339,8 +339,8 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     """
     sx = scalefun(x)
     sy = scalefun(y)
-    assert jnp.all(sx > 0)
-    assert jnp.all(sy > 0)
+    assert jnp.all(_linalg.notracer(sx) > 0)
+    assert jnp.all(_linalg.notracer(sy) > 0)
     denom = sx ** 2 + sy ** 2
     factor = jnp.sqrt(2 * sx * sy / denom)
     return factor * jnp.exp(-(x - y) ** 2 / denom)

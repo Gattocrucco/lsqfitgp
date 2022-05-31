@@ -85,10 +85,12 @@ def choose_numpy(*args):
 
 def notracer(x):
     """
-    Unpack a JAX differentiation tracer.
+    Unpack a JAX tracer.
     """
-    if isinstance(x, jax.core.Tracer):
-        return notracer(x.primal) # won't work for jit (intentional)
+    if isinstance(x, jax.interpreters.ad.JVPTracer):
+        return notracer(x.primal)
+    elif isinstance(x, jax.interpreters.batching.BatchTracer):
+        return notracer(x.val)
     else:
         return x
 

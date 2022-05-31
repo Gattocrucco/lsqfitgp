@@ -84,6 +84,8 @@ def _compatible_dtypes(d1, d2): # pragma: no cover
     casting of concrete dtypes (like, in one array a field can be int, in
     another float, as long as the field name and position is the same).
     Currently not used.
+
+    May not be needed in numpy 1.23 (to be released yet).
     """
     if d1.names != d2.names or d1.shape != d2.shape:
         return False
