@@ -1,7 +1,7 @@
 """Test of double integral constraint"""
 
 import lsqfitgp as lgp
-from autograd import numpy as np
+import numpy as np
 from matplotlib import pyplot as plt
 import gvar
 
