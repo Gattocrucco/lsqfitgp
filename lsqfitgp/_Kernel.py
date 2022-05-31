@@ -403,7 +403,7 @@ class _KernelBase:
         """
         
         Return a Kernel-like object that computes the derivatives of this
-        kernel. The derivatives are computed automatically with autograd. If
+        kernel. The derivatives are computed automatically with JAX. If
         `xderiv` and `yderiv` are trivial, this is a no-op.
         
         .. math::

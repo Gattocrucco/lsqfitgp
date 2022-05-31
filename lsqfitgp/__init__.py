@@ -47,9 +47,8 @@ prediction.
 The main class is `GP`, which represents a Gaussian process over arbitrary
 input. It can be used both autonomously and with lsqfit. The inputs/outputs can
 be arrays or dictionaries of arrays. It supports doing inference with the
-derivatives of the process, using `autograd` to compute automatically
-derivatives of the kernels. Indirectly, this can be used to make inference with
-integrals.
+derivatives of the process, using `jax` to compute automatically derivatives of
+the kernels. Indirectly, this can be used to make inference with integrals.
 
 Functions and classes
 ---------------------
@@ -59,7 +58,7 @@ Functions and classes
     empbayes_fit : class
         Fit the hyperparameters of a Gaussian process.
     StructuredArray : class
-        Autograd-friendly wrapper of numpy structured arrays.
+        JAX-friendly wrapper of numpy structured arrays.
     where : function
         Make a kernel that switches between two kernels based on a condition.
     Deriv : class

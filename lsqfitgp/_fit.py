@@ -81,9 +81,9 @@ class empbayes_fit:
         gpfactory : callable
             A function with signature gpfactory(hyperparams) -> GP object. The
             argument `hyperparams` has the same structure of the empbayes_fit
-            argument `hyperprior`. gpfactory must be autograd-friendly, i.e.,
-            either use autograd.numpy, autograd.scipy, lsqfitgp.numpy,
-            lsqfitgp.scipy or gvar instead of plain numpy/scipy.
+            argument `hyperprior`. gpfactory must be JAX-friendly, i.e.,
+            use jax.numpy and jax.scipy instead of plain numpy/scipy and avoid
+            assignments to arrays.
         data : dict or callable
             Dictionary of data that is passed to `GP.marginal_likelihood` on
             the GP object returned by `gpfactory`. If a callable, it is called
