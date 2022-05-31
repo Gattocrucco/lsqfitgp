@@ -598,7 +598,7 @@ class EigCutLowRank(Diag):
     def __init__(self, K, eps=None):
         super().__init__(K)
         eps = self._eps(eps)
-        subset = slice(np.sum(self._w < eps), None) # w is sorted ascending
+        subset = slice(jnp.sum(self._w < eps), None) # w is sorted ascending
         self._w = self._w[subset]
         self._V = self._V[:, subset]
         # TODO jax's jit won't like this. fix: set entries to zero.
@@ -612,8 +612,8 @@ class SVDCutFullRank(Diag):
     def __init__(self, K, eps=None):
         super().__init__(K)
         eps = self._eps(eps)
-        cond = np.abs(self._w) < eps
-        self._w[cond] = eps * np.sign(self._w[cond])
+        cond = jnp.abs(self._w) < eps
+        self._w = jnp.where(cond, eps * jnp.sign(self._w), self._w)
         
 class SVDCutLowRank(Diag):
     """
@@ -624,7 +624,7 @@ class SVDCutLowRank(Diag):
     def __init__(self, K, eps=None):
         super().__init__(K)
         eps = self._eps(eps)
-        subset = np.abs(self._w) >= eps
+        subset = jnp.abs(self._w) >= eps
         self._w = self._w[subset]
         self._V = self._V[:, subset]
 
@@ -635,7 +635,7 @@ class ReduceRank(Diag):
     
     def __init__(self, K, rank=1):
         assert isinstance(rank, (int, jnp.integer)) and rank >= 1
-        self._w, self._V = sparse.linalg.eigsh(K, k=rank, which='LM')
+        self._w, self._V = sparse.linalg.eigsh(numpy.asarray(K), k=rank, which='LM')
     
     def correlate(self, b):
         return super().correlate(b[:len(self._w)])
@@ -648,11 +648,8 @@ def solve_triangular(a, b, lower=False):
     a @ solve_triangular(a, b) == b. It makes a difference only if b is >2D.
     """
     # TODO maybe commit this to gvar.linalg
-    # TODO can I raise a LinAlgError if a[i,i] is 0, and still return the
-    # result and have it assigned to a variable using try...finally inside this
-    # function? => Probably not
-    x = np.copy(b)
-    a = a.reshape(a.shape + (1,) * len(x.shape[1:]))
+    x = numpy.copy(b)
+    a = numpy.asarray(a).reshape(a.shape + (1,) * len(x.shape[1:]))
     if lower:
         x[0] /= a[0, 0]
         for i in range(1, len(x)):
@@ -694,6 +691,8 @@ class Chol(DecompAutoDiff):
             invLc = invLb
         else:
             invLc = solve_triangular_auto(self._L, c, lower=True)
+            if c.dtype == object:
+                invLb = numpy.asarray(invLb)
         return invLb.T @ invLc
     
     def logdet(self):
@@ -846,8 +845,8 @@ class BlockDecomp(Decomposition):
         f = b[:len(Q)]
         g = b[len(Q):]
         x = invP.correlate(f)
-        y = np.tensordot(invP.decorrelate(Q).T, f, 1) + tildeS.correlate(g)
-        return np.concatenate([x, y])
+        y = jnp.tensordot(invP.decorrelate(Q).T, f, 1) + tildeS.correlate(g)
+        return jnp.concatenate([x, y])
     
     def decorrelate(self, b):
         # L^-1 = [   A^-1         ]
@@ -859,7 +858,7 @@ class BlockDecomp(Decomposition):
         g = b[len(Q):]
         x = invP.decorrelate(f)
         y = tildeS.decorrelate(g - invP.quad(Q, f))
-        return np.concatenate([x, y])
+        return jnp.concatenate([x, y])
         
     @property
     def n(self):
@@ -918,7 +917,7 @@ class BlockDiagDecomp(Decomposition):
         An = A.n
         f = b[:An]
         g = b[An:]
-        return np.concatenate([A.correlate(f), B.correlate(g)])
+        return jnp.concatenate([A.correlate(f), B.correlate(g)])
     
     def decorrelate(self, b):
         A = self._A
@@ -926,7 +925,7 @@ class BlockDiagDecomp(Decomposition):
         An = A.n
         f = b[:An]
         g = b[An:]
-        return np.concatenate([A.decorrelate(f), B.decorrelate(g)])
+        return jnp.concatenate([A.decorrelate(f), B.decorrelate(g)])
 
     @property
     def n(self):
