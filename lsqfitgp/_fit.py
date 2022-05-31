@@ -145,6 +145,9 @@ class empbayes_fit:
         # take derivatives with autograd.
         
         # TODO compute the logGBF for the whole fit (see the gpbart code)
+        
+        # TODO try using Fisher scoring, defining an information matrix-vector
+        # product
     
         hyperprior = _asarrayorbufferdict(hyperprior)
         flathp = _flat(hyperprior)

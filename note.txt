@@ -469,3 +469,8 @@ Commands to get the version number:
 
 grep __version__ lsqfitgp/__init__.py | sed -e "s/__version__ = //" -e "s/'//" -e "s/'//"
 python -c 'import lsqfitgp;print(lsqfitgp.__version__)'
+
+2022-05-31
+==========
+
+Next thing to do: test jax jit.
