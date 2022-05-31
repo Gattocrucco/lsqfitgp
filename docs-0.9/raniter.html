@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>9. Random sampling &#8212; lsqfitgp 0.9 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -12,6 +12,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -85,7 +86,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -118,7 +119,7 @@
           <div class="body" role="main">
             
   <section id="random-sampling">
-<h1><span class="section-number">9. </span>Random sampling<a class="headerlink" href="#random-sampling" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">9. </span>Random sampling<a class="headerlink" href="#random-sampling" title="Permalink to this heading">¶</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.raniter">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">raniter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cov</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.raniter" title="Permalink to this definition">¶</a></dt>
@@ -126,7 +127,7 @@
 <p>This generator mimics the interface of <cite>gvar.raniter</cite>, but takes as input
 the mean and covariance separately instead of a collection of gvars.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>mean</strong><span class="classifier">scalar, array, or dictionary of scalars/arrays</span></dt><dd><p>The mean of the Gaussian distribution.</p>
 </dd>
@@ -141,7 +142,7 @@ Default is number of variables times floating point epsilon.</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-even">Yields</dt>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
 <dt><strong>samp</strong><span class="classifier">scalar, array, or dictionary of scalars/arrays</span></dt><dd><p>The random sample in the same format of <cite>mean</cite>.</p>
 </dd>
@@ -185,7 +186,7 @@ Default is number of variables times floating point epsilon.</p>
       &copy;2020-2022, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>5. Derivative specification &#8212; lsqfitgp 0.9 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -12,6 +12,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -85,7 +86,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -118,10 +119,10 @@
           <div class="body" role="main">
             
   <section id="derivative-specification">
-<span id="deriv"></span><h1><span class="section-number">5. </span>Derivative specification<a class="headerlink" href="#derivative-specification" title="Permalink to this headline">¶</a></h1>
+<span id="deriv"></span><h1><span class="section-number">5. </span>Derivative specification<a class="headerlink" href="#derivative-specification" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Deriv">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">specified</span> <span class="pre">order</span> <span class="pre">derivative</span></span></span><a class="headerlink" href="#lsqfitgp.Deriv" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Deriv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class for specifying derivatives. Behaves like a dictionary str -&gt; int,
 where the keys represent variables and values the derivation order. An
 empty Deriv means no derivatives. A Deriv with one single key None means
@@ -134,7 +135,7 @@ that the variable is implicit.</p>
 <p>Example: Deriv([‘a’, ‘b’, ‘b’, ‘c’]) is equivalent to
 Deriv([‘a’, 2, ‘b’, ‘c’]).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Raises</dt>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt>TypeError</dt><dd><p>If <cite>*args</cite> is not of the specified form.</p>
 </dd>
@@ -143,7 +144,7 @@ integers.</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-even">Attributes</dt>
+<dt class="field-even">Attributes<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
 <dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">implicit</span></code></dt><dd><p>True if the derivative is trivial or the variable is implicit.</p>
 </dd>
@@ -184,7 +185,7 @@ integers.</p>
       &copy;2020-2022, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

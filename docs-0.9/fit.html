@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>8. Fitting &#8212; lsqfitgp 0.9 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -12,6 +12,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -85,7 +86,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -118,7 +119,7 @@
           <div class="body" role="main">
             
   <section id="fitting">
-<span id="fit"></span><h1><span class="section-number">8. </span>Fitting<a class="headerlink" href="#fitting" title="Permalink to this headline">¶</a></h1>
+<span id="fit"></span><h1><span class="section-number">8. </span>Fitting<a class="headerlink" href="#fitting" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.empbayes_fit">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Permalink to this definition">¶</a></dt>
@@ -126,7 +127,7 @@
 <p>Maximizes the marginal likelihood of the data with a Gaussian process
 model that depends on hyperparameters.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>hyperprior</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>A collection of gvars representing the prior for the
 hyperparameters.</p>
@@ -153,13 +154,13 @@ is a callable.</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-even">Raises</dt>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
 <dt>RuntimeError</dt><dd><p>The minimization failed and <cite>raises</cite> is True.</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-odd">Attributes</dt>
+<dt class="field-odd">Attributes<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>p</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>A collection of gvars representing the hyperparameters that
 maximize the marginal likelihood. The covariance matrix is computed
@@ -201,7 +202,7 @@ gvars do not track correlations with the hyperprior or the data.</p>
       &copy;2020-2022, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
