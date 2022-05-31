@@ -88,7 +88,6 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = funjac(s, n, b)
             np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-8)
 
-    @pytest.mark.xfail
     def test_solve_vec_jac_rev(self):
         self.solve_vec_jac(jax.jacrev)
 
@@ -117,7 +116,6 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = funjac(s, n, b)
             np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-10)
 
-    @pytest.mark.xfail
     def test_solve_matrix_jac_rev(self):
         self.solve_matrix_jac(jax.jacrev)
     
@@ -139,7 +137,6 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = funjac(s, n, b, A)
             np.testing.assert_allclose(sol, result, rtol=1e-3)
         
-    @pytest.mark.xfail
     def test_solve_matrix_jac_rev_matrix(self):
         self.solve_matrix_jac_matrix(jax.jacrev)
 
@@ -306,7 +303,6 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fungrad(s, n)
             np.testing.assert_allclose(sol, result, rtol=1e-4, atol=1e-15)
     
-    @pytest.mark.xfail
     def test_logdet_jac_rev(self):
         self.logdet_jac(jax.jacrev)
     
@@ -487,6 +483,25 @@ class BlockDecompTestBase(DecompTestCorr):
             args = (self.subdecompclass(P), S, Q, self.subdecompclass)
             return _linalg.BlockDecomp(*args)
         return decomp
+    
+    # TODO probably these xfailures would be solved by making BlockDecomp
+    # a subclass of DecompAutoDiff
+    
+    @pytest.mark.xfail
+    def test_solve_vec_jac_rev(self):
+        super().test_solve_vec_jac_rev()
+    
+    @pytest.mark.xfail
+    def test_solve_matrix_jac_rev(self):
+        super().test_solve_matrix_jac_rev()
+    
+    @pytest.mark.xfail
+    def test_solve_matrix_jac_rev_matrix(self):
+        super().test_solve_matrix_jac_rev_matrix()
+    
+    @pytest.mark.xfail
+    def test_logdet_jac_rev(self):
+        super().test_logdet_jac_rev()
 
 class TestBlockChol(BlockDecompTestBase):
     
