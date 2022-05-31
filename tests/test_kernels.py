@@ -760,17 +760,15 @@ def xfail(cls, meth):
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y. => After porting JAX, I can use make_jaxpr to debug.
-xfail(TestMatern, 'test_symmetric_21')
 xfail(TestMatern, 'test_double_diff_nd_second_chopped')
 xfail(TestMatern, 'test_positive_deriv2_nd')
-xfail(TestMatern52, 'test_symmetric_21')
-xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
 xfail(TestMatern52, 'test_positive_deriv2_nd')
-xfail(TestPPKernel, 'test_positive_deriv2')
+xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
 xfail(TestPPKernel, 'test_positive_deriv2_nd')
 xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
-pytest.mark.xfail(test_matern_spec_21)
-pytest.mark.xfail(test_matern_spec_22)
+
+# TODO this one is probably a numerical precision problem, sometimes it passes
+xfail(TestPPKernel, 'test_positive_deriv2')
 
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some
