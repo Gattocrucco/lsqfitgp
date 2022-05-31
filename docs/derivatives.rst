@@ -33,8 +33,8 @@ The kernel of a derivative is just the derivative of the kernel:
     &= \frac \partial {\partial x} \frac \partial {\partial y} k(x, y).
 
 With :mod:`lsqfitgp` it's easy to use derivatives of functions in fits (the
-automatic derivative calculations are implemented with `autograd
-<https://github.com/HIPS/autograd>`_). Let's just dive into the code::
+automatic derivative calculations are implemented with `jax
+<https://github.com/google/jax>`_). Let's just dive into the code::
 
     import lsqfitgp as lgp
     import numpy as np

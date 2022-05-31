@@ -227,7 +227,7 @@ class StructuredArray:
         return type(self)._fromarrayanddict(self, d)
     
     def tree_flatten(self):
-        """JAX PyTree encoder"""
+        """JAX PyTree encoder. See `jax.tree_util.tree_flatten`."""
         children = tuple(self._dict.values())
         aux_data = dict(
             keys = tuple(self._dict.keys()),
@@ -240,7 +240,7 @@ class StructuredArray:
     
     @classmethod
     def tree_unflatten(cls, aux_data, children):
-        """JAX PyTree decoder"""
+        """JAX PyTree decoder. See `jax.tree_util.tree_unflatten`."""
         obj = super().__new__(cls)
         for attr, val in aux_data.items():
             if attr != 'keys':
