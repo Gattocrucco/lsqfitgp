@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>12. Hyperparameters in the input &#8212; lsqfitgp 0.9 documentation</title>
+    <title>12. Hyperparameters in the input &#8212; lsqfitgp 0.10 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -29,7 +29,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">lsqfitgp 0.9</a></h1>
+<h1 class="logo"><a href="index.html">lsqfitgp 0.10</a></h1>
 
 
 
@@ -201,17 +201,17 @@ Let’s fit now:</p>
 </pre></div>
 </div>
 <p>When I run this last piece of code, it fails with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ne">ValueError</span><span class="p">:</span> <span class="n">setting</span> <span class="n">an</span> <span class="n">array</span> <span class="n">element</span> <span class="k">with</span> <span class="n">a</span> <span class="n">sequence</span><span class="o">.</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">jax</span><span class="o">.</span><span class="n">_src</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">TracerArrayConversionError</span><span class="p">:</span> <span class="n">The</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span> <span class="n">conversion</span> <span class="n">method</span> <span class="n">__array__</span><span class="p">()</span> <span class="n">was</span> <span class="n">called</span> <span class="n">on</span> <span class="n">the</span> <span class="n">JAX</span> <span class="n">Tracer</span> <span class="nb">object</span> <span class="o">...</span>
 </pre></div>
 </div>
 <p>Ok, what went wrong? First, I used <code class="xref py py-func docutils literal notranslate"><span class="pre">np.array()</span></code> in <cite>makegp</cite> without doing
-<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">autograd</span> <span class="pre">import</span> <span class="pre">numpy</span></code>. Second, I did <code class="docutils literal notranslate"><span class="pre">points['time'][0]</span> <span class="pre">-=</span> <span class="pre">delay</span></code>,
-which is an inplace operation, which is not allowed by autograd. Fixing the
+<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">jax</span> <span class="pre">import</span> <span class="pre">numpy</span></code>. Second, I did <code class="docutils literal notranslate"><span class="pre">points['time'][0]</span> <span class="pre">-=</span> <span class="pre">delay</span></code>,
+which is an inplace operation, which is not allowed by <code class="xref py py-mod docutils literal notranslate"><span class="pre">jax</span></code>. Fixing the
 first is easy, but how do we fix the second? There isn’t an obvious way to put
 values into a numpy structured array without assigning to it. For this reason,
 <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> provides a wrapper, <a class="reference internal" href="array.html#lsqfitgp.StructuredArray" title="lsqfitgp.StructuredArray"><code class="xref py py-class docutils literal notranslate"><span class="pre">StructuredArray</span></code></a>, that allows
-assigning to fields without breaking autograd:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">autograd</span> <span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+assigning to fields without breaking <code class="xref py py-mod docutils literal notranslate"><span class="pre">jax</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">jnp</span>
 
 <span class="k">def</span> <span class="nf">makegp</span><span class="p">(</span><span class="n">hp</span><span class="p">):</span>
     <span class="n">delay</span> <span class="o">=</span> <span class="n">hp</span><span class="p">[</span><span class="s1">&#39;delay&#39;</span><span class="p">]</span>
@@ -219,14 +219,14 @@ assigning to fields without breaking autograd:</p>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">hp</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span>
 
     <span class="n">kernel</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
-    <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="n">corr</span><span class="p">],</span> <span class="p">[</span><span class="n">corr</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+    <span class="n">cov</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="n">corr</span><span class="p">],</span> <span class="p">[</span><span class="n">corr</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span> <span class="c1"># &lt;- jax numpy</span>
     <span class="n">kernel</span> <span class="o">*=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;series&#39;</span><span class="p">,</span> <span class="n">cov</span><span class="o">=</span><span class="n">cov</span><span class="p">)</span>
 
     <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
 
     <span class="n">points</span> <span class="o">=</span> <span class="n">makepoints</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
     <span class="n">points</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">StructuredArray</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
-    <span class="n">points</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">time</span> <span class="o">-</span> <span class="n">delay</span><span class="p">,</span> <span class="n">time</span><span class="p">])</span>
+    <span class="n">points</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">time</span> <span class="o">-</span> <span class="n">delay</span><span class="p">,</span> <span class="n">time</span><span class="p">])</span> <span class="c1"># &lt;- jax numpy</span>
         <span class="c1"># a StructuredArray can be assigned only a whole field at once</span>
     <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
 
@@ -241,9 +241,9 @@ assigning to fields without breaking autograd:</p>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">delay</span> <span class="mi">10</span> <span class="mf">10.57</span><span class="p">(</span><span class="mi">28</span><span class="p">)</span>
-<span class="n">corr</span> <span class="mf">0.7</span> <span class="mf">0.66</span><span class="p">(</span><span class="mi">14</span><span class="p">)</span>
-<span class="n">scale</span> <span class="mi">3</span> <span class="mf">2.993</span><span class="p">(</span><span class="mi">36</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">delay</span> <span class="mi">10</span> <span class="mf">10.29</span><span class="p">(</span><span class="mi">29</span><span class="p">)</span>
+<span class="n">corr</span> <span class="mf">0.7</span> <span class="mf">0.64</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">scale</span> <span class="mi">3</span> <span class="mf">2.963</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>It seems to work. Let’s plot some samples:</p>

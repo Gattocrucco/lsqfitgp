@@ -125,7 +125,7 @@ constant::
     def makegp(hyperparams):
         variance = hyperparams['sdev'] ** 2
         scale = hyperparams['scale']
-        kernel = lgp.ExpQuad(scale=scale) * variance
+        kernel = variance * lgp.ExpQuad(scale=scale)
         gp = lgp.GP(kernel)
         gp.addx(x, 'sine')
         return gp
@@ -140,22 +140,14 @@ constant::
     print('sdev', hp['sdev'])
     print('scale', hp['scale'])
 
-.. warning::
-
-   I did ``lgp.ExpQuad(scale=scale) * variance`` instead of ``variance *
-   lgp.ExpQuad(scale=scale)``. The latter would fail due to a bug. When using
-   :class:`empbayes_fit`, Kernel-scalar operations have to be done with the
-   Kernel on the left.
-
 .. note::
 
-   The function `makegp` must be autograd-friendly. This means that operations
-   that involve hyperparameters must always be functional, i.e., you can not
-   first create an array and later assign values to it. Also, if you explicitly
-   use numpy functions, you have to do ``from autograd import numpy`` instead
-   of ``import numpy``. Read the `autograd tutorial
-   <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`_ for
-   detailed information.
+   The function `makegp` must be jax-friendly. This means that operations that
+   involve hyperparameters must always be functional, i.e., you can not first
+   create an array and later assign values to it. Also, if you explicitly use
+   numpy functions, you have to do ``from jax import numpy`` instead of
+   ``import numpy``. Read the `jax documentation
+   <https://jax.readthedocs.io/en/latest>`_ for detailed information.
 
 Output::
 
