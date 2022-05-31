@@ -108,7 +108,7 @@ def asarray(x, **kw):
     """
     Version of np.asarray that works with StructuredArray.
     """
-    if isinstance(x, StructuredArray):
+    if isinstance(x, (StructuredArray, jnp.ndarray)):
         return x
     else:
         return np.asarray(x)
