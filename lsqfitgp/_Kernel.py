@@ -46,7 +46,6 @@ def _asfloat(x):
         return x
 
 def _isscalar(x):
-    # return jnp.isscalar(x) or hasattr(x, 'shape') and x.shape == ()
     return jnp.ndim(x) == 0
 
 def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreductor=None):
