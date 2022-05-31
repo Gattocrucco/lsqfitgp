@@ -32,6 +32,12 @@ Then, install :mod:`lsqfitgp` by running this command in a shell:
 
     pip install lsqfitgp
 
+Windows
+-------
+
 I've seen that people may have problems installing the dependency :mod:`gvar`
 on Windows. This page may help:
-`<https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
+`<https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_. Another problematic
+dependency is JAX, which is still not official supported on Windows. This other
+page provides pre-built wheels:
+`<https://github.com/cloudhan/jax-windows-builder>`_.
