@@ -62,7 +62,7 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreducto
             dtype = x.dtype.fields[name][0]
             if dtype.shape:
                 axis = tuple(range(-len(dtype.shape), 0))
-                red = jnpreductor if isinstance(red, jnp.ndarray) else npreductor
+                red = jnpreductor if isinstance(result, jnp.ndarray) else npreductor
                 result = red(result, axis=axis)
             
             if acc is None:
