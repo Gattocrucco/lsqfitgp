@@ -46,8 +46,7 @@ for example in examples:
         text = stream.read()
     for match in pattern.finditer(text):
         descr = match.group(1)
-        descr = descr.strip()
-        descr = f': {descr}'
+        descr = ': ' + '\n    '.join(s.strip() for s in descr.strip().split('\n'))
         break
     else:
         descr = ''
