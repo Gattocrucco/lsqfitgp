@@ -21,12 +21,13 @@ import sys
 import warnings
 import copy
 
-import autograd
-from autograd import numpy as np
-from autograd.builtins import isinstance
+import jax
+from jax import numpy as jnp
+import numpy
 
 from . import _array
 from . import _Deriv
+from . import _linalg
 
 __all__ = [
     'Kernel',
@@ -35,16 +36,19 @@ __all__ = [
     'kernel',
     'stationarykernel',
     'isotropickernel',
-    'where'
+    'where',
 ]
 
 def _asfloat(x):
-    if not np.issubdtype(x.dtype, np.floating):
-        return np.array(x, dtype=float, subok=True)
+    if not jnp.issubdtype(x.dtype, jnp.floating):
+        return x.astype(float)
     else:
         return x
 
-def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None):
+def _isscalar(x):
+    return jnp.ndim(x) == 0
+
+def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreductor=None):
     x = args[0]
     if x.dtype.names is None:
         return fun(*args)
@@ -52,13 +56,14 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None):
         acc = None
         for name in x.dtype.names:
             recargs = (arg[name] for arg in args)
-            reckw = dict(reductor=reductor, npreductor=npreductor)
+            reckw = dict(reductor=reductor, npreductor=npreductor, jnpreductor=jnpreductor)
             result = _reduce_recurse_dtype(fun, *recargs, **reckw)
             
             dtype = x.dtype.fields[name][0]
             if dtype.shape:
                 axis = tuple(range(-len(dtype.shape), 0))
-                result = npreductor(result, axis=axis)
+                red = jnpreductor if isinstance(result, jnp.ndarray) else npreductor
+                result = red(result, axis=axis)
             
             if acc is None:
                 acc = result
@@ -70,11 +75,11 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None):
 
 def _sum_recurse_dtype(fun, *args):
     plus = lambda a, b: a + b
-    return _reduce_recurse_dtype(fun, *args, reductor=plus, npreductor=np.sum)
+    return _reduce_recurse_dtype(fun, *args, reductor=plus, npreductor=numpy.sum, jnpreductor=jnp.sum)
 
 def _prod_recurse_dtype(fun, *args):
     times = lambda a, b: a * b
-    return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=np.prod)
+    return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=numpy.prod, jnpreductor=jnp.prod)
 
 def _transf_recurse_dtype(transf, x, *args):
     if x.dtype.names is None:
@@ -201,7 +206,7 @@ class _KernelBase:
             derivable = (0, sys.maxsize)
         elif isinstance(derivable, bool):
             derivable = sys.maxsize if derivable else 0
-        elif isinstance(derivable, (int, np.integer)):
+        elif isinstance(derivable, (int, jnp.integer)):
             assert derivable >= 0
         elif derivable:
             derivable = sys.maxsize
@@ -224,17 +229,12 @@ class _KernelBase:
                     return x[dim]
         
         if loc is not None:
-            assert np.isscalar(loc)
-            assert np.isfinite(loc)
-            transf1 = transf
-            transf = lambda x: _transf_recurse_dtype(lambda x: x - loc, transf1(x))
+            assert -jnp.inf < loc < jnp.inf
+            transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x - loc, transf(x))
         
         if scale is not None:
-            assert np.isscalar(scale)
-            assert np.isfinite(scale)
-            assert scale > 0
-            transf2 = transf
-            transf = lambda x: _transf_recurse_dtype(lambda x: x / scale, transf2(x))
+            assert 0 < scale < jnp.inf
+            transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x / scale, transf(x))
         
         # TODO when dim becomes deep, forcekron must apply also to subfields
         # for consistence. Maybe it should do it now already.
@@ -252,24 +252,28 @@ class _KernelBase:
     def __call__(self, x, y):
         x = _array.asarray(x)
         y = _array.asarray(y)
-        np.result_type(x.dtype, y.dtype)
+        numpy.result_type(x.dtype, y.dtype)
         shape = _array.broadcast(x, y).shape
         if self._forcebroadcast:
             x, y = _array.broadcast_arrays(x, y)
+            x = x.reshape(-1)
+            y = y.reshape(-1)
         result = self._kernel(x, y)
-        assert isinstance(result, (np.ndarray, np.number))
-        assert np.issubdtype(result.dtype, np.number), result.dtype
+        if self._forcebroadcast:
+            result = result.reshape(shape)
+        assert isinstance(result, (numpy.ndarray, jnp.number, jnp.ndarray))
+        assert jnp.issubdtype(result.dtype, jnp.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
         return result
     
     def _binary(self, value, op):
         if isinstance(value, _KernelBase):
             obj = _KernelBase(op(self._kernel, value._kernel))
-            obj._minderivable = tuple(np.minimum(self._minderivable, value._minderivable))
-            obj._maxderivable = tuple(np.maximum(self._maxderivable, value._maxderivable))
+            obj._minderivable = tuple(numpy.minimum(self._minderivable, value._minderivable))
+            obj._maxderivable = tuple(numpy.maximum(self._maxderivable, value._maxderivable))
             obj._forcebroadcast = self._forcebroadcast or value._forcebroadcast
-        elif np.isscalar(value):
-            assert np.isfinite(value), value
+        elif _isscalar(value):
+            assert -jnp.inf < value < jnp.inf, value
             obj = _KernelBase(op(self._kernel, lambda x, y: value))
             obj._minderivable = self._minderivable
             obj._maxderivable = self._maxderivable
@@ -277,11 +281,6 @@ class _KernelBase:
         else:
             obj = NotImplemented
         return obj
-    
-    # TODO when using autograd, an autograd scalar is an ArrayBox that
-    # has an all-in method __add__ that will be called if the autograd scalar
-    # is the first addend. Then autograd will complain that it can't compute
-    # derivatives w.r.t. a Kernel. Solve this bug.
     
     def __add__(self, value):
         return self._binary(value, lambda k, q: lambda x, y: k(x, y) + q(x, y))
@@ -294,7 +293,7 @@ class _KernelBase:
     __rmul__ = __mul__
     
     def __pow__(self, value):
-        if np.isscalar(value):
+        if not isinstance(value, _KernelBase) and _isscalar(value):
             return self._binary(value, lambda k, q: lambda x, y: k(x, y) ** q(x, y))
         else:
             return NotImplemented
@@ -404,7 +403,7 @@ class _KernelBase:
         """
         
         Return a Kernel-like object that computes the derivatives of this
-        kernel. The derivatives are computed automatically with autograd. If
+        kernel. The derivatives are computed automatically with JAX. If
         `xderiv` and `yderiv` are trivial, this is a no-op.
         
         .. math::
@@ -474,19 +473,27 @@ class _KernelBase:
                     for dim in deriv:
                         if dim not in x.dtype.names:
                             raise ValueError(f'derivative along missing field {dim!r}')
-                        if not np.issubdtype(x.dtype.fields[dim][0], np.number):
+                        if not jnp.issubdtype(x.dtype.fields[dim][0], jnp.number):
                             raise TypeError(f'derivative along non-numeric field {dim!r}')
             elif not xderiv.implicit or not yderiv.implicit:
                 raise ValueError('explicit derivatives with non-structured array')
-                
+        
+        
         # Handle the non-structured case.
         if xderiv.implicit and yderiv.implicit:
             
             f = self._kernel
+            # wrapper for applying jax.vmap multiple times
+            def nvmap(f):
+                def newf(*args):
+                    return f(*(jnp.atleast_1d(x) for x in args))[0]
+                return newf
+            f = nvmap(f)
             for _ in range(xderiv.order):
-                f = autograd.elementwise_grad(f, 0)
+                f = jax.jacfwd(f, 0)
             for _ in range(yderiv.order):
-                f = autograd.elementwise_grad(f, 1)
+                f = jax.jacfwd(f, 1)
+            f = jax.vmap(f)
             
             def fun(x, y):
                 check(x, y)
@@ -507,25 +514,31 @@ class _KernelBase:
                     x[dim] = args[i]
                 for j, dim in enumerate(yderiv):
                     y[dim] = args[1 + i + j]
-                return kernel(x, y)
+                # we will apply vmap so x and y are scalars, but kernel may
+                # contain an older vmap
+                x = x.reshape(-1)
+                y = y.reshape(-1)
+                assert x.shape == y.shape == (1,)
+                rt = kernel(x, y)
+                assert rt.shape == (1,)
+                return rt[0]
                 
             # Make derivatives.
             i = -1
             for i, dim in enumerate(xderiv):
                 for _ in range(xderiv[dim]):
-                    f = autograd.elementwise_grad(f, 2 + i)
+                    f = jax.jacfwd(f, 2 + i)
             for j, dim in enumerate(yderiv):
                 for _ in range(yderiv[dim]):
-                    f = autograd.elementwise_grad(f, 2 + 1 + i + j)
+                    f = jax.jacfwd(f, 2 + 1 + i + j)
+            f = jax.vmap(f)
             
             def fun(x, y):
                 check(x, y)
                                 
-                # Autograd-friendly wrap of structured arrays.
-                if xderiv:
-                    x = _array.StructuredArray(x)
-                if yderiv:
-                    y = _array.StructuredArray(y)
+                # JAX-friendly wrap of structured arrays.
+                x = _array.StructuredArray(x)
+                y = _array.StructuredArray(y)
             
                 # Make argument list and call function.
                 args = []
@@ -627,8 +640,8 @@ class Kernel(_KernelBase):
         if isinstance(value, Kernel):
             obj = super(Kernel, self)._binary(value, op)
             obj.__class__ = Kernel
-        elif np.isscalar(value):
-            assert value >= 0, value
+        elif _isscalar(value):
+            assert 0 <= value < jnp.inf, value
             obj = super(Kernel, self)._binary(value, op)
             obj.__class__ = Kernel
         else:
@@ -680,9 +693,7 @@ class StationaryKernel(Kernel):
         
         transf = lambda q: q
         if scale is not None:
-            assert np.isscalar(scale)
-            assert np.isfinite(scale)
-            assert scale > 0
+            assert 0 < scale < jnp.inf
             transf = lambda q : q / scale
         
         def function(x, y, **kwargs):
@@ -739,13 +750,10 @@ class IsotropicKernel(StationaryKernel):
         
         transf = lambda q: q
         if scale is not None:
-            assert np.isscalar(scale)
-            assert np.isfinite(scale)
-            assert scale > 0
+            assert 0 < scale < jnp.inf
             transf = lambda q : q / scale ** 2
         if input == 'soft':
-            transf0 = transf
-            transf = lambda q: np.sqrt(transf0(q))
+            transf = lambda q, transf=transf: jnp.sqrt(transf(q))
             # I do square and then square root because I first have to
             # compute the sum of squares
         
@@ -756,29 +764,13 @@ class IsotropicKernel(StationaryKernel):
         Kernel.__init__(self, function, **kw)
     
 def _eps(x):
-    if np.issubdtype(x.dtype, np.inexact):
-        return np.finfo(x.dtype).eps
+    if jnp.issubdtype(x.dtype, jnp.inexact):
+        return jnp.finfo(x.dtype).eps
     else:
-        return np.finfo(float).eps
-
-# I define my own version of abs because autograd defines the derivative in 0
-# to be 0, while I need it to be 1 for stationary/isotropic kernels.
-@autograd.extend.primitive
-def _abs(x):
-    return np.abs(x)
-
-autograd.extend.defvjp(
-    _abs,
-    lambda ans, x: lambda g: g * np.where(x >= 0, 1, -1)
-)
-
-autograd.extend.defjvp(
-    _abs,
-    lambda g, ans, x: (g.T * np.where(x >= 0, 1, -1).T).T
-)
+        return jnp.finfo(float).eps
 
 def _softabs(x):
-    return _abs(x) + _eps(x)
+    return _linalg.choose_numpy(x).abs(x) + _eps(x)
 
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
@@ -910,8 +902,7 @@ def where(condfun, kernel1, kernel2, dim=None):
                 return x[[dim]]
             else:
                 return x[dim]
-        condfun0 = condfun
-        condfun = lambda x: condfun0(transf(x))
+        condfun = lambda x, condfun=condfun: condfun(transf(x))
     
     def kernel_op(k1, k2):
         def kernel(x, y):
@@ -929,8 +920,8 @@ def where(condfun, kernel1, kernel2, dim=None):
             
             xcond = condfun(x)
             ycond = condfun(y)
-            r = np.where(xcond & ycond, k1(x, y), k2(x, y))
-            return np.where(xcond ^ ycond, 0, r)
+            r = jnp.where(xcond & ycond, k1(x, y), k2(x, y))
+            return jnp.where(xcond ^ ycond, 0, r)
         return kernel
     
     # TODO when I implement double callable derivable, propagate it

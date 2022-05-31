@@ -39,11 +39,12 @@ setuptools.setup(
         "Development Status :: 4 - Beta",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     install_requires=[
         'numpy',
         'scipy',
-        'autograd',
-        'gvar'
+        'jax',
+        'jaxlib',
+        'gvar',
     ]
 )

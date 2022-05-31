@@ -239,7 +239,7 @@ print('check integrals in fit:')
 check_integrals(xdata['x'], fit.p['xdata'])
 
 print('\nhyperparameters (true, fitted):')
-for k in fithp.all_keys(fithp):
+for k in fithp.all_keys():
     print(f'{k}: {truehp[k]:#.2g}\t{fithp[k]:#.2g}')
 
 #### PLOT RESULTS ####

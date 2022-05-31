@@ -19,10 +19,10 @@
 
 import collections
 
-from autograd import numpy as np
+import numpy as np
 
 __all__ = [
-    'Deriv'
+    'Deriv',
 ]
 
 class Deriv:
@@ -109,6 +109,9 @@ class Deriv:
     def __iter__(self):
         return iter(self._counter)
     
+    def __len__(self):
+        return len(self._counter)
+    
     def __bool__(self):
         return bool(self._counter)
 
@@ -117,6 +120,9 @@ class Deriv:
             return self._counter == val._counter
         else:
             return NotImplemented
+    
+    def __repr__(self):
+        return dict.__repr__(self._counter)
     
     @property
     def implicit(self):

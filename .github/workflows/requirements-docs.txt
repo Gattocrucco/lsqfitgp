@@ -3,7 +3,8 @@ scipy
 matplotlib
 gvar
 lsqfit
-autograd
+jax
+jaxlib
 sphinx
 numpydoc
 coverage

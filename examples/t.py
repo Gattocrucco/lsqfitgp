@@ -31,7 +31,8 @@ import time as systime
 
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
-from autograd import numpy as np
+from jax import numpy as jnp
+import numpy as np
 import gvar
 
 time = np.arange(21)
@@ -57,7 +58,7 @@ def makegp(params):
     kernel = lgp.RatQuad(scale=params['time_scale'], dim='time', alpha=1)
     kernel *= lgp.ExpQuad(scale=params['label_scale'], dim='label')
     gp = lgp.GP(kernel)
-    x['time'] = np.array([time, time - params['delay']])
+    x['time'] = jnp.array([time, time - params['delay']])
     gp.addx(x, 'A')
     return gp
 

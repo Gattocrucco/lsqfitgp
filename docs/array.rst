@@ -24,9 +24,8 @@
 Structured arrays wrapping
 ==========================
 
-Taking derivatives on structured numpy arrays is not supported by
-:mod:`autograd`, so structured arrays are internally wrapped with
-:class:`StructuredArray`.
+Taking derivatives on structured numpy arrays is not supported by :mod:`jax`,
+so structured arrays are internally wrapped with :class:`StructuredArray`.
 
 StructuredArray
 ---------------

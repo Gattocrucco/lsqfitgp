@@ -55,7 +55,7 @@ Kernels are reported with a simplified signature where the positional arguments
 are `r` or `r2` if the kernel is isotropic, `delta` if it is stationary, or
 `x`, `y` for generic kernels, and with only the keyword arguments specific to
 the kernel. All kernels also understand the general keyword arguments of
-:class:`Kernel` or :class:`IsotropicKernel`, while there are no positional
+:class:`Kernel` (or their specific superclass), while there are no positional
 arguments when instantiating the kernel and the call signature of instances is
 always `x`, `y`.
 

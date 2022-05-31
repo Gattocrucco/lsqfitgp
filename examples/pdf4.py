@@ -58,7 +58,7 @@ hyperprior = {
     'log(alpha)': gvar.log(gvar.gvar(2, 1)),
 }
 def makekernel(hp):
-    return lgp.RatQuad(dim='x', scale=hp['scale'], alpha=hp['alpha']) * lgp.White(dim='pid') * hp['ampl'] ** 2
+    return hp['ampl'] ** 2 * lgp.RatQuad(dim='x', scale=hp['scale'], alpha=hp['alpha']) * lgp.White(dim='pid')
 
 xdata = np.empty((nflav, nx), xtype)
 xdata['pid'] = pid[:, None]

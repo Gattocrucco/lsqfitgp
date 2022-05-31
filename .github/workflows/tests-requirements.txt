@@ -2,6 +2,7 @@ numpy
 scipy
 gvar
 lsqfit
-autograd
+jax
+jaxlib
 pytest
 coverage

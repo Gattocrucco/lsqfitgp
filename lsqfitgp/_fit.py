@@ -20,25 +20,17 @@
 import warnings
 
 import gvar
-import autograd
-from autograd import numpy as np
+import jax
+from jax import numpy as jnp
+import numpy as np
 from scipy import optimize
 
 from . import _GP
 from . import _linalg
 
 __all__ = [
-    'empbayes_fit'
+    'empbayes_fit',
 ]
-
-@autograd.wrap_util.unary_to_nary
-def jac(fun, x): # pragma: no cover
-    """Like autograd.jacobian but with forward mode, currently not used"""
-    jvp = autograd.core.make_jvp(fun, x)
-    ans = fun(x)
-    vs = autograd.extend.vspace(x)
-    grads = map(lambda b: jvp(b)[1], vs.standard_basis())
-    return np.reshape(np.stack(grads, axis=-1), ans.shape + vs.shape)
 
 def _asarrayorbufferdict(x):
     if hasattr(x, 'keys'):
@@ -47,7 +39,7 @@ def _asarrayorbufferdict(x):
         return np.array(x, copy=False)
 
 def _flat(x):
-    if isinstance(x, np.ndarray):
+    if hasattr(x, 'reshape'):
         return x.reshape(-1)
     elif isinstance(x, gvar.BufferDict):
         return x.buf
@@ -55,9 +47,21 @@ def _flat(x):
 def _unflat(x, original):
     if isinstance(original, np.ndarray):
         out = x.reshape(original.shape)
-        return out if out.shape else out.item()
+        # if not out.shape:
+        #     try:
+        #         out = out.item()
+        #     except jax.errors.ConcretizationTypeError:
+        #         pass
+        return out
     elif isinstance(original, gvar.BufferDict):
-        return gvar.BufferDict(original, buf=x)
+        # normally I would do BufferDict(original, buf=x) but it does not work
+        # with JAX tracers
+        b = gvar.BufferDict(original)
+        b._extension = {}
+        b._buf = x
+        # TODO b.buf = x does not work because BufferDict checks that the
+        # array is a numpy array.
+        return b
 
 class empbayes_fit:
 
@@ -77,9 +81,9 @@ class empbayes_fit:
         gpfactory : callable
             A function with signature gpfactory(hyperparams) -> GP object. The
             argument `hyperparams` has the same structure of the empbayes_fit
-            argument `hyperprior`. gpfactory must be autograd-friendly, i.e.,
-            either use autograd.numpy, autograd.scipy, lsqfitgp.numpy,
-            lsqfitgp.scipy or gvar instead of plain numpy/scipy.
+            argument `hyperprior`. gpfactory must be JAX-friendly, i.e.,
+            use jax.numpy and jax.scipy instead of plain numpy/scipy and avoid
+            assignments to arrays.
         data : dict or callable
             Dictionary of data that is passed to `GP.marginal_likelihood` on
             the GP object returned by `gpfactory`. If a callable, it is called
@@ -123,15 +127,14 @@ class empbayes_fit:
         # term.
     
         # TODO it raises very often with "Desired error not necessarily
-        # achieved due to precision loss.". Change the default arguments of
-        # minimize to make this less frequent, but only after implement the
-        # quad-specific derivatives since maybe they will fix this. Another
-        # thing that may matter is the vjp of the logdet, which computes a
-        # matrix inverse. I could do the following: make an internal version of
-        # marginal_likelihood that returns separately the residuals and the
-        # logdet term, and do a backward derivative on the residuals and a
-        # forward on the logdet. Other option: try another optimization
-        # algorithm.
+        # achieved due to precision loss.". I tried doing a forward grad on
+        # the logdet but does not fix the problem. I still suspect it's the
+        # logdet, maybe the value itself and not the derivative, because as the
+        # matrix changes the regularization can change a lot the value of the
+        # logdet. How do I stabilize it?
+        
+        # TODO use the split marginal likelihood to compute the gradient of
+        # the logdet in forward mode.
         
         # TODO I don't know really how much the inverse hessian estimated by
         # BFGS is accurate. Investigate computing the hessian with autograd or
@@ -141,12 +144,12 @@ class empbayes_fit:
         # jac is specified or if the method does not require derivatives do not
         # take derivatives with autograd.
         
-        # TODO compute the logGBF for the whole fit.
+        # TODO compute the logGBF for the whole fit (see the gpbart code)
     
         hyperprior = _asarrayorbufferdict(hyperprior)
         flathp = _flat(hyperprior)
         hpmean = gvar.mean(flathp)
-        hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks (low priority)
+        hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks
         hpdec = _linalg.EigCutFullRank(hpcov)
         
         if callable(data):
@@ -173,10 +176,16 @@ class empbayes_fit:
                 if not isinstance(args, tuple):
                     args = (args,)
             ml = gp.marginal_likelihood(*args)
+            logp = -ml + 1/2 * priorchi2
             
-            return -ml + 1/2 * priorchi2
+            return logp, logp
+        
+        jac = jax.jacfwd(fun, has_aux=True)
+        def value_and_grad(p):
+            j, f = jac(p)
+            return f, j
     
-        result = optimize.minimize(autograd.value_and_grad(fun), hpmean, jac=True, **minkw)
+        result = optimize.minimize(value_and_grad, hpmean, jac=True, **minkw)
         
         if not result.success:
             msg = 'minimization failed: {}'.format(result.message)

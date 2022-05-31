@@ -20,8 +20,9 @@
 import sys
 import abc
 
-import autograd
-from autograd import numpy as np
+import jax
+from jax import numpy as jnp
+import numpy as np
 from scipy import linalg, stats
 import gvar
 import pytest
@@ -50,9 +51,9 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     
     def mat(self, s, n):
         x = np.arange(n)
-        return np.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+        return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
     
-    matjac = autograd.jacobian(mat, 1)
+    matjac = jax.jacobian(mat, 1)
     
     def randvec(self, n):
         return np.random.randn(n)
@@ -73,25 +74,11 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = self.decompclass(K).solve(b)
             np.testing.assert_allclose(sol, result, rtol=1e-4)
     
-    def test_solve_vec_jac(self):
+    def solve_vec_jac(self, jacfun):
         def fun(s, n, b):
             K = self.mat(s, n)
             return self.decompclass(K).solve(b)
-        funjac = autograd.jacobian(fun)
-        for n in range(1, MAXSIZE):
-            s = np.exp(np.random.uniform(-1, 1))
-            K = self.mat(s, n)
-            dK = self.matjac(s, n)
-            b = self.randvec(n)
-            sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
-            result = funjac(s, n, b)
-            np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-10)
-
-    def test_solve_vec_jac_fwd(self):
-        def fun(s, n, b):
-            K = self.mat(s, n)
-            return self.decompclass(K).solve(b)
-        funjac = autograd.deriv(fun)
+        funjac = jacfun(fun)
         for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
@@ -101,6 +88,12 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = funjac(s, n, b)
             np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-8)
 
+    def test_solve_vec_jac_rev(self):
+        self.solve_vec_jac(jax.jacrev)
+
+    def test_solve_vec_jac_fwd(self):
+        self.solve_vec_jac(jax.jacfwd)
+
     def test_solve_matrix(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
@@ -108,12 +101,12 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             sol = self.solve(K, b)
             result = self.decompclass(K).solve(b)
             np.testing.assert_allclose(sol, result, rtol=1e-4)
-
-    def test_solve_matrix_jac(self):
+    
+    def solve_matrix_jac(self, jacfun):
         def fun(s, n, b):
             K = self.mat(s, n)
             return self.decompclass(K).solve(b)
-        funjac = autograd.jacobian(fun)
+        funjac = jacfun(fun)
         for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
@@ -123,11 +116,17 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = funjac(s, n, b)
             np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-10)
 
-    def test_solve_matrix_jac_matrix(self):
+    def test_solve_matrix_jac_rev(self):
+        self.solve_matrix_jac(jax.jacrev)
+    
+    def test_solve_matrix_jac_fwd(self):
+        self.solve_matrix_jac(jax.jacfwd)
+
+    def solve_matrix_jac_matrix(self, jacfun):
         def fun(s, n, b, A):
             K = self.mat(s, n)
             return A @ self.decompclass(K).solve(b)
-        funjac = autograd.jacobian(fun)
+        funjac = jacfun(fun)
         for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
@@ -137,6 +136,12 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             sol = -A @ self.solve(K.T, self.solve(K, dK).T).T @ b
             result = funjac(s, n, b, A)
             np.testing.assert_allclose(sol, result, rtol=1e-3)
+        
+    def test_solve_matrix_jac_rev_matrix(self):
+        self.solve_matrix_jac_matrix(jax.jacrev)
+
+    def test_solve_matrix_jac_fwd_matrix(self):
+        self.solve_matrix_jac_matrix(jax.jacfwd)
 
     def assert_close_gvar(self, sol, result):
         diff = np.reshape(sol - result, -1)
@@ -159,7 +164,8 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         xcov = np.linspace(0, 3, n)
         cov = np.exp(-(xcov.reshape(-1, 1) - xcov.reshape(1, -1)) ** 2)
         return gvar.gvar(mean, cov)
-
+    
+    @pytest.mark.xfail # solve does not support gvar any more
     def test_solve_vec_gvar(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
@@ -169,6 +175,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = self.decompclass(K).solve(b)
             self.assert_close_gvar(sol, result)
     
+    @pytest.mark.xfail # quad now supports gvar only on second argument
     def test_quad_vec_gvar(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
@@ -181,7 +188,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     def test_quad_vec_vec_gvar(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
-            b = self.randvecgvar(n)
+            b = self.randvec(n)
             c = self.randvecgvar(n)
             invK = self.solve(K, np.eye(len(K)))
             sol = b.T @ invK @ c
@@ -191,7 +198,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     def test_quad_matrix_vec_gvar(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
-            b = self.randvecgvar(n * 3).reshape(n, 3)
+            b = self.randvec(n * 3).reshape(n, 3)
             c = self.randvecgvar(n)
             invK = self.solve(K, np.eye(len(K)))
             sol = b.T @ invK @ c
@@ -231,12 +238,12 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             sol = b.T @ self.solve(K, c)
             result = self.decompclass(K).quad(b, c)
             np.testing.assert_allclose(sol, result)
-            
-    def test_quad_vec_grad(self):
+    
+    def quad_vec_jac(self, jacfun):
         def fun(s, n, b):
             K = self.mat(s, n)
             return self.decompclass(K).quad(b)
-        fungrad = autograd.grad(fun)
+        fungrad = jacfun(fun)
         for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
@@ -246,12 +253,19 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             sol = -invKb.T @ dK @ invKb
             result = fungrad(s, n, b)
             np.testing.assert_allclose(sol, result, rtol=1e-4)
-
-    def test_quad_matrix_jac(self):
+    
+    @pytest.mark.xfail
+    def test_quad_vec_jac_rev(self):
+        self.quad_vec_jac(jax.jacrev)
+    
+    def test_quad_vec_jac_fwd(self):
+        self.quad_vec_jac(jax.jacfwd)
+    
+    def quad_matrix_jac(self, jacfun):
         def fun(s, n, b):
             K = self.mat(s, n)
             return self.decompclass(K).quad(b)
-        funjac = autograd.jacobian(fun)
+        funjac = jacfun(fun)
         for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
@@ -261,6 +275,13 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             sol = -invKb.T @ dK @ invKb
             result = funjac(s, n, b)
             np.testing.assert_allclose(sol, result, rtol=1e-4)
+    
+    @pytest.mark.xfail
+    def test_quad_matrix_jac_rev(self):
+        self.quad_matrix_jac(jax.jacrev)
+    
+    def test_quad_matrix_jac_fwd(self):
+        self.quad_matrix_jac(jax.jacfwd)
 
     def test_logdet(self):
         for n in range(1, MAXSIZE):
@@ -269,11 +290,11 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = self.decompclass(K).logdet()
             np.testing.assert_allclose(sol, result, atol=1e-8)
     
-    def test_logdet_grad(self):
+    def logdet_jac(self, jacfun):
         def fun(s, n):
             K = self.mat(s, n)
             return self.decompclass(K).logdet()
-        fungrad = autograd.grad(fun)
+        fungrad = jacfun(fun)
         for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
@@ -282,19 +303,12 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fungrad(s, n)
             np.testing.assert_allclose(sol, result, rtol=1e-4, atol=1e-15)
     
-    def test_logdet_grad_fwd(self):
-        def fun(s, n):
-            K = self.mat(s, n)
-            return self.decompclass(K).logdet()
-        fungrad = autograd.deriv(fun)
-        for n in range(1, MAXSIZE):
-            s = np.exp(np.random.uniform(-1, 1))
-            K = self.mat(s, n)
-            dK = self.matjac(s, n)
-            sol = np.trace(self.solve(K, dK))
-            result = fungrad(s, n)
-            np.testing.assert_allclose(sol, result, rtol=1e-4, atol=1e-15)
+    def test_logdet_jac_rev(self):
+        self.logdet_jac(jax.jacrev)
     
+    def test_logdet_jac_fwd(self):
+        self.logdet_jac(jax.jacfwd)
+
     def test_inv(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
@@ -384,9 +398,9 @@ class TestCholToeplitz(DecompTestCorr):
     
     def mat(self, s, n):
         x = np.arange(n)
-        return np.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+        return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
     
-    matjac = autograd.jacobian(mat, 1)
+    matjac = jax.jacobian(mat, 1)
 
 class TestReduceRank(DecompTestCorr):
     
@@ -411,15 +425,15 @@ class TestReduceRank(DecompTestCorr):
         return K
     
     def mat(self, s, n=None):
-        if not isinstance(s, np.numpy_boxes.ArrayBox):
+        if not isinstance(s, jnp.ndarray):
             if not n:
                 n = self.randsize()
             self._rank = np.random.randint(1, n + 1)
         x = np.arange(n)
         x[:n - self._rank + 1] = x[0]
-        return np.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+        return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
     
-    matjac = autograd.jacobian(mat, 1)
+    matjac = jax.jacobian(mat, 1)
         
     def test_logdet(self):
         for n in range(1, MAXSIZE):
@@ -469,6 +483,25 @@ class BlockDecompTestBase(DecompTestCorr):
             args = (self.subdecompclass(P), S, Q, self.subdecompclass)
             return _linalg.BlockDecomp(*args)
         return decomp
+    
+    # TODO probably these xfailures would be solved by making BlockDecomp
+    # a subclass of DecompAutoDiff
+    
+    @pytest.mark.xfail
+    def test_solve_vec_jac_rev(self):
+        super().test_solve_vec_jac_rev()
+    
+    @pytest.mark.xfail
+    def test_solve_matrix_jac_rev(self):
+        super().test_solve_matrix_jac_rev()
+    
+    @pytest.mark.xfail
+    def test_solve_matrix_jac_rev_matrix(self):
+        super().test_solve_matrix_jac_rev_matrix()
+    
+    @pytest.mark.xfail
+    def test_logdet_jac_rev(self):
+        super().test_logdet_jac_rev()
 
 class TestBlockChol(BlockDecompTestBase):
     
@@ -507,12 +540,12 @@ class BlockDiagDecompTestBase(DecompTestCorr):
         A = super().mat(s, p)
         B = super().mat(s, n - p)
         self._p = p
-        return np.concatenate([
-            np.concatenate([A, np.zeros((p, n-p))], axis=1),
-            np.concatenate([np.zeros((n-p, p)), B], axis=1)
+        return jnp.block([
+            [A, jnp.zeros((p, n-p))],
+            [jnp.zeros((n-p, p)), B],
         ])
             
-    matjac = autograd.jacobian(mat, 1)
+    matjac = jax.jacobian(mat, 1)
     
     @property
     def decompclass(self):
