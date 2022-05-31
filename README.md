@@ -10,7 +10,7 @@ Python module for manipulating gaussian processes. Features:
   * Fit a latent gaussian process in a nonlinear model with
     [lsqfit](https://github.com/gplepage/lsqfit).
     
-  * [autograd](https://github.com/HIPS/autograd)-friendly.
+  * [JAX](https://github.com/google/jax)-friendly.
   
   * Supports multidimensional structured non-numerical input with named
     dimensions.
@@ -24,7 +24,7 @@ Python module for manipulating gaussian processes. Features:
   
 ## Installation
 
-Python >= 3.6 required. Then:
+Python >= 3.7 required. Then:
 
 ```
 $ pip install lsqfitgp
