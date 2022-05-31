@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>6. Gaussian process class &#8212; lsqfitgp 0.9 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -12,6 +12,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -86,7 +87,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -119,13 +120,13 @@
           <div class="body" role="main">
             
   <section id="gaussian-process-class">
-<span id="gp"></span><h1><span class="section-number">6. </span>Gaussian process class<a class="headerlink" href="#gaussian-process-class" title="Permalink to this headline">¶</a></h1>
+<span id="gp"></span><h1><span class="section-number">6. </span>Gaussian process class<a class="headerlink" href="#gaussian-process-class" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.GP">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkfinite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posepsfac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Object that represents a Gaussian process over arbitrary input.</p>
 <dl class="field-list">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
 <dt><strong>covfun</strong><span class="classifier">Kernel or None</span></dt><dd><p>An instance of <cite>Kernel</cite> representing the covariance kernel of the
 default process of the GP object. It can be left unspecified.</p>
@@ -182,10 +183,6 @@ smaller than the matrix size for the method to be convenient.</p>
 </dl>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addx</span></code></a>(x[, key, deriv, proc])</p></td>
 <td><p>Add points where the Gaussian process is evaluated.</p></td>
@@ -239,7 +236,7 @@ smaller than the matrix size for the method to be convenient.</p>
 finite-dimensional zero-mean Gaussian variables, assumed independent
 from all other variables in the GP object.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>covblocks</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>If an array: a covariance matrix (or tensor) to be added under key
 <cite>key</cite>. If a dictionary: a mapping from pairs of keys to the
@@ -252,7 +249,7 @@ dictionary.</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-even">Raises</dt>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
 <dt><strong>RuntimeError</strong><span class="classifier"></span></dt><dd><p>A key is already used in the GP.</p>
 </dd>
@@ -268,7 +265,7 @@ dictionary.</p>
 <span class="sig-name descname"><span class="pre">addkernelop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addkernelop" title="Permalink to this definition">¶</a></dt>
 <dd><p>Define a new process as the transformation of an existing one.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>method</strong><span class="classifier">str</span></dt><dd><p>A method of <cite>Kernel</cite> taking two arguments which returns a
 transformed kernel.</p>
@@ -290,7 +287,7 @@ default process.</p>
 <span class="sig-name descname"><span class="pre">addproc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add an independent process.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>kernel</strong><span class="classifier">Kernel</span></dt><dd><p>A kernel for the process. If None, use the default kernel. The
 difference between the default process and a process defined with
@@ -314,7 +311,7 @@ specified, sets the kernel of the default process.</p>
 <div class="math notranslate nohighlight">
 \[g(x) = \frac{\partial^n}{\partial x^n} f(x)\]</div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>Derivation order.</p>
 </dd>
@@ -335,7 +332,7 @@ default process.</p>
 <div class="math notranslate nohighlight">
 \[g(x) = s(x)f(x)\]</div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>scalefun</strong><span class="classifier">callable</span></dt><dd><p>A function from the domain of the process to a scalar.</p>
 </dd>
@@ -359,7 +356,7 @@ deterministic functions. The new process is defined as</p>
 <div><p>h(x) = g_1(x) f_1(x) + g_2(x) f_2(x) + …</p>
 </div></blockquote>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>ops</strong><span class="classifier">dict</span></dt><dd><p>A dictionary mapping process keys to scalars or scalar
 functions. The functions must take an argument of the same kind
@@ -382,7 +379,7 @@ parameter.</p>
 <div class="math notranslate nohighlight">
 \[g(x) = f(T(x))\]</div>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>transf</strong><span class="classifier">callable</span></dt><dd><p>A function mapping the new kind input to the input expected by the
 transformed process.</p>
@@ -403,7 +400,7 @@ default process.</p>
 <dd><p>Apply a linear transformation to already specified process points. The
 result of the transformation is represented by a new key.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>tensors</strong><span class="classifier">dict</span></dt><dd><p>Dictionary mapping keys of the GP to arrays/scalars. Each array is
 matrix-multiplied with the process array represented by its key,
@@ -440,7 +437,7 @@ you change their contents before doing something with the GP, the
 change will be reflected on the result. However, after the GP has
 computed internally its covariance matrix, the x are ignored.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>x</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>The points to be added.</p>
 </dd>
@@ -474,7 +471,7 @@ always computes the logGBF (it’s the same thing).</p>
 <p>The input is an array or dictionary of arrays, <cite>given</cite>. The contents of
 <cite>given</cite> represent the input data.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>given</strong><span class="classifier">dictionary of arrays</span></dt><dd><p>The data for some/all of the points in the GP. The arrays can
 contain either gvars or normal numbers, the latter being
@@ -488,7 +485,7 @@ Default False.</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
 <dt>If <code class="docutils literal notranslate"><span class="pre">separate</span> <span class="pre">==</span> <span class="pre">False</span></code> (default):</dt><dd></dd>
 <dt><strong>logp</strong><span class="classifier">scalar</span></dt><dd><p>The logarithm of the marginal likelihood.</p>
@@ -520,7 +517,7 @@ of arrays. They are properly correlated with gvars returned by
 <p>The input is a dictionary of arrays, <cite>given</cite>, with keys corresponding
 to the keys in the GP as added by <cite>addx</cite> or <cite>addtransf</cite>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>given</strong><span class="classifier">dictionary of arrays</span></dt><dd><p>The data or fit result for some/all of the points in the GP.
 The arrays can contain either gvars or normal numbers, the latter
@@ -547,7 +544,7 @@ gvars.</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
 <dt>If raw=False (default):</dt><dd></dd>
 <dt><strong>posterior</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>A collections of gvars representing the posterior.</p>
@@ -586,7 +583,7 @@ objects returned by different calls to <cite>prior</cite>.</p>
 <p>Calling without arguments returns the complete prior as a dictionary.
 If you specify <cite>key</cite>, only the array for the requested key is returned.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>key</strong><span class="classifier">None, key or list of keys</span></dt><dd><p>Key(s) corresponding to one passed to <cite>addx</cite> or <cite>addtransf</cite>. None
 for all keys.</p>
@@ -597,7 +594,7 @@ Default False.</p>
 </dd>
 </dl>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
 <dt>If raw=False (default):</dt><dd></dd>
 <dt><strong>prior</strong><span class="classifier">np.ndarray or gvar.BufferDict</span></dt><dd><p>A collection of gvars representing the prior.</p>
@@ -640,7 +637,7 @@ Default False.</p>
       &copy;2020-2022, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

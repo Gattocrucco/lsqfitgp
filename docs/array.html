@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>7. Structured arrays wrapping &#8212; lsqfitgp 0.9 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -12,6 +12,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -85,7 +86,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -118,12 +119,12 @@
           <div class="body" role="main">
             
   <section id="structured-arrays-wrapping">
-<span id="array"></span><h1><span class="section-number">7. </span>Structured arrays wrapping<a class="headerlink" href="#structured-arrays-wrapping" title="Permalink to this headline">¶</a></h1>
+<span id="array"></span><h1><span class="section-number">7. </span>Structured arrays wrapping<a class="headerlink" href="#structured-arrays-wrapping" title="Permalink to this heading">¶</a></h1>
 <p>Taking derivatives on structured numpy arrays is not supported by
 <code class="xref py py-mod docutils literal notranslate"><span class="pre">autograd</span></code>, so structured arrays are internally wrapped with
 <a class="reference internal" href="#lsqfitgp.StructuredArray" title="lsqfitgp.StructuredArray"><code class="xref py py-class docutils literal notranslate"><span class="pre">StructuredArray</span></code></a>.</p>
 <section id="structuredarray">
-<h2><span class="section-number">7.1. </span>StructuredArray<a class="headerlink" href="#structuredarray" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">7.1. </span>StructuredArray<a class="headerlink" href="#structuredarray" title="Permalink to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.StructuredArray">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">StructuredArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.StructuredArray" title="Permalink to this definition">¶</a></dt>
@@ -131,7 +132,7 @@
 <p>It behaves like a read-only numpy structured array, with the exception that
 you can set a whole field/subfield.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>array</strong><span class="classifier">numpy array, StructuredArray</span></dt><dd><p>A structured array. An array qualifies as structured if
 <code class="docutils literal notranslate"><span class="pre">array.dtype.names</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">None</span></code>.</p>
@@ -154,7 +155,7 @@ reference to the original array for that field is lost.</p>
 
 </section>
 <section id="functions">
-<h2><span class="section-number">7.2. </span>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">7.2. </span>Functions<a class="headerlink" href="#functions" title="Permalink to this heading">¶</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.asarray">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">asarray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.asarray" title="Permalink to this definition">¶</a></dt>
@@ -214,7 +215,7 @@ reference to the original array for that field is lost.</p>
       &copy;2020-2022, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
