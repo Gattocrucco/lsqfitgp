@@ -786,7 +786,7 @@ def Harmonic(delta, Q=1):
     tau = jnp.abs(delta)
     
     if Q < 1/2:
-        etaQ = np.sqrt((1 - Q) * (1 + Q))
+        etaQ = jnp.sqrt((1 - Q) * (1 + Q))
         tauQ = tau / Q
         pexp = jnp.exp(_sqrt1pm1(-jnp.square(Q)) * tauQ)
         mexp = jnp.exp(-(1 + etaQ) * tauQ)
@@ -802,7 +802,7 @@ def Harmonic(delta, Q=1):
         return _harmonic(tau, Q)
     
     else: # Q > 1
-        etaQ = jnp.sqrt(np.square(Q) - 1)
+        etaQ = jnp.sqrt(jnp.square(Q) - 1)
         tauQ = tau / Q
         etatau = etaQ * tauQ
         return jnp.exp(-tauQ) * (jnp.cos(etatau) + jnp.sin(etatau) / etaQ)

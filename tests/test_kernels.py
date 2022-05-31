@@ -692,7 +692,7 @@ def check_harmonic_continuous(deriv, Q0, Qderiv=False):
     for Q in Qs:
         kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).diff(deriv, deriv)(x[None, :], x[:, None])
         if Qderiv:
-            kernelf = jax.vmap(jax.grad(kernelf), (None, 0))
+            kernelf = jax.jacfwd(kernelf)
         results.append(kernelf(Q, x))
     np.testing.assert_allclose(results[0], results[2], atol=1e-5)
     np.testing.assert_allclose(results[0], results[1], atol=1e-5)
@@ -743,7 +743,7 @@ def test_transf_not_implemented():
 def test_matern_derivatives():
     for p in range(10):
         x = np.linspace(0, 10, 100)
-        test_util.check_grads(_kernels._maternp)(x, p)
+        test_util.check_grads(lambda x: _kernels._maternp(x, p), (x,), 2)
 
 #####################  XFAILS  #####################
 
