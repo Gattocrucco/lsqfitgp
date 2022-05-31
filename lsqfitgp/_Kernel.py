@@ -22,8 +22,8 @@ import warnings
 import copy
 
 import jax
-import numpy as np
 from jax import numpy as jnp
+import numpy
 
 from . import _array
 from . import _Deriv
@@ -40,10 +40,14 @@ __all__ = [
 ]
 
 def _asfloat(x):
-    if not np.issubdtype(x.dtype, np.floating):
+    if not jnp.issubdtype(x.dtype, jnp.floating):
         return x.astype(float)
     else:
         return x
+
+def _isscalar(x):
+    # return jnp.isscalar(x) or hasattr(x, 'shape') and x.shape == ()
+    return jnp.ndim(x) == 0
 
 def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreductor=None):
     x = args[0]
@@ -72,11 +76,11 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreducto
 
 def _sum_recurse_dtype(fun, *args):
     plus = lambda a, b: a + b
-    return _reduce_recurse_dtype(fun, *args, reductor=plus, npreductor=np.sum, jnpreductor=jnp.sum)
+    return _reduce_recurse_dtype(fun, *args, reductor=plus, npreductor=numpy.sum, jnpreductor=jnp.sum)
 
 def _prod_recurse_dtype(fun, *args):
     times = lambda a, b: a * b
-    return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=np.prod, jnpreductor=jnp.prod)
+    return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=numpy.prod, jnpreductor=jnp.prod)
 
 def _transf_recurse_dtype(transf, x, *args):
     if x.dtype.names is None:
@@ -203,7 +207,7 @@ class _KernelBase:
             derivable = (0, sys.maxsize)
         elif isinstance(derivable, bool):
             derivable = sys.maxsize if derivable else 0
-        elif isinstance(derivable, (int, np.integer)):
+        elif isinstance(derivable, (int, jnp.integer)):
             assert derivable >= 0
         elif derivable:
             derivable = sys.maxsize
@@ -226,14 +230,11 @@ class _KernelBase:
                     return x[dim]
         
         if loc is not None:
-            assert np.isscalar(loc)
-            assert np.isfinite(loc)
+            assert -jnp.inf < loc < jnp.inf
             transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x - loc, transf(x))
         
         if scale is not None:
-            assert np.isscalar(scale)
-            assert np.isfinite(scale)
-            assert scale > 0
+            assert 0 < scale < jnp.inf
             transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x / scale, transf(x))
         
         # TODO when dim becomes deep, forcekron must apply also to subfields
@@ -252,7 +253,7 @@ class _KernelBase:
     def __call__(self, x, y):
         x = _array.asarray(x)
         y = _array.asarray(y)
-        np.result_type(x.dtype, y.dtype)
+        numpy.result_type(x.dtype, y.dtype)
         shape = _array.broadcast(x, y).shape
         if self._forcebroadcast:
             x, y = _array.broadcast_arrays(x, y)
@@ -261,19 +262,19 @@ class _KernelBase:
         result = self._kernel(x, y)
         if self._forcebroadcast:
             result = result.reshape(shape)
-        assert isinstance(result, (np.ndarray, np.number, jnp.ndarray))
-        assert np.issubdtype(result.dtype, np.number), result.dtype
+        assert isinstance(result, (numpy.ndarray, jnp.number, jnp.ndarray))
+        assert jnp.issubdtype(result.dtype, jnp.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
         return result
     
     def _binary(self, value, op):
         if isinstance(value, _KernelBase):
             obj = _KernelBase(op(self._kernel, value._kernel))
-            obj._minderivable = tuple(np.minimum(self._minderivable, value._minderivable))
-            obj._maxderivable = tuple(np.maximum(self._maxderivable, value._maxderivable))
+            obj._minderivable = tuple(numpy.minimum(self._minderivable, value._minderivable))
+            obj._maxderivable = tuple(numpy.maximum(self._maxderivable, value._maxderivable))
             obj._forcebroadcast = self._forcebroadcast or value._forcebroadcast
-        elif np.isscalar(value):
-            assert np.isfinite(value), value
+        elif _isscalar(value):
+            assert -jnp.inf < value < jnp.inf, value
             obj = _KernelBase(op(self._kernel, lambda x, y: value))
             obj._minderivable = self._minderivable
             obj._maxderivable = self._maxderivable
@@ -281,12 +282,6 @@ class _KernelBase:
         else:
             obj = NotImplemented
         return obj
-    
-    # TODO when using autograd, an autograd scalar is an ArrayBox that
-    # has an all-in method __add__ that will be called if the autograd scalar
-    # is the first addend. Then autograd will complain that it can't compute
-    # derivatives w.r.t. a Kernel. Solve this bug. => Is it still happening
-    # with JAX?
     
     def __add__(self, value):
         return self._binary(value, lambda k, q: lambda x, y: k(x, y) + q(x, y))
@@ -299,7 +294,7 @@ class _KernelBase:
     __rmul__ = __mul__
     
     def __pow__(self, value):
-        if np.isscalar(value):
+        if _isscalar(value):
             return self._binary(value, lambda k, q: lambda x, y: k(x, y) ** q(x, y))
         else:
             return NotImplemented
@@ -479,7 +474,7 @@ class _KernelBase:
                     for dim in deriv:
                         if dim not in x.dtype.names:
                             raise ValueError(f'derivative along missing field {dim!r}')
-                        if not np.issubdtype(x.dtype.fields[dim][0], np.number):
+                        if not jnp.issubdtype(x.dtype.fields[dim][0], jnp.number):
                             raise TypeError(f'derivative along non-numeric field {dim!r}')
             elif not xderiv.implicit or not yderiv.implicit:
                 raise ValueError('explicit derivatives with non-structured array')
@@ -646,8 +641,8 @@ class Kernel(_KernelBase):
         if isinstance(value, Kernel):
             obj = super(Kernel, self)._binary(value, op)
             obj.__class__ = Kernel
-        elif np.isscalar(value):
-            assert value >= 0, value
+        elif _isscalar(value):
+            assert 0 <= value < jnp.inf, value
             obj = super(Kernel, self)._binary(value, op)
             obj.__class__ = Kernel
         else:
@@ -699,9 +694,7 @@ class StationaryKernel(Kernel):
         
         transf = lambda q: q
         if scale is not None:
-            assert np.isscalar(scale)
-            assert np.isfinite(scale)
-            assert scale > 0
+            assert 0 < scale < jnp.inf
             transf = lambda q : q / scale
         
         def function(x, y, **kwargs):
@@ -758,9 +751,7 @@ class IsotropicKernel(StationaryKernel):
         
         transf = lambda q: q
         if scale is not None:
-            assert jnp.isscalar(scale) or scale.shape == ()
-            assert jnp.isfinite(scale)
-            assert scale > 0
+            assert 0 < scale < jnp.inf
             transf = lambda q : q / scale ** 2
         if input == 'soft':
             transf = lambda q, transf=transf: jnp.sqrt(transf(q))
@@ -774,10 +765,10 @@ class IsotropicKernel(StationaryKernel):
         Kernel.__init__(self, function, **kw)
     
 def _eps(x):
-    if np.issubdtype(x.dtype, np.inexact):
-        return np.finfo(x.dtype).eps
+    if jnp.issubdtype(x.dtype, jnp.inexact):
+        return jnp.finfo(x.dtype).eps
     else:
-        return np.finfo(float).eps
+        return jnp.finfo(float).eps
 
 def _softabs(x):
     return _linalg.choose_numpy(x).abs(x) + _eps(x)
@@ -930,8 +921,8 @@ def where(condfun, kernel1, kernel2, dim=None):
             
             xcond = condfun(x)
             ycond = condfun(y)
-            r = np.where(xcond & ycond, k1(x, y), k2(x, y))
-            return np.where(xcond ^ ycond, 0, r)
+            r = jnp.where(xcond & ycond, k1(x, y), k2(x, y))
+            return jnp.where(xcond ^ ycond, 0, r)
         return kernel
     
     # TODO when I implement double callable derivable, propagate it

@@ -246,8 +246,7 @@ def GammaExp(r, gamma=1):
     the variance of the non-derivable component goes to zero.
 
     """
-    assert jnp.isscalar(gamma)
-    assert 0 <= gamma <= 2
+    assert 0 <= gamma <= 2, gamma
     return jnp.exp(-(r ** gamma))
 
 @isotropickernel(derivable=True)
@@ -264,8 +263,7 @@ def RatQuad(r2, alpha=2):
     infinity, it becomes the Gaussian kernel. It is smooth.
     
     """
-    assert jnp.isscalar(alpha)
-    assert 0 < alpha < np.inf
+    assert 0 < alpha < np.inf, alpha
     return (1 + r2 / (2 * alpha)) ** -alpha
 
 @kernel(derivable=True)
@@ -295,9 +293,7 @@ def NNKernel(x, y, sigma0=1):
     # TODO the `2`s in the formula are a bit arbitrary. Remove them or give
     # motivation relative to the precise formulation of the neural network.
     
-    assert jnp.isscalar(sigma0)
-    assert jnp.isfinite(sigma0)
-    assert sigma0 > 0
+    assert 0 < sigma0 < jnp.inf
     q = sigma0 ** 2
     denom = (1 + 2 * (q + _dot(x, x))) * (1 + 2 * (q + _dot(y, y)))
     return 2/np.pi * jnp.arcsin(2 * (q + _dot(x, y)) / denom)
@@ -367,8 +363,7 @@ def Periodic(delta, outerscale=1):
     sets the length scale of the correlations.
     
     """
-    assert jnp.isscalar(outerscale)
-    assert outerscale > 0
+    assert 0 < outerscale < jnp.inf
     return jnp.exp(-2 * (jnp.sin(delta / 2) / outerscale) ** 2)
 
 @kernel(forcekron=True, derivable=False)
@@ -451,7 +446,6 @@ def FracBrownian(x, y, H=1/2):
     # TODO I think the correlation between successive same step increments
     # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
     
-    assert jnp.isscalar(H)
     assert 0 < H < 1
     assert jnp.all(x >= 0)
     assert jnp.all(y >= 0)
@@ -719,9 +713,8 @@ def Celerite(delta, gamma=1, B=0):
     Astronomical Time Series*.
     """
     
-    assert np.isscalar(gamma) and 0 <= gamma < np.inf
-    assert np.isscalar(B) and np.isfinite(B)
-    assert np.abs(B) <= gamma
+    assert 0 <= gamma < jnp.inf, gamma
+    assert jnp.abs(B) <= gamma, (B, gamma)
     tau = jnp.abs(delta)
     # TODO option input='abs' in StationaryKernel
     return jnp.exp(-gamma * tau) * (jnp.cos(tau) + B * jnp.sin(tau))
@@ -788,7 +781,7 @@ def Harmonic(delta, Q=1):
     
     # TODO probably second derivatives w.r.t. Q at Q=1 are wrong.
     
-    assert np.isscalar(Q) and 0 < Q < np.inf
+    assert 0 < Q < np.inf, Q
     
     tau = jnp.abs(delta)
     

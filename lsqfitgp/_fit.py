@@ -22,6 +22,7 @@ import warnings
 import gvar
 import jax
 from jax import numpy as jnp
+import numpy as np
 from scipy import optimize
 
 from . import _GP
@@ -38,7 +39,7 @@ def _asarrayorbufferdict(x):
         return np.array(x, copy=False)
 
 def _flat(x):
-    if isinstance(x, np.ndarray):
+    if hasattr(x, 'reshape'):
         return x.reshape(-1)
     elif isinstance(x, gvar.BufferDict):
         return x.buf
@@ -138,12 +139,12 @@ class empbayes_fit:
         # jac is specified or if the method does not require derivatives do not
         # take derivatives with autograd.
         
-        # TODO compute the logGBF for the whole fit.
+        # TODO compute the logGBF for the whole fit (see the gpbart code)
     
         hyperprior = _asarrayorbufferdict(hyperprior)
         flathp = _flat(hyperprior)
         hpmean = gvar.mean(flathp)
-        hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks (low priority)
+        hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks
         hpdec = _linalg.EigCutFullRank(hpcov)
         
         if callable(data):
@@ -170,10 +171,16 @@ class empbayes_fit:
                 if not isinstance(args, tuple):
                     args = (args,)
             ml = gp.marginal_likelihood(*args)
+            logp = -ml + 1/2 * priorchi2
             
-            return -ml + 1/2 * priorchi2
+            return logp, logp
+        
+        jac = jax.jacfwd(fun, has_aux=True)
+        def value_and_grad(p):
+            j, f = jac(p)
+            return f, j
     
-        result = optimize.minimize(jax.value_and_grad(fun), hpmean, jac=True, **minkw)
+        result = optimize.minimize(value_and_grad, hpmean, jac=True, **minkw)
         
         if not result.success:
             msg = 'minimization failed: {}'.format(result.message)
