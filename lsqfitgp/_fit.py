@@ -47,7 +47,12 @@ def _flat(x):
 def _unflat(x, original):
     if isinstance(original, np.ndarray):
         out = x.reshape(original.shape)
-        return out if out.shape else out.item()
+        # if not out.shape:
+        #     try:
+        #         out = out.item()
+        #     except jax.errors.ConcretizationTypeError:
+        #         pass
+        return out
     elif isinstance(original, gvar.BufferDict):
         # normally I would do BufferDict(original, buf=x) but it does not work
         # with JAX tracers

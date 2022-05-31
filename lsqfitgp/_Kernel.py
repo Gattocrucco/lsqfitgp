@@ -293,7 +293,7 @@ class _KernelBase:
     __rmul__ = __mul__
     
     def __pow__(self, value):
-        if _isscalar(value):
+        if not isinstance(value, _KernelBase) and _isscalar(value):
             return self._binary(value, lambda k, q: lambda x, y: k(x, y) ** q(x, y))
         else:
             return NotImplemented

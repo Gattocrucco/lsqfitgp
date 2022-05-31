@@ -20,7 +20,7 @@
 import sys
 
 import numpy as np
-from autograd import numpy as anp
+from jax import numpy as jnp
 import gvar
 from scipy import stats
 import pytest
@@ -130,11 +130,11 @@ def test_flat():
         gp.addx(x, 'x')
         return gp
     def gpfactory2(hp):
-        gp = lgp.GP(lgp.ExpQuad() * anp.exp(hp[0]) ** 2)
+        gp = lgp.GP(lgp.ExpQuad() * jnp.exp(hp[0]) ** 2)
         gp.addx(x, 'x')
         return gp
     def gpfactory3(hp):
-        gp = lgp.GP(lgp.ExpQuad() * anp.exp(hp) ** 2)
+        gp = lgp.GP(lgp.ExpQuad() * jnp.exp(hp) ** 2)
         gp.addx(x, 'x')
         return gp
     truehp = gvar.sample(hp)

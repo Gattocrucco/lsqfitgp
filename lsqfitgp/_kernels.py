@@ -19,6 +19,7 @@
 
 import re
 import collections
+import functools
 
 import jax
 import numpy as np
@@ -29,6 +30,7 @@ from scipy import special
 from . import _array
 from . import _Kernel
 from . import _linalg
+from . import _patch_jax
 from ._Kernel import kernel, stationarykernel, isotropickernel
 
 __all__ = [
@@ -122,7 +124,7 @@ def Linear(x, y):
     """
     return _dot(x, y)
 
-@jax.custom_vjp
+@functools.partial(jax.custom_jvp, nondiff_argnums=(1,))
 def _maternp(x, p):
     poly = 1
     for k in reversed(range(p)):
@@ -141,13 +143,11 @@ def _maternp_deriv(x, p):
     poly = poly / (1 - 2 * p) * x
     return jnp.exp(-x) * poly
 
-def _maternp_fwd(x, p):
-    return _maternp(x, p), ()
-
-def _maternp_bwd(res, g):
-    return (g * _maternp_deriv(x, p), None)
-
-_maternp.defvjp(_maternp_fwd, _maternp_bwd)
+@_maternp.defjvp
+def _maternp_jvp(p, primals, tangents):
+    x, = primals
+    xdot, = tangents
+    return _maternp(x, p), _maternp_deriv(x, p) * xdot
 
 def _matern_derivable(**kw):
     nu = kw.get('nu', None)
@@ -178,13 +178,12 @@ def Matern(r, nu=None):
     only for half-integer nu.
 
     """
-    assert np.isscalar(nu)
-    assert nu > 0
+    assert 0 < nu < jnp.inf
     x = jnp.sqrt(2 * nu) * r
     if (2 * nu) % 1 == 0:
         return _maternp(x, int(nu - 1/2))
     else:
-        return 2 ** (1 - nu) / special.gamma(nu) * x ** nu * special.kv(nu, x)
+        return 2 ** (1 - nu) / special.gamma(nu) * x ** nu * _patch_jax.kv(nu, x)
 
 @isotropickernel(input='soft', derivable=False)
 def Matern12(r):
@@ -384,7 +383,7 @@ def Categorical(x, y, cov=None):
     # by flattening cov and converting x and y to flat indices manually. (Make
     # specific tests when I implement this.)
     
-    assert np.issubdtype(x.dtype, numpy.integer)
+    assert jnp.issubdtype(x.dtype, jnp.integer)
     cov = jnp.array(cov, copy=False)
     assert len(cov.shape) == 2
     assert cov.shape[0] == cov.shape[1]
@@ -521,8 +520,8 @@ def WienerIntegral(x, y):
     
     # TODO write formula in terms of min(x, y) and max(x, y).
     
-    assert jnp.all(x >= 0)
-    assert jnp.all(y >= 0)
+    assert jnp.all(_linalg.notracer(x) >= 0)
+    assert jnp.all(_linalg.notracer(y) >= 0)
     return 1/2 * jnp.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
 
 @kernel(forcekron=True, derivable=True)
@@ -542,10 +541,10 @@ def Taylor(x, y):
     # appropriate?
     
     mul = x * y
-    val = 2 * jnp.sqrt(np.abs(mul))
-    return np.where(mul >= 0, special.i0(val), special.j0(val))
+    val = 2 * jnp.sqrt(jnp.abs(mul))
+    return jnp.where(mul >= 0, jspecial.i0(val), _patch_jax.j0(val))
 
-@jax.custom_vjp
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def _bernoulli_poly(n, x):
     # takes x mod 1
     bernoulli = special.bernoulli(n)
@@ -564,14 +563,15 @@ def _bernoulli_poly(n, x):
         out *= jnp.where(cond, 1, -1)
     return out
 
-def _bernoulli_poly_fwd(n, x):
-    return _bernoulli_poly(n, x), (n,)
-
-def _bernoulli_poly_bwd(res, g):
-    n, = res
-    return (None, g * (n * _bernoulli_poly(n - 1, x) if n else 0))
-
-_bernoulli_poly.defvjp(_bernoulli_poly_fwd, _bernoulli_poly_bwd)
+@_bernoulli_poly.defjvp
+def _bernoulli_poly_jvp(n, primals, tangents):
+    x, = primals
+    xt, = tangents
+    if n:
+        t = n * _bernoulli_poly(n - 1, x) * xt
+    else:
+        t = 0 * xt
+    return _bernoulli_poly(n, x), t
 
 def _fourier_derivable(**kw):
     return kw.get('n', 2) - 1

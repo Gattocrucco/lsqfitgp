@@ -681,6 +681,8 @@ class Chol(DecompAutoDiff):
     
     def __init__(self, K):
         self._L = jlinalg.cholesky(K, lower=True, check_finite=False)
+        if not jnp.all(jnp.isfinite(self._L)):
+            raise numpy.linalg.LinAlgError('cholesky decomposition not finite, probably matrix not pos def numerically')
     
     def solve(self, b):
         invLb = solve_triangular_auto(self._L, b, lower=True)

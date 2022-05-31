@@ -22,10 +22,13 @@ import copy
 
 import pytest
 import numpy as np
+from jax import numpy as jnp
 import gvar
 
 sys.path.insert(0, '.')
 import lsqfitgp as lgp
+
+import util
 
 def test_prior_raw_shape():
     gp = lgp.GP(lgp.ExpQuad())
@@ -42,7 +45,7 @@ def test_no_checksym():
         gp = lgp.GP(lgp.ExpQuad(), checksym=checksym)
         gp.addx({'x': np.arange(20)})
         covs.append(gp.prior('x', raw=True))
-    np.testing.assert_equal(*covs)
+    util.assert_equal(*covs)
 
 def test_transf_scalar():
     gp = lgp.GP(lgp.ExpQuad() + lgp.RatQuad())
@@ -59,7 +62,7 @@ def test_transf_scalar():
     gp.addtransf({'y0': 1, 'y1': 1}, 'x')
     cov2 = gp.prior('x', raw=True)
     
-    np.testing.assert_equal(cov1, cov2)
+    util.assert_equal(cov1, cov2)
 
 def test_transf_vector():
     gp = lgp.GP(lgp.ExpQuad())
@@ -80,7 +83,7 @@ def test_cov():
     gp = lgp.GP()
     gp.addcov(M1, 'M')
     M2 = gp.prior('M', raw=True)
-    np.testing.assert_equal(M1, M2)
+    util.assert_equal(M1, M2)
 
 def test_proctransf():
     x = np.arange(20)
@@ -93,9 +96,9 @@ def test_proctransf():
     gp.addproctransf({'a': 2, 'b': 3}, 'ab')
     gp.addx(x, 'abx2', proc='ab')
     prior = gp.prior(['abx1', 'abx2'], raw=True)
-    np.testing.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx2'])
-    np.testing.assert_equal(prior['abx1', 'abx2'], prior['abx2', 'abx1'].T)
-    np.testing.assert_equal(prior['abx1', 'abx2'], prior['abx1', 'abx1'])
+    util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx2'])
+    util.assert_equal(prior['abx1', 'abx2'], prior['abx2', 'abx1'].T)
+    util.assert_equal(prior['abx1', 'abx2'], prior['abx1', 'abx1'])
 
 def test_kernelop():
     gp = lgp.GP()
@@ -107,9 +110,9 @@ def test_kernelop():
     gp.addx(x, 'x1', proc='b1')
     gp.addx(x, 'x2', proc='b2')
     prior = gp.prior(['x1', 'x2'], raw=True)
-    np.testing.assert_equal(prior['x1', 'x1'], prior['x2', 'x2'])
-    np.testing.assert_equal(prior['x2', 'x1'], prior['x1', 'x2'].T)
-    np.testing.assert_equal(prior['x1', 'x2'], np.zeros(2 * x.shape))
+    util.assert_equal(prior['x1', 'x1'], prior['x2', 'x2'])
+    util.assert_equal(prior['x2', 'x1'], prior['x1', 'x2'].T)
+    util.assert_equal(prior['x1', 'x2'], np.zeros(2 * x.shape))
 
 def test_not_kernel():
     with pytest.raises(TypeError):
@@ -128,8 +131,8 @@ def test_default_kernel():
     gp.addx(x, 'x1')
     gp.addx(x, 'x2', proc='a')
     prior = gp.prior(raw=True)
-    np.testing.assert_equal(prior['x1', 'x1'], prior['x2', 'x2'])
-    np.testing.assert_equal(prior['x1', 'x2'], np.zeros(2 * x.shape))
+    util.assert_equal(prior['x1', 'x1'], prior['x2', 'x2'])
+    util.assert_equal(prior['x1', 'x2'], np.zeros(2 * x.shape))
 
 def test_no_proc():
     gp = lgp.GP()
@@ -154,7 +157,7 @@ def test_empty_proc():
     x = np.arange(20)
     gp.addx(x, 'x', proc='a')
     cov = gp.prior('x', raw=True)
-    np.testing.assert_equal(cov, np.zeros(2 * x.shape))
+    util.assert_equal(cov, np.zeros(2 * x.shape))
 
 def test_no_op():
     gp = lgp.GP(lgp.ExpQuad())
@@ -179,8 +182,8 @@ def test_addprocderiv():
     gp.addx(x, 0, proc='a')
     gp.addx(x, 1, deriv=1)
     prior = gp.prior(raw=True)
-    np.testing.assert_equal(prior[0, 0], prior[1, 1])
-    np.testing.assert_equal(prior[0, 0], prior[0, 1])
+    util.assert_equal(prior[0, 0], prior[1, 1])
+    util.assert_equal(prior[0, 0], prior[0, 1])
 
 def test_addprocxtransf():
     gp = lgp.GP(lgp.ExpQuad())
@@ -190,8 +193,8 @@ def test_addprocxtransf():
     gp.addx(x, 0, proc='a')
     gp.addx(f(x), 1)
     prior = gp.prior(raw=True)
-    np.testing.assert_equal(prior[0, 0], prior[1, 1])
-    np.testing.assert_equal(prior[0, 0], prior[0, 1])
+    util.assert_equal(prior[0, 0], prior[1, 1])
+    util.assert_equal(prior[0, 0], prior[0, 1])
 
 def test_addprocrescale():
     gp = lgp.GP(lgp.ExpQuad())
@@ -359,7 +362,7 @@ def test_addcov_missing_block():
         (0, 1): np.ones((2, 3)),
     })
     prior = gp.prior(raw=True)
-    np.testing.assert_equal(prior[0, 1], prior[1, 0].T)
+    util.assert_equal(prior[0, 1], prior[1, 0].T)
 
 def test_new_proc():
     gp = lgp.GP()
@@ -380,7 +383,7 @@ def test_partial_derivative():
     gp.addx(x, 0, deriv=1)
     cov2 = gp.prior(0, raw=True)
     
-    np.testing.assert_equal(cov1, cov2)
+    util.assert_equal(cov1, cov2)
 
 def test_addproctransf_function():
     gp = lgp.GP()
@@ -392,8 +395,8 @@ def test_addproctransf_function():
     gp.addproctransf({'a': s}, 'b')
     gp.addx(x, 1, proc='b')
     prior = gp.prior([0, 1], raw=True)
-    np.testing.assert_equal(prior[0, 0], prior[1, 1])
-    np.testing.assert_equal(prior[0, 0], prior[0, 1])
+    util.assert_equal(prior[0, 0], prior[1, 1])
+    util.assert_equal(prior[0, 0], prior[0, 1])
 
 def test_zero_covblock():
     gp = lgp.GP()
@@ -402,7 +405,7 @@ def test_zero_covblock():
     gp.addcov(m, 0)
     gp.addcov(m, 1)
     prior = gp.prior(raw=True)
-    np.testing.assert_equal(prior[0, 1], np.zeros_like(m))
+    util.assert_equal(prior[0, 1], np.zeros_like(m))
 
 def test_addcov_checks():
     gp = lgp.GP()
@@ -473,8 +476,8 @@ def test_solver_cache():
     gp.addx(y, 1)
     m1, c1 = gp.predfromdata({0: z}, 1, raw=True)
     m2, c2 = gp.predfromdata({0: z}, 1, raw=True)
-    np.testing.assert_equal(m1, m2)
-    np.testing.assert_equal(c1, c2)
+    util.assert_equal(m1, m2)
+    util.assert_equal(c1, c2)
 
 def test_checkpos():
     a = np.random.randn(20, 20)
@@ -498,8 +501,8 @@ def test_priorpoints_cache():
     gp.addx(x, 1)
     prior = gp.prior()
     cov = gvar.evalcov(prior)
-    np.testing.assert_equal(cov[0, 0], cov[1, 1])
-    np.testing.assert_equal(cov[0, 0], cov[0, 1])
+    util.assert_equal(cov[0, 0], cov[1, 1])
+    util.assert_equal(cov[0, 0], cov[0, 1])
 
 def test_priortransf():
     gp = lgp.GP(lgp.ExpQuad())
@@ -542,8 +545,8 @@ def test_zero_givencov():
     cov = np.zeros(2 * x.shape)
     m1, c1 = gp.predfromdata({0: z}, 1, {(0, 0): cov}, raw=True)
     m2, c2 = gp.predfromdata({0: z}, 1, raw=True)
-    np.testing.assert_equal(m1, m2)
-    np.testing.assert_equal(c1, c2)
+    util.assert_equal(m1, m2)
+    util.assert_equal(c1, c2)
 
 def test_pred_checks():
     gp = lgp.GP(lgp.ExpQuad())
@@ -571,8 +574,8 @@ def test_pred_all():
     gp.addx(y, 1)
     m1, c1 = gp.predfromdata({0: z}, raw=True)
     m2, c2 = gp.predfromdata({0: z}, [0, 1], raw=True)
-    np.testing.assert_equal(m1, m2)
-    np.testing.assert_equal(c1, c2)
+    util.assert_equal(m1, m2)
+    util.assert_equal(c1, c2)
 
 def test_marginal_likelihood_separate():
     gp = lgp.GP(lgp.ExpQuad())

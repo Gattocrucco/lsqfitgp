@@ -18,10 +18,10 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import warnings
 
 import numpy as np
 from scipy import stats
+import pytest
 
 sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
@@ -62,10 +62,8 @@ def test_raniter_packing():
 
 def test_raniter_warning():
     cov = np.array([1, 1.1, 1.1, 1]).reshape(2, 2)
-    with warnings.catch_warnings(record=True) as w:
+    with pytest.warns(UserWarning, match='positive definite'):
         next(lgp.raniter(np.zeros(len(cov)), cov))
-        assert len(w) == 1
-        assert 'positive definite' in str(w[0].message)
-    with warnings.catch_warnings(record=True) as w:
+    with pytest.warns(None) as record:
         next(lgp.raniter(np.zeros(len(cov)), cov, eps=0.1))
-        assert len(w) == 0
+    assert len(record) == 0

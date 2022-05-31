@@ -24,13 +24,15 @@ import re
 
 import pytest
 import numpy as np
-import autograd
-import autograd.test_util
 from scipy import linalg
+from jax import test_util
+import jax
 
 sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
 from lsqfitgp import _kernels, _Kernel
+
+import util
 
 # Make list of Kernel concrete subclasses.
 kernels = []
@@ -246,7 +248,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x, x.T)
-            assert np.allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -258,7 +260,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             covfun = self.kernel_class(**kw)
             c1 = covfun(x1, x1.T)
             c2 = covfun(x2, x2.T)
-            np.testing.assert_equal(c1, c2)
+            util.assert_equal(c1, c2)
     
     def test_loc_scale_nd(self):
         kernel = self.kernel_class
@@ -300,8 +302,8 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             c1 = self.kernel_class(dim='f0', **kw)(x1, x1.T)
             c2 = self.kernel_class(**kw)(x2, x2.T)
             c3 = self.kernel_class(dim='f0', **kw)(x3, x3.T)
-            np.testing.assert_equal(c1, c2)
-            np.testing.assert_equal(c1, c3)
+            util.assert_equal(c1, c2)
+            util.assert_equal(c1, c3)
             with pytest.raises(ValueError):
                 self.kernel_class(dim='f0', **kw)(x2, x2.T)
     
@@ -328,7 +330,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             x = self.random_x(**kw)[:, None]
             c1 = k1(x, x.T)
             c2 = k2(x, x.T)
-            np.testing.assert_equal(c1, c2)
+            util.assert_equal(c1, c2)
         
     def test_transf_noop(self):
         meths = ['rescale', 'xtransf', 'diff', 'fourier', 'taylor']
@@ -392,9 +394,9 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             c3 = k1(x[:, None], x[None, :])
             c4 = k2(x[:, None], x[None, :])
 
-            np.testing.assert_equal(c1, c2)
-            np.testing.assert_equal(c3, c4)
-            np.testing.assert_equal(c1, c3)
+            util.assert_equal(c1, c2)
+            util.assert_equal(c3, c4)
+            util.assert_equal(c1, c3)
             
             x = self.random_x(**kw)
             with pytest.raises(ValueError):
@@ -411,7 +413,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             k2 = kernel.rescale(None, f)
             c1 = k1(x, y)
             c2 = k2(y, x)
-            np.testing.assert_equal(c1, c2)
+            util.assert_equal(c1, c2)
     
     def test_fourier_swap(self):
         for kw in self.kwargs_list:
@@ -426,7 +428,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             k2 = kernel.fourier(None, True)
             c1 = k1(k, x)
             c2 = k2(x, k)
-            np.testing.assert_equal(c1, c2)
+            util.assert_equal(c1, c2)
 
     def test_xtransf_swap(self):
         for kw in self.kwargs_list:
@@ -440,7 +442,7 @@ class KernelTestBase(metaclass=abc.ABCMeta):
             k2 = kernel.xtransf(None, f)
             c1 = k1(xt, y)
             c2 = k2(y, xt)
-            np.testing.assert_equal(c1, c2)
+            util.assert_equal(c1, c2)
     
     def test_derivable(self):
         for kw in self.kwargs_list:
@@ -638,12 +640,6 @@ def test_matern_spec_21():
 def test_matern_spec_22():
     check_matern_spec(2, 2)
 
-def test_matern32_jvp():
-    x = np.random.randn(100)
-    r1 = autograd.elementwise_grad(_kernels._matern32)(x)
-    r2 = autograd.deriv(_kernels._matern32)(x)
-    assert np.allclose(r1, r2)
-
 def test_wiener_integral():
     """
     Test that the derivative of the Wiener integral is the Wiener.
@@ -696,7 +692,7 @@ def check_harmonic_continuous(deriv, Q0, Qderiv=False):
     for Q in Qs:
         kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).diff(deriv, deriv)(x[None, :], x[:, None])
         if Qderiv:
-            kernelf = autograd.deriv(kernelf, 0)
+            kernelf = jax.vmap(jax.grad(kernelf), (None, 0))
         results.append(kernelf(Q, x))
     np.testing.assert_allclose(results[0], results[2], atol=1e-5)
     np.testing.assert_allclose(results[0], results[1], atol=1e-5)
@@ -723,7 +719,7 @@ def test_nonfloat_eps():
     x = np.arange(20)
     c1 = _kernels.Matern12()(x, x)
     c2 = np.exp(-np.finfo(float).eps)
-    np.testing.assert_equal(c1, c2)
+    util.assert_equal(c1, c2)
 
 def test_default_override():
     with pytest.warns(UserWarning):
@@ -744,14 +740,10 @@ def test_transf_not_implemented():
         with pytest.raises(NotImplementedError):
             getattr(kernel, meth)(True, True)
 
-def test_abs_jvp():
-    autograd.test_util.check_jvp(_Kernel._abs, 1.)
-    autograd.test_util.check_jvp(_Kernel._abs, -1.)
-
 def test_matern_derivatives():
     for p in range(10):
         x = np.linspace(0, 10, 100)
-        autograd.test_util.check_grads(_kernels._maternp, modes=['rev'])(x, p)
+        test_util.check_grads(_kernels._maternp)(x, p)
 
 #####################  XFAILS  #####################
 
@@ -776,6 +768,7 @@ xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
 xfail(TestMatern52, 'test_positive_deriv2_nd')
 xfail(TestPPKernel, 'test_positive_deriv2')
 xfail(TestPPKernel, 'test_positive_deriv2_nd')
+xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
 pytest.mark.xfail(test_matern_spec_21)
 pytest.mark.xfail(test_matern_spec_22)
 

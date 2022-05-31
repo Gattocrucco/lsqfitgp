@@ -20,15 +20,41 @@
 from jax.config import config
 config.update("jax_enable_x64", True)
 
-import builtins
+import functools
 
-import numpy as np
+from jax import core
+from jax.interpreters import ad
+from jax.interpreters import batching
+from scipy import special
 
-# TODO kv is currently not implemented in JAX, I have to define a primitive
-# and try to use the scipy cython implementation of kvp as XLA translation
-# implementation
-# autograd.extend.defvjp(
-#     special.kvp,
-#     lambda ans, v, z, n: lambda g: g * special.kvp(v, z, n + 1),
-#     argnums=[1]
-# )
+def makejaxufunc(ufunc, *derivs):
+    prim = core.Primitive(ufunc.__name__)
+    
+    @functools.wraps(ufunc)
+    def func(*args):
+        return prim.bind(*args)
+
+    @prim.def_impl
+    def impl(*args):
+        return ufunc(*args)
+
+    @prim.def_abstract_eval
+    def abstract_eval(*args):
+        return x
+
+    jvps = (
+        None if d is None
+        else lambda g, *args: d(*args) * g
+        for d in derivs
+    )
+    ad.defjvp(prim, *jvps)
+
+    batching.defbroadcasting(prim)
+    
+    return func
+
+j0 = makejaxufunc(special.j0, lambda x: -j1(x))
+j1 = makejaxufunc(special.j1, lambda x: (j0(x) - jn(2, x)) / 2.0)
+jn = makejaxufunc(special.jn, None, lambda n, x: (jn(n - 1, x) - jn(n + 1, x)) / 2.0)
+kv = makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
+kvp = makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
