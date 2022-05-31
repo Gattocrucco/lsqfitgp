@@ -104,17 +104,17 @@ Let's fit now::
 
 When I run this last piece of code, it fails with::
 
-   ValueError: setting an array element with a sequence.
+   jax._src.errors.TracerArrayConversionError: The numpy.ndarray conversion method __array__() was called on the JAX Tracer object ...
 
 Ok, what went wrong? First, I used :func:`np.array` in `makegp` without doing
-``from autograd import numpy``. Second, I did ``points['time'][0] -= delay``,
-which is an inplace operation, which is not allowed by autograd. Fixing the
+``from jax import numpy``. Second, I did ``points['time'][0] -= delay``,
+which is an inplace operation, which is not allowed by :mod:`jax`. Fixing the
 first is easy, but how do we fix the second? There isn't an obvious way to put
 values into a numpy structured array without assigning to it. For this reason,
 :mod:`lsqfitgp` provides a wrapper, :class:`StructuredArray`, that allows
-assigning to fields without breaking autograd::
+assigning to fields without breaking :mod:`jax`::
 
-    from autograd import numpy as np
+    from jax import numpy as jnp
     
     def makegp(hp):
         delay = hp['delay']
@@ -122,14 +122,14 @@ assigning to fields without breaking autograd::
         scale = hp['scale']
         
         kernel = lgp.ExpQuad(dim='time', scale=scale)
-        cov = np.array([[1, corr], [corr, 1]])
+        cov = jnp.array([[1, corr], [corr, 1]]) # <- jax numpy
         kernel *= lgp.Categorical(dim='series', cov=cov)
         
         gp = lgp.GP(kernel)
         
         points = makepoints(time)
         points = lgp.StructuredArray(points)
-        points['time'] = np.array([time - delay, time])
+        points['time'] = jnp.array([time - delay, time]) # <- jax numpy
             # a StructuredArray can be assigned only a whole field at once
         gp.addx(points, 'data')
         
@@ -144,9 +144,9 @@ assigning to fields without breaking autograd::
 
 Output::
 
-   delay 10 10.57(28)
-   corr 0.7 0.66(14)
-   scale 3 2.993(36)
+   delay 10 10.29(29)
+   corr 0.7 0.64(15)
+   scale 3 2.963(24)
 
 It seems to work. Let's plot some samples::
 
