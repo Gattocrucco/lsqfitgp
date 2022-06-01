@@ -22,7 +22,9 @@ config.update("jax_enable_x64", True)
 
 import functools
 
+import jax
 from jax import core
+from jax import numpy as jnp
 from jax.interpreters import ad
 from jax.interpreters import batching
 from scipy import special
@@ -58,3 +60,20 @@ j1 = makejaxufunc(special.j1, lambda x: (j0(x) - jn(2, x)) / 2.0)
 jn = makejaxufunc(special.jn, None, lambda n, x: (jn(n - 1, x) - jn(n + 1, x)) / 2.0)
 kv = makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
 kvp = makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
+
+def elementwise_grad(fun, argnum=0):
+    assert int(argnum) == argnum and argnum >= 0, argnum
+    @functools.wraps(fun)
+    def funderiv(*args):
+        preargs = args[:argnum]
+        postargs = args[argnum + 1:]
+        def oneargfun(arg):
+            args = preargs + (arg,) + postargs
+            return fun(*args)
+        primal = args[argnum]
+        shape = getattr(primal, 'shape', ())
+        dtype = getattr(primal, 'dtype', type(primal))
+        tangent = jnp.ones(shape, dtype)
+        primal_out, tangent_out = jax.jvp(oneargfun, (primal,), (tangent,))
+        return tangent_out
+    return funderiv

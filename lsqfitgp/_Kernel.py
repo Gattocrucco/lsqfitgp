@@ -28,6 +28,7 @@ import numpy
 from . import _array
 from . import _Deriv
 from . import _linalg
+from . import _patch_jax
 
 __all__ = [
     'Kernel',
@@ -186,7 +187,7 @@ class _KernelBase:
                 dim=dim,
                 loc=loc,
                 scale=scale,
-                forcebroadcast=forcebroadcast,
+                # forcebroadcast=forcebroadcast,
                 forcekron=forcekron,
                 derivable=derivable,
                 **kw,
@@ -196,7 +197,7 @@ class _KernelBase:
         
         # Check simple arguments.
         assert isinstance(dim, (str, type(None)))
-        self._forcebroadcast = bool(forcebroadcast)
+        # self._forcebroadcast = bool(forcebroadcast)
         forcekron = bool(forcekron)
         
         # Convert `derivable` to an integer.
@@ -254,13 +255,13 @@ class _KernelBase:
         y = _array.asarray(y)
         numpy.result_type(x.dtype, y.dtype)
         shape = _array.broadcast(x, y).shape
-        if self._forcebroadcast:
-            x, y = _array.broadcast_arrays(x, y)
-            x = x.reshape(-1)
-            y = y.reshape(-1)
+        # if self._forcebroadcast:
+        #     x, y = _array.broadcast_arrays(x, y)
+        #     x = x.reshape(-1)
+        #     y = y.reshape(-1)
         result = self._kernel(x, y)
-        if self._forcebroadcast:
-            result = result.reshape(shape)
+        # if self._forcebroadcast:
+        #     result = result.reshape(shape)
         assert isinstance(result, (numpy.ndarray, jnp.number, jnp.ndarray))
         assert jnp.issubdtype(result.dtype, jnp.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
@@ -271,13 +272,13 @@ class _KernelBase:
             obj = _KernelBase(op(self._kernel, value._kernel))
             obj._minderivable = tuple(numpy.minimum(self._minderivable, value._minderivable))
             obj._maxderivable = tuple(numpy.maximum(self._maxderivable, value._maxderivable))
-            obj._forcebroadcast = self._forcebroadcast or value._forcebroadcast
+            # obj._forcebroadcast = self._forcebroadcast or value._forcebroadcast
         elif _isscalar(value):
             assert -jnp.inf < value < jnp.inf, value
             obj = _KernelBase(op(self._kernel, lambda x, y: value))
             obj._minderivable = self._minderivable
             obj._maxderivable = self._maxderivable
-            obj._forcebroadcast = self._forcebroadcast
+            # obj._forcebroadcast = self._forcebroadcast
         else:
             obj = NotImplemented
         return obj
@@ -350,7 +351,8 @@ class _KernelBase:
                 return xfun(x) * yfun(y) * kernel(x, y)
         
         cls = Kernel if xfun is yfun and isinstance(self, Kernel) else _CrossKernel
-        obj = cls(fun, forcebroadcast=self._forcebroadcast)
+        # obj = cls(fun, forcebroadcast=self._forcebroadcast)
+        obj = cls(fun)
         obj._maxderivable = self._maxderivable
         return obj
     
@@ -395,7 +397,8 @@ class _KernelBase:
                 return kernel(xfun(x), yfun(y))
         
         cls = Kernel if xfun is yfun and isinstance(self, Kernel) else _CrossKernel
-        obj = cls(fun, forcebroadcast=self._forcebroadcast)
+        # obj = cls(fun, forcebroadcast=self._forcebroadcast)
+        obj = cls(fun)
         obj._maxderivable = self._maxderivable
         return obj
 
@@ -484,16 +487,18 @@ class _KernelBase:
             
             f = self._kernel
             # wrapper for applying jax.vmap multiple times
-            def nvmap(f):
-                def newf(*args):
-                    return f(*(jnp.atleast_1d(x) for x in args))[0]
-                return newf
-            f = nvmap(f)
+            # def nvmap(f):
+            #     def newf(*args):
+            #         return f(*(jnp.atleast_1d(x) for x in args))[0]
+            #     return newf
+            # f = nvmap(f)
             for _ in range(xderiv.order):
-                f = jax.jacfwd(f, 0)
+                # f = jax.jacfwd(f, 0)
+                f = _patch_jax.elementwise_grad(f, 0)
             for _ in range(yderiv.order):
-                f = jax.jacfwd(f, 1)
-            f = jax.vmap(f)
+                # f = jax.jacfwd(f, 1)
+                f = _patch_jax.elementwise_grad(f, 1)
+            # f = jax.vmap(f)
             
             def fun(x, y):
                 check(x, y)
@@ -516,22 +521,25 @@ class _KernelBase:
                     y[dim] = args[1 + i + j]
                 # we will apply vmap so x and y are scalars, but kernel may
                 # contain an older vmap
-                x = x.reshape(-1)
-                y = y.reshape(-1)
-                assert x.shape == y.shape == (1,)
-                rt = kernel(x, y)
-                assert rt.shape == (1,)
-                return rt[0]
+                # x = x.reshape(-1)
+                # y = y.reshape(-1)
+                # assert x.shape == y.shape == (1,)
+                # rt = kernel(x, y)
+                # assert rt.shape == (1,)
+                # return rt[0]
+                return kernel(x, y)
                 
             # Make derivatives.
             i = -1
             for i, dim in enumerate(xderiv):
                 for _ in range(xderiv[dim]):
-                    f = jax.jacfwd(f, 2 + i)
+                    # f = jax.jacfwd(f, 2 + i)
+                    f = _patch_jax.elementwise_grad(f, 2 + i)
             for j, dim in enumerate(yderiv):
                 for _ in range(yderiv[dim]):
-                    f = jax.jacfwd(f, 2 + 1 + i + j)
-            f = jax.vmap(f)
+                    # f = jax.jacfwd(f, 2 + 1 + i + j)
+                    f = _patch_jax.elementwise_grad(f, 2 + 1 + i + j)
+            # f = jax.vmap(f)
             
             def fun(x, y):
                 check(x, y)
@@ -549,7 +557,8 @@ class _KernelBase:
                 return f(x, y, *args)
         
         cls = Kernel if xderiv == yderiv and isinstance(self, Kernel) else _CrossKernel
-        obj = cls(fun, forcebroadcast=True)
+        # obj = cls(fun, forcebroadcast=True)
+        obj = cls(fun)
         obj._minderivable = tuple(self._minderivable[i] - orders[i] for i in range(2))
         obj._maxderivable = tuple(self._maxderivable[i] -   maxs[i] for i in range(2))
         return obj
