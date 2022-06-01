@@ -148,7 +148,7 @@ information = dict(constraints)
 information.update({
     'data': data,
 })
-fit = lgp.empbayes_fit(hyperprior, makegp, information, raises=False)
+fit = lgp.empbayes_fit(hyperprior, makegp, information, raises=False, jit=True)
 
 print('hyperparameters:')
 for k in fit.p.all_keys():

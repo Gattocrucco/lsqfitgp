@@ -77,3 +77,10 @@ def elementwise_grad(fun, argnum=0):
         primal_out, tangent_out = jax.jvp(oneargfun, (primal,), (tangent,))
         return tangent_out
     return funderiv
+
+def isconcrete(*args):
+    return all(not isinstance(x, core.Tracer) or isinstance(x.aval, core.ConcreteArray) for x in args)
+
+def concrete(x):
+    return x
+    # return x.aval.val if isinstance(x, core.Tracer) else x

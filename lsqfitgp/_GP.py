@@ -31,6 +31,7 @@ from . import _Kernel
 from . import _linalg
 from . import _array
 from . import _Deriv
+from . import _patch_jax
 
 __all__ = [
     'GP',
@@ -971,11 +972,13 @@ class GP:
         else:
             # TODO handle zero cov block efficiently
             cov = jnp.zeros((x.size, y.size))
-
-        if self._checkfinite and not jnp.all(jnp.isfinite(cov)):
-            raise RuntimeError('covariance block {!r} is not finite'.format((xkey, ykey)))
-        if self._checksym and xkey == ykey and not jnp.allclose(cov, cov.T):
-            raise RuntimeError('covariance block {!r} is not symmetric'.format((xkey, ykey)))
+        
+        if _patch_jax.isconcrete(cov):
+            C = _patch_jax.concrete(cov)
+            if self._checkfinite and not jnp.all(jnp.isfinite(C)):
+                raise RuntimeError('covariance block {!r} is not finite'.format((xkey, ykey)))
+            if self._checksym and xkey == ykey and not jnp.allclose(C, C.T):
+                raise RuntimeError('covariance block {!r} is not symmetric'.format((xkey, ykey)))
 
         return cov
 
@@ -992,14 +995,18 @@ class GP:
             
         if (row, col) not in self._covblocks:
             block = self._makecovblock(row, col)
-            # _linalg.noautograd(block).flags['WRITEABLE'] = False
-            # TODO gives problems to gvar.gvar, wait for Lepage to solve the bug
             if row != col:
                 if self._checksym:
-                    blockT = self._makecovblock(col, row)
-                    if not _linalg.choose_numpy(block, blockT).allclose(block.T, blockT):
-                        msg = 'covariance block {!r} is not symmetric'
-                        raise RuntimeError(msg.format((row, col)))
+                    if _patch_jax.isconcrete(block):
+                        blockT = self._makecovblock(col, row)
+                        assert _patch_jax.isconcrete(blockT)
+                        B = _patch_jax.concrete(block)
+                        BT = _patch_jax.concrete(blockT)
+                        if not jnp.allclose(B.T, BT):
+                            msg = 'covariance block {!r} is not symmetric'
+                            raise RuntimeError(msg.format((row, col)))
+                    else:
+                        warnings.warn('GP: can not check symmetry during abstract jax tracing')
                 self._covblocks[col, row] = block.T
             self._covblocks[row, col] = block
         
@@ -1056,7 +1063,10 @@ class GP:
         # 1) cholesky + eps, if fails it's not positive
         # 2) ldlt, check each 2x2 block     <--- probably best? is it stable?
         # 3) QR, check diagonal of R
-        eigv = linalg.eigvalsh(_linalg.notracer(cov))
+        if not _patch_jax.isconcrete(cov):
+            warnings.warn('GP: can not check positivity during abstract jax tracing')
+            return
+        eigv = linalg.eigvalsh(_patch_jax.concrete(cov))
         mineigv = np.min(eigv)
         if mineigv < 0:
             bound = -len(cov) * np.finfo(float).eps * np.max(eigv) * self._posepsfac

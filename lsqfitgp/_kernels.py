@@ -22,7 +22,7 @@ import collections
 import functools
 
 import jax
-import numpy as np
+import numpy
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 from scipy import special
@@ -79,9 +79,10 @@ def Constant(r2):
     to fitting with an horizontal line. This can be seen also by observing that
     1 = 1 x 1.
     """
-    return _linalg.choose_numpy(r2).ones(r2.shape)
+    return jnp.ones(r2.shape, r2.dtype)
     # TODO add support for input that doesn't have a distance but
-    # just equality, like for example non-numerical input.
+    # just equality, like for example non-numerical input. => add input option
+    # in isotropic kernel to allow x and y separate
     
 @isotropickernel(derivable=False)
 def White(r2):
@@ -95,8 +96,8 @@ def White(r2):
         \\end{cases}
     """
     # TODO add support for input that doesn't have a distance but
-    # just equality, like for example non-numerical input.
-    return _linalg.choose_numpy(r2).where(r2 == 0, 1, 0)
+    # just equality, like for example non-numerical input. => see Constant
+    return jnp.where(r2 == 0, 1, 0)
 
 @isotropickernel(derivable=True)
 def ExpQuad(r2):
@@ -110,7 +111,7 @@ def ExpQuad(r2):
     strongly suppressed under a certain wavelength, and correlations are
     strongly suppressed over a certain distance.
     """
-    return _linalg.choose_numpy(r2).exp(-1/2 * r2)
+    return jnp.exp(-1/2 * r2)
 
 @kernel(derivable=True)
 def Linear(x, y):
@@ -151,7 +152,7 @@ def _maternp_jvp(p, primals, tangents):
 
 def _matern_derivable(**kw):
     nu = kw.get('nu', None)
-    if np.isscalar(nu) and nu > 0 and (2 * nu) % 1 == 0:
+    if jnp.isscalar(nu) and nu > 0 and (2 * nu) % 1 == 0:
         return int(nu - 1/2)
     else:
         return False
@@ -178,7 +179,8 @@ def Matern(r, nu=None):
     only for half-integer nu.
 
     """
-    assert 0 < nu < jnp.inf
+    if _patch_jax.isconcrete(nu):
+        assert 0 < _patch_jax.concrete(nu) < jnp.inf, nu
     x = jnp.sqrt(2 * nu) * r
     if (2 * nu) % 1 == 0:
         return _maternp(x, int(nu - 1/2))
@@ -209,7 +211,7 @@ def Matern32(r):
     .. math::
         k(r) = (1 + x) \\exp(-x), \\quad x = \\sqrt3 r
     """
-    return _matern32(np.sqrt(3) * r)
+    return _matern32(jnp.sqrt(3) * r)
 
 @jax.custom_jvp
 def _matern52(x):
@@ -225,7 +227,7 @@ def Matern52(r):
     .. math::
         k(r) = (1 + x + x^2/3) \\exp(-x), \\quad x = \\sqrt5 r
     """
-    return _matern52(np.sqrt(5) * r)
+    return _matern52(jnp.sqrt(5) * r)
     
 def _gammaexp_derivable(gamma=1):
     return gamma == 2
@@ -245,7 +247,8 @@ def GammaExp(r, gamma=1):
     the variance of the non-derivable component goes to zero.
 
     """
-    assert 0 <= gamma <= 2, gamma
+    if _patch_jax.isconcrete(gamma):
+        assert 0 <= _patch_jax.concrete(gamma) <= 2, gamma
     return jnp.exp(-(r ** gamma))
 
 @isotropickernel(derivable=True)
@@ -262,7 +265,8 @@ def RatQuad(r2, alpha=2):
     infinity, it becomes the Gaussian kernel. It is smooth.
     
     """
-    assert 0 < alpha < np.inf, alpha
+    if _patch_jax.isconcrete(alpha):
+        assert 0 < _patch_jax.concrete(alpha) < jnp.inf, alpha
     return (1 + r2 / (2 * alpha)) ** -alpha
 
 @kernel(derivable=True)
@@ -291,11 +295,11 @@ def NNKernel(x, y, sigma0=1):
     
     # TODO the `2`s in the formula are a bit arbitrary. Remove them or give
     # motivation relative to the precise formulation of the neural network.
-    
-    assert 0 < sigma0 < jnp.inf
+    if _patch_jax.isconcrete(sigma0):
+        assert 0 < _patch_jax.concrete(sigma0) < jnp.inf
     q = sigma0 ** 2
     denom = (1 + 2 * (q + _dot(x, x))) * (1 + 2 * (q + _dot(y, y)))
-    return 2/np.pi * jnp.arcsin(2 * (q + _dot(x, y)) / denom)
+    return 2/jnp.pi * jnp.arcsin(2 * (q + _dot(x, y)) / denom)
     
     # TODO this is not fully equivalent to an arbitrary transformation on the
     # augmented vector even if x and y are transformed, unless I support q
@@ -312,8 +316,9 @@ def Wiener(x, y):
     A kernel representing a non-differentiable random walk starting at 0.
     
     """
-    assert jnp.all(x >= 0)
-    assert jnp.all(y >= 0)
+    if _patch_jax.isconcrete(x, y):
+        assert jnp.all(_patch_jax.concrete(x) >= 0)
+        assert jnp.all(_patch_jax.concrete(y) >= 0)
     return jnp.minimum(x, y)
 
 @kernel(forcekron=True)
@@ -338,8 +343,9 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     """
     sx = scalefun(x)
     sy = scalefun(y)
-    assert jnp.all(_linalg.notracer(sx) > 0)
-    assert jnp.all(_linalg.notracer(sy) > 0)
+    if _patch_jax.isconcrete(sx, sy):
+        assert jnp.all(_patch_jax.concrete(sx) > 0)
+        assert jnp.all(_patch_jax.concrete(sy) > 0)
     denom = sx ** 2 + sy ** 2
     factor = jnp.sqrt(2 * sx * sy / denom)
     return factor * jnp.exp(-(x - y) ** 2 / denom)
@@ -362,7 +368,8 @@ def Periodic(delta, outerscale=1):
     sets the length scale of the correlations.
     
     """
-    assert 0 < outerscale < jnp.inf
+    if _patch_jax.isconcrete(outerscale):
+        assert 0 < _patch_jax.concrete(outerscale) < jnp.inf
     return jnp.exp(-2 * (jnp.sin(delta / 2) / outerscale) ** 2)
 
 @kernel(forcekron=True, derivable=False)
@@ -387,7 +394,9 @@ def Categorical(x, y, cov=None):
     cov = jnp.array(cov, copy=False)
     assert len(cov.shape) == 2
     assert cov.shape[0] == cov.shape[1]
-    assert jnp.allclose(cov, cov.T)
+    if _patch_jax.isconcrete(cov):
+        C = _patch_jax.concrete(cov)
+        assert jnp.allclose(C, C.T)
     return cov[x, y]
 
 @kernel
@@ -408,7 +417,7 @@ def Rescaling(x, y, stdfun=None):
     
     """
     if stdfun is None:
-        stdfun = lambda x: jnp.ones(x.shape)
+        stdfun = lambda x: jnp.ones(x.shape, x.dtype)
         # do not use np.ones_like because it does not recognize StructuredArray
     return stdfun(x) * stdfun(y)
 
@@ -444,10 +453,10 @@ def FracBrownian(x, y, H=1/2):
     
     # TODO I think the correlation between successive same step increments
     # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
-    
-    assert 0 < H < 1
-    assert jnp.all(x >= 0)
-    assert jnp.all(y >= 0)
+    if _patch_jax.isconcrete(H, x, y):
+        assert 0 < _patch_jax.concrete(H) < 1, H
+        assert jnp.all(_patch_jax.concrete(x) >= 0)
+        assert jnp.all(_patch_jax.concrete(y) >= 0)
     H2 = 2 * H
     return 1/2 * (x ** H2 + y ** H2 - jnp.abs(x - y) ** H2)
 
@@ -484,11 +493,9 @@ def PPKernel(r, q=0, D=1):
     # TODO find the nonzero points in O(nlogn) instead of O(n^2) by sorting
     # the inputs.
     
-    assert isinstance(q, (int, np.integer))
-    assert 0 <= q <= 3
-    assert isinstance(D, (int, np.integer))
-    assert D >= 1
-    j = int(np.floor(D / 2)) + q + 1
+    assert int(q) == q and 0 <= q <= 3
+    assert int(D) == D and D >= 1
+    j = int(jnp.floor(D / 2)) + q + 1
     x = 1 - r
     if q == 0:
         poly = 1
@@ -519,9 +526,9 @@ def WienerIntegral(x, y):
     # If I don't find a closed formula I can use sympy.
     
     # TODO write formula in terms of min(x, y) and max(x, y).
-    
-    assert jnp.all(_linalg.notracer(x) >= 0)
-    assert jnp.all(_linalg.notracer(y) >= 0)
+    if _patch_jax.isconcrete(x, y):
+        assert jnp.all(_patch_jax.concrete(x) >= 0)
+        assert jnp.all(_patch_jax.concrete(y) >= 0)
     return 1/2 * jnp.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
 
 @kernel(forcekron=True, derivable=True)
@@ -548,7 +555,7 @@ def Taylor(x, y):
 def _bernoulli_poly(n, x):
     # takes x mod 1
     bernoulli = special.bernoulli(n)
-    k = np.arange(n + 1)
+    k = numpy.arange(n + 1)
     binom = special.binom(n, k)
     coeffs = binom[::-1] * bernoulli
     x = x % 1
@@ -610,11 +617,10 @@ def _FourierBase(delta, n=2):
     # series when I add a constant. => Maybe this will be solved when I
     # improve the transformations system.
     
-    assert isinstance(n, (int, np.integer)), type(n)
-    assert n >= 1, n # TODO I could allow n == 0 to be a constant kernel
+    assert int(n) == n and n >= 1, n # TODO I could allow n == 0 to be a constant kernel
     s = 2 * n
     sign0 = -(-1) ** n
-    factor = (2 * np.pi) ** s / (2 * special.factorial(s) * special.zeta(s))
+    factor = (2 * jnp.pi) ** s / (2 * special.factorial(s) * special.zeta(s))
     return sign0 * factor * _bernoulli_poly(s, delta)
 
 class Fourier(_FourierBase):
@@ -646,17 +652,17 @@ class Fourier(_FourierBase):
         
         if dox and doy:
             def kernel(k, q):
-                order = np.ceil(k / 2)
+                order = jnp.ceil(k / 2)
                 denom = order ** s * special.zeta(s)
-                return np.where((k == q) & (k > 0), 1 / denom, 0)
+                return jnp.where((k == q) & (k > 0), 1 / denom, 0)
         
         else:
             def kernel(k, y):
-                order = np.ceil(k / 2)
+                order = jnp.ceil(k / 2)
                 denom = order ** s * special.zeta(s)
                 odd = k % 2
-                arg = 2 * np.pi * order * y
-                return np.where(k > 0, np.where(odd, np.sin(arg), np.cos(arg)) / denom, 0)
+                arg = 2 * jnp.pi * order * y
+                return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)
         
             if doy:
                 kernel = lambda x, q, kernel=kernel: kernel(q, x)
@@ -682,14 +688,15 @@ def OrnsteinUhlenbeck(x, y):
     is provided as :class:`Expon`.
     
     """
-    assert jnp.all(x >= 0)
-    assert jnp.all(y >= 0)
+    if _patch_jax.isconcrete(x, y):
+        assert jnp.all(_patch_jax.concrete(x) >= 0)
+        assert jnp.all(_patch_jax.concrete(y) >= 0)
     return jnp.exp(-jnp.abs(x - y)) - jnp.exp(-(x + y))
     
 def _Celerite_derivable(**kw):
     gamma = kw.get('gamma', 1)
     B = kw.get('B', 0)
-    if np.isscalar(gamma) and np.isscalar(B) and B == gamma:
+    if jnp.isscalar(gamma) and jnp.isscalar(B) and B == gamma:
         return 1
     else:
         return False
@@ -712,9 +719,9 @@ def Celerite(delta, gamma=1, B=0):
     Angus: *Fast and Scalable Gaussian Process Modeling With Applications To
     Astronomical Time Series*.
     """
-    
-    assert 0 <= gamma < jnp.inf, gamma
-    assert jnp.abs(B) <= gamma, (B, gamma)
+    if _patch_jax.isconcrete(gamma, B):
+        assert 0 <= gamma < jnp.inf, gamma
+        assert jnp.abs(B) <= gamma, (B, gamma)
     tau = jnp.abs(delta)
     # TODO option input='abs' in StationaryKernel
     return jnp.exp(-gamma * tau) * (jnp.cos(tau) + B * jnp.sin(tau))
@@ -735,8 +742,9 @@ def BrownianBridge(x, y):
     # (t^2H(1-s) + s^2H(1-t) + s(1-t)^2H + t(1-s)^2H - (t+s) - |t-s|^2H + 2ts)/2
     # but I have to check if it is correct. (In new kernel FracBrownianBridge.)
     
-    assert jnp.all(0 <= x) and jnp.all(x <= 1)
-    assert jnp.all(0 <= y) and jnp.all(y <= 1)
+    if _patch_jax.isconcrete(x, y):
+        assert jnp.all(0 <= x) and jnp.all(x <= 1)
+        assert jnp.all(0 <= y) and jnp.all(y <= 1)
     return jnp.minimum(x, y) - x * y
 
 @stationarykernel(forcekron=True, derivable=1)
@@ -781,7 +789,8 @@ def Harmonic(delta, Q=1):
     
     # TODO probably second derivatives w.r.t. Q at Q=1 are wrong.
     
-    assert 0 < Q < np.inf, Q
+    if _patch_jax.isconcrete(Q):
+        assert 0 < Q < jnp.inf, Q
     
     tau = jnp.abs(delta)
     
@@ -844,12 +853,12 @@ def Expon(delta):
     In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
     it acts separately while the Matérn kernel is isotropic.
     """
-    return np.exp(-jnp.abs(delta))
+    return jnp.exp(-jnp.abs(delta))
 
 _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]')
 
 @kernel(forcekron=True, derivable=False)
-@np.vectorize
+@numpy.vectorize
 def BagOfWords(x, y):
     """
     Bag of words kernel.

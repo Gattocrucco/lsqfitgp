@@ -225,11 +225,13 @@ class _KernelBase:
                     return x[dim]
         
         if loc is not None:
-            assert -jnp.inf < loc < jnp.inf
+            if _patch_jax.isconcrete(loc):
+                assert -jnp.inf < _patch_jax.concrete(loc) < jnp.inf
             transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x - loc, transf(x))
         
         if scale is not None:
-            assert 0 < scale < jnp.inf
+            if _patch_jax.isconcrete(scale):
+                assert 0 < _patch_jax.concrete(scale) < jnp.inf
             transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x / scale, transf(x))
         
         # TODO when dim becomes deep, forcekron must apply also to subfields
@@ -262,7 +264,8 @@ class _KernelBase:
             obj._minderivable = tuple(numpy.minimum(self._minderivable, value._minderivable))
             obj._maxderivable = tuple(numpy.maximum(self._maxderivable, value._maxderivable))
         elif _isscalar(value):
-            assert -jnp.inf < value < jnp.inf, value
+            if _patch_jax.isconcrete(value):
+                assert -jnp.inf < _patch_jax.concrete(value) < jnp.inf, value
             obj = _KernelBase(op(self._kernel, lambda x, y: value))
             obj._minderivable = self._minderivable
             obj._maxderivable = self._maxderivable
@@ -471,19 +474,10 @@ class _KernelBase:
         if xderiv.implicit and yderiv.implicit:
             
             f = self._kernel
-            # wrapper for applying jax.vmap multiple times
-            # def nvmap(f):
-            #     def newf(*args):
-            #         return f(*(jnp.atleast_1d(x) for x in args))[0]
-            #     return newf
-            # f = nvmap(f)
             for _ in range(xderiv.order):
-                # f = jax.jacfwd(f, 0)
                 f = _patch_jax.elementwise_grad(f, 0)
             for _ in range(yderiv.order):
-                # f = jax.jacfwd(f, 1)
                 f = _patch_jax.elementwise_grad(f, 1)
-            # f = jax.vmap(f)
             
             def fun(x, y):
                 check(x, y)
@@ -504,27 +498,16 @@ class _KernelBase:
                     x[dim] = args[i]
                 for j, dim in enumerate(yderiv):
                     y[dim] = args[1 + i + j]
-                # we will apply vmap so x and y are scalars, but kernel may
-                # contain an older vmap
-                # x = x.reshape(-1)
-                # y = y.reshape(-1)
-                # assert x.shape == y.shape == (1,)
-                # rt = kernel(x, y)
-                # assert rt.shape == (1,)
-                # return rt[0]
                 return kernel(x, y)
                 
             # Make derivatives.
             i = -1
             for i, dim in enumerate(xderiv):
                 for _ in range(xderiv[dim]):
-                    # f = jax.jacfwd(f, 2 + i)
                     f = _patch_jax.elementwise_grad(f, 2 + i)
             for j, dim in enumerate(yderiv):
                 for _ in range(yderiv[dim]):
-                    # f = jax.jacfwd(f, 2 + 1 + i + j)
                     f = _patch_jax.elementwise_grad(f, 2 + 1 + i + j)
-            # f = jax.vmap(f)
             
             def fun(x, y):
                 check(x, y)
@@ -634,7 +617,8 @@ class Kernel(_KernelBase):
             obj = super(Kernel, self)._binary(value, op)
             obj.__class__ = Kernel
         elif _isscalar(value):
-            assert 0 <= value < jnp.inf, value
+            if _patch_jax.isconcrete(value):
+                assert 0 <= _patch_jax.concrete(value) < jnp.inf, value
             obj = super(Kernel, self)._binary(value, op)
             obj.__class__ = Kernel
         else:
@@ -686,7 +670,8 @@ class StationaryKernel(Kernel):
         
         transf = lambda q: q
         if scale is not None:
-            assert 0 < scale < jnp.inf
+            if _patch_jax.isconcrete(scale):
+                assert 0 < _patch_jax.concrete(scale) < jnp.inf
             transf = lambda q : q / scale
         
         def function(x, y, **kwargs):
@@ -743,7 +728,8 @@ class IsotropicKernel(StationaryKernel):
         
         transf = lambda q: q
         if scale is not None:
-            assert 0 < scale < jnp.inf
+            if _patch_jax.isconcrete(scale):
+                assert 0 < _patch_jax.concrete(scale) < jnp.inf
             transf = lambda q : q / scale ** 2
         if input == 'soft':
             transf = lambda q, transf=transf: jnp.sqrt(transf(q))

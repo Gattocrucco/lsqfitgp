@@ -65,7 +65,7 @@ def _unflat(x, original):
 
 class empbayes_fit:
 
-    def __init__(self, hyperprior, gpfactory, data, raises=True, minkw={}, gpfactorykw={}):
+    def __init__(self, hyperprior, gpfactory, data, raises=True, minkw={}, gpfactorykw={}, jit=False):
         """
     
         Empirical bayes fit.
@@ -98,6 +98,9 @@ class empbayes_fit:
         gpfactorykw : dict, optional
             Keyword arguments passed to `gpfactory`, and also to `data` if it
             is a callable.
+        jit : bool
+            If True, use jax's jit to compile the minimization target. Default
+            False.
     
         Attributes
         ----------
@@ -184,6 +187,8 @@ class empbayes_fit:
             return logp, logp
         
         jac = jax.jacfwd(fun, has_aux=True)
+        if jit:
+            jac = jax.jit(jac)
         def value_and_grad(p):
             j, f = jac(p)
             return f, j
