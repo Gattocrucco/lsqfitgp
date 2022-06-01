@@ -27,6 +27,8 @@ from scipy import linalg, stats
 import gvar
 import pytest
 
+import util
+
 sys.path = ['.'] + sys.path
 from lsqfitgp import _linalg, _kernels
 
@@ -65,62 +67,75 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     
     def solve(self, K, b):
         return linalg.solve(K, b)
-            
-    def test_solve_vec(self):
+    
+    def check_solve(self, bgen, jit=False):
+        fun = lambda K, b: self.decompclass(K).solve(b)
+        funjit = jax.jit(fun)
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
-            b = self.randvec(len(K))
-            sol = self.solve(K, b)
-            result = self.decompclass(K).solve(b)
-            np.testing.assert_allclose(sol, result, rtol=1e-4)
+            b = bgen(len(K))
+            result = fun(K, b)
+            if jit:
+                result2 = funjit(K, b)
+                np.testing.assert_allclose(result2, result, atol=1e-12, rtol=1e-12)
+            else:
+                sol = self.solve(K, b)
+                np.testing.assert_allclose(result, sol, rtol=1e-4)
     
-    def solve_vec_jac(self, jacfun):
+    def check_solve_jac(self, bgen, jacfun, jit=False):
         def fun(s, n, b):
             K = self.mat(s, n)
             return self.decompclass(K).solve(b)
         funjac = jacfun(fun)
+        funjacjit = jax.jit(funjac, static_argnums=1)
         for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
             dK = self.matjac(s, n)
-            b = self.randvec(n)
-            sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
+            b = bgen(n)
             result = funjac(s, n, b)
-            np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-8)
+            if jit:
+                result2 = funjacjit(s, n, b)
+                np.testing.assert_allclose(result2, result, atol=1e-8, rtol=1e-8)
+            else:
+                sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
+                np.testing.assert_allclose(result, sol, atol=1e-8, rtol=1e-3)
 
+    def test_solve_vec(self):
+        self.check_solve(self.randvec)
+    
     def test_solve_vec_jac_rev(self):
-        self.solve_vec_jac(jax.jacrev)
+        self.check_solve_jac(self.randvec, jax.jacrev)
 
     def test_solve_vec_jac_fwd(self):
-        self.solve_vec_jac(jax.jacfwd)
+        self.check_solve_jac(self.randvec, jax.jacfwd)
 
     def test_solve_matrix(self):
-        for n in range(1, MAXSIZE):
-            K = self.randsymmat(n)
-            b = self.randmat(len(K))
-            sol = self.solve(K, b)
-            result = self.decompclass(K).solve(b)
-            np.testing.assert_allclose(sol, result, rtol=1e-4)
+        self.check_solve(self.randmat)
     
-    def solve_matrix_jac(self, jacfun):
-        def fun(s, n, b):
-            K = self.mat(s, n)
-            return self.decompclass(K).solve(b)
-        funjac = jacfun(fun)
-        for n in range(1, MAXSIZE):
-            s = np.exp(np.random.uniform(-1, 1))
-            K = self.mat(s, n)
-            dK = self.matjac(s, n)
-            b = self.randmat(n)
-            sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
-            result = funjac(s, n, b)
-            np.testing.assert_allclose(sol, result, rtol=1e-3, atol=1e-10)
-
     def test_solve_matrix_jac_rev(self):
-        self.solve_matrix_jac(jax.jacrev)
+        self.check_solve_jac(self.randmat, jax.jacrev)
     
     def test_solve_matrix_jac_fwd(self):
-        self.solve_matrix_jac(jax.jacfwd)
+        self.check_solve_jac(self.randmat, jax.jacfwd)
+
+    def test_solve_vec_jit(self):
+        self.check_solve(self.randvec, True)
+    
+    def test_solve_vec_jac_rev_jit(self):
+        self.check_solve_jac(self.randvec, jax.jacrev, True)
+
+    def test_solve_vec_jac_fwd_jit(self):
+        self.check_solve_jac(self.randvec, jax.jacfwd, True)
+
+    def test_solve_matrix_jit(self):
+        self.check_solve(self.randmat, True)
+    
+    def test_solve_matrix_jac_rev_jit(self):
+        self.check_solve_jac(self.randmat, jax.jacrev, True)
+    
+    def test_solve_matrix_jac_fwd_jit(self):
+        self.check_solve_jac(self.randmat, jax.jacfwd, True)
 
     def solve_matrix_jac_matrix(self, jacfun):
         def fun(s, n, b, A):
@@ -165,7 +180,6 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         cov = np.exp(-(xcov.reshape(-1, 1) - xcov.reshape(1, -1)) ** 2)
         return gvar.gvar(mean, cov)
     
-    @pytest.mark.xfail # solve does not support gvar any more
     def test_solve_vec_gvar(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
@@ -175,7 +189,6 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = self.decompclass(K).solve(b)
             self.assert_close_gvar(sol, result)
     
-    @pytest.mark.xfail # quad now supports gvar only on second argument
     def test_quad_vec_gvar(self):
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
@@ -254,7 +267,6 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fungrad(s, n, b)
             np.testing.assert_allclose(sol, result, rtol=1e-4)
     
-    @pytest.mark.xfail
     def test_quad_vec_jac_rev(self):
         self.quad_vec_jac(jax.jacrev)
     
@@ -276,7 +288,6 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = funjac(s, n, b)
             np.testing.assert_allclose(sol, result, rtol=1e-4)
     
-    @pytest.mark.xfail
     def test_quad_matrix_jac_rev(self):
         self.quad_matrix_jac(jax.jacrev)
     
@@ -484,25 +495,6 @@ class BlockDecompTestBase(DecompTestCorr):
             return _linalg.BlockDecomp(*args)
         return decomp
     
-    # TODO probably these xfailures would be solved by making BlockDecomp
-    # a subclass of DecompAutoDiff
-    
-    @pytest.mark.xfail
-    def test_solve_vec_jac_rev(self):
-        super().test_solve_vec_jac_rev()
-    
-    @pytest.mark.xfail
-    def test_solve_matrix_jac_rev(self):
-        super().test_solve_matrix_jac_rev()
-    
-    @pytest.mark.xfail
-    def test_solve_matrix_jac_rev_matrix(self):
-        super().test_solve_matrix_jac_rev_matrix()
-    
-    @pytest.mark.xfail
-    def test_logdet_jac_rev(self):
-        super().test_logdet_jac_rev()
-
 class TestBlockChol(BlockDecompTestBase):
     
     @property
@@ -571,3 +563,29 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
     @property
     def subdecompclass(self):
         return _linalg.Diag
+
+#### XFAILS ####
+
+# solve does not support gvar any more, and quad now supports gvar only on
+# second argument
+util.xfail(DecompTestBase, 'test_solve_vec_gvar')
+util.xfail(DecompTestBase, 'test_quad_vec_gvar')
+
+# TODO quad backward derivatives are broken
+util.xfail(DecompTestBase, 'test_quad_vec_jac_rev')
+util.xfail(DecompTestBase, 'test_quad_matrix_jac_rev')
+
+# TODO linalg.sparse.eigsh does not have an XLA counterpart, but apparently
+# they are now making an effort to add sparse support to jax, let's wait
+for name, attr in vars(DecompTestBase).items():
+    if callable(attr) and name.endswith('_jit'):
+        util.xfail(TestReduceRank, name)
+
+# TODO probably these xfailures would be solved by making BlockDecomp
+# a subclass of DecompAutoDiff, the problem must be quad
+util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev')
+util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev_jit')
+util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev')
+util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_jit')
+util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_matrix')
+util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev')

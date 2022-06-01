@@ -21,7 +21,10 @@
 # released under the LGPL.
 # people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html
 
-import numpy as np
+from jax import numpy as jnp
+import numpy
+
+from . import _patch_jax
 
 def cholesky(t, diageps=None):
     """
@@ -62,35 +65,39 @@ def cholesky(t, diageps=None):
     # TODO Probably if I compile this with numba the code as originally
     # written with explicit indices is faster.
     
-    t = np.asanyarray(t)
+    t = jnp.asarray(t)
     assert len(t.shape) == 1
-    if len(t) == 0:
-        return np.empty((0, 0), dtype=t.dtype)
-    if t[0] <= 0:
-        msg = '1-th leading minor is not positive definite'
-        raise np.linalg.LinAlgError(msg)
-
     n = len(t)
-    L = np.zeros((n, n), order='F', dtype=t.dtype)
-    L[:, 0] = t
+    if n == 0:
+        return jnp.empty((0, 0))
+    if _patch_jax.isconcrete(t) and t[0] <= 0:
+        msg = '1-th leading minor is not positive definite'
+        raise numpy.linalg.LinAlgError(msg)
+
     if diageps is not None:
-        t = L[:, 0]
-        t[0] += diageps
-    g = np.stack([np.roll(t, 1), t])
+        t = jnp.concatenate([t[:1] + diageps, t[1:]])
+    L = t[None, :]
+    g = jnp.stack([jnp.roll(t, 1), t])
 
     for i in range(1, n):
-        assert g[0, i] > 0
+        if _patch_jax.isconcrete(g):
+            assert g[0, i] > 0
         rho = -g[1, i] / g[0, i]
-        if np.abs(rho) >= 1:
+        if _patch_jax.isconcrete(rho) and abs(rho) >= 1:
             msg = '{}-th leading minor is not positive definite'.format(i + 1)
-            raise np.linalg.LinAlgError(msg)
-        gamma = np.sqrt((1 - rho) * (1 + rho))
-        g[:, i:] += g[::-1, i:] * rho
-        g[:, i:] /= gamma
-        L[i:, i] = g[0, i:]
-        g[0, i:] = np.roll(g[0, i:], 1)
-
-    return L
+            raise numpy.linalg.LinAlgError(msg)
+        gamma = jnp.sqrt((1 - rho) * (1 + rho))
+        # g[:, i:] += g[::-1, i:] * rho
+        # g[:, i:] /= gamma
+        g = (g + g[::-1] * rho) / gamma
+        # L[i:, i] = g[0, i:]
+        newcol = jnp.concatenate([jnp.zeros(i), g[0, i:]])
+        L = jnp.concatenate([L, newcol[None, :]])
+        # g[0, i:] = jnp.roll(g[0, i:], 1)
+        g = jnp.stack([jnp.roll(g[0], 1), g[1]])
+    
+    assert L.shape == (n, n)
+    return L.T
 
 def eigv_bound(t):
     """
@@ -108,7 +115,7 @@ def eigv_bound(t):
         Any eigenvalue `v` of the matrix satisfies `|v| <= m`.
     
     """
-    s = np.abs(t)
-    c = np.cumsum(s)
+    s = jnp.abs(t)
+    c = jnp.cumsum(s)
     d = c + c[::-1] - s[0]
-    return np.max(d)
+    return jnp.max(d)

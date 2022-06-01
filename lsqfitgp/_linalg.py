@@ -70,6 +70,7 @@ from jax.scipy import linalg as jlinalg
 import gvar
 
 from . import _toeplitz_linalg
+from . import _patch_jax
 
 # TODO optimize the matrix multiplication with gvars. Use these gvar internals:
 # gvar.svec(int size)
@@ -83,15 +84,16 @@ def choose_numpy(*args):
     else:
         return numpy
 
-def notracer(x):
+def _notracer(x):
     """
     Unpack a JAX tracer.
     """
     if isinstance(x, jax.interpreters.ad.JVPTracer):
-        return notracer(x.primal)
+        return _notracer(x.primal)
     elif isinstance(x, jax.interpreters.batching.BatchTracer):
-        return notracer(x.val)
-    else:
+        # maybe also vmap should pass?
+        return _notracer(x.val)
+    else: # let jit pass through
         return x
 
 def asinexact(dtype):
@@ -203,7 +205,7 @@ class DecompAutoDiff(Decomposition):
         
         @functools.wraps(old__init__)
         def __init__(self, K, **kw):
-            old__init__(self, notracer(K), **kw)
+            old__init__(self, _notracer(K), **kw)
             self._K = K
         
         cls.__init__ = __init__
@@ -575,7 +577,7 @@ class Diag(DecompAutoDiff):
         w = self._w
         if eps is None:
             eps = len(w) * jnp.finfo(asinexact(w.dtype)).eps
-        assert jnp.isscalar(eps) and 0 <= eps < 1
+        assert 0 <= eps < 1
         return eps * jnp.max(w)
 
 class EigCutFullRank(Diag):
@@ -598,10 +600,9 @@ class EigCutLowRank(Diag):
     def __init__(self, K, eps=None):
         super().__init__(K)
         eps = self._eps(eps)
-        subset = slice(jnp.sum(self._w < eps), None) # w is sorted ascending
-        self._w = self._w[subset]
-        self._V = self._V[:, subset]
-        # TODO jax's jit won't like this. fix: set entries to zero.
+        cond = self._w < eps
+        self._w = jnp.where(cond, 0, self._w)
+        self._V = jnp.where(cond, 0, self._V)
         
 class SVDCutFullRank(Diag):
     """
@@ -624,9 +625,9 @@ class SVDCutLowRank(Diag):
     def __init__(self, K, eps=None):
         super().__init__(K)
         eps = self._eps(eps)
-        subset = jnp.abs(self._w) >= eps
-        self._w = self._w[subset]
-        self._V = self._V[:, subset]
+        cond = jnp.abs(self._w) < eps
+        self._w = jnp.where(cond, 0, self._w)
+        self._V = jnp.where(cond, 0, self._V)
 
 class ReduceRank(Diag):
     """
@@ -634,7 +635,6 @@ class ReduceRank(Diag):
     """
     
     def __init__(self, K, rank=1):
-        assert isinstance(rank, (int, jnp.integer)) and rank >= 1
         self._w, self._V = sparse.linalg.eigsh(numpy.asarray(K), k=rank, which='LM')
     
     def correlate(self, b):
@@ -678,7 +678,7 @@ class Chol(DecompAutoDiff):
     
     def __init__(self, K):
         self._L = jlinalg.cholesky(K, lower=True, check_finite=False)
-        if not jnp.all(jnp.isfinite(self._L)):
+        if _patch_jax.isconcrete(self._L) and not numpy.all(numpy.isfinite(self._L)):
             raise numpy.linalg.LinAlgError('cholesky decomposition not finite, probably matrix not pos def numerically')
     
     def solve(self, b):

@@ -794,51 +794,40 @@ def test_matern_derivatives():
 
 #####################  XFAILS  #####################
 
-import functools
-
-def xfail(cls, meth):
-    impl = getattr(cls, meth)
-    @pytest.mark.xfail
-    @functools.wraps(impl) # `wraps` needed because pytest uses the method name
-    def newimpl(self):
-        # wrap because otherwise the superclass method would be marked too
-        impl(self)
-    setattr(cls, meth, newimpl)
-
 # TODO These are isotropic kernels with the input='soft' option. The problems
-# arise where x == y. => After porting JAX, I can use make_jaxpr to debug.
-xfail(TestMatern, 'test_positive_deriv2_nd')
-xfail(TestMatern, 'test_double_diff_nd_second_chopped')
-xfail(TestMatern52, 'test_positive_deriv2_nd')
-xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
-xfail(TestMatern52, 'test_jit_deriv2_nd')
-xfail(TestPPKernel, 'test_positive_deriv2_nd')
-xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
-xfail(TestPPKernel, 'test_jit_deriv2_nd')
-xfail(TestGammaExp, 'test_positive_deriv2_nd')
-xfail(TestGammaExp, 'test_double_diff_nd_second_chopped')
+# arise where x == y. => use make_jaxpr to debug?
+util.xfail(TestMatern, 'test_positive_deriv2_nd')
+util.xfail(TestMatern, 'test_double_diff_nd_second_chopped')
+util.xfail(TestMatern52, 'test_positive_deriv2_nd')
+util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
+util.xfail(TestMatern52, 'test_jit_deriv2_nd')
+util.xfail(TestPPKernel, 'test_positive_deriv2_nd')
+util.xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
+util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
+util.xfail(TestGammaExp, 'test_positive_deriv2_nd')
+util.xfail(TestGammaExp, 'test_double_diff_nd_second_chopped')
 
 # TODO often xpass, numerical precision problems
-xfail(TestGammaExp, 'test_positive_deriv2')
-xfail(TestPPKernel, 'test_positive_deriv2')
+util.xfail(TestGammaExp, 'test_positive_deriv2')
+util.xfail(TestPPKernel, 'test_positive_deriv2')
 
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some
 # reason I don't catch it without taking a derivative. => This explanation is
 # likely wrong since the jit test fails too.
-xfail(TestPPKernel, 'test_positive_deriv_nd') # seen xpassing in the wild
-xfail(TestPPKernel, 'test_jit_deriv_nd')
+util.xfail(TestPPKernel, 'test_positive_deriv_nd') # seen xpassing in the wild
+util.xfail(TestPPKernel, 'test_jit_deriv_nd')
 
 # TODO These are not isotropic kernels, what is the problem?
-xfail(TestTaylor, 'test_double_diff_nd_second')
-xfail(TestNNKernel, 'test_double_diff_nd_second')
+util.xfail(TestTaylor, 'test_double_diff_nd_second')
+util.xfail(TestNNKernel, 'test_double_diff_nd_second')
 
 # TODO functions not supported by XLA. Wait for jax to add them?
-xfail(TestMatern, 'test_jit')
-xfail(TestMatern, 'test_jit_nd')
-xfail(TestTaylor, 'test_jit')
-xfail(TestTaylor, 'test_jit_deriv')
-xfail(TestTaylor, 'test_jit_deriv2')
-xfail(TestTaylor, 'test_jit_nd')
-xfail(TestTaylor, 'test_jit_deriv_nd')
-xfail(TestTaylor, 'test_jit_deriv2_nd')
+util.xfail(TestMatern, 'test_jit')
+util.xfail(TestMatern, 'test_jit_nd')
+util.xfail(TestTaylor, 'test_jit')
+util.xfail(TestTaylor, 'test_jit_deriv')
+util.xfail(TestTaylor, 'test_jit_deriv2')
+util.xfail(TestTaylor, 'test_jit_nd')
+util.xfail(TestTaylor, 'test_jit_deriv_nd')
+util.xfail(TestTaylor, 'test_jit_deriv2_nd')
