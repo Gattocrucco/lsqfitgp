@@ -42,7 +42,9 @@ def makejaxufunc(ufunc, *derivs):
 
     @prim.def_abstract_eval
     def abstract_eval(*args):
-        return x
+        shape = jnp.broadcast_shapes(*(x.shape for x in args))
+        dtype = jnp.result_type(*(x.dtype for x in args))
+        return core.ShapedArray(shape, dtype)
 
     jvps = (
         None if d is None
@@ -82,5 +84,6 @@ def isconcrete(*args):
     return all(not isinstance(x, core.Tracer) or isinstance(x.aval, core.ConcreteArray) for x in args)
 
 def concrete(x):
-    return x
-    # return x.aval.val if isinstance(x, core.Tracer) else x
+    # this is not needed from simple operations with operators on scalars
+    # it is needed for functions that expect a numpy array
+    return x.aval.val if isinstance(x, core.Tracer) else x

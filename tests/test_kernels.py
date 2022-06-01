@@ -159,6 +159,48 @@ class KernelTestBase(metaclass=abc.ABCMeta):
     # def test_symmetric_33(self):
     #     self.symmetric_offdiagonal(3, 3)
     
+    def jit(self, deriv=0, nd=False):
+        donesomething = False
+        for kw in self.kwargs_list:
+            if nd:
+                x = self.random_x_nd(2, **kw)
+                x = lgp.StructuredArray(x)
+                dtype = np.result_type(*(x[name].dtype for name in x.dtype.names))
+            else:
+                x = self.random_x(**kw)
+                dtype = x.dtype
+            if not np.issubdtype(dtype, np.number) and not dtype == bool:
+                continue
+            kernel = self.kernel_class(**kw)
+            if kernel.derivable < deriv:
+                continue
+            d = (deriv, 'f0') if nd else deriv
+            kernel = kernel.diff(d, d)
+            cov1 = kernel(x[None, :], x[:, None])
+            cov2 = jax.jit(kernel)(x[None, :], x[:, None])
+            np.testing.assert_allclose(cov2, cov1, rtol=1e-6, atol=1e-5)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
+    
+    def test_jit(self):
+        self.jit()
+    
+    def test_jit_deriv(self):
+        self.jit(1)
+    
+    def test_jit_deriv2(self):
+        self.jit(2)
+    
+    def test_jit_nd(self):
+        self.jit(0, True)
+    
+    def test_jit_deriv_nd(self):
+        self.jit(1, True)
+    
+    def test_jit_deriv2_nd(self):
+        self.jit(2, True)
+
     def test_normalized(self):
         kernel = self.kernel_class
         if issubclass(kernel, _Kernel.StationaryKernel):
@@ -589,12 +631,17 @@ test_kwargs = {
     ]),
     _kernels.BagOfWords: dict(random_x_fun=bow_rand),
     _kernels.Gibbs: dict(kwargs_list=[dict(derivable=True)]),
-    _kernels.Rescaling: dict(kwargs_list=[dict(derivable=True)])
+    _kernels.Rescaling: dict(kwargs_list=[dict(derivable=True)]),
+    _kernels.GammaExp: dict(kwargs_list=[dict(), dict(gamma=2)]),
 }
+
 for kernel in kernels:
     factory_kw = test_kwargs.get(kernel, {})
     newclass = KernelTestBase.make_subclass(kernel, **factory_kw)
     exec('{} = newclass'.format(newclass.__name__))
+
+TestGammaExp.eps = property(lambda self: 1e3 * np.finfo(float).eps)
+TestPPKernel.eps = property(lambda self: 1e3 * np.finfo(float).eps)
 
 def test_matern_half_integer():
     """
@@ -760,21 +807,38 @@ def xfail(cls, meth):
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y. => After porting JAX, I can use make_jaxpr to debug.
-xfail(TestMatern, 'test_double_diff_nd_second_chopped')
 xfail(TestMatern, 'test_positive_deriv2_nd')
+xfail(TestMatern, 'test_double_diff_nd_second_chopped')
 xfail(TestMatern52, 'test_positive_deriv2_nd')
 xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
+xfail(TestMatern52, 'test_jit_deriv2_nd')
 xfail(TestPPKernel, 'test_positive_deriv2_nd')
 xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
+xfail(TestPPKernel, 'test_jit_deriv2_nd')
+xfail(TestGammaExp, 'test_positive_deriv2_nd')
+xfail(TestGammaExp, 'test_double_diff_nd_second_chopped')
 
-# TODO this one is probably a numerical precision problem, sometimes it passes
+# TODO often xpass, numerical precision problems
+xfail(TestGammaExp, 'test_positive_deriv2')
 xfail(TestPPKernel, 'test_positive_deriv2')
 
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some
-# reason I don't catch it without taking a derivative.
-xfail(TestPPKernel, 'test_positive_deriv_nd')
+# reason I don't catch it without taking a derivative. => This explanation is
+# likely wrong since the jit test fails too.
+xfail(TestPPKernel, 'test_positive_deriv_nd') # seen xpassing in the wild
+xfail(TestPPKernel, 'test_jit_deriv_nd')
 
 # TODO These are not isotropic kernels, what is the problem?
 xfail(TestTaylor, 'test_double_diff_nd_second')
 xfail(TestNNKernel, 'test_double_diff_nd_second')
+
+# TODO functions not supported by XLA. Wait for jax to add them?
+xfail(TestMatern, 'test_jit')
+xfail(TestMatern, 'test_jit_nd')
+xfail(TestTaylor, 'test_jit')
+xfail(TestTaylor, 'test_jit_deriv')
+xfail(TestTaylor, 'test_jit_deriv2')
+xfail(TestTaylor, 'test_jit_nd')
+xfail(TestTaylor, 'test_jit_deriv_nd')
+xfail(TestTaylor, 'test_jit_deriv2_nd')

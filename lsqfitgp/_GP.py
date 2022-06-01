@@ -974,7 +974,7 @@ class GP:
             cov = jnp.zeros((x.size, y.size))
         
         if _patch_jax.isconcrete(cov):
-            C = _patch_jax.concrete(cov)
+            C = cov
             if self._checkfinite and not jnp.all(jnp.isfinite(C)):
                 raise RuntimeError('covariance block {!r} is not finite'.format((xkey, ykey)))
             if self._checksym and xkey == ykey and not jnp.allclose(C, C.T):
@@ -1000,8 +1000,8 @@ class GP:
                     if _patch_jax.isconcrete(block):
                         blockT = self._makecovblock(col, row)
                         assert _patch_jax.isconcrete(blockT)
-                        B = _patch_jax.concrete(block)
-                        BT = _patch_jax.concrete(blockT)
+                        B = block
+                        BT = blockT
                         if not jnp.allclose(B.T, BT):
                             msg = 'covariance block {!r} is not symmetric'
                             raise RuntimeError(msg.format((row, col)))

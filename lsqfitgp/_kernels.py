@@ -180,7 +180,7 @@ def Matern(r, nu=None):
 
     """
     if _patch_jax.isconcrete(nu):
-        assert 0 < _patch_jax.concrete(nu) < jnp.inf, nu
+        assert 0 < nu < jnp.inf, nu
     x = jnp.sqrt(2 * nu) * r
     if (2 * nu) % 1 == 0:
         return _maternp(x, int(nu - 1/2))
@@ -248,7 +248,7 @@ def GammaExp(r, gamma=1):
 
     """
     if _patch_jax.isconcrete(gamma):
-        assert 0 <= _patch_jax.concrete(gamma) <= 2, gamma
+        assert 0 <= gamma <= 2, gamma
     return jnp.exp(-(r ** gamma))
 
 @isotropickernel(derivable=True)
@@ -266,7 +266,7 @@ def RatQuad(r2, alpha=2):
     
     """
     if _patch_jax.isconcrete(alpha):
-        assert 0 < _patch_jax.concrete(alpha) < jnp.inf, alpha
+        assert 0 < alpha < jnp.inf, alpha
     return (1 + r2 / (2 * alpha)) ** -alpha
 
 @kernel(derivable=True)
@@ -296,7 +296,7 @@ def NNKernel(x, y, sigma0=1):
     # TODO the `2`s in the formula are a bit arbitrary. Remove them or give
     # motivation relative to the precise formulation of the neural network.
     if _patch_jax.isconcrete(sigma0):
-        assert 0 < _patch_jax.concrete(sigma0) < jnp.inf
+        assert 0 < sigma0 < jnp.inf
     q = sigma0 ** 2
     denom = (1 + 2 * (q + _dot(x, x))) * (1 + 2 * (q + _dot(y, y)))
     return 2/jnp.pi * jnp.arcsin(2 * (q + _dot(x, y)) / denom)
@@ -317,8 +317,8 @@ def Wiener(x, y):
     
     """
     if _patch_jax.isconcrete(x, y):
-        assert jnp.all(_patch_jax.concrete(x) >= 0)
-        assert jnp.all(_patch_jax.concrete(y) >= 0)
+        assert numpy.all(x >= 0)
+        assert numpy.all(y >= 0)
     return jnp.minimum(x, y)
 
 @kernel(forcekron=True)
@@ -344,8 +344,8 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     sx = scalefun(x)
     sy = scalefun(y)
     if _patch_jax.isconcrete(sx, sy):
-        assert jnp.all(_patch_jax.concrete(sx) > 0)
-        assert jnp.all(_patch_jax.concrete(sy) > 0)
+        assert numpy.all(sx > 0)
+        assert numpy.all(sy > 0)
     denom = sx ** 2 + sy ** 2
     factor = jnp.sqrt(2 * sx * sy / denom)
     return factor * jnp.exp(-(x - y) ** 2 / denom)
@@ -369,7 +369,7 @@ def Periodic(delta, outerscale=1):
     
     """
     if _patch_jax.isconcrete(outerscale):
-        assert 0 < _patch_jax.concrete(outerscale) < jnp.inf
+        assert 0 < outerscale < jnp.inf
     return jnp.exp(-2 * (jnp.sin(delta / 2) / outerscale) ** 2)
 
 @kernel(forcekron=True, derivable=False)
@@ -395,8 +395,8 @@ def Categorical(x, y, cov=None):
     assert len(cov.shape) == 2
     assert cov.shape[0] == cov.shape[1]
     if _patch_jax.isconcrete(cov):
-        C = _patch_jax.concrete(cov)
-        assert jnp.allclose(C, C.T)
+        C = cov
+        assert numpy.allclose(C, C.T)
     return cov[x, y]
 
 @kernel
@@ -417,8 +417,9 @@ def Rescaling(x, y, stdfun=None):
     
     """
     if stdfun is None:
-        stdfun = lambda x: jnp.ones(x.shape, x.dtype)
+        stdfun = lambda x: jnp.ones(x.shape)
         # do not use np.ones_like because it does not recognize StructuredArray
+        # do not use x.dtype because it could be structured
     return stdfun(x) * stdfun(y)
 
 @stationarykernel(derivable=True, forcekron=True)
@@ -454,9 +455,9 @@ def FracBrownian(x, y, H=1/2):
     # TODO I think the correlation between successive same step increments
     # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
     if _patch_jax.isconcrete(H, x, y):
-        assert 0 < _patch_jax.concrete(H) < 1, H
-        assert jnp.all(_patch_jax.concrete(x) >= 0)
-        assert jnp.all(_patch_jax.concrete(y) >= 0)
+        assert 0 < H < 1, H
+        assert numpy.all(x >= 0)
+        assert numpy.all(y >= 0)
     H2 = 2 * H
     return 1/2 * (x ** H2 + y ** H2 - jnp.abs(x - y) ** H2)
 
@@ -495,7 +496,7 @@ def PPKernel(r, q=0, D=1):
     
     assert int(q) == q and 0 <= q <= 3
     assert int(D) == D and D >= 1
-    j = int(jnp.floor(D / 2)) + q + 1
+    j = int(numpy.floor(D / 2)) + q + 1
     x = 1 - r
     if q == 0:
         poly = 1
@@ -527,8 +528,8 @@ def WienerIntegral(x, y):
     
     # TODO write formula in terms of min(x, y) and max(x, y).
     if _patch_jax.isconcrete(x, y):
-        assert jnp.all(_patch_jax.concrete(x) >= 0)
-        assert jnp.all(_patch_jax.concrete(y) >= 0)
+        assert numpy.all(x >= 0)
+        assert numpy.all(y >= 0)
     return 1/2 * jnp.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
 
 @kernel(forcekron=True, derivable=True)
@@ -689,8 +690,8 @@ def OrnsteinUhlenbeck(x, y):
     
     """
     if _patch_jax.isconcrete(x, y):
-        assert jnp.all(_patch_jax.concrete(x) >= 0)
-        assert jnp.all(_patch_jax.concrete(y) >= 0)
+        assert numpy.all(x >= 0)
+        assert numpy.all(y >= 0)
     return jnp.exp(-jnp.abs(x - y)) - jnp.exp(-(x + y))
     
 def _Celerite_derivable(**kw):
@@ -721,7 +722,7 @@ def Celerite(delta, gamma=1, B=0):
     """
     if _patch_jax.isconcrete(gamma, B):
         assert 0 <= gamma < jnp.inf, gamma
-        assert jnp.abs(B) <= gamma, (B, gamma)
+        assert abs(B) <= gamma, (B, gamma)
     tau = jnp.abs(delta)
     # TODO option input='abs' in StationaryKernel
     return jnp.exp(-gamma * tau) * (jnp.cos(tau) + B * jnp.sin(tau))
@@ -743,8 +744,8 @@ def BrownianBridge(x, y):
     # but I have to check if it is correct. (In new kernel FracBrownianBridge.)
     
     if _patch_jax.isconcrete(x, y):
-        assert jnp.all(0 <= x) and jnp.all(x <= 1)
-        assert jnp.all(0 <= y) and jnp.all(y <= 1)
+        assert numpy.all(0 <= x) and numpy.all(x <= 1)
+        assert numpy.all(0 <= y) and numpy.all(y <= 1)
     return jnp.minimum(x, y) - x * y
 
 @stationarykernel(forcekron=True, derivable=1)

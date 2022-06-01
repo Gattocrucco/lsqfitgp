@@ -226,12 +226,12 @@ class _KernelBase:
         
         if loc is not None:
             if _patch_jax.isconcrete(loc):
-                assert -jnp.inf < _patch_jax.concrete(loc) < jnp.inf
+                assert -jnp.inf < loc < jnp.inf
             transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x - loc, transf(x))
         
         if scale is not None:
             if _patch_jax.isconcrete(scale):
-                assert 0 < _patch_jax.concrete(scale) < jnp.inf
+                assert 0 < scale < jnp.inf
             transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x / scale, transf(x))
         
         # TODO when dim becomes deep, forcekron must apply also to subfields
@@ -265,7 +265,7 @@ class _KernelBase:
             obj._maxderivable = tuple(numpy.maximum(self._maxderivable, value._maxderivable))
         elif _isscalar(value):
             if _patch_jax.isconcrete(value):
-                assert -jnp.inf < _patch_jax.concrete(value) < jnp.inf, value
+                assert -jnp.inf < value < jnp.inf, value
             obj = _KernelBase(op(self._kernel, lambda x, y: value))
             obj._minderivable = self._minderivable
             obj._maxderivable = self._maxderivable
@@ -618,7 +618,7 @@ class Kernel(_KernelBase):
             obj.__class__ = Kernel
         elif _isscalar(value):
             if _patch_jax.isconcrete(value):
-                assert 0 <= _patch_jax.concrete(value) < jnp.inf, value
+                assert 0 <= value < jnp.inf, value
             obj = super(Kernel, self)._binary(value, op)
             obj.__class__ = Kernel
         else:
@@ -671,7 +671,7 @@ class StationaryKernel(Kernel):
         transf = lambda q: q
         if scale is not None:
             if _patch_jax.isconcrete(scale):
-                assert 0 < _patch_jax.concrete(scale) < jnp.inf
+                assert 0 < scale < jnp.inf
             transf = lambda q : q / scale
         
         def function(x, y, **kwargs):
@@ -729,7 +729,7 @@ class IsotropicKernel(StationaryKernel):
         transf = lambda q: q
         if scale is not None:
             if _patch_jax.isconcrete(scale):
-                assert 0 < _patch_jax.concrete(scale) < jnp.inf
+                assert 0 < scale < jnp.inf
             transf = lambda q : q / scale ** 2
         if input == 'soft':
             transf = lambda q, transf=transf: jnp.sqrt(transf(q))
