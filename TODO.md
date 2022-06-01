@@ -465,10 +465,6 @@ I can use `__kwdefaults__` to get the default values of kernel parameters
 when I decorate them, such that callable derivable and initargs would always
 know all the parameters.
 
-`forcebroadcast` should be a transformation and transform the core kernel once
-instead of being applied in __call__, which should just check if the arrays
-are broadcastable.
-
 Replace `forcekron` with `forcesep` with possible values None, 'prod', 'sum'.
 This because I can make diff-like transformations act separately automatically
 in both cases.
@@ -806,26 +802,6 @@ default, and then checking if something was not used in the blocks involved.
 With stationary kernels, an evenly spaced input produces a toeplitz matrix,
 which requires O(N) memory and can be solved in O(N^2). If the data has
 uniform independent errors it's still toeplitz.
-
-Add a toeplitz kw to Kernel. Values: False, True, 'auto'. True will complain if
-a non-evenly spaced input comes in. 'auto' will check if the input is compliant
-(before applying forcebroadcast), otherwise proceed as usual. Specific kernels
-need not be aware of this, `__call__` passes them only the necessary points and
-then packs up the result as a toeplitz array-like.
-
-Checking if input is evenly spaced is nonexact and the user should have control
-over this. Possible interface: GP.addx(..., evenlyspaced=True), convenienced
-to GP.addlinspace(start, stop, num, ...). In some way the x array is marked
-as a linspace.
-
-This only applies to stationary kernels and isotropic kernels in 1D. I can
-implement it this way: make an intermediate private Kernel subclass
-_ToeplitzKernel which implements `__call__`, StationaryKernel and
-IsotropicKernel are then subclasses of _ToeplitzKernel.
-
-Add a 'toeplitz' solver to GP. It fails if the matrix is non-toeplitz,
-accepting both toeplitz array-likes and normal matrices to be checked.
-Non-toeplitz solvers print a warning if they receive a toeplitz array-like.
 
 Scipy.linalg now has a function to multiply toeplitz matrices.
 

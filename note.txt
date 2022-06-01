@@ -474,3 +474,34 @@ python -c 'import lsqfitgp;print(lsqfitgp.__version__)'
 ==========
 
 Next thing to do: test jax jit.
+
+2022-06-01
+==========
+
+About Fisher scoring: the expected value of the log marginal likelihood is:
+
+    E[-1/2 log(det(V)) -nlog(2π) -1/2 (x-mu)^TV^-1(x-mu)] =
+    -1/2 log(det(V)) -nlog(2π) -1/2 V^-1_ijE[(x-mu)_i(x-mu)_j] =
+    -1/2 log(det(V)) -nlog(2π) -1/2 V^-1_ij V_ij =
+    -1/2 log(det(V)) -nlog(2π) -1/2 tr(V^-1 V) =
+    -1/2 log(det(V)) -nlog(2π) -1/2 tr(I) =
+    -1/2 log(det(V)) -nlog(2π) -1/2 n
+
+So in practice the thing amounts to computing the hessian of -1/2 log(det(V)),
+but the gradient of the full likelihood, and put these into a second order
+minimizer. Algorithms that may be appropriate in optimize.minimize: dogleg,
+trust-exact.
+
+Other hack-hessian option: external product of the residuals.
+
+    V = LL^T
+    V^-1 = L^T^-1 L^-1
+    r = L^-1 (x - mu)
+
+    D (-1/2 r^T r) = -r^T Dr
+    D^2 (-1/2 r^T r) = -Dr^T Dr -r^T D^2r
+    
+So I would just keep -J^T J, which is positive definite, instead of the full
+hessian. To do this with autodiff I would need to let jax go through the matrix
+decomposition. Tentative interface: add an option direct_autodiff to the
+__init__ wrapper in DecompAutoDiff.

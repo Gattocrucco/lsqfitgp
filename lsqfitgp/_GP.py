@@ -700,12 +700,12 @@ class GP:
         # Compute shape.
         arrays = tens.values()
         elements = (self._elements[k] for k in tens)
-        shapes = [
+        shapes = (
             t.shape[:-axes] + e.shape[axes:] if t.shape else e.shape
             for t, e in zip(arrays, elements)
-        ]
+        )
         try:
-            shape = _array.broadcast_shapes(shapes)
+            shape = np.broadcast_shapes(*shapes)
         except ValueError:
             msg = 'can not broadcast tensors with shapes ['
             msg += ', '.join(repr(t.shape) for t in arrays)

@@ -23,7 +23,6 @@ from jax import tree_util
 
 __all__ = [
     'StructuredArray',
-    'broadcast_shapes',
     'broadcast',
     'broadcast_to',
     'broadcast_arrays',
@@ -46,46 +45,13 @@ def _wrapifstructured(x):
     else:
         return StructuredArray(x)
 
-def _broadcast_shapes_2(s1, s2):
-    assert isinstance(s1, tuple)
-    assert isinstance(s2, tuple)
-    if len(s1) < len(s2):
-        s1 = (len(s2) - len(s1)) * (1,) + s1
-    elif len(s2) < len(s1):
-        s2 = (len(s1) - len(s2)) * (1,) + s2
-    out = ()
-    for a, b in zip(s1, s2):
-        if a == b:
-            out += (a,)
-        elif a == 1 or b == 1:
-            out += (a * b,)
-        else:
-            raise ValueError('can not broadcast shape {} with {}'.format(s1, s2))
-    return out
-
-def broadcast_shapes(shapes):
-    """
-    Return the broadcasted shape from a list of shapes.
-    ! added to numpy since 1.20.0
-    """
-    out = ()
-    for shape in shapes:
-        try:
-            out = _broadcast_shapes_2(out, shape)
-        except ValueError:
-            msg = 'can not broadcast shapes '
-            msg += ', '.join(str(s) for s in shapes)
-            raise ValueError(msg)
-    return out
-
 class broadcast:
     """
     Version of np.broadcast that works with StructuredArray.
     """
     
     def __init__(self, *arrays):
-        shapes = [a.shape for a in arrays]
-        self.shape = broadcast_shapes(shapes)
+        self.shape = np.broadcast_shapes(*(a.shape for a in arrays))
 
 def broadcast_to(x, shape, **kw):
     """
@@ -219,7 +185,7 @@ class StructuredArray:
         Return a view of the array broadcasted to another shape. See
         np.broadcast_to.
         """
-        _broadcast_shapes_2(self.shape, shape) # raises if not broadcastable
+        np.broadcast_shapes(self.shape, shape) # raises if not broadcastable
         d = {
             name: broadcast_to(x, shape + self.dtype.fields[name][0].shape, **kw)
             for name, x in self._dict.items()

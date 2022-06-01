@@ -1,4 +1,4 @@
-numpy<1.20 # minimum version required by jax 0.3
+numpy<1.21 # first version with broadcast_shapes
 scipy<1.4 # first version not complaining when k==n in sparse.linalg.eigsh
 gvar==11.10 # first version supporting gvar.gvar(y, ycov, x, xycov)
 lsqfit<12

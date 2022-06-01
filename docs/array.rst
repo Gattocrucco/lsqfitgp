@@ -38,5 +38,4 @@ Functions
 .. autofunction:: asarray
 .. autofunction:: broadcast
 .. autofunction:: broadcast_arrays
-.. autofunction:: broadcast_shapes
 .. autofunction:: broadcast_to

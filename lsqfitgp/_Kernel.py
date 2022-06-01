@@ -101,7 +101,7 @@ class _KernelBase:
     # Kernel. The docstring is all in __init__ otherwise autoclass would not
     # read it.
     
-    def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcebroadcast=False, forcekron=False, derivable=None, saveargs=False, **kw):
+    def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcekron=False, derivable=None, saveargs=False, **kw):
         """
         
         Base class for objects representing covariance kernels.
@@ -133,9 +133,6 @@ class _KernelBase:
             structured but has only field `dim`.
         loc, scale : scalar
             The inputs to `kernel` are transformed as (x - loc) / scale.
-        forcebroadcast : bool
-            If True, the inputs to `kernel` will always have the same shape.
-            Default is False.
         forcekron : bool
             If True, when calling `kernel`, if `x` and `y` are structured
             arrays, i.e., if they represent multidimensional input, `kernel` is
@@ -187,7 +184,6 @@ class _KernelBase:
                 dim=dim,
                 loc=loc,
                 scale=scale,
-                # forcebroadcast=forcebroadcast,
                 forcekron=forcekron,
                 derivable=derivable,
                 **kw,
@@ -197,7 +193,6 @@ class _KernelBase:
         
         # Check simple arguments.
         assert isinstance(dim, (str, type(None)))
-        # self._forcebroadcast = bool(forcebroadcast)
         forcekron = bool(forcekron)
         
         # Convert `derivable` to an integer.
@@ -255,13 +250,7 @@ class _KernelBase:
         y = _array.asarray(y)
         numpy.result_type(x.dtype, y.dtype)
         shape = _array.broadcast(x, y).shape
-        # if self._forcebroadcast:
-        #     x, y = _array.broadcast_arrays(x, y)
-        #     x = x.reshape(-1)
-        #     y = y.reshape(-1)
         result = self._kernel(x, y)
-        # if self._forcebroadcast:
-        #     result = result.reshape(shape)
         assert isinstance(result, (numpy.ndarray, jnp.number, jnp.ndarray))
         assert jnp.issubdtype(result.dtype, jnp.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
@@ -272,13 +261,11 @@ class _KernelBase:
             obj = _KernelBase(op(self._kernel, value._kernel))
             obj._minderivable = tuple(numpy.minimum(self._minderivable, value._minderivable))
             obj._maxderivable = tuple(numpy.maximum(self._maxderivable, value._maxderivable))
-            # obj._forcebroadcast = self._forcebroadcast or value._forcebroadcast
         elif _isscalar(value):
             assert -jnp.inf < value < jnp.inf, value
             obj = _KernelBase(op(self._kernel, lambda x, y: value))
             obj._minderivable = self._minderivable
             obj._maxderivable = self._maxderivable
-            # obj._forcebroadcast = self._forcebroadcast
         else:
             obj = NotImplemented
         return obj
@@ -351,7 +338,6 @@ class _KernelBase:
                 return xfun(x) * yfun(y) * kernel(x, y)
         
         cls = Kernel if xfun is yfun and isinstance(self, Kernel) else _CrossKernel
-        # obj = cls(fun, forcebroadcast=self._forcebroadcast)
         obj = cls(fun)
         obj._maxderivable = self._maxderivable
         return obj
@@ -397,7 +383,6 @@ class _KernelBase:
                 return kernel(xfun(x), yfun(y))
         
         cls = Kernel if xfun is yfun and isinstance(self, Kernel) else _CrossKernel
-        # obj = cls(fun, forcebroadcast=self._forcebroadcast)
         obj = cls(fun)
         obj._maxderivable = self._maxderivable
         return obj
@@ -557,7 +542,6 @@ class _KernelBase:
                 return f(x, y, *args)
         
         cls = Kernel if xderiv == yderiv and isinstance(self, Kernel) else _CrossKernel
-        # obj = cls(fun, forcebroadcast=True)
         obj = cls(fun)
         obj._minderivable = tuple(self._minderivable[i] - orders[i] for i in range(2))
         obj._maxderivable = tuple(self._maxderivable[i] -   maxs[i] for i in range(2))
