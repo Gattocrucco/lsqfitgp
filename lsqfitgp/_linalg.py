@@ -95,10 +95,13 @@ def _nodifftracer(x):
         return x
 
 def _transpose(x):
-    if x.ndim >= 2:
+    if x.ndim < 2:
+        return x
+    elif isinstance(x, jnp.ndarray):
         return jnp.swapaxes(x, -2, -1)
     else:
-        return x
+        # need to support numpy because this function is used with gvars
+        return numpy.swapaxes(x, -2, -1)
 
 def asinexact(dtype):
     """
