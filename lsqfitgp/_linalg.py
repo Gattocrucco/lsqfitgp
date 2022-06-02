@@ -553,6 +553,19 @@ class CholToeplitz(Chol):
         eps = self._eps(eps, t, m)
         self._L = _toeplitz_linalg.cholesky(t, diageps=eps)
 
+class CholToeplitzML(DecompAutoDiff):
+    """
+    Cholesky decomposition of a Toeplitz matrix. Only the first row of the
+    matrix is read. It does not store the decomposition in memory, it is
+    evaluated each time column by column during operations.
+    """
+    
+    def __init__(self, K, eps=None):
+        t = K[0]
+        m = _toeplitz_linalg.eigv_bound(t)
+        self.teps = self._eps(eps, t, m)
+        self.t = t
+
 class BlockDecomp(Decomposition):
     """
     Decomposition of a 2x2 symmetric block matrix using decompositions of the

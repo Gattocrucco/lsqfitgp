@@ -48,16 +48,23 @@ pytestmark = pytest.mark.filterwarnings(
     r'ignore:Output seems independent of input',
 )
 
-class KernelTestBase(metaclass=abc.ABCMeta):
-    """
-    Abstract base class to test kernels. Each subclass tests one specific
-    kernel.
-    """
+class KernelTestABC(metaclass=abc.ABCMeta):
     
     @property
     @abc.abstractmethod
     def kernel_class(self):
         pass
+    
+    def __init_subclass__(cls):
+        for name, meth in vars(cls).items():
+            if name.startswith('test_'):
+                setattr(cls, name, util.tryagain(meth, method=True))
+
+class KernelTestBase(KernelTestABC):
+    """
+    Abstract base class to test kernels. Each subclass tests one specific
+    kernel.
+    """
     
     @property
     def kwargs_list(self):
