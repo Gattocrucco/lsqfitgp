@@ -505,3 +505,14 @@ So I would just keep -J^T J, which is positive definite, instead of the full
 hessian. To do this with autodiff I would need to let jax go through the matrix
 decomposition. Tentative interface: add an option direct_autodiff to the
 __init__ wrapper in DecompAutoDiff.
+
+2022-06-02
+==========
+
+The second derivative of logdet does not work. Possibilities:
+
+1) I'm doing the test wrong => unlikely because it fails both with analytical
+   solution and finite differences
+2) There is a sneaky error in the jvp of solve
+3) I have not properly understood how the tracing-stopping works and it doesn't
+   with multiple layers to unpack

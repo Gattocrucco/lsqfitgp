@@ -27,6 +27,11 @@ def xfail(cls, meth):
     @pytest.mark.xfail
     @functools.wraps(impl) # `wraps` needed because pytest uses the method name
     def newimpl(self):
-        # wrap because otherwise the superclass method would be marked too
-        impl(self)
+        # wrap because otherwise the superclass method would be marked too,
+        # but set the mark temporarily to allow introspection
+        pytest.mark.xfail(impl)
+        try:
+            impl(self)
+        finally:
+            impl.pytestmark.pop()
     setattr(cls, meth, newimpl)

@@ -21,9 +21,11 @@ import sys
 import abc
 import inspect
 import functools
+import warnings
 
 import jax
 from jax import numpy as jnp
+from jax import test_util
 import numpy as np
 from scipy import linalg, stats
 import gvar
@@ -36,13 +38,40 @@ from lsqfitgp import _linalg, _kernels
 
 MAXSIZE = 10 + 1
 
-class DecompTestBase(metaclass=abc.ABCMeta):
-    
+class DecompTestABC(metaclass=abc.ABCMeta):
+
     @property
     @abc.abstractmethod
     def decompclass(self):
         pass
             
+    def __init_subclass__(cls):
+        cls.matjac = jax.jacfwd(cls.mat, 1)
+        cls.mathess = jax.jacfwd(cls.matjac, 1)
+            
+        # wrap all methods to try again in case of failure,
+        # to hedge against bad random matrices
+        for name, meth in vars(cls).items():
+            # do not get all members, or all xfails would be needed to be
+            # marked on all subclasses
+            if name.startswith('test_'):
+                meta = {}
+                @functools.wraps(meth)
+                def newmeth(self, *args, _meth=meth, _meta=meta, **kw):
+                    job = lambda: _meth(self, *args, **kw)
+                    marks = getattr(_meta['newmeth'], 'pytestmark', [])
+                    if any(m.name == 'xfail' for m in marks):
+                        return job()
+                    try:
+                        return job()
+                    except Exception as exc:
+                        warnings.warn(f'Test {self.__class__.__name__}.{_meth.__name__} failed once with exception {exc.__class__.__name__}: ' + ", ".join(exc.args))
+                        return job()
+                meta['newmeth'] = newmeth
+                setattr(cls, name, newmeth)
+        
+class DecompTestBase(DecompTestABC):
+    
     def randsize(self):
         return np.random.randint(1, MAXSIZE)
         
@@ -56,8 +85,6 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     def mat(self, s, n):
         x = np.arange(n)
         return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
-    
-    matjac = jax.jacobian(mat, 1)
     
     def randvec(self, n):
         return np.random.randn(n)
@@ -245,7 +272,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
                 np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-11)
             else:
                 sol = self.quad(K, b, c)
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-10)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-9)
     
     def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False):
         def fun(s, n, b, c):
@@ -337,7 +364,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
                 sol = self.logdet(K)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-10)
     
-    def check_logdet_jac(self, jacfun, jit=False):
+    def check_logdet_jac(self, jacfun, jit=False, hess=False, num=False):
         def fun(s, n):
             K = self.mat(s, n)
             return self.decompclass(K).logdet()
@@ -345,18 +372,28 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
+            if num:
+                test_util.check_grads(lambda s: fun(s, n), (s,), order=2)
+                continue
             result = fungrad(s, n)
             if jit:
                 result2 = fungradjit(s, n)
                 np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-10)
-            else:
-                K = self.mat(s, n)
-                dK = self.matjac(s, n)
+                continue
+            K = self.mat(s, n)
+            dK = self.matjac(s, n)
+            if not hess:
                 sol = np.trace(self.solve(K, dK))
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
                 # TODO 1e-4? really? in general probably low tolerances are
                 # needed for CholToeplitz and to a lesser extent Chol, not for
                 # the diagonalizations
+            else:
+                d2K = self.mathess(s, n)
+                KdK = self.solve(K, dK)
+                Kd2K = self.solve(K, d2K)
+                sol = -np.trace(KdK @ KdK) + np.trace(Kd2K)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-15)
     
     def test_logdet(self):
         self.check_logdet()
@@ -366,6 +403,12 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     
     def test_logdet_jac_fwd(self):
         self.check_logdet_jac(jax.jacfwd)
+        
+    def test_logdet_hess(self):
+        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True)
+
+    def test_logdet_hess_num(self):
+        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, num=True)
 
     def test_logdet_jit(self):
         self.check_logdet(True)
@@ -382,9 +425,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             sol = self.solve(K, np.eye(n))
             result = self.decompclass(K).inv()
             np.testing.assert_allclose(sol, result)
-    
-    # TODO test second derivatives
-    
+        
     # TODO test derivatives w.r.t. b, c
 
 class DecompTestCorr(DecompTestBase):
@@ -466,10 +507,14 @@ class TestCholToeplitz(DecompTestCorr):
     def mat(self, s, n):
         x = np.arange(n)
         return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
-    
-    matjac = jax.jacobian(mat, 1)
-
+        
 class TestReduceRank(DecompTestCorr):
+    
+    def rank(self, n):
+        if not hasattr(self, 'ranks'):
+            self.ranks = dict()
+            # do not use __init__ or __new__ because they shoo away pytest
+        return self.ranks.setdefault(n, np.random.randint(1, n + 1))
     
     @property
     def decompclass(self):
@@ -479,9 +524,6 @@ class TestReduceRank(DecompTestCorr):
         invK, rank = linalg.pinv(K, return_rank=True)
         assert rank == self.rank(len(K))
         return invK @ b
-    
-    def rank(self, n):
-        return self.ranks.setdefault(n, np.random.randint(1, n + 1))
     
     def randsymmat(self, n=None):
         if not n:
@@ -501,20 +543,10 @@ class TestReduceRank(DecompTestCorr):
         x = np.arange(n)
         x[:n - rank + 1] = x[0]
         return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
-    
-    matjac = jax.jacobian(mat, 1)
-    
+        
     def logdet(self, K):
         return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
         
-for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
-    if name.startswith('test_'):
-        @functools.wraps(meth)
-        def newmeth(self, *args, _meth=meth, **kw):
-            self.ranks = dict()
-            return _meth(self, *args, **kw)
-        setattr(TestReduceRank, name, newmeth)
-
 def test_solve_triangular():
     for n in range(1, MAXSIZE):
         for ndim in range(3):
@@ -598,9 +630,7 @@ class BlockDiagDecompTestBase(DecompTestCorr):
             [A, jnp.zeros((p, n-p))],
             [jnp.zeros((n-p, p)), B],
         ])
-            
-    matjac = jax.jacobian(mat, 1)
-    
+                
     @property
     def decompclass(self):
         def decomp(K):
@@ -626,23 +656,6 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
     def subdecompclass(self):
         return _linalg.Diag
 
-# wrap all methods of all test classes to try again in case of failure,
-# to hedge against bad random matrices
-for name, cls in dict(vars()).items():
-    if inspect.isclass(cls) and issubclass(cls, DecompTestBase):
-        for name, meth in vars(cls).items():
-            # do not get all members, or all xfails would be needed to be
-            # marked on all subclasses
-            if name.startswith('test_'):
-                @functools.wraps(meth)
-                def newmeth(self, *args, _meth=meth, **kw):
-                    try:
-                        return _meth(self, *args, **kw)
-                    except Exception as exc:
-                        warnings.warn(f'Test {self.__class__.__name__}.{_meth.__name__} failed once with exception {exc.__class__.__name__}: ' + ", ".join(exc.args))
-                        return _meth(self, *args, **kw)
-                setattr(cls, name, newmeth)
-        
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings
 
@@ -650,19 +663,16 @@ for name, cls in dict(vars()).items():
 # second argument
 util.xfail(DecompTestBase, 'test_solve_vec_gvar')
 util.xfail(DecompTestBase, 'test_quad_vec_gvar')
-util.xfail(TestReduceRank, 'test_solve_vec_gvar')
-util.xfail(TestReduceRank, 'test_quad_vec_gvar')
-# duplicated for TestReduceRank because it wraps superclass methods
 
 # TODO quad backward derivatives are broken
 util.xfail(DecompTestBase, 'test_quad_vec_jac_rev')
 util.xfail(DecompTestBase, 'test_quad_matrix_jac_rev')
 util.xfail(DecompTestBase, 'test_quad_vec_jac_rev_jit')
 util.xfail(DecompTestBase, 'test_quad_matrix_jac_rev_jit')
-util.xfail(TestReduceRank, 'test_quad_vec_jac_rev')
-util.xfail(TestReduceRank, 'test_quad_matrix_jac_rev')
-util.xfail(TestReduceRank, 'test_quad_vec_jac_rev_jit')
-util.xfail(TestReduceRank, 'test_quad_matrix_jac_rev_jit')
+
+# TODO second derivatives not working
+util.xfail(DecompTestBase, 'test_logdet_hess')
+util.xfail(DecompTestBase, 'test_logdet_hess_num')
 
 # TODO linalg.sparse.eigsh does not have an XLA counterpart, but apparently
 # they are now making an effort to add sparse support to jax, let's wait
