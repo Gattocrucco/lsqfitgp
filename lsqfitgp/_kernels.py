@@ -317,8 +317,8 @@ def Wiener(x, y):
     
     """
     if _patch_jax.isconcrete(x, y):
-        assert numpy.all(x >= 0)
-        assert numpy.all(y >= 0)
+        assert numpy.all(_patch_jax.concrete(x) >= 0)
+        assert numpy.all(_patch_jax.concrete(y) >= 0)
     return jnp.minimum(x, y)
 
 @kernel(forcekron=True)
@@ -344,8 +344,8 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     sx = scalefun(x)
     sy = scalefun(y)
     if _patch_jax.isconcrete(sx, sy):
-        assert numpy.all(sx > 0)
-        assert numpy.all(sy > 0)
+        assert numpy.all(_patch_jax.concrete(sx) > 0)
+        assert numpy.all(_patch_jax.concrete(sy) > 0)
     denom = sx ** 2 + sy ** 2
     factor = jnp.sqrt(2 * sx * sy / denom)
     return factor * jnp.exp(-(x - y) ** 2 / denom)
@@ -395,7 +395,7 @@ def Categorical(x, y, cov=None):
     assert len(cov.shape) == 2
     assert cov.shape[0] == cov.shape[1]
     if _patch_jax.isconcrete(cov):
-        C = cov
+        C = _patch_jax.concrete(cov)
         assert numpy.allclose(C, C.T)
     return cov[x, y]
 
@@ -456,8 +456,8 @@ def FracBrownian(x, y, H=1/2):
     # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
     if _patch_jax.isconcrete(H, x, y):
         assert 0 < H < 1, H
-        assert numpy.all(x >= 0)
-        assert numpy.all(y >= 0)
+        assert numpy.all(_patch_jax.concrete(x) >= 0)
+        assert numpy.all(_patch_jax.concrete(y) >= 0)
     H2 = 2 * H
     return 1/2 * (x ** H2 + y ** H2 - jnp.abs(x - y) ** H2)
 
@@ -528,8 +528,8 @@ def WienerIntegral(x, y):
     
     # TODO write formula in terms of min(x, y) and max(x, y).
     if _patch_jax.isconcrete(x, y):
-        assert numpy.all(x >= 0)
-        assert numpy.all(y >= 0)
+        assert numpy.all(_patch_jax.concrete(x) >= 0)
+        assert numpy.all(_patch_jax.concrete(y) >= 0)
     return 1/2 * jnp.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
 
 @kernel(forcekron=True, derivable=True)
@@ -690,8 +690,8 @@ def OrnsteinUhlenbeck(x, y):
     
     """
     if _patch_jax.isconcrete(x, y):
-        assert numpy.all(x >= 0)
-        assert numpy.all(y >= 0)
+        assert numpy.all(_patch_jax.concrete(x) >= 0)
+        assert numpy.all(_patch_jax.concrete(y) >= 0)
     return jnp.exp(-jnp.abs(x - y)) - jnp.exp(-(x + y))
     
 def _Celerite_derivable(**kw):
@@ -744,8 +744,10 @@ def BrownianBridge(x, y):
     # but I have to check if it is correct. (In new kernel FracBrownianBridge.)
     
     if _patch_jax.isconcrete(x, y):
-        assert numpy.all(0 <= x) and numpy.all(x <= 1)
-        assert numpy.all(0 <= y) and numpy.all(y <= 1)
+        X = _patch_jax.concrete(x)
+        Y = _patch_jax.concrete(y)
+        assert numpy.all(0 <= X) and numpy.all(X <= 1)
+        assert numpy.all(0 <= Y) and numpy.all(Y <= 1)
     return jnp.minimum(x, y) - x * y
 
 @stationarykernel(forcekron=True, derivable=1)
