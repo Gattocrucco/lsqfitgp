@@ -19,6 +19,8 @@
 
 import sys
 import abc
+import inspect
+import functools
 
 import jax
 from jax import numpy as jnp
@@ -293,32 +295,58 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     
     def test_quad_matrix_jac_fwd(self):
         self.quad_matrix_jac(jax.jacfwd)
+    
+    def logdet(self, K):
+        return np.sum(np.log(linalg.eigvalsh(K)))
 
-    def test_logdet(self):
+    def check_logdet(self, jit=False):
+        fun = lambda K: self.decompclass(K).logdet()
+        funjit = jax.jit(fun)
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
-            sol = np.sum(np.log(linalg.eigvalsh(K)))
-            result = self.decompclass(K).logdet()
-            np.testing.assert_allclose(sol, result, atol=1e-8)
+            result = fun(K)
+            if jit:
+                result2 = funjit(K)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-15)
+            else:
+                sol = self.logdet(K)
+                np.testing.assert_allclose(result, sol, atol=1e-10, rtol=1e-10)
     
-    def logdet_jac(self, jacfun):
+    def check_logdet_jac(self, jacfun, jit=False):
         def fun(s, n):
             K = self.mat(s, n)
             return self.decompclass(K).logdet()
         fungrad = jacfun(fun)
+        fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in range(1, MAXSIZE):
             s = np.exp(np.random.uniform(-1, 1))
-            K = self.mat(s, n)
-            dK = self.matjac(s, n)
-            sol = np.trace(self.solve(K, dK))
             result = fungrad(s, n)
-            np.testing.assert_allclose(sol, result, rtol=1e-4, atol=1e-15)
+            if jit:
+                result2 = fungradjit(s, n)
+                np.testing.assert_allclose(result2, result, atol=1e-12, rtol=1e-10)
+            else:
+                K = self.mat(s, n)
+                dK = self.matjac(s, n)
+                sol = np.trace(self.solve(K, dK))
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
+    
+    def test_logdet(self):
+        self.check_logdet()
     
     def test_logdet_jac_rev(self):
-        self.logdet_jac(jax.jacrev)
+        self.check_logdet_jac(jax.jacrev)
     
     def test_logdet_jac_fwd(self):
-        self.logdet_jac(jax.jacfwd)
+        self.check_logdet_jac(jax.jacfwd)
+
+    def test_logdet_jit(self):
+        self.check_logdet(True)
+    
+    def test_logdet_jac_rev_jit(self):
+        self.check_logdet_jac(jax.jacrev, True)
+    
+    def test_logdet_jac_fwd_jit(self):
+        self.check_logdet_jac(jax.jacfwd, True)
 
     def test_inv(self):
         for n in range(1, MAXSIZE):
@@ -417,41 +445,47 @@ class TestReduceRank(DecompTestCorr):
     
     @property
     def decompclass(self):
-        return lambda K: _linalg.ReduceRank(K, rank=self._rank)
+        return lambda K: _linalg.ReduceRank(K, rank=self.rank(len(K)))
     
     def solve(self, K, b):
         invK, rank = linalg.pinv(K, return_rank=True)
-        assert rank == self._rank
+        assert rank == self.rank(len(K))
         return invK @ b
+    
+    def rank(self, n):
+        return self.ranks.setdefault(n, np.random.randint(1, n + 1))
     
     def randsymmat(self, n=None):
         if not n:
             n = self.randsize()
-        self._rank = np.random.randint(1, n + 1)
+        rank = self.rank(n)
         O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
-        eigvals = np.random.uniform(1e-2, 1e2, size=self._rank)
-        O = O[:, :self._rank]
+        eigvals = np.random.uniform(1e-2, 1e2, size=rank)
+        O = O[:, :rank]
         K = (O * eigvals) @ O.T
         np.testing.assert_allclose(K, K.T)
         return K
     
     def mat(self, s, n=None):
-        if not isinstance(s, jnp.ndarray):
-            if not n:
-                n = self.randsize()
-            self._rank = np.random.randint(1, n + 1)
+        if not n:
+            n = self.randsize()
+        rank = self.rank(n)
         x = np.arange(n)
-        x[:n - self._rank + 1] = x[0]
+        x[:n - rank + 1] = x[0]
         return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
     
     matjac = jax.jacobian(mat, 1)
+    
+    def logdet(self, K):
+        return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
         
-    def test_logdet(self):
-        for n in range(1, MAXSIZE):
-            K = self.randsymmat(n)
-            sol = np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self._rank:]))
-            result = self.decompclass(K).logdet()
-            np.testing.assert_allclose(sol, result)
+for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
+    if name.startswith('test_'):
+        @functools.wraps(meth)
+        def newmeth(self, *args, _meth=meth, **kw):
+            self.ranks = dict()
+            return _meth(self, *args, **kw)
+        setattr(TestReduceRank, name, newmeth)
 
 def test_solve_triangular():
     for n in range(1, MAXSIZE):
@@ -589,3 +623,4 @@ util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev')
 util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_jit')
 util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_matrix')
 util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev')
+util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev_jit')
