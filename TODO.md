@@ -80,11 +80,6 @@ Check that float32 is respected.
 
 Test recursive dtype support.
 
-Lower thresholds in linalg tests.
-
-per ovviare al bug della moltiplicazione per scalare del kernel con
-autograd, aggiungere dei metodi pubblici espliciti per comporre i kernel
-
 The minimum derivability warnings are annoying because there are a lot of them
 when doing nontrivial things, maybe I should put a warnings filter in GP.pred
 such that at most only one warning is emitted per call. => Or maybe not => Add

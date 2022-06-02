@@ -224,6 +224,13 @@ class DecompTestBase(metaclass=abc.ABCMeta):
         if c is None:
             c = b
         return b.T @ self.solve(K, c)
+    
+    def quadjac(self, dK, K, b, c=None):
+        if c is None:
+            c = b
+        invKb = self.solve(K, b)
+        invKc = self.solve(K, c)
+        return -invKb.T @ dK @ invKc
 
     def check_quad(self, bgen, cgen=lambda n: None, jit=False):
         fun = lambda K, b, c: self.decompclass(K).quad(b, c)
@@ -239,6 +246,26 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             else:
                 sol = self.quad(K, b, c)
                 np.testing.assert_allclose(result, sol, atol=1e-13, rtol=1e-10)
+    
+    def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False):
+        def fun(s, n, b, c):
+            K = self.mat(s, n)
+            return self.decompclass(K).quad(b, c)
+        fungrad = jacfun(fun)
+        fungradjit = jax.jit(fungrad, static_argnums=1)
+        for n in range(1, MAXSIZE):
+            s = np.exp(np.random.uniform(-1, 1))
+            K = self.mat(s, n)
+            dK = self.matjac(s, n)
+            b = bgen(n)
+            c = cgen(n)
+            result = fungrad(s, n, b, c)
+            if jit:
+                result2 = fungradjit(s, n, b, c)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-8)
+            else:
+                sol = self.quadjac(dK, K, b, c)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-7)
     
     def test_quad_vec(self):
         self.check_quad(self.randvec)
@@ -264,48 +291,36 @@ class DecompTestBase(metaclass=abc.ABCMeta):
     def test_quad_matrix_matrix_jit(self):
         self.check_quad(self.randmat, self.randmat, True)
     
-    def quad_vec_jac(self, jacfun):
-        def fun(s, n, b):
-            K = self.mat(s, n)
-            return self.decompclass(K).quad(b)
-        fungrad = jacfun(fun)
-        for n in range(1, MAXSIZE):
-            s = np.exp(np.random.uniform(-1, 1))
-            K = self.mat(s, n)
-            dK = self.matjac(s, n)
-            b = self.randvec(n)
-            invKb = self.solve(K, b)
-            sol = -invKb.T @ dK @ invKb
-            result = fungrad(s, n, b)
-            np.testing.assert_allclose(sol, result, rtol=1e-4)
-    
     def test_quad_vec_jac_rev(self):
-        self.quad_vec_jac(jax.jacrev)
+        self.check_quad_jac(jax.jacrev, self.randvec)
     
     def test_quad_vec_jac_fwd(self):
-        self.quad_vec_jac(jax.jacfwd)
-    
-    def quad_matrix_jac(self, jacfun):
-        def fun(s, n, b):
-            K = self.mat(s, n)
-            return self.decompclass(K).quad(b)
-        funjac = jacfun(fun)
-        for n in range(1, MAXSIZE):
-            s = np.exp(np.random.uniform(-1, 1))
-            K = self.mat(s, n)
-            dK = self.matjac(s, n)
-            b = self.randmat(n)
-            invKb = self.solve(K, b)
-            sol = -invKb.T @ dK @ invKb
-            result = funjac(s, n, b)
-            np.testing.assert_allclose(sol, result, rtol=1e-4)
+        self.check_quad_jac(jax.jacfwd, self.randvec)
     
     def test_quad_matrix_jac_rev(self):
-        self.quad_matrix_jac(jax.jacrev)
+        self.check_quad_jac(jax.jacrev, self.randmat)
     
     def test_quad_matrix_jac_fwd(self):
-        self.quad_matrix_jac(jax.jacfwd)
+        self.check_quad_jac(jax.jacfwd, self.randmat)
     
+    def test_quad_matrix_matrix_jac_fwd(self):
+        self.check_quad_jac(jax.jacfwd, self.randmat, self.randmat)
+    
+    def test_quad_vec_jac_rev_jit(self):
+        self.check_quad_jac(jax.jacrev, self.randvec, jit=True)
+    
+    def test_quad_vec_jac_fwd_jit(self):
+        self.check_quad_jac(jax.jacfwd, self.randvec, jit=True)
+    
+    def test_quad_matrix_jac_rev_jit(self):
+        self.check_quad_jac(jax.jacrev, self.randmat, jit=True)
+    
+    def test_quad_matrix_jac_fwd_jit(self):
+        self.check_quad_jac(jax.jacfwd, self.randmat, jit=True)
+    
+    def test_quad_matrix_matrix_jac_fwd_jit(self):
+        self.check_quad_jac(jax.jacfwd, self.randmat, self.randmat, jit=True)
+
     def logdet(self, K):
         return np.sum(np.log(linalg.eigvalsh(K)))
 
@@ -317,7 +332,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fun(K)
             if jit:
                 result2 = funjit(K)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-15)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-14)
             else:
                 sol = self.logdet(K)
                 np.testing.assert_allclose(result, sol, atol=1e-10, rtol=1e-10)
@@ -610,6 +625,9 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
 
 #### XFAILS ####
 
+# TODO wrap all methods of all test classes to try again in case of failure,
+# to hedge against bad random matrices
+
 # solve does not support gvar any more, and quad now supports gvar only on
 # second argument
 util.xfail(DecompTestBase, 'test_solve_vec_gvar')
@@ -620,8 +638,12 @@ util.xfail(TestReduceRank, 'test_quad_vec_gvar')
 # TODO quad backward derivatives are broken
 util.xfail(DecompTestBase, 'test_quad_vec_jac_rev')
 util.xfail(DecompTestBase, 'test_quad_matrix_jac_rev')
+util.xfail(DecompTestBase, 'test_quad_vec_jac_rev_jit')
+util.xfail(DecompTestBase, 'test_quad_matrix_jac_rev_jit')
 util.xfail(TestReduceRank, 'test_quad_vec_jac_rev')
 util.xfail(TestReduceRank, 'test_quad_matrix_jac_rev')
+util.xfail(TestReduceRank, 'test_quad_vec_jac_rev_jit')
+util.xfail(TestReduceRank, 'test_quad_matrix_jac_rev_jit')
 
 # TODO linalg.sparse.eigsh does not have an XLA counterpart, but apparently
 # they are now making an effort to add sparse support to jax, let's wait
