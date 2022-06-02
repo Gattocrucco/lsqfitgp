@@ -146,7 +146,7 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         if c is None:
             c = b
-        return b.T @ self.solve(c)
+        return jnp.swapaxes(b, -2, -1) @ self.solve(c)
     
     @abc.abstractmethod
     def logdet(self): # pragma: no cover
@@ -177,6 +177,7 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         
         # TODO currently no subclass overrides this, some should probably do.
+        # Actually, nobody should ever use this function.
         
         return self.quad(jnp.eye(self.n))
     
@@ -190,9 +191,6 @@ class Decomposition(metaclass=abc.ABCMeta):
 class DecompAutoDiff(Decomposition):
     """
     Abstract subclass adding JAX support to subclasses of Decomposition.
-    Moreover, it fixes the convention of tensor multiplication by passing
-    the concrete class methods only 2d matrices and then reshaping back the
-    result.
     """
         
     def __init_subclass__(cls, **kw):
@@ -213,8 +211,7 @@ class DecompAutoDiff(Decomposition):
         for name in 'solve', 'quad', 'logdet':
             meth = getattr(cls, name)
             if not hasattr(meth, '_autodiff'):
-                # print(f'defining {cls.__name__}.{name}')
-                newmeth = getattr(DecompAutoDiff, '_make_' + name)(meth)
+                newmeth = getattr(cls, '_make_' + name)(meth)
                 newmeth = functools.wraps(meth)(newmeth)
                 if not hasattr(newmeth, '_autodiff'):
                     newmeth._autodiff = True
@@ -225,197 +222,29 @@ class DecompAutoDiff(Decomposition):
     @staticmethod
     def _make_solve(oldsolve):
         
-        # def solve_vjp_K(ans, self, K, b):
-        #     assert ans.shape == b.shape
-        #     assert b.shape[0] == K.shape[0] == K.shape[1]
-        #     def vjp(g):
-        #         assert g.shape[-len(b.shape):] == b.shape
-        #         g = jnp.moveaxis(g, -len(b.shape), 0)
-        #         A = solve_autodiff(self, K, g)
-        #         B = jnp.moveaxis(ans, 0, -1)
-        #         AB = jnp.tensordot(A, B, len(b.shape) - 1)
-        #         AB = jnp.moveaxis(AB, 0, -2)
-        #         assert AB.shape == g.shape[:-len(b.shape)] + K.shape
-        #         return -AB
-        #     return vjp
-        #
-        # def solve_vjp_b(ans, self, K, b):
-        #     assert ans.shape == b.shape
-        #     assert b.shape[0] == K.shape[0] == K.shape[1]
-        #     def vjp(g):
-        #         assert g.shape[-len(b.shape):] == b.shape
-        #         g = jnp.moveaxis(g, -len(b.shape), 0)
-        #         gj = solve_autodiff(self, K, g)
-        #         gj = jnp.moveaxis(gj, 0, -len(b.shape))
-        #         assert gj.shape == g.shape
-        #         return gj
-        #     return vjp
-        #
-        # def solve_fwd(self, K, b):
-        #     ans = solve_autodiff(self, K, b)
-        #     return ans, (ans, self, K, b)
-        #
-        # def solve_bwd(res, g):
-        #     return None, solve_vjp_K(*res)(g), solve_vjp_b(*res)(g)
-        #
-        # solve_autodiff.defvjp(solve_fwd, solve_bwd)
-        
         @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def solve_autodiff(self, K, b):
-            b2d = b.reshape(b.shape[0], -1)
-            return oldsolve(self, b2d).reshape(b.shape)
-        
-        def solve_jvp_K(g, ans, self, K, b):
-            assert ans.shape == b.shape
-            assert ans.shape[0] == K.shape[0] == K.shape[1]
-            assert g.shape[:2] == K.shape
-            invKg = solve_autodiff(self, K, g)
-            ans2D = ans.reshape(ans.shape[0], -1)
-            jvp = -jnp.tensordot(invKg, ans2D, axes=(1, 0))
-            jvp = jnp.moveaxis(jvp, -1, 1)
-            return jvp.reshape(ans.shape + g.shape[2:])
-        
-        def solve_jvp_b(g, ans, self, K, b):
-            assert ans.shape == b.shape
-            assert b.shape[0] == K.shape[0] == K.shape[1]
-            assert g.shape[:len(b.shape)] == b.shape
-            return solve_autodiff(self, K, g)
+            return oldsolve(self, b)
         
         @solve_autodiff.defjvp
         def solve_vjp(self, primals, tangents):
             K, b = primals
             K_dot, b_dot = tangents
-            ans = solve_autodiff(self, K, b)
-            return ans, (
-                solve_jvp_K(K_dot, ans, self, K, b) +
-                solve_jvp_b(b_dot, ans, self, K, b)
-            )
+            primal = solve_autodiff(self, K, b)
+            tangent_K = -solve_autodiff(self, K, K_dot) @ primal
+            tangent_b = solve_autodiff(self, K, b_dot)
+            return primal, tangent_K + tangent_b
         
         def solve(self, b):
             return solve_autodiff(self, self._K, b)
         
-        # solve_autodiff is used by other methods
+        # solve_autodiff is used by logdet_jvp
         solve._autodiff = solve_autodiff
         
         return solve
     
     @staticmethod
     def _make_quad(oldquad):
-        
-        # def quad_vjp_K(ans, self, K, b, c):
-        #     assert b.shape[0] == K.shape[0] == K.shape[1]
-        #     bshape = b.shape[1:]
-        #     if c is None:
-        #         cshape = bshape
-        #     else:
-        #         assert c.shape[0] == b.shape[0]
-        #         cshape = c.shape[1:]
-        #     assert ans.shape == tuple(reversed(bshape)) + cshape
-        #
-        #     def vjp(g):
-        #         assert g.shape[len(g.shape) - len(ans.shape):] == ans.shape
-        #
-        #         invKb = self.solve._autodiff(self, K, b)
-        #         if c is None:
-        #             invKc = invKb
-        #         else:
-        #             invKc = self.solve._autodiff(self, K, c)
-        #
-        #         axes = 2 * (tuple(range(-len(cshape), 0)),)
-        #         ginvKc = jnp.tensordot(g, invKc, axes)
-        #
-        #         axes = 2 * (tuple(range(-len(bshape) - 1, -1)),)
-        #         ginvKcb = jnp.tensordot(ginvKc, invKb.T, axes)
-        #
-        #         assert ginvKcb.shape == g.shape[:len(g.shape) - len(ans.shape)] + K.shape
-        #         return -ginvKcb
-        #     return vjp
-        #
-        # def quad_vjp_b(ans, self, K, b, c):
-        #     assert b.shape[0] == K.shape[0] == K.shape[1]
-        #     bshape = b.shape[1:]
-        #     if c is None:
-        #         cshape = bshape
-        #     else:
-        #         assert c.shape[0] == b.shape[0]
-        #         cshape = c.shape[1:]
-        #     assert ans.shape == tuple(reversed(bshape)) + cshape
-        #
-        #     if c is None:
-        #         def vjp(g):
-        #             glen = len(g.shape) - len(ans.shape)
-        #             assert g.shape[glen:] == ans.shape
-        #
-        #             invKb = self.solve._autodiff(self, K, b)
-        #
-        #             axes = 2 * (range(-len(bshape), 0),)
-        #             gj1 = jnp.tensordot(g, invKb, axes)
-        #
-        #             axes = tuple(range(glen))
-        #             axes += tuple(reversed(range(glen, len(gj1.shape))))
-        #             gj1 = jnp.transpose(gj1, axes)
-        #             assert gj1.shape == g.shape[:glen] + b.shape
-        #
-        #             axes = (
-        #                 tuple(range(-len(bshape) - 1, -2 * len(bshape) - 1, -1)),
-        #                 tuple(range(-len(bshape), 0))
-        #             )
-        #             gj2 = jnp.tensordot(g, invKb, axes)
-        #
-        #             gj2 = jnp.moveaxis(gj2, -1, -len(bshape) - 1)
-        #             assert gj2.shape == gj1.shape
-        #
-        #             return gj1 + gj2
-        #     else:
-        #         def vjp(g):
-        #             glen = len(g.shape) - len(ans.shape)
-        #             assert g.shape[glen:] == ans.shape
-        #
-        #             invKc = self.solve._autodiff(self, K, c)
-        #
-        #             axes = 2 * (range(-len(cshape), 0),)
-        #             gj = jnp.tensordot(g, invKc, axes)
-        #
-        #             axes = tuple(range(glen))
-        #             axes += tuple(reversed(range(glen, len(gj.shape))))
-        #             gj = jnp.transpose(gj, axes)
-        #             assert gj.shape == g.shape[:glen] + b.shape
-        #             return gj
-        #
-        #     return vjp
-        #
-        # def quad_vjp_c(ans, self, K, b, c):
-        #     assert b.shape[0] == K.shape[0] == K.shape[1]
-        #     assert c.shape[0] == b.shape[0]
-        #     bshape = b.shape[1:]
-        #     cshape = c.shape[1:]
-        #     assert ans.shape == tuple(reversed(bshape)) + cshape
-        #
-        #     def vjp(g):
-        #         assert g.shape[len(g.shape) - len(ans.shape):] == ans.shape
-        #
-        #         invKb = self.solve._autodiff(self, K, b)
-        #
-        #         axes = (
-        #             tuple(range(-len(cshape) - 1, -len(cshape) - len(bshape) - 1, -1)),
-        #             tuple(range(-len(bshape), 0))
-        #         )
-        #         gj = jnp.tensordot(g, invKb, axes)
-        #
-        #         gj = jnp.moveaxis(gj, -1, -len(cshape) - 1)
-        #         assert gj.shape == g.shape[:len(g.shape) - len(ans.shape)] + c.shape
-        #         return gj
-        #
-        #     return vjp
-        #
-        # def quad_fwd(ans, self, K, b, c):
-        #     ans = quad_autodiff(self, K, b, c)
-        #     return ans, (ans, self, K, b, c)
-        #
-        # def quad_bwd(res, g):
-        #     return None, quad_vjp_K(*res)(g), quad_vjp_b(*res)(g), quad_vjp_c(*res)(g)
-        #
-        # quad_autodiff.defvjp(quad_fwd, quad_bwd)
         
         # TODO currently backward derivatives don't work because when
         # transposing quad's jvp into a vjp somehow it's like a nonlinear
@@ -424,70 +253,31 @@ class DecompAutoDiff(Decomposition):
         
         @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def quad_autodiff(self, K, b, c):
-            b2d = b.reshape(b.shape[0], -1)
-            c2d = c.reshape(c.shape[0], -1)
-            outshape = b.shape[1:][::-1] + c.shape[1:]
-            return oldquad(self, b2d, c2d).reshape(outshape)
+            return oldquad(self, b, c)
 
         @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def quad_autodiff_cnone(self, K, b):
-            b2d = b.reshape(b.shape[0], -1)
-            outshape = b.shape[1:][::-1] + b.shape[1:]
-            return oldquad(self, b2d).reshape(outshape)
+            return oldquad(self, b)
 
-        def quad_jvp_K(g, ans, self, K, b, c):
-            if c is None:
-                c = b
-            bshape = b.shape[1:]
-            cshape = c.shape[1:]
-            assert ans.shape == tuple(reversed(bshape)) + cshape
-            assert g.shape[:2] == K.shape
-            g3d = g.reshape(K.shape + (-1,))
-            ginvKc = quad_autodiff(self, K, g3d, c)
-            ginvKc = jnp.moveaxis(ginvKc, 0, -1)
-            ginvKc = ginvKc.reshape(c.shape + g.shape[2:])
-            jvp = -quad_autodiff(self, K, b, ginvKc)
-            assert jvp.shape == ans.shape + g.shape[2:]
-            return jvp
-        
-        def quad_jvp_b(g, ans, self, K, b, c):
-            assert g.shape[:len(b.shape)] == b.shape
-            g1d = g.reshape(b.shape + (-1,))
-            if c is None:
-                jvp = quad_autodiff(self, K, b, g1d)
-                jvpT = jnp.moveaxis(jvp.T, 0, -1)
-                jvp = jvp + jvpT
-            else:
-                jvp = quad_autodiff(self, K, g1d, c)
-                jvp = jnp.moveaxis(jvp, 0, -1)
-            return jvp.reshape(ans.shape + g.shape[len(b.shape):])
-        
-        def quad_jvp_c(g, ans, self, K, b, c):
-            assert g.shape[:len(c.shape)] == c.shape
-            jvp = quad_autodiff(self, K, b, g)
-            assert jvp.shape == ans.shape + g.shape[len(c.shape):]
-            return jvp
-        
         @quad_autodiff.defjvp
         def quad_jvp(self, primals, tangents):
             K, b, c = primals
             K_dot, b_dot, c_dot = tangents
-            ans = quad_autodiff(self, K, b, c)
-            return ans, (
-                quad_jvp_K(K_dot, ans, self, K, b, c)
-                + quad_jvp_b(b_dot, ans, self, K, b, c)
-                + quad_jvp_c(c_dot, ans, self, K, b, c)
-            )
+            primal = quad_autodiff(self, K, b, c)
+            tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, c))
+            tangent_b = quad_autodiff(self, K, b_dot, c)
+            tangent_c = quad_autodiff(self, K, b, c_dot)
+            return primal, tangent_K + tangent_b + tangent_c
             
         @quad_autodiff_cnone.defjvp
         def quad_cnone_jvp(self, primals, tangents):
             K, b = primals
             K_dot, b_dot = tangents
-            ans = quad_autodiff_cnone(self, K, b)
-            return ans, (
-                quad_jvp_K(K_dot, ans, self, K, b, None) +
-                quad_jvp_b(b_dot, ans, self, K, b, None)
-            )
+            primal = quad_autodiff_cnone(self, K, b)
+            tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, b))
+            tangent_b = quad_autodiff(self, K, b_dot, b)
+            tangent_b_T = jnp.swapaxes(tangent_b, -2, -1) if b.ndim >= 2 else tangent_b
+            return primal, tangent_K + tangent_b + tangent_b_T
 
         def quad(self, b, c=None):
             if c is None:
@@ -495,46 +285,22 @@ class DecompAutoDiff(Decomposition):
             else:
                 return quad_autodiff(self, self._K, b, c)
         
-        quad._autodiff = quad_autodiff
-
         return quad
     
     @staticmethod
     def _make_logdet(oldlogdet):
         
-        # def logdet_vjp(ans, self, K):
-        #     assert ans.shape == ()
-        #     assert K.shape[0] == K.shape[1]
-        #     def vjp(g):
-        #         invK = self.quad._autodiff(self, K, jnp.eye(len(K)), None)
-        #         return g[..., None, None] * invK
-        #     return vjp
-        #
-        # def logdet_fwd(self, K):
-        #     ans = logdet_autodiff(self, K)
-        #     return ans, (ans, self, K)
-        #
-        # def logdet_bwd(res, g):
-        #     return None, logdet_vjp(*res)(g)
-        #
-        # logdet_autodiff.defvjp(logdet_fwd, logdet_bwd)
-
         @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def logdet_autodiff(self, K):
             return oldlogdet(self)
                         
-        def logdet_jvp_K(g, ans, self, K):
-            assert ans.shape == ()
-            assert K.shape[0] == K.shape[1]
-            assert g.shape[:2] == K.shape
-            return jnp.trace(self.solve._autodiff(self, K, g))
-        
         @logdet_autodiff.defjvp
         def logdet_jvp(self, primals, tangents):
             K, = primals
             K_dot, = tangents
-            ans = logdet_autodiff(self, K)
-            return ans, logdet_jvp_K(K_dot, ans, self, K)
+            primal = logdet_autodiff(self, K)
+            tangent = jnp.trace(self.solve._autodiff(self, K, K_dot))
+            return primal, tangent
         
         def logdet(self):
             return logdet_autodiff(self, self._K)

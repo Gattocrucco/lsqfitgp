@@ -516,3 +516,8 @@ The second derivative of logdet does not work. Possibilities:
 2) There is a sneaky error in the jvp of solve
 3) I have not properly understood how the tracing-stopping works and it doesn't
    with multiple layers to unpack
+
+First things to do:
+
+1) Check finite differences against the partially handwritten solution
+2) Implement direct_autodiff and see if it works.

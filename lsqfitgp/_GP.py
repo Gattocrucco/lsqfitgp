@@ -1115,6 +1115,7 @@ class GP:
         for k, tensor in x.tensors.items():
             prior = self._prior(k)
             transf = x.tensormul(tensor, prior)
+            # TODO probably breaks if tensor is a jax array
             if out is None:
                 out = transf
             else:

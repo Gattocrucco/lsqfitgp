@@ -27,7 +27,6 @@ import numpy
 
 from . import _array
 from . import _Deriv
-from . import _linalg
 from . import _patch_jax
 
 __all__ = [
@@ -749,7 +748,7 @@ def _eps(x):
         return jnp.finfo(float).eps
 
 def _softabs(x):
-    return _linalg.choose_numpy(x).abs(x) + _eps(x)
+    return jnp.abs(x) + _eps(x)
 
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
