@@ -30,7 +30,7 @@ from ._fit import *
 from ._Deriv import *
 from ._fastraniter import *
 
-__version__ = '0.10'
+__version__ = '0.11'
 
 __doc__ = """
 
