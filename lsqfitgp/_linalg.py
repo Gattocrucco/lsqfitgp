@@ -84,16 +84,19 @@ def choose_numpy(*args):
     else:
         return numpy
 
-def _notracer(x):
+def _nodifftracer(x):
     """
-    Unpack a JAX tracer.
+    Unpack a JAX autodiff tracer.
     """
-    if isinstance(x, jax.interpreters.ad.JVPTracer):
-        return _notracer(x.primal)
-    elif isinstance(x, jax.interpreters.batching.BatchTracer):
-        # maybe also vmap should pass?
-        return _notracer(x.val)
-    else: # let jit pass through
+    if isinstance(x, jax.core.Tracer) and hasattr(x, 'primal'):
+        return _nodifftracer(x.primal)
+    else:
+        return x
+
+def _transpose(x):
+    if x.ndim >= 2:
+        return jnp.swapaxes(x, -2, -1)
+    else:
         return x
 
 def asinexact(dtype):
@@ -146,7 +149,7 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         if c is None:
             c = b
-        return jnp.swapaxes(b, -2, -1) @ self.solve(c)
+        return _transpose(b) @ self.solve(c)
     
     @abc.abstractmethod
     def logdet(self): # pragma: no cover
@@ -203,7 +206,7 @@ class DecompAutoDiff(Decomposition):
         
         @functools.wraps(old__init__)
         def __init__(self, K, **kw):
-            old__init__(self, _notracer(K), **kw)
+            old__init__(self, _nodifftracer(K), **kw)
             self._K = K
         
         cls.__init__ = __init__
@@ -246,11 +249,6 @@ class DecompAutoDiff(Decomposition):
     @staticmethod
     def _make_quad(oldquad):
         
-        # TODO currently backward derivatives don't work because when
-        # transposing quad's jvp into a vjp somehow it's like a nonlinear
-        # function of the tangent is evaluated. Probably happens in
-        # quad_jvp_K but I don't know how.
-        
         @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def quad_autodiff(self, K, b, c):
             return oldquad(self, b, c)
@@ -258,13 +256,23 @@ class DecompAutoDiff(Decomposition):
         @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
         def quad_autodiff_cnone(self, K, b):
             return oldquad(self, b)
+        
+        # TODO the tangent_K calculation with quad_autodiff breaks backward
+        # derivatives, I don't know why. Maybe I should define a new
+        # decomposition function sandwitch(b, X, c) which computes b.T K^-1 X
+        # K^-1 c and use it both for numerical accuracy (I'm guessing that
+        # avoiding the two concatenated solves within solve is good) and to make
+        # the jvp work.
 
         @quad_autodiff.defjvp
         def quad_jvp(self, primals, tangents):
             K, b, c = primals
             K_dot, b_dot, c_dot = tangents
             primal = quad_autodiff(self, K, b, c)
-            tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, c))
+            # tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, c))
+            Kb = self.solve._autodiff(self, K, b)
+            Kc = self.solve._autodiff(self, K, c)
+            tangent_K = -_transpose(Kb) @ K_dot @ Kc
             tangent_b = quad_autodiff(self, K, b_dot, c)
             tangent_c = quad_autodiff(self, K, b, c_dot)
             return primal, tangent_K + tangent_b + tangent_c
@@ -274,10 +282,11 @@ class DecompAutoDiff(Decomposition):
             K, b = primals
             K_dot, b_dot = tangents
             primal = quad_autodiff_cnone(self, K, b)
-            tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, b))
+            # tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, b))
+            Kb = self.solve._autodiff(self, K, b)
+            tangent_K = -_transpose(Kb) @ K_dot @ Kb
             tangent_b = quad_autodiff(self, K, b_dot, b)
-            tangent_b_T = jnp.swapaxes(tangent_b, -2, -1) if b.ndim >= 2 else tangent_b
-            return primal, tangent_K + tangent_b + tangent_b_T
+            return primal, tangent_K + tangent_b + _transpose(tangent_b)
 
         def quad(self, b, c=None):
             if c is None:

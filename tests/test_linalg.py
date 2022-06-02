@@ -664,12 +664,6 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
 util.xfail(DecompTestBase, 'test_solve_vec_gvar')
 util.xfail(DecompTestBase, 'test_quad_vec_gvar')
 
-# TODO quad backward derivatives are broken
-util.xfail(DecompTestBase, 'test_quad_vec_jac_rev')
-util.xfail(DecompTestBase, 'test_quad_matrix_jac_rev')
-util.xfail(DecompTestBase, 'test_quad_vec_jac_rev_jit')
-util.xfail(DecompTestBase, 'test_quad_matrix_jac_rev_jit')
-
 # TODO second derivatives not working
 util.xfail(DecompTestBase, 'test_logdet_hess')
 util.xfail(DecompTestBase, 'test_logdet_hess_num')
@@ -679,13 +673,3 @@ util.xfail(DecompTestBase, 'test_logdet_hess_num')
 for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
     if name.endswith('_jit'):
         util.xfail(TestReduceRank, name)
-
-# TODO probably these xfailures would be solved by making BlockDecomp
-# a subclass of DecompAutoDiff, the problem must be quad
-util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev')
-util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev_jit')
-util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev')
-util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_jit')
-util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_matrix')
-util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev')
-util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev_jit')
