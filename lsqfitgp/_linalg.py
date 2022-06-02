@@ -344,7 +344,7 @@ class Diag(DecompAutoDiff):
     
     def quad(self, b, c=None):
         VTb = self._V.T @ b
-        VTbw = VTb.T / self._w
+        VTbw = _transpose(VTb) / self._w
         if c is None:
             VTc = VTb
         elif c.dtype == object:
@@ -461,7 +461,15 @@ def solve_triangular_auto(a, b, lower=False):
     else:
         return linalg.solve_triangular(a, b, lower=lower, check_finite=False)
 
-class Chol(DecompAutoDiff):
+class CholEps:
+    
+    def _eps(self, eps, mat, maxeigv):
+        if eps is None:
+            eps = len(mat) * jnp.finfo(asinexact(mat.dtype)).eps
+        assert 0 <= eps < 1
+        return eps * maxeigv    
+
+class Chol(DecompAutoDiff, CholEps):
     """
     Cholesky decomposition.
     """
@@ -483,7 +491,7 @@ class Chol(DecompAutoDiff):
             invLc = solve_triangular_auto(self._L, c, lower=True)
             if c.dtype == object:
                 invLb = numpy.asarray(invLb)
-        return invLb.T @ invLc
+        return _transpose(invLb) @ invLc
     
     def logdet(self):
         return 2 * jnp.sum(jnp.log(jnp.diag(self._L)))
@@ -493,12 +501,6 @@ class Chol(DecompAutoDiff):
     
     def decorrelate(self, b):
         return solve_triangular_auto(self._L, b, lower=True)
-
-    def _eps(self, eps, mat, maxeigv):
-        if eps is None:
-            eps = len(mat) * jnp.finfo(asinexact(mat.dtype)).eps
-        assert 0 <= eps < 1
-        return eps * maxeigv
 
 def _scale(a):
     """
@@ -553,7 +555,7 @@ class CholToeplitz(Chol):
         eps = self._eps(eps, t, m)
         self._L = _toeplitz_linalg.cholesky(t, diageps=eps)
 
-class CholToeplitzML(DecompAutoDiff):
+class CholToeplitzML(DecompAutoDiff, CholEps):
     """
     Cholesky decomposition of a Toeplitz matrix. Only the first row of the
     matrix is read. It does not store the decomposition in memory, it is
@@ -565,6 +567,27 @@ class CholToeplitzML(DecompAutoDiff):
         m = _toeplitz_linalg.eigv_bound(t)
         self.teps = self._eps(eps, t, m)
         self.t = t
+    
+    def solve(self, b):
+        ilb = _toeplitz_linalg.cholesky(self.t, b, lower=True, inverse=True, diageps=self.teps)
+        return _toeplitz_linalg.cholesky(self.t, ilb, lower=False, inverse=True, diageps=self.teps)
+    
+    def quad(self, b, c=None):
+        ilb = _toeplitz_linalg.cholesky(self.t, b, lower=True, inverse=True, diageps=self.teps)
+        if c is None:
+            ilc = ilb
+        else:
+            ilc = _toeplitz_linalg.cholesky(self.t, c, lower=True, inverse=True, diageps=self.teps)
+        return _transpose(ilb) @ ilc
+    
+    def logdet(self):
+        return _toeplitz_linalg.cholesky_logdet(self.t, diageps=t.teps)
+    
+    def correlate(self, b):
+        return _toeplitz_linalg.cholesky(self.t, b, lower=True, inverse=False, diageps=self.teps)
+    
+    def decorrelate(self, b):
+        return _toeplitz_linalg.cholesky(self.t, b, lower=True, inverse=True, diageps=self.teps)
 
 class BlockDecomp(Decomposition):
     """

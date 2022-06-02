@@ -26,7 +26,7 @@ import numpy
 
 from . import _patch_jax
 
-def cholesky(t, b=None, *, inverse=False, diageps=None):
+def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     """
     
     Cholesky decomposition of a positive definite Toeplitz matrix.
@@ -37,6 +37,9 @@ def cholesky(t, b=None, *, inverse=False, diageps=None):
         The first row/column of the matrix.
     b : (n,) or (n, m) array, optional
         If provided, the cholesky factor is multiplied by this vector/matrix.
+    lower : bool
+        Compute the lower (True, default) or the upper triangular cholesky
+        factor.
     inverse : bool
         If True, multiply the inverse of the cholesky factor by `b`.
     diageps: float, optional
@@ -48,7 +51,8 @@ def cholesky(t, b=None, *, inverse=False, diageps=None):
     If `b` is None (default):
     
     L : (n, n) array
-        Lower triangular matrix such that toeplitz(t) == L @ L.T.
+        Lower triangular matrix such that toeplitz(t) == L @ L.T, or
+        upper U = L.T.
     
     If `b` is an array:
     
@@ -71,8 +75,13 @@ def cholesky(t, b=None, *, inverse=False, diageps=None):
     # compiled this with numba the code as originally written with explicit
     # indices is faster.
     
-    # TODO reimplement using jax.lax.scan. Is there something analogous for
-    # reduction instead of stacking?
+    # TODO reimplement using jax.lax.scan. Use the y for stacking and the
+    # carry for summing.
+    
+    # TODO implement lower=False
+    # (L^Tb)_ij = L_ki b_kj
+    # L^Tb = stack(sum(L[:, :, None] * b[:, None, :], 0))
+    assert lower, 'lower=False not implemented'
     
     t = jnp.asarray(t)
     assert len(t.shape) == 1
