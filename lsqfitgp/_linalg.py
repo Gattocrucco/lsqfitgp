@@ -84,16 +84,6 @@ def choose_numpy(*args):
     else:
         return numpy
 
-# TODO try jax.lax.stop_gradient instead
-def _nodifftracer(x):
-    """
-    Unpack a JAX autodiff tracer.
-    """
-    if isinstance(x, jax.core.Tracer) and hasattr(x, 'primal'):
-        return _nodifftracer(x.primal)
-    else:
-        return x
-
 def _transpose(x):
     if x.ndim < 2:
         return x
@@ -216,7 +206,7 @@ class DecompAutoDiff(Decomposition):
             if self.direct_autodiff:
                 old__init__(self, K, *args, **kw)
             else:
-                old__init__(self, _nodifftracer(K), *args, **kw)
+                old__init__(self, jax.lax.stop_gradient(K), *args, **kw)
             self._K = K
         
         cls.__init__ = __init__
