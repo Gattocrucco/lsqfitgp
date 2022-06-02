@@ -219,40 +219,50 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             sol = b.T @ invK @ c
             result = self.decompclass(K).quad(b, c)
             self.assert_close_gvar(sol, result)
+    
+    def quad(self, K, b, c=None):
+        if c is None:
+            c = b
+        return b.T @ self.solve(K, c)
 
-    def test_quad_vec(self):
+    def check_quad(self, bgen, cgen=lambda n: None, jit=False):
+        fun = lambda K, b, c: self.decompclass(K).quad(b, c)
+        funjit = jax.jit(fun)
         for n in range(1, MAXSIZE):
             K = self.randsymmat(n)
-            b = self.randvec(len(K))
-            sol = b.T @ self.solve(K, b)
-            result = self.decompclass(K).quad(b)
-            np.testing.assert_allclose(sol, result, rtol=1e-3)
+            b = bgen(len(K))
+            c = cgen(len(K))
+            result = fun(K, b, c)
+            if jit:
+                result2 = funjit(K, b, c)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-12)
+            else:
+                sol = self.quad(K, b, c)
+                np.testing.assert_allclose(result, sol, atol=1e-13, rtol=1e-10)
+    
+    def test_quad_vec(self):
+        self.check_quad(self.randvec)
     
     def test_quad_vec_vec(self):
-        for n in range(1, MAXSIZE):
-            K = self.randsymmat(n)
-            b = self.randvec(len(K))
-            c = self.randvec(len(K))
-            sol = b.T @ self.solve(K, c)
-            result = self.decompclass(K).quad(b, c)
-            np.testing.assert_allclose(sol, result)
+        self.check_quad(self.randvec, self.randvec)
     
     def test_quad_matrix(self):
-        for n in range(1, MAXSIZE):
-            K = self.randsymmat(n)
-            b = self.randmat(len(K))
-            sol = b.T @ self.solve(K, b)
-            result = self.decompclass(K).quad(b)
-            np.testing.assert_allclose(sol, result)
+        self.check_quad(self.randmat)
     
     def test_quad_matrix_matrix(self):
-        for n in range(1, MAXSIZE):
-            K = self.randsymmat(n)
-            b = self.randmat(len(K))
-            c = self.randmat(len(K))
-            sol = b.T @ self.solve(K, c)
-            result = self.decompclass(K).quad(b, c)
-            np.testing.assert_allclose(sol, result)
+        self.check_quad(self.randmat, self.randmat)
+    
+    def test_quad_vec_jit(self):
+        self.check_quad(self.randvec, jit=True)
+    
+    def test_quad_vec_vec_jit(self):
+        self.check_quad(self.randvec, self.randvec, True)
+    
+    def test_quad_matrix_jit(self):
+        self.check_quad(self.randmat, jit=True)
+    
+    def test_quad_matrix_matrix_jit(self):
+        self.check_quad(self.randmat, self.randmat, True)
     
     def quad_vec_jac(self, jacfun):
         def fun(s, n, b):
@@ -604,15 +614,19 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
 # second argument
 util.xfail(DecompTestBase, 'test_solve_vec_gvar')
 util.xfail(DecompTestBase, 'test_quad_vec_gvar')
+util.xfail(TestReduceRank, 'test_solve_vec_gvar')
+util.xfail(TestReduceRank, 'test_quad_vec_gvar')
 
 # TODO quad backward derivatives are broken
 util.xfail(DecompTestBase, 'test_quad_vec_jac_rev')
 util.xfail(DecompTestBase, 'test_quad_matrix_jac_rev')
+util.xfail(TestReduceRank, 'test_quad_vec_jac_rev')
+util.xfail(TestReduceRank, 'test_quad_matrix_jac_rev')
 
 # TODO linalg.sparse.eigsh does not have an XLA counterpart, but apparently
 # they are now making an effort to add sparse support to jax, let's wait
-for name, attr in vars(DecompTestBase).items():
-    if callable(attr) and name.endswith('_jit'):
+for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
+    if name.endswith('_jit'):
         util.xfail(TestReduceRank, name)
 
 # TODO probably these xfailures would be solved by making BlockDecomp
