@@ -79,10 +79,10 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fun(K, b)
             if jit:
                 result2 = funjit(K, b)
-                np.testing.assert_allclose(result2, result, atol=1e-12, rtol=1e-12)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-11)
             else:
                 sol = self.solve(K, b)
-                np.testing.assert_allclose(result, sol, rtol=1e-4)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
     
     def check_solve_jac(self, bgen, jacfun, jit=False):
         def fun(s, n, b):
@@ -98,10 +98,10 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = funjac(s, n, b)
             if jit:
                 result2 = funjacjit(s, n, b)
-                np.testing.assert_allclose(result2, result, atol=1e-8, rtol=1e-8)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-8)
             else:
                 sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
-                np.testing.assert_allclose(result, sol, atol=1e-8, rtol=1e-3)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-3)
 
     def test_solve_vec(self):
         self.check_solve(self.randvec)
@@ -242,10 +242,10 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fun(K, b, c)
             if jit:
                 result2 = funjit(K, b, c)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-12)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-11)
             else:
                 sol = self.quad(K, b, c)
-                np.testing.assert_allclose(result, sol, atol=1e-13, rtol=1e-10)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-10)
     
     def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False):
         def fun(s, n, b, c):
@@ -262,7 +262,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fungrad(s, n, b, c)
             if jit:
                 result2 = fungradjit(s, n, b, c)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-8)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-7)
             else:
                 sol = self.quadjac(dK, K, b, c)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-7)
@@ -335,7 +335,7 @@ class DecompTestBase(metaclass=abc.ABCMeta):
                 np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-14)
             else:
                 sol = self.logdet(K)
-                np.testing.assert_allclose(result, sol, atol=1e-10, rtol=1e-10)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-10)
     
     def check_logdet_jac(self, jacfun, jit=False):
         def fun(s, n):
@@ -348,12 +348,15 @@ class DecompTestBase(metaclass=abc.ABCMeta):
             result = fungrad(s, n)
             if jit:
                 result2 = fungradjit(s, n)
-                np.testing.assert_allclose(result2, result, atol=1e-12, rtol=1e-10)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-10)
             else:
                 K = self.mat(s, n)
                 dK = self.matjac(s, n)
                 sol = np.trace(self.solve(K, dK))
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
+                # TODO 1e-4? really? in general probably low tolerances are
+                # needed for CholToeplitz and to a lesser extent Chol, not for
+                # the diagonalizations
     
     def test_logdet(self):
         self.check_logdet()
@@ -623,10 +626,25 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
     def subdecompclass(self):
         return _linalg.Diag
 
-#### XFAILS ####
-
-# TODO wrap all methods of all test classes to try again in case of failure,
+# wrap all methods of all test classes to try again in case of failure,
 # to hedge against bad random matrices
+for name, cls in dict(vars()).items():
+    if inspect.isclass(cls) and issubclass(cls, DecompTestBase):
+        for name, meth in vars(cls).items():
+            # do not get all members, or all xfails would be needed to be
+            # marked on all subclasses
+            if name.startswith('test_'):
+                @functools.wraps(meth)
+                def newmeth(self, *args, _meth=meth, **kw):
+                    try:
+                        return _meth(self, *args, **kw)
+                    except Exception as exc:
+                        warnings.warn(f'Test {self.__class__.__name__}.{_meth.__name__} failed once with exception {exc.__class__.__name__}: ' + ", ".join(exc.args))
+                        return _meth(self, *args, **kw)
+                setattr(cls, name, newmeth)
+        
+#### XFAILS ####
+# keep last to avoid hiding them in wrappings
 
 # solve does not support gvar any more, and quad now supports gvar only on
 # second argument
@@ -634,6 +652,7 @@ util.xfail(DecompTestBase, 'test_solve_vec_gvar')
 util.xfail(DecompTestBase, 'test_quad_vec_gvar')
 util.xfail(TestReduceRank, 'test_solve_vec_gvar')
 util.xfail(TestReduceRank, 'test_quad_vec_gvar')
+# duplicated for TestReduceRank because it wraps superclass methods
 
 # TODO quad backward derivatives are broken
 util.xfail(DecompTestBase, 'test_quad_vec_jac_rev')
