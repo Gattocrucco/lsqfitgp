@@ -806,8 +806,9 @@ util.xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
 util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
 util.xfail(TestGammaExp, 'test_positive_deriv2_nd')
 util.xfail(TestGammaExp, 'test_double_diff_nd_second_chopped')
+util.xfail(TestGammaExp, 'test_jit_deriv2_nd') # tipically xpasses
 
-# TODO often xpass, numerical precision problems
+# TODO often xpass, likely numerical precision problems
 util.xfail(TestGammaExp, 'test_positive_deriv2')
 util.xfail(TestPPKernel, 'test_positive_deriv2')
 
