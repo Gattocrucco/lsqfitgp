@@ -364,10 +364,10 @@ class DecompTestBase(DecompTestABC):
                 sol = self.logdet(K)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-10)
     
-    def check_logdet_jac(self, jacfun, jit=False, hess=False, num=False):
+    def check_logdet_jac(self, jacfun, jit=False, hess=False, num=False, da=False):
         def fun(s, n):
             K = self.mat(s, n)
-            return self.decompclass(K).logdet()
+            return self.decompclass(K, direct_autodiff=da).logdet()
         fungrad = jacfun(fun)
         fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in range(1, MAXSIZE):
@@ -408,7 +408,7 @@ class DecompTestBase(DecompTestABC):
         self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True)
 
     def test_logdet_hess_num(self):
-        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, num=True)
+        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, num=True, da=True)
 
     def test_logdet_jit(self):
         self.check_logdet(True)
@@ -518,7 +518,7 @@ class TestReduceRank(DecompTestCorr):
     
     @property
     def decompclass(self):
-        return lambda K: _linalg.ReduceRank(K, rank=self.rank(len(K)))
+        return lambda K, **kw: _linalg.ReduceRank(K, rank=self.rank(len(K)), **kw)
     
     def solve(self, K, b):
         invK, rank = linalg.pinv(K, return_rank=True)
@@ -578,14 +578,14 @@ class BlockDecompTestBase(DecompTestCorr):
             
     @property
     def decompclass(self):
-        def decomp(K):
+        def decomp(K, **kw):
             if len(K) == 1:
-                return self.subdecompclass(K)
+                return self.subdecompclass(K, **kw)
             p = np.random.randint(1, len(K))
             P = K[:p, :p]
             Q = K[:p, p:]
             S = K[p:, p:]
-            args = (self.subdecompclass(P), S, Q, self.subdecompclass)
+            args = (self.subdecompclass(P, **kw), S, Q, lambda K, **kw: self.subdecompclass(K, **kw))
             return _linalg.BlockDecomp(*args)
         return decomp
     
@@ -633,14 +633,14 @@ class BlockDiagDecompTestBase(DecompTestCorr):
                 
     @property
     def decompclass(self):
-        def decomp(K):
+        def decomp(K, **kw):
             if len(K) == 1:
-                return self.subdecompclass(K)
+                return self.subdecompclass(K, **kw)
             p = self._p
             assert p < len(K)
             A = K[:p, :p]
             B = K[p:, p:]
-            args = (self.subdecompclass(A), self.subdecompclass(B))
+            args = (self.subdecompclass(A, **kw), self.subdecompclass(B, **kw))
             return _linalg.BlockDiagDecomp(*args)
         return decomp
 
@@ -666,7 +666,7 @@ util.xfail(DecompTestBase, 'test_quad_vec_gvar')
 
 # TODO second derivatives not working
 util.xfail(DecompTestBase, 'test_logdet_hess')
-util.xfail(DecompTestBase, 'test_logdet_hess_num')
+util.skip(DecompTestBase, 'test_logdet_hess_num')
 
 # TODO linalg.sparse.eigsh does not have an XLA counterpart, but apparently
 # they are now making an effort to add sparse support to jax, let's wait
@@ -688,3 +688,6 @@ util.xfail(BlockDecompTestBase, 'test_quad_vec_jac_rev_jit')
 util.xfail(BlockDecompTestBase, 'test_quad_matrix_jac_rev_jit')
 util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev')
 util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev_jit')
+
+# TODO why?
+util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')

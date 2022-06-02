@@ -19,12 +19,12 @@ def assert_equal(*args):
     """
     np.testing.assert_equal(*map(jaxtonumpy, args))
 
-def xfail(cls, meth):
+def mark(cls, meth, mark):
     """
-    Function to mark a test method as xfail.
+    Function to mark a test method.
     """
     impl = getattr(cls, meth)
-    @pytest.mark.xfail
+    @getattr(pytest.mark, mark)
     @functools.wraps(impl) # `wraps` needed because pytest uses the method name
     def newimpl(self):
         # wrap because otherwise the superclass method would be marked too,
@@ -35,3 +35,9 @@ def xfail(cls, meth):
         finally:
             impl.pytestmark.pop()
     setattr(cls, meth, newimpl)
+
+def xfail(cls, meth):
+    mark(cls, meth, 'xfail')
+
+def skip(cls, meth):
+    mark(cls, meth, 'skip')
