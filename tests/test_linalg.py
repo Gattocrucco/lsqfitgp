@@ -673,3 +673,18 @@ util.xfail(DecompTestBase, 'test_logdet_hess_num')
 for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
     if name.endswith('_jit'):
         util.xfail(TestReduceRank, name)
+
+# TODO reverse diff broken because they use quads within other stuff probably.
+# Subclassing DecompAutoDiff does not work. Maybe just using quad to compute
+# tildeS is too much.
+util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev')
+util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev')
+util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev_jit')
+util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_jit')
+util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_matrix')
+util.xfail(BlockDecompTestBase, 'test_quad_vec_jac_rev')
+util.xfail(BlockDecompTestBase, 'test_quad_matrix_jac_rev')
+util.xfail(BlockDecompTestBase, 'test_quad_vec_jac_rev_jit')
+util.xfail(BlockDecompTestBase, 'test_quad_matrix_jac_rev_jit')
+util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev')
+util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev_jit')

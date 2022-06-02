@@ -193,7 +193,8 @@ class Decomposition(metaclass=abc.ABCMeta):
 
 class DecompAutoDiff(Decomposition):
     """
-    Abstract subclass adding JAX support to subclasses of Decomposition.
+    Abstract subclass adding JAX autodiff support to subclasses of
+    Decomposition, even if the decomposition algorithm is not supported by JAX.
     """
         
     def __init_subclass__(cls, **kw):
@@ -205,8 +206,13 @@ class DecompAutoDiff(Decomposition):
         old__init__ = cls.__init__
         
         @functools.wraps(old__init__)
-        def __init__(self, K, **kw):
-            old__init__(self, _nodifftracer(K), **kw)
+        def __init__(self, K, *args, **kw):
+            if not hasattr(self, 'direct_autodiff'):
+                self.direct_autodiff = kw.pop('direct_autodiff', False)
+            if self.direct_autodiff:
+                old__init__(self, K, *args, **kw)
+            else:
+                old__init__(self, _nodifftracer(K), *args, **kw)
             self._K = K
         
         cls.__init__ = __init__
@@ -239,7 +245,10 @@ class DecompAutoDiff(Decomposition):
             return primal, tangent_K + tangent_b
         
         def solve(self, b):
-            return solve_autodiff(self, self._K, b)
+            if self.direct_autodiff:
+                return oldsolve(self, b)
+            else:
+                return solve_autodiff(self, self._K, b)
         
         # solve_autodiff is used by logdet_jvp
         solve._autodiff = solve_autodiff
@@ -289,7 +298,9 @@ class DecompAutoDiff(Decomposition):
             return primal, tangent_K + tangent_b + _transpose(tangent_b)
 
         def quad(self, b, c=None):
-            if c is None:
+            if self.direct_autodiff:
+                return oldquad(self, b, c)
+            elif c is None:
                 return quad_autodiff_cnone(self, self._K, b)
             else:
                 return quad_autodiff(self, self._K, b, c)
@@ -312,7 +323,10 @@ class DecompAutoDiff(Decomposition):
             return primal, tangent
         
         def logdet(self):
-            return logdet_autodiff(self, self._K)
+            if self.direct_autodiff:
+                return oldlogdet(self)
+            else:
+                return logdet_autodiff(self, self._K)
         
         return logdet
     
@@ -549,9 +563,7 @@ class BlockDecomp(Decomposition):
     # This class can be used only starting from a seed block and adding
     # other blocks one at a time. Would a divide et impera approach be useful
     # for my case?
-    
-    # TODO is it more efficient to make this a subclass of DecompAutoDiff?
-    
+        
     def __init__(self, P_decomp, S, Q, S_decomp_class):
         """
         The matrix to be decomposed is
@@ -592,8 +604,7 @@ class BlockDecomp(Decomposition):
         QTinvPf = invP.quad(Q, f)
         if c is None:
             fTinvPQtildeSg = tildeS.quad(QTinvPf, g)
-            gtildeSQTinvPf = fTinvPQtildeSg.T if fTinvPQtildeSg.shape else fTinvPQtildeSg
-            return invP.quad(f) + tildeS.quad(QTinvPf) - fTinvPQtildeSg - gtildeSQTinvPf + tildeS.quad(g)
+            return invP.quad(f) + tildeS.quad(QTinvPf) - fTinvPQtildeSg - _transpose(fTinvPQtildeSg) + tildeS.quad(g)
         else:
             h = c[:len(Q)]
             i = c[len(Q):]
@@ -620,7 +631,7 @@ class BlockDecomp(Decomposition):
         f = b[:len(Q)]
         g = b[len(Q):]
         x = invP.correlate(f)
-        y = jnp.tensordot(invP.decorrelate(Q).T, f, 1) + tildeS.correlate(g)
+        y = _transpose(invP.decorrelate(Q)) @ f + tildeS.correlate(g)
         return jnp.concatenate([x, y])
     
     def decorrelate(self, b):
