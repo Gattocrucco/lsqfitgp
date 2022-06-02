@@ -84,6 +84,7 @@ def choose_numpy(*args):
     else:
         return numpy
 
+# TODO try jax.lax.stop_gradient instead
 def _nodifftracer(x):
     """
     Unpack a JAX autodiff tracer.

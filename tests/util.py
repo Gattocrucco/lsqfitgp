@@ -1,4 +1,5 @@
 import functools
+import warnings
 
 from jax import tree_util
 import numpy as np
@@ -41,3 +42,32 @@ def xfail(cls, meth):
 
 def skip(cls, meth):
     mark(cls, meth, 'skip')
+
+def tryagain(fun, rep=2, method=False):
+    """
+    Decorates test `fun` to make it try again in case of failure. Inhibited
+    by xfails.
+    """
+    meta = {}
+    @functools.wraps(fun)
+    def newfun(*args, _meta=meta, **kw):
+        job = lambda: fun(*args, **kw)
+        marks = getattr(_meta['newfun'], 'pytestmark', [])
+        if any(m.name == 'xfail' for m in marks):
+            return job()
+        for i in range(rep):
+            try:
+                x = job()
+                if i > 0:
+                    if method:
+                        self = args[0]
+                        name = f'{self.__class__.__name__}.{fun.__name__}'
+                    else:
+                        name = fun.__name__
+                    warnings.warn(f'Test {name} failed {i} times with exception {exc.__class__.__name__}: ' + ", ".join(exc.args))
+                return x
+            except Exception as e:
+                exc = e
+        raise exc
+    meta['newfun'] = newfun
+    return newfun

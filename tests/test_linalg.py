@@ -20,8 +20,6 @@
 import sys
 import abc
 import inspect
-import functools
-import warnings
 
 import jax
 from jax import numpy as jnp
@@ -29,12 +27,11 @@ from jax import test_util
 import numpy as np
 from scipy import linalg, stats
 import gvar
-import pytest
 
 import util
 
 sys.path = ['.'] + sys.path
-from lsqfitgp import _linalg, _kernels
+from lsqfitgp import _linalg, _kernels, _toeplitz_linalg
 
 MAXSIZE = 10 + 1
 
@@ -55,20 +52,7 @@ class DecompTestABC(metaclass=abc.ABCMeta):
             # do not get all members, or all xfails would be needed to be
             # marked on all subclasses
             if name.startswith('test_'):
-                meta = {}
-                @functools.wraps(meth)
-                def newmeth(self, *args, _meth=meth, _meta=meta, **kw):
-                    job = lambda: _meth(self, *args, **kw)
-                    marks = getattr(_meta['newmeth'], 'pytestmark', [])
-                    if any(m.name == 'xfail' for m in marks):
-                        return job()
-                    try:
-                        return job()
-                    except Exception as exc:
-                        warnings.warn(f'Test {self.__class__.__name__}.{_meth.__name__} failed once with exception {exc.__class__.__name__}: ' + ", ".join(exc.args))
-                        return job()
-                meta['newmeth'] = newmeth
-                setattr(cls, name, newmeth)
+                setattr(cls, name, util.tryagain(meth, method=True))
         
 class DecompTestBase(DecompTestABC):
     
@@ -393,7 +377,7 @@ class DecompTestBase(DecompTestABC):
                 KdK = self.solve(K, dK)
                 Kd2K = self.solve(K, d2K)
                 sol = -np.trace(KdK @ KdK) + np.trace(Kd2K)
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-15)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-5)
     
     def test_logdet(self):
         self.check_logdet()
@@ -405,7 +389,7 @@ class DecompTestBase(DecompTestABC):
         self.check_logdet_jac(jax.jacfwd)
         
     def test_logdet_hess(self):
-        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True)
+        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, da=True)
 
     def test_logdet_hess_num(self):
         self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, num=True, da=True)
@@ -547,24 +531,6 @@ class TestReduceRank(DecompTestCorr):
     def logdet(self, K):
         return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
         
-def test_solve_triangular():
-    for n in range(1, MAXSIZE):
-        for ndim in range(3):
-            for lower in [True, False]:
-                tri = np.tril if lower else np.triu
-                A = tri(np.random.randn(n, n))
-                diag = np.sqrt(np.sum(np.random.randn(n, 2) ** 2, axis=-1) / 2)
-                A[np.diag_indices(n)] = diag
-                shape = np.random.randint(1, 4, size=ndim)
-                B = np.random.randn(n, *shape)
-                check_solve_triangular(A, B, lower)
-
-def check_solve_triangular(A, B, lower):
-    x1 = linalg.solve_triangular(A, B.reshape(B.shape[0], -1), lower=lower).reshape(B.shape)
-    np.testing.assert_allclose(np.tensordot(A, x1, 1), B)
-    x2 = _linalg.solve_triangular(A, B, lower=lower)
-    np.testing.assert_allclose(x1, x2)
-
 class BlockDecompTestBase(DecompTestCorr):
     """
     Abstract class for testing BlockDecomp. Concrete subclasses must
@@ -655,6 +621,51 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
     @property
     def subdecompclass(self):
         return _linalg.Diag
+
+def test_solve_triangular():
+    for n in range(1, MAXSIZE):
+        for ndim in range(3):
+            for lower in [True, False]:
+                tri = np.tril if lower else np.triu
+                A = tri(np.random.randn(n, n))
+                diag = np.sqrt(np.sum(np.random.randn(n, 2) ** 2, axis=-1) / 2)
+                A[np.diag_indices(n)] = diag
+                shape = np.random.randint(1, 4, size=ndim)
+                B = np.random.randn(n, *shape)
+                check_solve_triangular(A, B, lower)
+
+def check_solve_triangular(A, B, lower):
+    x1 = linalg.solve_triangular(A, B.reshape(B.shape[0], -1), lower=lower).reshape(B.shape)
+    np.testing.assert_allclose(np.tensordot(A, x1, 1), B)
+    x2 = _linalg.solve_triangular(A, B, lower=lower)
+    np.testing.assert_allclose(x1, x2)
+
+@util.tryagain
+def test_toeplitz_gershgorin():
+    t = np.random.randn(100)
+    m = linalg.toeplitz(t)
+    b1 = _linalg._gershgorin_eigval_bound(m)
+    b2 = _toeplitz_linalg.eigv_bound(t)
+    np.testing.assert_allclose(b2, b1, rtol=1e-15)
+
+@util.tryagain
+def test_toeplitz_chol():
+    x = np.linspace(0, 3, 10)
+    t = np.exp(-1/2 * x ** 2)
+    m = linalg.toeplitz(t)
+    
+    l1 = _toeplitz_linalg.cholesky(t)
+    l2 = linalg.cholesky(m, lower=True)
+    np.testing.assert_allclose(l1, l2, rtol=1e-8)
+    
+    b = np.random.randn(len(t), 30)
+    lb1 = _toeplitz_linalg.cholesky(t, b)
+    lb2 = l2 @ b
+    np.testing.assert_allclose(lb1, lb2, rtol=1e-8)
+    
+    ilb1 = _toeplitz_linalg.cholesky(t, b, inverse=True)
+    ilb2 = linalg.solve_triangular(l2, b, lower=True)
+    np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
 
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings

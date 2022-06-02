@@ -521,3 +521,13 @@ First things to do:
 
 1) Check finite differences against the partially handwritten solution
 2) Implement direct_autodiff and see if it works.
+
+=> with direct_autodiff, the derivatives work, both compared to finite
+differences and to the handwritten solution. This leaves (2) and (3), and I
+guess (3) is the case since the jvp of solve is tested on its own.
+
+I have no idea on what's going wrong, and I don't feel like diving into jax
+tracing, so the next thing to do is implementing the second derivative test
+for solve and quad and see if they fail too. Since I expect debugging this
+will require some time, after checking that direct_autodiff works in those
+cases I should switch to improving pdf*.py and using hessians in empbayes_fit.
