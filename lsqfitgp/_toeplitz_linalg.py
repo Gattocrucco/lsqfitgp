@@ -105,6 +105,8 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
 
     if diageps is not None:
         t = t.at[0].add(diageps)
+    norm = t[0]
+    t = t / norm
     
     if _patch_jax.isconcrete(t) and t[0] <= 0:
         msg = '1-th leading minor is not positive definite'
@@ -191,27 +193,25 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     
     if logdet:
         ld = val[0]
-        return ld
+        return ld + n / 2 * jnp.log(norm)
     if b is None:
         L = val[0]
         assert L.shape == (n, n)
         if lower:
             L = L.T
-        return L
+        return L * jnp.sqrt(norm)
     elif not inverse:
         Lb = val[0]
         assert Lb.shape == b.shape
         if vec:
             Lb = jnp.squeeze(Lb, -1)
-        return Lb
+        return Lb * jnp.sqrt(norm)
     else:
         invLb = val[0]
         assert invLb.shape == b.shape
         if vec:
             invLb = jnp.squeeze(invLb, -1)
-        return invLb
-
-cholesky_jit = jax.jit(cholesky, static_argnames=['lower', 'inverse', 'logdet'])
+        return invLb / jnp.sqrt(norm)
 
 def eigv_bound(t):
     """

@@ -68,7 +68,7 @@ class DecompTestBase(DecompTestABC):
     
     def mat(self, s, n):
         x = np.arange(n)
-        return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+        return np.pi * jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
     
     def randvec(self, n):
         return np.random.randn(n)
@@ -484,11 +484,11 @@ class ToeplitzBase(DecompTestCorr):
         alpha = np.exp(1/3 * np.random.randn())
         scale = np.exp(1/3 * np.random.randn())
         kernel = _kernels.RatQuad(scale=scale, alpha=alpha)
-        return kernel(x[None, :], x[:, None])
+        return np.pi * kernel(x[None, :], x[:, None])
     
     def mat(self, s, n):
         x = np.arange(n)
-        return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+        return np.pi * jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
 
 class TestCholToeplitz(ToeplitzBase):
     
@@ -656,13 +656,12 @@ def test_toeplitz_gershgorin():
 
 def check_toeplitz_chol(lower=True, jit=False):
     x = np.linspace(0, 3, 10)
-    t = np.exp(-1/2 * x ** 2)
+    t = np.pi * np.exp(-1/2 * x ** 2)
     m = linalg.toeplitz(t)
     
+    cholesky = _toeplitz_linalg.cholesky
     if jit:
-        cholesky = _toeplitz_linalg.cholesky_jit
-    else:
-        cholesky = _toeplitz_linalg.cholesky
+        cholesky = jax.jit(_toeplitz_linalg.cholesky, static_argnames=['lower', 'inverse', 'logdet'])
     
     l1 = cholesky(t, lower=lower)
     l2 = linalg.cholesky(m, lower=lower)
