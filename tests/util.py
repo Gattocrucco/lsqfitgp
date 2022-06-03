@@ -25,6 +25,8 @@ def mark(cls, meth, mark):
     Function to mark a test method.
     """
     impl = getattr(cls, meth)
+    if not meth.startswith('test_'):
+        warnings.warn(f'method {cls.__name__}.{meth} not prefixed with test_')
     @getattr(pytest.mark, mark)
     @functools.wraps(impl) # `wraps` needed because pytest uses the method name
     def newimpl(self):

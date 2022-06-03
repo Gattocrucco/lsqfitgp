@@ -577,6 +577,9 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     def solve(self, b):
         raise NotImplementedError
     
+    # TODO support gvar in quad, requires a numpy reimplementation of
+    # _toeplitz_linalg.cholesky
+    
     def quad(self, b, c=None):
         ilb = _toeplitz_linalg.cholesky(self.t, b, inverse=True, diageps=self.teps)
         if c is None:
@@ -586,7 +589,7 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
         return _transpose(ilb) @ ilc
     
     def logdet(self):
-        return 2 * _toeplitz_linalg.cholesky(self.t, logdet=True, diageps=t.teps)
+        return 2 * _toeplitz_linalg.cholesky(self.t, logdet=True, diageps=self.teps)
     
     def correlate(self, b):
         return _toeplitz_linalg.cholesky(self.t, b, diageps=self.teps)

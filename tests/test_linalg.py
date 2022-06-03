@@ -477,12 +477,8 @@ class TestCholGersh(DecompTestCorr):
     def decompclass(self):
         return _linalg.CholGersh
 
-class TestCholToeplitz(DecompTestCorr):
-    
-    @property
-    def decompclass(self):
-        return _linalg.CholToeplitz
-    
+class ToeplitzBase(DecompTestCorr):
+
     def randsymmat(self, n):
         x = np.arange(n)
         alpha = np.exp(1/3 * np.random.randn())
@@ -493,6 +489,18 @@ class TestCholToeplitz(DecompTestCorr):
     def mat(self, s, n):
         x = np.arange(n)
         return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+
+class TestCholToeplitz(ToeplitzBase):
+    
+    @property
+    def decompclass(self):
+        return _linalg.CholToeplitz
+    
+class TestCholToeplitzML(ToeplitzBase):
+    
+    @property
+    def decompclass(self):
+        return _linalg.CholToeplitzML    
         
 class TestReduceRank(DecompTestCorr):
     
@@ -730,3 +738,8 @@ util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev_jit')
 
 # TODO why?
 util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')
+
+# TODO solve is not implemented by TestCholToeplitzML
+for name, meth in inspect.getmembers(TestCholToeplitzML, inspect.isfunction):
+    if name.startswith('test_') and ('solve' in name or 'jac' in name or 'gvar' in name):
+        util.xfail(TestCholToeplitzML, name)
