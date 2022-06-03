@@ -576,14 +576,13 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     
     def solve(self, b):
         raise NotImplementedError
-    
-    # TODO support gvar in quad, requires a numpy reimplementation of
-    # _toeplitz.cholesky
+        # TODO use linalg.solve_toeplitz, xfail jit
     
     def quad(self, b, c=None):
         ilb = _toeplitz.cholesky(self.t, b, inverse=True, diageps=self.teps)
         # TODO can I jit cholesky here? would it work if then I want to jit
-        # again or compute derivatives?
+        # again or compute derivatives? => better to let the user opt for the
+        # jit
         if c is None:
             ilc = ilb
         elif c.dtype == object:

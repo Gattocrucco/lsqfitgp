@@ -214,6 +214,8 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
             invLb = jnp.squeeze(invLb, -1)
         return invLb / jnp.sqrt(norm)
 
+cholesky_jit = jax.jit(cholesky, static_argnames=['lower', 'inverse', 'logdet'])
+
 def chol_solve(t, b, diageps=None):
     """
     t[0] += diageps
