@@ -43,8 +43,8 @@ setuptools.setup(
     install_requires=[
         'numpy>=1.20', # first version with broadcast_shapes
         'scipy>=1.3', # first version not complaining when n==k in sparse.eigsh
-        'jax>=0.3', # major release at adoption
-        'jaxlib>=0.3', # major release at adoption
+        'jax>=0.3.13', # release at adoption
+        'jaxlib>=0.3.10', # release at adoption
         'gvar>=1.10', # first version with new gvars correlated with old ones
     ]
 )
