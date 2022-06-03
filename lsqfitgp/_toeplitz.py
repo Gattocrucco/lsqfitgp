@@ -222,7 +222,7 @@ cholesky_jit = jax.jit(cholesky, static_argnames=['lower', 'inverse', 'logdet'])
 def chol_solve(t, b, diageps=None):
     """
     t (..., n)
-    b (..., n, m) or (..., n)
+    b (..., n, m) or (n,)
     t[0] += diageps
     m = toeplitz(t)
     l = chol(m)

@@ -531,3 +531,33 @@ tracing, so the next thing to do is implementing the second derivative test
 for solve and quad and see if they fail too. Since I expect debugging this
 will require some time, after checking that direct_autodiff works in those
 cases I should switch to improving pdf*.py and using hessians in empbayes_fit.
+
+2022-06-04
+==========
+
+Some benchmarks of toeplitz chol matvec:
+
+In [344]: def trychol(n, func):
+     ...:     t = jnp.exp(-1/2 * jnp.linspace(0, 5, n) ** 2)
+     ...:     t = t.at[0].add(lgp._toeplitz.eigv_bound(t) * n * finfo(float).eps)
+     ...:     b = np.random.randn(n)
+     ...:     getattr(lgp._toeplitz, func)(t, b)
+     ...: 
+
+In [345]: %timeit trychol(10000, 'chol_solve')
+440 ms ± 7.56 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+In [346]: %timeit trychol(10000, 'cholesky')
+227 ms ± 1.8 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+In [347]: %timeit trychol(10000, 'cholesky_jit')
+159 ms ± 164 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+In [348]: %timeit trychol(10, 'cholesky_jit')
+692 µs ± 214 ns per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+
+In [349]: %timeit trychol(10, 'cholesky')
+68 ms ± 146 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+In [350]: %timeit trychol(10, 'chol_solve')
+910 µs ± 4.26 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
