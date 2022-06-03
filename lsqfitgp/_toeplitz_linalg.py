@@ -41,7 +41,7 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
         Compute the lower (True, default) or the upper triangular cholesky
         factor.
     inverse : bool
-        If True, multiply the inverse of the cholesky factor by `b`.
+        If True, compute the inverse of the cholesky factor.
     diageps: float, optional
         The diagonal of the matrix (the first element of t) is increased by
         `diageps` to correct for numerical non-positivity.
@@ -57,7 +57,8 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     If `b` is an array:
     
     Lb : (n,) or (n, m) array
-        The product L @ b, or L^-1 @ b if `inverse == True`.
+        The product L @ b, or L^-1 @ b if `inverse == True`, or
+        L.T @ b, L.T^-1 @ b if `lower == False`.
     
     Notes
     -----
@@ -70,32 +71,22 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     
     """
     
-    # TODO Split the function in an interface and a numba core. Exceptions are
-    # raised by the interface, the core returns the last i. Probably if I
-    # compiled this with numba the code as originally written with explicit
-    # indices is faster.
-    
     # TODO reimplement using jax.lax.scan. Use the y for stacking and the
     # carry for summing. Use lax.fori_loop for summing only.
         
-    # TODO implement lower=False
-    # (L^Tb)_ij = L_ki b_kj
-    # L^Tb = stack(sum(L[:, :, None] * b[:, None, :], 0))
-    # for the solve I have to iterate backward.
-    assert lower, 'lower=False not implemented'
-    
     t = jnp.asarray(t)
     assert len(t.shape) == 1
     n = len(t)
     
-    if b is None:
-        assert not inverse
-    else:
+    vec = False
+    if b is not None:
         b = jnp.asarray(b)
         assert b.ndim in (1, 2) and b.shape[0] == n
-        bshape = b.shape
-        if b.ndim == 1:
-            b = b[:, None]
+        vec = b.ndim < 2
+    elif inverse:
+        b = jnp.eye(n)
+    if vec:
+        b = b[:, None]
     
     if n == 0:
         return jnp.empty((0, 0) if b is None else b.shape)
@@ -108,14 +99,23 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
         t = jnp.concatenate([t[:1] + diageps, t[1:]])
     
     if b is None:
-        L = t[None, :] # transposed
+        L = jnp.zeros((n, n))
+        L = L.at[0, :].set(t)
     elif not inverse:
-        Lb = t[:, None] * b[0, None, :]
+        if lower:
+            Lb = t[:, None] * b[0, None, :]
+        else:
+            Lb = jnp.zeros(b.shape)
+            Lb = Lb.at[0, :].set(t @ b)
     else:
-        invLb = b.at[0].divide(t[0])
-        prevLi = t
+        if lower:
+            invLb = b.at[0].divide(t[0])
+            prevLi = t
+        else:
+            pass
 
-    g = jnp.stack([jnp.roll(t, 1), t])
+    g = jnp.stack([t, t])
+    g = g.at[0, 1:].set(g[0, :-1])
 
     for i in range(1, n):
         if _patch_jax.isconcrete(g):
@@ -128,32 +128,46 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
             raise numpy.linalg.LinAlgError(msg)
 
         gamma = jnp.sqrt((1 - rho) * (1 + rho))
-        g = (g + g[::-1] * rho) / gamma
-        Li = jnp.concatenate([jnp.zeros(i), g[0, i:]]) # i-th column of L
-        g = jnp.stack([jnp.roll(g[0], 1), g[1]])
+        g = g.at[:, i:].add(g[::-1, i:] * rho)
+        g = g.at[:, i:].divide(gamma)
+        Li = g[0, :] # i-th column of L starting from row i, garbage before
         
         if b is None:
-            L = jnp.concatenate([L, Li[None, :]])
+            L = L.at[i, i:].set(Li[i:])
         elif not inverse:
-            Lb = Lb + Li[:, None] * b[i, None, :]
+            if lower:
+                Lb = Lb.at[i:, :].add(Li[i:, None] * b[i, None, :])
+            else:
+                Lb = Lb.at[i, :].set(Li[i:] @ b[i:, :])
         else:
             # x[0] /= a[0, 0]
             # for i in range(1, len(x)):
             #     x[i:] -= x[i - 1] * a[i:, i - 1]
             #     x[i] /= a[i, i]
-            invLb = invLb.at[i:].add(-invLb[i - 1] * prevLi[i:, None])
-            invLb = invLb.at[i].divide(Li[i])
+            if lower:
+                invLb = invLb.at[i:].add(-invLb[i - 1] * prevLi[i:, None])
+                invLb = invLb.at[i].divide(Li[i])
+            else:
+                pass
             prevLi = Li
             
+        g = g.at[0, i + 1:].set(g[0, i:-1])
+
     if b is None:
         assert L.shape == (n, n)
-        return L.T
+        if lower:
+            L = L.T
+        return L
     elif not inverse:
         assert Lb.shape == b.shape
-        return Lb.reshape(bshape)
+        if vec:
+            Lb = jnp.squeeze(Lb, -1)
+        return Lb
     else:
         assert invLb.shape == b.shape
-        return invLb.reshape(bshape)
+        if vec:
+            invLb = jnp.squeeze(invLb, -1)
+        return invLb
 
 def eigv_bound(t):
     """

@@ -144,6 +144,9 @@ class Decomposition(metaclass=abc.ABCMeta):
         if c is None:
             c = b
         return _transpose(b) @ self.solve(c)
+        
+    # TODO to compute efficiently the predictive variance I need a new method
+    # diagquad(b).
     
     @abc.abstractmethod
     def logdet(self): # pragma: no cover
@@ -432,24 +435,26 @@ def solve_triangular(a, b, lower=False):
     a = numpy.asarray(a)
     x = numpy.copy(b)
     
-    if x.ndim < 2:
-        x = x[..., :, None]
+    vec = x.ndim < 2
+    if vec:
+        x = x[:, None]
 
     n = a.shape[-1]
     assert x.shape[-2] == n
-
-    if lower:
-        x[..., 0, :] /= a[..., 0, 0, None]
-        for i in range(1, n):
-            x[..., i:, :] -= x[..., None, i - 1, :] * a[..., i:, i - 1, None]
-            x[..., i, :] /= a[..., i, i, None]
-    else:
-        x[..., -1, :] /= a[..., -1, -1, None]
-        for i in range(n - 1, 0, -1):
-            x[..., :i, :] -= x[..., None, i, :] * a[..., :i, i, None]
-            x[..., i - 1, :] /= a[..., i - 1, i - 1, None]
     
-    if b.ndim < 2:
+    if not lower:
+        a = a[..., ::-1, ::-1]
+        x = x[..., ::-1, :]
+
+    x[..., 0, :] /= a[..., 0, 0, None]
+    for i in range(1, n):
+        x[..., i:, :] -= x[..., None, i - 1, :] * a[..., i:, i - 1, None]
+        x[..., i, :] /= a[..., i, i, None]
+    
+    if not lower:
+        x = x[..., ::-1, :]
+    
+    if vec:
         x = numpy.squeeze(x, -1)
     return x
 
