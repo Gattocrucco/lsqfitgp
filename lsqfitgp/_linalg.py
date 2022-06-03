@@ -69,7 +69,7 @@ from scipy import sparse
 from jax.scipy import linalg as jlinalg
 import gvar
 
-from . import _toeplitz_linalg
+from . import _toeplitz
 from . import _patch_jax
 
 # TODO optimize the matrix multiplication with gvars. Use these gvar internals:
@@ -557,9 +557,9 @@ class CholToeplitz(Chol):
     
     def __init__(self, K, eps=None):
         t = K[0]
-        m = _toeplitz_linalg.eigv_bound(t)
+        m = _toeplitz.eigv_bound(t)
         eps = self._eps(eps, t, m)
-        self._L = _toeplitz_linalg.cholesky(t, diageps=eps)
+        self._L = _toeplitz.cholesky(t, diageps=eps)
 
 class CholToeplitzML(DecompAutoDiff, CholEps):
     """
@@ -570,7 +570,7 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     
     def __init__(self, K, eps=None):
         t = K[0]
-        m = _toeplitz_linalg.eigv_bound(t)
+        m = _toeplitz.eigv_bound(t)
         self.teps = self._eps(eps, t, m)
         self.t = t
     
@@ -578,24 +578,29 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
         raise NotImplementedError
     
     # TODO support gvar in quad, requires a numpy reimplementation of
-    # _toeplitz_linalg.cholesky
+    # _toeplitz.cholesky
     
     def quad(self, b, c=None):
-        ilb = _toeplitz_linalg.cholesky(self.t, b, inverse=True, diageps=self.teps)
+        ilb = _toeplitz.cholesky(self.t, b, inverse=True, diageps=self.teps)
+        # TODO can I jit cholesky here? would it work if then I want to jit
+        # again or compute derivatives?
         if c is None:
             ilc = ilb
+        elif c.dtype == object:
+            ilb = numpy.array(ilb)
+            ilc = _toeplitz.chol_solve(self.t, c, diageps=self.teps)
         else:
-            ilc = _toeplitz_linalg.cholesky(self.t, c, inverse=True, diageps=self.teps)
+            ilc = _toeplitz.cholesky(self.t, c, inverse=True, diageps=self.teps)
         return _transpose(ilb) @ ilc
     
     def logdet(self):
-        return 2 * _toeplitz_linalg.cholesky(self.t, logdet=True, diageps=self.teps)
+        return 2 * _toeplitz.cholesky(self.t, logdet=True, diageps=self.teps)
     
     def correlate(self, b):
-        return _toeplitz_linalg.cholesky(self.t, b, diageps=self.teps)
+        return _toeplitz.cholesky(self.t, b, diageps=self.teps)
     
     def decorrelate(self, b):
-        return _toeplitz_linalg.cholesky(self.t, b, inverse=True, diageps=self.teps)
+        return _toeplitz.cholesky(self.t, b, inverse=True, diageps=self.teps)
 
 class BlockDecomp(Decomposition):
     """

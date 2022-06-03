@@ -31,7 +31,7 @@ import gvar
 import util
 
 sys.path = ['.'] + sys.path
-from lsqfitgp import _linalg, _kernels, _toeplitz_linalg
+from lsqfitgp import _linalg, _kernels, _toeplitz
 
 MAXSIZE = 10 + 1
 
@@ -536,7 +536,7 @@ class TestReduceRank(DecompTestCorr):
         rank = self.rank(n)
         x = np.arange(n)
         x[:n - rank + 1] = x[0]
-        return jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+        return np.pi * jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
         
     def logdet(self, K):
         return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
@@ -644,47 +644,48 @@ def test_solve_triangular():
                 shape = np.random.randint(1, 4, size=ndim)
                 B = np.random.randn(*shape[:-1], n, *shape[-1:])
                 x = _linalg.solve_triangular(A, B, lower=lower)
-                np.testing.assert_allclose(A @ x, B, rtol=1e-11)
+                np.testing.assert_allclose(A @ x, B, rtol=1e-10)
 
 @util.tryagain
 def test_toeplitz_gershgorin():
     t = np.random.randn(100)
     m = linalg.toeplitz(t)
     b1 = _linalg._gershgorin_eigval_bound(m)
-    b2 = _toeplitz_linalg.eigv_bound(t)
+    b2 = _toeplitz.eigv_bound(t)
     np.testing.assert_allclose(b2, b1, rtol=1e-15)
 
 def check_toeplitz_chol(lower=True, jit=False):
-    x = np.linspace(0, 3, 10)
-    t = np.pi * np.exp(-1/2 * x ** 2)
-    m = linalg.toeplitz(t)
+    for n in [1, 2, 10]:
+        x = np.linspace(0, 3, n)
+        t = np.pi * np.exp(-1/2 * x ** 2)
+        m = linalg.toeplitz(t)
     
-    cholesky = _toeplitz_linalg.cholesky
-    if jit:
-        cholesky = jax.jit(_toeplitz_linalg.cholesky, static_argnames=['lower', 'inverse', 'logdet'])
+        cholesky = _toeplitz.cholesky
+        if jit:
+            cholesky = jax.jit(_toeplitz.cholesky, static_argnames=['lower', 'inverse', 'logdet'])
     
-    l1 = cholesky(t, lower=lower)
-    l2 = linalg.cholesky(m, lower=lower)
-    np.testing.assert_allclose(l1, l2, rtol=1e-8)
+        l1 = cholesky(t, lower=lower)
+        l2 = linalg.cholesky(m, lower=lower)
+        np.testing.assert_allclose(l1, l2, rtol=1e-8)
     
-    b = np.random.randn(len(t), 30)
-    lb1 = cholesky(t, b, lower=lower)
-    lb2 = l2 @ b
-    np.testing.assert_allclose(lb1, lb2, rtol=1e-7)
+        b = np.random.randn(len(t), 30)
+        lb1 = cholesky(t, b, lower=lower)
+        lb2 = l2 @ b
+        np.testing.assert_allclose(lb1, lb2, rtol=1e-7)
     
-    ld1 = cholesky(t, logdet=True)
-    _, ld2 = np.linalg.slogdet(l2)
-    np.testing.assert_allclose(ld1, ld2, rtol=1e-9)
+        ld1 = cholesky(t, logdet=True)
+        _, ld2 = np.linalg.slogdet(l2)
+        np.testing.assert_allclose(ld1, ld2, rtol=1e-9)
     
-    if lower:
+        if lower:
     
-        il1 = cholesky(t, inverse=True, lower=lower)
-        il2 = linalg.solve_triangular(l2, np.eye(len(t)), lower=lower)
-        np.testing.assert_allclose(il1, il2, rtol=1e-6)
+            il1 = cholesky(t, inverse=True, lower=lower)
+            il2 = linalg.solve_triangular(l2, np.eye(len(t)), lower=lower)
+            np.testing.assert_allclose(il1, il2, rtol=1e-6)
     
-        ilb1 = cholesky(t, b, inverse=True, lower=lower)
-        ilb2 = linalg.solve_triangular(l2, b, lower=lower)
-        np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
+            ilb1 = cholesky(t, b, inverse=True, lower=lower)
+            ilb2 = linalg.solve_triangular(l2, b, lower=lower)
+            np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
 
 @util.tryagain
 def test_toeplitz_chol_lower():
@@ -701,6 +702,18 @@ def test_toeplitz_chol_lower_jit():
 @util.tryagain
 def test_toeplitz_chol_upper_jit():
     check_toeplitz_chol(False, True)
+
+@util.tryagain
+def test_toeplitz_chol_solve():
+    for n in [1, 2, 10]:
+        x = np.linspace(0, 3, n)
+        t = np.pi * np.exp(-1/2 * x ** 2)
+        m = linalg.toeplitz(t)
+        l = linalg.cholesky(m, lower=True)
+        b = np.random.randn(n, 30)
+        ilb1 = _toeplitz.chol_solve(t, b)
+        ilb2 = linalg.solve_triangular(l, b, lower=True)
+        np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
 
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings
@@ -740,5 +753,5 @@ util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')
 
 # TODO solve is not implemented by TestCholToeplitzML
 for name, meth in inspect.getmembers(TestCholToeplitzML, inspect.isfunction):
-    if name.startswith('test_') and ('solve' in name or 'jac' in name or 'gvar' in name):
+    if name.startswith('test_') and ('solve' in name or 'jac' in name):
         util.xfail(TestCholToeplitzML, name)

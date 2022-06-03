@@ -1,4 +1,4 @@
-# lsqfitgp/_toeplitz_linalg.py
+# lsqfitgp/_toeplitz.py
 #
 # Copyright (c) 2020, 2022, Giacomo Petrillo
 #
@@ -85,8 +85,7 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     """
     
     t = jnp.asarray(t)
-    assert len(t.shape) == 1
-    n = len(t)
+    n, = t.shape
     
     assert lower or not inverse
     
@@ -105,12 +104,13 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
 
     if diageps is not None:
         t = t.at[0].add(diageps)
-    norm = t[0]
-    t = t / norm
-    
+
     if _patch_jax.isconcrete(t) and t[0] <= 0:
         msg = '1-th leading minor is not positive definite'
         raise numpy.linalg.LinAlgError(msg)
+    
+    norm = t[0]
+    t = t / norm
     
     if logdet:
         init_val = (jnp.log(t[0]),)
@@ -126,9 +126,8 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
             Lb = Lb.at[0, :].set(t @ b)
         init_val = (Lb,)
     else:
-        invLb = b.at[0].divide(t[0])
         prevLi = t.at[0].set(0)
-        init_val = (invLb, prevLi)
+        init_val = (b, prevLi) # invLb = b
 
     g = jnp.stack([t, t])
     g = g.at[0, :].set(jnp.roll(g[0, :], 1))
@@ -212,6 +211,62 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
         if vec:
             invLb = jnp.squeeze(invLb, -1)
         return invLb / jnp.sqrt(norm)
+
+def chol_solve(t, b, diageps=None):
+    """
+    t[0] += diageps
+    m = toeplitz(t)
+    l = chol(m)
+    return solve(l, b)
+    pure numpy, object arrays supported
+    """
+    
+    t = numpy.copy(t, subok=True)
+    n, = t.shape
+        
+    b = numpy.copy(b, subok=True)
+    assert b.ndim in (1, 2) and b.shape[0] == n
+    vec = b.ndim < 2
+    if vec:
+        b = b[:, None]
+    
+    if n == 0:
+        return numpy.empty(b.shape, numpy.result_type(t.dtype, b.dtype))
+
+    if diageps is not None:
+        t[0] += diageps
+
+    if t[0] <= 0:
+        msg = '1-th leading minor is not positive definite'
+        raise numpy.linalg.LinAlgError(msg)
+    
+    norm = t[0]
+    t /= norm
+    invLb = b
+    prevLi = t
+    g = numpy.stack([numpy.roll(t, 1), t])
+    
+    for i in range(1, n):
+        
+        assert g[0, i] > 0
+        rho = -g[1, i] / g[0, i]
+
+        if abs(rho) >= 1:
+            msg = '{}-th leading minor is not positive definite'.format(i + 1)
+            raise numpy.linalg.LinAlgError(msg)
+
+        gamma = numpy.sqrt((1 - rho) * (1 + rho))
+        g[:, i:] += g[::-1, i:] * rho
+        g[:, i:] /= gamma
+        Li = g[0, i:] # i-th column of L from row i
+        invLb[i:, :] -= invLb[i - 1, None, :] * prevLi[i:, None]
+        invLb[i, :] /= Li[0]
+        prevLi[i:] = Li
+        g[0, i:] = numpy.roll(g[0, i:], 1)
+
+    if vec:
+        invLb = numpy.squeeze(invLb, -1)
+    return invLb / numpy.sqrt(norm)
 
 def eigv_bound(t):
     """
