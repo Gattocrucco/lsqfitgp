@@ -309,7 +309,7 @@ class KernelTestBase(KernelTestABC):
             covfun = self.kernel_class(**kw)
             c1 = covfun(x1, x1.T)
             c2 = covfun(x2, x2.T)
-            np.testing.assert_allclose(c1, c2, atol=1e-15, rtol=1e-15)
+            np.testing.assert_allclose(c1, c2, atol=1e-15, rtol=1e-14)
     
     def test_loc_scale_nd(self):
         kernel = self.kernel_class

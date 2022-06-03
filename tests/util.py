@@ -51,23 +51,31 @@ def tryagain(fun, rep=2, method=False):
     meta = {}
     @functools.wraps(fun)
     def newfun(*args, _meta=meta, **kw):
+
         job = lambda: fun(*args, **kw)
+
         marks = getattr(_meta['newfun'], 'pytestmark', [])
         if any(m.name == 'xfail' for m in marks):
             return job()
+
+        if method:
+            self = args[0]
+            name = f'{self.__class__.__name__}.{fun.__name__}'
+        else:
+            name = fun.__name__
+
         for i in range(rep):
             try:
                 x = job()
                 if i > 0:
-                    if method:
-                        self = args[0]
-                        name = f'{self.__class__.__name__}.{fun.__name__}'
-                    else:
-                        name = fun.__name__
                     warnings.warn(f'Test {name} failed {i} times with exception {exc.__class__.__name__}: ' + ", ".join(exc.args))
                 return x
             except Exception as e:
                 exc = e
+
+        if rep > 1:
+            warnings.warn(f'Test {name} failed {rep} times')
         raise exc
+
     meta['newfun'] = newfun
     return newfun
