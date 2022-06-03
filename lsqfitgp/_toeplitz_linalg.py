@@ -22,6 +22,8 @@
 # people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html
 
 from jax import numpy as jnp
+from jax import lax
+import jax
 import numpy
 
 from . import _patch_jax
@@ -71,9 +73,6 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     
     """
     
-    # TODO reimplement using jax.lax.scan. Use the y for stacking and the
-    # carry for summing. Use lax.fori_loop for summing only.
-        
     t = jnp.asarray(t)
     assert len(t.shape) == 1
     n = len(t)
@@ -91,33 +90,48 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     if n == 0:
         return jnp.empty((0, 0) if b is None else b.shape)
 
+    if diageps is not None:
+        t = t.at[0].add(diageps)
+    
     if _patch_jax.isconcrete(t) and t[0] <= 0:
         msg = '1-th leading minor is not positive definite'
         raise numpy.linalg.LinAlgError(msg)
-
-    if diageps is not None:
-        t = jnp.concatenate([t[:1] + diageps, t[1:]])
     
     if b is None:
         L = jnp.zeros((n, n))
         L = L.at[0, :].set(t)
+        init_val = (L,)
     elif not inverse:
         if lower:
             Lb = t[:, None] * b[0, None, :]
         else:
             Lb = jnp.zeros(b.shape)
             Lb = Lb.at[0, :].set(t @ b)
+        init_val = (Lb,)
     else:
         if lower:
             invLb = b.at[0].divide(t[0])
-            prevLi = t
         else:
             pass
+        prevLi = t.at[0].set(0)
+        init_val = (invLb, prevLi)
 
     g = jnp.stack([t, t])
-    g = g.at[0, 1:].set(g[0, :-1])
-
-    for i in range(1, n):
+    g = g.at[0, :].set(jnp.roll(g[0, :], 1))
+    g = g.at[:, 0].set(0)
+    
+    init_val = (g,) + init_val
+    
+    def body_fun(i, val):
+        
+        g = val[0]
+        if b is None:
+            L = val[1]
+        elif not inverse:
+            Lb = val[1]
+        else:
+            invLb, prevLi = val[1:]
+        
         if _patch_jax.isconcrete(g):
             assert g[0, i] > 0
         
@@ -128,46 +142,59 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
             raise numpy.linalg.LinAlgError(msg)
 
         gamma = jnp.sqrt((1 - rho) * (1 + rho))
-        g = g.at[:, i:].add(g[::-1, i:] * rho)
-        g = g.at[:, i:].divide(gamma)
-        Li = g[0, :] # i-th column of L starting from row i, garbage before
+        g = (g + g[::-1] * rho) / gamma
+        Li = g[0, :] # i-th column of L
         
         if b is None:
-            L = L.at[i, i:].set(Li[i:])
+            L = L.at[i, :].set(Li)
+            val = (L,)
         elif not inverse:
             if lower:
-                Lb = Lb.at[i:, :].add(Li[i:, None] * b[i, None, :])
+                Lb = Lb + Li[:, None] * b[i, None, :]
             else:
-                Lb = Lb.at[i, :].set(Li[i:] @ b[i:, :])
+                Lb = Lb.at[i, :].set(Li @ b)
+            val = (Lb,)
         else:
             # x[0] /= a[0, 0]
             # for i in range(1, len(x)):
             #     x[i:] -= x[i - 1] * a[i:, i - 1]
             #     x[i] /= a[i, i]
             if lower:
-                invLb = invLb.at[i:].add(-invLb[i - 1] * prevLi[i:, None])
+                invLb = invLb - invLb[i - 1, :] * prevLi[:, None]
                 invLb = invLb.at[i].divide(Li[i])
             else:
                 pass
-            prevLi = Li
+            prevLi = Li.at[i].set(0)
+            val = (invLb, prevLi)
             
-        g = g.at[0, i + 1:].set(g[0, i:-1])
+        g = g.at[0, :].set(jnp.roll(g[0, :], 1))
+        g = g.at[:, 0].set(0)
+        g = g.at[:, i].set(0)
+        
+        return (g,) + val
+        
+    val = lax.fori_loop(1, n, body_fun, init_val)
 
     if b is None:
+        L = val[1]
         assert L.shape == (n, n)
         if lower:
             L = L.T
         return L
     elif not inverse:
+        Lb = val[1]
         assert Lb.shape == b.shape
         if vec:
             Lb = jnp.squeeze(Lb, -1)
         return Lb
     else:
+        invLb = val[1]
         assert invLb.shape == b.shape
         if vec:
             invLb = jnp.squeeze(invLb, -1)
         return invLb
+
+cholesky_jit = jax.jit(cholesky, static_argnames=['lower', 'inverse'])
 
 def eigv_bound(t):
     """

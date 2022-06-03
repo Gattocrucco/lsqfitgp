@@ -646,35 +646,48 @@ def test_toeplitz_gershgorin():
     b2 = _toeplitz_linalg.eigv_bound(t)
     np.testing.assert_allclose(b2, b1, rtol=1e-15)
 
-def check_toeplitz_chol(lower):
+def check_toeplitz_chol(lower=True, jit=False):
     x = np.linspace(0, 3, 10)
     t = np.exp(-1/2 * x ** 2)
     m = linalg.toeplitz(t)
     
-    l1 = _toeplitz_linalg.cholesky(t, lower=lower)
+    if jit:
+        cholesky = _toeplitz_linalg.cholesky_jit
+    else:
+        cholesky = _toeplitz_linalg.cholesky
+    
+    l1 = cholesky(t, lower=lower)
     l2 = linalg.cholesky(m, lower=lower)
     np.testing.assert_allclose(l1, l2, rtol=1e-8)
     
     b = np.random.randn(len(t), 30)
-    lb1 = _toeplitz_linalg.cholesky(t, b, lower=lower)
+    lb1 = cholesky(t, b, lower=lower)
     lb2 = l2 @ b
     np.testing.assert_allclose(lb1, lb2, rtol=1e-7)
     
-    il1 = _toeplitz_linalg.cholesky(t, inverse=True, lower=lower)
+    il1 = cholesky(t, inverse=True, lower=lower)
     il2 = linalg.solve_triangular(l2, np.eye(len(t)), lower=lower)
     np.testing.assert_allclose(il1, il2, rtol=1e-6)
     
-    ilb1 = _toeplitz_linalg.cholesky(t, b, inverse=True, lower=lower)
+    ilb1 = cholesky(t, b, inverse=True, lower=lower)
     ilb2 = linalg.solve_triangular(l2, b, lower=lower)
     np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
 
 @util.tryagain
 def test_toeplitz_chol_lower():
-    check_toeplitz_chol(True)
+    check_toeplitz_chol()
 
 @util.tryagain
 def test_toeplitz_chol_upper():
     check_toeplitz_chol(False)
+
+@util.tryagain
+def test_toeplitz_chol_lower_jit():
+    check_toeplitz_chol(True, True)
+
+@util.tryagain
+def test_toeplitz_chol_upper_jit():
+    check_toeplitz_chol(False, True)
 
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings
