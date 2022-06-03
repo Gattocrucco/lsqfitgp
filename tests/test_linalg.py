@@ -624,23 +624,19 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
     def subdecompclass(self):
         return _linalg.Diag
 
+@util.tryagain
 def test_solve_triangular():
     for n in range(1, MAXSIZE):
-        for ndim in range(3):
+        for ndim in range(4):
             for lower in [True, False]:
                 tri = np.tril if lower else np.triu
                 A = tri(np.random.randn(n, n))
                 diag = np.sqrt(np.sum(np.random.randn(n, 2) ** 2, axis=-1) / 2)
                 A[np.diag_indices(n)] = diag
                 shape = np.random.randint(1, 4, size=ndim)
-                B = np.random.randn(n, *shape)
-                check_solve_triangular(A, B, lower)
-
-def check_solve_triangular(A, B, lower):
-    x1 = linalg.solve_triangular(A, B.reshape(B.shape[0], -1), lower=lower).reshape(B.shape)
-    np.testing.assert_allclose(np.tensordot(A, x1, 1), B)
-    x2 = _linalg.solve_triangular(A, B, lower=lower)
-    np.testing.assert_allclose(x1, x2)
+                B = np.random.randn(*shape[:-1], n, *shape[-1:])
+                x = _linalg.solve_triangular(A, B, lower=lower)
+                np.testing.assert_allclose(A @ x, B, rtol=1e-11)
 
 @util.tryagain
 def test_toeplitz_gershgorin():

@@ -81,6 +81,7 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     # TODO implement lower=False
     # (L^Tb)_ij = L_ki b_kj
     # L^Tb = stack(sum(L[:, :, None] * b[:, None, :], 0))
+    # for the solve I have to iterate backward.
     assert lower, 'lower=False not implemented'
     
     t = jnp.asarray(t)

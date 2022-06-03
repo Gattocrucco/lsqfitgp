@@ -426,23 +426,31 @@ class ReduceRank(Diag):
 def solve_triangular(a, b, lower=False):
     """
     Pure python implementation of scipy.linalg.solve_triangular for when
-    a or b are object arrays. Differently from the scipy version, it
-    satisfies tensordot(a, solve_triangular(a, b), 1) == b instead of
-    a @ solve_triangular(a, b) == b. It makes a difference only if b is >2D.
+    a or b are object arrays.
     """
     # TODO maybe commit this to gvar.linalg
+    a = numpy.asarray(a)
     x = numpy.copy(b)
-    a = numpy.asarray(a).reshape(a.shape + (1,) * len(x.shape[1:]))
+    
+    if x.ndim < 2:
+        x = x[..., :, None]
+
+    n = a.shape[-1]
+    assert x.shape[-2] == n
+
     if lower:
-        x[0] /= a[0, 0]
-        for i in range(1, len(x)):
-            x[i:] -= x[i - 1] * a[i:, i - 1]
-            x[i] /= a[i, i]
+        x[..., 0, :] /= a[..., 0, 0, None]
+        for i in range(1, n):
+            x[..., i:, :] -= x[..., None, i - 1, :] * a[..., i:, i - 1, None]
+            x[..., i, :] /= a[..., i, i, None]
     else:
-        x[-1] /= a[-1, -1]
-        for i in range(len(x) - 1, 0, -1):
-            x[:i] -= x[i] * a[:i, i]
-            x[i - 1] /= a[i - 1, i - 1]
+        x[..., -1, :] /= a[..., -1, -1, None]
+        for i in range(n - 1, 0, -1):
+            x[..., :i, :] -= x[..., None, i, :] * a[..., :i, i, None]
+            x[..., i - 1, :] /= a[..., i - 1, i - 1, None]
+    
+    if b.ndim < 2:
+        x = numpy.squeeze(x, -1)
     return x
 
 def solve_triangular_auto(a, b, lower=False):
