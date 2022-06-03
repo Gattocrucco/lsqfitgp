@@ -575,25 +575,24 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
         self.t = t
     
     def solve(self, b):
-        ilb = _toeplitz_linalg.cholesky(self.t, b, lower=True, inverse=True, diageps=self.teps)
-        return _toeplitz_linalg.cholesky(self.t, ilb, lower=False, inverse=True, diageps=self.teps)
+        raise NotImplementedError
     
     def quad(self, b, c=None):
-        ilb = _toeplitz_linalg.cholesky(self.t, b, lower=True, inverse=True, diageps=self.teps)
+        ilb = _toeplitz_linalg.cholesky(self.t, b, inverse=True, diageps=self.teps)
         if c is None:
             ilc = ilb
         else:
-            ilc = _toeplitz_linalg.cholesky(self.t, c, lower=True, inverse=True, diageps=self.teps)
+            ilc = _toeplitz_linalg.cholesky(self.t, c, inverse=True, diageps=self.teps)
         return _transpose(ilb) @ ilc
     
     def logdet(self):
         return _toeplitz_linalg.cholesky_logdet(self.t, diageps=t.teps)
     
     def correlate(self, b):
-        return _toeplitz_linalg.cholesky(self.t, b, lower=True, inverse=False, diageps=self.teps)
+        return _toeplitz_linalg.cholesky(self.t, b, diageps=self.teps)
     
     def decorrelate(self, b):
-        return _toeplitz_linalg.cholesky(self.t, b, lower=True, inverse=True, diageps=self.teps)
+        return _toeplitz_linalg.cholesky(self.t, b, inverse=True, diageps=self.teps)
 
 class BlockDecomp(Decomposition):
     """

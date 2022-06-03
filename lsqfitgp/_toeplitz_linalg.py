@@ -54,17 +54,20 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     
     L : (n, n) array
         Lower triangular matrix such that toeplitz(t) == L @ L.T, or
-        upper U = L.T.
+        upper U = L.T if `lower == False`, or L^-1 if `inverse == True`.
     
     If `b` is an array:
     
     Lb : (n,) or (n, m) array
         The product L @ b, or L^-1 @ b if `inverse == True`, or
-        L.T @ b, L.T^-1 @ b if `lower == False`.
+        L.T @ b if `lower == False`.
     
     Notes
     -----
-    The reference for the algorithm is:
+    If b is specified, the Cholesky factor is never formed in memory, but it is
+    not possible to compute U^-1 or U^-1 @ b directly in this way.
+    
+    Reference:
         
         Michael Stewart,
         Cholesky factorization of semi-definite Toeplitz matrices.
@@ -76,6 +79,8 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     t = jnp.asarray(t)
     assert len(t.shape) == 1
     n = len(t)
+    
+    assert lower or not inverse
     
     vec = False
     if b is not None:
@@ -109,10 +114,7 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
             Lb = Lb.at[0, :].set(t @ b)
         init_val = (Lb,)
     else:
-        if lower:
-            invLb = b.at[0].divide(t[0])
-        else:
-            pass
+        invLb = b.at[0].divide(t[0])
         prevLi = t.at[0].set(0)
         init_val = (invLb, prevLi)
 
@@ -159,11 +161,8 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
             # for i in range(1, len(x)):
             #     x[i:] -= x[i - 1] * a[i:, i - 1]
             #     x[i] /= a[i, i]
-            if lower:
-                invLb = invLb - invLb[i - 1, :] * prevLi[:, None]
-                invLb = invLb.at[i].divide(Li[i])
-            else:
-                pass
+            invLb = invLb - invLb[i - 1, :] * prevLi[:, None]
+            invLb = invLb.at[i].divide(Li[i])
             prevLi = Li.at[i].set(0)
             val = (invLb, prevLi)
             
