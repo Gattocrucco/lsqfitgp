@@ -76,8 +76,8 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     # indices is faster.
     
     # TODO reimplement using jax.lax.scan. Use the y for stacking and the
-    # carry for summing.
-    
+    # carry for summing. Use lax.fori_loop for summing only.
+        
     # TODO implement lower=False
     # (L^Tb)_ij = L_ki b_kj
     # L^Tb = stack(sum(L[:, :, None] * b[:, None, :], 0))
@@ -111,8 +111,7 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     elif not inverse:
         Lb = t[:, None] * b[0, None, :]
     else:
-        idx = jnp.arange(n)[:, None] # row indices
-        invLb = jnp.where(idx, b, b / t[0])
+        invLb = b.at[0].divide(t[0])
         prevLi = t
 
     g = jnp.stack([jnp.roll(t, 1), t])
@@ -141,8 +140,8 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
             # for i in range(1, len(x)):
             #     x[i:] -= x[i - 1] * a[i:, i - 1]
             #     x[i] /= a[i, i]
-            invLb = jnp.where(idx < i, invLb, invLb - invLb[i - 1] * prevLi[:, None])
-            invLb = jnp.where(idx != i, invLb, invLb / Li[i])
+            invLb = invLb.at[i:].add(-invLb[i - 1] * prevLi[i:, None])
+            invLb = invLb.at[i].divide(Li[i])
             prevLi = Li
             
     if b is None:
