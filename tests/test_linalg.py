@@ -665,6 +665,10 @@ def check_toeplitz_chol(lower=True, jit=False):
     lb2 = l2 @ b
     np.testing.assert_allclose(lb1, lb2, rtol=1e-7)
     
+    ld1 = cholesky(t, logdet=True)
+    _, ld2 = np.linalg.slogdet(l2)
+    np.testing.assert_allclose(ld1, ld2, rtol=1e-9)
+    
     if lower:
     
         il1 = cholesky(t, inverse=True, lower=lower)

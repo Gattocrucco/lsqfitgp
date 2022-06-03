@@ -586,7 +586,7 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
         return _transpose(ilb) @ ilc
     
     def logdet(self):
-        return _toeplitz_linalg.cholesky_logdet(self.t, diageps=t.teps)
+        return 2 * _toeplitz_linalg.cholesky(self.t, logdet=True, diageps=t.teps)
     
     def correlate(self, b):
         return _toeplitz_linalg.cholesky(self.t, b, diageps=self.teps)

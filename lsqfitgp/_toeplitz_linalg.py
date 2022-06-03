@@ -28,7 +28,7 @@ import numpy
 
 from . import _patch_jax
 
-def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
+def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False):
     """
     
     Cholesky decomposition of a positive definite Toeplitz matrix.
@@ -38,15 +38,18 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     t : (n,) array
         The first row/column of the matrix.
     b : (n,) or (n, m) array, optional
-        If provided, the cholesky factor is multiplied by this vector/matrix.
+        If provided, the Cholesky factor is multiplied by this vector/matrix.
     lower : bool
-        Compute the lower (True, default) or the upper triangular cholesky
+        Compute the lower (True, default) or the upper triangular Cholesky
         factor.
     inverse : bool
-        If True, compute the inverse of the cholesky factor.
-    diageps: float, optional
+        If True, compute the inverse of the Cholesky factor.
+    diageps : float, optional
         The diagonal of the matrix (the first element of t) is increased by
         `diageps` to correct for numerical non-positivity.
+    logdet : bool
+        If True, ignore all other options and return the logarithm of the
+        determinant of the Cholesky factor.
     
     Returns
     -------
@@ -61,6 +64,11 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     Lb : (n,) or (n, m) array
         The product L @ b, or L^-1 @ b if `inverse == True`, or
         L.T @ b if `lower == False`.
+    
+    If `logdet` is True:
+    
+    l : scalar
+        log(det(L))
     
     Notes
     -----
@@ -102,7 +110,9 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
         msg = '1-th leading minor is not positive definite'
         raise numpy.linalg.LinAlgError(msg)
     
-    if b is None:
+    if logdet:
+        init_val = (jnp.log(t[0]),)
+    elif b is None:
         L = jnp.zeros((n, n))
         L = L.at[0, :].set(t)
         init_val = (L,)
@@ -122,17 +132,19 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
     g = g.at[0, :].set(jnp.roll(g[0, :], 1))
     g = g.at[:, 0].set(0)
     
-    init_val = (g,) + init_val
+    init_val += (g,)
     
     def body_fun(i, val):
         
-        g = val[0]
-        if b is None:
-            L = val[1]
+        g = val[-1]
+        if logdet:
+            ld = val[0]
+        elif b is None:
+            L = val[0]
         elif not inverse:
-            Lb = val[1]
+            Lb = val[0]
         else:
-            invLb, prevLi = val[1:]
+            invLb, prevLi = val[:2]
         
         if _patch_jax.isconcrete(g):
             assert g[0, i] > 0
@@ -147,7 +159,10 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
         g = (g + g[::-1] * rho) / gamma
         Li = g[0, :] # i-th column of L
         
-        if b is None:
+        if logdet:
+            ld = ld + jnp.log(Li[i])
+            val = (ld,)
+        elif b is None:
             L = L.at[i, :].set(Li)
             val = (L,)
         elif not inverse:
@@ -170,30 +185,33 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None):
         g = g.at[:, 0].set(0)
         g = g.at[:, i].set(0)
         
-        return (g,) + val
+        return val + (g,)
         
     val = lax.fori_loop(1, n, body_fun, init_val)
-
+    
+    if logdet:
+        ld = val[0]
+        return ld
     if b is None:
-        L = val[1]
+        L = val[0]
         assert L.shape == (n, n)
         if lower:
             L = L.T
         return L
     elif not inverse:
-        Lb = val[1]
+        Lb = val[0]
         assert Lb.shape == b.shape
         if vec:
             Lb = jnp.squeeze(Lb, -1)
         return Lb
     else:
-        invLb = val[1]
+        invLb = val[0]
         assert invLb.shape == b.shape
         if vec:
             invLb = jnp.squeeze(invLb, -1)
         return invLb
 
-cholesky_jit = jax.jit(cholesky, static_argnames=['lower', 'inverse'])
+cholesky_jit = jax.jit(cholesky, static_argnames=['lower', 'inverse', 'logdet'])
 
 def eigv_bound(t):
     """
