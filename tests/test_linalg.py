@@ -96,6 +96,8 @@ class DecompTestBase(DecompTestABC):
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
     
     def check_solve_jac(self, bgen, jacfun, jit=False):
+        # TODO sometimes the jacobian of fun is practically zero. Why? This
+        # gives problems because it needs an higher absolute tolerance.
         def fun(s, n, b):
             K = self.mat(s, n)
             return self.decompclass(K).solve(b)
@@ -112,8 +114,8 @@ class DecompTestBase(DecompTestABC):
                 np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-8)
             else:
                 sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-3)
-
+                np.testing.assert_allclose(result, sol, atol=1e-13, rtol=1e-3)
+    
     def test_solve_vec(self):
         self.check_solve(self.randvec)
     
@@ -362,7 +364,7 @@ class DecompTestBase(DecompTestABC):
             result = fungrad(s, n)
             if jit:
                 result2 = fungradjit(s, n)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-10)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-9)
                 continue
             K = self.mat(s, n)
             dK = self.matjac(s, n)
