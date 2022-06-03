@@ -84,6 +84,8 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     
     """
     
+    # TODO vectorize
+    
     t = jnp.asarray(t)
     n, = t.shape
     
@@ -221,6 +223,8 @@ def chol_solve(t, b, diageps=None):
     pure numpy, object arrays supported
     """
     
+    # TODO vectorize
+    
     t = numpy.copy(t, subok=True)
     n, = t.shape
         
@@ -266,7 +270,8 @@ def chol_solve(t, b, diageps=None):
 
     if vec:
         invLb = numpy.squeeze(invLb, -1)
-    return invLb / numpy.sqrt(norm)
+    invLb /= numpy.sqrt(norm)
+    return invLb
 
 def eigv_bound(t):
     """
