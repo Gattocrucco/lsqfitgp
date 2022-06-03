@@ -792,13 +792,21 @@ When a covariance block flag or a DAG assumption is not used, emit a warning.
 Can be implemented by flagging the individual objects with "done", false by
 default, and then checking if something was not used in the blocks involved.
 
-#### Evenly spaced input
+#### Evenly spaced input (toeplitz)
 
 With stationary kernels, an evenly spaced input produces a toeplitz matrix,
 which requires O(N) memory and can be solved in O(N^2). If the data has
 uniform independent errors it's still toeplitz.
 
 Scipy.linalg now has a function to multiply toeplitz matrices.
+
+The kinds of solvers/decompositions are:
+1) Levinson O(n^2)  -> see scipy.linalg.solve_toeplitz
+2) Superfast direct O(n log^2 n)  -> see SuperGauss (R)
+3) PCG O(n log n)  -> see GPyTorch
+4) Schur O(n^2)  -> already implemented in lsqfitgp
+
+Book for PCG: Chan & Jin, An Introduction to Iterative Toeplitz Solvers
 
 #### Markovian processes
 

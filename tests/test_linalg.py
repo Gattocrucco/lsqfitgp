@@ -705,15 +705,29 @@ def test_toeplitz_chol_upper_jit():
 
 @util.tryagain
 def test_toeplitz_chol_solve():
-    for n in [1, 2, 10]:
-        x = np.linspace(0, 3, n)
-        t = np.pi * np.exp(-1/2 * x ** 2)
-        m = linalg.toeplitz(t)
-        l = linalg.cholesky(m, lower=True)
-        b = np.random.randn(n, 30)
-        ilb1 = _toeplitz.chol_solve(t, b)
-        ilb2 = linalg.solve_triangular(l, b, lower=True)
-        np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
+    shapes = [
+        [(), ()],
+        [(10,), (1,)],
+        [(1, 2), (3, 1)],
+        [(1, 4), (4,)],
+        [(3,), (1, 3)],
+    ]
+    for tshape, bshape in shapes:
+        for n in [1, 2, 10]:
+            x = np.linspace(0, 3, n)
+            gamma = np.random.uniform(0, 2, tshape + (1,))
+            t = np.pi * np.exp(-1/2 * x ** gamma)
+            m = np.empty(tshape + (n, n))
+            for i in np.ndindex(*tshape):
+                m[i] = linalg.toeplitz(t[i])
+            l = np.linalg.cholesky(m)
+            for shape in [(), (1,), (2,), (10,)]:
+                if bshape and not shape:
+                    continue
+                b = np.random.randn(*bshape, n, *shape)
+                ilb = _toeplitz.chol_solve(t, b, diageps=1e-12)
+                # ilb2 = linalg.solve_triangular(l, b, lower=True)
+                np.testing.assert_allclose(*np.broadcast_arrays(l @ ilb, b), rtol=1e-6)
 
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings

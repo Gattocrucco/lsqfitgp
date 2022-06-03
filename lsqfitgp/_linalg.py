@@ -577,6 +577,9 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     def solve(self, b):
         raise NotImplementedError
         # TODO use linalg.solve_toeplitz, xfail jit
+        # note: scipy's solve_toeplitz is vectorized with a silly python loop,
+        # levinson's algorithm should be simple so it may be worthwhile to
+        # reimplement it in jax.
     
     def quad(self, b, c=None):
         ilb = _toeplitz.cholesky(self.t, b, inverse=True, diageps=self.teps)

@@ -86,6 +86,9 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     
     # TODO vectorize
     
+    # TODO make this an internal implementation function, and define
+    # single-purpose wrappers
+    
     t = jnp.asarray(t)
     n, = t.shape
     
@@ -218,61 +221,64 @@ cholesky_jit = jax.jit(cholesky, static_argnames=['lower', 'inverse', 'logdet'])
 
 def chol_solve(t, b, diageps=None):
     """
+    t (..., n)
+    b (..., n, m) or (..., n)
     t[0] += diageps
     m = toeplitz(t)
     l = chol(m)
     return solve(l, b)
     pure numpy, object arrays supported
     """
-    
-    # TODO vectorize
-    
-    t = numpy.copy(t, subok=True)
-    n, = t.shape
         
-    b = numpy.copy(b, subok=True)
-    assert b.ndim in (1, 2) and b.shape[0] == n
+    t = numpy.copy(t, subok=True)
+    n = t.shape[-1]
+        
+    b = numpy.asanyarray(b)
     vec = b.ndim < 2
     if vec:
         b = b[:, None]
+    assert b.shape[-2] == n
     
     if n == 0:
-        return numpy.empty(b.shape, numpy.result_type(t.dtype, b.dtype))
+        shape = numpy.broadcast_shapes(t.shape[:-1], b.shape[:-2])
+        shape += (n,) if vec else b.shape[-2:]
+        dtype = numpy.result_type(t.dtype, b.dtype)
+        return numpy.empty(shape, dtype)
 
     if diageps is not None:
-        t[0] += diageps
+        t[..., 0] += diageps
 
-    if t[0] <= 0:
+    if numpy.any(t[..., 0] <= 0):
         msg = '1-th leading minor is not positive definite'
         raise numpy.linalg.LinAlgError(msg)
     
-    norm = t[0]
+    norm = numpy.copy(t[..., 0, None], subok=True)
     t /= norm
-    invLb = b
+    invLb = numpy.copy(numpy.broadcast_arrays(b, t[..., None])[0], subok=True)
     prevLi = t
-    g = numpy.stack([numpy.roll(t, 1), t])
+    g = numpy.stack([numpy.roll(t, 1, -1), t], -2)
     
     for i in range(1, n):
         
-        assert g[0, i] > 0
-        rho = -g[1, i] / g[0, i]
+        assert numpy.all(g[..., 0, i] > 0)
+        rho = -g[..., 1, i, None, None] / g[..., 0, i, None, None]
 
-        if abs(rho) >= 1:
+        if numpy.any(numpy.abs(rho) >= 1):
             msg = '{}-th leading minor is not positive definite'.format(i + 1)
             raise numpy.linalg.LinAlgError(msg)
 
         gamma = numpy.sqrt((1 - rho) * (1 + rho))
-        g[:, i:] += g[::-1, i:] * rho
-        g[:, i:] /= gamma
-        Li = g[0, i:] # i-th column of L from row i
-        invLb[i:, :] -= invLb[i - 1, None, :] * prevLi[i:, None]
-        invLb[i, :] /= Li[0]
-        prevLi[i:] = Li
-        g[0, i:] = numpy.roll(g[0, i:], 1)
+        g[..., :, i:] += g[..., ::-1, i:] * rho
+        g[..., :, i:] /= gamma
+        Li = g[..., 0, i:] # i-th column of L from row i
+        invLb[..., i:, :] -= invLb[..., i - 1, None, :] * prevLi[..., i:, None]
+        invLb[..., i, :] /= Li[..., 0, None]
+        prevLi[..., i:] = Li
+        g[..., 0, i:] = numpy.roll(g[..., 0, i:], 1, -1)
 
+    invLb /= numpy.sqrt(norm[..., None])
     if vec:
         invLb = numpy.squeeze(invLb, -1)
-    invLb /= numpy.sqrt(norm)
     return invLb
 
 def eigv_bound(t):
