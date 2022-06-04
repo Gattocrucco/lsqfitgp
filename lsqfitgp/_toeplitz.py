@@ -28,7 +28,7 @@ import numpy
 
 from . import _patch_jax
 
-def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False, difft=None):
+def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False):
     """
     
     Cholesky decomposition of a positive definite Toeplitz matrix.
@@ -134,27 +134,10 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
         prevLi = t.at[0].set(0)
         init_val = [b, prevLi] # invLb = b
         
-    if difft is None:
-        g = jnp.stack([t, t])
-        g = g.at[0, :].set(jnp.roll(g[0, :], 1))
-        g = g.at[:, 0].set(0)
-        init_val += [g]
-
-    else:
-        difft = jnp.asarray(difft)
-        assert difft.shape == (len(t) - 1,)
-        if diageps is not None and len(difft) >= 1:
-            difft = difft.at[0].add(-diageps)
-        difft = difft / norm
-        if _patch_jax.isconcrete(t, difft):
-            rtol = numpy.finfo(t.dtype).eps * t[0] / (t[0] - t[1])
-            numpy.testing.assert_allclose(numpy.diff(t), difft, rtol=rtol, atol=0)
-        t1 = jnp.roll(t, 1)
-        s = (t1 + t) / 2 # (g[0] + g[1]) / 2
-        d = t1.at[1:].set(-difft / 2) # (g[0] - g[1]) / 2
-        s = s.at[0].set(0)
-        d = d.at[0].set(0)
-        init_val += [s, d]
+    g = jnp.stack([t, t])
+    g = g.at[0, :].set(jnp.roll(g[0, :], 1))
+    g = g.at[:, 0].set(0)
+    init_val += [g]
     
     def body_fun(i, val):
         
@@ -168,32 +151,16 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
             invLb = val.pop(0)
             prevLi = val.pop(0)
         
-        if difft is None:
-            g = val.pop(0)
+        g = val.pop(0)
 
-            if _patch_jax.isconcrete(g):
-                assert g[0, i] > 0
-        
-            rho = -g[1, i] / g[0, i]
-            error = _patch_jax.isconcrete(rho) and abs(rho) >= 1
-            gamma = jnp.sqrt((1 - rho) * (1 + rho))
-            g = (g + g[::-1] * rho) / gamma
-            Li = g[0, :] # i-th column of L
-        
-        else:
-            s = val.pop(0)
-            d = val.pop(0)
-            si = s[i]
-            di = d[i]
-            
-            if _patch_jax.isconcrete(s, d):
-                assert si + di > 0
-            
-            error = _patch_jax.isconcrete(si, di) and si * di <= 0
-            ssd = jnp.sqrt(si / di) # sqrt((1 + rho)/(1 - rho))
-            s = s / ssd
-            d = d * ssd
-            Li = s + d
+        if _patch_jax.isconcrete(g):
+            assert g[0, i] > 0
+    
+        rho = -g[1, i] / g[0, i]
+        error = _patch_jax.isconcrete(rho) and abs(rho) >= 1
+        gamma = jnp.sqrt((1 - rho) * (1 + rho))
+        g = (g + g[::-1] * rho) / gamma
+        Li = g[0, :] # i-th column of L
         
         if error:
             msg = '{}-th leading minor is not positive definite'.format(i + 1)
@@ -221,18 +188,9 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
             prevLi = Li.at[i].set(0)
             val = [invLb, prevLi]
         
-        if difft is None:
-            g = g.at[0, :].set(jnp.roll(g[0, :], 1))
-            g = g.at[:, 0].set(0).at[:, i].set(0)
-            val += [g]
-        else:
-            g01 = jnp.roll(s + d, 1)
-            g1 = s - d
-            s = (g01 + g1) / 2
-            d = (g01 - g1) / 2
-            s = s.at[0].set(0).at[i].set(0)
-            d = d.at[0].set(0).at[i].set(0)
-            val += [s, d]
+        g = g.at[0, :].set(jnp.roll(g[0, :], 1))
+        g = g.at[:, 0].set(0).at[:, i].set(0)
+        val += [g]
         
         return val
     
