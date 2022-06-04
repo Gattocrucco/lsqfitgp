@@ -806,7 +806,8 @@ The kinds of solvers/decompositions are:
 3) PCG O(n log n)  -> see GPyTorch
 4) Schur O(n^2)  -> already implemented in lsqfitgp
 
-Book for PCG: Chan & Jin, An Introduction to Iterative Toeplitz Solvers
+Book about PCG: Chan 2007, An Introduction to Iterative Toeplitz Solvers
+Review of Levinson and Schur: Heinig 2011, Fast algorithms for Toeplitz and Hankel matrices
 
 #### Markovian processes
 

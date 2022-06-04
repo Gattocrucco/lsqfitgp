@@ -87,7 +87,14 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     # TODO vectorize
     
     # TODO make this an internal implementation function, and define
-    # single-purpose wrappers
+    # single-purpose wrappers. Call it 'schur'.
+    
+    # TODO from the point of view of numerical stability, the problematic step
+    # is g - rho * g[::-1], where rho = g[1] / g[0]. In the first iteration this
+    # amounts to subtracting t[1] from t[0]. If diff(t) is small, this leads to
+    # a cancellation. Starting from the formula of the kernel, diff(t) can be
+    # computed precisely, e.g., 1 - exp(-x) = -expm1(-x). Can I rewrite the
+    # algorithm to use directly diff(t) instead of t?
     
     t = jnp.asarray(t)
     n, = t.shape
