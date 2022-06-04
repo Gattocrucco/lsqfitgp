@@ -27,6 +27,7 @@ from jax import core
 from jax import numpy as jnp
 from jax.interpreters import ad
 from jax.interpreters import batching
+from jax import tree_util
 from scipy import special
 
 def makejaxufunc(ufunc, *derivs):
@@ -80,8 +81,12 @@ def elementwise_grad(fun, argnum=0):
         return tangent_out
     return funderiv
 
+def _isconcrete(x):
+    return not isinstance(x, core.Tracer) or isinstance(x.aval, core.ConcreteArray)
+
 def isconcrete(*args):
-    return all(not isinstance(x, core.Tracer) or isinstance(x.aval, core.ConcreteArray) for x in args)
+    children, _ = tree_util.tree_flatten(args)
+    return all(map(_isconcrete, children))
 
 def concrete(x):
     # this is not needed from simple operations with operators on scalars

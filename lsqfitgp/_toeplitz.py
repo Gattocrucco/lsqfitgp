@@ -100,12 +100,12 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
         assert b.ndim in (1, 2) and b.shape[0] == n
         vec = b.ndim < 2
     elif inverse:
-        b = jnp.eye(n)
+        b = jnp.eye(n, dtype=t.dtype)
     if vec:
         b = b[:, None]
     
     if n == 0:
-        return jnp.empty((0, 0) if b is None else b.shape)
+        return jnp.empty((0, 0) if b is None else b.shape, t.dtype)
 
     if diageps is not None:
         t = t.at[0].add(diageps)
@@ -120,14 +120,14 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     if logdet:
         init_val = [jnp.log(t[0])]
     elif b is None:
-        L = jnp.zeros((n, n))
+        L = jnp.zeros((n, n), t.dtype)
         L = L.at[0, :].set(t)
         init_val = [L]
     elif not inverse:
         if lower:
             Lb = t[:, None] * b[0, None, :]
         else:
-            Lb = jnp.zeros(b.shape)
+            Lb = jnp.zeros_like(b)
             Lb = Lb.at[0, :].set(t @ b)
         init_val = [Lb]
     else:
@@ -141,8 +141,11 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
         init_val += [g]
 
     else:
-        difft = jnp.asarray(difft) / norm
+        difft = jnp.asarray(difft)
         assert difft.shape == (len(t) - 1,)
+        if diageps is not None and len(difft) >= 1:
+            difft = difft.at[0].add(-diageps)
+        difft = difft / norm
         if _patch_jax.isconcrete(t, difft):
             rtol = numpy.finfo(t.dtype).eps * t[0] / (t[0] - t[1])
             numpy.testing.assert_allclose(numpy.diff(t), difft, rtol=rtol, atol=0)
@@ -232,8 +235,16 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
             val += [s, d]
         
         return val
-        
-    val = lax.fori_loop(1, n, body_fun, init_val)
+    
+    if _patch_jax.isconcrete(init_val):
+        # loop manually because lax.fori_loop traces even without jit so it
+        # disables positivity checks
+        # TODO alternative: save first nan index in aux
+        val = init_val
+        for i in range(1, n):
+            val = body_fun(i, val)
+    else:
+        val = lax.fori_loop(1, n, body_fun, init_val)
     
     if logdet:
         ld = val[0]
