@@ -28,7 +28,7 @@ import numpy
 
 from . import _patch_jax
 
-def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False):
+def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False, difft=None):
     """
     
     Cholesky decomposition of a positive definite Toeplitz matrix.
@@ -89,13 +89,6 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     # TODO make this an internal implementation function, and define
     # single-purpose wrappers. Call it 'schur'.
     
-    # TODO from the point of view of numerical stability, the problematic step
-    # is g - rho * g[::-1], where rho = g[1] / g[0]. In the first iteration this
-    # amounts to subtracting t[1] from t[0]. If diff(t) is small, this leads to
-    # a cancellation. Starting from the formula of the kernel, diff(t) can be
-    # computed precisely, e.g., 1 - exp(-x) = -expm1(-x). Can I rewrite the
-    # algorithm to use directly diff(t) instead of t?
-    
     t = jnp.asarray(t)
     n, = t.shape
     
@@ -125,65 +118,96 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     t = t / norm
     
     if logdet:
-        init_val = (jnp.log(t[0]),)
+        init_val = [jnp.log(t[0])]
     elif b is None:
         L = jnp.zeros((n, n))
         L = L.at[0, :].set(t)
-        init_val = (L,)
+        init_val = [L]
     elif not inverse:
         if lower:
             Lb = t[:, None] * b[0, None, :]
         else:
             Lb = jnp.zeros(b.shape)
             Lb = Lb.at[0, :].set(t @ b)
-        init_val = (Lb,)
+        init_val = [Lb]
     else:
         prevLi = t.at[0].set(0)
-        init_val = (b, prevLi) # invLb = b
+        init_val = [b, prevLi] # invLb = b
+        
+    if difft is None:
+        g = jnp.stack([t, t])
+        g = g.at[0, :].set(jnp.roll(g[0, :], 1))
+        g = g.at[:, 0].set(0)
+        init_val += [g]
 
-    g = jnp.stack([t, t])
-    g = g.at[0, :].set(jnp.roll(g[0, :], 1))
-    g = g.at[:, 0].set(0)
-    
-    init_val += (g,)
+    else:
+        difft = jnp.asarray(difft) / norm
+        assert difft.shape == (len(t) - 1,)
+        if _patch_jax.isconcrete(t, difft):
+            rtol = numpy.finfo(t.dtype).eps * t[0] / (t[0] - t[1])
+            numpy.testing.assert_allclose(numpy.diff(t), difft, rtol=rtol, atol=0)
+        t1 = jnp.roll(t, 1)
+        s = (t1 + t) / 2 # (g[0] + g[1]) / 2
+        d = t1.at[1:].set(-difft / 2) # (g[0] - g[1]) / 2
+        s = s.at[0].set(0)
+        d = d.at[0].set(0)
+        init_val += [s, d]
     
     def body_fun(i, val):
         
-        g = val[-1]
         if logdet:
-            ld = val[0]
+            ld = val.pop(0)
         elif b is None:
-            L = val[0]
+            L = val.pop(0)
         elif not inverse:
-            Lb = val[0]
+            Lb = val.pop(0)
         else:
-            invLb, prevLi = val[:2]
+            invLb = val.pop(0)
+            prevLi = val.pop(0)
         
-        if _patch_jax.isconcrete(g):
-            assert g[0, i] > 0
-        
-        rho = -g[1, i] / g[0, i]
+        if difft is None:
+            g = val.pop(0)
 
-        if _patch_jax.isconcrete(rho) and abs(rho) >= 1:
+            if _patch_jax.isconcrete(g):
+                assert g[0, i] > 0
+        
+            rho = -g[1, i] / g[0, i]
+            error = _patch_jax.isconcrete(rho) and abs(rho) >= 1
+            gamma = jnp.sqrt((1 - rho) * (1 + rho))
+            g = (g + g[::-1] * rho) / gamma
+            Li = g[0, :] # i-th column of L
+        
+        else:
+            s = val.pop(0)
+            d = val.pop(0)
+            si = s[i]
+            di = d[i]
+            
+            if _patch_jax.isconcrete(s, d):
+                assert si + di > 0
+            
+            error = _patch_jax.isconcrete(si, di) and si * di <= 0
+            ssd = jnp.sqrt(si / di) # sqrt((1 + rho)/(1 - rho))
+            s = s / ssd
+            d = d * ssd
+            Li = s + d
+        
+        if error:
             msg = '{}-th leading minor is not positive definite'.format(i + 1)
             raise numpy.linalg.LinAlgError(msg)
 
-        gamma = jnp.sqrt((1 - rho) * (1 + rho))
-        g = (g + g[::-1] * rho) / gamma
-        Li = g[0, :] # i-th column of L
-        
         if logdet:
             ld = ld + jnp.log(Li[i])
-            val = (ld,)
+            val = [ld]
         elif b is None:
             L = L.at[i, :].set(Li)
-            val = (L,)
+            val = [L]
         elif not inverse:
             if lower:
                 Lb = Lb + Li[:, None] * b[i, None, :]
             else:
                 Lb = Lb.at[i, :].set(Li @ b)
-            val = (Lb,)
+            val = [Lb]
         else:
             # x[0] /= a[0, 0]
             # for i in range(1, len(x)):
@@ -192,13 +216,22 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
             invLb = invLb - invLb[i - 1, :] * prevLi[:, None]
             invLb = invLb.at[i].divide(Li[i])
             prevLi = Li.at[i].set(0)
-            val = (invLb, prevLi)
-            
-        g = g.at[0, :].set(jnp.roll(g[0, :], 1))
-        g = g.at[:, 0].set(0)
-        g = g.at[:, i].set(0)
+            val = [invLb, prevLi]
         
-        return val + (g,)
+        if difft is None:
+            g = g.at[0, :].set(jnp.roll(g[0, :], 1))
+            g = g.at[:, 0].set(0).at[:, i].set(0)
+            val += [g]
+        else:
+            g01 = jnp.roll(s + d, 1)
+            g1 = s - d
+            s = (g01 + g1) / 2
+            d = (g01 - g1) / 2
+            s = s.at[0].set(0).at[i].set(0)
+            d = d.at[0].set(0).at[i].set(0)
+            val += [s, d]
+        
+        return val
         
     val = lax.fori_loop(1, n, body_fun, init_val)
     

@@ -654,22 +654,26 @@ def test_toeplitz_gershgorin():
     b2 = _toeplitz.eigv_bound(t)
     np.testing.assert_allclose(b2, b1, rtol=1e-15)
 
-def check_toeplitz_chol(lower=True, jit=False):
+def check_toeplitz_chol(lower=True, jit=False, diff=False):
     for n in [1, 2, 10]:
         x = np.linspace(0, 3, n)
         t = np.pi * np.exp(-1/2 * x ** 2)
+        dx = x[1] - x[0] if len(x) > 1 else np.empty(())
+        difft = t[:-1] * np.expm1(-dx * (x[:-1] + dx / 2))
+        np.testing.assert_allclose(np.diff(t), difft)
+        difft = difft if diff else None
         m = linalg.toeplitz(t)
     
         cholesky = _toeplitz.cholesky
         if jit:
             cholesky = jax.jit(_toeplitz.cholesky, static_argnames=['lower', 'inverse', 'logdet'])
     
-        l1 = cholesky(t, lower=lower)
+        l1 = cholesky(t, lower=lower, difft=difft)
         l2 = linalg.cholesky(m, lower=lower)
         np.testing.assert_allclose(l1, l2, rtol=1e-8)
-    
+        
         b = np.random.randn(len(t), 30)
-        lb1 = cholesky(t, b, lower=lower)
+        lb1 = cholesky(t, b, lower=lower, difft=difft)
         lb2 = l2 @ b
         np.testing.assert_allclose(lb1, lb2, rtol=1e-7)
     
@@ -679,11 +683,11 @@ def check_toeplitz_chol(lower=True, jit=False):
     
         if lower:
     
-            il1 = cholesky(t, inverse=True, lower=lower)
+            il1 = cholesky(t, inverse=True, lower=lower, difft=difft)
             il2 = linalg.solve_triangular(l2, np.eye(len(t)), lower=lower)
             np.testing.assert_allclose(il1, il2, rtol=1e-6)
     
-            ilb1 = cholesky(t, b, inverse=True, lower=lower)
+            ilb1 = cholesky(t, b, inverse=True, lower=lower, difft=difft)
             ilb2 = linalg.solve_triangular(l2, b, lower=lower)
             np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
 
@@ -702,6 +706,22 @@ def test_toeplitz_chol_lower_jit():
 @util.tryagain
 def test_toeplitz_chol_upper_jit():
     check_toeplitz_chol(False, True)
+
+@util.tryagain
+def test_toeplitz_chol_lower_diff():
+    check_toeplitz_chol(diff=True)
+
+@util.tryagain
+def test_toeplitz_chol_upper_diff():
+    check_toeplitz_chol(False, diff=True)
+
+@util.tryagain
+def test_toeplitz_chol_lower_jit_diff():
+    check_toeplitz_chol(True, True, True)
+
+@util.tryagain
+def test_toeplitz_chol_upper_jit_diff():
+    check_toeplitz_chol(False, True, True)
 
 @util.tryagain
 def test_toeplitz_chol_solve():
@@ -726,7 +746,6 @@ def test_toeplitz_chol_solve():
                     continue
                 b = np.random.randn(*bshape, n, *shape)
                 ilb = _toeplitz.chol_solve(t, b, diageps=1e-12)
-                # ilb2 = linalg.solve_triangular(l, b, lower=True)
                 np.testing.assert_allclose(*np.broadcast_arrays(l @ ilb, b), rtol=1e-6)
 
 #### XFAILS ####
