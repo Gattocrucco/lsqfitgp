@@ -122,13 +122,13 @@
 <span id="fit"></span><h1><span class="section-number">8. </span>Fitting<a class="headerlink" href="#fitting" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.empbayes_fit">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gradient'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Empirical bayes fit.</p>
 <p>Maximizes the marginal likelihood of the data with a Gaussian process
 model that depends on hyperparameters.</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
+<dd class="field-odd"><dl>
 <dt><strong>hyperprior</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>A collection of gvars representing the prior for the
 hyperparameters.</p>
 </dd>
@@ -154,6 +154,23 @@ is a callable.</p>
 </dd>
 <dt><strong>jit</strong><span class="classifier">bool</span></dt><dd><p>If True, use jax’s jit to compile the minimization target. Default
 False.</p>
+</dd>
+<dt><strong>method</strong><span class="classifier">str</span></dt><dd><p>Minimization strategy. Options:
+‘gradient’ :</p>
+<blockquote>
+<div><p>Use a gradient-only method.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>‘hessian’ :</dt><dd><p>Use a newton method with the hessian.</p>
+</dd>
+<dt>‘fisher’ :</dt><dd><p>Use a newton method with the Fisher information matrix plus
+the hyperprior precision matrix.</p>
+</dd>
+<dt>‘fisherjj’ :</dt><dd><p>Use a newton method with the Fisher information matrix plus
+the newton-jacobi approximation to the squared residuals
+hessian and the hyperprior precision matrix.</p>
+</dd>
+</dl>
 </dd>
 </dl>
 </dd>
