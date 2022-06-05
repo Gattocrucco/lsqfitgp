@@ -803,11 +803,18 @@ Scipy.linalg now has a function to multiply toeplitz matrices.
 The kinds of solvers/decompositions are:
 1) Levinson O(n^2)  -> see scipy.linalg.solve_toeplitz
 2) Superfast direct O(n log^2 n)  -> see SuperGauss (R)
-3) PCG O(n log n)  -> see GPyTorch
+3) PCG O(n log n)  -> see GPyTorch and Chan
 4) Schur O(n^2)  -> already implemented in lsqfitgp
+5) Toeplitz Bareiss O(n^2) + O(n^2) space, but stable (see ??)
 
 Book about PCG: Chan 2007, An Introduction to Iterative Toeplitz Solvers
 Review of Levinson and Schur: Heinig 2011, Fast algorithms for Toeplitz and Hankel matrices
+
+See https://en.wikipedia.org/wiki/Levinson_recursion for more references. Says
+that Schur is more stable than Levinson.
+
+In general SuperGauss has all these methods implemented, but copying them from
+C++ is not convenient.
 
 #### Markovian processes
 

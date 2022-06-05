@@ -33,8 +33,6 @@ import util
 sys.path = ['.'] + sys.path
 from lsqfitgp import _linalg, _kernels, _toeplitz
 
-MAXSIZE = 10 + 1
-
 class DecompTestABC(metaclass=abc.ABCMeta):
 
     @property
@@ -56,8 +54,10 @@ class DecompTestABC(metaclass=abc.ABCMeta):
         
 class DecompTestBase(DecompTestABC):
     
+    sizes = [1, 2, 3, 10]
+    
     def randsize(self):
-        return np.random.randint(1, MAXSIZE)
+        return np.random.randint(1, 11)
         
     def randsymmat(self, n):
         O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
@@ -84,7 +84,7 @@ class DecompTestBase(DecompTestABC):
     def check_solve(self, bgen, jit=False):
         fun = lambda K, b: self.decompclass(K).solve(b)
         funjit = jax.jit(fun)
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             b = bgen(len(K))
             result = fun(K, b)
@@ -95,25 +95,36 @@ class DecompTestBase(DecompTestABC):
                 sol = self.solve(K, b)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
     
-    def check_solve_jac(self, bgen, jacfun, jit=False):
+    def check_solve_jac(self, bgen, jacfun, jit=False, hess=False, da=False):
         # TODO sometimes the jacobian of fun is practically zero. Why? This
         # gives problems because it needs an higher absolute tolerance.
         def fun(s, n, b):
             K = self.mat(s, n)
-            return self.decompclass(K).solve(b)
+            return self.decompclass(K, direct_autodiff=da).solve(b)
         funjac = jacfun(fun)
         funjacjit = jax.jit(funjac, static_argnums=1)
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             s = np.exp(np.random.uniform(-1, 1))
-            K = self.mat(s, n)
-            dK = self.matjac(s, n)
             b = bgen(n)
             result = funjac(s, n, b)
             if jit:
                 result2 = funjacjit(s, n, b)
                 np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-8)
+                continue
+            K = self.mat(s, n)
+            dK = self.matjac(s, n)
+            KdK = self.solve(K, dK)
+            Kb = self.solve(K, b)
+            if not hess:
+                # -K^-1 dK K^-1 b
+                sol = -KdK @ Kb
+                np.testing.assert_allclose(result, sol, atol=1e-13, rtol=1e-3)
             else:
-                sol = -self.solve(K.T, self.solve(K, dK).T).T @ b
+                #  K^-1 dK K^-1 dK K^-1 b   +
+                # -K^-1 d2K K^-1 b          +
+                #  K^-1 dK K^-1 dK K^-1 b
+                d2K = self.mathess(s, n)
+                sol = 2 * KdK @ KdK @ Kb - self.solve(K, d2K) @ Kb
                 np.testing.assert_allclose(result, sol, atol=1e-13, rtol=1e-3)
     
     def test_solve_vec(self):
@@ -133,6 +144,9 @@ class DecompTestBase(DecompTestABC):
     
     def test_solve_matrix_jac_fwd(self):
         self.check_solve_jac(self.randmat, jax.jacfwd)
+    
+    def test_solve_matrix_jac_fwd_da(self):
+        self.check_solve_jac(self.randmat, jax.jacfwd, da=True)
 
     def test_solve_vec_jit(self):
         self.check_solve(self.randvec, True)
@@ -151,13 +165,16 @@ class DecompTestBase(DecompTestABC):
     
     def test_solve_matrix_jac_fwd_jit(self):
         self.check_solve_jac(self.randmat, jax.jacfwd, True)
+    
+    def test_solve_matrix_hess_da(self):
+        self.check_solve_jac(self.randmat, lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, da=True)
 
     def solve_matrix_jac_matrix(self, jacfun):
         def fun(s, n, b, A):
             K = self.mat(s, n)
             return A @ self.decompclass(K).solve(b)
         funjac = jacfun(fun)
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             s = np.exp(np.random.uniform(-1, 1))
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -196,7 +213,7 @@ class DecompTestBase(DecompTestABC):
         return gvar.gvar(mean, cov)
     
     def test_solve_vec_gvar(self):
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             b = self.randvecgvar(n)
             invK = self.solve(K, np.eye(len(K)))
@@ -205,7 +222,7 @@ class DecompTestBase(DecompTestABC):
             self.assert_close_gvar(sol, result)
     
     def test_quad_vec_gvar(self):
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             b = self.randvecgvar(n)
             invK = self.solve(K, np.eye(len(K)))
@@ -214,7 +231,7 @@ class DecompTestBase(DecompTestABC):
             self.assert_close_gvar(sol, result)
     
     def test_quad_vec_vec_gvar(self):
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             b = self.randvec(n)
             c = self.randvecgvar(n)
@@ -224,7 +241,7 @@ class DecompTestBase(DecompTestABC):
             self.assert_close_gvar(sol, result)
 
     def test_quad_matrix_vec_gvar(self):
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             b = self.randvec(n * 3).reshape(n, 3)
             c = self.randvecgvar(n)
@@ -238,17 +255,10 @@ class DecompTestBase(DecompTestABC):
             c = b
         return b.T @ self.solve(K, c)
     
-    def quadjac(self, dK, K, b, c=None):
-        if c is None:
-            c = b
-        invKb = self.solve(K, b)
-        invKc = self.solve(K, c)
-        return -invKb.T @ dK @ invKc
-
     def check_quad(self, bgen, cgen=lambda n: None, jit=False):
         fun = lambda K, b, c: self.decompclass(K).quad(b, c)
         funjit = jax.jit(fun)
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             b = bgen(len(K))
             c = cgen(len(K))
@@ -260,24 +270,38 @@ class DecompTestBase(DecompTestABC):
                 sol = self.quad(K, b, c)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-9)
     
-    def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False):
+    def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False, hess=False, da=False):
         def fun(s, n, b, c):
             K = self.mat(s, n)
-            return self.decompclass(K).quad(b, c)
+            return self.decompclass(K, direct_autodiff=da).quad(b, c)
         fungrad = jacfun(fun)
         fungradjit = jax.jit(fungrad, static_argnums=1)
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             s = np.exp(np.random.uniform(-1, 1))
-            K = self.mat(s, n)
-            dK = self.matjac(s, n)
             b = bgen(n)
             c = cgen(n)
             result = fungrad(s, n, b, c)
             if jit:
                 result2 = fungradjit(s, n, b, c)
                 np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-7)
+                continue
+            if c is None:
+                c = b
+            K = self.mat(s, n)
+            dK = self.matjac(s, n)
+            KdK = self.solve(K, dK)
+            Kc = self.solve(K, c)
+            if not hess:
+                # b.T K^-1 c
+                # -b.T K^-1 dK K^-1 c
+                sol = -b.T @ KdK @ Kc
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-7)
             else:
-                sol = self.quadjac(dK, K, b, c)
+                #  b.T K^-1 dK K^-1 dK K^-1 c   +
+                # -b.T K^-1 d2K K^-1 c          +
+                #  b.T K^-1 dK K^-1 dK K^-1 c
+                d2K = self.mathess(s, n)
+                sol = 2 * b.T @ KdK @ KdK @ Kc - b.T @ self.solve(K, d2K) @ Kc
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-7)
     
     def test_quad_vec(self):
@@ -319,6 +343,9 @@ class DecompTestBase(DecompTestABC):
     def test_quad_matrix_matrix_jac_fwd(self):
         self.check_quad_jac(jax.jacfwd, self.randmat, self.randmat)
     
+    def test_quad_matrix_matrix_jac_fwd_da(self):
+        self.check_quad_jac(jax.jacfwd, self.randmat, self.randmat, da=True)
+    
     def test_quad_vec_jac_rev_jit(self):
         self.check_quad_jac(jax.jacrev, self.randvec, jit=True)
     
@@ -334,13 +361,16 @@ class DecompTestBase(DecompTestABC):
     def test_quad_matrix_matrix_jac_fwd_jit(self):
         self.check_quad_jac(jax.jacfwd, self.randmat, self.randmat, jit=True)
 
+    def test_quad_matrix_matrix_hess_da(self):
+        self.check_quad_jac(lambda f: jax.jacfwd(jax.jacrev(f)), self.randmat, self.randmat, hess=True, da=True)
+    
     def logdet(self, K):
         return np.sum(np.log(linalg.eigvalsh(K)))
 
     def check_logdet(self, jit=False):
         fun = lambda K: self.decompclass(K).logdet()
         funjit = jax.jit(fun)
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             result = fun(K)
             if jit:
@@ -356,10 +386,11 @@ class DecompTestBase(DecompTestABC):
             return self.decompclass(K, direct_autodiff=da).logdet()
         fungrad = jacfun(fun)
         fungradjit = jax.jit(fungrad, static_argnums=1)
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             s = np.exp(np.random.uniform(-1, 1))
             if num:
-                test_util.check_grads(lambda s: fun(s, n), (s,), order=2)
+                order = 2 if hess else 1
+                test_util.check_grads(lambda s: fun(s, n), (s,), order=order)
                 continue
             result = fungrad(s, n)
             if jit:
@@ -391,10 +422,10 @@ class DecompTestBase(DecompTestABC):
         self.check_logdet_jac(jax.jacfwd)
         
     def test_logdet_hess(self):
-        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, da=True)
+        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True)
 
-    def test_logdet_hess_num(self):
-        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, num=True, da=True)
+    def test_logdet_hess_da(self):
+        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, da=True)
 
     def test_logdet_jit(self):
         self.check_logdet(True)
@@ -406,7 +437,7 @@ class DecompTestBase(DecompTestABC):
         self.check_logdet_jac(jax.jacfwd, True)
 
     def test_inv(self):
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             sol = self.solve(K, np.eye(n))
             result = self.decompclass(K).inv()
@@ -420,14 +451,14 @@ class DecompTestCorr(DecompTestBase):
     but I've left the code around"""
     
     def test_correlate_eye(self):
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             A = self.decompclass(K).correlate(np.eye(n))
             Q = A @ A.T
             np.testing.assert_allclose(K, Q)
     
     def test_decorrelate_mat(self):
-        for n in range(1, MAXSIZE):
+        for n in self.sizes:
             K = self.randsymmat(n)
             b = self.randmat(n)
             x = self.decompclass(K).decorrelate(b)
@@ -634,7 +665,7 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
 
 @util.tryagain
 def test_solve_triangular():
-    for n in range(1, MAXSIZE):
+    for n in DecompTestBase.sizes:
         for ndim in range(4):
             for lower in [True, False]:
                 tri = np.tril if lower else np.triu
@@ -738,17 +769,17 @@ util.xfail(DecompTestBase, 'test_quad_vec_gvar')
 
 # TODO second derivatives not working
 util.xfail(DecompTestBase, 'test_logdet_hess')
-util.skip(DecompTestBase, 'test_logdet_hess_num')
 
-# TODO linalg.sparse.eigsh does not have an XLA counterpart, but apparently
+# TODO linalg.sparse.eigsh does not have a jax counterpart, but apparently
 # they are now making an effort to add sparse support to jax, let's wait
 for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
-    if name.endswith('_jit'):
+    if name.endswith('_jit') or name.endswith('_da'):
         util.xfail(TestReduceRank, name)
 
 # TODO reverse diff broken because they use quads within other stuff probably.
 # Subclassing DecompAutoDiff does not work. Maybe just using quad to compute
-# tildeS is too much.
+# tildeS is too much. The error is two undefined primals in a matrix
+# multiplication jvp transpose.
 util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev')
 util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev')
 util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev_jit')
@@ -760,11 +791,18 @@ util.xfail(BlockDecompTestBase, 'test_quad_vec_jac_rev_jit')
 util.xfail(BlockDecompTestBase, 'test_quad_matrix_jac_rev_jit')
 util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev')
 util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev_jit')
+util.xfail(BlockDecompTestBase, 'test_solve_matrix_hess_da')
+util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_da')
+
+# TODO basically works but is very inaccurate. Would subclassing DecompAutoDiff
+# help?
+util.xfail(BlockDecompTestBase, 'test_logdet_hess_da')
 
 # TODO why?
-util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')
+# util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')
 
 # TODO solve is not implemented by TestCholToeplitzML
 for name, meth in inspect.getmembers(TestCholToeplitzML, inspect.isfunction):
-    if name.startswith('test_') and ('solve' in name or 'jac' in name):
+    if name.startswith('test_') and ('solve' in name or ('jac' in name and 'da' not in name)):
         util.xfail(TestCholToeplitzML, name)
+

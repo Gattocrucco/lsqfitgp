@@ -28,7 +28,7 @@ Classes
 Decomposition
     Abstract base class.
 DecompAutoDiff
-    Abstract subclass that adds JAX support.
+    Abstract subclass that adds decomposition-independent jax-autodiff support.
 Diag
     Diagonalization.
 EigCutFullRank
@@ -49,7 +49,9 @@ CholGersh
     Cholesky regularized using an estimate of the maximum eigenvalue.
 CholToeplitz
     Cholesky decomposition of a Toeplitz matrix regularized using an estimate
-    of the maximum eigenvalue.
+    of the maximum eigenvalue. Uses Schur's algorithm.
+CholToeplitzML
+    Like CholToeplitz but does not store the cholesky factor in memory.
 BlockDecomp
     Decompose a 2x2 block matrix.
 BlockDiagDecomp
@@ -79,6 +81,7 @@ from . import _patch_jax
 # it may require cython to be fast since it's not vectorized
 
 def choose_numpy(*args):
+    """ don't use this function """
     if any(isinstance(x, jnp.ndarray) for x in args):
         return jnp
     else:
@@ -182,17 +185,22 @@ class Decomposition(metaclass=abc.ABCMeta):
         return self.quad(jnp.eye(self.n))
     
     @property
-    def n(self):
+    @abc.abstractmethod
+    def n(self): # pragma: no cover
         """
         Return n where the decomposed matrix is n x n.
         """
-        return len(self._K)
+        pass
 
 class DecompAutoDiff(Decomposition):
     """
     Abstract subclass adding JAX autodiff support to subclasses of
     Decomposition, even if the decomposition algorithm is not supported by JAX.
     """
+    
+    @property
+    def n(self):
+        return len(self._K)
         
     def __init_subclass__(cls, **kw):
         
@@ -547,7 +555,8 @@ class CholGersh(CholReg):
     
     def _regularize(self, mat, eps):
         maxeigv = _gershgorin_eigval_bound(mat)
-        return mat + jnp.diag(jnp.broadcast_to(self._eps(eps, mat, maxeigv), len(mat)))
+        # return mat + jnp.diag(jnp.broadcast_to(self._eps(eps, mat, maxeigv), len(mat)))
+        return mat.at[jnp.diag_indices(len(mat))].add(self._eps(eps, mat, maxeigv))
 
 class CholToeplitz(Chol):
     """
