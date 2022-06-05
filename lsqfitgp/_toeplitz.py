@@ -89,6 +89,13 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     # TODO make this an internal implementation function, and define
     # single-purpose wrappers. Call it 'schur'.
     
+    # TODO I would like to implement other combinations of operations, in
+    # particular I need quad and quad + logdet. Instead of adding a bunch of
+    # complicated options, I could write a function for each operation
+    # (l, lt, l b, lt b, l^-1 b, logdet), take *args after l and diageps and
+    # each arg is a tuple (op, *args). This means that I can not jit
+    # directly the function, I have to jit the wrappers.
+    
     t = jnp.asarray(t)
     n, = t.shape
     

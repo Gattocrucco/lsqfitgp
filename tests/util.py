@@ -75,8 +75,8 @@ def tryagain(fun, rep=2, method=False):
             except Exception as e:
                 exc = e
 
-        if rep > 1:
-            warnings.warn(f'Test {name} failed {rep} times')
+        # if rep > 1:
+        #     warnings.warn(f'Test {name} failed {rep} times')
         raise exc
 
     meta['newfun'] = newfun

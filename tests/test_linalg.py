@@ -166,6 +166,12 @@ class DecompTestBase(DecompTestABC):
     def test_solve_matrix_jac_fwd_jit(self):
         self.check_solve_jac(self.randmat, jax.jacfwd, True)
     
+    def test_solve_matrix_hess_fwd_fwd(self):
+        self.check_solve_jac(self.randmat, lambda f: jax.jacfwd(jax.jacfwd(f)), hess=True)
+
+    def test_solve_matrix_hess_fwd_rev(self):
+        self.check_solve_jac(self.randmat, lambda f: jax.jacfwd(jax.jacrev(f)), hess=True)
+
     def test_solve_matrix_hess_da(self):
         self.check_solve_jac(self.randmat, lambda f: jax.jacfwd(jax.jacrev(f)), hess=True, da=True)
 
@@ -361,6 +367,12 @@ class DecompTestBase(DecompTestABC):
     def test_quad_matrix_matrix_jac_fwd_jit(self):
         self.check_quad_jac(jax.jacfwd, self.randmat, self.randmat, jit=True)
 
+    def test_quad_matrix_matrix_hess_fwd_rev(self):
+        self.check_quad_jac(lambda f: jax.jacfwd(jax.jacrev(f)), self.randmat, self.randmat, hess=True)
+    
+    def test_quad_matrix_matrix_hess_fwd_fwd(self):
+        self.check_quad_jac(lambda f: jax.jacfwd(jax.jacfwd(f)), self.randmat, self.randmat, hess=True)
+    
     def test_quad_matrix_matrix_hess_da(self):
         self.check_quad_jac(lambda f: jax.jacfwd(jax.jacrev(f)), self.randmat, self.randmat, hess=True, da=True)
     
@@ -421,7 +433,10 @@ class DecompTestBase(DecompTestABC):
     def test_logdet_jac_fwd(self):
         self.check_logdet_jac(jax.jacfwd)
         
-    def test_logdet_hess(self):
+    def test_logdet_hess_fwd_fwd(self):
+        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacfwd(f)), hess=True)
+
+    def test_logdet_hess_fwd_rev(self):
         self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True)
 
     def test_logdet_hess_da(self):
@@ -767,8 +782,9 @@ def test_toeplitz_chol_solve():
 util.xfail(DecompTestBase, 'test_solve_vec_gvar')
 util.xfail(DecompTestBase, 'test_quad_vec_gvar')
 
-# TODO second derivatives not working
-util.xfail(DecompTestBase, 'test_logdet_hess')
+# TODO second derivatives completing but returning incorrect result
+util.xfail(DecompTestBase, 'test_solve_matrix_hess_fwd_rev')
+util.xfail(DecompTestBase, 'test_logdet_hess_fwd_rev')
 
 # TODO linalg.sparse.eigsh does not have a jax counterpart, but apparently
 # they are now making an effort to add sparse support to jax, let's wait
@@ -792,6 +808,7 @@ util.xfail(BlockDecompTestBase, 'test_quad_matrix_jac_rev_jit')
 util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev')
 util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev_jit')
 util.xfail(BlockDecompTestBase, 'test_solve_matrix_hess_da')
+util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_fwd_rev')
 util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_da')
 
 # TODO basically works but is very inaccurate. Would subclassing DecompAutoDiff
@@ -803,6 +820,5 @@ util.xfail(BlockDecompTestBase, 'test_logdet_hess_da')
 
 # TODO solve is not implemented by TestCholToeplitzML
 for name, meth in inspect.getmembers(TestCholToeplitzML, inspect.isfunction):
-    if name.startswith('test_') and ('solve' in name or ('jac' in name and 'da' not in name)):
+    if name.startswith('test_') and ('solve' in name or (('jac' in name or 'hess' in name) and 'da' not in name)):
         util.xfail(TestCholToeplitzML, name)
-
