@@ -1472,8 +1472,8 @@ class GP:
             the determinant of the prior covariance matrix, without the -1/2
             factor.
         residuals : array or dictionary of arrays
-            A vector whose 2-norm multiplied by -1/2 gives the other term of
-            the marginal likelihood.
+            A vector whose squared 2-norm multiplied by -1/2 gives the other
+            term of the marginal likelihood.
         """        
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = _concatenate_noop(ylist)

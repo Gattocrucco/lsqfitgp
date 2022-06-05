@@ -65,7 +65,7 @@ def _unflat(x, original):
 
 class empbayes_fit:
 
-    def __init__(self, hyperprior, gpfactory, data, raises=True, minkw={}, gpfactorykw={}, jit=False):
+    def __init__(self, hyperprior, gpfactory, data, raises=True, minkw={}, gpfactorykw={}, jit=False, method='gradient'):
         """
     
         Empirical bayes fit.
@@ -101,6 +101,19 @@ class empbayes_fit:
         jit : bool
             If True, use jax's jit to compile the minimization target. Default
             False.
+        method : str
+            Minimization strategy. Options:
+            'gradient' :
+                Use a gradient-only method.
+            'hessian' :
+                Use a newton method with the hessian.
+            'fisher' :
+                Use a newton method with the Fisher information matrix plus
+                the hyperprior precision matrix.
+            'fisherjj' :
+                Use a newton method with the Fisher information matrix plus
+                the newton-jacobi approximation to the squared residuals
+                hessian and the hyperprior precision matrix.
     
         Attributes
         ----------
@@ -136,27 +149,14 @@ class empbayes_fit:
         # matrix changes the regularization can change a lot the value of the
         # logdet. How do I stabilize it?
         
-        # TODO use the split marginal likelihood to compute the gradient of
-        # the logdet in forward mode.
-        
-        # TODO I don't know really how much the inverse hessian estimated by
-        # BFGS is accurate. Investigate computing the hessian with autograd or
-        # using Gauss-Newton on the residuals and autograd on the logdet.
-        
-        # TODO read the minkw options to adapt the usage of the jacobian: if
-        # jac is specified or if the method does not require derivatives do not
-        # take derivatives with autograd.
-        
         # TODO compute the logGBF for the whole fit (see the gpbart code)
         
-        # TODO try using Fisher scoring, defining an information matrix-vector
-        # product
-    
         hyperprior = _asarrayorbufferdict(hyperprior)
         flathp = _flat(hyperprior)
         hpmean = gvar.mean(flathp)
         hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks
         hpdec = _linalg.EigCutFullRank(hpcov)
+        precision = hpdec.inv()
         
         if callable(data):
             cachedargs = None
@@ -168,7 +168,7 @@ class empbayes_fit:
         else:
             cachedargs = (data,)
     
-        def fun(p):
+        def make(p):
             priorchi2 = hpdec.quad(p - hpmean)
 
             hp = _unflat(p, hyperprior)
@@ -181,19 +181,66 @@ class empbayes_fit:
                 args = data(hp, **gpfactorykw)
                 if not isinstance(args, tuple):
                     args = (args,)
+            
+            return gp, args, priorchi2
+        
+        def dojit(f):
+            return jax.jit(f) if jit else f
+        
+        @dojit      
+        def fun(p):
+            gp, args, priorchi2 = make(p)
             ml = gp.marginal_likelihood(*args)
             logp = -ml + 1/2 * priorchi2
-            
-            return logp, logp
+            return logp
+                
+        jac = dojit(jax.jacfwd(fun))
+        hess = dojit(jax.jacfwd(jac))
         
-        jac = jax.jacfwd(fun, has_aux=True)
-        if jit:
-            jac = jax.jit(jac)
-        def value_and_grad(p):
-            j, f = jac(p)
-            return f, j
-    
-        result = optimize.minimize(value_and_grad, hpmean, jac=True, **minkw)
+        @jax.jacfwd
+        @jax.jacfwd
+        def fisher(p):
+            gp, args, _ = make(p)
+            logdet, _ = gp.marginal_likelihood(*args, separate=True)
+            return 1/2 * logdet
+        
+        @dojit
+        def fisherprec(p):
+            return fisher(p) + precision
+        
+        @dojit
+        @jax.jacfwd
+        def jres(p):
+            gp, args, _ = make(p)
+            _, res = gp.marginal_likelihood(*args, separate=True)
+            return res
+        
+        @dojit
+        def fisherprecjj(p):
+            J = jres(p)
+            return fisherprec(p) + J.T @ J
+            
+        # TODO instead of recomputing everything many times, I can use nested
+        # has_aux appropriately to compute all the things I need at once. The
+        # problem is that scipy currently does not allow me to provide a
+        # function that computes value, jacobian and hessian at once, only value
+        # and jacobian.
+        
+        args = (fun, hpmean)
+        kwargs = dict(jac=jac)
+        
+        if method == 'gradient':
+            kwargs.update(method='bfgs')
+        elif method == 'hessian':
+            kwargs.update(hess=hess, method='trust-exact')
+        elif method == 'fisher':
+            kwargs.update(hess=fisherprec, method='dogleg')
+        elif method == 'fisherjj':
+            kwargs.update(hess=fisherprecjj, method='dogleg')
+        else:
+            raise KeyError(method)
+        kwargs.update(minkw)
+        result = optimize.minimize(*args, **kwargs)
         
         if not result.success:
             msg = 'minimization failed: {}'.format(result.message)

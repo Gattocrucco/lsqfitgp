@@ -91,10 +91,13 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     
     # TODO I would like to implement other combinations of operations, in
     # particular I need quad and quad + logdet. Instead of adding a bunch of
-    # complicated options, I could write a function for each operation
-    # (l, lt, l b, lt b, l^-1 b, logdet), take *args after l and diageps and
-    # each arg is a tuple (op, *args). This means that I can not jit
-    # directly the function, I have to jit the wrappers.
+    # complicated options, I could write a function for each operation (l, lt, l
+    # b, lt b, l^-1 b, logdet), take *args after l and diageps and each arg is a
+    # tuple (op, *args). This means that I can not jit directly the function, I
+    # have to jit the wrappers. => Actually I'd also like to compute things like
+    # Q K^-1 (V K^-1 P) in one call, thus I need to feed the output of one
+    # operator into another. This requires knowing the shape beforehand. Thus it
+    # is probably easier to define classes for the operators.
     
     t = jnp.asarray(t)
     n, = t.shape

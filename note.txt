@@ -567,3 +567,8 @@ In [350]: %timeit trychol(10, 'chol_solve')
 
 The forward jacobian of quad and solve seems more accurate with custom
 derivatives than with direct ones, but maybe only for some matrices.
+
+--------
+
+The forward second derivatives work. I can move on to implementing
+hyperparameters algorithms.
