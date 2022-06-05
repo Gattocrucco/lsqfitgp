@@ -295,14 +295,14 @@ class DecompTestBase(DecompTestABC):
                 # b.T K^-1 c
                 # -b.T K^-1 dK K^-1 c
                 sol = -b.T @ KdK @ Kc
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-7)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-6)
             else:
                 #  b.T K^-1 dK K^-1 dK K^-1 c   +
                 # -b.T K^-1 d2K K^-1 c          +
                 #  b.T K^-1 dK K^-1 dK K^-1 c
                 d2K = self.mathess(s, n)
                 sol = 2 * b.T @ KdK @ KdK @ Kc - b.T @ self.solve(K, d2K) @ Kc
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-7)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-6)
     
     def test_quad_vec(self):
         self.check_quad(self.randvec)

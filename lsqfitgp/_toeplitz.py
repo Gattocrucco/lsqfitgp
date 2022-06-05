@@ -110,10 +110,7 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     if diageps is not None:
         t = t.at[0].add(diageps)
 
-    if _patch_jax.isconcrete(t) and t[0] <= 0:
-        msg = '1-th leading minor is not positive definite'
-        raise numpy.linalg.LinAlgError(msg)
-    
+    # assert t[0] > 0, '1-th leading minor is not positive definite'
     norm = t[0]
     t = t / norm
     
@@ -153,19 +150,13 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
         
         g = val.pop(0)
 
-        if _patch_jax.isconcrete(g):
-            assert g[0, i] > 0
-    
+        # assert g[0, i] > 0, 'what??'
         rho = -g[1, i] / g[0, i]
-        error = _patch_jax.isconcrete(rho) and abs(rho) >= 1
+        # assert abs(rho) < 1, f'{i+1}-th leading minor is not positive definite'
         gamma = jnp.sqrt((1 - rho) * (1 + rho))
         g = (g + g[::-1] * rho) / gamma
         Li = g[0, :] # i-th column of L
         
-        if error:
-            msg = '{}-th leading minor is not positive definite'.format(i + 1)
-            raise numpy.linalg.LinAlgError(msg)
-
         if logdet:
             ld = ld + jnp.log(Li[i])
             val = [ld]
@@ -194,15 +185,7 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
         
         return val
     
-    if _patch_jax.isconcrete(init_val):
-        # loop manually because lax.fori_loop traces even without jit so it
-        # disables positivity checks
-        # TODO alternative: save first nan index in aux
-        val = init_val
-        for i in range(1, n):
-            val = body_fun(i, val)
-    else:
-        val = lax.fori_loop(1, n, body_fun, init_val)
+    val = lax.fori_loop(1, n, body_fun, init_val)
     
     if logdet:
         ld = val[0]

@@ -561,3 +561,9 @@ In [349]: %timeit trychol(10, 'cholesky')
 
 In [350]: %timeit trychol(10, 'chol_solve')
 910 µs ± 4.26 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+
+2022-06-05
+==========
+
+The forward jacobian of quad and solve seems more accurate with custom
+derivatives than with direct ones, but maybe only for some matrices.
