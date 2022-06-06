@@ -220,15 +220,6 @@ class DecompTestBase(DecompTestABC):
         cov = np.exp(-(xcov.reshape(-1, 1) - xcov.reshape(1, -1)) ** 2)
         return gvar.gvar(mean, cov)
     
-    def test_quad_vec_gvar(self):
-        for n in self.sizes:
-            K = self.randsymmat(n)
-            b = self.randvecgvar(n)
-            invK = self.solve(K, np.eye(len(K)))
-            sol = b.T @ invK @ b
-            result = self.decompclass(K).quad(b)
-            self.assert_close_gvar(sol, result)
-    
     def test_quad_vec_vec_gvar(self):
         for n in self.sizes:
             K = self.randsymmat(n)
