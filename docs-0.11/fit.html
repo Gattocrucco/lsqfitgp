@@ -161,14 +161,14 @@ False.</p>
 <div><p>Use a gradient-only method.</p>
 </div></blockquote>
 <dl class="simple">
-<dt>‘hessian’ :</dt><dd><p>Use a newton method with the hessian.</p>
+<dt>‘hessian’ :</dt><dd><p>Use a Newton method with the Hessian.</p>
 </dd>
-<dt>‘fisher’ :</dt><dd><p>Use a newton method with the Fisher information matrix plus
+<dt>‘fisher’ :</dt><dd><p>Use a Newton method with the Fisher information matrix plus
 the hyperprior precision matrix.</p>
 </dd>
-<dt>‘fisherjj’ :</dt><dd><p>Use a newton method with the Fisher information matrix plus
-the newton-jacobi approximation to the squared residuals
-hessian and the hyperprior precision matrix.</p>
+<dt>‘hessmod’ :</dt><dd><p>Use a Newton method with a modified Hessian where the
+second derivatives of the prior covariance matrix w.r.t. the
+hyperparameters are assumed to be zero.</p>
 </dd>
 </dl>
 </dd>

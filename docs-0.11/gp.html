@@ -457,7 +457,7 @@ the default process.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.marginal_likelihood">
-<span class="sig-name descname"><span class="pre">marginal_likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">given</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givencov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.marginal_likelihood" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">marginal_likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">given</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givencov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.marginal_likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the logarithm of the probability of the data.</p>
 <p>The probability is computed under the Gaussian prior and Gaussian error
 model. It is also called marginal likelihood or bayes factor. If <cite>y</cite> is
@@ -482,6 +482,8 @@ is extracted from <cite>given</cite> with <cite>gvar.evalcov(given)</cite>.</p>
 </dd>
 <dt><strong>separate</strong><span class="classifier">bool</span></dt><dd><p>If True, return separately the logdet term and the residuals term.
 Default False.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the matrix decomposition.</p>
 </dd>
 </dl>
 </dd>
