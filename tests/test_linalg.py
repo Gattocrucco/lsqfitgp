@@ -700,54 +700,42 @@ def test_toeplitz_gershgorin():
     b2 = _toeplitz.eigv_bound(t)
     np.testing.assert_allclose(b2, b1, rtol=1e-15)
 
-def check_toeplitz_chol(lower=True, jit=False):
+def check_toeplitz_chol(jit=False):
+    class Mod:
+        def __getattr__(self, func):
+            f = getattr(_toeplitz, func)
+            return jax.jit(f) if jit else f
+    mod = Mod()
+    
     for n in [1, 2, 10]:
         x = np.linspace(0, 3, n)
         t = np.pi * np.exp(-1/2 * x ** 2)
         m = linalg.toeplitz(t)
-    
-        cholesky = _toeplitz.cholesky
-        if jit:
-            cholesky = jax.jit(_toeplitz.cholesky, static_argnames=['lower', 'inverse', 'logdet'])
-    
-        l1 = cholesky(t, lower=lower)
-        l2 = linalg.cholesky(m, lower=lower)
+        
+        l1 = mod.chol(t)
+        l2 = linalg.cholesky(m, lower=True)
         np.testing.assert_allclose(l1, l2, rtol=1e-8)
         
         b = np.random.randn(len(t), 30)
-        lb1 = cholesky(t, b, lower=lower)
+        lb1 = mod.chol_matmul(t, b)
         lb2 = l2 @ b
         np.testing.assert_allclose(lb1, lb2, rtol=1e-7)
     
-        ld1 = cholesky(t, logdet=True)
-        _, ld2 = np.linalg.slogdet(l2)
+        ld1 = mod.logdet(t)
+        _, ld2 = np.linalg.slogdet(m)
         np.testing.assert_allclose(ld1, ld2, rtol=1e-9)
-    
-        if lower:
-    
-            il1 = cholesky(t, inverse=True, lower=lower)
-            il2 = linalg.solve_triangular(l2, np.eye(len(t)), lower=lower)
-            np.testing.assert_allclose(il1, il2, rtol=1e-6)
-    
-            ilb1 = cholesky(t, b, inverse=True, lower=lower)
-            ilb2 = linalg.solve_triangular(l2, b, lower=lower)
-            np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
+        
+        ilb1 = mod.chol_solve(t, b)
+        ilb2 = linalg.solve_triangular(l2, b, lower=True)
+        np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
 
 @util.tryagain
-def test_toeplitz_chol_lower():
+def test_toeplitz_chol():
     check_toeplitz_chol()
 
 @util.tryagain
-def test_toeplitz_chol_upper():
-    check_toeplitz_chol(False)
-
-@util.tryagain
-def test_toeplitz_chol_lower_jit():
-    check_toeplitz_chol(True, True)
-
-@util.tryagain
-def test_toeplitz_chol_upper_jit():
-    check_toeplitz_chol(False, True)
+def test_toeplitz_chol_jit():
+    check_toeplitz_chol(True)
 
 @util.tryagain
 def test_toeplitz_chol_solve_numpy():

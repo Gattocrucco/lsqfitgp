@@ -17,10 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-# This code originally copied from the TOEPLITZ_CHOLESKY code by John Burkardt,
-# released under the LGPL.
-# people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html
-
 import abc
 
 from jax import numpy as jnp
@@ -79,7 +75,19 @@ def sequential_algorithm(n, ops):
 class SymSchur(SequentialOperation):
     
     def __init__(self, t):
-        """t = first row of a symmetric toeplitz matrix"""
+        """
+        t = first row of a symmetric toeplitz matrix
+        
+        This code was initially copied from the TOEPLITZ_CHOLESKY code by John
+        Burkardt, released under the LGPL.
+        people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html
+        
+        Reference:
+            Michael Stewart,
+            Cholesky factorization of semi-definite Toeplitz matrices.
+            Linear Algebra and its Applications,
+            Volume 254, pages 497-525, 1997.
+        """
         t = jnp.asarray(t)
         assert t.ndim == 1
         # assert t[0] > 0, '1-th leading minor is not positive definite'
@@ -249,85 +257,22 @@ class SumLogDiag(SequentialOperation):
         """sum(log(diag(m)))"""
         return sld
 
-def cholesky(t, b=None, *, lower=True, inverse=False, logdet=False):
-    """
-    
-    Cholesky decomposition of a positive definite Toeplitz matrix.
-    
-    Parameters
-    ----------
-    t : (n,) array
-        The first row/column of the matrix.
-    b : (n,) or (n, m) array, optional
-        If provided, the Cholesky factor is multiplied by this vector/matrix.
-    lower : bool
-        Compute the lower (True, default) or the upper triangular Cholesky
-        factor.
-    inverse : bool
-        If True, compute the inverse of the Cholesky factor.
-    logdet : bool
-        If True, ignore all other options and return the logarithm of the
-        determinant of the Cholesky factor.
-    
-    Returns
-    -------
-    If `b` is None (default):
-    
-    L : (n, n) array
-        Lower triangular matrix such that toeplitz(t) == L @ L.T, or
-        upper U = L.T if `lower == False`, or L^-1 if `inverse == True`.
-    
-    If `b` is an array:
-    
-    Lb : (n,) or (n, m) array
-        The product L @ b, or L^-1 @ b if `inverse == True`, or
-        L.T @ b if `lower == False`.
-    
-    If `logdet` is True:
-    
-    l : scalar
-        log(det(L))
-    
-    Notes
-    -----
-    If b is specified, the Cholesky factor is never formed in memory, but it is
-    not possible to compute U^-1 or U^-1 @ b directly in this way.
-    
-    Reference:
-        
-        Michael Stewart,
-        Cholesky factorization of semi-definite Toeplitz matrices.
-        Linear Algebra and its Applications,
-        Volume 254, pages 497-525, 1997.
-    
-    """
+def chol(t):
+    _, out = sequential_algorithm(len(t), [SymSchur(t), Stack(0)])
+    return out.T
 
-    # TODO vectorize
-    
-    t = jnp.asarray(t)
+def chol_solve(t, *bs):
+    ops = [SolveTriLowerColByFull(0, b) for b in bs]
+    out = sequential_algorithm(len(t), [SymSchur(t)] + ops)
+    return out[1] if len(bs) == 1 else out[1:]
 
-    if logdet:
-        op = SumLogDiag(0)
-    elif b is None and inverse:
-        assert lower
-        op = SolveTriLowerColByFull(0, jnp.eye(len(t)))
-    elif b is None:
-        op = Stack(0)
-    elif inverse:
-        assert lower
-        op = SolveTriLowerColByFull(0, b)
-    elif lower:
-        op = MatMulColByFull(0, b)
-    else:
-        op = MatMulRowByFull(0, b)
-
-    _, out = sequential_algorithm(len(t), [SymSchur(t), op])
-
-    if b is None and not inverse and lower:
-        out = out.T
+def chol_matmul(t, b):
+    _, out = sequential_algorithm(len(t), [SymSchur(t), MatMulColByFull(0, b)])
     return out
 
-cholesky_jit = jax.jit(cholesky, static_argnames=['lower', 'inverse', 'logdet'])
+def logdet(t):
+    _, out = sequential_algorithm(len(t), [SymSchur(t), SumLogDiag(0)])
+    return 2 * out
 
 def chol_solve_numpy(t, b, diageps=None):
     """

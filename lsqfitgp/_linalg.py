@@ -565,10 +565,11 @@ class CholToeplitz(Chol):
     """
     
     def __init__(self, K, eps=None):
-        t = K[0]
+        t = jnp.asarray(K[0])
         m = _toeplitz.eigv_bound(t)
         eps = self._eps(eps, t, m)
-        self._L = _toeplitz.cholesky(t, diageps=eps)
+        t = t.at[0].add(eps)
+        self._L = _toeplitz.chol(t)
 
 class CholToeplitzML(DecompAutoDiff, CholEps):
     """
@@ -577,6 +578,10 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     evaluated each time column by column during operations.
     """
     
+    # TODO can I jit cholesky here? would it work if then I want to jit
+    # again or compute derivatives? => better to let the user opt for the
+    # jit => jax supports redundant nested jits
+
     def __init__(self, K, eps=None):
         t = jnp.asarray(K[0])
         m = _toeplitz.eigv_bound(t)
@@ -591,27 +596,25 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
         # reimplement it in jax.
     
     def quad(self, b, c=None):
-        ilb = _toeplitz.cholesky(self.t, b, inverse=True)
-        # TODO can I jit cholesky here? would it work if then I want to jit
-        # again or compute derivatives? => better to let the user opt for the
-        # jit => jax supports redundant nested jits
-        if c is None:
+        t = self.t
+        if c is not None and c.dtype == object:
+            ilb = numpy.array(_toeplitz.chol_solve(t, b))
+            ilc = _toeplitz.chol_solve_numpy(t, c)
+        elif c is None:
+            ilb = _toeplitz.chol_solve(t, b)
             ilc = ilb
-        elif c.dtype == object:
-            ilb = numpy.array(ilb)
-            ilc = _toeplitz.chol_solve_numpy(self.t, c)
         else:
-            ilc = _toeplitz.cholesky(self.t, c, inverse=True)
+            ilb, ilc = _toeplitz.chol_solve(t, b, c)
         return _transpose(ilb) @ ilc
     
     def logdet(self):
-        return 2 * _toeplitz.cholesky(self.t, logdet=True)
+        return _toeplitz.logdet(self.t)
     
     def correlate(self, b):
-        return _toeplitz.cholesky(self.t, b)
+        return _toeplitz.chol_matmul(self.t, b)
     
     def decorrelate(self, b):
-        return _toeplitz.cholesky(self.t, b, inverse=True)
+        return _toeplitz.chol_solve(self.t, b)
 
 class BlockDecomp(Decomposition):
     """
