@@ -203,6 +203,8 @@ class DecompAutoDiff(Decomposition):
     def _popattr(self, kw, attr, default):
         if not hasattr(self, attr):
             setattr(self, attr, kw.pop(attr, default))
+    
+    # TODO try using jax.linearize and jax.convert_closure
         
     def __init_subclass__(cls, **kw):
         
@@ -284,7 +286,9 @@ class DecompAutoDiff(Decomposition):
         # decomposition function sandwitch(b, X, c) which computes b.T K^-1 X
         # K^-1 c and use it both for numerical accuracy (I'm guessing that
         # avoiding the two concatenated solves within solve is good) and to make
-        # the jvp work.
+        # the jvp work. For things like ToeplitzML that stream-decompose each
+        # time, it would be more efficient to have versions of solve and quad
+        # with an arbitrary number of right-hand sides.
 
         @quad_autodiff.defjvp
         def quad_jvp(self, primals, tangents):
@@ -296,7 +300,9 @@ class DecompAutoDiff(Decomposition):
             Kc = self.solve._autodiff(self, K, c)
             tangent_K = -_transpose(Kb) @ K_dot @ Kc
             tangent_b = quad_autodiff(self, K, b_dot, c)
+            # tangent_b = _transpose(b_dot) @ self.solve._autodiff(self, K, c)
             tangent_c = quad_autodiff(self, K, b, c_dot)
+            # tangent_c = _transpose(b) @ self.solve._autodiff(self, K, c_dot)
             return primal, tangent_K + tangent_b + tangent_c
             
         @quad_autodiff_cnone.defjvp
@@ -333,6 +339,8 @@ class DecompAutoDiff(Decomposition):
             K_dot, = self._stop_tangents(tangents)
             primal = logdet_autodiff(self, K)
             tangent = jnp.trace(self.solve._autodiff(self, K, K_dot))
+            # TODO for efficiency I should define a new method
+            # tracesolve.
             return primal, tangent
         
         def logdet(self):

@@ -106,10 +106,14 @@ class empbayes_fit:
             'gradient' :
                 Use a gradient-only method.
             'hessian' :
-                Use a Newton method with the hessian.
+                Use a Newton method with the Hessian.
             'fisher' :
                 Use a Newton method with the Fisher information matrix plus
                 the hyperprior precision matrix.
+            'hessmod' :
+                Use a Newton method with a modified Hessian where the
+                second derivatives of the prior covariance matrix w.r.t. the
+                hyperparameters are assumed to be zero.
     
         Attributes
         ----------
@@ -190,11 +194,11 @@ class empbayes_fit:
             logp = -ml + 1/2 * priorchi2
             return logp
                 
-        jac = dojit(jax.jacfwd(fun))
+        jac = dojit(jax.jacfwd(fun)) # can't change to rev due to, I guess, the priorchi2 term quad derivatives w.r.t. b
         hess = dojit(jax.jacfwd(jac))
         
         @jax.jacfwd
-        @jax.jacfwd
+        @jax.jacfwd # can't change to rev due to jax issue #10994
         def fisher(p):
             gp, args, _ = make(p)
             decomp, _ = gp._prior_decomp(*args, stop_tangents=True)

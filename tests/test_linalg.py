@@ -464,6 +464,9 @@ class DecompTestBase(DecompTestABC):
             np.testing.assert_allclose(sol, result)
         
     # TODO test derivatives w.r.t. b, c
+    # reverse gradient is broken in empbayes_fit, so I envisage that reverse
+    # derivatives of quad w.r.t. b and c won't work due to the quad_autodiff
+    # in the custom jvp
 
 class DecompTestCorr(DecompTestBase):
     """Tests for `correlate` and `decorrelate` are defined in this
@@ -770,11 +773,6 @@ def test_toeplitz_chol_solve_numpy():
 
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings
-
-# solve does not support gvar any more, and quad now supports gvar only on
-# second argument
-util.xfail(DecompTestBase, 'test_solve_vec_gvar')
-util.xfail(DecompTestBase, 'test_quad_vec_gvar')
 
 # TODO second derivatives completing but returning incorrect result
 util.xfail(DecompTestBase, 'test_solve_matrix_hess_fwd_rev')
