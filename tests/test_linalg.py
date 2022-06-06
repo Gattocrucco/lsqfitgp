@@ -750,7 +750,7 @@ def test_toeplitz_chol_upper_jit():
     check_toeplitz_chol(False, True)
 
 @util.tryagain
-def test_toeplitz_chol_solve():
+def test_toeplitz_chol_solve_numpy():
     shapes = [
         [(), ()],
         [(10,), (1,)],
@@ -771,7 +771,7 @@ def test_toeplitz_chol_solve():
                 if bshape and not shape:
                     continue
                 b = np.random.randn(*bshape, n, *shape)
-                ilb = _toeplitz.chol_solve(t, b, diageps=1e-12)
+                ilb = _toeplitz.chol_solve_numpy(t, b, diageps=1e-12)
                 np.testing.assert_allclose(*np.broadcast_arrays(l @ ilb, b), rtol=1e-6)
 
 #### XFAILS ####

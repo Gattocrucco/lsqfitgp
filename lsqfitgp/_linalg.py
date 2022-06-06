@@ -599,7 +599,7 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
             ilc = ilb
         elif c.dtype == object:
             ilb = numpy.array(ilb)
-            ilc = _toeplitz.chol_solve(self.t, c, diageps=self.teps)
+            ilc = _toeplitz.chol_solve_numpy(self.t, c, diageps=self.teps)
         else:
             ilc = _toeplitz.cholesky(self.t, c, inverse=True, diageps=self.teps)
         return _transpose(ilb) @ ilc

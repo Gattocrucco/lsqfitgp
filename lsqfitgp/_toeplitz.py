@@ -21,12 +21,233 @@
 # released under the LGPL.
 # people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html
 
+import abc
+
 from jax import numpy as jnp
 from jax import lax
 import jax
 import numpy
 
 from . import _patch_jax
+
+class SequentialOperation(metaclass=abc.ABCMeta):
+    """see jax.lax.fori_loop for semantics"""
+    
+    @abc.abstractmethod
+    def __init__(self, *args): # pragma: no cover
+        pass
+    
+    @property
+    @abc.abstractmethod
+    def inputs(self): # pragma: no cover
+        """tuple of indices of other ops to be used as input"""
+        pass
+    
+    @abc.abstractmethod
+    def init_val(self, n, *inputs): # pragma: no cover
+        pass
+    
+    @abc.abstractmethod
+    def iter_out(self, i, val): # pragma: no cover
+        """output passed to other ops who request it through `inputs`"""
+        pass
+    
+    @abc.abstractmethod
+    def iter(self, i, val, *inputs): # pragma: no cover
+        """return updated val"""
+        pass
+
+    @abc.abstractmethod
+    def finalize_val(self, val): # pragma: no cover
+        """return final product"""
+        pass
+
+def sequential_algorithm(n, ops):
+    init_val = []
+    for op in ops:
+        args = (ops[j].iter_out(0, init_val[j]) for j in op.inputs)
+        init_val.append(op.init_val(n, *args))
+    def body_fun(i, val):
+        newval = []
+        for op, v in zip(ops, val):
+            args = (ops[j].iter_out(i, newval[j]) for j in op.inputs)
+            newval.append(op.iter(i, v, *args))
+        return newval
+    val = lax.fori_loop(1, n, body_fun, init_val)
+    return tuple(op.finalize_val(v) for op, v in zip(ops, val))
+
+class SymSchur(SequentialOperation):
+    
+    def __init__(self, t):
+        """t = first row of a symmetric toeplitz matrix"""
+        t = jnp.asarray(t)
+        assert t.ndim == 1
+        # assert t[0] > 0, '1-th leading minor is not positive definite'
+        self.t = t
+    
+    @property
+    def inputs(self):
+        return ()
+    
+    def init_val(self, n):
+        t = self.t
+        assert len(t) == n
+        norm = t[0]
+        t = t / norm
+        g = jnp.stack([t, t])
+        return g, jnp.sqrt(norm)
+    
+    def iter_out(self, i, val):
+        """i-th column of cholesky factor L"""
+        g, snorm = val
+        return g[0, :] * snorm
+    
+    def iter(self, i, val):
+        g, snorm = val
+        g = g.at[0, :].set(jnp.roll(g[0, :], 1))
+        g = g.at[:, 0].set(0).at[:, i - 1].set(0)
+        # assert g[0, i] > 0, 'what??'
+        rho = -g[1, i] / g[0, i]
+        # assert abs(rho) < 1, f'{i+1}-th leading minor is not positive definite'
+        gamma = jnp.sqrt((1 - rho) * (1 + rho))
+        g = (g + g[::-1] * rho) / gamma
+        return g, snorm
+    
+    def finalize_val(self, val):
+        pass
+
+class Stack(SequentialOperation):
+    
+    def __init__(self, input):
+        """input = an operation producing arrays"""
+        self.input = input
+        
+    @property
+    def inputs(self):
+        return (self.input,)
+        
+    def init_val(self, n, a0):
+        out = jnp.zeros((n,) + a0.shape, a0.dtype)
+        return out.at[0, ...].set(a0)
+    
+    def iter_out(self, i, out):
+        pass
+    
+    def iter(self, i, out, ai):
+        return out.at[i, ...].set(ai)
+    
+    def finalize_val(self, out):
+        """the stacked arrays"""
+        return out
+
+class MatMulIterByFull(SequentialOperation):
+    
+    def __init__(self, input, b):
+        """input = an operation producing pieces of left operand (a)
+        b = right operand"""
+        self.input = input
+        b = jnp.asarray(b)
+        assert b.ndim in (1, 2)
+        vec = b.ndim < 2
+        if vec:
+            b = b[:, None]
+        self.vec = vec
+        self.b = b
+    
+    @property
+    def inputs(self):
+        return (self.input,)
+    
+    @abc.abstractmethod
+    def init_val(self, n, a0): # pragma: no cover
+        return ab, ...
+    
+    def iter_out(self, i, val):
+        pass
+    
+    @abc.abstractmethod
+    def iter(self, i, val, ai): # pragma: no cover
+        return ab, ...
+    
+    def finalize_val(self, val):
+        ab = val[0]
+        if self.vec:
+            ab = jnp.squeeze(ab, -1)
+        return ab
+
+class MatMulRowByFull(MatMulIterByFull):
+    
+    def init_val(self, n, a0):
+        b = self.b
+        assert a0.ndim == 1
+        assert b.shape[0] == len(a0)
+        ab = jnp.empty((n, b.shape[1]), jnp.result_type(a0.dtype, b.dtype))
+        ab = ab.at[0, :].set(a0 @ b)
+        return ab, b
+    
+    def iter(self, i, val, ai):
+        ab, b = val
+        ab = ab.at[i, :].set(ai @ b)
+        return ab, b
+    
+class MatMulColByFull(MatMulIterByFull):
+
+    def init_val(self, n, a0):
+        b = self.b
+        assert a0.ndim == 1
+        assert b.shape[0] == n
+        ab = a0[:, None] * b[0, None, :]
+        return ab, b
+    
+    def iter(self, i, val, ai):
+        ab, b = val
+        ab = ab + ai[:, None] * b[i, None, :]
+        return ab, b
+
+class SolveTriLowerColByFull(MatMulIterByFull):
+    # x[0] /= a[0, 0]
+    # for i in range(1, len(x)):
+    #     x[i:] -= x[i - 1] * a[i:, i - 1]
+    #     x[i] /= a[i, i]
+        
+    def init_val(self, n, a0):
+        b = self.b
+        assert a0.shape == (n,)
+        assert b.shape[0] == n
+        prevai = a0.at[0].set(0)
+        ab = b.at[0, :].divide(a0[0])
+        return ab, prevai
+    
+    def iter(self, i, val, ai):
+        ab, prevai = val
+        ab = ab - ab[i - 1, :] * prevai[:, None]
+        ab = ab.at[i, :].divide(ai[i])
+        prevai = ai.at[i].set(0)
+        return ab, prevai
+
+class SumLogDiag(SequentialOperation):
+    
+    def __init__(self, input):
+        """input = operation producing the rows/columns of a square matrix"""
+        self.input = input
+    
+    @property
+    def inputs(self):
+        return (self.input,)
+    
+    def init_val(self, n, m0):
+        assert m0.shape == (n,)
+        return jnp.log(m0[0])
+    
+    def iter_out(self, i, sld):
+        pass
+    
+    def iter(self, i, sld, mi):
+        return sld + jnp.log(mi[i])
+    
+    def finalize_val(self, sld):
+        """sum(log(diag(m)))"""
+        return sld
 
 def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False):
     """
@@ -83,145 +304,37 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
         Volume 254, pages 497-525, 1997.
     
     """
-    
+
     # TODO vectorize
     
-    # TODO make this an internal implementation function, and define
-    # single-purpose wrappers. Call it 'schur'.
-    
-    # TODO I would like to implement other combinations of operations, in
-    # particular I need quad and quad + logdet. Instead of adding a bunch of
-    # complicated options, I could write a function for each operation (l, lt, l
-    # b, lt b, l^-1 b, logdet), take *args after l and diageps and each arg is a
-    # tuple (op, *args). This means that I can not jit directly the function, I
-    # have to jit the wrappers. => Actually I'd also like to compute things like
-    # Q K^-1 (V K^-1 P) in one call, thus I need to feed the output of one
-    # operator into another. This requires knowing the shape beforehand. Thus it
-    # is probably easier to define classes for the operators.
-    
     t = jnp.asarray(t)
-    n, = t.shape
-    
-    assert lower or not inverse
-    
-    vec = False
-    if b is not None:
-        b = jnp.asarray(b)
-        assert b.ndim in (1, 2) and b.shape[0] == n
-        vec = b.ndim < 2
-    elif inverse:
-        b = jnp.eye(n, dtype=t.dtype)
-    if vec:
-        b = b[:, None]
-    
-    if n == 0:
-        return jnp.empty((0, 0) if b is None else b.shape, t.dtype)
-
     if diageps is not None:
         t = t.at[0].add(diageps)
 
-    # assert t[0] > 0, '1-th leading minor is not positive definite'
-    norm = t[0]
-    t = t / norm
-    
     if logdet:
-        init_val = [jnp.log(t[0])]
+        op = SumLogDiag(0)
+    elif b is None and inverse:
+        assert lower
+        op = SolveTriLowerColByFull(0, jnp.eye(len(t)))
     elif b is None:
-        L = jnp.zeros((n, n), t.dtype)
-        L = L.at[0, :].set(t)
-        init_val = [L]
-    elif not inverse:
-        if lower:
-            Lb = t[:, None] * b[0, None, :]
-        else:
-            Lb = jnp.zeros_like(b)
-            Lb = Lb.at[0, :].set(t @ b)
-        init_val = [Lb]
+        op = Stack(0)
+    elif inverse:
+        assert lower
+        op = SolveTriLowerColByFull(0, b)
+    elif lower:
+        op = MatMulColByFull(0, b)
     else:
-        prevLi = t.at[0].set(0)
-        init_val = [b, prevLi] # invLb = b
-        
-    g = jnp.stack([t, t])
-    g = g.at[0, :].set(jnp.roll(g[0, :], 1))
-    g = g.at[:, 0].set(0)
-    init_val += [g]
-    
-    def body_fun(i, val):
-        
-        if logdet:
-            ld = val.pop(0)
-        elif b is None:
-            L = val.pop(0)
-        elif not inverse:
-            Lb = val.pop(0)
-        else:
-            invLb = val.pop(0)
-            prevLi = val.pop(0)
-        
-        g = val.pop(0)
+        op = MatMulRowByFull(0, b)
 
-        # assert g[0, i] > 0, 'what??'
-        rho = -g[1, i] / g[0, i]
-        # assert abs(rho) < 1, f'{i+1}-th leading minor is not positive definite'
-        gamma = jnp.sqrt((1 - rho) * (1 + rho))
-        g = (g + g[::-1] * rho) / gamma
-        Li = g[0, :] # i-th column of L
-        
-        if logdet:
-            ld = ld + jnp.log(Li[i])
-            val = [ld]
-        elif b is None:
-            L = L.at[i, :].set(Li)
-            val = [L]
-        elif not inverse:
-            if lower:
-                Lb = Lb + Li[:, None] * b[i, None, :]
-            else:
-                Lb = Lb.at[i, :].set(Li @ b)
-            val = [Lb]
-        else:
-            # x[0] /= a[0, 0]
-            # for i in range(1, len(x)):
-            #     x[i:] -= x[i - 1] * a[i:, i - 1]
-            #     x[i] /= a[i, i]
-            invLb = invLb - invLb[i - 1, :] * prevLi[:, None]
-            invLb = invLb.at[i].divide(Li[i])
-            prevLi = Li.at[i].set(0)
-            val = [invLb, prevLi]
-        
-        g = g.at[0, :].set(jnp.roll(g[0, :], 1))
-        g = g.at[:, 0].set(0).at[:, i].set(0)
-        val += [g]
-        
-        return val
-    
-    val = lax.fori_loop(1, n, body_fun, init_val)
-    
-    if logdet:
-        ld = val[0]
-        return ld + n / 2 * jnp.log(norm)
-    if b is None:
-        L = val[0]
-        assert L.shape == (n, n)
-        if lower:
-            L = L.T
-        return L * jnp.sqrt(norm)
-    elif not inverse:
-        Lb = val[0]
-        assert Lb.shape == b.shape
-        if vec:
-            Lb = jnp.squeeze(Lb, -1)
-        return Lb * jnp.sqrt(norm)
-    else:
-        invLb = val[0]
-        assert invLb.shape == b.shape
-        if vec:
-            invLb = jnp.squeeze(invLb, -1)
-        return invLb / jnp.sqrt(norm)
+    _, out = sequential_algorithm(len(t), [SymSchur(t), op])
+
+    if b is None and not inverse and lower:
+        out = out.T
+    return out
 
 cholesky_jit = jax.jit(cholesky, static_argnames=['lower', 'inverse', 'logdet'])
 
-def chol_solve(t, b, diageps=None):
+def chol_solve_numpy(t, b, diageps=None):
     """
     t (..., n)
     b (..., n, m) or (n,)
