@@ -249,7 +249,7 @@ class SumLogDiag(SequentialOperation):
         """sum(log(diag(m)))"""
         return sld
 
-def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False):
+def cholesky(t, b=None, *, lower=True, inverse=False, logdet=False):
     """
     
     Cholesky decomposition of a positive definite Toeplitz matrix.
@@ -265,9 +265,6 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
         factor.
     inverse : bool
         If True, compute the inverse of the Cholesky factor.
-    diageps : float, optional
-        The diagonal of the matrix (the first element of t) is increased by
-        `diageps` to correct for numerical non-positivity.
     logdet : bool
         If True, ignore all other options and return the logarithm of the
         determinant of the Cholesky factor.
@@ -308,8 +305,6 @@ def cholesky(t, b=None, *, lower=True, inverse=False, diageps=None, logdet=False
     # TODO vectorize
     
     t = jnp.asarray(t)
-    if diageps is not None:
-        t = t.at[0].add(diageps)
 
     if logdet:
         op = SumLogDiag(0)

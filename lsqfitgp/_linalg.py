@@ -578,10 +578,10 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     """
     
     def __init__(self, K, eps=None):
-        t = K[0]
+        t = jnp.asarray(K[0])
         m = _toeplitz.eigv_bound(t)
-        self.teps = self._eps(eps, t, m)
-        self.t = t
+        eps = self._eps(eps, t, m)
+        self.t = t.at[0].add(eps)
     
     def solve(self, b):
         raise NotImplementedError
@@ -591,27 +591,27 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
         # reimplement it in jax.
     
     def quad(self, b, c=None):
-        ilb = _toeplitz.cholesky(self.t, b, inverse=True, diageps=self.teps)
+        ilb = _toeplitz.cholesky(self.t, b, inverse=True)
         # TODO can I jit cholesky here? would it work if then I want to jit
         # again or compute derivatives? => better to let the user opt for the
-        # jit
+        # jit => jax supports redundant nested jits
         if c is None:
             ilc = ilb
         elif c.dtype == object:
             ilb = numpy.array(ilb)
-            ilc = _toeplitz.chol_solve_numpy(self.t, c, diageps=self.teps)
+            ilc = _toeplitz.chol_solve_numpy(self.t, c)
         else:
-            ilc = _toeplitz.cholesky(self.t, c, inverse=True, diageps=self.teps)
+            ilc = _toeplitz.cholesky(self.t, c, inverse=True)
         return _transpose(ilb) @ ilc
     
     def logdet(self):
-        return 2 * _toeplitz.cholesky(self.t, logdet=True, diageps=self.teps)
+        return 2 * _toeplitz.cholesky(self.t, logdet=True)
     
     def correlate(self, b):
-        return _toeplitz.cholesky(self.t, b, diageps=self.teps)
+        return _toeplitz.cholesky(self.t, b)
     
     def decorrelate(self, b):
-        return _toeplitz.cholesky(self.t, b, inverse=True, diageps=self.teps)
+        return _toeplitz.cholesky(self.t, b, inverse=True)
 
 class BlockDecomp(Decomposition):
     """
