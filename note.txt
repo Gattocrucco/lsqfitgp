@@ -492,6 +492,8 @@ but the gradient of the full likelihood, and put these into a second order
 minimizer. Algorithms that may be appropriate in optimize.minimize: dogleg,
 trust-exact.
 
+**** WRONG, SEE 2022-06-06 ****
+
 Other hack-hessian option: external product of the residuals.
 
     V = LL^T
@@ -572,3 +574,28 @@ derivatives than with direct ones, but maybe only for some matrices.
 
 The forward second derivatives work. I can move on to implementing
 hyperparameters algorithms.
+
+2022-06-06
+==========
+
+Interesting piece of code:
+
+File ~/Documents/Scuola/lsqfitgp/Repository/lsqfitgp/pythonvenv/lib/python3.10/site-packages/scipy/optimize/_trustregion_exact.py:245, in IterativeSubproblem.__init__(self, x, fun, jac, hess, hessp, k_easy, k_hard)
+    242 self.dimension = len(self.hess)
+    243 self.hess_gershgorin_lb,\
+    244     self.hess_gershgorin_ub = gershgorin_bounds(self.hess)
+--> 245 self.hess_inf = norm(self.hess, np.Inf)
+    246 self.hess_fro = norm(self.hess, 'fro')
+    248 # A constant such that for vectors smaler than that
+    249 # backward substituition is not reliable. It was stabilished
+    250 # based on Golub, G. H., Van Loan, C. F. (2013).
+    251 # "Matrix computations". Forth Edition. JHU press., p.165.
+
+--------
+
+I noticed that I made a mistake in computing the Fisher matrix, I took the
+expected value *before* differentiating. The correct expression is
+
+    E[∂^2l] = 1/2 tr(K^-1 ∂1K K^-1 ∂2K)
+
+How do I implement it in jax? => Use lax.stop_gradient(K_dot) in solve_vjp

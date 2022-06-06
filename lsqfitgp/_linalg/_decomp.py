@@ -74,7 +74,7 @@ import gvar
 from . import _toeplitz
 from .. import _patch_jax
 
-# TODO optimize the matrix multiplication with gvars. Use these gvar internals:
+# TODO optimize matrix multiplication with gvars. Use these gvar internals:
 # gvar.svec(int size)
 # gvar.svec._assign(float[] values, int[] indices)
 # gvar.GVar(float mean, svec derivs, smat cov)
@@ -199,6 +199,10 @@ class DecompAutoDiff(Decomposition):
     @property
     def n(self):
         return len(self._K)
+    
+    def _popattr(self, kw, attr, default):
+        if not hasattr(self, attr):
+            setattr(self, attr, kw.pop(attr, default))
         
     def __init_subclass__(cls, **kw):
         
@@ -210,8 +214,9 @@ class DecompAutoDiff(Decomposition):
         
         @functools.wraps(old__init__)
         def __init__(self, K, *args, **kw):
-            if not hasattr(self, 'direct_autodiff'):
-                self.direct_autodiff = kw.pop('direct_autodiff', False)
+            self._popattr(kw, 'direct_autodiff', False)
+            self._popattr(kw, 'stop_tangents', False)
+            assert not (self.direct_autodiff and self.stop_tangents)
             if self.direct_autodiff:
                 old__init__(self, K, *args, **kw)
             else:
@@ -230,6 +235,11 @@ class DecompAutoDiff(Decomposition):
                 setattr(cls, name, newmeth)
         
         super().__init_subclass__(**kw)
+    
+    def _stop_tangents(self, tangents):
+        if self.stop_tangents:
+            tangents = jax.lax.stop_gradient(tangents)
+        return tangents
 
     @staticmethod
     def _make_solve(oldsolve):
@@ -241,7 +251,7 @@ class DecompAutoDiff(Decomposition):
         @solve_autodiff.defjvp
         def solve_vjp(self, primals, tangents):
             K, b = primals
-            K_dot, b_dot = tangents
+            K_dot, b_dot = self._stop_tangents(tangents)
             primal = solve_autodiff(self, K, b)
             tangent_K = -solve_autodiff(self, K, K_dot) @ primal
             tangent_b = solve_autodiff(self, K, b_dot)
@@ -279,7 +289,7 @@ class DecompAutoDiff(Decomposition):
         @quad_autodiff.defjvp
         def quad_jvp(self, primals, tangents):
             K, b, c = primals
-            K_dot, b_dot, c_dot = tangents
+            K_dot, b_dot, c_dot = self._stop_tangents(tangents)
             primal = quad_autodiff(self, K, b, c)
             # tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, c))
             Kb = self.solve._autodiff(self, K, b)
@@ -292,7 +302,7 @@ class DecompAutoDiff(Decomposition):
         @quad_autodiff_cnone.defjvp
         def quad_cnone_jvp(self, primals, tangents):
             K, b = primals
-            K_dot, b_dot = tangents
+            K_dot, b_dot = self._stop_tangents(tangents)
             primal = quad_autodiff_cnone(self, K, b)
             # tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, b))
             Kb = self.solve._autodiff(self, K, b)
@@ -320,7 +330,7 @@ class DecompAutoDiff(Decomposition):
         @logdet_autodiff.defjvp
         def logdet_jvp(self, primals, tangents):
             K, = primals
-            K_dot, = tangents
+            K_dot, = self._stop_tangents(tangents)
             primal = logdet_autodiff(self, K)
             tangent = jnp.trace(self.solve._autodiff(self, K, K_dot))
             return primal, tangent
@@ -553,7 +563,6 @@ class CholGersh(CholReg):
     
     def _regularize(self, mat, eps):
         maxeigv = _gershgorin_eigval_bound(mat)
-        # return mat + jnp.diag(jnp.broadcast_to(self._eps(eps, mat, maxeigv), len(mat)))
         return mat.at[jnp.diag_indices(len(mat))].add(self._eps(eps, mat, maxeigv))
 
 class CholToeplitz(Chol):
@@ -625,7 +634,7 @@ class BlockDecomp(Decomposition):
     # other blocks one at a time. Would a divide et impera approach be useful
     # for my case?
         
-    def __init__(self, P_decomp, S, Q, S_decomp_class):
+    def __init__(self, P_decomp, S, Q, S_decomp_class, **kw):
         """
         The matrix to be decomposed is
         
@@ -640,10 +649,12 @@ class BlockDecomp(Decomposition):
             The other blocks.
         S_decomp_class : subclass of Decomposition
             A subclass of Decomposition used to decompose S - Q.T P^-1 Q.
+        **kw :
+            Additional keyword arguments are passed to S_decomp_class.
         """
         self._Q = Q
         self._invP = P_decomp
-        self._tildeS = S_decomp_class(S - P_decomp.quad(Q))
+        self._tildeS = S_decomp_class(S - P_decomp.quad(Q), **kw)
     
     def solve(self, b):
         invP = self._invP

@@ -1021,7 +1021,7 @@ class GP:
         ]
         return _block_noop(blocks)
     
-    def _solver(self, keys, ycov=None):
+    def _solver(self, keys, ycov=None, **kw):
         """
         Return a decomposition of the covariance matrix of the keys in `keys`
         plus the matrix ycov.
@@ -1034,6 +1034,8 @@ class GP:
         # not needed but when it is it makes a difference. A faster and less
         # thorough check can be done only on off-diagonal key-key blocks being
         # zero, which may be useful with multi-output or split components.
+        
+        # TODO cache ignores **kw.
         
         keys = tuple(keys)
         
@@ -1050,7 +1052,7 @@ class GP:
         Kxx = self._assemblecovblocks(keys)
         if ycov is not None:
             Kxx = Kxx + ycov
-        decomp = self._decompclass(Kxx)
+        decomp = self._decompclass(Kxx, **kw)
         
         # Cache decomposition.
         if ycov is None:
@@ -1424,8 +1426,36 @@ class GP:
         Like `pred` with `fromdata=True`.
         """
         return self.pred(*args, fromdata=True, **kw)
+    
+    def _prior_decomp(self, given, givencov=None, **kw):
+        ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
+        y = _concatenate_noop(ylist)
+        
+        if ycovblocks is not None:
+            ycov = _block_noop(ycovblocks)
+            if y.dtype == object:
+                warnings.warn(f'covariance matrix may have been specified both explicitly and with gvars; the explicit one will be used')
+            ymean = gvar.mean(y)
+        elif y.dtype == object:
+            gvary = gvar.gvar(y)
+            ycov = gvar.evalcov(gvary)
+            ymean = gvar.mean(gvary)
+        else:
+            ycov = None
+            ymean = y
+        
+        if self._checkfinite and not _linalg.choose_numpy(ymean).all(_linalg.choose_numpy(ymean).isfinite(ymean)):
+            raise ValueError('mean of `given` is not finite')
+        if ycov is not None:
+            if self._checkfinite and not _linalg.choose_numpy(ycov).all(_linalg.choose_numpy(ycov).isfinite(ycov)):
+                raise ValueError('covariance matrix of `given` is not finite')
+            if self._checksym and not _linalg.choose_numpy(ycov).allclose(ycov, ycov.T):
+                raise ValueError('covariance matrix of `given` is not symmetric')
+        
+        decomp = self._solver(inkeys, ycov, **kw)
+        return decomp, ymean
 
-    def marginal_likelihood(self, given, givencov=None, separate=False):
+    def marginal_likelihood(self, given, givencov=None, separate=False, **kw):
         """
         
         Compute the logarithm of the probability of the data.
@@ -1457,6 +1487,8 @@ class GP:
         separate : bool
             If True, return separately the logdet term and the residuals term.
             Default False.
+        **kw :
+            Additional keyword arguments are passed to the matrix decomposition.
         
         Returns
         -------
@@ -1474,33 +1506,9 @@ class GP:
         residuals : array or dictionary of arrays
             A vector whose squared 2-norm multiplied by -1/2 gives the other
             term of the marginal likelihood.
-        """        
-        ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
-        y = _concatenate_noop(ylist)
-        
-        if ycovblocks is not None:
-            ycov = _block_noop(ycovblocks)
-            if y.dtype == object:
-                warnings.warn(f'covariance matrix may have been specified both explicitly and with gvars; the explicit one will be used')
-            ymean = gvar.mean(y)
-        elif y.dtype == object:
-            gvary = gvar.gvar(y)
-            ycov = gvar.evalcov(gvary)
-            ymean = gvar.mean(gvary)
-        else:
-            ycov = None
-            ymean = y
-        
-        if self._checkfinite and not _linalg.choose_numpy(ymean).all(_linalg.choose_numpy(ymean).isfinite(ymean)):
-            raise ValueError('mean of `given` is not finite')
-        if ycov is not None:
-            if self._checkfinite and not _linalg.choose_numpy(ycov).all(_linalg.choose_numpy(ycov).isfinite(ycov)):
-                raise ValueError('covariance matrix of `given` is not finite')
-            if self._checksym and not _linalg.choose_numpy(ycov).allclose(ycov, ycov.T):
-                raise ValueError('covariance matrix of `given` is not symmetric')
-        
-        decomp = self._solver(inkeys, ycov)
-        logdet = decomp.logdet() + len(y) * np.log(2 * np.pi)
+        """
+        decomp, ymean = self._prior_decomp(given, givencov, **kw)
+        logdet = decomp.logdet() + decomp.n * np.log(2 * np.pi)
         if separate:
             residuals = decomp.decorrelate(ymean)
             return logdet, residuals

@@ -207,6 +207,8 @@ class DecompTestBase(DecompTestABC):
         # not be accurate.
         np.testing.assert_allclose(q, 0, atol=1e-7)
         
+        # TODO to compare matrices, use the 2-norm.
+        
         diffcov = gvar.evalcov(diff)
         solmax = np.max(linalg.eigvalsh(solcov))
         diffmax = np.max(linalg.eigvalsh(diffcov))
@@ -217,15 +219,6 @@ class DecompTestBase(DecompTestABC):
         xcov = np.linspace(0, 3, n)
         cov = np.exp(-(xcov.reshape(-1, 1) - xcov.reshape(1, -1)) ** 2)
         return gvar.gvar(mean, cov)
-    
-    def test_solve_vec_gvar(self):
-        for n in self.sizes:
-            K = self.randsymmat(n)
-            b = self.randvecgvar(n)
-            invK = self.solve(K, np.eye(len(K)))
-            sol = invK @ b
-            result = self.decompclass(K).solve(b)
-            self.assert_close_gvar(sol, result)
     
     def test_quad_vec_gvar(self):
         for n in self.sizes:
@@ -276,10 +269,10 @@ class DecompTestBase(DecompTestABC):
                 sol = self.quad(K, b, c)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-9)
     
-    def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False, hess=False, da=False):
+    def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False, hess=False, da=False, stopg=False):
         def fun(s, n, b, c):
             K = self.mat(s, n)
-            return self.decompclass(K, direct_autodiff=da).quad(b, c)
+            return self.decompclass(K, direct_autodiff=da, stop_tangents=stopg).quad(b, c)
         fungrad = jacfun(fun)
         fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in self.sizes:
@@ -306,8 +299,10 @@ class DecompTestBase(DecompTestABC):
                 #  b.T K^-1 dK K^-1 dK K^-1 c   +
                 # -b.T K^-1 d2K K^-1 c          +
                 #  b.T K^-1 dK K^-1 dK K^-1 c
-                d2K = self.mathess(s, n)
-                sol = 2 * b.T @ KdK @ KdK @ Kc - b.T @ self.solve(K, d2K) @ Kc
+                sol = 2 * b.T @ KdK @ KdK @ Kc
+                if not stopg:
+                    d2K = self.mathess(s, n)
+                    sol -= b.T @ self.solve(K, d2K) @ Kc
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-6)
     
     def test_quad_vec(self):
@@ -373,6 +368,9 @@ class DecompTestBase(DecompTestABC):
     def test_quad_matrix_matrix_hess_fwd_fwd(self):
         self.check_quad_jac(lambda f: jax.jacfwd(jax.jacfwd(f)), self.randmat, self.randmat, hess=True)
     
+    def test_quad_matrix_matrix_hess_fwd_fwd_stopg(self):
+        self.check_quad_jac(lambda f: jax.jacfwd(jax.jacfwd(f)), self.randmat, self.randmat, hess=True, stopg=True)
+    
     def test_quad_matrix_matrix_hess_da(self):
         self.check_quad_jac(lambda f: jax.jacfwd(jax.jacrev(f)), self.randmat, self.randmat, hess=True, da=True)
     
@@ -392,10 +390,10 @@ class DecompTestBase(DecompTestABC):
                 sol = self.logdet(K)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-10)
     
-    def check_logdet_jac(self, jacfun, jit=False, hess=False, num=False, da=False):
+    def check_logdet_jac(self, jacfun, jit=False, hess=False, num=False, da=False, stopg=False):
         def fun(s, n):
             K = self.mat(s, n)
-            return self.decompclass(K, direct_autodiff=da).logdet()
+            return self.decompclass(K, direct_autodiff=da, stop_tangents=stopg).logdet()
         fungrad = jacfun(fun)
         fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in self.sizes:
@@ -411,17 +409,21 @@ class DecompTestBase(DecompTestABC):
                 continue
             K = self.mat(s, n)
             dK = self.matjac(s, n)
+            KdK = self.solve(K, dK)
             if not hess:
-                sol = np.trace(self.solve(K, dK))
+                # tr(K^-1 dK)
+                sol = np.trace(KdK)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
                 # TODO 1e-4? really? in general probably low tolerances are
                 # needed for CholToeplitz and to a lesser extent Chol, not for
                 # the diagonalizations
             else:
-                d2K = self.mathess(s, n)
-                KdK = self.solve(K, dK)
-                Kd2K = self.solve(K, d2K)
-                sol = -np.trace(KdK @ KdK) + np.trace(Kd2K)
+                # tr(-K^-1 dK K^-1 dK + K d2K)
+                sol = -np.trace(KdK @ KdK)
+                if not stopg:
+                    d2K = self.mathess(s, n)
+                    Kd2K = self.solve(K, d2K)
+                    sol += np.trace(Kd2K)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-5)
     
     def test_logdet(self):
@@ -435,6 +437,9 @@ class DecompTestBase(DecompTestABC):
         
     def test_logdet_hess_fwd_fwd(self):
         self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacfwd(f)), hess=True)
+
+    def test_logdet_hess_fwd_fwd_stopg(self):
+        self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacfwd(f)), hess=True, stopg=True)
 
     def test_logdet_hess_fwd_rev(self):
         self.check_logdet_jac(lambda f: jax.jacfwd(jax.jacrev(f)), hess=True)
@@ -607,8 +612,9 @@ class BlockDecompTestBase(DecompTestCorr):
             P = K[:p, :p]
             Q = K[:p, p:]
             S = K[p:, p:]
-            args = (self.subdecompclass(P, **kw), S, Q, lambda K, **kw: self.subdecompclass(K, **kw))
-            return _linalg.BlockDecomp(*args)
+            Pdec = self.subdecompclass(P, **kw)
+            subdec = lambda K, **kw: self.subdecompclass(K, **kw)
+            return _linalg.BlockDecomp(Pdec, S, Q, subdec, **kw)
         return decomp
     
 class TestBlockChol(BlockDecompTestBase):
@@ -773,6 +779,8 @@ util.xfail(DecompTestBase, 'test_quad_vec_gvar')
 # TODO second derivatives completing but returning incorrect result
 util.xfail(DecompTestBase, 'test_solve_matrix_hess_fwd_rev')
 util.xfail(DecompTestBase, 'test_logdet_hess_fwd_rev')
+util.xfail(BlockDecompTestBase, 'test_logdet_hess_fwd_fwd_stopg')
+util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
 
 # TODO linalg.sparse.eigsh does not have a jax counterpart, but apparently
 # they are now making an effort to add sparse support to jax, let's wait
@@ -797,7 +805,6 @@ util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev')
 util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev_jit')
 util.xfail(BlockDecompTestBase, 'test_solve_matrix_hess_da')
 util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_fwd_rev')
-util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_da')
 
 # TODO basically works but is very inaccurate.
 util.xfail(BlockDecompTestBase, 'test_logdet_hess_da')

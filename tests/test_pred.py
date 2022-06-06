@@ -59,6 +59,8 @@ def assert_close(x, y):
 def assert_close_cov(a, b, stol, mtol):
     assert np.sqrt(np.sum((a - b) ** 2) / a.size) < stol
     assert np.median(np.abs(a - b)) < mtol
+    # TODO use the 2-norm to compare matrices. (maybe write an helper in
+    # util.py)
 
 kwargs = [
     dict(fromdata=fromdata, raw=raw, keepcorr=keepcorr)

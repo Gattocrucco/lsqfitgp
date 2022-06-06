@@ -106,14 +106,10 @@ class empbayes_fit:
             'gradient' :
                 Use a gradient-only method.
             'hessian' :
-                Use a newton method with the hessian.
+                Use a Newton method with the hessian.
             'fisher' :
-                Use a newton method with the Fisher information matrix plus
+                Use a Newton method with the Fisher information matrix plus
                 the hyperprior precision matrix.
-            'fisherjj' :
-                Use a newton method with the Fisher information matrix plus
-                the newton-jacobi approximation to the squared residuals
-                hessian and the hyperprior precision matrix.
     
         Attributes
         ----------
@@ -167,7 +163,7 @@ class empbayes_fit:
             cachedargs = (datamean, datacov)
         else:
             cachedargs = (data,)
-    
+        
         def make(p):
             priorchi2 = hpdec.quad(p - hpmean)
 
@@ -190,7 +186,7 @@ class empbayes_fit:
         @dojit      
         def fun(p):
             gp, args, priorchi2 = make(p)
-            ml = gp.marginal_likelihood(*args)
+            ml = gp.marginal_likelihood(*args, stop_tangents=method == 'hessmod')
             logp = -ml + 1/2 * priorchi2
             return logp
                 
@@ -201,33 +197,35 @@ class empbayes_fit:
         @jax.jacfwd
         def fisher(p):
             gp, args, _ = make(p)
-            logdet, _ = gp.marginal_likelihood(*args, separate=True)
-            return 1/2 * logdet
+            decomp, _ = gp._prior_decomp(*args, stop_tangents=True)
+            return -1/2 * decomp.logdet()
         
         @dojit
         def fisherprec(p):
             return fisher(p) + precision
         
-        @dojit
-        @jax.jacfwd
-        def jres(p):
-            gp, args, _ = make(p)
-            _, res = gp.marginal_likelihood(*args, separate=True)
-            return res
-        
-        @dojit
-        def fisherprecjj(p):
-            J = jres(p)
-            return fisherprec(p) + J.T @ J
+        # @dojit
+        # @jax.jacfwd
+        # def jres(p):
+        #     gp, args, _ = make(p)
+        #     _, res = gp.marginal_likelihood(*args, separate=True, direct_autodiff=True)
+        #     return res
+        #
+        # @dojit
+        # def fisherprecjj(p):
+        #     J = jres(p)
+        #     return fisherprec(p) + J.T @ J
             
         # TODO instead of recomputing everything many times, I can use nested
         # has_aux appropriately to compute all the things I need at once. The
         # problem is that scipy currently does not allow me to provide a
         # function that computes value, jacobian and hessian at once, only value
-        # and jacobian.
+        # and jacobian. => Another problem is that the jacobian and hessian
+        # need not be computed all the times, see scipy issue #9265. Check
+        # if using value_and_jac is more efficient.
         
-        args = (fun, hpmean)
-        kwargs = dict(jac=jac)
+        args = (fun,)
+        kwargs = dict(x0=hpmean, jac=jac)
         
         if method == 'gradient':
             kwargs.update(method='bfgs')
@@ -235,8 +233,8 @@ class empbayes_fit:
             kwargs.update(hess=hess, method='trust-exact')
         elif method == 'fisher':
             kwargs.update(hess=fisherprec, method='dogleg')
-        elif method == 'fisherjj':
-            kwargs.update(hess=fisherprecjj, method='dogleg')
+        elif method == 'hessmod':
+            kwargs.update(hess=hess, method='trust-exact')
         else:
             raise KeyError(method)
         kwargs.update(minkw)
@@ -249,7 +247,15 @@ class empbayes_fit:
             else:
                 warnings.warn(msg)
         
-        uresult = gvar.gvar(result.x, result.hess_inv)
+        if hasattr(result, 'hess_inv'):
+            cov = result.hess_inv
+        elif hasattr(result, 'hess'):
+            hessdec = _linalg.EigCutFullRank(result.hess)
+            cov = hessdec.inv()
+        else:
+            raise ValueError('can not compute covariance matrix')
+        
+        uresult = gvar.gvar(result.x, cov)
         
         self.p = _unflat(uresult, hyperprior)
         self.minresult = result
