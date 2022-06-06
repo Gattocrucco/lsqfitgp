@@ -31,7 +31,7 @@ import gvar
 import util
 
 sys.path = ['.'] + sys.path
-from lsqfitgp import _linalg, _kernels, _toeplitz
+from lsqfitgp import _linalg, _kernels
 
 class DecompTestABC(metaclass=abc.ABCMeta):
 
@@ -697,13 +697,13 @@ def test_toeplitz_gershgorin():
     t = np.random.randn(100)
     m = linalg.toeplitz(t)
     b1 = _linalg._gershgorin_eigval_bound(m)
-    b2 = _toeplitz.eigv_bound(t)
+    b2 = _linalg._toeplitz.eigv_bound(t)
     np.testing.assert_allclose(b2, b1, rtol=1e-15)
 
 def check_toeplitz_chol(jit=False):
     class Mod:
         def __getattr__(self, func):
-            f = getattr(_toeplitz, func)
+            f = getattr(_linalg._toeplitz, func)
             return jax.jit(f) if jit else f
     mod = Mod()
     
@@ -759,7 +759,7 @@ def test_toeplitz_chol_solve_numpy():
                 if bshape and not shape:
                     continue
                 b = np.random.randn(*bshape, n, *shape)
-                ilb = _toeplitz.chol_solve_numpy(t, b, diageps=1e-12)
+                ilb = _linalg._toeplitz.chol_solve_numpy(t, b, diageps=1e-12)
                 np.testing.assert_allclose(*np.broadcast_arrays(l @ ilb, b), rtol=1e-6)
 
 #### XFAILS ####

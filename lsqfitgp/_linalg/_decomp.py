@@ -1,4 +1,4 @@
-# lsqfitgp/_linalg.py
+# lsqfitgp/_linalg/_decomp.py
 #
 # Copyright (c) 2020, 2022, Giacomo Petrillo
 #
@@ -72,7 +72,7 @@ from jax.scipy import linalg as jlinalg
 import gvar
 
 from . import _toeplitz
-from . import _patch_jax
+from .. import _patch_jax
 
 # TODO optimize the matrix multiplication with gvars. Use these gvar internals:
 # gvar.svec(int size)
