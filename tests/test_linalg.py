@@ -696,7 +696,7 @@ def test_solve_triangular():
 def test_toeplitz_gershgorin():
     t = np.random.randn(100)
     m = linalg.toeplitz(t)
-    b1 = _linalg._gershgorin_eigval_bound(m)
+    b1 = _linalg._decomp._gershgorin_eigval_bound(m)
     b2 = _linalg._toeplitz.eigv_bound(t)
     np.testing.assert_allclose(b2, b1, rtol=1e-15)
 
@@ -799,8 +799,7 @@ util.xfail(BlockDecompTestBase, 'test_solve_matrix_hess_da')
 util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_fwd_rev')
 util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_da')
 
-# TODO basically works but is very inaccurate. Would subclassing DecompAutoDiff
-# help?
+# TODO basically works but is very inaccurate.
 util.xfail(BlockDecompTestBase, 'test_logdet_hess_da')
 
 # TODO why?
