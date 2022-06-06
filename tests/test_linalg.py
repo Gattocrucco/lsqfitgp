@@ -805,7 +805,11 @@ util.xfail(BlockDecompTestBase, 'test_logdet_hess_da')
 # TODO why?
 # util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')
 
-# TODO solve is not implemented by TestCholToeplitzML
+# TODO TestCholToeplitzML's solve is not jax compatible
 for name, meth in inspect.getmembers(TestCholToeplitzML, inspect.isfunction):
-    if name.startswith('test_') and ('solve' in name or (('jac' in name or 'hess' in name) and 'da' not in name)):
+    cond = 'solve' in name and ('jac' in name or 'jit' in name or 'hess' in name)
+    cond = cond or ('jit' in name and ('jac' in name or 'hess' in name))
+    cond = cond or ('hess' in name and 'da' not in name)
+    cond = cond or ('logdet' in name and 'jac' in name)
+    if name.startswith('test_') and cond:
         util.xfail(TestCholToeplitzML, name)
