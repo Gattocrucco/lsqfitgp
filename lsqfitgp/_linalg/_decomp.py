@@ -139,14 +139,13 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         pass
     
-    def quad(self, b, c=None):
+    @abc.abstractmethod
+    def quad(self, b, c=None): # pragma: no cover
         """
         Compute the quadratic form b.T @ inv(K) @ b if c is not specified, else
         b.T @ inv(K) @ c. `c` can be an array of gvars.
         """
-        if c is None:
-            c = b
-        return _transpose(b) @ self.solve(c)
+        pass
         
     # TODO to compute efficiently the predictive variance I need a new method
     # diagquad(b).
@@ -180,7 +179,6 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         
         # TODO currently no subclass overrides this, some should probably do.
-        # Actually, nobody should ever use this function.
         
         return self.quad(jnp.eye(self.n))
     
