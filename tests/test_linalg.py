@@ -263,7 +263,7 @@ class DecompTestBase(DecompTestABC):
     def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False, hess=False, da=False, stopg=False):
         def fun(s, n, b, c):
             K = self.mat(s, n)
-            return self.decompclass(K, direct_autodiff=da, stop_tangents=stopg).quad(b, c)
+            return self.decompclass(K, direct_autodiff=da, stop_hessian=stopg).quad(b, c)
         fungrad = jacfun(fun)
         fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in self.sizes:
@@ -384,7 +384,7 @@ class DecompTestBase(DecompTestABC):
     def check_logdet_jac(self, jacfun, jit=False, hess=False, num=False, da=False, stopg=False):
         def fun(s, n):
             K = self.mat(s, n)
-            return self.decompclass(K, direct_autodiff=da, stop_tangents=stopg).logdet()
+            return self.decompclass(K, direct_autodiff=da, stop_hessian=stopg).logdet()
         fungrad = jacfun(fun)
         fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in self.sizes:

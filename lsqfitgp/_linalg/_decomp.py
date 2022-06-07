@@ -217,12 +217,15 @@ class DecompAutoDiff(Decomposition):
         @functools.wraps(old__init__)
         def __init__(self, K, *args, **kw):
             self._popattr(kw, 'direct_autodiff', False)
-            self._popattr(kw, 'stop_tangents', False)
-            assert not (self.direct_autodiff and self.stop_tangents)
-            if self.direct_autodiff:
+            self._popattr(kw, 'stop_hessian', False)
+            if self.direct_autodiff and self.stop_hessian:
+                old__init__(self, _patch_jax.stop_hessian(K), *args, **kw)
+            elif self.direct_autodiff:
                 old__init__(self, K, *args, **kw)
             else:
                 old__init__(self, jax.lax.stop_gradient(K), *args, **kw)
+                if self.stop_hessian:
+                    K = _patch_jax.stop_hessian(K)
             self._K = K
         
         cls.__init__ = __init__
@@ -238,11 +241,6 @@ class DecompAutoDiff(Decomposition):
         
         super().__init_subclass__(**kw)
     
-    def _stop_tangents(self, tangents):
-        if self.stop_tangents:
-            tangents = jax.lax.stop_gradient(tangents)
-        return tangents
-
     @staticmethod
     def _make_solve(oldsolve):
         
@@ -253,7 +251,7 @@ class DecompAutoDiff(Decomposition):
         @solve_autodiff.defjvp
         def solve_vjp(self, primals, tangents):
             K, b = primals
-            K_dot, b_dot = self._stop_tangents(tangents)
+            K_dot, b_dot = tangents
             primal = solve_autodiff(self, K, b)
             tangent_K = -solve_autodiff(self, K, K_dot) @ primal
             tangent_b = solve_autodiff(self, K, b_dot)
@@ -293,7 +291,7 @@ class DecompAutoDiff(Decomposition):
         @quad_autodiff.defjvp
         def quad_jvp(self, primals, tangents):
             K, b, c = primals
-            K_dot, b_dot, c_dot = self._stop_tangents(tangents)
+            K_dot, b_dot, c_dot = tangents
             primal = quad_autodiff(self, K, b, c)
             # tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, c))
             Kb = self.solve._autodiff(self, K, b)
@@ -308,7 +306,7 @@ class DecompAutoDiff(Decomposition):
         @quad_autodiff_cnone.defjvp
         def quad_cnone_jvp(self, primals, tangents):
             K, b = primals
-            K_dot, b_dot = self._stop_tangents(tangents)
+            K_dot, b_dot = tangents
             primal = quad_autodiff_cnone(self, K, b)
             # tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, b))
             Kb = self.solve._autodiff(self, K, b)
@@ -336,7 +334,7 @@ class DecompAutoDiff(Decomposition):
         @logdet_autodiff.defjvp
         def logdet_jvp(self, primals, tangents):
             K, = primals
-            K_dot, = self._stop_tangents(tangents)
+            K_dot, = tangents
             primal = logdet_autodiff(self, K)
             tangent = jnp.trace(self.solve._autodiff(self, K, K_dot))
             # TODO for efficiency I should define a new method

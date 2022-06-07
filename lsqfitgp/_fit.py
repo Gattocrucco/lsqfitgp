@@ -190,7 +190,7 @@ class empbayes_fit:
         @dojit      
         def fun(p):
             gp, args, priorchi2 = make(p)
-            ml = gp.marginal_likelihood(*args, stop_tangents=method == 'hessmod')
+            ml = gp.marginal_likelihood(*args, stop_hessian=method == 'hessmod')
             logp = -ml + 1/2 * priorchi2
             return logp
                 
@@ -201,7 +201,7 @@ class empbayes_fit:
         @jax.jacfwd # can't change to rev due to jax issue #10994
         def fisher(p):
             gp, args, _ = make(p)
-            decomp, _ = gp._prior_decomp(*args, stop_tangents=True)
+            decomp, _ = gp._prior_decomp(*args, stop_hessian=True)
             return -1/2 * decomp.logdet()
         
         @dojit

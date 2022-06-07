@@ -24,13 +24,17 @@ import functools
 
 import jax
 from jax import core
+from jax import lax
 from jax import numpy as jnp
 from jax.interpreters import ad
 from jax.interpreters import batching
 from jax import tree_util
+from jax._src import ad_util
 from scipy import special
 
 def makejaxufunc(ufunc, *derivs):
+    # TODO use jax.something.standard_primitive
+    
     prim = core.Primitive(ufunc.__name__)
     
     @functools.wraps(ufunc)
@@ -92,3 +96,16 @@ def concrete(x):
     # this is not needed from simple operations with operators on scalars
     # it is needed for functions that expect a numpy array
     return x.aval.val if isinstance(x, core.Tracer) else x
+
+# see jax issue #10994
+# ad.primitive_transposes[ad_util.stop_gradient_p] = lambda ct, _: [lax.stop_gradient(ct)]
+
+@jax.custom_jvp
+def stop_hessian(x):
+    return x
+
+@stop_hessian.defjvp
+def stop_hessian_jvp(primals, tangents):
+    x, = primals
+    x_dot, = tangents
+    return x, lax.stop_gradient(x_dot)
