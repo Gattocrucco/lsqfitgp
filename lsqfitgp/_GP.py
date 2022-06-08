@@ -157,12 +157,16 @@ class _Transf(_Element):
         """
         Do the multiplication tensor @ x.
         """
-        if not tensor.shape:
-            return tensor * x
-        elif x.dtype == object:
-            return numpy.tensordot(tensor, x, axes=self._axes)
+        if tensor.shape:
+            if x.dtype == object:
+                return numpy.tensordot(tensor, x, axes=self._axes)
+            else:
+                return jnp.tensordot(tensor, x, axes=self._axes)
         else:
-            return jnp.tensordot(tensor, x, axes=self._axes)
+            if x.dtype == object:
+                return tensor.item() * x
+            else:
+                return tensor * x
 
 class _Cov(_Element):
     """User-provided covariance matrix block(s)"""

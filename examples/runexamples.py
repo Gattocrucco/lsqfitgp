@@ -22,6 +22,7 @@ in the same directory of each corresponding script."""
 
 import sys
 import os
+import warnings
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -29,6 +30,8 @@ import gvar
 
 sys.path.insert(0, '..') # to import lsqfitgp if run from examples/
 sys.path.insert(0, '.')
+
+warnings.filterwarnings('ignore', r'JAX on Mac ARM machines is experimental and minimally tested\. Please see https://github.com/google/jax/issues/5501 in the event of problems\.')
 
 for file in sys.argv[1:]:
     print('running {}...'.format(file))
