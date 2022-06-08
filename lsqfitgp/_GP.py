@@ -23,7 +23,7 @@ import abc
 import warnings
 
 import gvar
-import numpy as np
+import numpy
 from jax import numpy as jnp
 from scipy import linalg
 
@@ -44,9 +44,9 @@ def _concatenate_noop(alist, **kw):
     if isinstance(alist[0], jnp.ndarray):
         return jnp.concatenate(alist, **kw) # jax's already noop
     elif len(alist) == 1:
-        return np.array(alist[0], copy=False)
+        return numpy.array(alist[0], copy=False)
     else:
-        return np.concatenate(alist, **kw)
+        return numpy.concatenate(alist, **kw)
 
 def _block_noop(blocks):
     """
@@ -62,15 +62,15 @@ def _triu_indices_and_back(n):
     Return indices to get the upper triangular part of a matrix, and indices to
     convert a flat array of upper triangular elements to a symmetric matrix.
     """
-    indices = np.triu_indices(n)
-    q = np.empty((n, n), int)
-    a = np.arange(len(indices[0]))
-    q[indices] = a
-    q[tuple(reversed(indices))] = a
+    indices = jnp.triu_indices(n)
+    q = jnp.empty((n, n), indices[0].dtype)
+    a = jnp.arange(len(indices[0]))
+    q = q.at[indices].set(a)
+    q = q.at[indices[::-1]].set(a)
     return indices, q
 
 def _isarraylike_nostructured(x):
-    return np.isscalar(x) or jnp.isscalar(x) or isinstance(x, (list, tuple, np.ndarray, jnp.ndarray))
+    return numpy.isscalar(x) or jnp.isscalar(x) or isinstance(x, (list, tuple, numpy.ndarray, jnp.ndarray))
 
 def _isarraylike(x):
     return _isarraylike_nostructured(x) or isinstance(x, _array.StructuredArray)
@@ -96,7 +96,7 @@ def _compatible_dtypes(d1, d2): # pragma: no cover
                 return False
     else:
         try:
-            np.result_type(d1, d2) # TODO not strict enough!
+            numpy.result_type(d1, d2) # TODO not strict enough!
         except TypeError:
             return False
     return True
@@ -104,8 +104,8 @@ def _compatible_dtypes(d1, d2): # pragma: no cover
 def _array_copy_if_not_readonly(x): # pragma: no cover
     """currently not used"""
     y = _array.asarray(x)
-    if x is y and isinstance(x, np.ndarray) and x.flags['WRITEABLE']:
-        return np.copy(x)
+    if x is y and isinstance(x, numpy.ndarray) and x.flags['WRITEABLE']:
+        return numpy.copy(x)
     else:
         return y
 
@@ -123,7 +123,7 @@ class _Element(metaclass=abc.ABCMeta):
     
     @property
     def size(self):
-        return np.prod(self.shape, dtype=int)
+        return numpy.prod(self.shape, dtype=int)
 
 class _Points(_Element):
     """Points where the process is evaluated"""
@@ -157,10 +157,12 @@ class _Transf(_Element):
         """
         Do the multiplication tensor @ x.
         """
-        if tensor.shape:
-            return _linalg.choose_numpy(tensor, x).tensordot(tensor, x, axes=self._axes)
-        else:
+        if not tensor.shape:
             return tensor * x
+        elif x.dtype == object:
+            return numpy.tensordot(tensor, x, axes=self._axes)
+        else:
+            return jnp.tensordot(tensor, x, axes=self._axes)
 
 class _Cov(_Element):
     """User-provided covariance matrix block(s)"""
@@ -419,7 +421,7 @@ class GP:
         for k, func in ops.items():
             if k not in self._procs:
                 raise KeyError(f'process key {k!r} not in GP object')
-            if not np.isscalar(func) and not callable(func):
+            if not jnp.isscalar(func) and not callable(func):
                 raise TypeError(f'object of type {type(func)!r} for key {k!r} is neither scalar nor callable')
         
         if key in self._procs:
@@ -609,7 +611,9 @@ class GP:
             # ordering function in updowncast.py.
             if hasattr(self, '_dtype'):
                 try:
-                    self._dtype = np.result_type(self._dtype, gx.dtype)
+                    self._dtype = numpy.result_type(self._dtype, gx.dtype)
+                    # do not use jnp.result_type, it does not support
+                    # structured types
                 except TypeError:
                     msg = 'x[{!r}].dtype = {!r} not compatible with {!r}'
                     msg = msg.format(key, gx.dtype, self._dtype)
@@ -688,11 +692,13 @@ class GP:
         # Check tensors and convert them to numpy arrays.
         tens = {}
         for k, t in tensors.items():
-            t = _linalg.choose_numpy(t).array(t, copy=False)
-            if not np.issubdtype(t.dtype, np.number):
+            t = jnp.asarray(t)
+            if not jnp.issubdtype(t.dtype, jnp.number):
                 raise TypeError(f'tensors[{k!r}] has non-numeric dtype {t.dtype!r}')
-            if self._checkfinite and not np.all(np.isfinite(t)):
-                raise ValueError(f'tensors[{k!r}] contains infs/nans')
+            if self._checkfinite and _patch_jax.isconcrete(t):
+                T = _patch_jax.concrete(t)
+                if not numpy.all(numpy.isfinite(T)):
+                    raise ValueError(f'tensors[{k!r}] contains infs/nans')
             rshape = self._elements[k].shape
             if t.shape and t.shape[-axes:] != rshape[:axes]:
                 raise ValueError(f'tensors[{k!r}].shape = {t.shape!r} can not be multiplied with shape {rshape!r} with {axes}-axes contraction')
@@ -706,7 +712,7 @@ class GP:
             for t, e in zip(arrays, elements)
         )
         try:
-            shape = np.broadcast_shapes(*shapes)
+            shape = jnp.broadcast_shapes(*shapes)
         except ValueError:
             msg = 'can not broadcast tensors with shapes ['
             msg += ', '.join(repr(t.shape) for t in arrays)
@@ -772,7 +778,7 @@ class GP:
                 if key in self._elements:
                     raise KeyError(f'key {key!r} already in GP')
             xkey, ykey = keys
-            block = _linalg.choose_numpy(block).array(block, copy=False)
+            block = jnp.asarray(block)
             if xkey == ykey:
                 if block.ndim % 2 == 1:
                     raise ValueError(f'diagonal block {key!r} has odd number of axes')
@@ -781,8 +787,9 @@ class GP:
                 tail = block.shape[half:]
                 if head != tail:
                     raise ValueError(f'shape {block.shape!r} of diagonal block {key!r} is not symmetric')
-                if self._checksym:
-                    if not np.allclose(block, block.T):
+                if self._checksym and _patch_jax.isconcrete(block):
+                    B = _patch_jax.concrete(block)
+                    if not numpy.allclose(B, B.T):
                         raise ValueError(f'diagonal block {key!r} is not symmetric')
                 shapes[xkey] = head
             preblocks[keys] = block
@@ -791,11 +798,13 @@ class GP:
         # diagonal blocks match those of diagonal ones.
         blocks = {}
         for keys, block in preblocks.items():
-            if self._checkfinite and not np.all(np.isfinite(block)):
-                raise ValueError(f'block {keys!r} not finite')
+            if self._checkfinite and _patch_jax.isconcrete(block):
+                B = _patch_jax.concrete(block)
+                if not numpy.all(numpy.isfinite(B)):
+                    raise ValueError(f'block {keys!r} not finite')
             xkey, ykey = keys
             if xkey == ykey:
-                size = np.prod(shapes[xkey], dtype=int)
+                size = numpy.prod(shapes[xkey], dtype=int)
                 blocks[keys] = block.reshape((size, size))
             else:
                 for key in keys:
@@ -804,8 +813,8 @@ class GP:
                 eshape = shapes[xkey] + shapes[ykey]
                 if block.shape != eshape:
                     raise ValueError(f'shape {block.shape!r} of block {keys!r} is not {eshape!r} as expected from diagonal blocks')
-                xsize = np.prod(shapes[xkey], dtype=int)
-                ysize = np.prod(shapes[ykey], dtype=int)
+                xsize = numpy.prod(shapes[xkey], dtype=int)
+                ysize = numpy.prod(shapes[ykey], dtype=int)
                 block = block.reshape((xsize, ysize))
                 blocks[keys] = block
                 revkeys = (ykey, xkey)
@@ -819,8 +828,10 @@ class GP:
                 xkey, ykey = keys
                 if xkey != ykey:
                     blockT = blocks[ykey, xkey]
-                    if not _linalg.choose_numpy(block, blockT).allclose(block.T, blockT):
-                        raise ValueError(f'block {keys!r} is not the transpose of block {revkeys!r}')
+                    if _patch_jax.isconcrete(block, blockT):
+                        B, BT = _patch_jax.concrete(block, blockT)
+                        if not numpy.allclose(B.T, BT):
+                            raise ValueError(f'block {keys!r} is not the transpose of block {revkeys!r}')
         
         # Create _Cov objects.
         for key, shape in shapes.items():
@@ -878,7 +889,7 @@ class GP:
             if kernel is _ZeroKernel:
                 continue
             
-            if np.isscalar(factor):
+            if jnp.isscalar(factor):
                 factor = lambda x, factor=factor: factor
             kernel = kernel.rescale(factor, None)
             
@@ -922,14 +933,14 @@ class GP:
         kernel = self._crosskernel(x.proc, y.proc)
         if kernel is _ZeroKernel:
             # TODO handle zero cov block efficiently
-            return np.zeros((x.size, y.size))
+            return jnp.zeros((x.size, y.size))
         
         kernel = kernel.diff(x.deriv, y.deriv)
         
         if x is y and not self._checksym:
             indices, back = _triu_indices_and_back(x.size)
-            ax = _linalg.choose_numpy(x.x).broadcast_to(x.x.reshape(-1)[:, None], (x.x.size, y.x.size))[indices]
-            ay = _linalg.choose_numpy(y.x).broadcast_to(y.x.reshape(-1)[None, :], (x.x.size, y.x.size))[indices]
+            ax = jnp.broadcast_to(x.x.reshape(-1)[:, None], (x.x.size, y.x.size))[indices]
+            ay = jnp.broadcast_to(y.x.reshape(-1)[None, :], (x.x.size, y.x.size))[indices]
             halfcov = kernel(ax, ay)
             cov = halfcov[back]
         else:
@@ -974,10 +985,10 @@ class GP:
             cov = jnp.zeros((x.size, y.size))
         
         if _patch_jax.isconcrete(cov):
-            C = cov
-            if self._checkfinite and not jnp.all(jnp.isfinite(C)):
+            C = _patch_jax.concrete(cov)
+            if self._checkfinite and not numpy.all(numpy.isfinite(C)):
                 raise RuntimeError('covariance block {!r} is not finite'.format((xkey, ykey)))
-            if self._checksym and xkey == ykey and not jnp.allclose(C, C.T):
+            if self._checksym and xkey == ykey and not numpy.allclose(C, C.T):
                 raise RuntimeError('covariance block {!r} is not symmetric'.format((xkey, ykey)))
 
         return cov
@@ -1000,9 +1011,9 @@ class GP:
                     if _patch_jax.isconcrete(block):
                         blockT = self._makecovblock(col, row)
                         assert _patch_jax.isconcrete(blockT)
-                        B = block
-                        BT = blockT
-                        if not jnp.allclose(B.T, BT):
+                        B = _patch_jax.concrete(block)
+                        BT = _patch_jax.concrete(blockT)
+                        if not numpy.allclose(B.T, BT):
                             msg = 'covariance block {!r} is not symmetric'
                             raise RuntimeError(msg.format((row, col)))
                     else:
@@ -1069,24 +1080,24 @@ class GP:
             warnings.warn('GP: can not check positivity during abstract jax tracing')
             return
         eigv = linalg.eigvalsh(_patch_jax.concrete(cov))
-        mineigv = np.min(eigv)
+        mineigv = numpy.min(eigv)
         if mineigv < 0:
-            bound = -len(cov) * np.finfo(float).eps * np.max(eigv) * self._posepsfac
+            bound = -len(cov) * numpy.finfo(float).eps * numpy.max(eigv) * self._posepsfac
             if mineigv < bound:
                 msg = 'covariance matrix is not positive definite: '
                 msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
-                raise np.linalg.LinAlgError(msg)
+                raise numpy.linalg.LinAlgError(msg)
     
     def _priorpointscov(self, key):
         
         x = self._elements[key]
         classes = (_Points, _Cov)
         assert isinstance(x, classes)
-        mean = np.zeros(x.size)
+        mean = numpy.zeros(x.size)
         cov = self._covblock(key, key).astype(float)
         assert cov.shape == 2 * mean.shape, cov.shape
         
-        cov = np.array(cov) # TODO workaround for gvar issue #27
+        cov = numpy.array(cov) # TODO workaround for gvar issue #27
 
         # get preexisting primary gvars to be correlated with the new ones
         preitems = [
@@ -1096,11 +1107,11 @@ class GP:
             and k in self._priordict
         ]
         if preitems:
-            prex = np.concatenate([
-                np.reshape(self._priordict[k], -1)
+            prex = numpy.concatenate([
+                numpy.reshape(self._priordict[k], -1)
                 for k in preitems
             ])
-            precov = np.concatenate([
+            precov = numpy.concatenate([
                 self._covblock(k, key).astype(float)
                 for k in preitems
             ])
@@ -1208,12 +1219,12 @@ class GP:
             if key not in self._elements:
                 raise KeyError(key)
 
-            l = np.array(l, copy=False)
+            l = numpy.array(l, copy=False)
             shape = self._elements[key].shape
             if l.shape != shape:
                 msg = 'given[{!r}] has shape {!r} different from shape {!r}'
                 raise ValueError(msg.format(key, l.shape, shape))
-            if l.dtype != object and not np.issubdtype(l.dtype, np.number):
+            if l.dtype != object and not jnp.issubdtype(l.dtype, jnp.number):
                 msg = 'given[{!r}] has non-numerical dtype {!r}'
                 raise TypeError(msg.format(key, l.dtype))
             
@@ -1241,7 +1252,7 @@ class GP:
         corresponding to keys in `keylist` into their concatenation.
         """
         sizes = [self._elements[key].size for key in keylist]
-        stops = np.concatenate([[0], np.cumsum(sizes)])
+        stops = numpy.concatenate([[0], numpy.cumsum(sizes)])
         return [slice(stops[i - 1], stops[i]) for i in range(1, len(stops))]
     
     def pred(self, given, key=None, givencov=None, fromdata=None, raw=False, keepcorr=None):
@@ -1336,16 +1347,11 @@ class GP:
             # TODO use evalcov_blocks
         else:
             ycov = None
-            
+        self._check_ycov(ycov)
+        
         if raw or not keepcorr or self._checkfinite:
             ymean = gvar.mean(y)
-        if self._checkfinite and not _linalg.choose_numpy(ymean).all(_linalg.choose_numpy(ymean).isfinite(ymean)):
-            raise ValueError('mean of `given` is not finite')
-        if ycov is not None:
-            if self._checkfinite and not _linalg.choose_numpy(ycov).all(_linalg.choose_numpy(ycov).isfinite(ycov)):
-                raise ValueError('covariance matrix of `given` is not finite')
-            if self._checksym and not _linalg.choose_numpy(ycov).allclose(ycov, ycov.T):
-                raise ValueError('covariance matrix of `given` is not symmetric')
+            self._check_ymean(ymean)
         
         if raw or not keepcorr:
             
@@ -1370,8 +1376,8 @@ class GP:
                     cov = cov + A.T @ ycov @ A
             
         else: # (keepcorr and not raw)        
-            yplist = [np.reshape(self._prior(key), -1) for key in inkeys]
-            ysplist = [np.reshape(self._prior(key), -1) for key in outkeys]
+            yplist = [numpy.reshape(self._prior(key), -1) for key in inkeys]
+            ysplist = [numpy.reshape(self._prior(key), -1) for key in outkeys]
             yp = _concatenate_noop(yplist)
             ysp = _concatenate_noop(ysplist)
             
@@ -1401,7 +1407,7 @@ class GP:
         
         elif not keepcorr:
             
-            cov = np.array(cov) # TODO workaround for gvar issue #27
+            cov = numpy.array(cov) # TODO workaround for gvar issue #27
             
             flatout = gvar.gvar(mean, cov, fast=True)
         
@@ -1444,16 +1450,24 @@ class GP:
             ycov = None
             ymean = y
         
-        if self._checkfinite and not _linalg.choose_numpy(ymean).all(_linalg.choose_numpy(ymean).isfinite(ymean)):
-            raise ValueError('mean of `given` is not finite')
-        if ycov is not None:
-            if self._checkfinite and not _linalg.choose_numpy(ycov).all(_linalg.choose_numpy(ycov).isfinite(ycov)):
-                raise ValueError('covariance matrix of `given` is not finite')
-            if self._checksym and not _linalg.choose_numpy(ycov).allclose(ycov, ycov.T):
-                raise ValueError('covariance matrix of `given` is not symmetric')
+        self._check_ymean(ymean)
+        self._check_ycov(ycov)
         
         decomp = self._solver(inkeys, ycov, **kw)
         return decomp, ymean
+    
+    def _check_ymean(self, ymean):
+        if self._checkfinite and _patch_jax.isconcrete(ymean):
+            if not numpy.all(numpy.isfinite(_patch_jax.concrete(ymean))):
+                raise ValueError('mean of `given` is not finite')
+    
+    def _check_ycov(self, ycov):
+        if ycov is not None and _patch_jax.isconcrete(ycov):
+            C = _patch_jax.concrete(ycov)
+            if self._checkfinite and not numpy.all(numpy.isfinite(C)):
+                raise ValueError('covariance matrix of `given` is not finite')
+            if self._checksym and not numpy.allclose(C, C.T):
+                raise ValueError('covariance matrix of `given` is not symmetric')
 
     def marginal_likelihood(self, given, givencov=None, separate=False, **kw):
         """
@@ -1508,7 +1522,7 @@ class GP:
             term of the marginal likelihood.
         """
         decomp, ymean = self._prior_decomp(given, givencov, **kw)
-        logdet = decomp.logdet() + decomp.n * np.log(2 * np.pi)
+        logdet = decomp.logdet() + decomp.n * jnp.log(2 * jnp.pi)
         if separate:
             residuals = decomp.decorrelate(ymean)
             return logdet, residuals

@@ -173,8 +173,8 @@ def makegp(hp, quick=False):
     
     # define xg
     gp.addproc(kernel, 'f2')
-    a = hp['alpha_g']
-    gp.addproctransf({'f2': lambda x: x ** (a + 1) / (a + 2)}, 'tf2')
+    b = hp['alpha_g']
+    gp.addproctransf({'f2': lambda x: x ** (b + 1) / (b + 2)}, 'tf2')
     gp.addproctransf({'tf2': 1}, "xg", deriv=1)
     
     # define primitive of xSigma + xg

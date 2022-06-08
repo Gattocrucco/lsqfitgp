@@ -28,6 +28,8 @@ import pytest
 sys.path.insert(0, '.')
 import lsqfitgp as lgp
 
+import util
+
 def flat(g):
     """convert dictionary or array to 1D array"""
     if hasattr(g, 'buf'):
@@ -77,6 +79,7 @@ def check_fit(hyperprior, gpfactory, dataerr=None, alpha=1e-5):
     chisq_test(fit.p - truehp, alpha)
 
 @pytest.mark.xfail
+@util.tryagain
 def test_period():
     # TODO Investigate why this fails, redo the fit in a standalone script.
     # It is not wrong harmonic. Is the Laplace approximation not appropriate for
@@ -92,6 +95,7 @@ def test_period():
     for _ in range(10):
         check_fit(hp, gpfactory)
 
+@util.tryagain
 def test_scale():
     hp = {
         'log(scale)': gvar.log(gvar.gvar(3, 0.2))
@@ -104,6 +108,7 @@ def test_scale():
     for _ in range(10):
         check_fit(hp, gpfactory, alpha=1e-7)
 
+@util.tryagain
 def test_sdev():
     hp = {
         'log(sdev)': gvar.log(gvar.gvar(1, 1))

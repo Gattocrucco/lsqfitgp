@@ -596,22 +596,23 @@ File ~/Documents/Scuola/lsqfitgp/Repository/lsqfitgp/pythonvenv/lib/python3.10/s
 I noticed that I made a mistake in computing the Fisher matrix, I took the
 expected value *before* differentiating. The correct expression is
 
-    E[∂^2l] = 1/2 tr(K^-1 ∂1K K^-1 ∂2K)
+    E[∂∂l] = 1/2 tr(K^-1 ∂K K^-1 ∂K)
 
 How do I implement it in jax? => Use lax.stop_gradient(K_dot) in solve_vjp
 
 2022-06-07
 ==========
 
-Jax stuff:
+Jax stuff
+---------
 
 From jax #9973:
-
 jax.config.update('jax_default_matmul_precision', jax.lax.Precision.HIGHEST)
-
 The default is not highest.
 
 jax.lax.cond is the jittable equivalent of if
+see https://github.com/google/jax/discussions/10306 about evaluating or not both
+branches of a conditional.
 
 https://github.com/google/jax/issues/5507#issuecomment-767931338
 "JAX handles NumPy constants with zero strides in a smart way."
@@ -621,6 +622,22 @@ jax.dtypes.float0. May work also for integer inputs not to be differentiated.
 
 jax.tree_util.tree_map allows mapping a function through a set of trees. I
 could use it with StructuredArray in place of my current custom traverser.
+To handle array fields, transpose everything before and after the reduction,
+to have automatic broadcasting (does tree_map support broadcasting?)
 
 see https://github.com/josipd/jax/blob/master/jax/experimental/jambax.py to
 convert numba functions to jax primitives
+
+https://github.com/google/jax/discussions/10004 about using Fisher matrices
+
+2022-06-08
+==========
+
+Next things to do:
+
+1) Write pdf9.py stripping pdf8.py of all non-linear things and using
+empbayes_fit for the hyperparameters
+
+2) Scale pdf9.py to a large dataset
+
+3) Write pdf10.py like pdf9.py but using real PDF data

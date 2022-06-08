@@ -78,6 +78,8 @@ def tryagain(fun, rep=2, method=False):
         # if rep > 1:
         #     warnings.warn(f'Test {name} failed {rep} times')
         raise exc
-
+    
+    if hasattr(fun, 'pytestmark'):
+        newfun.pytestmark = fun.pytestmark
     meta['newfun'] = newfun
     return newfun

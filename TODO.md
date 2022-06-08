@@ -561,6 +561,13 @@ More general alternatives to `addtransf`:
     generalized ufunc to the covariance matrix appropriately. Hopefully this
     would work at once for stacking, indexing, fft, convolution...
 
+For (3): I need to apply the linear operations along the row index of the
+covariance matrix, broadcasting along the column index. Now that I have adopted
+jax, this can be done with vmap. => Problem: how do I get the shape before
+applying the operator? => Solution: let _Elements have shape None, and do not
+check when it is None => Better solution: use jax abstract tracing to get the
+shape.
+
 It could be convenient to change the matrix multiplication order based on
 efficiency, like when using backprop vs. forward. Now I'm always doing
 forward. It should be feasible to do backward at least, for when the output
@@ -609,6 +616,8 @@ to it.
 How would this work in multiple dimensions? Does it amount just to start from
 the dot product kernel?
 
+It may be possible to recycle jax.experimental.jet to do these things.
+
 #### Other infinite transformations
 
 Mellin transform?
@@ -619,7 +628,6 @@ family of random access sequences of coefficients is ok.
 In general I could write a method "diagonalization" that generates
 cross-covariances with a numerable basis that diagonalizes a kernel. This would
 be useful for sparse approximations.
-
 
 RatQuad is a gamma scale mixture of ExpQuad, so I could implement the
 corresponding transformation easily. In general series of kernels support this.

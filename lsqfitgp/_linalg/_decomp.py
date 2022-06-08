@@ -80,13 +80,6 @@ from .. import _patch_jax
 # gvar.GVar(float mean, svec derivs, smat cov)
 # it may require cython to be fast since it's not vectorized
 
-def choose_numpy(*args):
-    """ don't use this function """
-    if any(isinstance(x, jnp.ndarray) for x in args):
-        return jnp
-    else:
-        return numpy
-
 def _transpose(x):
     if x.ndim < 2:
         return x

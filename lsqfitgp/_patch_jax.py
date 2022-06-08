@@ -68,6 +68,10 @@ jn = makejaxufunc(special.jn, None, lambda n, x: (jn(n - 1, x) - jn(n + 1, x)) /
 kv = makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
 kvp = makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
 
+# See jax #1870, #2466, #9956, #11002 and
+# https://github.com/josipd/jax/blob/master/jax/experimental/jambax.py
+# to implement special functions in jax
+
 def elementwise_grad(fun, argnum=0):
     assert int(argnum) == argnum and argnum >= 0, argnum
     @functools.wraps(fun)
@@ -92,10 +96,21 @@ def isconcrete(*args):
     children, _ = tree_util.tree_flatten(args)
     return all(map(_isconcrete, children))
 
-def concrete(x):
-    # this is not needed from simple operations with operators on scalars
-    # it is needed for functions that expect a numpy array
+def _concrete(x):
+    # This is not needed from simple operations with operators on scalars.
+    # It is needed for functions that expect a numpy array, and then you
+    # have to use the actual numpy function instead of the jax version,
+    # because during jit tracing all jax functions produce abstract arrays.
     return x.aval.val if isinstance(x, core.Tracer) else x
+    # TODO maybe use jax.core.concrete_aval? But I'm not sure of what it does
+
+def concrete(*args):
+    if len(args) == 0:
+        pass
+    elif len(args) == 1:
+        return _concrete(args[0])
+    else:
+        return tuple(map(_concrete, args))
 
 # see jax issue #10994
 # ad.primitive_transposes[ad_util.stop_gradient_p] = lambda ct, _: [lax.stop_gradient(ct)]
@@ -109,3 +124,29 @@ def stop_hessian_jvp(primals, tangents):
     x, = primals
     x_dot, = tangents
     return x, lax.stop_gradient(x_dot)
+
+def value_and_ops(f, *ops, has_aux=False, **kw):
+    if not ops:
+        return f
+    def fop(*args, **kw):
+        y = f(*args, **kw)
+        if has_aux:
+            y, aux = y
+            return y, (aux,)
+        else:
+            return y, ()
+    def nextfop(fop):
+        def nextfop(*args, **kw):
+            y, aux = fop(*args, **kw)
+            return y, aux + (y,)
+        return nextfop
+    for op in ops:
+        fop = op(nextfop(fop), has_aux=True, **kw)
+    @functools.wraps(f)
+    def lastfop(*args, **kw):
+        y, aux = fop(*args, **kw)
+        if has_aux:
+            return aux[1:] + (y,), aux[0]
+        else:
+            return aux + (y,)
+    return lastfop
