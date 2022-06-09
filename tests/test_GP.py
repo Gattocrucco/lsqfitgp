@@ -83,26 +83,43 @@ def test_cov():
 
 def test_transf_vs_lintransf_vs_proctransf():
     x = np.arange(20)
+    def preparegp():
+        gp = lgp.GP()
+        gp.addproc(lgp.ExpQuad(), 'a')
+        gp.addproc(lgp.RatQuad(), 'b')
+        gp.addx(x, 'ax', proc='a')
+        gp.addx(x, 'bx', proc='b')
+        return gp
+    def finalizegp(gp):
+        gp.addx(x, 'abx3', proc='ab')
+    def checkgp(gp):
+        prior = gp.prior(['abx1', 'abx2', 'abx3'], raw=True)
+        util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx2'])
+        util.assert_equal(prior['abx1', 'abx1'], prior['abx3', 'abx3'])
+        util.assert_equal(prior['abx1', 'abx1'], prior['abx1', 'abx2'])
+        util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx3'])
+        util.assert_equal(prior['abx1', 'abx1'], prior['abx1', 'abx3'])
+        util.assert_equal(prior['abx1', 'abx2'], prior['abx2', 'abx1'].T)
+        util.assert_equal(prior['abx1', 'abx3'], prior['abx3', 'abx1'].T)
+        util.assert_equal(prior['abx2', 'abx3'], prior['abx3', 'abx2'].T)
+    
+    # with functions
+    gp = preparegp()
     fa = lambda x: jnp.sin(x) + 0.5 * jnp.cos(x ** 2)
     fb = lambda x: 1 / (1 + jnp.exp(-x))
-    gp = lgp.GP()
-    gp.addproc(lgp.ExpQuad(), 'a')
-    gp.addproc(lgp.RatQuad(), 'b')
-    gp.addx(x, 'ax', proc='a')
-    gp.addx(x, 'bx', proc='b')
     gp.addtransf({'ax': np.diag(fa(x)), 'bx': np.diag(fb(x))}, 'abx1')
     gp.addlintransf(lambda a, b: fa(x) * a + fb(x) * b, ['ax', 'bx'], 'abx2')
     gp.addproctransf({'a': fa, 'b': fb}, 'ab')
-    gp.addx(x, 'abx3', proc='ab')
-    prior = gp.prior(['abx1', 'abx2', 'abx3'], raw=True)
-    util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx2'])
-    util.assert_equal(prior['abx1', 'abx1'], prior['abx3', 'abx3'])
-    util.assert_equal(prior['abx1', 'abx1'], prior['abx1', 'abx2'])
-    util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx3'])
-    util.assert_equal(prior['abx1', 'abx1'], prior['abx1', 'abx3'])
-    util.assert_equal(prior['abx1', 'abx2'], prior['abx2', 'abx1'].T)
-    util.assert_equal(prior['abx1', 'abx3'], prior['abx3', 'abx1'].T)
-    util.assert_equal(prior['abx2', 'abx3'], prior['abx3', 'abx2'].T)
+    finalizegp(gp)
+    checkgp(gp)
+    
+    # with scalars
+    gp = preparegp()
+    gp.addtransf({'ax': 2, 'bx': 3}, 'abx1')
+    gp.addlintransf(lambda a, b: 2 * a + 3 * b, ['ax', 'bx'], 'abx2')
+    gp.addproctransf({'a': 2, 'b': 3}, 'ab')
+    finalizegp(gp)
+    checkgp(gp)
 
 def test_lintransf_checks():
     gp = lgp.GP(lgp.ExpQuad())
@@ -436,19 +453,6 @@ def test_partial_derivative():
     cov2 = gp.prior(0, raw=True)
     
     util.assert_equal(cov1, cov2)
-
-def test_addproctransf_function():
-    gp = lgp.GP()
-    gp.addproc(lgp.ExpQuad(), 'a')
-    x = np.arange(20)
-    gp.addx(x, 'base', proc='a')
-    s = lambda x: x ** 2
-    gp.addtransf({'base': s(x) * np.eye(len(x))}, 0)
-    gp.addproctransf({'a': s}, 'b')
-    gp.addx(x, 1, proc='b')
-    prior = gp.prior([0, 1], raw=True)
-    util.assert_equal(prior[0, 0], prior[1, 1])
-    util.assert_equal(prior[0, 0], prior[0, 1])
 
 def test_zero_covblock():
     gp = lgp.GP()

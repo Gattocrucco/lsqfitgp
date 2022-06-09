@@ -39,25 +39,15 @@ __all__ = [
     'GP',
 ]
 
-def _concatenate_noop(alist, **kw):
+def _concatenate(alist):
     """
-    Like np.concatenate but avoids a copy if there is only one array.
+    Decides to use numpy.concatenate or jnp.concatenate depending on the
+    input to support gvars.
     """
-    if isinstance(alist[0], jnp.ndarray):
-        return jnp.concatenate(alist, **kw) # jax's already noop
-    elif len(alist) == 1:
-        return numpy.array(alist[0], copy=False)
+    if any(a.dtype == object for a in alist):
+        return numpy.concatenate(alist)
     else:
-        return numpy.concatenate(alist, **kw)
-
-def _block_noop(blocks):
-    """
-    Like np.block but avoids a copy if there is only one block.
-    """
-    if isinstance(blocks[0][0], jnp.ndarray):
-        return jnp.block(blocks)
-    else:
-        return _concatenate_noop([_concatenate_noop(row, axis=1) for row in blocks], axis=0)
+        return jnp.concatenate(alist)
 
 def _triu_indices_and_back(n):
     """
@@ -102,14 +92,6 @@ def _compatible_dtypes(d1, d2): # pragma: no cover
         except TypeError:
             return False
     return True
-
-def _array_copy_if_not_readonly(x): # pragma: no cover
-    """currently not used"""
-    y = _array.asarray(x)
-    if x is y and isinstance(x, numpy.ndarray) and x.flags['WRITEABLE']:
-        return numpy.copy(x)
-    else:
-        return y
 
 class _Element(metaclass=abc.ABCMeta):
     """
@@ -677,8 +659,7 @@ class GP:
         tens = {}
         for k, t in tensors.items():
             t = jnp.asarray(t)
-            if not jnp.issubdtype(t.dtype, jnp.number):
-                raise TypeError(f'tensors[{k!r}] has non-numeric dtype {t.dtype!r}')
+            # no need to check dtype since jax supports only numerical arrays
             if self._checkfinite and _patch_jax.isconcrete(t):
                 T = _patch_jax.concrete(t)
                 if not numpy.all(numpy.isfinite(T)):
@@ -1093,8 +1074,6 @@ class GP:
                         if not numpy.allclose(B.T, BT):
                             msg = 'covariance block {!r} is not symmetric'
                             raise RuntimeError(msg.format((row, col)))
-                    else:
-                        warnings.warn('GP: can not check symmetry during abstract jax tracing')
                 self._covblocks[col, row] = block.T
             self._covblocks[row, col] = block
         
@@ -1107,7 +1086,7 @@ class GP:
             [self._covblock(row, col) for col in colkeys]
             for row in rowkeys
         ]
-        return _block_noop(blocks)
+        return jnp.block(blocks)
     
     def _solver(self, keys, ycov=None, **kw):
         """
@@ -1149,12 +1128,13 @@ class GP:
         return decomp
         
     def _checkpos(self, cov):
-        # faster but less trivial options for checking positivity:
+        # TODO faster but less interpretable ways of checking positivity:
         # 1) cholesky + eps, if fails it's not positive
         # 2) ldlt, check each 2x2 block     <--- probably best? is it stable?
         # 3) QR, check diagonal of R
+        # For QR, can I use directly the tau coefficients? (halves the
+        # computation time, going to 1/4 diagonalization)
         if not _patch_jax.isconcrete(cov):
-            warnings.warn('GP: can not check positivity during abstract jax tracing')
             return
         eigv = linalg.eigvalsh(_patch_jax.concrete(cov))
         mineigv = numpy.min(eigv)
@@ -1431,12 +1411,12 @@ class GP:
         outslices = self._slices(outkeys)
         
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
-        y = _concatenate_noop(ylist)
+        y = _concatenate(ylist)
         
         Kxxs = self._assemblecovblocks(inkeys, outkeys)
         
         if ycovblocks is not None:
-            ycov = _block_noop(ycovblocks)
+            ycov = jnp.block(ycovblocks)
         elif (fromdata or raw or not keepcorr) and y.dtype == object:
             ycov = gvar.evalcov(gvar.gvar(y))
             # TODO use evalcov_blocks
@@ -1473,10 +1453,11 @@ class GP:
         else: # (keepcorr and not raw)        
             yplist = [numpy.reshape(self._prior(key), -1) for key in inkeys]
             ysplist = [numpy.reshape(self._prior(key), -1) for key in outkeys]
-            yp = _concatenate_noop(yplist)
-            ysp = _concatenate_noop(ysplist)
+            yp = _concatenate(yplist)
+            ysp = _concatenate(ysplist)
             
             mat = ycov if fromdata else None
+            y = numpy.asarray(y) # because y - yp fails if y is a jax array
             flatout = ysp + self._solver(inkeys, mat).quad(Kxxs, y - yp)
         
         if raw and not strip:
@@ -1530,10 +1511,10 @@ class GP:
     
     def _prior_decomp(self, given, givencov=None, **kw):
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
-        y = _concatenate_noop(ylist)
+        y = _concatenate(ylist)
         
         if ycovblocks is not None:
-            ycov = _block_noop(ycovblocks)
+            ycov = jnp.block(ycovblocks)
             if y.dtype == object:
                 warnings.warn(f'covariance matrix may have been specified both explicitly and with gvars; the explicit one will be used')
             ymean = gvar.mean(y)

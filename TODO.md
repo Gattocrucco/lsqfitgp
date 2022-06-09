@@ -73,6 +73,9 @@ to disable the transformations.
 
 In the optimization section talk about the jit and checklin.
 
+Go through the documentation and replace addtransf with addlintransf where
+appropriate.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -549,6 +552,15 @@ would be necessary that the `GP` method forcibly sets some fields of x based on
 a rule. A simpler alternative would be to add a `shape` parameter to `addproc`,
 assuming independent processes, and add the possibility of (constant) matrices
 as factors in `addproctransf`.
+
+New method `addproclintransf`, analogous to `addlintransf`, that takes a second
+order function:
+
+    addproclintransf(lambda f, g: lambda x: f(x) + 2 * g(x), ['a', 'b'], 'c')
+
+It would become the backend of `addproctransf`, `addprocrescale`, and
+`addprocxtransf`. I have to convert a map operating on one-argument functions
+to one operating on two-arguments functions, I think it is doable.
 
 #### Finite transformations
 
