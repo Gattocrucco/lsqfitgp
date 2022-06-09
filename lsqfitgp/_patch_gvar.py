@@ -81,3 +81,71 @@ def scipy_eigh(x):
 
 gvar.SVD._analyzers = dict(scipy_eigh=scipy_eigh)
 # default uses SVD instead of diagonalization because it once was more stable
+
+def getsvec(x):
+    if isinstance(x, gvar.GVar):
+        return x.internaldata[1]
+    else:
+        return gvar.svec(0)
+
+def jacobian(g):
+    """
+    Extract the jacobian of gvars w.r.t. primary gvars.
+    
+    Parameters
+    ----------
+    g : array_like
+        An array of numbers or gvars.
+    
+    Return
+    ------
+    jac : array
+        The shape is g.shape + (m,), where m is the total number of primary
+        gvars that g depends on.
+    indices : (m,) int array
+        The indices that map the last axis of jac to primary gvars in the
+        global covariance matrix.
+    """
+    g = np.asarray(g)
+    v = gvar.svec(0)
+    for x in g.flat:
+        v = v.add(getsvec(x), 1, 1)
+    indices = v.indices()
+    jac = np.zeros((g.size, len(indices)), float)
+    for i, x in enumerate(g.flat):
+        v = getsvec(x)
+        ind = np.searchsorted(indices, v.indices())
+        jac[i, ind] = v.values()
+    jac = jac.reshape(g.shape + indices.shape)
+    return jac, indices
+
+def from_jacobian(mean, jac, indices):
+    """
+    Create new gvars from a jacobian w.r.t. primary gvars.
+    
+    Parameters
+    ----------
+    mean : array_like
+        An array of numbers with the means of the new gvars.
+    jac : mean.shape + (m,) array
+        The derivatives of each new gvar w.r.t. m primary gvars.
+    indices : (m,) int array
+        The indices of the primary gvars.
+    
+    Return
+    ------
+    g : mean.shape array
+        The new gvars.
+    """
+    cov = gvar.gvar.cov
+    mean = np.asarray(mean)
+    shape = mean.shape
+    mean = mean.flat
+    jac = np.array(jac) # TODO patch gvar issue #27
+    jac = jac.reshape(len(mean), len(indices))
+    g = np.zeros(len(mean), object)
+    for i, jacrow in enumerate(jac):
+        der = gvar.svec(len(indices))
+        der._assign(jac[i], indices)
+        g[i] = gvar.GVar(mean[i], der, cov)
+    return g.reshape(shape)

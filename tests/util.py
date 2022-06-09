@@ -4,6 +4,7 @@ import warnings
 from jax import tree_util
 import numpy as np
 from jax import numpy as jnp
+import gvar
 import pytest
 
 def jaxtonumpy(x):
@@ -83,3 +84,28 @@ def tryagain(fun, rep=2, method=False):
         newfun.pytestmark = fun.pytestmark
     meta['newfun'] = newfun
     return newfun
+
+def assert_close_matrices(actual, desired, rtol=1e-5, atol=1e-8):
+    if actual.shape == desired.shape and actual.size == 0:
+        return
+    dnorm = np.linalg.norm(desired, 2)
+    adnorm = np.linalg.norm(actual - desired, 2)
+    msg = f"""\
+matrices actual and desired are not close in 2-norm
+norm(desired) = {dnorm:.2g}
+norm(actual - desired) = {adnorm:.2g}
+rtol = {rtol:.2g}
+atol = {atol:.2g}"""
+    assert adnorm < atol + rtol * dnorm, msg
+
+def assert_similar_gvars(g, h, rtol=1e-5, atol=1e-8):
+    np.testing.assert_allclose(gvar.mean(g), gvar.mean(h), rtol=rtol, atol=atol)
+    g = np.reshape(g, -1)
+    h = np.reshape(h, -1)
+    assert_close_matrices(gvar.evalcov(g), gvar.evalcov(h), rtol=rtol, atol=atol)
+
+def assert_same_gvars(g, h, atol=1e-8):
+    z = g - h
+    z = np.reshape(z, -1)
+    np.testing.assert_allclose(gvar.mean(z), np.zeros(z.shape), rtol=0, atol=atol)
+    assert_close_matrices(gvar.evalcov(z), np.zeros(2 * z.shape), rtol=0, atol=atol)

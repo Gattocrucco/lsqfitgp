@@ -103,14 +103,15 @@ class empbayes_fit:
             False.
         method : str
             Minimization strategy. Options:
-            'gradient' :
+        
+            'gradient'
                 Use a gradient-only method.
-            'hessian' :
+            'hessian'
                 Use a Newton method with the Hessian.
-            'fisher' :
+            'fisher'
                 Use a Newton method with the Fisher information matrix plus
                 the hyperprior precision matrix.
-            'hessmod' :
+            'hessmod'
                 Use a Newton method with a modified Hessian where the
                 second derivatives of the prior covariance matrix w.r.t. the
                 hyperparameters are assumed to be zero.
@@ -197,6 +198,8 @@ class empbayes_fit:
         jac = dojit(jax.jacfwd(fun)) # can't change to rev due to, I guess, the priorchi2 term quad derivatives w.r.t. b
         hess = dojit(jax.jacfwd(jac))
         
+        # TODO this fisher matrix is probably wrong if the residuals depend on
+        # the hyperparameters
         @jax.jacfwd
         @jax.jacfwd # can't change to rev due to jax issue #10994
         def fisher(p):

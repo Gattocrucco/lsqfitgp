@@ -24,6 +24,7 @@ import warnings
 
 import gvar
 import numpy
+import jax
 from jax import numpy as jnp
 from scipy import linalg
 
@@ -32,6 +33,7 @@ from . import _linalg
 from . import _array
 from . import _Deriv
 from . import _patch_jax
+from . import _patch_gvar
 
 __all__ = [
     'GP',
@@ -140,18 +142,16 @@ class _Points(_Element):
         return self.x.shape
 
 class _Transf(_Element):
-    """Trasformation over other _Element objects"""
+    """Transformation over other _Element objects"""
+    
+    shape = None
     
     def __init__(self, tensors, shape, axes):
         assert isinstance(tensors, dict)
         assert isinstance(shape, tuple)
         self.tensors = tensors # dict key -> array
-        self._shape = shape
+        self.shape = shape
         self._axes = axes
-    
-    @property
-    def shape(self):
-        return self._shape
     
     def tensormul(self, tensor, x):
         """
@@ -168,17 +168,25 @@ class _Transf(_Element):
             else:
                 return tensor * x
 
+class _LinTransf(_Element):
+    """Linear transformation of other _Element objects"""
+    
+    shape = None
+    
+    def __init__(self, transf, keys, shape):
+        self.transf = transf
+        self.keys = keys
+        self.shape = shape
+
 class _Cov(_Element):
     """User-provided covariance matrix block(s)"""
+    
+    shape = None
     
     def __init__(self, blocks, shape):
         """blocks = dict (key, key) -> matrices"""
         self.blocks = blocks
-        self._shape = shape
-    
-    @property
-    def shape(self):
-        return self._shape
+        self.shape = shape
 
 class _Proc(metaclass=abc.ABCMeta):
     """
@@ -242,8 +250,11 @@ class GP:
     -------
     addx
         Add points where the Gaussian process is evaluated.
-    addtransf
+    addlintransf
         Define a linear transformation of the evaluated process.
+    addtransf
+        Define a linear transformation of the evaluated process with explicit
+        coefficients.
     addcov
         Introduce a set of user-provided prior covariance matrix blocks.
     addproc
@@ -267,7 +278,8 @@ class GP:
     predfromdata
         Like `pred` with ``fromdata=True``.
     marginal_likelihood
-        Compute the "marginal likelihood", also known as "bayes factor".
+        Compute the marginal likelihood, i.e., the unconditional probability of
+        data.
     
     Parameters
     ----------
@@ -289,7 +301,7 @@ class GP:
             Remove small eigenvalues.
         'lowrank'
             Reduce the rank of the matrix. The complexity is O(n^2 r) where
-            `n` is the matrix size and `r` the required rank, while other
+            `n` is the matrix size and `r` the required rank, while the other
             algorithms are O(n^3). Slow for small sizes.
         'chol'
             Cholesky decomposition after regularizing the matrix with a
@@ -298,14 +310,16 @@ class GP:
     
     checkpos : bool
         If True (default), raise a `LinAlgError` if the prior covariance matrix
-        turns out non positive within numerical error. With the Cholesky
-        solvers the check will be done in all cases.
+        turns out non positive within numerical error.
     checksym : bool
         If True (default), check that the prior covariance matrix is
         symmetric. If False, only half of the matrix is computed.
     checkfinite : bool
         If True (default), check that the prior covariance matrix does not
         contain infs or nans.
+    checklin : bool
+        If True (default), the method `addlintransf` will check that the
+        given transformation is linear on a random input tensor.
     posepsfac : number
         The threshold used to check if the prior covariance matrix is positive
         definite is multiplied by this factor (default 1).
@@ -342,7 +356,7 @@ class GP:
     # gvar.raniter or lgp.raninter because they do add their own noise. But this
     # will be solved when I add GP sampling methods.
     
-    def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, posepsfac=1, **kw):
+    def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, checklin=True, posepsfac=1, **kw):
         self._elements = dict() # key -> _Element
         self._covblocks = dict() # (key, key) -> matrix
         self._priordict = gvar.BufferDict({}, dtype=object) # key -> gvar array (shaped)
@@ -367,6 +381,7 @@ class GP:
         self._posepsfac = float(posepsfac)
         self._checksym = bool(checksym)
         self._checkfinite = bool(checkfinite)
+        self._checklin = bool(checklin)
     
     def addproc(self, kernel=None, key=DefaultProcess, deriv=0):
         """
@@ -637,7 +652,7 @@ class GP:
             
             self._elements[key] = _Points(gx, deriv, proc)
         
-    def addtransf(self, tensors, key, axes=1):
+    def addtransf(self, tensors, key, axes=1, oldimpl=False):
         """
         
         Apply a linear transformation to already specified process points. The
@@ -665,14 +680,6 @@ class GP:
         second-to-last dimension of the second array.
         
         """        
-        # TODO if a tensor is a callable, it is called on the points to get
-        # the tensor. It can be only applied on _Points. The callable is called
-        # immediately in addtransf to catch errors.
-        
-        # TODO with callable transf, it would be nice to take derivatives
-        # on the combined transf @ kernel @ transf.T. Maybe then it is better
-        # to add transformations as a kernel method.
-        
         # Note: it may seem nice that when an array has less axes than `axes`,
         # the summation would be restricted only on the existing axes. However
         # this brings about the ambiguous case where only one of the factors has
@@ -693,7 +700,7 @@ class GP:
             if k not in self._elements:
                 raise KeyError(k)
         
-        # Check tensors and convert them to numpy arrays.
+        # Check tensors and convert them to jax arrays.
         tens = {}
         for k, t in tensors.items():
             t = jnp.asarray(t)
@@ -724,7 +731,84 @@ class GP:
             msg += ', '.join(repr(e.shape) for e in elements) + ']'
             raise ValueError(msg)
         
-        self._elements[key] = _Transf(tens, shape, axes)
+        if oldimpl:
+            self._elements[key] = _Transf(tens, shape, axes)
+        else:
+            def equiv_lintransf(*args):
+                assert len(args) == len(tens)
+                out = None
+                for a, (k, t) in zip(args, tens.items()):
+                    if t.shape:
+                        b = jnp.tensordot(t, a, axes)
+                    else:
+                        b = t * a
+                    if out is None:
+                        out = b
+                    else:
+                        out = out + b
+                return out
+            keys = list(tens.keys())
+            self.addlintransf(equiv_lintransf, keys, key)
+    
+    def addlintransf(self, transf, keys, key):
+        """
+        
+        Define a finite linear transformation of the evaluated process.
+        
+        Parameters
+        ----------
+        transf : callable
+            A function with signature `f(array1, array2, ...) -> array` which
+            computes the linear transformation. The function must be
+            jax-traceable, i.e., use jax.numpy instead of numpy.
+        keys : sequence
+            Keys of parts of the process to be passed as inputs to the
+            transformation.
+        key : hashable
+            The key of the newly defined points.
+        
+        Raises
+        ------
+        RuntimeError :
+            The transformation seems not to be linear. To disable the linearity
+            check, initialize the GP with `checklin=False`.
+        
+        """
+        
+        # Check key.
+        if key is None:
+            raise ValueError('key can not be None')
+        if key in self._elements:
+            raise KeyError(f'key {key!r} already in GP')
+        
+        # Check keys.
+        for k in keys:
+            if k not in self._elements:
+                raise KeyError(k)
+        
+        # Determine shape.
+        class ArrayMockup:
+            def __init__(self, elem):
+                self.shape = elem.shape
+                self.dtype = float
+        inp = [ArrayMockup(self._elements[k]) for k in keys]
+        out = jax.eval_shape(transf, *inp)
+        shape = out.shape
+        
+        # Check that the transformation is linear.
+        if self._checklin:
+            rkey = jax.random.PRNGKey(202206091600)
+            inp = []
+            for k in keys:
+                inp.append(jax.random.normal(rkey, self._elements[k].shape))
+                _, rkey = jax.random.split(rkey)
+            out0, out1 = jax.jvp(transf, inp, inp)
+            if _patch_jax.isconcrete(out0, out1):
+                out0, out1 = _patch_jax.concrete(out0, out1)
+                if not numpy.allclose(out0, out1):
+                    raise RuntimeError('the transformation is not linear')
+        
+        self._elements[key] = _LinTransf(transf, keys, shape)
     
     def addcov(self, covblocks, key=None):
         """
@@ -741,7 +825,8 @@ class GP:
             If an array: a covariance matrix (or tensor) to be added under key
             `key`. If a dictionary: a mapping from pairs of keys to the
             corresponding covariance matrix blocks. A missing off-diagonal
-            block in the dictionary is interpreted as a matrix of zeros.
+            block in the dictionary is interpreted as a matrix of zeros,
+            unless the corresponding transposed block is specified.
         key : hashable
             If `covblocks` is an array, the dictionary key under which
             `covblocks` is added. Can not be specified if `covblocks` is a
@@ -749,7 +834,7 @@ class GP:
         
         Raises
         ------
-        RuntimeError :
+        KeyError :
             A key is already used in the GP.
         ValueError :
             `covblocks` and/or `key` are malformed or inconsistent.
@@ -821,7 +906,7 @@ class GP:
                 ysize = numpy.prod(shapes[ykey], dtype=int)
                 block = block.reshape((xsize, ysize))
                 blocks[keys] = block
-                revkeys = (ykey, xkey)
+                revkeys = keys[::-1]
                 blockT = preblocks.get(revkeys)
                 if blockT is None:
                     blocks[revkeys] = block.T
@@ -971,6 +1056,26 @@ class GP:
                 covsum = cov
         assert covsum.shape == x.shape + y.shape
         return covsum.reshape((x.size, y.size)) # don't leave out the ()!
+    
+    def _makecovblock_lintransf_any(self, xkey, ykey):
+        x = self._elements[xkey]
+        y = self._elements[ykey]
+        assert isinstance(x, _LinTransf)
+        
+        # Gather covariance matrices to be transformed.
+        covs = []
+        for k in x.keys:
+            elem = self._elements[k]
+            cov = self._covblock(k, ykey)
+            assert cov.shape == (elem.size, y.size)
+            cov = cov.reshape(elem.shape + (y.size,))
+            covs.append(cov)
+        
+        # Apply transformation.
+        t = jax.vmap(x.transf, -1, -1)
+        cov = t(*covs)
+        assert cov.shape == x.shape + (y.size,)
+        return cov.reshape((x.size, y.size))
             
     def _makecovblock(self, xkey, ykey):
         x = self._elements[xkey]
@@ -981,6 +1086,11 @@ class GP:
             cov = self._makecovblock_transf_any(xkey, ykey)
         elif isinstance(y, _Transf):
             cov = self._makecovblock_transf_any(ykey, xkey)
+            cov = cov.T
+        elif isinstance(x, _LinTransf):
+            cov = self._makecovblock_lintransf_any(xkey, ykey)
+        elif isinstance(y, _LinTransf):
+            cov = self._makecovblock_lintransf_any(ykey, xkey)
             cov = cov.T
         elif isinstance(x, _Cov) and isinstance(y, _Cov) and x.blocks is y.blocks and (xkey, ykey) in x.blocks:
             cov = x.blocks[xkey, ykey]
@@ -1132,12 +1242,39 @@ class GP:
         for k, tensor in x.tensors.items():
             prior = self._prior(k)
             transf = x.tensormul(tensor, prior)
-            # TODO probably breaks if tensor is a jax array
             if out is None:
                 out = transf
             else:
                 out = out + transf
         return out
+    
+    def _priorlintransf(self, key):
+        x = self._elements[key]
+        assert isinstance(x, _LinTransf)
+        
+        # Gather all gvars to be transformed.
+        elems = [
+            self._prior(k).reshape(-1)
+            for k in x.keys
+        ]
+        g = numpy.concatenate(elems)
+        
+        # Extract jacobian and split it.
+        slices = self._slices(x.keys)
+        jac, indices = _patch_gvar.jacobian(g)
+        jacs = [
+            jac[s].reshape(self._elements[k].shape + indices.shape)
+            for s, k in zip(slices, x.keys)
+        ]
+        
+        # Apply transformation.
+        t = jax.vmap(x.transf, -1, -1)
+        outjac = t(*jacs)
+        assert outjac.shape == x.shape + indices.shape
+        
+        # Rebuild gvars.
+        outg = _patch_gvar.from_jacobian(numpy.zeros(x.shape), outjac, indices)
+        return outg
     
     def _prior(self, key):
         prior = self._priordict.get(key, None)
@@ -1147,6 +1284,8 @@ class GP:
                 prior = self._priorpointscov(key)
             elif isinstance(x, _Transf):
                 prior = self._priortransf(key)
+            elif isinstance(x, _LinTransf):
+                prior = self._priorlintransf(key)
             else:
                 raise TypeError(type(x))
             self._priordict[key] = prior
@@ -1256,7 +1395,7 @@ class GP:
         corresponding to keys in `keylist` into their concatenation.
         """
         sizes = [self._elements[key].size for key in keylist]
-        stops = numpy.concatenate([[0], numpy.cumsum(sizes)])
+        stops = numpy.pad(numpy.cumsum(sizes), (1, 0))
         return [slice(stops[i - 1], stops[i]) for i in range(1, len(stops))]
     
     def pred(self, given, key=None, givencov=None, fromdata=None, raw=False, keepcorr=None):

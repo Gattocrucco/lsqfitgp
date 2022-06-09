@@ -550,24 +550,6 @@ as factors in `addproctransf`.
 
 #### Finite transformations
 
-More general alternatives to `addtransf`:
- 1) Let `GP[key]` be a class representing the key that overloads numpy with
-    `__array_function__` and `__array_ufunc__`, that builds a forward
-    transformation of covariance matrices with lambdas.
- 2) Take in a string which is executed in an environment with some
-    numpy-like functions and where the keys are variables. The syntax would
-    be cleaner than the numpy-based version.
- 3) I could do something like `addkernelop`: a method that applies a
-    generalized ufunc to the covariance matrix appropriately. Hopefully this
-    would work at once for stacking, indexing, fft, convolution...
-
-For (3): I need to apply the linear operations along the row index of the
-covariance matrix, broadcasting along the column index. Now that I have adopted
-jax, this can be done with vmap. => Problem: how do I get the shape before
-applying the operator? => Solution: let _Elements have shape None, and do not
-check when it is None => Better solution: use jax abstract tracing to get the
-shape.
-
 It could be convenient to change the matrix multiplication order based on
 efficiency, like when using backprop vs. forward. Now I'm always doing
 forward. It should be feasible to do backward at least, for when the output

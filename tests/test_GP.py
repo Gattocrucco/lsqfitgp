@@ -71,11 +71,7 @@ def test_transf_vector():
     prior = gp.prior()
     y1 = prior['y']
     y2 = prior['x'][1] - prior['x'][0]
-    np.testing.assert_allclose(gvar.mean(y1), gvar.mean(y2))
-    np.testing.assert_allclose(gvar.sdev(y1), gvar.sdev(y2))
-    z = y1 - y2
-    np.testing.assert_allclose(gvar.mean(z), 0)
-    np.testing.assert_allclose(gvar.sdev(z), 0)
+    util.assert_same_gvars(y1, y2, atol=1e-12)
 
 def test_cov():
     A = np.random.randn(20, 20)
@@ -85,7 +81,7 @@ def test_cov():
     M2 = gp.prior('M', raw=True)
     util.assert_equal(M1, M2)
 
-def test_proctransf():
+def test_transf_vs_lintransf_vs_proctransf():
     x = np.arange(20)
     gp = lgp.GP()
     gp.addproc(lgp.ExpQuad(), 'a')
@@ -93,12 +89,44 @@ def test_proctransf():
     gp.addx(x, 'ax', proc='a')
     gp.addx(x, 'bx', proc='b')
     gp.addtransf({'ax': 2, 'bx': 3}, 'abx1')
+    gp.addlintransf(lambda a, b: 2 * a + 3 * b, ['ax', 'bx'], 'abx2')
     gp.addproctransf({'a': 2, 'b': 3}, 'ab')
-    gp.addx(x, 'abx2', proc='ab')
-    prior = gp.prior(['abx1', 'abx2'], raw=True)
+    gp.addx(x, 'abx3', proc='ab')
+    prior = gp.prior(['abx1', 'abx2', 'abx3'], raw=True)
     util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx2'])
+    util.assert_equal(prior['abx1', 'abx1'], prior['abx3', 'abx3'])
+    util.assert_equal(prior['abx1', 'abx1'], prior['abx1', 'abx2'])
+    util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx3'])
+    util.assert_equal(prior['abx1', 'abx1'], prior['abx1', 'abx3'])
     util.assert_equal(prior['abx1', 'abx2'], prior['abx2', 'abx1'].T)
-    util.assert_equal(prior['abx1', 'abx2'], prior['abx1', 'abx1'])
+    util.assert_equal(prior['abx1', 'abx3'], prior['abx3', 'abx1'].T)
+    util.assert_equal(prior['abx2', 'abx3'], prior['abx3', 'abx2'].T)
+
+def test_lintransf_checks():
+    gp = lgp.GP(lgp.ExpQuad())
+    gp.addx(0, 0)
+    gp.addx(0, 1)
+    with pytest.raises(KeyError):
+        gp.addlintransf(lambda x, y: x + y, [0, 1], 0)
+    with pytest.raises(ValueError):
+        gp.addlintransf(lambda x, y: x + y, [0, 1], None)
+    with pytest.raises(KeyError):
+        gp.addlintransf(lambda x, y: x + y, [0, 2], 2)
+    with pytest.raises(RuntimeError):
+        gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 2)
+    gp._checklin = False
+    gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 2)
+
+def test_lintransf_matmul():
+    gp = lgp.GP(lgp.ExpQuad())
+    x = np.arange(20)
+    gp.addx(x, 0)
+    m = np.random.randn(30, len(x))
+    gp.addlintransf(lambda x: m @ x, [0], 1)
+    prior = gp.prior([0, 1], raw=True)
+    np.testing.assert_allclose(m @ prior[0, 0] @ m.T, prior[1, 1])
+    np.testing.assert_allclose(m @ prior[0, 1], prior[1, 1])
+    np.testing.assert_allclose(prior[1, 0] @ m.T, prior[1, 1])
 
 def test_kernelop():
     gp = lgp.GP()
