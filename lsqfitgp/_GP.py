@@ -1513,20 +1513,23 @@ class GP:
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = _concatenate(ylist)
         
+        # Get mean.
+        if y.dtype == object:
+            ymean = gvar.mean(y)
+        else:
+            ymean = y
+        self._check_ymean(ymean)
+        
+        # Get covariance matrix.
         if ycovblocks is not None:
             ycov = jnp.block(ycovblocks)
             if y.dtype == object:
                 warnings.warn(f'covariance matrix may have been specified both explicitly and with gvars; the explicit one will be used')
-            ymean = gvar.mean(y)
         elif y.dtype == object:
             gvary = gvar.gvar(y)
             ycov = gvar.evalcov(gvary)
-            ymean = gvar.mean(gvary)
         else:
             ycov = None
-            ymean = y
-        
-        self._check_ymean(ymean)
         self._check_ycov(ycov)
         
         decomp = self._solver(inkeys, ycov, **kw)

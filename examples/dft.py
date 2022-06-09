@@ -28,10 +28,8 @@ import numpy as np
 from jax import numpy as jnp
 import gvar
 
-class PORCO:
-    pass
-class DUO:
-    pass
+class PORCO: pass
+class DUO: pass
 
 gp = lgp.GP(lgp.Fourier(scale=2 * np.pi, n=1))
 # We could do the same with a non-periodic prior, but it would not make as much
@@ -40,9 +38,12 @@ gp = lgp.GP(lgp.Fourier(scale=2 * np.pi, n=1))
 # shrinking prior on the DFT coefficients. Try it.
 
 xdata = np.linspace(0, 2 * np.pi, 20)
-xpred = np.linspace(-2 * np.pi, 4 * np.pi, 300)
-
 gp.addx(xdata, PORCO)
+
+xpred = np.linspace(-2 * np.pi, 4 * np.pi, 50 * 6 + 1)
+# If we don't align the number of points to the period, the samples will not
+# show as periodic because the function is very rough. The distribution would
+# still be periodic though, it's just an artifact of looking at a coarse grid.
 gp.addx(xpred, DUO)
 
 def transf(x):
@@ -54,7 +55,7 @@ gp.addlintransf(transf, [PORCO], 'dft')
 
 gp.addlintransf(lambda x: x[0, 3], ['dft'], '3rd real coef')
 gp.addlintransf(lambda x: x[0, 3] - x[1, 3], ['dft'], '3rd coef pseudo-phase')
-# We will force the 3rd Fourier coefficient to be high because the supervisor
+# We will force the 3rd spectrum coefficient to be high because the supervisor
 # said that it always comes out high, so the plot can't be different from the
 # other articles. The statistics professor said that the correct fitting method
 # is "Bayesian statistics" and that everything is subjective, so we may as
