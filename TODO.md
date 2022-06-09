@@ -71,6 +71,8 @@ NotImplementedError right away instead of letting the core callable do it: thus
 the implementation methods shall return NotImplemented in place of a callable
 to disable the transformations.
 
+In the optimization section talk about the jit and checklin.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -562,6 +564,9 @@ starts from a lower dimensional set of variables and thus the prior covariance
 matrix is rank deficient. => Actually, it is sufficient to find a "bottleneck"
 somewhere along the matrix multiplications, not necessarily in the starting
 matrix.
+
+I can not currently use an fft because it returns complex output. The user
+needs to manually separate the real and complex parts.
 
 #### Fourier
   

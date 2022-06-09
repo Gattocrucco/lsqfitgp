@@ -83,14 +83,16 @@ def test_cov():
 
 def test_transf_vs_lintransf_vs_proctransf():
     x = np.arange(20)
+    fa = lambda x: jnp.sin(x) + 0.5 * jnp.cos(x ** 2)
+    fb = lambda x: 1 / (1 + jnp.exp(-x))
     gp = lgp.GP()
     gp.addproc(lgp.ExpQuad(), 'a')
     gp.addproc(lgp.RatQuad(), 'b')
     gp.addx(x, 'ax', proc='a')
     gp.addx(x, 'bx', proc='b')
-    gp.addtransf({'ax': 2, 'bx': 3}, 'abx1')
-    gp.addlintransf(lambda a, b: 2 * a + 3 * b, ['ax', 'bx'], 'abx2')
-    gp.addproctransf({'a': 2, 'b': 3}, 'ab')
+    gp.addtransf({'ax': np.diag(fa(x)), 'bx': np.diag(fb(x))}, 'abx1')
+    gp.addlintransf(lambda a, b: fa(x) * a + fb(x) * b, ['ax', 'bx'], 'abx2')
+    gp.addproctransf({'a': fa, 'b': fb}, 'ab')
     gp.addx(x, 'abx3', proc='ab')
     prior = gp.prior(['abx1', 'abx2', 'abx3'], raw=True)
     util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx2'])
@@ -114,8 +116,11 @@ def test_lintransf_checks():
         gp.addlintransf(lambda x, y: x + y, [0, 2], 2)
     with pytest.raises(RuntimeError):
         gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 2)
+    gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 2, checklin=False)
     gp._checklin = False
-    gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 2)
+    gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 3)
+    with pytest.raises(RuntimeError):
+        gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 4, checklin=True)
 
 def test_lintransf_matmul():
     gp = lgp.GP(lgp.ExpQuad())
@@ -127,6 +132,25 @@ def test_lintransf_matmul():
     np.testing.assert_allclose(m @ prior[0, 0] @ m.T, prior[1, 1])
     np.testing.assert_allclose(m @ prior[0, 1], prior[1, 1])
     np.testing.assert_allclose(prior[1, 0] @ m.T, prior[1, 1])
+
+def test_prior_gvar():
+    gp = lgp.GP(lgp.ExpQuad())
+    gp.addx(np.random.randn(20), 0)
+    gp.addx(np.random.randn(15), 1)
+    gp.addtransf({0: np.random.randn(15, 20)}, 2)
+    gp.addlintransf(lambda x, y: jnp.real(jnp.fft.rfft(x + y)), [1, 2], 3)
+    m = np.random.randn(40, 40)
+    gp.addcov(m @ m.T, 4)
+    gp.addtransf({4: np.random.randn(8, 40), 3: np.pi}, 5)
+    covs = gp.prior(raw=True)
+    prior = gp.prior()
+    gmeans = gvar.mean(prior)
+    for g in gmeans.values():
+        np.testing.assert_equal(g, np.zeros_like(g))
+    gcovs = gvar.evalcov(prior)
+    for k, cov in covs.items():
+        gcov = gcovs[k]
+        np.testing.assert_allclose(cov, gcov, atol=1e-15, rtol=1e-12)
 
 def test_kernelop():
     gp = lgp.GP()

@@ -141,33 +141,6 @@ class _Points(_Element):
     def shape(self):
         return self.x.shape
 
-class _Transf(_Element):
-    """Transformation over other _Element objects"""
-    
-    shape = None
-    
-    def __init__(self, tensors, shape, axes):
-        assert isinstance(tensors, dict)
-        assert isinstance(shape, tuple)
-        self.tensors = tensors # dict key -> array
-        self.shape = shape
-        self._axes = axes
-    
-    def tensormul(self, tensor, x):
-        """
-        Do the multiplication tensor @ x.
-        """
-        if tensor.shape:
-            if x.dtype == object:
-                return numpy.tensordot(tensor, x, axes=self._axes)
-            else:
-                return jnp.tensordot(tensor, x, axes=self._axes)
-        else:
-            if x.dtype == object:
-                return tensor.item() * x
-            else:
-                return tensor * x
-
 class _LinTransf(_Element):
     """Linear transformation of other _Element objects"""
     
@@ -731,26 +704,24 @@ class GP:
             msg += ', '.join(repr(e.shape) for e in elements) + ']'
             raise ValueError(msg)
         
-        if oldimpl:
-            self._elements[key] = _Transf(tens, shape, axes)
-        else:
-            def equiv_lintransf(*args):
-                assert len(args) == len(tens)
-                out = None
-                for a, (k, t) in zip(args, tens.items()):
-                    if t.shape:
-                        b = jnp.tensordot(t, a, axes)
-                    else:
-                        b = t * a
-                    if out is None:
-                        out = b
-                    else:
-                        out = out + b
-                return out
-            keys = list(tens.keys())
-            self.addlintransf(equiv_lintransf, keys, key)
+        # Define linear transformation.
+        def equiv_lintransf(*args):
+            assert len(args) == len(tens)
+            out = None
+            for a, (k, t) in zip(args, tens.items()):
+                if t.shape:
+                    b = jnp.tensordot(t, a, axes)
+                else:
+                    b = t * a
+                if out is None:
+                    out = b
+                else:
+                    out = out + b
+            return out
+        keys = list(tens.keys())
+        self.addlintransf(equiv_lintransf, keys, key, checklin=False)
     
-    def addlintransf(self, transf, keys, key):
+    def addlintransf(self, transf, keys, key, checklin=None):
         """
         
         Define a finite linear transformation of the evaluated process.
@@ -766,6 +737,10 @@ class GP:
             transformation.
         key : hashable
             The key of the newly defined points.
+        checklin : bool
+            If True (default), check that the given function is linear in its
+            inputs. The default can be overridden at initialization of the GP
+            object. Note that an affine function (x -> a + bx) is not linear.
         
         Raises
         ------
@@ -774,6 +749,13 @@ class GP:
             check, initialize the GP with `checklin=False`.
         
         """
+        
+        # TODO elementwise operations can be applied more efficiently to
+        # primary gvars (tipical case), so the method could use an option
+        # `elementwise`. What is the reliable way to check it is indeed
+        # elementwise with a single random vector? Zero items of the tangent
+        # at random with p=0.5 and check they stay zero? (And of course check
+        # the shape is preserved.)
         
         # Check key.
         if key is None:
@@ -796,7 +778,9 @@ class GP:
         shape = out.shape
         
         # Check that the transformation is linear.
-        if self._checklin:
+        if checklin is None:
+            checklin = self._checklin
+        if checklin:
             rkey = jax.random.PRNGKey(202206091600)
             inp = []
             for k in keys:
@@ -1039,24 +1023,6 @@ class GP:
         
         return cov
     
-    def _makecovblock_transf_any(self, xkey, ykey):
-        x = self._elements[xkey]
-        y = self._elements[ykey]
-        assert isinstance(x, _Transf)
-        covsum = None
-        for key, tensor in x.tensors.items():
-            elem = self._elements[key]
-            cov = self._covblock(key, ykey)
-            assert cov.shape == (elem.size, y.size)
-            cov = cov.reshape(elem.shape + y.shape)
-            cov = x.tensormul(tensor, cov)
-            if covsum is not None:
-                covsum = covsum + cov
-            else:
-                covsum = cov
-        assert covsum.shape == x.shape + y.shape
-        return covsum.reshape((x.size, y.size)) # don't leave out the ()!
-    
     def _makecovblock_lintransf_any(self, xkey, ykey):
         x = self._elements[xkey]
         y = self._elements[ykey]
@@ -1075,18 +1041,15 @@ class GP:
         t = jax.vmap(x.transf, -1, -1)
         cov = t(*covs)
         assert cov.shape == x.shape + (y.size,)
-        return cov.reshape((x.size, y.size))
+        return cov.reshape((x.size, y.size)) # don't leave out the ()!
+        # the () probably was an obscure autograd bug, I don't think it will
+        # be a problem again with jax
             
     def _makecovblock(self, xkey, ykey):
         x = self._elements[xkey]
         y = self._elements[ykey]
         if isinstance(x, _Points) and isinstance(y, _Points):
             cov = self._makecovblock_points(xkey, ykey)
-        elif isinstance(x, _Transf):
-            cov = self._makecovblock_transf_any(xkey, ykey)
-        elif isinstance(y, _Transf):
-            cov = self._makecovblock_transf_any(ykey, xkey)
-            cov = cov.T
         elif isinstance(x, _LinTransf):
             cov = self._makecovblock_lintransf_any(xkey, ykey)
         elif isinstance(y, _LinTransf):
@@ -1235,19 +1198,6 @@ class GP:
         
         return g.reshape(x.shape)
     
-    def _priortransf(self, key):
-        x = self._elements[key]
-        assert isinstance(x, _Transf)
-        out = None
-        for k, tensor in x.tensors.items():
-            prior = self._prior(k)
-            transf = x.tensormul(tensor, prior)
-            if out is None:
-                out = transf
-            else:
-                out = out + transf
-        return out
-    
     def _priorlintransf(self, key):
         x = self._elements[key]
         assert isinstance(x, _LinTransf)
@@ -1266,6 +1216,10 @@ class GP:
             jac[s].reshape(self._elements[k].shape + indices.shape)
             for s, k in zip(slices, x.keys)
         ]
+        # TODO the jacobian can be extracted much more efficiently when the
+        # elements are _Points or _Cov, since in that case the gvars are
+        # primary and contiguous within each block, so each jacobian is
+        # the identity + a range.
         
         # Apply transformation.
         t = jax.vmap(x.transf, -1, -1)
@@ -1282,8 +1236,6 @@ class GP:
             x = self._elements[key]
             if isinstance(x, (_Points, _Cov)):
                 prior = self._priorpointscov(key)
-            elif isinstance(x, _Transf):
-                prior = self._priortransf(key)
             elif isinstance(x, _LinTransf):
                 prior = self._priorlintransf(key)
             else:

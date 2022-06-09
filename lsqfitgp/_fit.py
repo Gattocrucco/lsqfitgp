@@ -188,7 +188,7 @@ class empbayes_fit:
         def dojit(f):
             return jax.jit(f) if jit else f
         
-        @dojit      
+        @dojit
         def fun(p):
             gp, args, priorchi2 = make(p)
             ml = gp.marginal_likelihood(*args, stop_hessian=method == 'hessmod')
