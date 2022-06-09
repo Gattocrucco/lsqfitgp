@@ -155,18 +155,16 @@ is a callable.</p>
 <dt><strong>jit</strong><span class="classifier">bool</span></dt><dd><p>If True, use jax’s jit to compile the minimization target. Default
 False.</p>
 </dd>
-<dt><strong>method</strong><span class="classifier">str</span></dt><dd><p>Minimization strategy. Options:
-‘gradient’ :</p>
-<blockquote>
-<div><p>Use a gradient-only method.</p>
-</div></blockquote>
+<dt><strong>method</strong><span class="classifier">str</span></dt><dd><p>Minimization strategy. Options:</p>
 <dl class="simple">
-<dt>‘hessian’ :</dt><dd><p>Use a Newton method with the Hessian.</p>
+<dt>‘gradient’</dt><dd><p>Use a gradient-only method.</p>
 </dd>
-<dt>‘fisher’ :</dt><dd><p>Use a Newton method with the Fisher information matrix plus
+<dt>‘hessian’</dt><dd><p>Use a Newton method with the Hessian.</p>
+</dd>
+<dt>‘fisher’</dt><dd><p>Use a Newton method with the Fisher information matrix plus
 the hyperprior precision matrix.</p>
 </dd>
-<dt>‘hessmod’ :</dt><dd><p>Use a Newton method with a modified Hessian where the
+<dt>‘hessmod’</dt><dd><p>Use a Newton method with a modified Hessian where the
 second derivatives of the prior covariance matrix w.r.t. the
 hyperparameters are assumed to be zero.</p>
 </dd>
