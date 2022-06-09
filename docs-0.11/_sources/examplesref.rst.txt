@@ -12,7 +12,7 @@ repository. The links point to the file preview on github.
 
 Short index
 -----------
-a_ b_ bernoulli_ c_ d_ doubleint_ e_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
+a_ b_ bernoulli_ c_ d_ dft_ doubleint_ e_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
 
 Long index
 ----------
@@ -59,6 +59,13 @@ Long index
     up and down.
     
     .. image:: ../examples/plot/d.png
+
+.. _dft:
+
+  * `dft.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/dft.py>`_: Constrain the discrete Fourier transform of a periodic process. Shows how
+    to use GP.addlintransf.
+    
+    .. image:: ../examples/plot/dft.png
 
 .. _doubleint:
 
