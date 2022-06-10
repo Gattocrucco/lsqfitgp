@@ -668,7 +668,7 @@ class Fourier(_FourierBase):
             if doy:
                 kernel = lambda x, q, kernel=kernel: kernel(q, x)
         
-        cls = _Kernel.Kernel if dox == doy and isinstance(self, _Kernel.Kernel) else _Kernel._CrossKernel
+        cls = _Kernel.Kernel if dox == doy and isinstance(self, _Kernel.Kernel) else _Kernel.CrossKernel
         obj = cls(kernel)
         obj.initargs = self.initargs
         obj._maxderivable = self._maxderivable

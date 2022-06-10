@@ -197,7 +197,10 @@ class DecompAutoDiff(Decomposition):
         if not hasattr(self, attr):
             setattr(self, attr, kw.pop(attr, default))
     
-    # TODO try using jax.linearize and jax.convert_closure
+    # TODO try using jax.linearize and jax.convert_closure. Or: try to pass
+    # the decomposition products as variadic arguments to the intermediate
+    # wrapper, maybe this solves all reverse-mode autodiff problems like
+    # the double undefined primals.
         
     def __init_subclass__(cls, **kw):
         
@@ -220,6 +223,9 @@ class DecompAutoDiff(Decomposition):
                 if self.stop_hessian:
                     K = _patch_jax.stop_hessian(K)
             self._K = K
+        
+        # TODO remove the option stop_hessian and let mesa-users apply it,
+        # it does not make sense anymore as something managed by the class.
         
         cls.__init__ = __init__
         

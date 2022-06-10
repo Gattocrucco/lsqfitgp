@@ -46,7 +46,7 @@ def _asfloat(x):
         return x
 
 def _isscalar(x):
-    return jnp.ndim(x) == 0
+    return jnp.ndim(x) == 0 and not isinstance(x, CrossKernel)
 
 def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreductor=None):
     x = args[0]
@@ -87,18 +87,41 @@ def _transf_recurse_dtype(transf, x, *args):
     else:
         x = _array.StructuredArray(x)
         # TODO this would overwrite StructuredArrays passed by the user, but
-        # it's unlikely to be a problem in practice
+        # it's unlikely to be a problem in practice, right? => nope, it's
+        # a problem
         for name in x.dtype.names:
             newargs = tuple(y[name] for y in args)
             x[name] = _transf_recurse_dtype(transf, x[name], *newargs)
         return x
 
-class _KernelBase:
+def _greatest_common_superclass(instances):
+    # from https://stackoverflow.com/a/25787091/3942284
+    classes = [type(x).mro() for x in instances]
+    for x in classes[0]:
+        if all(x in mro for mro in classes):
+            return x
+
+class CrossKernel:
     
-    # This class is only used to share the implementation between Kernel and
-    # _CrossKernel, so the docstrings are meant to be read as docstrings of
-    # Kernel. The docstring is all in __init__ otherwise autoclass would not
-    # read it.
+    # TODO if I implement double callable derivable, derivable should always be
+    # a callable, and _newkernel_from should propagate it properly (with an
+    # `and`?).
+    
+    # TODO make some unit tests checking that Kernel classes are
+    # propagated properly
+
+    @staticmethod
+    def _newkernel_from(core, kernels):
+        cls = _greatest_common_superclass(kernels)
+        assert issubclass(cls, CrossKernel)
+        obj = cls.__new__(cls)
+        obj.initargs = None
+        mind = [k._minderivable for k in kernels]
+        maxd = [k._maxderivable for k in kernels]
+        obj._minderivable = tuple(numpy.min(mind, 0))
+        obj._maxderivable = tuple(numpy.max(maxd, 0))
+        obj._kernel = core
+        return obj
     
     def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcekron=False, derivable=None, saveargs=False, **kw):
         """
@@ -175,9 +198,7 @@ class _KernelBase:
         # the second callable is called with input points to determine on
         # which points exactly the kernel is derivable. (But still returns
         # a single boolean for an array of points, equivalent to an `all`.)
-        
-        # TODO the default derivable could be None instead of 0.
-        
+                
         if saveargs:
             self.initargs = dict(
                 dim=dim,
@@ -257,36 +278,58 @@ class _KernelBase:
         assert result.shape == shape, (result.shape, shape)
         return result
     
-    def _binary(self, value, op):
-        if isinstance(value, _KernelBase):
-            obj = _KernelBase(op(self._kernel, value._kernel))
-            obj._minderivable = tuple(numpy.minimum(self._minderivable, value._minderivable))
-            obj._maxderivable = tuple(numpy.maximum(self._maxderivable, value._maxderivable))
-        elif _isscalar(value):
-            if _patch_jax.isconcrete(value):
-                assert -jnp.inf < value < jnp.inf, value
-            obj = _KernelBase(op(self._kernel, lambda x, y: value))
-            obj._minderivable = self._minderivable
-            obj._maxderivable = self._maxderivable
+    class SIDE: pass
+    class LEFT(SIDE): pass
+    class RIGHT(SIDE): pass
+    class BOTH(SIDE): pass
+         
+    @classmethod
+    def _nary(cls, op, kernels, side):
+        
+        if side is cls.LEFT:
+            wrapper = lambda c, _, y: lambda x: c(x, y)
+            arg = lambda x, _: x
+        elif side is cls.RIGHT:
+            wrapper = lambda c, x, _: lambda y: c(x, y)
+            arg = lambda _, y: y
+        elif side is cls.BOTH:
+            wrapper = lambda c, _, __: lambda xy: c(*xy)
+            arg = lambda x, y: (x, y)
         else:
-            obj = NotImplemented
-        return obj
+            raise KeyError(side)
+        
+        cores = [k._kernel for k in kernels]
+        def core(x, y):
+            wrapped = [wrapper(c, x, y) for c in cores]
+            transformed = op(*wrapped)
+            return transformed(arg(x, y))
+        
+        return cls._newkernel_from(core, kernels)
+    
+    def _binary(self, value, op):
+        if _isscalar(value):
+            val = value
+            value = self._newkernel_from(lambda x, y: val, [self])
+        if not isinstance(value, CrossKernel):
+            return NotImplemented
+        return self._nary(op, [self, value], self.BOTH)
     
     def __add__(self, value):
-        return self._binary(value, lambda k, q: lambda x, y: k(x, y) + q(x, y))
+        return self._binary(value, lambda f, g: lambda x: f(x) + g(x))
     
     __radd__ = __add__
     
     def __mul__(self, value):
-        return self._binary(value, lambda k, q: lambda x, y: k(x, y) * q(x, y))
+        return self._binary(value, lambda f, g: lambda x: f(x) * g(x))
     
     __rmul__ = __mul__
     
     def __pow__(self, value):
-        if not isinstance(value, _KernelBase) and _isscalar(value):
-            return self._binary(value, lambda k, q: lambda x, y: k(x, y) ** q(x, y))
-        else:
+        if not _isscalar(value):
             return NotImplemented
+        if _patch_jax.isconcrete(value):
+            assert 0 <= value < jnp.inf, value
+        return self._binary(value, lambda f, g: lambda x: f(x) ** g(x))
 
     def _swap(self):
         """permute the arguments (cross kernels are not symmetric)"""
@@ -296,9 +339,7 @@ class _KernelBase:
         obj._minderivable = obj._minderivable[::-1]
         obj._maxderivable = obj._maxderivable[::-1]
         return obj
-        
-        # TODO make _CrossKernel and _swap public?
-    
+                
     def rescale(self, xfun, yfun):
         """
         
@@ -339,7 +380,7 @@ class _KernelBase:
             def fun(x, y):
                 return xfun(x) * yfun(y) * kernel(x, y)
         
-        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else _CrossKernel
+        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else CrossKernel
         obj = cls(fun)
         obj._maxderivable = self._maxderivable
         return obj
@@ -384,7 +425,7 @@ class _KernelBase:
             def fun(x, y):
                 return kernel(xfun(x), yfun(y))
         
-        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else _CrossKernel
+        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else CrossKernel
         obj = cls(fun)
         obj._maxderivable = self._maxderivable
         return obj
@@ -523,7 +564,7 @@ class _KernelBase:
                     args.append(_asfloat(y[dim]))
                 return f(x, y, *args)
         
-        cls = Kernel if xderiv == yderiv and isinstance(self, Kernel) else _CrossKernel
+        cls = Kernel if xderiv == yderiv and isinstance(self, Kernel) else CrossKernel
         obj = cls(fun)
         obj._minderivable = tuple(self._minderivable[i] - orders[i] for i in range(2))
         obj._maxderivable = tuple(self._maxderivable[i] -   maxs[i] for i in range(2))
@@ -592,10 +633,7 @@ class _KernelBase:
             return self
         raise NotImplementedError
 
-class _CrossKernel(_KernelBase):
-    pass
-    
-class Kernel(_KernelBase):
+class Kernel(CrossKernel):
     
     @property
     def derivable(self):
@@ -606,38 +644,12 @@ class Kernel(_KernelBase):
         else:
             return None
         
-    # TODO if I implement double callable derivable, derivable should always be
-    # a callable, and _binary should propagate it properly (with an `and`?).
-    
     def _binary(self, value, op):
-        # redefine _KernelBase._binary to forbid Kernel-_CrossKernel operations
-        # and multiplication by negative scalar
-        if isinstance(value, Kernel):
-            obj = super(Kernel, self)._binary(value, op)
-            obj.__class__ = Kernel
-        elif _isscalar(value):
-            if _patch_jax.isconcrete(value):
-                assert 0 <= value < jnp.inf, value
-            obj = super(Kernel, self)._binary(value, op)
-            obj.__class__ = Kernel
-        else:
-            obj = NotImplemented
-        return obj
+        if _isscalar(value) and _patch_jax.isconcrete(value):
+            assert 0 <= value < jnp.inf, value
+        return super()._binary(value, op)
     
 class StationaryKernel(Kernel):
-
-    def _binary(self, value, op):
-        
-        # TODO this logic could be made generic and moved to Kernel, since
-        # any subclass I can think of forms a subalgebra.
-        
-        # TODO make some unit tests checking that Kernel classes are
-        # propagated properly
-        
-        obj = super()._binary(value, op)
-        if isinstance(obj, Kernel) and isinstance(value, __class__):
-            obj.__class__ = __class__
-        return obj
 
     def __init__(self, kernel, *, input='signed', scale=None, **kw):
         """
@@ -745,7 +757,7 @@ def _eps(x):
     if jnp.issubdtype(x.dtype, jnp.inexact):
         return jnp.finfo(x.dtype).eps
     else:
-        return jnp.finfo(float).eps
+        return jnp.finfo(jnp.empty(())).eps
 
 def _softabs(x):
     return jnp.abs(x) + _eps(x)
@@ -883,7 +895,7 @@ def where(condfun, kernel1, kernel2, dim=None):
         condfun = lambda x, condfun=condfun: condfun(transf(x))
     
     def kernel_op(k1, k2):
-        def kernel(x, y):
+        def kernel(xy):
             # TODO this is inefficient, kernels should be computed only on
             # the relevant points. To support this with autograd, make a
             # custom np.where that uses assignment and define its vjp.
@@ -896,9 +908,10 @@ def where(condfun, kernel1, kernel2, dim=None):
             # way: if it's zero, broadcast a 0-d array to the required shape,
             # and flag it as all zero with an instance variable.
             
+            x, y = xy
             xcond = condfun(x)
             ycond = condfun(y)
-            r = jnp.where(xcond & ycond, k1(x, y), k2(x, y))
+            r = jnp.where(xcond & ycond, k1(xy), k2(xy))
             return jnp.where(xcond ^ ycond, 0, r)
         return kernel
     

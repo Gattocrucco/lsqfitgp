@@ -636,8 +636,8 @@ https://github.com/google/jax/discussions/10004 about using Fisher matrices
 Next things to do:
 
 1) Write pdf9.py stripping pdf8.py of all non-linear things and using
-empbayes_fit for the hyperparameters
+empbayes_fit for the hyperparameters (DONE)
 
-2) Scale pdf9.py to a large dataset
+2) Scale pdf9.py to a large dataset (SOMEWHAT DONE)
 
 3) Write pdf10.py like pdf9.py but using real PDF data

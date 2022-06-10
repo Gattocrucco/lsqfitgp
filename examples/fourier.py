@@ -12,9 +12,6 @@ gp.addx(x, 'x')
 gp.addx(1, 's1', proc='F')
 gp.addx(2, 'c1', proc='F')
 
-cov = gp.prior(['s1', 'c1'], raw=True)
-cov2 = gp.prior(raw=True)
-
 comb = [
     [0, 0],
     [1, 0],
