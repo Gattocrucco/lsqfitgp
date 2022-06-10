@@ -641,3 +641,10 @@ empbayes_fit for the hyperparameters (DONE)
 2) Scale pdf9.py to a large dataset (SOMEWHAT DONE)
 
 3) Write pdf10.py like pdf9.py but using real PDF data
+
+2022-06-10
+==========
+
+I did the calculation of the Fisher information when the residuals (i.e., the
+mean vector) depend on the hyperparameters. The result is that I have to add a
+term ∂r^T K^-1 ∂r, i.e., quad(rjac).

@@ -123,7 +123,7 @@ def test_sdev():
     # TODO once I've seen the chi2 check fail with sf(q) = 1e-8. Is this
     # a minimization problem or the posterior distribution of log(sdev) which
     # has a very heavy tail? The distribution of sdev**2 should be a scaled
-    # inverse chisquared
+    # inverse chisquared, so very heavy tailed indeed
 
 def test_flat():
     hp = gvar.BufferDict({
@@ -159,3 +159,36 @@ def test_flat():
     np.testing.assert_allclose(m1, m3)
     np.testing.assert_allclose(c1, c2)
     np.testing.assert_allclose(c1, c3)
+
+@pytest.mark.xfail
+def test_method():
+    hp = gvar.BufferDict({
+        'log(sdev)': gvar.log(gvar.gvar(1, 1))
+    })
+    x = np.linspace(0, 5, 10)
+    def gpfactory(hp):
+        gp = lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2)
+        gp.addx(x, 'x')
+        return gp
+    truehp = gvar.sample(hp)
+    truegp = gpfactory(truehp)
+    trueprior = truegp.prior()
+    data = gvar.sample(trueprior)
+    fits = []
+    kwbase = dict(data=data)
+    kws = [
+        dict(method='nograd'),
+        dict(method='gradient'),
+        dict(method='hessian'),
+        dict(method='fisher'),
+        dict(method='fisher', data=lambda *_: data), # TODO <-- fails here
+        dict(method='hessmod'),
+    ]
+    for kw in kws:
+        kwargs = dict(kwbase)
+        kwargs.update(kw)
+        fit = lgp.empbayes_fit(hp, gpfactory, **kwargs, minkw=dict(x0=truehp.buf))
+        fits.append(fit)
+    p = fits[0].minresult.x
+    for fit in fits[1:]:
+        np.testing.assert_allclose(fit.minresult.x, p)

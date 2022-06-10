@@ -454,6 +454,37 @@ class DecompTestBase(DecompTestABC):
             result = self.decompclass(K).inv()
             np.testing.assert_allclose(sol, result)
         
+    def check_tree_decomp(self, conversion):
+        for n in self.sizes:
+            K = self.randsymmat(n)
+            b = self.randmat(n)
+            d1 = self.decompclass(K)
+            q1 = d1.quad(b)
+            d2 = conversion(d1)
+            q2 = d2.quad(b)
+            util.assert_equal(q1, q2)
+    
+    def test_flatten_decomp(self):
+        def conversion(d):
+            c, a = jax.tree_util.tree_flatten(d)
+            return jax.tree_util.tree_unflatten(a, c)
+        self.check_tree_decomp(conversion)
+    
+    def check_decomp_aux(self, op):
+        def conversion(d):
+            _, d2 = op(lambda x: (x, d), has_aux=True)(0.)
+            return d2
+        self.check_tree_decomp(conversion)
+    
+    def test_decomp_aux_jacfwd(self):
+        self.check_decomp_aux(jax.jacfwd)
+    
+    def test_decomp_aux_jacrev(self):
+        self.check_decomp_aux(jax.jacrev)
+    
+    def test_decomp_aux_grad(self):
+        self.check_decomp_aux(jax.grad)
+    
     # TODO test derivatives w.r.t. b, c
     # reverse gradient is broken in empbayes_fit, so I envisage that reverse
     # derivatives of quad w.r.t. b and c won't work due to the quad_autodiff
@@ -809,3 +840,6 @@ for name, meth in inspect.getmembers(TestCholToeplitzML, inspect.isfunction):
     cond = cond or ('logdet' in name and 'jac' in name)
     if name.startswith('test_') and cond:
         util.xfail(TestCholToeplitzML, name)
+
+# TODO why?????
+util.xfail(DecompTestBase, 'test_decomp_aux_jacfwd')

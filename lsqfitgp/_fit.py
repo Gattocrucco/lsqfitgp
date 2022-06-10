@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import warnings
+import functools
 
 import gvar
 import jax
@@ -104,8 +105,10 @@ class empbayes_fit:
         method : str
             Minimization strategy. Options:
         
+            'nograd'
+                Use a gradient-free method.
             'gradient'
-                Use a gradient-only method.
+                Use a gradient-only method (default).
             'hessian'
                 Use a Newton method with the Hessian.
             'fisher'
@@ -152,6 +155,7 @@ class empbayes_fit:
         
         # TODO compute the logGBF for the whole fit (see the gpbart code)
         
+        # Analyze the hyperprior.
         hyperprior = _asarrayorbufferdict(hyperprior)
         flathp = _flat(hyperprior)
         hpmean = gvar.mean(flathp)
@@ -198,31 +202,43 @@ class empbayes_fit:
         jac = dojit(jax.jacfwd(fun)) # can't change to rev due to, I guess, the priorchi2 term quad derivatives w.r.t. b
         hess = dojit(jax.jacfwd(jac))
         
-        # TODO this fisher matrix is probably wrong if the residuals depend on
-        # the hyperparameters
-        @jax.jacfwd
-        @jax.jacfwd # can't change to rev due to jax issue #10994
-        def fisher(p):
-            gp, args, _ = make(p)
-            decomp, _ = gp._prior_decomp(*args, stop_hessian=True)
-            return -1/2 * decomp.logdet()
         
-        @dojit
-        def fisherprec(p):
-            return fisher(p) + precision
-        
-        # @dojit
-        # @jax.jacfwd
-        # def jres(p):
-        #     gp, args, _ = make(p)
-        #     _, res = gp.marginal_likelihood(*args, separate=True, direct_autodiff=True)
-        #     return res
-        #
-        # @dojit
-        # def fisherprecjj(p):
-        #     J = jres(p)
-        #     return fisherprec(p) + J.T @ J
+        if not callable(data):
             
+            @jax.jacfwd
+            @jax.jacfwd
+            # can't change inner jac to rev due to jax issue #10994
+            def fisher(p):
+                gp, args, _ = make(p)
+                decomp, _ = gp._prior_decomp(*args, stop_hessian=True)
+                return -1/2 * decomp.logdet()
+            
+            @dojit
+            def fisherprec(p):
+                return fisher(p) + precision
+        
+        else:
+            
+            # Must take into account that the data can depend on the        
+            # hyperparameters. The statistical meaning is that the prior mean
+            # depends on the hyperparameters.
+            
+            @functools.partial(jax.jacfwd, has_aux=True)
+            def grad_logdet_and_aux(p):
+                gp, args, _ = make(p)
+                decomp, _ = gp._prior_decomp(*args, stop_hessian=True)
+                return -1/2 * decomp.logdet(), (decomp, args)
+            
+            @functools.partial(jax.jacfwd, has_aux=True)
+            def fisher_and_jac_and_aux(p):
+                gld, (decomp, args) = grad_logdet_and_aux(p)
+                return (gld, args[0]), decomp
+            
+            @dojit
+            def fisherprec(p):
+                (F, J), decomp = fisher_and_jac_and_aux(p)
+                return F + precision + decomp.quad(J)
+                            
         # TODO instead of recomputing everything many times, I can use nested
         # has_aux appropriately to compute all the things I need at once. The
         # problem is that scipy currently does not allow me to provide a
@@ -234,16 +250,21 @@ class empbayes_fit:
         args = (fun,)
         kwargs = dict(x0=hpmean, jac=jac)
         
-        if method == 'gradient':
+        if method == 'nograd':
+            kwargs.pop('jac')
+            kwargs.update(method='nelder-mead')
+        elif method == 'gradient':
             kwargs.update(method='bfgs')
         elif method == 'hessian':
             kwargs.update(hess=hess, method='trust-exact')
         elif method == 'fisher':
             kwargs.update(hess=fisherprec, method='dogleg')
+            # dogleg requires positive definiteness
         elif method == 'hessmod':
             kwargs.update(hess=hess, method='trust-exact')
         else:
             raise KeyError(method)
+        
         kwargs.update(minkw)
         result = optimize.minimize(*args, **kwargs)
         
@@ -260,7 +281,7 @@ class empbayes_fit:
             hessdec = _linalg.EigCutFullRank(result.hess)
             cov = hessdec.inv()
         else:
-            raise ValueError('can not compute covariance matrix')
+            cov = jnp.full_like(hpcov, jnp.nan)
         
         uresult = gvar.gvar(result.x, cov)
         

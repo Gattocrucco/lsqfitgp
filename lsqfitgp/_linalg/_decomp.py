@@ -65,10 +65,11 @@ import warnings
 
 import jax
 from jax import numpy as jnp
+from jax import tree_util
+from jax.scipy import linalg as jlinalg
 import numpy
 from scipy import linalg
 from scipy import sparse
-from jax.scipy import linalg as jlinalg
 import gvar
 
 from . import _toeplitz
@@ -207,6 +208,8 @@ class DecompAutoDiff(Decomposition):
         # For __init__ I can't use an _autodiff flag like below to avoid double
         # wrapping because the wrapper is called as super().__init__ in
         # subclasses, so I assign self._K *after* calling old__init__.
+        
+        tree_util.register_pytree_node_class(cls)
         
         old__init__ = cls.__init__
         
@@ -347,6 +350,30 @@ class DecompAutoDiff(Decomposition):
                 return logdet_autodiff(self, self._K)
         
         return logdet
+    
+    def tree_flatten(self):
+        """JAX PyTree encoder. See `jax.tree_util.tree_flatten`."""
+        jax_vars = []
+        other_vars = []
+        for n, v in vars(self).items():
+            if isinstance(v, (jnp.ndarray, numpy.ndarray)):
+                jax_vars.append(n)
+            else:
+                other_vars.append((n, v))
+        children = tuple(getattr(self, n) for n in jax_vars)
+        aux_data = (jax_vars, other_vars)
+        return children, aux_data
+    
+    @classmethod
+    def tree_unflatten(cls, aux_data, children):
+        """JAX PyTree decoder. See `jax.tree_util.tree_unflatten`."""
+        self = cls.__new__(cls)
+        jax_vars, other_vars = aux_data
+        for n, v in zip(jax_vars, children):
+            setattr(self, n, v)
+        for n, v in other_vars:
+            setattr(self, n, v)
+        return self
     
 class Diag(DecompAutoDiff):
     """
