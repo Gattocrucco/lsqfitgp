@@ -81,7 +81,7 @@ def test_cov():
     M2 = gp.prior('M', raw=True)
     util.assert_equal(M1, M2)
 
-def test_transf_vs_lintransf_vs_proctransf():
+def test_compare_transfs():
     x = np.arange(20)
     def preparegp():
         gp = lgp.GP()
@@ -91,33 +91,32 @@ def test_transf_vs_lintransf_vs_proctransf():
         gp.addx(x, 'bx', proc='b')
         return gp
     def finalizegp(gp):
-        gp.addx(x, 'abx3', proc='ab')
+        gp.addx(x, 2, proc='ab1')
+        gp.addx(x, 3, proc='ab2')
     def checkgp(gp):
-        prior = gp.prior(['abx1', 'abx2', 'abx3'], raw=True)
-        util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx2'])
-        util.assert_equal(prior['abx1', 'abx1'], prior['abx3', 'abx3'])
-        util.assert_equal(prior['abx1', 'abx1'], prior['abx1', 'abx2'])
-        util.assert_equal(prior['abx1', 'abx1'], prior['abx2', 'abx3'])
-        util.assert_equal(prior['abx1', 'abx1'], prior['abx1', 'abx3'])
-        util.assert_equal(prior['abx1', 'abx2'], prior['abx2', 'abx1'].T)
-        util.assert_equal(prior['abx1', 'abx3'], prior['abx3', 'abx1'].T)
-        util.assert_equal(prior['abx2', 'abx3'], prior['abx3', 'abx2'].T)
+        keys = [0, 1, 2, 3]
+        prior = gp.prior(keys, raw=True)
+        for k1 in keys:
+            for k2 in keys:
+                np.testing.assert_allclose(prior[0, 0], prior[k1, k2], atol=1e-15, rtol=1e-15)
     
     # with functions
     gp = preparegp()
     fa = lambda x: jnp.sin(x) + 0.5 * jnp.cos(x ** 2)
     fb = lambda x: 1 / (1 + jnp.exp(-x))
-    gp.addtransf({'ax': np.diag(fa(x)), 'bx': np.diag(fb(x))}, 'abx1')
-    gp.addlintransf(lambda a, b: fa(x) * a + fb(x) * b, ['ax', 'bx'], 'abx2')
-    gp.addproctransf({'a': fa, 'b': fb}, 'ab')
+    gp.addtransf({'ax': np.diag(fa(x)), 'bx': np.diag(fb(x))}, 0)
+    gp.addlintransf(lambda a, b: fa(x) * a + fb(x) * b, ['ax', 'bx'], 1)
+    gp.addproctransf({'a': fa, 'b': fb}, 'ab1')
+    gp.addproclintransf(lambda a, b: lambda x: fa(x) * a(x) + fb(x) * b(x), ['a', 'b'], 'ab2')
     finalizegp(gp)
     checkgp(gp)
     
     # with scalars
     gp = preparegp()
-    gp.addtransf({'ax': 2, 'bx': 3}, 'abx1')
-    gp.addlintransf(lambda a, b: 2 * a + 3 * b, ['ax', 'bx'], 'abx2')
-    gp.addproctransf({'a': 2, 'b': 3}, 'ab')
+    gp.addtransf({'ax': 2, 'bx': 3}, 0)
+    gp.addlintransf(lambda a, b: 2 * a + 3 * b, ['ax', 'bx'], 1)
+    gp.addproctransf({'a': 2, 'b': 3}, 'ab1')
+    gp.addproclintransf(lambda a, b: lambda x: 2 * a(x) + 3 * b(x), ['a', 'b'], 'ab2')
     finalizegp(gp)
     checkgp(gp)
 
@@ -133,11 +132,27 @@ def test_lintransf_checks():
         gp.addlintransf(lambda x, y: x + y, [0, 2], 2)
     with pytest.raises(RuntimeError):
         gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 2)
+    with pytest.raises(RuntimeError):
+        gp.addlintransf(lambda x, y: 1, [0, 1], 2)
     gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 2, checklin=False)
     gp._checklin = False
     gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 3)
     with pytest.raises(RuntimeError):
         gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 4, checklin=True)
+
+def test_proclintransf_checks():
+    gp = lgp.GP()
+    gp.addproc(lgp.ExpQuad(), 0)
+    gp.addproc(lgp.ExpQuad(), 1)
+    with pytest.raises(KeyError):
+        gp.addproclintransf(lambda f, g: lambda x: f(x) + g(x), [0, 1], 0)
+    with pytest.raises(KeyError):
+        gp.addproclintransf(lambda f, g: lambda x: f(x) + g(x), [0, 2], 2)
+    with pytest.raises(RuntimeError):
+        gp.addproclintransf(lambda f, g: lambda x: 1, [0, 1], 2, checklin=True)
+    with pytest.raises(RuntimeError):
+        gp.addproclintransf(lambda f, g: lambda x: 1 + f(x) + g(x), [0, 1], 2, checklin=True)
+    gp.addproclintransf(lambda f, g: lambda x: 1 + f(x) + g(x), [0, 1], 2)
 
 def test_lintransf_matmul():
     gp = lgp.GP(lgp.ExpQuad())
@@ -223,10 +238,13 @@ def test_existing_proc():
 def test_empty_proc():
     gp = lgp.GP()
     gp.addproctransf({}, 'a')
+    gp.addproclintransf(lambda: lambda x: 0, [], 'b')
     x = np.arange(20)
-    gp.addx(x, 'x', proc='a')
-    cov = gp.prior('x', raw=True)
-    util.assert_equal(cov, np.zeros(2 * x.shape))
+    gp.addx(x, 'ax', proc='a')
+    gp.addx(x, 'bx', proc='b')
+    cov = gp.prior(raw=True)
+    util.assert_equal(cov['ax', 'ax'], np.zeros(2 * x.shape))
+    util.assert_equal(cov['bx', 'bx'], np.zeros(2 * x.shape))
 
 def test_no_op():
     gp = lgp.GP(lgp.ExpQuad())
@@ -255,27 +273,35 @@ def test_addprocderiv():
     util.assert_equal(prior[0, 0], prior[0, 1])
 
 def test_addprocxtransf():
-    gp = lgp.GP(lgp.ExpQuad())
+    gp = lgp.GP()
     f = lambda x: x ** 2
-    gp.addprocxtransf(f, 'a')
+    gp.addproc(lgp.ExpQuad(), 0)
+    gp.addprocxtransf(f, 'a', 0)
+    gp.addproclintransf(lambda g: lambda x: g(f(x)), [0], 'b')
     x = np.linspace(0, 4, 20)
     gp.addx(x, 0, proc='a')
-    gp.addx(f(x), 1)
+    gp.addx(x, 1, proc='b')
+    gp.addx(f(x), 2, proc=0)
     prior = gp.prior(raw=True)
-    util.assert_equal(prior[0, 0], prior[1, 1])
-    util.assert_equal(prior[0, 0], prior[0, 1])
+    for i in range(3):
+        for j in range(3):
+            util.assert_equal(prior[0, 0], prior[i, j])
 
 def test_addprocrescale():
-    gp = lgp.GP(lgp.ExpQuad())
+    gp = lgp.GP()
     s = lambda x: x ** 2
-    gp.addprocrescale(s, 'a')
+    gp.addproc(lgp.ExpQuad(), 0)
+    gp.addprocrescale(s, 'a', 0)
+    gp.addproclintransf(lambda f: lambda x: s(x) * f(x), [0], 'b')
     x = np.linspace(0, 2, 20)
-    gp.addx(x, 'base')
+    gp.addx(x, 'base', proc=0)
     gp.addtransf({'base': s(x) * np.eye(len(x))}, 0)
     gp.addx(x, 1, proc='a')
-    prior = gp.prior([0, 1], raw=True)
-    np.testing.assert_allclose(prior[0, 0], prior[1, 1], rtol=1e-15)
-    np.testing.assert_allclose(prior[0, 0], prior[0, 1], rtol=1e-15)
+    gp.addx(x, 2, proc='b')
+    prior = gp.prior(raw=True)
+    for i in range(3):
+        for j in range(3):
+            np.testing.assert_allclose(prior[0, 0], prior[i, j], rtol=1e-15, atol=1e-15)
 
 def test_missing_proc():
     gp = lgp.GP()

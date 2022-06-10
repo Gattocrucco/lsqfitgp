@@ -94,9 +94,9 @@ def _transf_recurse_dtype(transf, x, *args):
             x[name] = _transf_recurse_dtype(transf, x[name], *newargs)
         return x
 
-def _greatest_common_superclass(instances):
+def _greatest_common_superclass(classes):
     # from https://stackoverflow.com/a/25787091/3942284
-    classes = [type(x).mro() for x in instances]
+    classes = [x.mro() for x in classes]
     for x in classes[0]:
         if all(x in mro for mro in classes):
             return x
@@ -112,15 +112,20 @@ class CrossKernel:
 
     @staticmethod
     def _newkernel_from(core, kernels):
-        cls = _greatest_common_superclass(kernels)
+        classes = (IsotropicKernel, *map(type, kernels))
+        cls = _greatest_common_superclass(classes)
         assert issubclass(cls, CrossKernel)
         obj = cls.__new__(cls)
-        obj.initargs = None
-        mind = [k._minderivable for k in kernels]
-        maxd = [k._maxderivable for k in kernels]
-        obj._minderivable = tuple(numpy.min(mind, 0))
-        obj._maxderivable = tuple(numpy.max(maxd, 0))
+        if kernels:
+            mind = [k._minderivable for k in kernels]
+            maxd = [k._maxderivable for k in kernels]
+            obj._minderivable = tuple(numpy.min(mind, 0))
+            obj._maxderivable = tuple(numpy.max(maxd, 0))
+        else:
+            obj._minderivable = (0, sys.maxsize)
+            obj._maxderivable = (0, sys.maxsize)
         obj._kernel = core
+        obj.initargs = None
         return obj
     
     def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcekron=False, derivable=None, saveargs=False, **kw):
@@ -928,3 +933,14 @@ def where(condfun, kernel1, kernel2, dim=None):
 # example where `comp` is a string field, and without using `dim`:
 # choose(lambda x: x['comp'], {'a': kernela, 'b': kernelb})
 # define Kernel._nary using a cycle of _binary
+
+class Zero(IsotropicKernel):
+    
+    def __init__(self):
+        self._kernel = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
+        self._minderivable = (sys.maxsize, sys.maxsize)
+        self._maxderivable = (sys.maxsize, sys.maxsize)
+        self.initargs = None
+    
+    _swap = lambda self: self
+    diff = lambda self, *_: self

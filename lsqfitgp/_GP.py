@@ -169,6 +169,13 @@ class _ProcTransf(_Proc):
         self.ops = ops
         self.deriv = deriv
 
+class _ProcLinTransf(_Proc):
+    
+    def __init__(self, transf, keys, deriv):
+        self.transf = transf
+        self.keys = keys
+        self.deriv = deriv
+
 class _ProcKernelOp(_Proc):
     """A process defined by an operation on the kernel of another process"""
     
@@ -189,12 +196,10 @@ class _Singleton(metaclass=_SingletonMeta):
         raise NotImplementedError(f"{cls.__name__} can not be instantiated")
 
 class DefaultProcess(_Singleton):
-    """Singleton used as key for the default process in GP objects"""
+    """Key for the default process in GP objects"""
     pass
 
-class _ZeroKernel(_Singleton):
-    """Singleton representing a null kernel"""
-    pass
+_zerokernel = _Kernel.Zero()
 
 class GP:
     """
@@ -206,16 +211,19 @@ class GP:
     addx
         Add points where the Gaussian process is evaluated.
     addlintransf
-        Define a linear transformation of the evaluated process.
+        Define a finite linear transformation of the evaluated process.
     addtransf
-        Define a linear transformation of the evaluated process with explicit
-        coefficients.
+        Define a finite linear transformation of the evaluated process with
+        explicit coefficients.
     addcov
         Introduce a set of user-provided prior covariance matrix blocks.
     addproc
         Define a new independent component of the process.
     addproctransf
-        Define a linear transformation of the process.
+        Define a pointwise linear transformation of the process with explicit
+        coefficients.
+    addproclintransf
+        Define a pointwise linear transformation of the process.
     addkernelop
         Define a transformation of the process through a kernel method.
     addprocderiv
@@ -404,7 +412,82 @@ class GP:
         deriv = _Deriv.Deriv(deriv)
         
         self._procs[key] = _ProcTransf(ops, deriv)
+        
+        # functions = [
+        #     op if callable(op)
+        #     else (lambda x: lambda _: x)(op)
+        #     for op in ops.values()
+        # ]
+        # def equivalent_lintransf(*procs):
+        #     def fun(x):
+        #         out = None
+        #         for fun, proc in zip(functions, procs):
+        #             this = fun(x) * proc(x)
+        #             out = this if out is None else out + this
+        #         return out
+        #     return fun
+        # self.addproclintransf(equivalent_lintransf, list(ops.keys()), key, deriv, False)
     
+    def addproclintransf(self, transf, keys, key, deriv=0, checklin=False):
+        """
+        
+        Define a new process as a linear combination of other processes.
+        
+        Let f_i(x), i = 1, 2, ... be already defined processes, and T
+        a linear map from processes to a single process. The new process is
+        
+            h(x) = T(f_1, f_2, ...)(x).
+        
+        Parameters
+        ----------
+        transf : callable
+            A function with signature `transf(callable, callable, ...) -> callable`.
+        keys : sequence
+            The keys of the processes to be passed to the transformation.
+        key : hashable
+            The name that identifies the new process in the GP object.
+        deriv : Deriv-like
+            The linear combination is derived as specified by this
+            parameter.
+        checklin : bool
+            If True, check if the transformation is linear. Default False.
+        
+        Notes
+        -----
+        The linearity check may fail if the transformation does nontrivial
+        operations with the inner function input.
+        
+        """
+        
+        if key in self._procs:
+            raise KeyError(f'process key {key!r} already used in GP')
+    
+        for k in keys:
+            if k not in self._procs:
+                raise KeyError(k)
+        
+        deriv = _Deriv.Deriv(deriv)
+        
+        if len(keys) == 0:
+            self._procs[key] = _ProcKernel(_zerokernel)
+            return
+        
+        if checklin is None:
+            checklin = self._checklin
+        if checklin:
+            mockup_function = lambda a: lambda _: a
+            # TODO this array mockup fails with jax functions
+            class Mockup(numpy.ndarray):
+                __getitem__ = lambda *_: Mockup((0,))
+                __getattr__ = __getitem__
+            def checktransf(*arrays):
+                functions = [mockup_function(a) for a in arrays]
+                return transf(*functions)(Mockup((0,)))
+            shapes = [(11,)] * len(keys)
+            self._checklinear(checktransf, shapes, elementwise=True)
+        
+        self._procs[key] = _ProcLinTransf(transf, keys, deriv)
+
     def addkernelop(self, method, arg, key, proc=DefaultProcess):
         """
         
@@ -762,18 +845,42 @@ class GP:
         if checklin is None:
             checklin = self._checklin
         if checklin:
-            rkey = jax.random.PRNGKey(202206091600)
-            inp = []
-            for k in keys:
-                inp.append(jax.random.normal(rkey, self._elements[k].shape))
-                _, rkey = jax.random.split(rkey)
-            out0, out1 = jax.jvp(transf, inp, inp)
-            if _patch_jax.isconcrete(out0, out1):
-                out0, out1 = _patch_jax.concrete(out0, out1)
-                if not numpy.allclose(out0, out1):
-                    raise RuntimeError('the transformation is not linear')
+            shapes = [self._elements[k].shape for k in keys]
+            self._checklinear(transf, shapes)
         
         self._elements[key] = _LinTransf(transf, keys, shape)
+    
+    def _checklinear(self, func, inshapes, elementwise=False):
+        
+        # Make input arrays.
+        rkey = jax.random.PRNGKey(202206091600)
+        inp = []
+        for shape in inshapes:
+            inp.append(jax.random.normal(rkey, shape))
+            _, rkey = jax.random.split(rkey)
+        
+        # Put zeros into the arrays to check they are preserved.
+        if elementwise:
+            shape = jnp.broadcast_shapes(*inshapes)
+            zeros = jax.random.bernoulli(rkey, 0.5, shape)
+            for i, a in enumerate(inp):
+                inp[i] = a.at[zeros].set(0)
+            
+        # Compute JVP and check it is identical to the function itself.
+        out0, out1 = jax.jvp(func, inp, inp)
+        if _patch_jax.isconcrete(out0, out1):
+            out0, out1 = _patch_jax.concrete(out0, out1)
+            if out1.dtype == jax.float0:
+                cond = numpy.allclose(out0, 0)
+            else:
+                cond = numpy.allclose(out0, out1)
+            if not cond:
+                raise RuntimeError('the transformation is not linear')
+        
+            # Check that the function is elementwise.
+            if elementwise:
+                if out0.shape != shape or not (numpy.allclose(out0[zeros], 0) and numpy.allclose(out1[zeros], 0)):
+                    raise RuntimeError('the transformation is not elementwise')
     
     def addcov(self, covblocks, key=None):
         """
@@ -907,19 +1014,21 @@ class GP:
         elif isinstance(xp, _ProcTransf):
             kernel = self._crosskernel_transf_any(xpkey, ypkey)
         elif isinstance(yp, _ProcTransf):
-            kernel = self._crosskernel_transf_any(ypkey, xpkey)
-            kernel = kernel if kernel is _ZeroKernel else kernel._swap()
+            kernel = self._crosskernel_transf_any(ypkey, xpkey)._swap()
+        elif isinstance(xp, _ProcLinTransf):
+            kernel = self._crosskernel_lintransf_any(xpkey, ypkey)
+        elif isinstance(yp, _ProcLinTransf):
+            kernel = self._crosskernel_lintransf_any(ypkey, xpkey)._swap()
         elif isinstance(xp, _ProcKernelOp):
             kernel = self._crosskernel_op_any(xpkey, ypkey)
         elif isinstance(yp, _ProcKernelOp):
-            kernel = self._crosskernel_op_any(ypkey, xpkey)
-            kernel = kernel if kernel is _ZeroKernel else kernel._swap()
+            kernel = self._crosskernel_op_any(ypkey, xpkey)._swap()
         else:
             raise TypeError(f'unrecognized process types {type(xp)!r} and {type(yp)!r}')
         
         # Save cache.
         self._kernels[xpkey, ypkey] = kernel
-        self._kernels[ypkey, xpkey] = kernel if kernel is _ZeroKernel else kernel._swap()
+        self._kernels[ypkey, xpkey] = kernel._swap()
         
         return kernel
         
@@ -930,32 +1039,39 @@ class GP:
         if xp is yp:
             return xp.kernel.diff(xp.deriv, xp.deriv)
         else:
-            return _ZeroKernel
+            return _zerokernel
     
     def _crosskernel_transf_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]
         yp = self._procs[ypkey]
         
-        kernelsum = _ZeroKernel
+        kernelsum = _zerokernel
         
         for pkey, factor in xp.ops.items():
             kernel = self._crosskernel(pkey, ypkey)
-            if kernel is _ZeroKernel:
+            if kernel is _zerokernel:
                 continue
             
-            if jnp.isscalar(factor):
-                factor = lambda x, factor=factor: factor
+            if not callable(factor):
+                factor = (lambda f: lambda _: f)(factor)
             kernel = kernel.rescale(factor, None)
             
-            if kernelsum is _ZeroKernel:
+            if kernelsum is _zerokernel:
                 kernelsum = kernel
             else:
                 kernelsum += kernel
+                
+        return kernelsum.diff(xp.deriv, 0)
+    
+    def _crosskernel_lintransf_any(self, xpkey, ypkey):
+        xp = self._procs[xpkey]
+        yp = self._procs[ypkey]
         
-        if kernelsum is not _ZeroKernel:
-            kernelsum = kernelsum.diff(xp.deriv, 0)
+        kernels = [self._crosskernel(pk, ypkey) for pk in xp.keys]
+        kernel = _Kernel.CrossKernel._nary(xp.transf, kernels, _Kernel.CrossKernel.LEFT)
+        kernel = kernel.diff(xp.deriv, 0)
         
-        return kernelsum
+        return kernel
     
     def _crosskernel_op_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]
@@ -970,8 +1086,8 @@ class GP:
         else:
             basekernel = self._crosskernel(xp.proc, ypkey)
         
-        if basekernel is _ZeroKernel:
-            return _ZeroKernel
+        if basekernel is _zerokernel:
+            return _zerokernel
         elif xp is yp:
             return getattr(basekernel, xp.method)(xp.arg, xp.arg)
         else:
@@ -985,7 +1101,7 @@ class GP:
         assert isinstance(y, _Points)
         
         kernel = self._crosskernel(x.proc, y.proc)
-        if kernel is _ZeroKernel:
+        if kernel is _zerokernel:
             # TODO handle zero cov block efficiently
             return jnp.zeros((x.size, y.size))
         

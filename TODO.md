@@ -553,68 +553,6 @@ a rule. A simpler alternative would be to add a `shape` parameter to `addproc`,
 assuming independent processes, and add the possibility of (constant) matrices
 as factors in `addproctransf`.
 
-New method `addproclintransf`, analogous to `addlintransf`, that takes a second
-order function:
-
-    addproclintransf(lambda f, g: lambda x: f(x) + 2 * g(x), ['a', 'b'], 'c')
-
-It would become the backend of `addproctransf`, `addprocrescale`, and
-`addprocxtransf`. I have to convert a map operating on one-argument functions
-to one operating on two-arguments functions, I think it is doable.
-
-To check the transformation is pointwise linear, I can input into it mockup
-functions that when called ignore the argument (but check that they are called
-with one and only one argument, printing a meaningful error message) and return
-a predefined array, which comes from the arguments of an enclosing function.
-Then I compute the jacobian of such function and check it's a diagonal square
-matrix, and that the function is linear, like I do in `addlintransf`.
-
-Applying the transformation requires acceding to kernel internals so it
-should be a method of `_KernelBase`, `_nary`.
-
-If there are no transformations on the xs, like:
-
-    lambda f, g: lambda x: f(x) + g(x)
-
-Then I can obtain the transformed kernel core by
-
- 1. wrapping each core into a function `lambda args: k(*args)`
- 2. passing the wrapped cores through the transformation
- 3. wrapping again in `lambda *args: k(args)`
-
-Such that the transformation becomes
-
-    lambda f, g: lambda x, y: f(x, y) + g(x, y)
-
-What if, instead, the transformation also acts on the inputs? E.g.,
-
-    lambda f: lambda x: f(x) + f(-x)
-
-I always have to act only on the left argument (so the method should be
-called `_nary_left_side`), while leaving the right one untouched. The result I
-need is
-
-    lambda f: lambda x, y: f(x, y) + f(-x, y)
-
-So I
-
- 1. wrap each core in `lambda x, y=_Y: k(x, y)`
- 2. pass them through the transf
- 3. wrap again in
-    
-        def f(x, y):
-            _Y = y
-            return k(x)
-
-Ok, actually in one go without globals:
-
-    def h(x, y):
-        f = lambda x: kf(x, y)
-        g = lambda x: kg(x, y)
-        return t(f, g)(x)
-
-Let's try this!
-
 #### Finite transformations
 
 It could be convenient to change the matrix multiplication order based on
