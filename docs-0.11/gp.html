@@ -204,31 +204,34 @@ smaller than the matrix size for the method to be convenient.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproctransf" title="lsqfitgp.GP.addproctransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproctransf</span></code></a>(ops, key[, deriv])</p></td>
 <td><p>Define a new process as a linear combination of other processes.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addkernelop" title="lsqfitgp.GP.addkernelop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addkernelop</span></code></a>(method, arg, key[, proc])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproclintransf" title="lsqfitgp.GP.addproclintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproclintransf</span></code></a>(transf, keys, key[, deriv, ...])</p></td>
+<td><p>Define a new process as a linear combination of other processes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addkernelop" title="lsqfitgp.GP.addkernelop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addkernelop</span></code></a>(method, arg, key[, proc])</p></td>
 <td><p>Define a new process as the transformation of an existing one.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocderiv" title="lsqfitgp.GP.addprocderiv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocderiv</span></code></a>(deriv, key[, proc])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocderiv" title="lsqfitgp.GP.addprocderiv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocderiv</span></code></a>(deriv, key[, proc])</p></td>
 <td><p>Define a new process as the derivative of an existing one.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocxtransf" title="lsqfitgp.GP.addprocxtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocxtransf</span></code></a>(transf, key[, proc])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocxtransf" title="lsqfitgp.GP.addprocxtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocxtransf</span></code></a>(transf, key[, proc])</p></td>
 <td><p>Define a new process by transforming the inputs of another one.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocrescale" title="lsqfitgp.GP.addprocrescale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocrescale</span></code></a>(scalefun, key[, proc])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocrescale" title="lsqfitgp.GP.addprocrescale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocrescale</span></code></a>(scalefun, key[, proc])</p></td>
 <td><p>Define a new process as a rescaling of an existing one.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prior</span></code></a>([key, raw])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prior</span></code></a>([key, raw])</p></td>
 <td><p>Return an array or a dictionary of arrays of gvars representing the prior for the Gaussian process.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.pred" title="lsqfitgp.GP.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(given[, key, givencov, fromdata, raw, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.pred" title="lsqfitgp.GP.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(given[, key, givencov, fromdata, raw, ...])</p></td>
 <td><p>Compute the posterior.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromfit" title="lsqfitgp.GP.predfromfit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromfit</span></code></a>(*args, **kw)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromfit" title="lsqfitgp.GP.predfromfit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromfit</span></code></a>(*args, **kw)</p></td>
 <td><p>Like <cite>pred</cite> with <cite>fromdata=False</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromdata</span></code></a>(*args, **kw)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromdata</span></code></a>(*args, **kw)</p></td>
 <td><p>Like <cite>pred</cite> with <cite>fromdata=True</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">marginal_likelihood</span></code></a>(given[, givencov, separate])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">marginal_likelihood</span></code></a>(given[, givencov, separate])</p></td>
 <td><p>Compute the logarithm of the probability of the data.</p></td>
 </tr>
 </tbody>
@@ -361,6 +364,37 @@ default process.</p>
 </dl>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addproclintransf">
+<span class="sig-name descname"><span class="pre">addproclintransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproclintransf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process as a linear combination of other processes.</p>
+<p>Let f_i(x), i = 1, 2, … be already defined processes, and T
+a linear map from processes to a single process. The new process is</p>
+<blockquote>
+<div><p>h(x) = T(f_1, f_2, …)(x).</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transf</strong><span class="classifier">callable</span></dt><dd><p>A function with signature <cite>transf(callable, callable, …) -&gt; callable</cite>.</p>
+</dd>
+<dt><strong>keys</strong><span class="classifier">sequence</span></dt><dd><p>The keys of the processes to be passed to the transformation.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the new process in the GP object.</p>
+</dd>
+<dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>The linear combination is derived as specified by this
+parameter.</p>
+</dd>
+<dt><strong>checklin</strong><span class="classifier">bool</span></dt><dd><p>If True, check if the transformation is linear. Default False.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The linearity check may fail if the transformation does nontrivial
+operations with the inner function input.</p>
 </dd></dl>
 
 <dl class="py method">
