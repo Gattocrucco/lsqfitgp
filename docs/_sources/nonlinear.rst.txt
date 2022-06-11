@@ -24,10 +24,10 @@
 Nonlinear models
 ================
 
-Using :class:`GP` we can define a Gaussian process. Using :meth:`GP.addtransf`
-we can represent finite linear transformations of the process, and we can take
-derivatives with :meth:`GP.addx`. This means that we can only do linear
-operations on the process before putting the data in.
+Using :class:`GP` we can define a Gaussian process. Using
+:meth:`GP.addlintransf` we can represent finite linear transformations of the
+process, and we can take derivatives with :meth:`GP.addx`. This means that we
+can only do linear operations on the process before putting the data in.
 
 A common non-linear operation is putting a boundary on the possible data
 values. Gaussian distributions don't play nicely with boundaries---they are

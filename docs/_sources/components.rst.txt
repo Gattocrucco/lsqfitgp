@@ -94,6 +94,12 @@ Now we add separately the two components and sum them with
     gp.addx(xcomp[1], 'shortscale')
     gp.addtransf({'shortscale': 1, 'longscale': 1}, 'sum')
 
+This method is an alternative to :meth:`~GP.addlintransf` that takes explicitly
+the coefficients of the linear transformation instead of a Python function
+implementing it. The equivalent :meth:`~GP.addlintransf` invocation would be::
+
+   gp.addlintransf(lambda s, l: s + l, ['shortscale', 'longscale'], 'sum')
+
 We can now proceed as usual to get the posterior on other points::
 
     xplot = np.empty((2, 200), dtype=xtype)
@@ -194,13 +200,13 @@ Then we add separately the two kernels to the object using :meth:`GP.addproc`::
 
 Now the two names ``'long'`` and ``'short'`` stand for *independent* processes
 with their respective kernels. (These names reside in a namespace separate
-from the one used by :meth:`GP.addx` and :meth:`GP.addtransf`.) Now we use
+from the one used by :meth:`~GP.addx` and :meth:`~GP.addtransf`.) Now we use
 these to define their sum *as a process* instead of summing them after
 evaluation on specific points::
 
     gp.addproctransf({'long': 1, 'short': 1}, 'sum')
 
-The method :meth:`GP.addproctransf` is analogous to :meth:`GP.addtransf` but
+The method :meth:`~GP.addproctransf` is analogous to :meth:`~GP.addtransf` but
 works for the whole process at once. What we are doing mathematically is the
 following:
 
@@ -208,7 +214,9 @@ following:
     \operatorname{sum}(x) \equiv 1 \cdot \operatorname{long}(x) +
                                  1 \cdot \operatorname{short}(x).
 
-Now that we have defined the components, we evaluate them on the points::
+(There is also the analogous :meth:`~GP.addproclintransf`, which takes a
+Python function like :meth:`~GP.addlintransf`.) Now that we have defined the
+components, we evaluate them on the points::
 
     x = np.linspace(-10, 10, 21)
     xplot = np.linspace(-10, 10, 200)
@@ -221,7 +229,7 @@ Now that we have defined the components, we evaluate them on the points::
     gp.addx(xplot, 'plotshort', proc='short')
     gp.addx(xplot, 'plotsum'  , proc='sum'  )
 
-We specified the processes using the ``proc`` parameter of :meth:`GP.addx`.
+We specified the processes using the ``proc`` parameter of :meth:`~GP.addx`.
 Then we continue as before::
 
     dataprior = gp.prior(['datalong', 'datashort', 'datasum'])
@@ -249,7 +257,7 @@ Then we continue as before::
 
 If there was this more convenient way of dealing with latent components, why
 didn't we introduce it right away? The reason is that it is not as general as
-managing the components manually with an explicit field. :meth:`GP.addproc`
+managing the components manually with an explicit field. :meth:`~GP.addproc`
 defines processes which are independent of each other; to have nontrivial a
 priori correlations it is necessary to put the process index in the domain such
 that kernel can manipulate it. We did this at the end of :ref:`multiout` when

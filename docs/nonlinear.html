@@ -126,10 +126,10 @@
             
   <section id="nonlinear-models">
 <span id="nonlinear"></span><h1><span class="section-number">13. </span>Nonlinear models<a class="headerlink" href="#nonlinear-models" title="Permalink to this heading">¶</a></h1>
-<p>Using <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> we can define a Gaussian process. Using <a class="reference internal" href="gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addtransf()</span></code></a>
-we can represent finite linear transformations of the process, and we can take
-derivatives with <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addx()</span></code></a>. This means that we can only do linear
-operations on the process before putting the data in.</p>
+<p>Using <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> we can define a Gaussian process. Using
+<a class="reference internal" href="gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addlintransf()</span></code></a> we can represent finite linear transformations of the
+process, and we can take derivatives with <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addx()</span></code></a>. This means that we
+can only do linear operations on the process before putting the data in.</p>
 <p>A common non-linear operation is putting a boundary on the possible data
 values. Gaussian distributions don’t play nicely with boundaries—they are
 defined on <span class="math notranslate nohighlight">\((-\infty,\infty)\)</span>—so it is necessary to map the Gaussian
