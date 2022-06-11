@@ -206,7 +206,8 @@ are avoided. Example:</p>
 
 <span class="n">doinference_compiled</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">doinference</span><span class="p">,</span> <span class="n">static_argnames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">,</span> <span class="s1">&#39;checkpos&#39;</span><span class="p">,</span> <span class="s1">&#39;checksym&#39;</span><span class="p">])</span>
 <span class="c1"># static_argnames indicates the function parameters that are not numerical</span>
-<span class="c1"># and should not be dealt by the compiler, I&#39;ve put some I will use later</span>
+<span class="c1"># and should not be dealt with by the compiler, I&#39;ve put some I will use</span>
+<span class="c1"># later</span>
 
 <span class="kn">import</span> <span class="nn">timeit</span>
 
@@ -255,7 +256,7 @@ important tweak. Let’s check:</p>
 </div>
 <p>As expected.</p>
 <p>Back to the hyperparameters: <a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> applies the jit for you if
-pass the <code class="docutils literal notranslate"><span class="pre">jit=True</span></code> option, so you don’t have to deal with this manually.</p>
+passed the <code class="docutils literal notranslate"><span class="pre">jit=True</span></code> option, so you don’t have to deal with this manually.</p>
 </section>
 </section>
 

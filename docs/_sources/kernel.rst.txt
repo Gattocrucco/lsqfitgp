@@ -23,8 +23,23 @@ Generic kernel classes
 ======================
 
 All kernels in :mod:`lsqfitgp` are subclasses of :class:`Kernel`,
-:class:`StationaryKernel` or :class:`IsotropicKernel` (which are themselves
-subclasses of :class:`Kernel`).
+:class:`StationaryKernel` or :class:`IsotropicKernel` (the latter two are
+themselves subclasses of :class:`Kernel`).
+
+:class:`Kernel` itself is a subclass of :class:`CrossKernel`, which represents
+the covariance function between two different processes. In symbols, the kernel
+of a process :math:`f` is
+
+.. math::
+    k_f(x, y) = \operatorname{Cov}[f(x), f(y)],
+
+while the cross kernel between processes :math:`f` and :math:`g` is
+
+.. math::
+    k_{fg}(x, y) = \operatorname{Cov}[f(x), g(y)].
+
+However you will probably never need to deal directly with a cross kernel, they
+are generated automatically behind the scenes by :class:`GP`.
 
 The three general classes can be used directly by instantiating them with a
 callable which will do the actual computation. However, this can be done in a
