@@ -22,7 +22,7 @@ name: release
 on:
   release:
     types: [published]
-  workflow-dispatch:
+  workflow_dispatch:
 
 jobs:
   
