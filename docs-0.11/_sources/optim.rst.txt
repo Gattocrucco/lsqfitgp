@@ -112,7 +112,8 @@ are avoided. Example::
     
     doinference_compiled = jax.jit(doinference, static_argnames=['solver', 'checkpos', 'checksym'])
     # static_argnames indicates the function parameters that are not numerical
-    # and should not be dealt by the compiler, I've put some I will use later
+    # and should not be dealt with by the compiler, I've put some I will use
+    # later
     
     import timeit
     
@@ -161,4 +162,4 @@ Result::
 As expected.
 
 Back to the hyperparameters: :class:`empbayes_fit` applies the jit for you if
-pass the ``jit=True`` option, so you don't have to deal with this manually.
+passed the ``jit=True`` option, so you don't have to deal with this manually.

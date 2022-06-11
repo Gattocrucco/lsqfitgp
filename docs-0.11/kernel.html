@@ -122,8 +122,18 @@
   <section id="generic-kernel-classes">
 <h1><span class="section-number">2. </span>Generic kernel classes<a class="headerlink" href="#generic-kernel-classes" title="Permalink to this heading">¶</a></h1>
 <p>All kernels in <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> are subclasses of <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a>,
-<a class="reference internal" href="#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a> or <a class="reference internal" href="#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a> (which are themselves
-subclasses of <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a>).</p>
+<a class="reference internal" href="#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a> or <a class="reference internal" href="#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a> (the latter two are
+themselves subclasses of <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a>).</p>
+<p><a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a> itself is a subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">CrossKernel</span></code>, which represents
+the covariance function between two different processes. In symbols, the kernel
+of a process <span class="math notranslate nohighlight">\(f\)</span> is</p>
+<div class="math notranslate nohighlight">
+\[k_f(x, y) = \operatorname{Cov}[f(x), f(y)],\]</div>
+<p>while the cross kernel between processes <span class="math notranslate nohighlight">\(f\)</span> and <span class="math notranslate nohighlight">\(g\)</span> is</p>
+<div class="math notranslate nohighlight">
+\[k_{fg}(x, y) = \operatorname{Cov}[f(x), g(y)].\]</div>
+<p>However you will probably never need to deal directly with a cross kernel, they
+are generated automatically behind the scenes by <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>.</p>
 <p>The three general classes can be used directly by instantiating them with a
 callable which will do the actual computation. However, this can be done in a
 simpler and more functional way using the decorators <a class="reference internal" href="kerneldec.html#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">kernel()</span></code></a>,
