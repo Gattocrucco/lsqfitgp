@@ -1543,7 +1543,10 @@ class GP:
         self._check_ycov(ycov)
         
         if raw or not keepcorr or self._checkfinite:
-            ymean = gvar.mean(y)
+            if isinstance(y, jnp.ndarray):
+                ymean = y
+            else:
+                ymean = gvar.mean(y)
             self._check_ymean(ymean)
         
         if raw or not keepcorr:

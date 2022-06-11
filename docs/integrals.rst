@@ -41,13 +41,13 @@ Let's compute the primitive of our dear friend cosine::
     xplot = np.linspace(-5, 5, 200)
     
     gp = lgp.GP(lgp.ExpQuad(scale=2))
-    gp.addx(xplot, 'integral')
+    gp.addx(xplot, 'primitive')
     gp.addx(x, 'cosine', deriv=1)
     
-    yplot = gp.predfromdata({'cosine': y}, 'integral')
+    yplot = gp.predfromdata({'cosine': y}, 'primitive')
 
 We just gave the data for the ``'cosine'`` label which has ``deriv=1``, and
-asked for the posterior on the label ``'integral'`` which is not derived. Now
+asked for the posterior on the label ``'primitive'`` which is not derived. Now
 we plot::
 
     from matplotlib import pyplot as plt
@@ -66,8 +66,8 @@ So, the Gaussian process not only can do integrals, it also understands that
 the primitive is defined up to an additive constant.
 
 How can we do a definite integral? There's the easy way, and the easy but not
-obvious way. Let's go first with the easy one: we will just use the correlation
-tracking features of :mod:`gvar`. ::
+obvious way. Let's go first with the easy one: we use the correlation tracking
+features of :mod:`gvar`. ::
 
     area = yplot[-1] - yplot[0] # -1 means the last index
     print(area)
@@ -83,59 +83,62 @@ deviation.
 
 The not obvious way follows::
 
-    transf = np.zeros_like(xplot)
-    transf[0] = -1
-    transf[-1] = 1
-    gp.addtransf({'integral': transf}, 'definite-integral')
-    area = gp.predfromdata({'cosine': y}, 'definite-integral')
+    gp.addlintransf(lambda x: x[-1] - x[0], ['primitive'], 'integral')
+    area = gp.predfromdata({'cosine': y}, 'integral')
     print(area)
 
-Output: ``-1.9157(27)``. What did we do? :meth:`~GP.addtransf` is similar to
+Output: ``-1.9157(27)``. What did we do? :meth:`~GP.addlintransf` is similar to
 :meth:`~GP.addx`, but instead of adding new points where the process is
-evaluated, it adds a linear transformation of already specified process values.
-The first argument is ``{'integral': transf}``: a dictionary where keys are
-labels to be transformed, and values are vectors or matrices. In this case we
-passed a vector, so the transformation is the scalar product of the ``transf``
-array with the process values we labeled ``'integral'``. If you look at how
-we filled ``transf``, you'll notice that all this is just subtracting the
-first value from the last.
+evaluated, it defines a linear transformation of already specified process
+values. The first argument is ``lambda x: x[-1] - x[0]``, a function which
+takes in an array and computes the same difference we computed by hand before.
+The second argument is ``['primitive']``, a list of labels that indicate which
+arrays are passed to the function. The last argument is the name of the newly
+defined array of process values, as in :meth:`~GP.addx`.
 
-Using :meth:`~GP.addtransf` for this is an overkill, since transformations
+Using :meth:`~GP.addlintransf` for this is overkill, since transformations
 applied to the posterior can always be applied directly to the arrays returned
 by :meth:`~GP.predfromdata`. It becomes useful when there's data to fit against
 the transformed quantities.
 
 Example: you already know the area of the function. Let's try this with a
-Gaussian::
+Cauchy pdf, pretending we only know its area and some values of the function
+not too close to the center::
 
-    gaussian = lambda x: 1 / np.sqrt(2 * np.pi) * np.exp(-1/2 * x**2)
+    from scipy import stats
     
     x = np.array([-5, -4, -3, -2, 2, 3, 4, 5])
-    y = gaussian(x)
+    
+    true_function = stats.cauchy.pdf
+    true_area = np.subtract(*stats.cauchy.cdf([x[-1], x[0]]))
+    
+    y = true_function(x)
     
     gp = lgp.GP(lgp.ExpQuad(scale=2))
     gp.addx(x, 'datapoints', deriv=1)
     gp.addx(-5, 'left')
     gp.addx(5, 'right')
-    gp.addtransf({'left': -1, 'right': 1}, 'area')
+    gp.addlintransf(lambda l, r: r - l, ['left', 'right'], 'area')
     
     xplot = np.linspace(-5, 5, 200)
     gp.addx(xplot, 'plot', deriv=1)
     
-    yplot = gp.predfromdata({'datapoints': y, 'area': 1}, 'plot')
+    yplot = gp.predfromdata({'datapoints': y, 'area': true_area}, 'plot')
     
     ax.cla()
     
-    for sample in gvar.raniter(yplot, 4):
-        ax.plot(xplot, sample, color='blue', alpha=0.5)
-    ax.plot(xplot, gaussian(xplot), color='gray', linestyle='--')
+    m = gvar.mean(yplot)
+    s = gvar.sdev(yplot)
+    ax.fill_between(xplot, m - s, m + s, alpha=0.5)
+    ax.plot(xplot, true_function(xplot), color='gray', linestyle='--')
     ax.plot(x, y, '.k')
     
     fig.savefig('integrals2.png')
 
 .. image:: integrals2.png
 
-It works well, it draws a Gaussian. However, had we picked an ugly function
-that is asymmetrical between -2 and 2, the fit would have given the same
-answer. As usual, the choice of the kernel is important for the result:
-apparently an exponential quadratic kernel with ``scale=2`` likes Gaussians.
+It doesn't work too well, the posterior band completely misses the top of the
+function, but at least it gets the sides right. This highlights the importance
+of the choice of prior. Try playing with changing the kernel and its parameters
+too see if you can find a prior that "likes" the Cauchy pdf enough to reproduce
+it given the constraints.

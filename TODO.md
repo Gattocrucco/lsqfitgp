@@ -71,11 +71,6 @@ NotImplementedError right away instead of letting the core callable do it: thus
 the implementation methods shall return NotImplemented in place of a callable
 to disable the transformations.
 
-In the optimization section talk about the jit and checklin.
-
-Go through the documentation and replace addtransf with addlintransf where
-appropriate.
-
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
