@@ -126,23 +126,24 @@
             
   <section id="optimization">
 <span id="optim"></span><h1><span class="section-number">14. </span>Optimization<a class="headerlink" href="#optimization" title="Permalink to this heading">¶</a></h1>
+<section id="evaluating-a-single-gaussian-process-posterior">
+<h2><span class="section-number">14.1. </span>Evaluating a single Gaussian process posterior<a class="headerlink" href="#evaluating-a-single-gaussian-process-posterior" title="Permalink to this heading">¶</a></h2>
 <p>There are three main computational steps when doing a Gaussian process fit with
-<a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>:</p>
+<a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>Compute the prior covariance matrix using the kernel. This is <span class="math notranslate nohighlight">\(O((n +
 m)^2)\)</span> where <cite>n</cite> is the number of datapoints and <cite>m</cite> the number of
 additional points where the posterior is computed.</p></li>
-<li><p>Solve a linear system of size <cite>n</cite>. This is <span class="math notranslate nohighlight">\(O(n^3)\)</span>.</p></li>
-<li><p>Take random samples from the posterior. This is <span class="math notranslate nohighlight">\(O(m^3 + s)\)</span> where
-<cite>s</cite> is the number of samples taken.</p></li>
+<li><p>Decompose the prior covariance matrix. This is <span class="math notranslate nohighlight">\(O(n^3)\)</span>.</p></li>
+<li><p>Take random samples from the posterior. This is <span class="math notranslate nohighlight">\(O(m^3)\)</span>.</p></li>
 </ul>
 </div></blockquote>
 <p>Since usually <span class="math notranslate nohighlight">\(m \gg n\)</span> because the plot is done on a finely spaced grid,
-the typical bottleneck is taking the samples, i.e., calling
-<code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code>. This problem can be bypassed by plotting only the
+the typical bottleneck is taking the samples, i.e., calling <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sample()</span></code>
+(or <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code>). This problem can be bypassed by plotting only the
 standard deviation band instead of taking samples, but it is less informative.
-To make <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code> faster, use its <code class="docutils literal notranslate"><span class="pre">eps</span></code> option: <code class="docutils literal notranslate"><span class="pre">gvar.raniter(x,</span>
+To make <code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sample()</span></code> faster, use its <code class="docutils literal notranslate"><span class="pre">eps</span></code> option: <code class="docutils literal notranslate"><span class="pre">gvar.sample(x,</span>
 <span class="pre">eps=1e-12)</span></code>. This forces it to use a Cholesky decomposition instead of a
 diagonalization.</p>
 <p>In general the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> methods have options for doing everything without
@@ -155,13 +156,107 @@ an explicit mean vector and covariance matrix instead of <code class="xref py py
 some hundreds of datapoints the next bottleneck is probably in
 <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code></a>. Making it faster is quick: select a solver different
 from the default one when initializing the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object, like
-<code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol')</span></code>. This applies also when using
-<a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a>. And don’t forget to disable the positivity check:
-<code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol',</span> <span class="pre">checkpos=False)</span></code>.</p>
-<p>Finally, if you have written a custom kernel, it may become a bottleneck. For
-example the letter counting kernel in <a class="reference internal" href="customs.html#customs"><span class="std std-ref">A custom kernel: text classification</span></a> was very slow. A quick
-way to get a 2x improvement is disabling the symmetry check in <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>:
-<code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">checksym=False)</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol')</span></code>. And don’t forget to disable the positivity
+check: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol',</span> <span class="pre">checkpos=False)</span></code>.</p>
+<p>If you have written a custom kernel, it may become a bottleneck. For example
+the letter counting kernel in <a class="reference internal" href="customs.html#customs"><span class="std std-ref">A custom kernel: text classification</span></a> was very slow. A quick way to get
+a 2x improvement is disabling the symmetry check in <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span>
+<span class="pre">checksym=False)</span></code>.</p>
+</section>
+<section id="fitting-hyperparameters">
+<h2><span class="section-number">14.2. </span>Fitting hyperparameters<a class="headerlink" href="#fitting-hyperparameters" title="Permalink to this heading">¶</a></h2>
+<p>The function <a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> finds the “optimal” hyperparameters by
+feeding the GP-factory you give to it into a minimization routine that tries to
+change the hyperparameters one step at a time and each time recreates the GP
+object and does some computations to check how a “good fit” it is for the given
+data.</p>
+<p>From the point of view of computational efficiency this means that, apart from
+taking posterior samples, the other techniques explained in the previous
+section also apply here. In particular, when the number of datapoints <cite>n</cite>
+starts to be in the hundreds, to speed up the fit do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;chol&#39;</span><span class="p">,</span> <span class="n">checkpos</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>when you create the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object in the factory function.</p>
+<p>Since the same calculations are repeated many times over, it would be
+convenient if the whole linear algebra operation was streamlined without
+passing again and again from all the scaffolding and bookkeeping done by
+<a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>, in particular when there model is complex and uses nontrivial
+kernels and many transformations. Enters the JAX JIT (just-in-time compiler).
+Since <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> uses JAX as computational backend, in many cases a piece
+of code doing stuff with a Gaussian process can be put into a function and
+compiled to low-level instructions with <code class="docutils literal notranslate"><span class="pre">jax.jit</span></code>, provided all the array
+operations are implemented with <code class="docutils literal notranslate"><span class="pre">jax.numpy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">numpy</span></code>, and gvars
+are avoided. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">jnp</span>
+<span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
+
+<span class="k">def</span> <span class="nf">doinference</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">xplot</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(),</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span>
+    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+    <span class="n">yplot_mean</span><span class="p">,</span> <span class="n">yplot_cov</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># notice we use raw=True to return mean and covariance separately</span>
+    <span class="c1"># instead of implicitly tracked into gvars</span>
+    <span class="n">yplot_sdev</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">yplot_cov</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">yplot_mean</span><span class="p">,</span> <span class="n">yplot_sdev</span>
+
+<span class="n">doinference_compiled</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">doinference</span><span class="p">,</span> <span class="n">static_argnames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;solver&#39;</span><span class="p">,</span> <span class="s1">&#39;checkpos&#39;</span><span class="p">,</span> <span class="s1">&#39;checksym&#39;</span><span class="p">])</span>
+<span class="c1"># static_argnames indicates the function parameters that are not numerical</span>
+<span class="c1"># and should not be dealt by the compiler, I&#39;ve put some I will use later</span>
+
+<span class="kn">import</span> <span class="nn">timeit</span>
+
+<span class="k">def</span> <span class="nf">benchmark</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">timer</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">Timer</span><span class="p">(</span><span class="s1">&#39;func(*args, **kwargs)&#39;</span><span class="p">,</span> <span class="nb">globals</span><span class="o">=</span><span class="nb">locals</span><span class="p">())</span>
+    <span class="n">n</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">timer</span><span class="o">.</span><span class="n">autorange</span><span class="p">()</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="n">timer</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> took </span><span class="si">{</span><span class="n">time</span> <span class="o">*</span> <span class="mf">1e3</span><span class="si">:</span><span class="s1">7.3f</span><span class="si">}</span><span class="s1"> ms on average&#39;</span><span class="p">)</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">doinference</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">doinference_compiled</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And the winner is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doinference</span> <span class="n">took</span>   <span class="mf">5.651</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
+<span class="n">doinference</span> <span class="n">took</span>   <span class="mf">0.074</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
+</pre></div>
+</div>
+<p>The compiled version is 70 times faster. The difference is so stark because we
+used only 10 datapoints, so most of the time is spent in routing overhead
+instead of actual computations. Repeating with 1000 datapoints, the advantage
+should be limited:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">doinference</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">doinference_compiled</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Indeed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doinference</span> <span class="n">took</span> <span class="mf">356.814</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
+<span class="n">doinference</span> <span class="n">took</span> <span class="mf">187.924</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
+</pre></div>
+</div>
+<p>With many datapoints we said that changing the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> options is the
+important tweak. Let’s check:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kw</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s1">&#39;chol&#39;</span><span class="p">,</span> <span class="n">checkpos</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">checksym</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">doinference</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">doinference_compiled</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Result:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doinference</span> <span class="n">took</span>  <span class="mf">54.725</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
+<span class="n">doinference</span> <span class="n">took</span>  <span class="mf">16.106</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
+</pre></div>
+</div>
+<p>As expected.</p>
+<p>Back to the hyperparameters: <a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> applies the jit for you if
+pass the <code class="docutils literal notranslate"><span class="pre">jit=True</span></code> option, so you don’t have to deal with this manually.</p>
+</section>
 </section>
 
 

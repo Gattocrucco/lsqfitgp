@@ -191,6 +191,12 @@ only when acting on two points which have the same <code class="docutils literal
 <span class="n">gp</span><span class="o">.</span><span class="n">addtransf</span><span class="p">({</span><span class="s1">&#39;shortscale&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;longscale&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="s1">&#39;sum&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>This method is an alternative to <a class="reference internal" href="gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a> that takes explicitly
+the coefficients of the linear transformation instead of a Python function
+implementing it. The equivalent <a class="reference internal" href="gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a> invocation would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span><span class="o">.</span><span class="n">addlintransf</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span> <span class="n">s</span> <span class="o">+</span> <span class="n">l</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;shortscale&#39;</span><span class="p">,</span> <span class="s1">&#39;longscale&#39;</span><span class="p">],</span> <span class="s1">&#39;sum&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>We can now proceed as usual to get the posterior on other points:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">xtype</span><span class="p">)</span>
 <span class="n">xplot</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">xplot</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
@@ -288,19 +294,21 @@ object <em>without specifying a kernel</em>:</p>
 </div>
 <p>Now the two names <code class="docutils literal notranslate"><span class="pre">'long'</span></code> and <code class="docutils literal notranslate"><span class="pre">'short'</span></code> stand for <em>independent</em> processes
 with their respective kernels. (These names reside in a namespace separate
-from the one used by <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addx()</span></code></a> and <a class="reference internal" href="gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addtransf()</span></code></a>.) Now we use
+from the one used by <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a> and <a class="reference internal" href="gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addtransf()</span></code></a>.) Now we use
 these to define their sum <em>as a process</em> instead of summing them after
 evaluation on specific points:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span><span class="o">.</span><span class="n">addproctransf</span><span class="p">({</span><span class="s1">&#39;long&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;short&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="s1">&#39;sum&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The method <a class="reference internal" href="gp.html#lsqfitgp.GP.addproctransf" title="lsqfitgp.GP.addproctransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addproctransf()</span></code></a> is analogous to <a class="reference internal" href="gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addtransf()</span></code></a> but
+<p>The method <a class="reference internal" href="gp.html#lsqfitgp.GP.addproctransf" title="lsqfitgp.GP.addproctransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addproctransf()</span></code></a> is analogous to <a class="reference internal" href="gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addtransf()</span></code></a> but
 works for the whole process at once. What we are doing mathematically is the
 following:</p>
 <div class="math notranslate nohighlight">
 \[\operatorname{sum}(x) \equiv 1 \cdot \operatorname{long}(x) +
                              1 \cdot \operatorname{short}(x).\]</div>
-<p>Now that we have defined the components, we evaluate them on the points:</p>
+<p>(There is also the analogous <a class="reference internal" href="gp.html#lsqfitgp.GP.addproclintransf" title="lsqfitgp.GP.addproclintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addproclintransf()</span></code></a>, which takes a
+Python function like <a class="reference internal" href="gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a>.) Now that we have defined the
+components, we evaluate them on the points:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
 <span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 
@@ -313,7 +321,7 @@ following:</p>
 <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plotsum&#39;</span>  <span class="p">,</span> <span class="n">proc</span><span class="o">=</span><span class="s1">&#39;sum&#39;</span>  <span class="p">)</span>
 </pre></div>
 </div>
-<p>We specified the processes using the <code class="docutils literal notranslate"><span class="pre">proc</span></code> parameter of <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addx()</span></code></a>.
+<p>We specified the processes using the <code class="docutils literal notranslate"><span class="pre">proc</span></code> parameter of <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a>.
 Then we continue as before:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dataprior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">([</span><span class="s1">&#39;datalong&#39;</span><span class="p">,</span> <span class="s1">&#39;datashort&#39;</span><span class="p">,</span> <span class="s1">&#39;datasum&#39;</span><span class="p">])</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">dataprior</span><span class="p">)</span>
@@ -340,7 +348,7 @@ Then we continue as before:</p>
 <img alt="_images/components4.png" src="_images/components4.png" />
 <p>If there was this more convenient way of dealing with latent components, why
 didn’t we introduce it right away? The reason is that it is not as general as
-managing the components manually with an explicit field. <a class="reference internal" href="gp.html#lsqfitgp.GP.addproc" title="lsqfitgp.GP.addproc"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addproc()</span></code></a>
+managing the components manually with an explicit field. <a class="reference internal" href="gp.html#lsqfitgp.GP.addproc" title="lsqfitgp.GP.addproc"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addproc()</span></code></a>
 defines processes which are independent of each other; to have nontrivial a
 priori correlations it is necessary to put the process index in the domain such
 that kernel can manipulate it. We did this at the end of <a class="reference internal" href="out.html#multiout"><span class="std std-ref">Multidimensional output</span></a> when

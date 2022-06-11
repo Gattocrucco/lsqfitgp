@@ -123,9 +123,10 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.empbayes_fit">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gradient'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Empirical bayes fit.</p>
+<dd><p>Maximum a posteriori fit.</p>
 <p>Maximizes the marginal likelihood of the data with a Gaussian process
-model that depends on hyperparameters.</p>
+model that depends on hyperparameters, multiplied by a prior on the
+hyperparameters.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
@@ -138,11 +139,11 @@ argument <cite>hyperprior</cite>. gpfactory must be JAX-friendly, i.e.,
 use jax.numpy and jax.scipy instead of plain numpy/scipy and avoid
 assignments to arrays.</p>
 </dd>
-<dt><strong>data</strong><span class="classifier">dict or callable</span></dt><dd><p>Dictionary of data that is passed to <cite>GP.marginal_likelihood</cite> on
-the GP object returned by <cite>gpfactory</cite>. If a callable, it is called
-with the same arguments of <cite>gpfactory</cite> and must return either a
-dictionary or a pair of dictionaries where the second dictionary is
-passed as <cite>givencov</cite> argument to <cite>GP.marginal_likelihood</cite>.</p>
+<dt><strong>data</strong><span class="classifier">dict, tuple or callable</span></dt><dd><p>Dictionary of data that is passed to <cite>GP.marginal_likelihood</cite> on
+the GP object returned by <cite>gpfactory</cite>. If a tuple, it contains the
+first two arguments to <cite>GP.marginal_likelihood</cite>. If a callable, it
+is called with the same arguments of <cite>gpfactory</cite> and must return
+the argument(s) for <cite>GP.marginal_likelihood</cite>.</p>
 </dd>
 <dt><strong>raises</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), raise an error when the minimization fails.
 Otherwise, use the last point of the minimization as result.</p>

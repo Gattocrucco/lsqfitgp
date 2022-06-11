@@ -140,14 +140,14 @@ derivative.</p>
 <span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 
 <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;integral&#39;</span><span class="p">)</span>
+<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;primitive&#39;</span><span class="p">)</span>
 <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;cosine&#39;</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;cosine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;integral&#39;</span><span class="p">)</span>
+<span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;cosine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;primitive&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>We just gave the data for the <code class="docutils literal notranslate"><span class="pre">'cosine'</span></code> label which has <code class="docutils literal notranslate"><span class="pre">deriv=1</span></code>, and
-asked for the posterior on the label <code class="docutils literal notranslate"><span class="pre">'integral'</span></code> which is not derived. Now
+asked for the posterior on the label <code class="docutils literal notranslate"><span class="pre">'primitive'</span></code> which is not derived. Now
 we plot:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
@@ -164,8 +164,8 @@ we plot:</p>
 <p>So, the Gaussian process not only can do integrals, it also understands that
 the primitive is defined up to an additive constant.</p>
 <p>How can we do a definite integral? There’s the easy way, and the easy but not
-obvious way. Let’s go first with the easy one: we will just use the correlation
-tracking features of <code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>.</p>
+obvious way. Let’s go first with the easy one: we use the correlation tracking
+features of <code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">area</span> <span class="o">=</span> <span class="n">yplot</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">yplot</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># -1 means the last index</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
 </pre></div>
@@ -179,60 +179,63 @@ standard deviation is 0.0027. Is it correct? Well we know the answer here:</p>
 <p>Output: <code class="docutils literal notranslate"><span class="pre">-1.917848549326277</span> <span class="pre">0.0022(27)</span></code>. So it’s correct within one standard
 deviation.</p>
 <p>The not obvious way follows:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">transf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xplot</span><span class="p">)</span>
-<span class="n">transf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-<span class="n">transf</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addtransf</span><span class="p">({</span><span class="s1">&#39;integral&#39;</span><span class="p">:</span> <span class="n">transf</span><span class="p">},</span> <span class="s1">&#39;definite-integral&#39;</span><span class="p">)</span>
-<span class="n">area</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;cosine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;definite-integral&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span><span class="o">.</span><span class="n">addlintransf</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;primitive&#39;</span><span class="p">],</span> <span class="s1">&#39;integral&#39;</span><span class="p">)</span>
+<span class="n">area</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;cosine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;integral&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Output: <code class="docutils literal notranslate"><span class="pre">-1.9157(27)</span></code>. What did we do? <a class="reference internal" href="gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addtransf()</span></code></a> is similar to
+<p>Output: <code class="docutils literal notranslate"><span class="pre">-1.9157(27)</span></code>. What did we do? <a class="reference internal" href="gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a> is similar to
 <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a>, but instead of adding new points where the process is
-evaluated, it adds a linear transformation of already specified process values.
-The first argument is <code class="docutils literal notranslate"><span class="pre">{'integral':</span> <span class="pre">transf}</span></code>: a dictionary where keys are
-labels to be transformed, and values are vectors or matrices. In this case we
-passed a vector, so the transformation is the scalar product of the <code class="docutils literal notranslate"><span class="pre">transf</span></code>
-array with the process values we labeled <code class="docutils literal notranslate"><span class="pre">'integral'</span></code>. If you look at how
-we filled <code class="docutils literal notranslate"><span class="pre">transf</span></code>, you’ll notice that all this is just subtracting the
-first value from the last.</p>
-<p>Using <a class="reference internal" href="gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addtransf()</span></code></a> for this is an overkill, since transformations
+evaluated, it defines a linear transformation of already specified process
+values. The first argument is <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">x:</span> <span class="pre">x[-1]</span> <span class="pre">-</span> <span class="pre">x[0]</span></code>, a function which
+takes in an array and computes the same difference we computed by hand before.
+The second argument is <code class="docutils literal notranslate"><span class="pre">['primitive']</span></code>, a list of labels that indicate which
+arrays are passed to the function. The last argument is the name of the newly
+defined array of process values, as in <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a>.</p>
+<p>Using <a class="reference internal" href="gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a> for this is overkill, since transformations
 applied to the posterior can always be applied directly to the arrays returned
 by <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a>. It becomes useful when there’s data to fit against
 the transformed quantities.</p>
 <p>Example: you already know the area of the function. Let’s try this with a
-Gaussian:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gaussian</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+Cauchy pdf, pretending we only know its area and some values of the function
+not too close to the center:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
 
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="n">true_function</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">cauchy</span><span class="o">.</span><span class="n">pdf</span>
+<span class="n">true_area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="o">*</span><span class="n">stats</span><span class="o">.</span><span class="n">cauchy</span><span class="o">.</span><span class="n">cdf</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]]))</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">true_function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
 <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;datapoints&#39;</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;left&#39;</span><span class="p">)</span>
 <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;right&#39;</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addtransf</span><span class="p">({</span><span class="s1">&#39;left&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;right&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="s1">&#39;area&#39;</span><span class="p">)</span>
+<span class="n">gp</span><span class="o">.</span><span class="n">addlintransf</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span> <span class="o">-</span> <span class="n">l</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="s1">&#39;right&#39;</span><span class="p">],</span> <span class="s1">&#39;area&#39;</span><span class="p">)</span>
 
 <span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;datapoints&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;area&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;datapoints&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;area&#39;</span><span class="p">:</span> <span class="n">true_area</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
 
-<span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">yplot</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">gaussian</span><span class="p">(</span><span class="n">xplot</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">yplot</span><span class="p">)</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">yplot</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">m</span> <span class="o">-</span> <span class="n">s</span><span class="p">,</span> <span class="n">m</span> <span class="o">+</span> <span class="n">s</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">true_function</span><span class="p">(</span><span class="n">xplot</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;integrals2.png&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="_images/integrals2.png" src="_images/integrals2.png" />
-<p>It works well, it draws a Gaussian. However, had we picked an ugly function
-that is asymmetrical between -2 and 2, the fit would have given the same
-answer. As usual, the choice of the kernel is important for the result:
-apparently an exponential quadratic kernel with <code class="docutils literal notranslate"><span class="pre">scale=2</span></code> likes Gaussians.</p>
+<p>It doesn’t work too well, the posterior band completely misses the top of the
+function, but at least it gets the sides right. This highlights the importance
+of the choice of prior. Try playing with changing the kernel and its parameters
+too see if you can find a prior that “likes” the Cauchy pdf enough to reproduce
+it given the constraints.</p>
 </section>
 
 
