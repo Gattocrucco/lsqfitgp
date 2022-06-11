@@ -112,6 +112,7 @@ def concrete(*args):
     else:
         return tuple(map(_concrete, args))
 
+# TODO make stop_hessian work in reverse mode
 # see jax issue #10994
 # ad.primitive_transposes[ad_util.stop_gradient_p] = lambda ct, _: [lax.stop_gradient(ct)]
 
@@ -126,6 +127,11 @@ def stop_hessian_jvp(primals, tangents):
     return x, lax.stop_gradient(x_dot)
 
 def value_and_ops(f, *ops, has_aux=False, **kw):
+    """
+    Creates a function returning the values of f and its derivatives defined
+    by stacking the operators in ops. Example:
+    value_and_grad_and_hess = value_and_ops(f, jax.grad, jax.jacfwd)
+    """
     if not ops:
         return f
     def fop(*args, **kw):

@@ -1,5 +1,22 @@
 # lsqfitgp/Makefile
 #
+# Copyright (c) 2022, Giacomo Petrillo
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
 # Makefile for running tests, prepare and upload a release.
 
 COVERAGE_SUFFIX=
@@ -45,3 +62,14 @@ docs:
 covreport:
 	coverage combine
 	coverage html
+
+# TODO write a rule that
+# - removes an eventual preexisting venv
+# - creates a new venv
+# - installs requirements
+# - activate the venv
+# and also a rule just to activate the venv
+# so the hierarchy is:
+# 1 true rule to create the venv
+# 2 true rule to activate it, depends on 1
+# 3 phony rule to delete the venv, recreate and activate it

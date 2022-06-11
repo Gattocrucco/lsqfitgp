@@ -30,6 +30,7 @@ from . import _Deriv
 from . import _patch_jax
 
 __all__ = [
+    'CrossKernel',
     'Kernel',
     'StationaryKernel',
     'IsotropicKernel',

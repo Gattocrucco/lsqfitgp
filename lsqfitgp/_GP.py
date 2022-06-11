@@ -690,7 +690,7 @@ class GP:
             
             self._elements[key] = _Points(gx, deriv, proc)
         
-    def addtransf(self, tensors, key, axes=1, oldimpl=False):
+    def addtransf(self, tensors, key, axes=1):
         """
         
         Apply a linear transformation to already specified process points. The
@@ -767,6 +767,11 @@ class GP:
             msg += '] contracted with arrays with shapes ['
             msg += ', '.join(repr(e.shape) for e in elements) + ']'
             raise ValueError(msg)
+        
+        # TODO fail gracefully with empty input, but we still need to raise
+        # since the shape is undetermined. Or we could create an exact scalar 0?
+        # the latter would still break operations defined on tensors, so nope,
+        # just fail.
         
         # Define linear transformation.
         def equiv_lintransf(*args):
@@ -1313,9 +1318,11 @@ class GP:
             for s, k in zip(slices, x.keys)
         ]
         # TODO the jacobian can be extracted much more efficiently when the
-        # elements are _Points or _Cov, since in that case the gvars are
-        # primary and contiguous within each block, so each jacobian is
-        # the identity + a range.
+        # elements are _Points or _Cov, since in that case the gvars are primary
+        # and contiguous within each block, so each jacobian is the identity + a
+        # range. Then write a function _patch_gvar.merge_jacobians to combine
+        # them, which also can be optimized knowing the indices are
+        # non-overlapping ranges.
         
         # Apply transformation.
         t = jax.vmap(x.transf, -1, -1)

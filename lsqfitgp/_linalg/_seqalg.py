@@ -67,10 +67,13 @@ def sequential_algorithm(n, ops):
         return newval
     val = lax.fori_loop(1, n, body_fun, init_val)
     # TODO use jax.lax.scan because fori_loop could switch to while_loop
-    # if i is abstract, which breaks reverse autodiff. Moreover lax.scan
+    # if n is abstract, which breaks reverse autodiff. Moreover lax.scan
     # allows loop unrolling, although that's currently not really useful
     # probably since I do large row or matrix operations in each cycle.
     return tuple(op.finalize_val(v) for op, v in zip(ops, val))
+    
+# TODO define two other abstract intermediate classes, Producer and Consumer,
+# which concretize the void finalize and iter_out respectively.
 
 class Stack(SequentialOperation):
     

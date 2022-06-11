@@ -23,7 +23,7 @@ Module to fit Gaussian processes
 See the manual at https://gattocrucco.github.io/lsqfitgp/docs
 """
 
-__version__ = '0.11'
+__version__ = '0.12'
 
 from . import _patch_jax
 from . import _patch_gvar

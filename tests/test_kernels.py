@@ -647,6 +647,7 @@ for kernel in kernels:
     newclass = KernelTestBase.make_subclass(kernel, **factory_kw)
     exec('{} = newclass'.format(newclass.__name__))
 
+# TODO probably the property can be overriden with a scalar
 TestGammaExp.eps = property(lambda self: 1e3 * np.finfo(float).eps)
 TestPPKernel.eps = property(lambda self: 1e3 * np.finfo(float).eps)
 
