@@ -188,3 +188,68 @@ def test_method():
         p = fits[0].minresult.x
         for fit in fits[1:]:
             np.testing.assert_allclose(fit.minresult.x, p, atol=1e-5)
+
+def test_checks():
+    with pytest.raises(KeyError):
+        lgp.empbayes_fit(gvar.gvar(0, 1), lambda: None, lambda: None, method='cippa')
+    with pytest.raises(RuntimeError) as err:
+        def makegp(x):
+            gp = lgp.GP(lgp.ExpQuad(), checkfinite=False, checksym=False, checkpos=False)
+            gp.addx(x, 0)
+            return gp
+        lgp.empbayes_fit(gvar.gvar(np.nan, 1), makegp, {0: 0})
+    assert 'minimization failed: ' in str(err.value)
+
+def test_data():
+    
+    hp = gvar.BufferDict({
+        'log(sdev)': gvar.log(gvar.gvar(1, 1))
+    })
+    x = np.linspace(0, 5, 10)
+    def gpfactory(hp):
+        gp = lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2)
+        gp.addx(x, 'x')
+        return gp
+    truehp = gvar.sample(hp)
+    truegp = gpfactory(truehp)
+    trueprior = truegp.prior()
+    
+    def makeerr(bd, err):
+        return gvar.BufferDict(bd, buf=np.full_like(bd.buf, err))
+    
+    data_noerr = gvar.sample(trueprior)
+    error = makeerr(data_noerr, 0.1)
+    zeroerror = makeerr(data_noerr, 0)
+    zerocov = gvar.evalcov(gvar.gvar(data_noerr, zeroerror))
+    data_err = gvar.make_fake_data(gvar.gvar(data_noerr, error))
+    
+    datas = [
+        [
+            data_noerr,
+            gvar.gvar(data_noerr),
+            (data_noerr,),
+            (data_noerr, zerocov),
+            lambda _: data_noerr,
+            lambda _: gvar.gvar(data_noerr),
+            lambda _: (data_noerr,),
+            lambda _: (data_noerr, zerocov),
+        ],
+        [
+            data_err,
+            (data_err,),
+            (gvar.mean(data_err), gvar.evalcov(data_err)),
+            lambda _: data_err,
+            lambda _: (data_err,),
+            lambda _: (gvar.mean(data_err), gvar.evalcov(data_err)),
+        ],
+    ]
+    
+    for datasets in datas:
+        fits = []
+        for data in datasets:
+            fit = lgp.empbayes_fit(hp, gpfactory, data)
+            fits.append(fit)
+
+        p = fits[0].minresult.x
+        for fit in fits[1:]:
+            np.testing.assert_allclose(fit.minresult.x, p, atol=1e-6)

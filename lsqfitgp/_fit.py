@@ -23,7 +23,7 @@ import functools
 import gvar
 import jax
 from jax import numpy as jnp
-import numpy as np
+import numpy
 from scipy import optimize
 
 from . import _GP
@@ -37,16 +37,18 @@ def _asarrayorbufferdict(x):
     if hasattr(x, 'keys'):
         return gvar.BufferDict(x)
     else:
-        return np.array(x, copy=False)
+        return numpy.asarray(x)
 
 def _flat(x):
     if hasattr(x, 'reshape'):
         return x.reshape(-1)
-    elif isinstance(x, gvar.BufferDict):
+    elif isinstance(x, gvar.BufferDict): # pragma: no branch
         return x.buf
+    else:
+        raise NotImplementedError # pragma: no cover
 
 def _unflat(x, original):
-    if isinstance(original, np.ndarray):
+    if isinstance(original, numpy.ndarray):
         out = x.reshape(original.shape)
         # if not out.shape:
         #     try:
@@ -54,7 +56,7 @@ def _unflat(x, original):
         #     except jax.errors.ConcretizationTypeError:
         #         pass
         return out
-    elif isinstance(original, gvar.BufferDict):
+    elif isinstance(original, gvar.BufferDict): # pragma: no branch
         # normally I would do BufferDict(original, buf=x) but it does not work
         # with JAX tracers
         b = gvar.BufferDict(original)
@@ -63,16 +65,19 @@ def _unflat(x, original):
         # TODO b.buf = x does not work because BufferDict checks that the
         # array is a numpy array.
         return b
+    else:
+        raise NotImplementedError # pragma: no cover
 
 class empbayes_fit:
 
     def __init__(self, hyperprior, gpfactory, data, raises=True, minkw={}, gpfactorykw={}, jit=False, method='gradient'):
         """
     
-        Empirical bayes fit.
+        Maximum a posteriori fit.
     
         Maximizes the marginal likelihood of the data with a Gaussian process
-        model that depends on hyperparameters.
+        model that depends on hyperparameters, multiplied by a prior on the
+        hyperparameters.
     
         Parameters
         ----------
@@ -85,12 +90,12 @@ class empbayes_fit:
             argument `hyperprior`. gpfactory must be JAX-friendly, i.e.,
             use jax.numpy and jax.scipy instead of plain numpy/scipy and avoid
             assignments to arrays.
-        data : dict or callable
+        data : dict, tuple or callable
             Dictionary of data that is passed to `GP.marginal_likelihood` on
-            the GP object returned by `gpfactory`. If a callable, it is called
-            with the same arguments of `gpfactory` and must return either a
-            dictionary or a pair of dictionaries where the second dictionary is
-            passed as `givencov` argument to `GP.marginal_likelihood`.
+            the GP object returned by `gpfactory`. If a tuple, it contains the
+            first two arguments to `GP.marginal_likelihood`. If a callable, it
+            is called with the same arguments of `gpfactory` and must return
+            the argument(s) for `GP.marginal_likelihood`.
         raises : bool, optional
             If True (default), raise an error when the minimization fails.
             Otherwise, use the last point of the minimization as result.
@@ -163,8 +168,13 @@ class empbayes_fit:
         hpdec = _linalg.EigCutFullRank(hpcov)
         precision = hpdec.inv()
         
+        if isinstance(data, tuple) and len(data) == 1:
+            data, = data
+        
         if callable(data):
             cachedargs = None
+        elif isinstance(data, tuple):
+            cachedargs = data
         elif _flat(_asarrayorbufferdict(data)).dtype == object:
             data = gvar.gvar(data)
             datamean = gvar.mean(data)
