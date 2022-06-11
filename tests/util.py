@@ -98,11 +98,16 @@ rtol = {rtol:.2g}
 atol = {atol:.2g}"""
     assert adnorm < atol + rtol * dnorm, msg
 
-def assert_similar_gvars(g, h, rtol=1e-5, atol=1e-8):
+def _assert_similar_gvars(g, h, rtol, atol):
     np.testing.assert_allclose(gvar.mean(g), gvar.mean(h), rtol=rtol, atol=atol)
     g = np.reshape(g, -1)
     h = np.reshape(h, -1)
     assert_close_matrices(gvar.evalcov(g), gvar.evalcov(h), rtol=rtol, atol=atol)
+
+def assert_similar_gvars(*gs, rtol=1e-5, atol=1e-8):
+    if gs:
+        for g in gs[1:]:
+            _assert_similar_gvars(g, gs[0], rtol, atol)
 
 def assert_same_gvars(g, h, atol=1e-8):
     z = g - h

@@ -840,6 +840,3 @@ for name, meth in inspect.getmembers(TestCholToeplitzML, inspect.isfunction):
     cond = cond or ('logdet' in name and 'jac' in name)
     if name.startswith('test_') and cond:
         util.xfail(TestCholToeplitzML, name)
-
-# TODO why?????
-util.xfail(DecompTestBase, 'test_decomp_aux_jacfwd')

@@ -27,6 +27,8 @@ Classes
 -------
 Decomposition
     Abstract base class.
+DecompPyTree
+    Abstract subclass that register subclasses as jax pytrees.
 DecompAutoDiff
     Abstract subclass that adds decomposition-independent jax-autodiff support.
 Diag
@@ -184,7 +186,49 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         pass
 
-class DecompAutoDiff(Decomposition):
+class DecompPyTree(Decomposition):
+    """
+    Class adding support for jax pytree flattening
+    """
+    
+    def __init_subclass__(cls, **kw):
+        tree_util.register_pytree_node_class(cls)
+        super().__init_subclass__(**kw)
+    
+    # Since I decide dinamically which members are children based on their type,
+    # I have to cache the jax pytree structure aux_data such that the
+    # structure is preserved when constructing an object with tree_unflatten
+    # with dummies as children. This happens in jax.jacfwd for some reason.
+    @functools.cached_property
+    def _aux_data(self):
+        jax_vars = []
+        other_vars = []
+        for n, v in vars(self).items():
+            if isinstance(v, (jnp.ndarray, numpy.ndarray, DecompPyTree)):
+                jax_vars.append(n)
+            else:
+                other_vars.append((n, v))
+        return jax_vars, other_vars
+    
+    def tree_flatten(self):
+        """JAX PyTree encoder. See `jax.tree_util.tree_flatten`."""
+        jax_vars, _ = self._aux_data
+        children = tuple(getattr(self, n) for n in jax_vars)
+        return children, self._aux_data
+    
+    @classmethod
+    def tree_unflatten(cls, aux_data, children):
+        """JAX PyTree decoder. See `jax.tree_util.tree_unflatten`."""
+        self = cls.__new__(cls)
+        self._aux_data = aux_data
+        jax_vars, other_vars = aux_data
+        for n, v in zip(jax_vars, children):
+            setattr(self, n, v)
+        for n, v in other_vars:
+            setattr(self, n, v)
+        return self    
+
+class DecompAutoDiff(DecompPyTree):
     """
     Abstract subclass adding JAX autodiff support to subclasses of
     Decomposition, even if the decomposition algorithm is not supported by JAX.
@@ -208,8 +252,6 @@ class DecompAutoDiff(Decomposition):
         # For __init__ I can't use an _autodiff flag like below to avoid double
         # wrapping because the wrapper is called as super().__init__ in
         # subclasses, so I assign self._K *after* calling old__init__.
-        
-        tree_util.register_pytree_node_class(cls)
         
         old__init__ = cls.__init__
         
@@ -350,31 +392,7 @@ class DecompAutoDiff(Decomposition):
                 return logdet_autodiff(self, self._K)
         
         return logdet
-    
-    def tree_flatten(self):
-        """JAX PyTree encoder. See `jax.tree_util.tree_flatten`."""
-        jax_vars = []
-        other_vars = []
-        for n, v in vars(self).items():
-            if isinstance(v, (jnp.ndarray, numpy.ndarray)):
-                jax_vars.append(n)
-            else:
-                other_vars.append((n, v))
-        children = tuple(getattr(self, n) for n in jax_vars)
-        aux_data = (jax_vars, other_vars)
-        return children, aux_data
-    
-    @classmethod
-    def tree_unflatten(cls, aux_data, children):
-        """JAX PyTree decoder. See `jax.tree_util.tree_unflatten`."""
-        self = cls.__new__(cls)
-        jax_vars, other_vars = aux_data
-        for n, v in zip(jax_vars, children):
-            setattr(self, n, v)
-        for n, v in other_vars:
-            setattr(self, n, v)
-        return self
-    
+        
 class Diag(DecompAutoDiff):
     """
     Diagonalization.
@@ -617,10 +635,6 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     evaluated each time column by column during operations.
     """
     
-    # TODO can I jit cholesky here? would it work if then I want to jit
-    # again or compute derivatives? => better to let the user opt for the
-    # jit => jax supports redundant nested jits
-
     def __init__(self, K, eps=None):
         t = jnp.asarray(K[0])
         m = _toeplitz.eigv_bound(t)
@@ -654,7 +668,7 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     def decorrelate(self, b):
         return _toeplitz.chol_solve(self.t, b)
 
-class BlockDecomp(Decomposition):
+class BlockDecomp(DecompPyTree):
     """
     Decomposition of a 2x2 symmetric block matrix using decompositions of the
     diagonal blocks.
@@ -754,7 +768,7 @@ class BlockDecomp(Decomposition):
     def n(self):
         return sum(self._Q.shape)
 
-class BlockDiagDecomp(Decomposition):
+class BlockDiagDecomp(DecompPyTree):
     
     # TODO allow NxN instead of 2x2?
     

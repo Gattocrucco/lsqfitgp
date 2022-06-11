@@ -226,13 +226,13 @@ class empbayes_fit:
             @functools.partial(jax.jacfwd, has_aux=True)
             def grad_logdet_and_aux(p):
                 gp, args, _ = make(p)
-                decomp, _ = gp._prior_decomp(*args, stop_hessian=True)
-                return -1/2 * decomp.logdet(), (decomp, args)
+                decomp, ymean = gp._prior_decomp(*args, stop_hessian=True)
+                return -1/2 * decomp.logdet(), (decomp, ymean)
             
             @functools.partial(jax.jacfwd, has_aux=True)
             def fisher_and_jac_and_aux(p):
-                gld, (decomp, args) = grad_logdet_and_aux(p)
-                return (gld, args[0]), decomp
+                gld, (decomp, ymean) = grad_logdet_and_aux(p)
+                return (gld, ymean), decomp
             
             @dojit
             def fisherprec(p):

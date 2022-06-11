@@ -1409,8 +1409,10 @@ class GP:
         for key, l in given.items():
             if key not in self._elements:
                 raise KeyError(key)
-
-            l = numpy.array(l, copy=False)
+            
+            if not isinstance(l, jnp.ndarray):
+                # use numpy since there could be gvars
+                l = numpy.asarray(l)
             shape = self._elements[key].shape
             if l.shape != shape:
                 msg = 'given[{!r}] has shape {!r} different from shape {!r}'

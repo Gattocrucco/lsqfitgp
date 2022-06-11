@@ -149,19 +149,11 @@ def test_flat():
     fit1 = lgp.empbayes_fit(hp, gpfactory1, data)
     fit2 = lgp.empbayes_fit(hp.buf, gpfactory2, data)
     fit3 = lgp.empbayes_fit(hp.buf[0], gpfactory3, data)
-    m1 = gvar.mean(fit1.p.buf[0])
-    c1 = gvar.evalcov(fit1.p.buf[0])
-    m2 = gvar.mean(fit2.p[0])
-    c2 = gvar.evalcov(fit2.p[0])
-    m3 = gvar.mean(fit3.p)
-    c3 = gvar.evalcov(fit3.p)
-    np.testing.assert_allclose(m1, m2)
-    np.testing.assert_allclose(m1, m3)
-    np.testing.assert_allclose(c1, c2)
-    np.testing.assert_allclose(c1, c3)
+    util.assert_similar_gvars(fit1.p.buf[0], fit2.p[0], fit3.p)
 
-@pytest.mark.xfail
+@util.tryagain
 def test_method():
+    
     hp = gvar.BufferDict({
         'log(sdev)': gvar.log(gvar.gvar(1, 1))
     })
@@ -173,22 +165,26 @@ def test_method():
     truehp = gvar.sample(hp)
     truegp = gpfactory(truehp)
     trueprior = truegp.prior()
-    data = gvar.sample(trueprior)
-    fits = []
-    kwbase = dict(data=data)
-    kws = [
-        dict(method='nograd'),
-        dict(method='gradient'),
-        dict(method='hessian'),
-        dict(method='fisher'),
-        dict(method='fisher', data=lambda *_: data), # TODO <-- fails here
-        dict(method='hessmod'),
-    ]
-    for kw in kws:
-        kwargs = dict(kwbase)
-        kwargs.update(kw)
-        fit = lgp.empbayes_fit(hp, gpfactory, **kwargs, minkw=dict(x0=truehp.buf))
-        fits.append(fit)
-    p = fits[0].minresult.x
-    for fit in fits[1:]:
-        np.testing.assert_allclose(fit.minresult.x, p)
+    data_fixed = gvar.sample(trueprior)
+    def data_variable(hp):
+        return {k: v + hp['log(sdev)'] for k, v in data_fixed.items()}
+    
+    for data in [data_fixed, data_variable]:
+        fits = []
+        kws = [
+            dict(method='nograd', minkw=dict(options=dict(xatol=1e-6))),
+            dict(method='gradient'),
+            dict(method='hessian'),
+            dict(method='fisher'),
+            dict(method='fisher'),
+            dict(method='hessmod'),
+        ]
+        for kw in kws:
+            kwargs = dict(data=data)
+            kwargs.update(kw)
+            kwargs.setdefault('minkw', {}).update(x0=truehp.buf)
+            fit = lgp.empbayes_fit(hp, gpfactory, **kwargs)
+            fits.append(fit)
+        p = fits[0].minresult.x
+        for fit in fits[1:]:
+            np.testing.assert_allclose(fit.minresult.x, p, atol=1e-5)

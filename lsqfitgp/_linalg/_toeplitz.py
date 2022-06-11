@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import jax
 from jax import numpy as jnp
 import numpy
 
@@ -74,19 +75,23 @@ class SymSchur(_seqalg.SequentialOperation):
     def finalize_val(self, val):
         pass
 
+@jax.jit
 def chol(t):
     _, out = _seqalg.sequential_algorithm(len(t), [SymSchur(t), _seqalg.Stack(0)])
     return out.T
 
+@jax.jit
 def chol_solve(t, *bs):
     ops = [_seqalg.SolveTriLowerColByFull(0, b) for b in bs]
     out = _seqalg.sequential_algorithm(len(t), [SymSchur(t)] + ops)
     return out[1] if len(bs) == 1 else out[1:]
 
+@jax.jit
 def chol_matmul(t, b):
     _, out = _seqalg.sequential_algorithm(len(t), [SymSchur(t), _seqalg.MatMulColByFull(0, b)])
     return out
 
+@jax.jit
 def logdet(t):
     _, out = _seqalg.sequential_algorithm(len(t), [SymSchur(t), _seqalg.SumLogDiag(0)])
     return 2 * out

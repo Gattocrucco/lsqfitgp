@@ -17,13 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import builtins
 import functools
 
 import jax
 import gvar
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
+from jax import tree_util
 import numpy as np
 from scipy import linalg
 
@@ -50,6 +50,11 @@ gvar_ufuncs = [
 ]
 
 def jaxsupport(jax_ufunc):
+    """
+    Create a wrapper of a function that will dispatch to another specified
+    function if the argument is a jax array.
+    """
+    # TODO look into python typed dispatching
     def decorator(gvar_ufunc):
         @functools.wraps(gvar_ufunc)
         def newfunc(x):
@@ -66,6 +71,7 @@ for fname in gvar_ufuncs:
     fboth = jaxsupport(fjax)(fgvar)
     setattr(gvar, fname, fboth)
 
+# reset transformations to support jax arrays 
 gvar.BufferDict.del_distribution('log')
 gvar.BufferDict.del_distribution('sqrt')
 gvar.BufferDict.del_distribution('erfinv')
@@ -83,6 +89,9 @@ gvar.SVD._analyzers = dict(scipy_eigh=scipy_eigh)
 # default uses SVD instead of diagonalization because it once was more stable
 
 def getsvec(x):
+    """
+    Get the sparse vector of derivatives of a GVar.
+    """
     if isinstance(x, gvar.GVar):
         return x.internaldata[1]
     else:
@@ -141,7 +150,7 @@ def from_jacobian(mean, jac, indices):
     mean = np.asarray(mean)
     shape = mean.shape
     mean = mean.flat
-    jac = np.array(jac) # TODO patch gvar issue #27
+    jac = np.array(jac) # TODO patches gvar issue #27
     jac = jac.reshape(len(mean), len(indices))
     g = np.zeros(len(mean), object)
     for i, jacrow in enumerate(jac):
@@ -149,3 +158,12 @@ def from_jacobian(mean, jac, indices):
         der._assign(jac[i], indices)
         g[i] = gvar.GVar(mean[i], der, cov)
     return g.reshape(shape)
+    
+def bufferdict_flatten(bd):
+    return tuple(bd.values()), tuple(bd.keys())
+
+def bufferdict_unflatten(keys, values):
+    return gvar.BufferDict(zip(keys, values))
+
+# register BufferDict as a pytree
+tree_util.register_pytree_node(gvar.BufferDict, bufferdict_flatten, bufferdict_unflatten)
