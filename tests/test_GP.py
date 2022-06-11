@@ -182,7 +182,7 @@ def test_prior_gvar():
     gcovs = gvar.evalcov(prior)
     for k, cov in covs.items():
         gcov = gcovs[k]
-        np.testing.assert_allclose(cov, gcov, atol=1e-15, rtol=1e-12)
+        np.testing.assert_allclose(cov, gcov, atol=1e-15, rtol=1e-11)
 
 def test_kernelop():
     gp = lgp.GP()
