@@ -78,7 +78,9 @@ Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
 
 Check that float32 is respected.
 
-Test recursive dtype support.
+Test recursive dtype support
+
+In general add extensive tests for StructuredArray.
 
 The minimum derivability warnings are annoying because there are a lot of them
 when doing nontrivial things, maybe I should put a warnings filter in GP.pred
@@ -107,6 +109,8 @@ Currently the positivity check is done only on the first call to predfromdata,
 on all non-transformed blocks. This means that if I add other blocks afterward
 they are not checked. Maybe a more coherent behaviour would be to check all
 blocks involved in the conditioning, on every conditioning.
+
+Add jit tests to test_GP
 
 ## Implementation details
 

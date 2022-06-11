@@ -277,12 +277,16 @@ class CrossKernel:
         y = _array.asarray(y)
         numpy.result_type(x.dtype, y.dtype)
         shape = _array.broadcast(x, y).shape
+        # TODO allow the result to have a different shape and broadcast it,
+        # this handles automatically constant matrices without using memory,
+        # and makes writing the kernel simpler
         result = self._kernel(x, y)
         assert isinstance(result, (numpy.ndarray, jnp.number, jnp.ndarray))
         assert jnp.issubdtype(result.dtype, jnp.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
         return result
     
+    # TODO look up how to write enums in python
     class SIDE: pass
     class LEFT(SIDE): pass
     class RIGHT(SIDE): pass
