@@ -22,6 +22,7 @@ name: release
 on:
   release:
     types: [published]
+  workflow-dispatch
 
 jobs:
   
@@ -32,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.10", "3.7"]
+        python-version: ["3.10", "3.8"]
     steps:
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3

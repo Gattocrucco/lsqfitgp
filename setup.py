@@ -39,7 +39,7 @@ setuptools.setup(
         "Development Status :: 4 - Beta",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.7',
+    python_requires='>=3.8', # first version with functools.cached_property
     install_requires=[
         'numpy>=1.20', # first version with broadcast_shapes
         'scipy>=1.3', # first version not complaining when n==k in sparse.eigsh
