@@ -17,9 +17,18 @@ def jaxtonumpy(x):
 
 def assert_equal(*args):
     """
-    Version of assert_equal that works with jax arrays.
+    Version of assert_equal that works with jax arrays, and which fixes
+    numpy issue #21739
     """
-    np.testing.assert_equal(*map(jaxtonumpy, args))
+    assert_array_equal(*map(jaxtonumpy, args))
+
+def assert_array_equal(*args):
+    a = args[0]
+    if isinstance(a, np.ndarray) and a.size == 0 and a.dtype.names:
+        assert all(b.dtype == a.dtype for b in args)
+        assert all(b.shape == a.shape for b in args)
+    else:
+        np.testing.assert_equal(*args)
 
 def mark(cls, meth, mark):
     """

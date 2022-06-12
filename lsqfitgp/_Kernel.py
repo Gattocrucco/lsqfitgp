@@ -20,6 +20,8 @@
 import sys
 import warnings
 import copy
+import types
+import enum
 
 import jax
 from jax import numpy as jnp
@@ -287,22 +289,21 @@ class CrossKernel:
         assert result.shape == shape, (result.shape, shape)
         return result
     
-    # TODO look up how to write enums in python
-    class SIDE: pass
-    class LEFT(SIDE): pass
-    class RIGHT(SIDE): pass
-    class BOTH(SIDE): pass
+    class side(enum.Enum):
+        LEFT = 0
+        RIGHT = 1
+        BOTH = 2
          
     @classmethod
     def _nary(cls, op, kernels, side):
         
-        if side is cls.LEFT:
+        if side is cls.side.LEFT:
             wrapper = lambda c, _, y: lambda x: c(x, y)
             arg = lambda x, _: x
-        elif side is cls.RIGHT:
+        elif side is cls.side.RIGHT:
             wrapper = lambda c, x, _: lambda y: c(x, y)
             arg = lambda _, y: y
-        elif side is cls.BOTH:
+        elif side is cls.side.BOTH:
             wrapper = lambda c, _, __: lambda xy: c(*xy)
             arg = lambda x, y: (x, y)
         else:
@@ -322,7 +323,7 @@ class CrossKernel:
             value = self._newkernel_from(lambda x, y: val, [self])
         if not isinstance(value, CrossKernel):
             return NotImplemented
-        return self._nary(op, [self, value], self.BOTH)
+        return self._nary(op, [self, value], self.side.BOTH)
     
     def __add__(self, value):
         return self._binary(value, lambda f, g: lambda x: f(x) + g(x))
@@ -781,8 +782,9 @@ def _makekernelsubclass(kernel, superclass, **prekw):
         named_object = kernel
     
     name = getattr(named_object, '__name__', 'DecoratedKernel')
-    newclass = type(name, (superclass,), {})
-    
+    # newclass = type(name, (superclass,), {})
+    newclass = types.new_class(name, (superclass,))
+        
     prekwset = set(prekw)
     def __init__(self, **kw):
         kwargs = prekw.copy()

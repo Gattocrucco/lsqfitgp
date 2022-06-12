@@ -105,9 +105,7 @@ def _concrete(x):
     # TODO maybe use jax.core.concrete_aval? But I'm not sure of what it does
 
 def concrete(*args):
-    if len(args) == 0:
-        pass
-    elif len(args) == 1:
+    if len(args) == 1:
         return _concrete(args[0])
     else:
         return tuple(map(_concrete, args))
@@ -126,7 +124,8 @@ def stop_hessian_jvp(primals, tangents):
     x_dot, = tangents
     return x, lax.stop_gradient(x_dot)
 
-def value_and_ops(f, *ops, has_aux=False, **kw):
+def value_and_ops(f, *ops, has_aux=False, **kw): # pragma: no cover
+    # currently not used, written for empbayes_fit
     """
     Creates a function returning the values of f and its derivatives defined
     by stacking the operators in ops. Example:

@@ -30,13 +30,13 @@ __all__ = [
 ]
 
 # TODO use the __array_function__ mechanism instead of exposing custom
-# functions. Requires numpy >= 1.17. Is it still experimental, or will it stay
-# as it is?
+# functions. => Or try __array_module__, which probably does not work for
+# asarray.
 
 def _readonlyview(x):
     if not isinstance(x, (StructuredArray, jnp.ndarray)):
         x = x.view()
-        x.flags['WRITEABLE'] = False
+        x.flags.writeable = False
     return x
 
 def _wrapifstructured(x):
@@ -67,7 +67,7 @@ def broadcast_arrays(*arrays, **kw):
     Version of np.broadcast_arrays that works with StructuredArray.
     """
     shapes = [a.shape for a in arrays]
-    shape = broadcast_shapes(shapes)
+    shape = np.broadcast_shapes(*shapes)
     return tuple(broadcast_to(a, shape, **kw) for a in arrays)
 
 def asarray(x, **kw):
@@ -238,3 +238,17 @@ class StructuredArray:
         out += '})'
         
         return out
+    
+    def __array__(self):
+        array = np.empty(self.shape, self.dtype)
+        self._copy_into_array(array)
+        return array
+    
+    def _copy_into_array(self, dest):
+        assert self.dtype == dest.dtype
+        assert self.shape == dest.shape
+        for name, src in self._dict.items():
+            if src.dtype.names:
+                src._copy_into_array(dest[name])
+            else:
+                dest[name][...] = src

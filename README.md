@@ -7,7 +7,7 @@ Python module for manipulating Gaussian processes. Features:
   * Use [gvar](https://github.com/gplepage/gvar) to keep track transparently of
     correlations between prior, data and posterior.
 
-  * Fit a latent gaussian process in a nonlinear model with
+  * Fit a latent Gaussian process in a nonlinear model with
     [lsqfit](https://github.com/gplepage/lsqfit).
     
   * [JAX](https://github.com/google/jax)-friendly.
@@ -15,7 +15,8 @@ Python module for manipulating Gaussian processes. Features:
   * Supports multidimensional structured non-numerical input with named
     dimensions.
     
-  * Apply arbitrary linear transformations to the process.
+  * Apply arbitrary linear transformations to the process, finite and
+    infinite.
   
   * Use dictionaries to manipulate hyperparameters and hyperpriors. Use
     `gvar.BufferDict` to transparently apply transformations.

@@ -1073,7 +1073,7 @@ class GP:
         yp = self._procs[ypkey]
         
         kernels = [self._crosskernel(pk, ypkey) for pk in xp.keys]
-        kernel = _Kernel.CrossKernel._nary(xp.transf, kernels, _Kernel.CrossKernel.LEFT)
+        kernel = _Kernel.CrossKernel._nary(xp.transf, kernels, _Kernel.CrossKernel.side.LEFT)
         kernel = kernel.diff(xp.deriv, 0)
         
         return kernel

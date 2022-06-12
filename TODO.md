@@ -71,6 +71,9 @@ NotImplementedError right away instead of letting the core callable do it: thus
 the implementation methods shall return NotImplemented in place of a callable
 to disable the transformations.
 
+The way I specify the hyperprior with transformations of gvars from the point
+of view of a statistician is a gaussian copula.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -114,10 +117,6 @@ Add jit tests to test_GP
 
 ## Implementation details
 
-Usare l'interfaccia numpy `__array_function__` per `StructuredArray`, and
-add an `__array__` method that raises an exception such that StructuredArrays
-are not silently converted to 0d object arrays like it happened in Rescaling.
-
 Chiamare GP -> _GPBase e poi fare una sottoclasse GP e mettere tutti i metodi
 di convenienza che non accedono a cose interne in GP.
 
@@ -126,6 +125,13 @@ su github. => Non è che però è un rischio? In questo modo il mio account
 github controllerebbe cosa finisce su PyPI perché dovrei metterci le chiavi di
 accesso. Dovrei attivare l'autenticazione a due fattori. => Vantaggio: potrei
 testare anche l'installazione da PyPI dopo aver caricato la release.
+
+In defining abstract methods, use the single line syntax:
+
+    @abc.abstractmethod
+    def cippa(*_): pass
+
+such that there is not need to add # pragma: no cover.
 
 ## New functionality
 
@@ -813,6 +819,10 @@ that Schur is more stable than Levinson.
 
 In general SuperGauss has all these methods implemented, but copying them from
 C++ is not convenient.
+
+PCG should be the state of the art, but I can't decompose the matrix that way.
+This implies that I can't sample from a toeplitz matrix efficiently, because
+I need V = A @ A.T. Maybe ask Amengual at his course.
 
 #### Markovian processes
 

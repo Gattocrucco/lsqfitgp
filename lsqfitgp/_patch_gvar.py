@@ -54,7 +54,6 @@ def jaxsupport(jax_ufunc):
     Create a wrapper of a function that will dispatch to another specified
     function if the argument is a jax array.
     """
-    # TODO look into python typed dispatching
     def decorator(gvar_ufunc):
         @functools.wraps(gvar_ufunc)
         def newfunc(x):
@@ -68,10 +67,13 @@ def jaxsupport(jax_ufunc):
 for fname in gvar_ufuncs:
     fgvar = getattr(gvar, fname)
     fjax = getattr(jspecial if fname == 'erf' else jnp, fname)
+    # fboth = functools.singledispatch(fgvar)
+    # fboth.register(jnp.ndarray, fjax)
+    # python dispatch mechanism does not work, see jax issue #11075
     fboth = jaxsupport(fjax)(fgvar)
     setattr(gvar, fname, fboth)
 
-# reset transformations to support jax arrays 
+# reset transformations to support jax arrays
 gvar.BufferDict.del_distribution('log')
 gvar.BufferDict.del_distribution('sqrt')
 gvar.BufferDict.del_distribution('erfinv')
