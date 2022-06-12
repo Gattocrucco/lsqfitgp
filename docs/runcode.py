@@ -17,10 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Run the python code in the rst files specified on the command line."""
+"""Run the python code in the rst files specified on the command line, but
+only if the leading indentation is at least 4 spaces and there is a blank line
+after the code block"""
 
 import re
 import sys
+import textwrap
+
 import numpy as np
 from matplotlib import pyplot as plt
 import gvar
@@ -48,11 +52,14 @@ def runcode(file):
     
     for match in pattern.finditer(text):
         codeblock = match.group(1)
-        print('---------------------------------------------------------\n')
-        pyprint(codeblock)
-        code = '\n'.join(line[4:] for line in codeblock.split('\n'))
+        print(58 * '-' + '\n')
+        code = textwrap.dedent(codeblock).strip()
+        printcode = '\n'.join(f' {i + 1:2d}  ' + l for i, l in enumerate(code.split('\n')))
+        pyprint(printcode)
         exec(code, globals_dict)
 
 for file in sys.argv[1:]:
-    print('running {}...'.format(file))
+    s = f'*  running {file}  *'
+    line = '*' * len(s)
+    print('\n' + line + '\n' + s + '\n' + line)
     runcode(file)

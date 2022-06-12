@@ -21,11 +21,11 @@
 
 outputfile = 'examplesref.rst'
 
-import glob
-import os
+import pathlib
 import re
+import textwrap
 
-examples = glob.glob('../examples/*.py')
+examples = pathlib.Path('.').glob('../examples/*.py')
 examples = list(sorted(examples))
 
 pattern = re.compile(r'(?s)"""(.+)"""')
@@ -36,7 +36,7 @@ longindex = ''
 for example in examples:
     
     # get script name and url
-    prefix, name = os.path.split(example)
+    name = example.name
     if name == 'runexamples.py':
         continue
     url = f'https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/{name}'
@@ -44,17 +44,16 @@ for example in examples:
     # get description from docstring
     with open(example, 'r') as stream:
         text = stream.read()
-    for match in pattern.finditer(text):
+    if match := pattern.search(text):
         descr = match.group(1)
-        descr = ': ' + '\n    '.join(s.strip() for s in descr.strip().split('\n'))
-        break
+        descr = ': ' + textwrap.indent(textwrap.dedent(descr), 4 * ' ').strip()
     else:
         descr = ''
         
     # get eventual figure
-    base, _ = os.path.splitext(name)
-    imgfile = f'{prefix}/plot/{base}.png'
-    if os.path.exists(imgfile):
+    base = example.stem
+    imgfile = example.parent / 'plot' / f'{base}.png'
+    if imgfile.exists():
         image = f"""
     
     .. image:: {imgfile}"""
