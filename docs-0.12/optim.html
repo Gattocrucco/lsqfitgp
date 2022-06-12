@@ -157,7 +157,9 @@ some hundreds of datapoints the next bottleneck is probably in
 <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code></a>. Making it faster is quick: select a solver different
 from the default one when initializing the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object, like
 <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol')</span></code>. And don’t forget to disable the positivity
-check: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol',</span> <span class="pre">checkpos=False)</span></code>.</p>
+check: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol',</span> <span class="pre">checkpos=False)</span></code>. The positivity check
+takes <span class="math notranslate nohighlight">\(O((n+m)^3)\)</span>, so it’s guaranteed to become the slower step at some
+point.</p>
 <p>If you have written a custom kernel, it may become a bottleneck. For example
 the letter counting kernel in <a class="reference internal" href="customs.html#customs"><span class="std std-ref">A custom kernel: text classification</span></a> was very slow. A quick way to get
 a 2x improvement is disabling the symmetry check in <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span>
