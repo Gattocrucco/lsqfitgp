@@ -58,7 +58,9 @@ some hundreds of datapoints the next bottleneck is probably in
 :meth:`GP.predfromdata`. Making it faster is quick: select a solver different
 from the default one when initializing the :class:`GP` object, like
 ``GP(kernel, solver='chol')``. And don't forget to disable the positivity
-check: ``GP(kernel, solver='chol', checkpos=False)``.
+check: ``GP(kernel, solver='chol', checkpos=False)``. The positivity check
+takes :math:`O((n+m)^3)`, so it's guaranteed to become the slower step at some
+point.
 
 If you have written a custom kernel, it may become a bottleneck. For example
 the letter counting kernel in :ref:`customs` was very slow. A quick way to get
@@ -67,6 +69,7 @@ checksym=False)``.
 
 Fitting hyperparameters
 -----------------------
+.. TODO split this into a jit section and a hyperparameters section
 
 The function :class:`empbayes_fit` finds the "optimal" hyperparameters by
 feeding the GP-factory you give to it into a minimization routine that tries to
