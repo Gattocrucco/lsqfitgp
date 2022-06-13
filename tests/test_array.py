@@ -22,6 +22,7 @@ import itertools
 
 import numpy as np
 from jax import tree_util
+import pytest
 
 sys.path.insert(0, '.')
 import lsqfitgp as lgp
@@ -51,7 +52,7 @@ def random_array(shape, dtype):
 def crosscheck_operation(op, *arrays, **kw):
     
     r1 = op(*arrays, **kw)
-    r2 = op(*map(lgp.StructuredArray, arrays), **kw)
+    r2 = op(*map(lgp.StructuredArray, map(np.copy, arrays)), **kw)
     
     if not isinstance(r1, tuple):
         r1 = (r1,)
@@ -171,6 +172,67 @@ def test_broadcast():
 def test_asarray():
     def op(array):
         return lgp.asarray(array)
+    dtypes = [
+        [('f0', float)],
+        'f,f',
+        'f,d,f',
+        'f,O',
+        'S25,U10,?',
+        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
+    ]
+    shapes = [
+        (),
+        (0,),
+        (1,),
+        (1, 0),
+        (0, 1),
+        (10,),
+        (1, 2, 3),
+        (2, 3, 4),
+    ]
+    for dtype, shape in itertools.product(dtypes, shapes):
+        array = random_array(shape, dtype)
+        crosscheck_operation(op, array)
+
+def test_multiindex():
+    def op(a):
+        names = list(a.dtype.names)
+        return a[names], a[names[:2]], a[names[-2:]], a[names[:1]]
+    dtypes = [
+        [('f0', float)],
+        'f,f',
+        'f,d,f',
+        'f,O',
+        'S25,U10,?',
+        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
+    ]
+    shapes = [
+        (),
+        (0,),
+        (1,),
+        (1, 0),
+        (0, 1),
+        (10,),
+        (1, 2, 3),
+        (2, 3, 4),
+    ]
+    for dtype, shape in itertools.product(dtypes, shapes):
+        array = random_array(shape, dtype)
+        crosscheck_operation(op, array)
+
+def array_meta_hash(a):
+    d = a.dtype
+    shape_hash = sum(a.shape) + a.size + a.ndim
+    type_hash = len(d) + d.itemsize + sum(d[i].num for i in range(len(d))) + d.num
+    return shape_hash + type_hash
+
+def test_setfield():
+    def op(a):
+        name = a.dtype.names[0]
+        a0 = a[name]
+        np.random.seed(array_meta_hash(a))
+        a[name] = random_array(a0.shape, a0.dtype)
+        return a
     dtypes = [
         [('f0', float)],
         'f,f',
@@ -325,3 +387,16 @@ StructuredArray({
     'f1': array([  85.10061608, -152.64632798]),
 })"""
     assert repr(y) == s
+    
+    x = np.zeros(5, [])
+    y = lgp.StructuredArray(x)
+    s = "StructuredArray({})"
+    assert repr(y) == s
+
+def test_readonly():
+    x = random_array((2, 3), '4f,d,?')
+    x = lgp.StructuredArray(x)
+    x = x[:, 1]
+    with pytest.raises(ValueError):
+        y0 = x['f0']
+        x['f0'] = random_array(y0.shape, y0.dtype)

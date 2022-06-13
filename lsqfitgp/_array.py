@@ -34,9 +34,10 @@ __all__ = [
 # asarray.
 
 def _readonlyview(x):
-    if not isinstance(x, (StructuredArray, jnp.ndarray)):
+    if isinstance(x, np.ndarray):
         x = x.view()
         x.flags.writeable = False
+        # jax arrays and StructuredArrays are already readonly
     return x
 
 def _wrapifstructured(x):
@@ -109,22 +110,30 @@ class StructuredArray:
     """
     
     @classmethod
-    def _fromarrayanddict(cls, x, d, readonly=False):
+    def _array(cls, s, t, d, readonly=False):
         """
-        Create a new StructuredArray, copying the dtype member from `x` and
-        using `d` as `_dict` member (no copy). The shape and size are inferred
-        from the contents of `d`.
+        Create a new StructuredArray with shape `s`, dtype `t`, using `d` as
+        `_dict` member (no copy).
         """
+        if s is None:
+            f0 = t.names[0]
+            a0 = d[f0]
+            subshape = t[0].shape
+            s = a0.shape[:len(a0.shape) - len(subshape)]
         out = super().__new__(cls)
-        out.dtype = x.dtype
+        out.dtype = t
+        out.shape = s
         out._dict = d
-        f0 = x.dtype.names[0]
-        a0 = d[f0]
-        subshape = x.dtype.fields[f0][0].shape
-        out.shape = a0.shape[:len(a0.shape) - len(subshape)]
-        out.size = np.prod(out.shape)
         out._readonly = readonly
         return out
+    
+    @property
+    def size(self):
+        return np.prod(self.shape, dtype=int)
+    
+    @property
+    def ndim(self):
+        return len(self.shape)
     
     def __new__(cls, array):
         assert isinstance(array, (np.ndarray, cls))
@@ -133,17 +142,17 @@ class StructuredArray:
             name: _readonlyview(_wrapifstructured(array[name]))
             for name in array.dtype.names
         }
-        return cls._fromarrayanddict(array, d)
+        return cls._array(array.shape, array.dtype, d)
     
     def __getitem__(self, key):
         if isinstance(key, str):
             return self._dict[key]
-        elif isinstance(key, list) and all(isinstance(k, str) for k in key):
+        elif isinstance(key, list) and key and all(isinstance(k, str) for k in key):
             d = {
                 name: self._dict[name]
                 for name in key
             }
-            return type(self)._fromarrayanddict(self, d)
+            return self._array(self.shape, self.dtype[key], d)
         else:
             d = {
                 name: x[
@@ -152,7 +161,8 @@ class StructuredArray:
                 ]
                 for name, x in self._dict.items()
             }
-            return type(self)._fromarrayanddict(self, d, readonly=True)
+            # TODO won't work with empty dtype, but who cares
+            return self._array(None, self.dtype, d, readonly=True)
     
     def __setitem__(self, key, val):
         if self._readonly:
@@ -178,7 +188,7 @@ class StructuredArray:
             name: x.reshape(shape + self.dtype.fields[name][0].shape)
             for name, x in self._dict.items()
         }
-        return type(self)._fromarrayanddict(self, d)
+        return self._array(None, self.dtype, d)
     
     def broadcast_to(self, shape, **kw):
         """
@@ -190,7 +200,7 @@ class StructuredArray:
             name: broadcast_to(x, shape + self.dtype.fields[name][0].shape, **kw)
             for name, x in self._dict.items()
         }
-        return type(self)._fromarrayanddict(self, d)
+        return self._array(shape, self.dtype, d)
     
     def tree_flatten(self):
         """JAX PyTree encoder. See `jax.tree_util.tree_flatten`."""
@@ -199,7 +209,6 @@ class StructuredArray:
             keys = tuple(self._dict.keys()),
             dtype = self.dtype,
             shape = self.shape,
-            size = self.size,
             _readonly = self._readonly,
         )
         return children, aux_data
@@ -248,7 +257,7 @@ class StructuredArray:
         assert self.dtype == dest.dtype
         assert self.shape == dest.shape
         for name, src in self._dict.items():
-            if src.dtype.names:
+            if isinstance(src, StructuredArray):
                 src._copy_into_array(dest[name])
             else:
                 dest[name][...] = src
