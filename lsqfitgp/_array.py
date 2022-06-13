@@ -115,11 +115,12 @@ class StructuredArray:
         Create a new StructuredArray with shape `s`, dtype `t`, using `d` as
         `_dict` member (no copy).
         """
-        if s is None:
-            f0 = t.names[0]
-            a0 = d[f0]
-            subshape = t[0].shape
-            s = a0.shape[:len(a0.shape) - len(subshape)]
+        # if s is None:
+        #     # infer the shape from the arrays in the dictionary
+        #     f0 = t.names[0]
+        #     a0 = d[f0]
+        #     subshape = t[0].shape
+        #     s = a0.shape[:len(a0.shape) - len(subshape)]
         out = super().__new__(cls)
         out.dtype = t
         out.shape = s
@@ -161,8 +162,8 @@ class StructuredArray:
                 ]
                 for name, x in self._dict.items()
             }
-            # TODO won't work with empty dtype, but who cares
-            return self._array(None, self.dtype, d, readonly=True)
+            shape = np.empty(self.shape, [])[key].shape
+            return self._array(shape, self.dtype, d, readonly=True)
     
     def __setitem__(self, key, val):
         if self._readonly:
@@ -188,7 +189,8 @@ class StructuredArray:
             name: x.reshape(shape + self.dtype.fields[name][0].shape)
             for name, x in self._dict.items()
         }
-        return self._array(None, self.dtype, d)
+        shape = np.empty(self.shape, []).reshape(shape).shape
+        return self._array(shape, self.dtype, d)
     
     def broadcast_to(self, shape, **kw):
         """
