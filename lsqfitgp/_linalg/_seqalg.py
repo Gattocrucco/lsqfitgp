@@ -21,8 +21,11 @@ import abc
 
 from jax import numpy as jnp
 from jax import lax
+from jax import tree_util
 
-class SequentialOperation(metaclass=abc.ABCMeta):
+from . import _pytree
+
+class SequentialOperation(_pytree.AutoPyTree, metaclass=abc.ABCMeta):
     """see jax.lax.fori_loop for semantics"""
     
     @abc.abstractmethod
@@ -36,55 +39,51 @@ class SequentialOperation(metaclass=abc.ABCMeta):
         pass
     
     @abc.abstractmethod
-    def init_val(self, n, *inputs): # pragma: no cover
+    def init(self, n, *inputs): # pragma: no cover
+        """called before the cycle starts with the requested inputs"""
         pass
     
     @abc.abstractmethod
-    def iter_out(self, i, val): # pragma: no cover
-        """output passed to other ops who request it through `inputs`"""
+    def iter_out(self, i): # pragma: no cover
+        """output passed to other ops who request it through `inputs`,
+        guaranteed to be called after `init`"""
         pass
     
     @abc.abstractmethod
-    def iter(self, i, val, *inputs): # pragma: no cover
-        """return updated val"""
+    def iter(self, i, *inputs): # pragma: no cover
+        """update for iteration"""
         pass
 
     @abc.abstractmethod
-    def finalize_val(self, val): # pragma: no cover
+    def finalize(self): # pragma: no cover
         """return final product"""
         pass
 
-# TODO maybe I can register the class as a pytree with automatic childrening,
-# such that I don't need to pass `val` around explicitly.
-
 def sequential_algorithm(n, ops):
-    init_val = []
-    for op in ops:
-        args = (ops[j].iter_out(0, init_val[j]) for j in op.inputs)
-        init_val.append(op.init_val(n, *args))
-    def body_fun(i, val):
-        newval = []
-        for op, v in zip(ops, val):
-            args = (ops[j].iter_out(i, newval[j]) for j in op.inputs)
-            newval.append(op.iter(i, v, *args))
-        return newval
-    val = lax.fori_loop(1, n, body_fun, init_val)
-    # TODO use jax.lax.scan because fori_loop could switch to while_loop
-    # if n is abstract, which breaks reverse autodiff. Moreover lax.scan
-    # allows loop unrolling, although that's currently not really useful
-    # probably since I do large row or matrix operations in each cycle.
-    return tuple(op.finalize_val(v) for op, v in zip(ops, val))
+    for i, op in enumerate(ops):
+        inputs = op.inputs
+        if any(j >= i for j in inputs):
+            raise ValueError(f'{i}-th operation {op.__class__.__name__} requested inputs {inputs!r} with forward references')
+        args = (ops[j].iter_out(0) for j in inputs)
+        op.init(n, *args)
+    def body_fun(i, ops):
+        for op in ops:
+            args = (ops[j].iter_out(i) for j in op.inputs)
+            op.iter(i, *args)
+        return ops
+    ops = lax.fori_loop(1, n, body_fun, ops)
+    return tuple(op.finalize() for op in ops)
     
 class Producer(SequentialOperation):
     """produces something at each iteration but no final output"""
     
-    def finalize_val(self, val):
+    def finalize(self):
         pass
 
 class Consumer(SequentialOperation):
     """produces a final output but no iteration output"""
     
-    def iter_out(self, i, val):
+    def iter_out(self, i):
         pass
 
 class SingleInput(SequentialOperation):
@@ -97,19 +96,18 @@ class SingleInput(SequentialOperation):
         return (self.input,)
 
 class Stack(Consumer, SingleInput):
-    
     """input = an operation producing arrays"""
         
-    def init_val(self, n, a0):
+    def init(self, n, a0):
         out = jnp.zeros((n,) + a0.shape, a0.dtype)
-        return out.at[0, ...].set(a0)
+        self.out = out.at[0, ...].set(a0)
     
-    def iter(self, i, out, ai):
-        return out.at[i, ...].set(ai)
+    def iter(self, i, ai):
+        self.out = self.out.at[i, ...].set(ai)
     
-    def finalize_val(self, out):
+    def finalize(self):
         """the stacked arrays"""
-        return out
+        return self.out
 
 class MatMulIterByFull(Consumer, SingleInput):
     
@@ -126,47 +124,41 @@ class MatMulIterByFull(Consumer, SingleInput):
         self.b = b
     
     @abc.abstractmethod
-    def init_val(self, n, a0): # pragma: no cover
-        return ab, ...
+    def init(self, n, a0): # pragma: no cover
+        self.ab = ...
     
     @abc.abstractmethod
-    def iter(self, i, val, ai): # pragma: no cover
-        return ab, ...
+    def iter(self, i, ai): # pragma: no cover
+        self.ab = ...
     
-    def finalize_val(self, val):
-        ab = val[0]
+    def finalize(self):
+        ab = self.ab
         if self.vec:
             ab = jnp.squeeze(ab, -1)
         return ab
 
 class MatMulRowByFull(MatMulIterByFull):
     
-    def init_val(self, n, a0):
+    def init(self, n, a0):
         b = self.b
         assert a0.ndim == 1
         assert b.shape[0] == len(a0)
         ab = jnp.empty((n, b.shape[1]), jnp.result_type(a0.dtype, b.dtype))
-        ab = ab.at[0, :].set(a0 @ b)
-        return ab, b
+        self.ab = ab.at[0, :].set(a0 @ b)
     
-    def iter(self, i, val, ai):
-        ab, b = val
-        ab = ab.at[i, :].set(ai @ b)
-        return ab, b
+    def iter(self, i, ai):
+        self.ab = self.ab.at[i, :].set(ai @ self.b)
     
 class MatMulColByFull(MatMulIterByFull):
 
-    def init_val(self, n, a0):
+    def init(self, n, a0):
         b = self.b
         assert a0.ndim == 1
         assert b.shape[0] == n
-        ab = a0[:, None] * b[0, None, :]
-        return ab, b
+        self.ab = a0[:, None] * b[0, None, :]
     
-    def iter(self, i, val, ai):
-        ab, b = val
-        ab = ab + ai[:, None] * b[i, None, :]
-        return ab, b
+    def iter(self, i, ai):
+        self.ab = self.ab + ai[:, None] * self.b[i, None, :]
 
 class SolveTriLowerColByFull(MatMulIterByFull):
     # x[0] /= a[0, 0]
@@ -174,32 +166,30 @@ class SolveTriLowerColByFull(MatMulIterByFull):
     #     x[i:] -= x[i - 1] * a[i:, i - 1]
     #     x[i] /= a[i, i]
         
-    def init_val(self, n, a0):
+    def init(self, n, a0):
         b = self.b
+        del self.b
         assert a0.shape == (n,)
         assert b.shape[0] == n
-        prevai = a0.at[0].set(0)
-        ab = b.at[0, :].divide(a0[0])
-        return ab, prevai
+        self.prevai = a0.at[0].set(0)
+        self.ab = b.at[0, :].divide(a0[0])
     
-    def iter(self, i, val, ai):
-        ab, prevai = val
-        ab = ab - ab[i - 1, :] * prevai[:, None]
-        ab = ab.at[i, :].divide(ai[i])
-        prevai = ai.at[i].set(0)
-        return ab, prevai
+    def iter(self, i, ai):
+        ab = self.ab
+        ab = ab - ab[i - 1, :] * self.prevai[:, None]
+        self.ab = ab.at[i, :].divide(ai[i])
+        self.prevai = ai.at[i].set(0)
 
 class SumLogDiag(Consumer, SingleInput):
-    
     """input = operation producing the rows/columns of a square matrix"""
     
-    def init_val(self, n, m0):
+    def init(self, n, m0):
         assert m0.shape == (n,)
-        return jnp.log(m0[0])
+        self.sld = jnp.log(m0[0])
     
-    def iter(self, i, sld, mi):
-        return sld + jnp.log(mi[i])
+    def iter(self, i, mi):
+        self.sld = self.sld + jnp.log(mi[i])
     
-    def finalize_val(self, sld):
+    def finalize(self):
         """sum(log(diag(m)))"""
-        return sld
+        return self.sld

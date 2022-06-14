@@ -48,29 +48,28 @@ class SymSchur(_seqalg.Producer):
     def inputs(self):
         return ()
     
-    def init_val(self, n):
+    def init(self, n):
         t = self.t
+        del self.t
         assert len(t) == n
         norm = t[0]
         t = t / norm
-        g = jnp.stack([t, t])
-        return g, jnp.sqrt(norm)
+        self.g = jnp.stack([t, t])
+        self.snorm = jnp.sqrt(norm)
     
-    def iter_out(self, i, val):
+    def iter_out(self, i):
         """i-th column of cholesky factor L"""
-        g, snorm = val
-        return g[0, :] * snorm
+        return self.g[0, :] * self.snorm
     
-    def iter(self, i, val):
-        g, snorm = val
+    def iter(self, i):
+        g = self.g
         g = g.at[0, :].set(jnp.roll(g[0, :], 1))
         g = g.at[:, 0].set(0).at[:, i - 1].set(0)
         # assert g[0, i] > 0, 'what??'
         rho = -g[1, i] / g[0, i]
         # assert abs(rho) < 1, f'{i+1}-th leading minor is not positive definite'
         gamma = jnp.sqrt((1 - rho) * (1 + rho))
-        g = (g + g[::-1] * rho) / gamma
-        return g, snorm
+        self.g = (g + g[::-1] * rho) / gamma
     
 @jax.jit
 def chol(t):
