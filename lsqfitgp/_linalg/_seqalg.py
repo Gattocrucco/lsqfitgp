@@ -54,6 +54,9 @@ class SequentialOperation(metaclass=abc.ABCMeta):
         """return final product"""
         pass
 
+# TODO maybe I can register the class as a pytree with automatic childrening,
+# such that I don't need to pass `val` around explicitly.
+
 def sequential_algorithm(n, ops):
     init_val = []
     for op in ops:
@@ -72,25 +75,34 @@ def sequential_algorithm(n, ops):
     # probably since I do large row or matrix operations in each cycle.
     return tuple(op.finalize_val(v) for op, v in zip(ops, val))
     
-# TODO define two other abstract intermediate classes, Producer and Consumer,
-# which concretize the void finalize and iter_out respectively.
+class Producer(SequentialOperation):
+    """produces something at each iteration but no final output"""
+    
+    def finalize_val(self, val):
+        pass
 
-class Stack(SequentialOperation):
+class Consumer(SequentialOperation):
+    """produces a final output but no iteration output"""
+    
+    def iter_out(self, i, val):
+        pass
+
+class SingleInput(SequentialOperation):
     
     def __init__(self, input):
-        """input = an operation producing arrays"""
         self.input = input
         
     @property
     def inputs(self):
         return (self.input,)
+
+class Stack(Consumer, SingleInput):
+    
+    """input = an operation producing arrays"""
         
     def init_val(self, n, a0):
         out = jnp.zeros((n,) + a0.shape, a0.dtype)
         return out.at[0, ...].set(a0)
-    
-    def iter_out(self, i, out):
-        pass
     
     def iter(self, i, out, ai):
         return out.at[i, ...].set(ai)
@@ -99,7 +111,7 @@ class Stack(SequentialOperation):
         """the stacked arrays"""
         return out
 
-class MatMulIterByFull(SequentialOperation):
+class MatMulIterByFull(Consumer, SingleInput):
     
     def __init__(self, input, b):
         """input = an operation producing pieces of left operand (a)
@@ -113,16 +125,9 @@ class MatMulIterByFull(SequentialOperation):
         self.vec = vec
         self.b = b
     
-    @property
-    def inputs(self):
-        return (self.input,)
-    
     @abc.abstractmethod
     def init_val(self, n, a0): # pragma: no cover
         return ab, ...
-    
-    def iter_out(self, i, val):
-        pass
     
     @abc.abstractmethod
     def iter(self, i, val, ai): # pragma: no cover
@@ -184,22 +189,13 @@ class SolveTriLowerColByFull(MatMulIterByFull):
         prevai = ai.at[i].set(0)
         return ab, prevai
 
-class SumLogDiag(SequentialOperation):
+class SumLogDiag(Consumer, SingleInput):
     
-    def __init__(self, input):
-        """input = operation producing the rows/columns of a square matrix"""
-        self.input = input
-    
-    @property
-    def inputs(self):
-        return (self.input,)
+    """input = operation producing the rows/columns of a square matrix"""
     
     def init_val(self, n, m0):
         assert m0.shape == (n,)
         return jnp.log(m0[0])
-    
-    def iter_out(self, i, sld):
-        pass
     
     def iter(self, i, sld, mi):
         return sld + jnp.log(mi[i])
@@ -207,4 +203,3 @@ class SumLogDiag(SequentialOperation):
     def finalize_val(self, sld):
         """sum(log(diag(m)))"""
         return sld
-

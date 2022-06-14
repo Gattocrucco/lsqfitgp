@@ -23,7 +23,7 @@ import numpy
 
 from . import _seqalg
 
-class SymSchur(_seqalg.SequentialOperation):
+class SymSchur(_seqalg.Producer):
     
     def __init__(self, t):
         """
@@ -72,9 +72,6 @@ class SymSchur(_seqalg.SequentialOperation):
         g = (g + g[::-1] * rho) / gamma
         return g, snorm
     
-    def finalize_val(self, val):
-        pass
-
 @jax.jit
 def chol(t):
     _, out = _seqalg.sequential_algorithm(len(t), [SymSchur(t), _seqalg.Stack(0)])

@@ -25,7 +25,7 @@ Python module for manipulating Gaussian processes. Features:
   
 ## Installation
 
-Python >= 3.7 required. Then:
+Python >= 3.8 required. Then:
 
 ```
 $ pip install lsqfitgp

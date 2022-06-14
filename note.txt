@@ -648,3 +648,17 @@ empbayes_fit for the hyperparameters (DONE)
 I did the calculation of the Fisher information when the residuals (i.e., the
 mean vector) depend on the hyperparameters. The result is that I have to add a
 term ∂r^T K^-1 ∂r, i.e., quad(rjac).
+
+2022-06-13
+==========
+
+pdf9.py with 500 datapoints runs smoothly, but does not give something
+compatible with the truth. Even judging by eye, the fitted correlation length
+is too short, the valence shell looks shrinked. The minimum seems robust to
+change of fitting method. Ideas about this:
+
+1) Instrument properly empbayes_fit
+2) Maybe the link matrix with iid normal entries is particularly pathological
+   for some reason. Like, the effect tend to cancel out statistically as I
+   increase the size of the matrix, so it is numerically inaccurate doing
+   the inference.
