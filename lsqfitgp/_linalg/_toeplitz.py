@@ -24,22 +24,15 @@ import numpy
 from . import _seqalg
 
 class SymSchur(_seqalg.Producer):
-    """Cholesky decomposition of a symmetric Toeplitz matrix"""
+    """
+    Cholesky decomposition of a symmetric Toeplitz matrix
+    
+    Adapted from TOEPLITZ_CHOLESKY by John Burkardt (LGPL license)
+    http://people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html
+    """
     
     def __init__(self, t):
-        """
-        t = first row of a symmetric toeplitz matrix
-        
-        This code was initially copied from the TOEPLITZ_CHOLESKY code by John
-        Burkardt, released under the LGPL.
-        people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html
-        
-        Reference:
-            Michael Stewart,
-            Cholesky factorization of semi-definite Toeplitz matrices.
-            Linear Algebra and its Applications,
-            Volume 254, pages 497-525, 1997.
-        """
+        """t = first row of the matrix"""
         t = jnp.asarray(t)
         assert t.ndim == 1
         # assert t[0] > 0, '1-th leading minor is not positive definite'
@@ -73,11 +66,20 @@ class SymSchur(_seqalg.Producer):
         self.g = (g + g[::-1] * rho) / gamma
     
 class SymLevinson(_seqalg.Producer):
-    """Cholesky decomposition of the *inverse* of a symmetric Toeplitz matrix"""
+    """
+    Cholesky decomposition of the *inverse* of a symmetric Toeplitz matrix
+    
+    Adapted form SuperGauss/DurbinLevinson.h (GPL license)
+    https://cran.r-project.org/package=SuperGauss
+    
+    Note: Schur should be more accurate than Levinson
+    """
     
     def __init__(self, t):
+        """t = first row of the matrix"""
         t = jnp.asarray(t)
         assert t.ndim == 1
+        # assert t[0] > 0, '1-th leading minor is not positive definite'
         self.t = t
     
     @property
@@ -100,21 +102,11 @@ class SymLevinson(_seqalg.Producer):
         nu = self.nu
         tlag = self.tlag
         
-        # now:
-        # phi1[i - 1:] == 0
-        # phi2[i - 1:] == 0
-        
         pi = i - 1
         rp = phi2 @ tlag
         phi1 = phi1.at[pi].set((tlag[pi] - rp) / nu)
         phi1 = phi1 - phi1[pi] * phi2
-        # TODO this could possibly be simplified by adding a non-zero entry
-        # to phi2, such that ili = -phi2 / sqrt(nu), without having a special
-        # case for phi1[pi]
-        
-        # now:
-        # phi1[i:] == 0
-
+        # assert abs(phi1[pi]) < 1, f'{i+1}-th leading minor is not positive definite'
         nu = nu * (1 - phi1[pi]) * (1 + phi1[pi])
         phi2 = jnp.roll(phi1[::-1], i)
         
@@ -145,7 +137,8 @@ def logdet(t):
 
 @jax.jit
 def solve(t, b):
-    _, _, out = _seqalg.sequential_algorithm(len(t), [SymLevinson(t), _seqalg.MatMulRowByFull(0, b), _seqalg.MatMulColByRow(0, 1)])
+    ops = [SymLevinson(t), _seqalg.MatMulRowByFull(0, b), _seqalg.MatMulColByRow(0, 1)]
+    _, _, out = _seqalg.sequential_algorithm(len(t), ops)
     return out
 
 def chol_solve_numpy(t, b, diageps=None):

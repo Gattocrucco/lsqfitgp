@@ -813,24 +813,23 @@ uniform independent errors it's still toeplitz.
 Scipy.linalg now has a function to multiply toeplitz matrices.
 
 The kinds of solvers/decompositions are:
-1) Levinson O(n^2)  -> see scipy.linalg.solve_toeplitz
-2) Superfast direct O(n log^2 n)  -> see SuperGauss (R)
-3) PCG O(n log n)  -> see GPyTorch and Chan
-4) Schur O(n^2)  -> already implemented in lsqfitgp
+1) Levinson O(n^2)  -> already implemented
+1a) Levinson-Trench-Zohar O(n^2), a bit faster for solve  -> see SuperGauss
+2) Block Schur O(n log^2 n)  -> see SuperGauss
+3) PCG O(n log n)  -> see Chan and SuperGauss
+4) Schur O(n^2)  -> already implemented
 5) Toeplitz Bareiss O(n^2) + O(n^2) space, but stable (see ??)
 
 Book about PCG: Chan 2007, An Introduction to Iterative Toeplitz Solvers
 Review of Levinson and Schur: Heinig 2011, Fast algorithms for Toeplitz and Hankel matrices
 
-See https://en.wikipedia.org/wiki/Levinson_recursion for more references. Says
-that Schur is more stable than Levinson.
+See https://en.wikipedia.org/wiki/Levinson_recursion for more references.
 
-In general SuperGauss has all these methods implemented, but copying them from
-C++ is not convenient.
+In general SuperGauss has all these methods implemented.
 
 PCG should be the state of the art, but I can't decompose the matrix that way.
 This implies that I can't sample from a toeplitz matrix as efficiently, because
-I need V = A @ A.T. Maybe ask Amengual at his course.
+I need V = A @ A.T.
 
 #### Markovian processes
 
@@ -842,7 +841,8 @@ rest of the library.
 I think what you get is a Kalman filter.
 
 In GPstuff they also approximate any stationary 1D process with a sufficient
-number of hidden Markov processes.
+number of hidden Markov processes. => This doesn't work well for long memory
+processes, i.e., if the covariance function decays slower than exponentially.
 
 #### Autoregressive processes
 
