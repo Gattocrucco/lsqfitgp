@@ -598,16 +598,13 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     """
     
     def __init__(self, K, eps=None):
-        t = jnp.asarray(K[0])
+        t = jnp.asarray(K[0, :])
         m = _toeplitz.eigv_bound(t)
         eps = self._eps(eps, t, m)
         self.t = t.at[0].add(eps)
     
     def solve(self, b):
-        # TODO scipy's solve_toeplitz is vectorized with a silly python loop,
-        # levinson's algorithm should be simple so it is worthwhile to
-        # reimplement it in jax.
-        return linalg.solve_toeplitz(self.t, b)
+        return _toeplitz.solve(self.t, b)
     
     def quad(self, b, c=None):
         t = self.t

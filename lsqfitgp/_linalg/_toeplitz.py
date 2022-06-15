@@ -24,6 +24,7 @@ import numpy
 from . import _seqalg
 
 class SymSchur(_seqalg.Producer):
+    """Cholesky decomposition of a symmetric Toeplitz matrix"""
     
     def __init__(self, t):
         """
@@ -58,7 +59,7 @@ class SymSchur(_seqalg.Producer):
         self.snorm = jnp.sqrt(norm)
     
     def iter_out(self, i):
-        """i-th column of cholesky factor L"""
+        """i-th column of Cholesky factor L"""
         return self.g[0, :] * self.snorm
     
     def iter(self, i):
@@ -71,6 +72,56 @@ class SymSchur(_seqalg.Producer):
         gamma = jnp.sqrt((1 - rho) * (1 + rho))
         self.g = (g + g[::-1] * rho) / gamma
     
+class SymLevinson(_seqalg.Producer):
+    """Cholesky decomposition of the *inverse* of a symmetric Toeplitz matrix"""
+    
+    def __init__(self, t):
+        t = jnp.asarray(t)
+        assert t.ndim == 1
+        self.t = t
+    
+    @property
+    def inputs(self):
+        return ()
+        
+    def init(self, n):
+        self.phi1 = jnp.zeros(n)
+        self.phi2 = jnp.zeros(n)
+        self.nu = self.t[0]
+        self.tlag = jnp.roll(self.t, -1)
+        
+    def iter_out(self, i):
+        """i-th row of L^-1"""
+        return -self.phi2.at[i].set(-1) / jnp.sqrt(self.nu)
+        
+    def iter(self, i):
+        phi1 = self.phi1
+        phi2 = self.phi2
+        nu = self.nu
+        tlag = self.tlag
+        
+        # now:
+        # phi1[i - 1:] == 0
+        # phi2[i - 1:] == 0
+        
+        pi = i - 1
+        rp = phi2 @ tlag
+        phi1 = phi1.at[pi].set((tlag[pi] - rp) / nu)
+        phi1 = phi1 - phi1[pi] * phi2
+        # TODO this could possibly be simplified by adding a non-zero entry
+        # to phi2, such that ili = -phi2 / sqrt(nu), without having a special
+        # case for phi1[pi]
+        
+        # now:
+        # phi1[i:] == 0
+
+        nu = nu * (1 - phi1[pi]) * (1 + phi1[pi])
+        phi2 = jnp.roll(phi1[::-1], i)
+        
+        self.phi1 = phi1
+        self.phi2 = phi2
+        self.nu = nu
+
 @jax.jit
 def chol(t):
     _, out = _seqalg.sequential_algorithm(len(t), [SymSchur(t), _seqalg.Stack(0)])
@@ -91,6 +142,11 @@ def chol_matmul(t, b):
 def logdet(t):
     _, out = _seqalg.sequential_algorithm(len(t), [SymSchur(t), _seqalg.SumLogDiag(0)])
     return 2 * out
+
+@jax.jit
+def solve(t, b):
+    _, _, out = _seqalg.sequential_algorithm(len(t), [SymLevinson(t), _seqalg.MatMulRowByFull(0, b), _seqalg.MatMulColByRow(0, 1)])
+    return out
 
 def chol_solve_numpy(t, b, diageps=None):
     """

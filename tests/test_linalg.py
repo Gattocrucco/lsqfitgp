@@ -731,42 +731,42 @@ def test_toeplitz_gershgorin():
     b2 = _linalg._toeplitz.eigv_bound(t)
     np.testing.assert_allclose(b2, b1, rtol=1e-15)
 
-def check_toeplitz_chol(jit=False):
-    class Mod:
-        def __getattr__(self, func):
-            f = getattr(_linalg._toeplitz, func)
-            return jax.jit(f) if jit else f
-    mod = Mod()
-    
+def check_toeplitz():
+    mod = _linalg._toeplitz
     for n in [1, 2, 10]:
         x = np.linspace(0, 3, n)
         t = np.pi * np.exp(-1/2 * x ** 2)
         m = linalg.toeplitz(t)
-        
+    
         l1 = mod.chol(t)
         l2 = linalg.cholesky(m, lower=True)
         np.testing.assert_allclose(l1, l2, rtol=1e-8)
-        
+    
         b = np.random.randn(len(t), 30)
         lb1 = mod.chol_matmul(t, b)
         lb2 = l2 @ b
         np.testing.assert_allclose(lb1, lb2, rtol=1e-7)
-    
+
         ld1 = mod.logdet(t)
         _, ld2 = np.linalg.slogdet(m)
         np.testing.assert_allclose(ld1, ld2, rtol=1e-9)
-        
+    
         ilb1 = mod.chol_solve(t, b)
         ilb2 = linalg.solve_triangular(l2, b, lower=True)
         np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
+    
+        imb1 = mod.solve(t, b)
+        imb2 = np.linalg.solve(m, b)
+        np.testing.assert_allclose(imb1, imb2, rtol=1e-5)
 
 @util.tryagain
-def test_toeplitz_chol():
-    check_toeplitz_chol()
+def test_toeplitz_nojit():
+    with jax.disable_jit():
+        check_toeplitz()
 
 @util.tryagain
-def test_toeplitz_chol_jit():
-    check_toeplitz_chol(True)
+def test_toeplitz():
+    check_toeplitz()
 
 @util.tryagain
 def test_toeplitz_chol_solve_numpy():
@@ -831,12 +831,3 @@ util.xfail(BlockDecompTestBase, 'test_logdet_hess_da')
 
 # TODO why?
 # util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')
-
-# TODO TestCholToeplitzML's solve is not jax compatible
-for name, meth in inspect.getmembers(TestCholToeplitzML, inspect.isfunction):
-    cond = 'solve' in name and ('jac' in name or 'jit' in name or 'hess' in name)
-    cond = cond or ('jit' in name and ('jac' in name or 'hess' in name))
-    cond = cond or ('hess' in name and 'da' not in name)
-    cond = cond or ('logdet' in name and 'jac' in name)
-    if name.startswith('test_') and cond:
-        util.xfail(TestCholToeplitzML, name)

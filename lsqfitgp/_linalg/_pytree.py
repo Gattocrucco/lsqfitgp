@@ -48,4 +48,4 @@ class AutoPyTree:
             setattr(self, n, v)
         for n, v in other_vars:
             setattr(self, n, v)
-        return self    
+        return self

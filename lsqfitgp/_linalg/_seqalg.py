@@ -146,6 +146,12 @@ class MatMulRowByFull(MatMulIterByFull):
         ab = jnp.empty((n, b.shape[1]), jnp.result_type(a0.dtype, b.dtype))
         self.ab = ab.at[0, :].set(a0 @ b)
     
+    def iter_out(self, i):
+        abi = self.ab[i, :]
+        if self.vec:
+            abi = jnp.squeeze(abi, -1)
+        return abi
+    
     def iter(self, i, ai):
         self.ab = self.ab.at[i, :].set(ai @ self.b)
     
@@ -159,6 +165,30 @@ class MatMulColByFull(MatMulIterByFull):
     
     def iter(self, i, ai):
         self.ab = self.ab + ai[:, None] * self.b[i, None, :]
+
+class MatMulColByRow(Consumer):
+    
+    def __init__(self, inputa, inputb):
+        self.inputs = (inputa, inputb)
+    
+    inputs = None
+    
+    def init(self, n, a0, b0):
+        assert a0.ndim == 1 and b0.ndim <= 1
+        self.vec = b0.ndim > 0
+        if self.vec:
+            self.ab = a0[:, None] * b0[None, :]
+        else:
+            self.ab = a0 * b0
+    
+    def iter(self, i, ai, bi):
+        if self.vec:
+            self.ab = self.ab + ai[:, None] * bi[None, :]
+        else:
+            self.ab = self.ab + ai * bi
+    
+    def finalize(self):
+        return self.ab
 
 class SolveTriLowerColByFull(MatMulIterByFull):
     # x[0] /= a[0, 0]

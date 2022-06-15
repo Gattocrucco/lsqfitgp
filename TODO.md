@@ -630,6 +630,14 @@ corresponding transformation easily. In general series of kernels support this.
 => Wait, nope: being an integral, the individual expquad processes have zero
 variance.
 
+#### Nonlinear transformations
+
+Shteno supports analytical multiplications of GPs with moment matching. Can I
+do that for general transformations by taking hessians with JAX? The problem I
+expect with multiplications is that if the mean is zero (as I'm doing) then it
+won't work well because the linearization is crap. I should really support mean
+functions at some point.
+
 ### Discrete likelihoods
 
 I'd like to avoid introducing a different likelihood and Laplace and EP. In the
@@ -821,7 +829,7 @@ In general SuperGauss has all these methods implemented, but copying them from
 C++ is not convenient.
 
 PCG should be the state of the art, but I can't decompose the matrix that way.
-This implies that I can't sample from a toeplitz matrix efficiently, because
+This implies that I can't sample from a toeplitz matrix as efficiently, because
 I need V = A @ A.T. Maybe ask Amengual at his course.
 
 #### Markovian processes
