@@ -540,6 +540,11 @@ Classes: RandomWalkKernel, PeriodicKernel (che non è una sottoclasse di
 StationaryKernel, perché in linea di principio può anche essere non
 stazionario, lo aggiungo con ereditarietà multipla solo come flag)
 
+Kernels I didn't know from https://github.com/wesselb/mlkernels:
+causal exponential quadratic
+decaying kernel
+logkernel
+
 ### Transformations
 
 #### Pointwise infinite transformations
@@ -804,18 +809,16 @@ When a covariance block flag or a DAG assumption is not used, emit a warning.
 Can be implemented by flagging the individual objects with "done", false by
 default, and then checking if something was not used in the blocks involved.
 
-#### Evenly spaced input (toeplitz)
+#### Stationary processes (toeplitz)
 
 With stationary kernels, an evenly spaced input produces a toeplitz matrix,
 which requires O(N) memory and can be solved in O(N^2). If the data has
 uniform independent errors it's still toeplitz.
 
-Scipy.linalg now has a function to multiply toeplitz matrices.
-
 The kinds of solvers/decompositions are:
 1) Levinson O(n^2)  -> already implemented
 1a) Levinson-Trench-Zohar O(n^2), a bit faster for solve  -> see SuperGauss
-2) Block Schur O(n log^2 n)  -> see SuperGauss
+2) Generalized Schur O(n log^2 n)  -> see SuperGauss
 3) PCG O(n log n)  -> see Chan and SuperGauss
 4) Schur O(n^2)  -> already implemented
 5) Toeplitz Bareiss O(n^2) + O(n^2) space, but stable (see ??)
@@ -827,11 +830,21 @@ See https://en.wikipedia.org/wiki/Levinson_recursion for more references.
 
 In general SuperGauss has all these methods implemented.
 
-PCG should be the state of the art, but I can't decompose the matrix that way.
-This implies that I can't sample from a toeplitz matrix as efficiently, because
-I need V = A @ A.T.
+How to take samples with GSchur:
+1) obtain the semencul decomposition V^-1 = AA^T - BB^T with A, B triangular
+   toeplitz   O(n log^2 n)
+2) take two iid normal vectors za and zb   O(n)
+3) y = A za + B zb has then covariance matrix V^-1   O(n log n)
+4) x = V y has covariance V   O(n log n)
 
-#### Markovian processes
+Actual proper way to sample in O(n log n): use circulant embedding.
+
+##### Periodic stationary processes (circulant)
+
+If furthermore the process is periodic and the grid of points is aligned with
+the period, the covariance matrix is circulant and diagonalized by the DFT.
+
+#### Markovian processes (sparse inverse)
 
 Example: the Wiener kernel is a Markov process, i.e. on the right of a
 datapoint you don't need the datapoints on the left. This means it can be
