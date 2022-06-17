@@ -675,11 +675,11 @@ class StationaryKernel(Kernel):
         kernel : callable
             A function taking one argument `delta` which is the difference
             between x and y, plus optionally keyword arguments.
-        input : {'signed', 'soft'}
+        input : {'signed', 'soft', 'hard'}
             If 'signed' (default), `kernel` is passed the bare difference. If
             'soft', `kernel` is passed the absolute value of the difference,
             and the difference of equal points is a small number instead of
-            zero.
+            zero. If 'hard', the absolute value.
         scale : scalar
             The difference is divided by `scale`.
         **kw
@@ -690,6 +690,8 @@ class StationaryKernel(Kernel):
             func = lambda x, y: _softabs(x - y)
         elif input == 'signed':
             func = lambda x, y: x - y
+        elif input == 'hard':
+            func = lambda x, y: jnp.abs(x - y)
         else:
             raise KeyError(input)
         

@@ -62,6 +62,7 @@ __all__ = [
     'Harmonic',
     'Expon',
     'BagOfWords',
+    'HoleEffect',
 ]
 
 def _dot(x, y):
@@ -928,3 +929,16 @@ def BagOfWords(x, y):
     ybag[''] = 0
     common = set(xbag) & set(ybag)
     return sum(xbag[k] * ybag[k] for k in common)
+
+@stationarykernel(derivable=False, input='hard', forcekron=True)
+def HoleEffect(delta):
+    """
+    
+    Hole effect kernel.
+    
+    .. math:: k(r) = (1 - r) \exp(-r)
+    
+    Reference: Dietrich and Newsam (1997, p. 1096).
+    
+    """
+    return (1 - delta) * jnp.exp(-delta)

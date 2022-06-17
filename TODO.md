@@ -553,11 +553,9 @@ causal exponential quadratic
 decaying kernel
 logkernel
 
-Hole effect (Graham 2018, Dietrich 1997, but it seems to be standard and older):
-(1-r)exp(-r)
-I don't think this can be obtained by multiplying other already defined kernels.
-
 Bessel kernel (GPML pag. 89)
+
+Look in the kernels reference I highlighted in the GPML bibliography
 
 ### Transformations
 
