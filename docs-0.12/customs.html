@@ -145,21 +145,21 @@ count the words in the text. However, for the sake of the example, we will
 write a dumb kernel that has no internal knowledge of the languages and doesn’t
 even consider words.</p>
 <p>How do we make a kernel over texts? We always talked about kernels with real
-numbers, but actually the definition did not require <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> to
-be numbers. It didn’t require them to be <em>anything</em>. In <a class="reference internal" href="kernels.html#kernelexpl"><span class="std std-ref">More on kernels</span></a> we
+numbers, but actually the definition did not require <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(x'\)</span>
+to be numbers. It didn’t require them to be <em>anything</em>. In <a class="reference internal" href="kernels.html#kernelexpl"><span class="std std-ref">More on kernels</span></a> we
 wrote the positivity requirement with an integral, but it can also be written
 as a sum:</p>
 <div class="math notranslate nohighlight">
-\[\forall g: \sum_x \sum_y g(x) k(x, y) g(y) \ge 0.\]</div>
-<p>It still holds that a function of the form <span class="math notranslate nohighlight">\(k(x, y) = \sum_i h_i(x)
-h_i(y)\)</span> is a valid kernel. So if we invent a family of functions <span class="math notranslate nohighlight">\(h_i\)</span> on
-texts we are done. This kind of construction is called <em>mapping to feature
-space</em>, each <span class="math notranslate nohighlight">\(h_i\)</span> measures a “feature” of its input that matters for
-the problem. The simplest functions we can define for texts are</p>
+\[\forall g: \sum_x \sum_x' g(x) k(x, x') g(x') \ge 0.\]</div>
+<p>It still holds that a function of the form <span class="math notranslate nohighlight">\(k(x, x') = \sum_i h_i(x)
+h_i(x')\)</span> is a valid kernel. So if we invent a family of functions <span class="math notranslate nohighlight">\(h_i\)</span>
+on texts we are done. This kind of construction is called <em>mapping to feature
+space</em>, each <span class="math notranslate nohighlight">\(h_i\)</span> measures a “feature” of its input that matters for the
+problem. The simplest functions we can define for texts are</p>
 <div class="math notranslate nohighlight">
 \[h_i(x) = \text{how many times letter $i$ appears in text $x$}.\]</div>
 <p>What does this mean practically? Fix <span class="math notranslate nohighlight">\(i = \texttt{a}\)</span>. Then
-<span class="math notranslate nohighlight">\(h_\texttt{a}(x) h_\texttt{a}(y)\)</span> just multiplies the number of “a” in
+<span class="math notranslate nohighlight">\(h_\texttt{a}(x) h_\texttt{a}(x')\)</span> just multiplies the number of “a” in
 two texts. If a text has no “a” at all, it will be zero-a-correlated with any
 other text. Texts with a lot of “a” will be much a-correlated between them.</p>
 <p>Let’s put this into code:</p>
@@ -412,7 +412,7 @@ artefact of the finite precision of floating point computation. Effectively, it
 is so: the correct theorical value of those standard deviations is zero. The
 reason is that we have fit 50 texts with a kernel that uses 26 letters. In
 <a class="reference internal" href="kernels.html#kernelexpl"><span class="std std-ref">More on kernels</span></a> we said that fitting with a kernel <span class="math notranslate nohighlight">\(\sum_i h_i(x)
-h_i(y)\)</span> is equivalent to doing a linear least squares fit with parameters
+h_i(x')\)</span> is equivalent to doing a linear least squares fit with parameters
 <span class="math notranslate nohighlight">\(p_i\)</span> where the model function is <span class="math notranslate nohighlight">\(\sum_i p_i h_i(x)\)</span>, so we have
 more data than parameters. This would not be a problem <em>if we had errors on the
 datapoints</em>, but we put in the -1 and +1 without errors, so it’s like solving

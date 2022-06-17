@@ -129,32 +129,35 @@
 <p>In <a class="reference internal" href="sine.html#sine"><span class="std std-ref">First example: a sine</span></a>, we defined the kernel as the function that gives the covariance
 of the process values at two different points:</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \operatorname{Cov}[f(x), f(y)].\]</div>
+\[k(x, x') = \operatorname{Cov}[f(x), f(x')].\]</div>
 <p>So you can imagine the Gaussian process as a multivariate Gaussian distribution
 on an infinitely long vector <span class="math notranslate nohighlight">\(f(x)\)</span>, where <span class="math notranslate nohighlight">\(x\)</span> is a “continuous
-index”, and <span class="math notranslate nohighlight">\(k(x, y)\)</span> is the covariance matrix.</p>
-<p>This implies that kernels are symmetric, i.e., <span class="math notranslate nohighlight">\(k(x, y) = k(y, x)\)</span>. Also,
-covariance matrices must be positive semidefinite (if you wonder why, you can
-find an explanation on <a class="reference external" href="https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_matrices?">wikipedia</a>).
-For kernels, this means that, for <em>any</em> function <span class="math notranslate nohighlight">\(g\)</span>,</p>
+index”, and <span class="math notranslate nohighlight">\(k(x, x')\)</span> is the covariance matrix.</p>
+<p>This implies that kernels are symmetric, i.e., <span class="math notranslate nohighlight">\(k(x, x') = k(x', x)\)</span>.
+Also, covariance matrices must be positive semidefinite (if you wonder why, you
+can find an explanation on <a class="reference external" href="https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_matrices?">wikipedia</a>). For kernels, this means that, for <em>any</em> function <span class="math notranslate nohighlight">\(g\)</span>,</p>
 <div class="math notranslate nohighlight">
-\[\int_{-\infty}^\infty \mathrm dx \mathrm dy\, g(x) k(x, y) g(y) \ge 0.\]</div>
+\[\int_{-\infty}^\infty \mathrm dx \mathrm dx'\, g(x) k(x, x') g(x') \ge 0.\]</div>
 <p>This is the reason why you can’t pick any two-variable symmetric function as
 kernel. So, how do you build valid kernels? Luckily, there are some simple
 rules that allow to make kernels out of other kernels:</p>
 <ul class="simple">
 <li><p>The sum of kernels is a kernel.</p></li>
 <li><p>The product of kernels is a kernel.</p></li>
-<li><p>A kernel raised to a power is a kernel.</p></li>
+<li><p>Corollary 1: a kernel can be multiplied by a nonnegative constant.</p></li>
+<li><p>Corollary 2: a kernel can be raised to an integer power (some kernels
+allow non-integer nonnegative powers, they are called “infinitely divisible”).</p></li>
+<li><p>Corollary 3: a function with nonnegative Taylor coefficients applied to
+some kernels is a valid kernel.</p></li>
 </ul>
-<p>Now we need a set of fundamental kernels. There is a class of functions that
-can be easily shown to be positive semidefinite (exercise for the reader):
-<span class="math notranslate nohighlight">\(k(x, y) = h(x) h(y)\)</span> for some function <span class="math notranslate nohighlight">\(h\)</span>. In fact, it can be
-shown that <em>any</em> kernel can be written as</p>
+<p>Now we need a set of fundamental kernels to start with. There is a class of
+functions that can be easily shown to be positive semidefinite (exercise for
+the reader): <span class="math notranslate nohighlight">\(k(x, x') = h(x) h(x')\)</span> for some function <span class="math notranslate nohighlight">\(h\)</span>. In
+fact, it can be shown that <em>any</em> kernel can be written as</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \sum_i h_i(x) h_i(y)\]</div>
-<p>for some possibly infinite set of functions <span class="math notranslate nohighlight">\(h_i\)</span>.</p>
-<p>Ok, but if I use a kernel of the form <span class="math notranslate nohighlight">\(h(x) h(y)\)</span>, how will it behave
+\[k(x, x') = \sum_i h_i(x) h_i(x')\]</div>
+<p>for some possibly infinite set of functions <span class="math notranslate nohighlight">\(\{h_i\mid i=0,1,\ldots\}\)</span>.</p>
+<p>Ok, but if I use a kernel of the form <span class="math notranslate nohighlight">\(h(x) h(x')\)</span>, how will it behave
 in practice with the data?</p>
 <p>Let’s suppose that you have some data <span class="math notranslate nohighlight">\(y(x)\)</span> that you want to fit with
 a specific function, that (let’s say by chance) we call <span class="math notranslate nohighlight">\(h(x)\)</span>, apart
@@ -163,15 +166,15 @@ from an amplitude parameter, i.e., the model is</p>
 \[y = p h(x) + \varepsilon(x),\]</div>
 <p>where <span class="math notranslate nohighlight">\(\varepsilon(x)\)</span> is an independent zero mean Gaussian distributed
 error. Put a Gaussian prior with zero mean and unit variance on the parameter
-<span class="math notranslate nohighlight">\(p\)</span>. What is the prior covariance of <span class="math notranslate nohighlight">\(y(x_1)\)</span> with <span class="math notranslate nohighlight">\(y(x_2)\)</span>?
+<span class="math notranslate nohighlight">\(p\)</span>. What is the prior covariance of <span class="math notranslate nohighlight">\(y(x)\)</span> with <span class="math notranslate nohighlight">\(y(x')\)</span>?
 Let’s compute:</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\operatorname{Cov}[y(x_1), y(x_2)] &amp;=
-\operatorname{Cov}[p h(x_1) + \varepsilon(x_1), p h(x_2) + \varepsilon(x_2)] = \\
-&amp;= \operatorname{Var}[p] h(x_1) h(x_2) = \\
-&amp;= h(x_1) h(x_2).\end{split}\]</div>
+\[\begin{split}\operatorname{Cov}[y(x), y(x')] &amp;=
+\operatorname{Cov}[p h(x) + \varepsilon(x), p h(x') + \varepsilon(x')] = \\
+&amp;= \operatorname{Var}[p] h(x) h(x') = \\
+&amp;= h(x) h(x').\end{split}\]</div>
 <p>This, by definition, is also the prior of a Gaussian process fit with kernel
-<span class="math notranslate nohighlight">\(h(x_1) h(x_2)\)</span>. It can be extended to <span class="math notranslate nohighlight">\(y = p_i h_i(x)\)</span> to get
+<span class="math notranslate nohighlight">\(h(x) h(x')\)</span>. It can be extended to <span class="math notranslate nohighlight">\(y = \sum_i p_i h_i(x)\)</span> to get
 the general kernel from above (exercise). So, have we discovered that a
 Gaussian process fit is just a linear least squares fit with priors? Yes! But,
 when thinking in terms of Gaussian processes, you normally use an infinite
@@ -213,13 +216,13 @@ is like summing two <em>independent</em> Gaussian processes: let <span class="ma
 <span class="math notranslate nohighlight">\(f_2\)</span> be processes with kernels <span class="math notranslate nohighlight">\(k_1\)</span> and <span class="math notranslate nohighlight">\(k_2\)</span> respectively,
 then the kernel of <span class="math notranslate nohighlight">\(f_1 + f_2\)</span> is</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}k(x, y) &amp;= \operatorname{Cov}[f_1(x) + f_2(x), f_1(y) + f_2(y)] = \\
-        &amp;= \operatorname{Cov}[f_1(x), f_1(y)] +
-           \operatorname{Cov}[f_2(x), f_2(y)] = \\
-        &amp;= k_1(x, y) + k_2(x, y).\end{split}\]</div>
+\[\begin{split}k(x, x') &amp;= \operatorname{Cov}[f_1(x) + f_2(x), f_1(x) + f_2(x')] = \\
+        &amp;= \operatorname{Cov}[f_1(x), f_1(x')] +
+           \operatorname{Cov}[f_2(x), f_2(x')] = \\
+        &amp;= k_1(x, x') + k_2(x, x').\end{split}\]</div>
 <p>So we are looking at the sum of two processes, one <code class="docutils literal notranslate"><span class="pre">ExpQuad(scale=0.3)</span></code>
 and one <code class="docutils literal notranslate"><span class="pre">ExpQuad(scale=10)</span></code>.</p>
-<p>Let’s now multiply kernels. The <span class="math notranslate nohighlight">\(h(x)h(y)\)</span> kernel is implemented in
+<p>Let’s now multiply kernels. The <span class="math notranslate nohighlight">\(h(x)h(x')\)</span> kernel is implemented in
 <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> as <a class="reference internal" href="kernelsref.html#lsqfitgp.Rescaling" title="lsqfitgp.Rescaling"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rescaling</span></code></a>. We multiply it by an exponential
 quadratic:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lorentz</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
@@ -240,7 +243,7 @@ quadratic:</p>
 <p>The function oscillates, but the oscillations are suppressed going away from
 zero. This is because the function we defined, <code class="docutils literal notranslate"><span class="pre">lorentz</span></code>, goes to zero for
 <span class="math notranslate nohighlight">\(x\to\pm\infty\)</span>. Let’s plot a band delimited by <span class="math notranslate nohighlight">\(\pm\)</span> that
-function, and the band of the standard deviation of <code class="docutils literal notranslate"><span class="pre">y</span></code>:</p>
+function (cyan), and the band of the standard deviation of <code class="docutils literal notranslate"><span class="pre">y</span></code> (yellow):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;yellow&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
@@ -248,10 +251,11 @@ function, and the band of the standard deviation of <code class="docutils litera
 </pre></div>
 </div>
 <img alt="_images/kernels3.png" src="_images/kernels3.png" />
-<p>We see only one green band, because it is a perfect match! We have rescaled the
-standard deviations of the prior with the function <code class="docutils literal notranslate"><span class="pre">lorentz</span></code>, without
-changing the correlations. Since the <a class="reference internal" href="kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a> prior variance is 1
-everywhere, after the multiplication it just matches <code class="docutils literal notranslate"><span class="pre">lorentz(x)</span></code>.</p>
+<p>We see only one green (cyan+yellow) band, because it is a perfect match! We
+have rescaled the standard deviations of the prior with the function
+<code class="docutils literal notranslate"><span class="pre">lorentz</span></code>, without changing the correlations. Since the <a class="reference internal" href="kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a>
+prior variance is 1 everywhere, after the multiplication it just matches
+<code class="docutils literal notranslate"><span class="pre">lorentz(x)</span></code>.</p>
 </section>
 
 

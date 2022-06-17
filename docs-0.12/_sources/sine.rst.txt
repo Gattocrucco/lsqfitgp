@@ -47,26 +47,26 @@ fit guess a function that passes through the data.
 
 The first step in using a Gaussian process is choosing a *kernel function*. Say
 :math:`f` is the unknown function we want to model. The kernel function
-:math:`k(x, y)` specifies the covariance we expect *a priori* between
-:math:`f(x)` and :math:`f(y)`:
+:math:`k(x, x')` specifies the covariance we expect *a priori* between
+:math:`f(x)` and :math:`f(x')`:
 
 .. math::
-    k(x, y) = \operatorname{Cov}[f(x), f(y)].
+    k(x, x') = \operatorname{Cov}[f(x), f(x')].
 
 This means that the *a priori* variance of :math:`f(x)` is
 :math:`\operatorname{Var}[f(x)] = k(x, x)`, and the *a priori* correlation
-between :math:`f(x)` and :math:`f(y)` is
+between :math:`f(x)` and :math:`f(x')` is
 
 .. math::
-    \operatorname{Corr}[f(x), f(y)] &=
-    \frac {\operatorname{Cov}[f(x), f(y)]}
-          {\sqrt{\operatorname{Var}[f(x)] \operatorname{Var}[f(y)]}} = \\
-    &= \frac {k(x, y)} {\sqrt{k(x, x) k(y, y)}}.
+    \operatorname{Corr}[f(x), f(x')] &=
+    \frac {\operatorname{Cov}[f(x), f(x')]}
+          {\sqrt{\operatorname{Var}[f(x)] \operatorname{Var}[f(x')]}} = \\
+    &= \frac {k(x, x')} {\sqrt{k(x, x) k(x', x')}}.
 
 Again, in other words: :math:`\sqrt{k(x, x)}` expresses how much you are
 uncertain on the function value at :math:`x` before seeing the data, and
-:math:`k(x, y)` expresses how much you think the value at point :math:`x` is
-linked with the value at point :math:`y`.
+:math:`k(x, x')` expresses how much you think the value at point :math:`x` is
+linked with the value at point :math:`x'`.
 
 :mod:`lsqfitgp` allows you to specify arbitrary functions as kernels; however,
 not all functions are valid kernels, so it is convenient to use one of the
@@ -74,7 +74,7 @@ already available ones from the module. We will use a quite common kernel, the
 *exponential quadratic*:
 
 .. math::
-    k(x, y) = \exp \left( \frac 12 (x - y)^2 \right)
+    k(x, x') = \exp \left( \frac 12 (x - x')^2 \right)
 
 which is available as :class:`ExpQuad`::
 
@@ -110,7 +110,7 @@ Now, we ask ``gproc`` to compute the *a posteriori* function values on
 
 So :meth:`~GP.predfromdata` takes two arguments; the first is a Python
 dictionary with labels as keys and arrays of function values as values, the
-second is the label on which we want the estimate.
+second is the label of the points on which we want the estimate.
 
 Now we make a plot of everything::
 
