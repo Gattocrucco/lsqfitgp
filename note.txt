@@ -662,3 +662,9 @@ change of fitting method. Ideas about this:
    for some reason. Like, the effect tend to cancel out statistically as I
    increase the size of the matrix, so it is numerically inaccurate doing
    the inference.
+
+2022-06-17
+==========
+
+Thing that I could cite: Snelson et al., "Warped Gaussian Processes". It's a
+bit trivial but people expect you to cite everything.

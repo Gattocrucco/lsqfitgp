@@ -24,6 +24,7 @@ after the code block"""
 import re
 import sys
 import textwrap
+import warnings
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -32,6 +33,8 @@ import gvar
 from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import TerminalFormatter
+
+warnings.filterwarnings('ignore', r'JAX on Mac ARM machines is experimental and minimally tested\. Please see https://github.com/google/jax/issues/5501 in the event of problems\.')
 
 def pyprint(text):
     print(highlight(text, PythonLexer(), TerminalFormatter()))

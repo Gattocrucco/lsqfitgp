@@ -28,20 +28,20 @@ In :ref:`sine`, we defined the kernel as the function that gives the covariance
 of the process values at two different points:
 
 .. math::
-    k(x, y) = \operatorname{Cov}[f(x), f(y)].
+    k(x, x') = \operatorname{Cov}[f(x), f(x')].
 
 So you can imagine the Gaussian process as a multivariate Gaussian distribution
 on an infinitely long vector :math:`f(x)`, where :math:`x` is a "continuous
-index", and :math:`k(x, y)` is the covariance matrix.
+index", and :math:`k(x, x')` is the covariance matrix.
 
-This implies that kernels are symmetric, i.e., :math:`k(x, y) = k(y, x)`. Also,
-covariance matrices must be positive semidefinite (if you wonder why, you can
-find an explanation on `wikipedia
-<https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_matrices?>`_).
-For kernels, this means that, for *any* function :math:`g`,
+This implies that kernels are symmetric, i.e., :math:`k(x, x') = k(x', x)`.
+Also, covariance matrices must be positive semidefinite (if you wonder why, you
+can find an explanation on `wikipedia
+<https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_m
+atrices?>`_). For kernels, this means that, for *any* function :math:`g`,
 
 .. math::
-    \int_{-\infty}^\infty \mathrm dx \mathrm dy\, g(x) k(x, y) g(y) \ge 0.
+    \int_{-\infty}^\infty \mathrm dx \mathrm dx'\, g(x) k(x, x') g(x') \ge 0.
 
 This is the reason why you can't pick any two-variable symmetric function as
 kernel. So, how do you build valid kernels? Luckily, there are some simple
@@ -53,17 +53,20 @@ rules that allow to make kernels out of other kernels:
 
 * A kernel raised to a power is a kernel.
 
-Now we need a set of fundamental kernels. There is a class of functions that
-can be easily shown to be positive semidefinite (exercise for the reader):
-:math:`k(x, y) = h(x) h(y)` for some function :math:`h`. In fact, it can be
-shown that *any* kernel can be written as
+* (Corollary: a function with nonnegative Taylor coefficients applied to
+   some kernels is a valid kernel.)
+
+Now we need a set of fundamental kernels to start with. There is a class of
+functions that can be easily shown to be positive semidefinite (exercise for
+the reader): :math:`k(x, x') = h(x) h(x')` for some function :math:`h`. In
+fact, it can be shown that *any* kernel can be written as
 
 .. math::
-    k(x, y) = \sum_i h_i(x) h_i(y)
+    k(x, x') = \sum_i h_i(x) h_i(x')
 
-for some possibly infinite set of functions :math:`h_i`.
+for some possibly infinite set of functions :math:`\{h_i\mid i=0,1,\ldots\}`.
 
-Ok, but if I use a kernel of the form :math:`h(x) h(y)`, how will it behave
+Ok, but if I use a kernel of the form :math:`h(x) h(x')`, how will it behave
 in practice with the data?
 
 Let's suppose that you have some data :math:`y(x)` that you want to fit with
@@ -75,17 +78,17 @@ from an amplitude parameter, i.e., the model is
 
 where :math:`\varepsilon(x)` is an independent zero mean Gaussian distributed
 error. Put a Gaussian prior with zero mean and unit variance on the parameter
-:math:`p`. What is the prior covariance of :math:`y(x_1)` with :math:`y(x_2)`?
+:math:`p`. What is the prior covariance of :math:`y(x)` with :math:`y(x')`?
 Let's compute:
 
 .. math::
-    \operatorname{Cov}[y(x_1), y(x_2)] &=
-    \operatorname{Cov}[p h(x_1) + \varepsilon(x_1), p h(x_2) + \varepsilon(x_2)] = \\
-    &= \operatorname{Var}[p] h(x_1) h(x_2) = \\
-    &= h(x_1) h(x_2).
+    \operatorname{Cov}[y(x), y(x')] &=
+    \operatorname{Cov}[p h(x) + \varepsilon(x), p h(x') + \varepsilon(x')] = \\
+    &= \operatorname{Var}[p] h(x) h(x') = \\
+    &= h(x) h(x').
 
 This, by definition, is also the prior of a Gaussian process fit with kernel
-:math:`h(x_1) h(x_2)`. It can be extended to :math:`y = p_i h_i(x)` to get
+:math:`h(x) h(x')`. It can be extended to :math:`y = \sum_i p_i h_i(x)` to get
 the general kernel from above (exercise). So, have we discovered that a
 Gaussian process fit is just a linear least squares fit with priors? Yes! But,
 when thinking in terms of Gaussian processes, you normally use an infinite
@@ -131,15 +134,15 @@ is like summing two *independent* Gaussian processes: let :math:`f_1` and
 then the kernel of :math:`f_1 + f_2` is
 
 .. math::
-    k(x, y) &= \operatorname{Cov}[f_1(x) + f_2(x), f_1(y) + f_2(y)] = \\
-            &= \operatorname{Cov}[f_1(x), f_1(y)] +
-               \operatorname{Cov}[f_2(x), f_2(y)] = \\
-            &= k_1(x, y) + k_2(x, y).
+    k(x, x') &= \operatorname{Cov}[f_1(x) + f_2(x), f_1(x) + f_2(x')] = \\
+            &= \operatorname{Cov}[f_1(x), f_1(x')] +
+               \operatorname{Cov}[f_2(x), f_2(x')] = \\
+            &= k_1(x, x') + k_2(x, x').
 
 So we are looking at the sum of two processes, one ``ExpQuad(scale=0.3)``
 and one ``ExpQuad(scale=10)``.
 
-Let's now multiply kernels. The :math:`h(x)h(y)` kernel is implemented in
+Let's now multiply kernels. The :math:`h(x)h(x')` kernel is implemented in
 :mod:`lsqfitgp` as :class:`Rescaling`. We multiply it by an exponential
 quadratic::
 
@@ -161,7 +164,7 @@ quadratic::
 The function oscillates, but the oscillations are suppressed going away from
 zero. This is because the function we defined, ``lorentz``, goes to zero for
 :math:`x\to\pm\infty`. Let's plot a band delimited by :math:`\pm` that
-function, and the band of the standard deviation of ``y``::
+function (cyan), and the band of the standard deviation of ``y`` (yellow)::
 
     ax.fill_between(x, -lorentz(x), lorentz(x), color='cyan', alpha=0.5)
     ax.fill_between(x, -gvar.sdev(y), gvar.sdev(y), color='yellow', alpha=0.5)
@@ -170,7 +173,8 @@ function, and the band of the standard deviation of ``y``::
 
 .. image:: kernels3.png
 
-We see only one green band, because it is a perfect match! We have rescaled the
-standard deviations of the prior with the function ``lorentz``, without
-changing the correlations. Since the :class:`ExpQuad` prior variance is 1
-everywhere, after the multiplication it just matches ``lorentz(x)``.
+We see only one green (cyan+yellow) band, because it is a perfect match! We
+have rescaled the standard deviations of the prior with the function
+``lorentz``, without changing the correlations. Since the :class:`ExpQuad`
+prior variance is 1 everywhere, after the multiplication it just matches
+``lorentz(x)``.

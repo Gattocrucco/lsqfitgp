@@ -25,7 +25,6 @@ Matheron". I wonder if Lepage knows that what he's doing is a special case of
 Gaussian processes, maybe he's reinventing everything himself because he's
 smart.
 
-Non usare x e y per il kernel perché non si capisce, usare x_1 e x_2.
 Aggiungere che il manuale richiede conoscenze di base di algebra lineare e
 analisi.
 
@@ -545,6 +544,10 @@ causal exponential quadratic
 decaying kernel
 logkernel
 
+Hole effect (Graham 2018, Dietrich 1997, but it seems to be standard and older):
+(1-r)exp(-r)
+I don't think this can be obtained by multiplying other already defined kernels.
+
 ### Transformations
 
 #### Pointwise infinite transformations
@@ -836,8 +839,22 @@ How to take samples with GSchur:
 2) take two iid normal vectors za and zb   O(n)
 3) y = A za + B zb has then covariance matrix V^-1   O(n log n)
 4) x = V y has covariance V   O(n log n)
+=> Nope wait, if I do that I get covariance AA^T + BB^T, with a plus sign. How
+could I get the minus?
 
-Actual proper way to sample in O(n log n): use circulant embedding.
+Way to sample in O(n log n) that doesn't always work: use the standard
+circulant matrix embedding. If it turns out pos def (can be checked quickly
+with FFT), use it for sampling (Graham 2018, alg. 2). A sufficient condition of
+pos def (Dietrich 1997, th. 2) is that the first row should be convex,
+decreasing and nonnegative (the latter can be relaxed a bit).
+
+If I can compute V^-1 x and V x, can I sample from V? I think not, but it
+would allow to use PCG which is O(n log n)
+
+A n-dimensional regular grid with a stationary kernel (even not separable) is
+not toeplitz but is nested block toeplitz with n levels, can still be solved
+fast probably by adapting toeplitz algorithms to a matrix field. See Graham et
+al. 2018.
 
 ##### Periodic stationary processes (circulant)
 
