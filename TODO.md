@@ -56,8 +56,6 @@ weird way I can't predict. But why wouldn't this happen when I just call
 linalg.cholesky? => Activity monitor shows I'm using all cores when running
 a timeit of lgp.raniter, so nope.
 
-Add references for all the kernels.
-
 Add an "Andvanced guide" after the User guide, the first chapters would be
 -kernel operations -fourier series -taylor series (taylor afterward because
 it has a richer set of kernels implementing but they must be obtained with
@@ -72,6 +70,17 @@ to disable the transformations.
 
 The way I specify the hyperprior with transformations of gvars from the point
 of view of a statistician is a gaussian copula.
+
+In the kernels reference, generate automatically:
+
+  * a plot of the covariance profile for stationary kernels
+  
+  * a matrix heatmap for nonstationary kernels
+  
+  * a random sample from the process, both in 1D and 2D
+  
+  * in the index, a flag D0, D1, ..., D∞, D? for the derivability with the
+    default parameters
 
 ## Fixes and tests
 
@@ -547,6 +556,8 @@ logkernel
 Hole effect (Graham 2018, Dietrich 1997, but it seems to be standard and older):
 (1-r)exp(-r)
 I don't think this can be obtained by multiplying other already defined kernels.
+
+Bessel kernel (GPML pag. 89)
 
 ### Transformations
 

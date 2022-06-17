@@ -341,6 +341,9 @@ class CrossKernel:
         if _patch_jax.isconcrete(value):
             assert 0 <= value < jnp.inf, value
         return self._binary(value, lambda f, g: lambda x: f(x) ** g(x))
+        # Only infinitely divisible kernels allow non-integer exponent.
+        # It would be difficult to check for this though, since the user can
+        # compose and write arbitrary kernels.
 
     def _swap(self):
         """permute the arguments (cross kernels are not symmetric)"""
@@ -731,36 +734,49 @@ class IsotropicKernel(StationaryKernel):
         kernel : callable
             A function taking one argument `r2` which is the squared distance
             between x and y, plus optionally keyword arguments.
-        input : {'squared', 'soft'}
+        input : {'squared', 'hard', 'soft', 'raw'}
             If 'squared' (default), `kernel` is passed the squared distance.
-            If 'soft', `kernel` is passed the distance, and the distance of
-            equal points is a small number instead of zero.
+            If 'hard', it is passed the distance (not squared). If 'soft', it
+            is passed the distance, and the distance of equal points is a small
+            number instead of zero. If 'raw', the kernel is passed both points
+            separately like non-stationary kernels.
         scale : scalar
             The distance is divided by `scale`.
         **kw
             Additional keyword arguments are passed to the :class:`Kernel` init.
                 
         """
-        if input == 'soft':
-            func = lambda x, y: _softabs(x - y) ** 2
-        elif input == 'squared':
+        if input in ('squared', 'hard'):
             func = lambda x, y: (x - y) ** 2
+        elif input == 'soft':
+            func = lambda x, y: _softabs(x - y) ** 2
+        elif input == 'raw':
+            pass
         else:
             raise KeyError(input)
         
         transf = lambda q: q
+        
         if scale is not None:
             if _patch_jax.isconcrete(scale):
                 assert 0 < scale < jnp.inf
-            transf = lambda q : q / scale ** 2
-        if input == 'soft':
-            transf = lambda q, transf=transf: jnp.sqrt(transf(q))
+            if input == 'raw':
+                transf = lambda q: q / scale
+            else:
+                transf = lambda q: q / scale ** 2
+        
+        if input in ('soft', 'hard'):
+            transf = (lambda t: lambda q: jnp.sqrt(t(q)))(transf)
             # I do square and then square root because I first have to
             # compute the sum of squares
         
-        def function(x, y, **kwargs):
-            q = _sum_recurse_dtype(func, x, y)
-            return kernel(transf(q), **kwargs)
+        if input == 'raw':
+            def function(x, y, **kwargs):
+                return kernel(transf(x), transf(y), **kwargs)
+        else:
+            def function(x, y, **kwargs):
+                q = _sum_recurse_dtype(func, x, y)
+                return kernel(transf(q), **kwargs)
         
         Kernel.__init__(self, function, **kw)
     

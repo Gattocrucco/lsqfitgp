@@ -51,10 +51,13 @@ rules that allow to make kernels out of other kernels:
 
 * The product of kernels is a kernel.
 
-* A kernel raised to a power is a kernel.
+* Corollary 1: a kernel can be multiplied by a nonnegative constant.
 
-* (Corollary: a function with nonnegative Taylor coefficients applied to
-   some kernels is a valid kernel.)
+* Corollary 2: a kernel can be raised to an integer power (some kernels
+  allow non-integer nonnegative powers, they are called "infinitely divisible").
+
+* Corollary 3: a function with nonnegative Taylor coefficients applied to
+  some kernels is a valid kernel.
 
 Now we need a set of fundamental kernels to start with. There is a class of
 functions that can be easily shown to be positive semidefinite (exercise for

@@ -68,24 +68,21 @@ def _dot(x, y):
     return _Kernel._sum_recurse_dtype(lambda x, y: x * y, x, y)
     
 @isotropickernel(derivable=True)
-def Constant(r2):
+def Constant(x, y):
     """
     Constant kernel.
     
     .. math::
-        k(r) = 1
+        k(x, y) = 1
     
     This means that all points are completely correlated, thus it is equivalent
     to fitting with an horizontal line. This can be seen also by observing that
     1 = 1 x 1.
     """
-    return jnp.ones(r2.shape, r2.dtype)
-    # TODO add support for input that doesn't have a distance but
-    # just equality, like for example non-numerical input. => add input option
-    # in isotropic kernel to allow x and y separate
+    return jnp.ones(jnp.broadcast_shapes(x.shape, y.shape))
     
 @isotropickernel(derivable=False)
-def White(r2):
+def White(x, y):
     """
     White noise kernel.
     
@@ -95,9 +92,7 @@ def White(r2):
             0 & x \\neq y
         \\end{cases}
     """
-    # TODO add support for input that doesn't have a distance but
-    # just equality, like for example non-numerical input. => see Constant
-    return jnp.where(r2 == 0, 1, 0)
+    return jnp.where(x == y, 1, 0)
 
 @isotropickernel(derivable=True)
 def ExpQuad(r2):
@@ -110,6 +105,8 @@ def ExpQuad(r2):
     It is smooth and has a strict typical lengthscale, i.e., oscillations are
     strongly suppressed under a certain wavelength, and correlations are
     strongly suppressed over a certain distance.
+    
+    Reference: Rasmussen and Williams (2006, p. 83).
     """
     return jnp.exp(-1/2 * r2)
 
@@ -122,6 +119,8 @@ def Linear(x, y):
         k(x, y) = x \\cdot y = \\sum_i x_i y_i
     
     In 1D it is equivalent to fitting with a line passing by the origin.
+
+    Reference: Rasmussen and Williams (2006, p. 89).
     """
     return _dot(x, y)
 
@@ -158,8 +157,7 @@ def _matern_derivable(**kw):
         return False
 
 # TODO I'm using soft input for the Matérn kernels, however for the
-# half-integer case it is probably not necessary to use the softabs. Add an
-# option 'hard' to the IsotropicKernel init and see if it works.
+# half-integer case it is probably not necessary to use the softabs.
 
 @isotropickernel(input='soft', derivable=_matern_derivable)
 def Matern(r, nu=None):
@@ -178,6 +176,7 @@ def Matern(r, nu=None):
     you should prefer it. Also, taking derivatives of the process is supported
     only for half-integer nu.
 
+    Reference: Rasmussen and Williams (2006, p. 84).
     """
     if _patch_jax.isconcrete(nu):
         assert 0 < nu < jnp.inf, nu
@@ -201,7 +200,7 @@ def Matern12(r):
 def _matern32(x):
     return (1 + x) * jnp.exp(-x)
 
-_matern32.defjvps(lambda g, ans, x: (g.T * (-x * jnp.exp(-x)).T).T)
+_matern32.defjvps(lambda g, ans, x: g * -x * jnp.exp(-x))
 
 @isotropickernel(input='soft', derivable=1)
 def Matern32(r):
@@ -217,7 +216,7 @@ def Matern32(r):
 def _matern52(x):
     return (1 + x * (1 + x/3)) * jnp.exp(-x)
 
-_matern52.defjvps(lambda g, ans, x: (g.T * (-x/3 * _matern32(x)).T).T)
+_matern52.defjvps(lambda g, ans, x: g * -x/3 * _matern32(x))
 
 @isotropickernel(input='soft', derivable=2)
 def Matern52(r):
@@ -246,6 +245,7 @@ def GammaExp(r, gamma=1):
     differentiable only for `gamma` = 2, however as `gamma` gets closer to 2
     the variance of the non-derivable component goes to zero.
 
+    Reference: Rasmussen and Williams (2006, p. 86).
     """
     if _patch_jax.isconcrete(gamma):
         assert 0 <= gamma <= 2, gamma
@@ -264,6 +264,7 @@ def RatQuad(r2, alpha=2):
     scale distribution is a gamma with shape parameter `alpha`. For `alpha` ->
     infinity, it becomes the Gaussian kernel. It is smooth.
     
+    Reference: Rasmussen and Williams (2006, p. 86).
     """
     if _patch_jax.isconcrete(alpha):
         assert 0 < alpha < jnp.inf, alpha
@@ -291,6 +292,7 @@ def NNKernel(x, y, sigma0=1):
     other words, you can think of the process as a superposition of sigmoids
     where `sigma0` sets the dispersion of the centers of the sigmoids.
     
+    Reference: Rasmussen and Williams (2006, p. 90).
     """
     
     # TODO the `2`s in the formula are a bit arbitrary. Remove them or give
@@ -315,6 +317,7 @@ def Wiener(x, y):
     
     A kernel representing a non-differentiable random walk starting at 0.
     
+    Reference: Rasmussen and Williams (2006, p. 94).
     """
     if _patch_jax.isconcrete(x, y):
         assert numpy.all(_patch_jax.concrete(x) >= 0)
@@ -340,6 +343,7 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     for example if `scalefun(x) = x` then `scale` has no effect. You should
     include all rescalings in `scalefun` to avoid surprises.
     
+    Reference: Rasmussen and Williams (2006, p. 93).
     """
     sx = scalefun(x)
     sy = scalefun(y)
@@ -367,6 +371,7 @@ def Periodic(delta, outerscale=1):
     default `scale` = 1 giving a period of 2π, while the `outerscale` parameter
     sets the length scale of the correlations.
     
+    Reference: Rasmussen and Williams (2006, p. 92).
     """
     if _patch_jax.isconcrete(outerscale):
         assert 0 < outerscale < jnp.inf
@@ -383,15 +388,12 @@ def Categorical(x, y, cov=None):
     A kernel over integers from 0 to N-1. The parameter `cov` is the covariance
     matrix of the values.
     """
-    
-    # TODO support an array-like for cov, do not force it to be a numpy
-    # array. In particular I'd like to support sparse matrices, but indexing
-    # with two arrays is not supported for pydata/sparse. I can circumvent it
-    # by flattening cov and converting x and y to flat indices manually. (Make
-    # specific tests when I implement this.)
+        
+    # TODO support sparse matrix for cov (replace jnp.asarray and numpy
+    # check)
     
     assert jnp.issubdtype(x.dtype, jnp.integer)
-    cov = jnp.array(cov, copy=False)
+    cov = jnp.asarray(cov)
     assert len(cov.shape) == 2
     assert cov.shape[0] == cov.shape[1]
     if _patch_jax.isconcrete(cov):
@@ -435,6 +437,7 @@ def Cos(delta):
     another kernel to introduce anticorrelations.
     
     """
+    # TODO reference?
     return jnp.cos(delta)
 
 @kernel(forcekron=True, derivable=False)
@@ -451,6 +454,7 @@ def FracBrownian(x, y, H=1/2):
     the increments are correlated (tends to keep a slope).
     
     """
+    # TODO reference? look on wikipedia
     
     # TODO I think the correlation between successive same step increments
     # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
@@ -482,6 +486,7 @@ def PPKernel(r, q=0, D=1):
     dimensionality the kernel can be used with. Default is `q` = 0 (non
     derivable), `D` = 1 (can be used only in 1D).
     
+    Reference: Rasmussen and Williams (2006, p. 87).
     """
     
     # TODO get the general formula for any q.
@@ -492,7 +497,7 @@ def PPKernel(r, q=0, D=1):
     # TODO compute the kernel only on the nonzero points.
     
     # TODO find the nonzero points in O(nlogn) instead of O(n^2) by sorting
-    # the inputs.
+    # the inputs, and output a sparse matrix.
     
     assert int(q) == q and 0 <= q <= 3
     assert int(D) == D and D >= 1
@@ -516,21 +521,20 @@ def WienerIntegral(x, y):
     Kernel for a process whose derivative is a Wiener process.
     
     .. math::
-        k(x, y) = \\frac 12 \\begin{cases}
-            x^2 (y - x/3) & x < y, \\\\
-            y^2 (x - y/3) & y \\le x
-        \\end{cases}
+        k(x, y) = \\frac 12 a^2 \\left(b - \\frac a3 \\right),
+        \\quad a = \min(x, y), b = \max(x, y)
     
     """
     
     # TODO can I generate this algorithmically for arbitrary integration order?
     # If I don't find a closed formula I can use sympy.
     
-    # TODO write formula in terms of min(x, y) and max(x, y).
     if _patch_jax.isconcrete(x, y):
         assert numpy.all(_patch_jax.concrete(x) >= 0)
         assert numpy.all(_patch_jax.concrete(y) >= 0)
-    return 1/2 * jnp.where(x < y, x**2 * (y - x/3), y**2 * (x - y/3))
+    a = jnp.minimum(x, y)
+    b = jnp.maximum(x, y)
+    return 1/2 * a ** 2 * (b - a / 3)
 
 @kernel(forcekron=True, derivable=True)
 def Taylor(x, y):
@@ -545,6 +549,8 @@ def Taylor(x, y):
     independent priors on the coefficients k with mean zero and standard
     deviation 1/k!.
     """
+    # TODO reference? Maybe it's called bessel kernel in the literature?
+        
     # TODO what is the "natural" extension of this to multidim? Is forcekron
     # appropriate?
     
@@ -610,6 +616,8 @@ def _FourierBase(delta, n=2):
     mean of the process over one period is forced to be zero.
     
     """
+    
+    # TODO reference? Maybe I can find it as "Bernoulli" kernel?
     
     # TODO maxk parameter to truncate the series. I have to manually sum the
     # components? => Bad idea then. => Can I sum analitically the residual?
@@ -689,6 +697,9 @@ def OrnsteinUhlenbeck(x, y):
     is provided as :class:`Expon`.
     
     """
+    
+    # TODO reference? look on wikipedia
+    
     if _patch_jax.isconcrete(x, y):
         assert numpy.all(_patch_jax.concrete(x) >= 0)
         assert numpy.all(_patch_jax.concrete(y) >= 0)
@@ -738,6 +749,8 @@ def BrownianBridge(x, y):
     
     It is a Wiener process conditioned on being zero at x = 1.
     """
+    
+    # TODO reference? look on wikipedia
     
     # TODO can this have a Hurst index? I think the kernel would be
     # (t^2H(1-s) + s^2H(1-t) + s(1-t)^2H + t(1-s)^2H - (t+s) - |t-s|^2H + 2ts)/2
@@ -855,6 +868,8 @@ def Expon(delta):
     
     In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
     it acts separately while the Matérn kernel is isotropic.
+
+    Reference: Rasmussen and Williams (2006, p. 85).
     """
     return jnp.exp(-jnp.abs(delta))
 
@@ -873,6 +888,8 @@ def BagOfWords(x, y):
     The words are defined as non-empty substrings delimited by spaces or one of
     the following punctuation characters: ! « » " “ ” ‘ ’ / ( ) ' ? ¡ ¿ „ ‚ < >
     , ; . : - – —.
+
+    Reference: Rasmussen and Williams (2006, p. 100).
     """
     
     # TODO precompute the bags for x and y, then call a vectorized private
@@ -884,7 +901,7 @@ def BagOfWords(x, y):
     
     xbag = collections.Counter(_bow_regexp.split(x))
     ybag = collections.Counter(_bow_regexp.split(y))
-    xbag[''] = 0
+    xbag[''] = 0 # why this? I can't recall
     ybag[''] = 0
     common = set(xbag) & set(ybag)
     return sum(xbag[k] * ybag[k] for k in common)
