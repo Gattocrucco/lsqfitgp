@@ -67,7 +67,7 @@ __all__ = [
 def _dot(x, y):
     return _Kernel._sum_recurse_dtype(lambda x, y: x * y, x, y)
     
-@isotropickernel(derivable=True)
+@isotropickernel(derivable=True, input='raw')
 def Constant(x, y):
     """
     Constant kernel.
@@ -81,7 +81,7 @@ def Constant(x, y):
     """
     return jnp.ones(jnp.broadcast_shapes(x.shape, y.shape))
     
-@isotropickernel(derivable=False)
+@isotropickernel(derivable=False, input='raw')
 def White(x, y):
     """
     White noise kernel.
@@ -92,7 +92,7 @@ def White(x, y):
             0 & x \\neq y
         \\end{cases}
     """
-    return jnp.where(x == y, 1, 0)
+    return _Kernel._prod_recurse_dtype(lambda x, y: x == y, x, y).astype(int)
 
 @isotropickernel(derivable=True)
 def ExpQuad(r2):
@@ -515,6 +515,29 @@ def PPKernel(r, q=0, D=1):
         raise NotImplementedError
     return jnp.where(x > 0, x ** (j + q) * poly, 0)
 
+# redefine derivatives of min and max because jax default is to yield 1/2
+# when x == y, I need 1 but consistently between min/max
+
+@jax.custom_jvp
+def _minimum(x, y):
+    return jnp.minimum(x, y)
+
+@_minimum.defjvp
+def _minimum_jvp(primals, tangents):
+    x, y = primals
+    xdot, ydot = tangents
+    return _minimum(x, y), jnp.where(x < y, xdot, ydot)
+
+@jax.custom_jvp
+def _maximum(x, y):
+    return jnp.maximum(x, y)
+
+@_maximum.defjvp
+def _maximum_jvp(primals, tangents):
+    x, y = primals
+    xdot, ydot = tangents
+    return _maximum(x, y), jnp.where(x >= y, xdot, ydot)
+
 @kernel(derivable=1, forcekron=True)
 def WienerIntegral(x, y):
     """
@@ -532,8 +555,8 @@ def WienerIntegral(x, y):
     if _patch_jax.isconcrete(x, y):
         assert numpy.all(_patch_jax.concrete(x) >= 0)
         assert numpy.all(_patch_jax.concrete(y) >= 0)
-    a = jnp.minimum(x, y)
-    b = jnp.maximum(x, y)
+    a = _minimum(x, y)
+    b = _maximum(x, y)
     return 1/2 * a ** 2 * (b - a / 3)
 
 @kernel(forcekron=True, derivable=True)

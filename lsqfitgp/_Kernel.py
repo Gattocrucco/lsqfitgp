@@ -746,12 +746,13 @@ class IsotropicKernel(StationaryKernel):
             Additional keyword arguments are passed to the :class:`Kernel` init.
                 
         """
+        if input == 'raw':
+            return Kernel.__init__(self, kernel, scale=scale, **kw)
+            
         if input in ('squared', 'hard'):
             func = lambda x, y: (x - y) ** 2
         elif input == 'soft':
             func = lambda x, y: _softabs(x - y) ** 2
-        elif input == 'raw':
-            pass
         else:
             raise KeyError(input)
         
@@ -760,23 +761,16 @@ class IsotropicKernel(StationaryKernel):
         if scale is not None:
             if _patch_jax.isconcrete(scale):
                 assert 0 < scale < jnp.inf
-            if input == 'raw':
-                transf = lambda q: q / scale
-            else:
-                transf = lambda q: q / scale ** 2
+            transf = lambda q: q / scale ** 2
         
         if input in ('soft', 'hard'):
             transf = (lambda t: lambda q: jnp.sqrt(t(q)))(transf)
             # I do square and then square root because I first have to
             # compute the sum of squares
         
-        if input == 'raw':
-            def function(x, y, **kwargs):
-                return kernel(transf(x), transf(y), **kwargs)
-        else:
-            def function(x, y, **kwargs):
-                q = _sum_recurse_dtype(func, x, y)
-                return kernel(transf(q), **kwargs)
+        def function(x, y, **kwargs):
+            q = _sum_recurse_dtype(func, x, y)
+            return kernel(transf(q), **kwargs)
         
         Kernel.__init__(self, function, **kw)
     
