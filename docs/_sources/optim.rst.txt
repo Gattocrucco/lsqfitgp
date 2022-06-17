@@ -67,35 +67,15 @@ the letter counting kernel in :ref:`customs` was very slow. A quick way to get
 a 2x improvement is disabling the symmetry check in :class:`GP`: ``GP(kernel,
 checksym=False)``.
 
-Fitting hyperparameters
------------------------
-.. TODO split this into a jit section and a hyperparameters section
+The JAX compiler
+----------------
 
-The function :class:`empbayes_fit` finds the "optimal" hyperparameters by
-feeding the GP-factory you give to it into a minimization routine that tries to
-change the hyperparameters one step at a time and each time recreates the GP
-object and does some computations to check how a "good fit" it is for the given
-data.
-
-From the point of view of computational efficiency this means that, apart from
-taking posterior samples, the other techniques explained in the previous
-section also apply here. In particular, when the number of datapoints `n`
-starts to be in the hundreds, to speed up the fit do::
-
-   GP(kernel, solver='chol', checkpos=False)
-
-when you create the :class:`GP` object in the factory function.
-
-Since the same calculations are repeated many times over, it would be
-convenient if the whole linear algebra operation was streamlined without
-passing again and again from all the scaffolding and bookkeeping done by
-:class:`GP`, in particular when there model is complex and uses nontrivial
-kernels and many transformations. Enters the JAX JIT (just-in-time compiler).
-Since :mod:`lsqfitgp` uses JAX as computational backend, in many cases a piece
-of code doing stuff with a Gaussian process can be put into a function and
-compiled to low-level instructions with ``jax.jit``, provided all the array
-operations are implemented with ``jax.numpy`` instead of ``numpy``, and gvars
-are avoided. Example::
+Since :mod:`lsqfitgp` uses JAX as computational backend, which provides a just
+in time compiler (JIT), in many cases a piece of code doing stuff with a
+Gaussian process can be put into a function and compiled to low-level
+instructions with ``jax.jit``, provided all the array operations are
+implemented with ``jax.numpy`` instead of ``numpy``, and gvars are avoided.
+Example::
 
     import jax
     from jax import numpy as jnp
@@ -164,5 +144,22 @@ Result::
 
 As expected.
 
-Back to the hyperparameters: :class:`empbayes_fit` applies the jit for you if
-passed the ``jit=True`` option, so you don't have to deal with this manually.
+Fitting hyperparameters
+-----------------------
+
+The function :class:`empbayes_fit` finds the "optimal" hyperparameters by
+feeding the GP-factory you give to it into a minimization routine that tries to
+change the hyperparameters one step at a time and each time recreates the GP
+object and does some computations to check how a "good fit" it is for the given
+data.
+
+From the point of view of computational efficiency this means that, apart from
+taking posterior samples, the other techniques explained in the previous
+sections also apply here. In particular, when the number of datapoints `n`
+starts to be in the hundreds, to speed up the fit do::
+
+   GP(kernel, solver='chol', checkpos=False)
+
+when you create the :class:`GP` object in the factory function.
+:class:`empbayes_fit` applies the jit for you if passed the ``jit=True``
+option, so you don't have to deal with it yourself.

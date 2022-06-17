@@ -46,25 +46,25 @@ write a dumb kernel that has no internal knowledge of the languages and doesn't
 even consider words.
 
 How do we make a kernel over texts? We always talked about kernels with real
-numbers, but actually the definition did not require :math:`x` and :math:`y` to
-be numbers. It didn't require them to be *anything*. In :ref:`kernelexpl` we
+numbers, but actually the definition did not require :math:`x` and :math:`x'`
+to be numbers. It didn't require them to be *anything*. In :ref:`kernelexpl` we
 wrote the positivity requirement with an integral, but it can also be written
 as a sum:
 
 .. math::
-    \forall g: \sum_x \sum_y g(x) k(x, y) g(y) \ge 0.
+    \forall g: \sum_x \sum_x' g(x) k(x, x') g(x') \ge 0.
 
-It still holds that a function of the form :math:`k(x, y) = \sum_i h_i(x)
-h_i(y)` is a valid kernel. So if we invent a family of functions :math:`h_i` on
-texts we are done. This kind of construction is called *mapping to feature
-space*, each :math:`h_i` measures a "feature" of its input that matters for
-the problem. The simplest functions we can define for texts are
+It still holds that a function of the form :math:`k(x, x') = \sum_i h_i(x)
+h_i(x')` is a valid kernel. So if we invent a family of functions :math:`h_i`
+on texts we are done. This kind of construction is called *mapping to feature
+space*, each :math:`h_i` measures a "feature" of its input that matters for the
+problem. The simplest functions we can define for texts are
 
 .. math::
     h_i(x) = \text{how many times letter $i$ appears in text $x$}.
 
 What does this mean practically? Fix :math:`i = \texttt{a}`. Then
-:math:`h_\texttt{a}(x) h_\texttt{a}(y)` just multiplies the number of "a" in
+:math:`h_\texttt{a}(x) h_\texttt{a}(x')` just multiplies the number of "a" in
 two texts. If a text has no "a" at all, it will be zero-a-correlated with any
 other text. Texts with a lot of "a" will be much a-correlated between them.
 
@@ -324,7 +324,7 @@ artefact of the finite precision of floating point computation. Effectively, it
 is so: the correct theorical value of those standard deviations is zero. The
 reason is that we have fit 50 texts with a kernel that uses 26 letters. In
 :ref:`kernelexpl` we said that fitting with a kernel :math:`\sum_i h_i(x)
-h_i(y)` is equivalent to doing a linear least squares fit with parameters
+h_i(x')` is equivalent to doing a linear least squares fit with parameters
 :math:`p_i` where the model function is :math:`\sum_i p_i h_i(x)`, so we have
 more data than parameters. This would not be a problem *if we had errors on the
 datapoints*, but we put in the -1 and +1 without errors, so it's like solving

@@ -146,28 +146,28 @@ steps is pretending we don’t know the data comes from a sine, and letting the
 fit guess a function that passes through the data.</p>
 <p>The first step in using a Gaussian process is choosing a <em>kernel function</em>. Say
 <span class="math notranslate nohighlight">\(f\)</span> is the unknown function we want to model. The kernel function
-<span class="math notranslate nohighlight">\(k(x, y)\)</span> specifies the covariance we expect <em>a priori</em> between
-<span class="math notranslate nohighlight">\(f(x)\)</span> and <span class="math notranslate nohighlight">\(f(y)\)</span>:</p>
+<span class="math notranslate nohighlight">\(k(x, x')\)</span> specifies the covariance we expect <em>a priori</em> between
+<span class="math notranslate nohighlight">\(f(x)\)</span> and <span class="math notranslate nohighlight">\(f(x')\)</span>:</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \operatorname{Cov}[f(x), f(y)].\]</div>
+\[k(x, x') = \operatorname{Cov}[f(x), f(x')].\]</div>
 <p>This means that the <em>a priori</em> variance of <span class="math notranslate nohighlight">\(f(x)\)</span> is
 <span class="math notranslate nohighlight">\(\operatorname{Var}[f(x)] = k(x, x)\)</span>, and the <em>a priori</em> correlation
-between <span class="math notranslate nohighlight">\(f(x)\)</span> and <span class="math notranslate nohighlight">\(f(y)\)</span> is</p>
+between <span class="math notranslate nohighlight">\(f(x)\)</span> and <span class="math notranslate nohighlight">\(f(x')\)</span> is</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\operatorname{Corr}[f(x), f(y)] &amp;=
-\frac {\operatorname{Cov}[f(x), f(y)]}
-      {\sqrt{\operatorname{Var}[f(x)] \operatorname{Var}[f(y)]}} = \\
-&amp;= \frac {k(x, y)} {\sqrt{k(x, x) k(y, y)}}.\end{split}\]</div>
+\[\begin{split}\operatorname{Corr}[f(x), f(x')] &amp;=
+\frac {\operatorname{Cov}[f(x), f(x')]}
+      {\sqrt{\operatorname{Var}[f(x)] \operatorname{Var}[f(x')]}} = \\
+&amp;= \frac {k(x, x')} {\sqrt{k(x, x) k(x', x')}}.\end{split}\]</div>
 <p>Again, in other words: <span class="math notranslate nohighlight">\(\sqrt{k(x, x)}\)</span> expresses how much you are
 uncertain on the function value at <span class="math notranslate nohighlight">\(x\)</span> before seeing the data, and
-<span class="math notranslate nohighlight">\(k(x, y)\)</span> expresses how much you think the value at point <span class="math notranslate nohighlight">\(x\)</span> is
-linked with the value at point <span class="math notranslate nohighlight">\(y\)</span>.</p>
+<span class="math notranslate nohighlight">\(k(x, x')\)</span> expresses how much you think the value at point <span class="math notranslate nohighlight">\(x\)</span> is
+linked with the value at point <span class="math notranslate nohighlight">\(x'\)</span>.</p>
 <p><a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> allows you to specify arbitrary functions as kernels; however,
 not all functions are valid kernels, so it is convenient to use one of the
 already available ones from the module. We will use a quite common kernel, the
 <em>exponential quadratic</em>:</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \exp \left( \frac 12 (x - y)^2 \right)\]</div>
+\[k(x, x') = \exp \left( \frac 12 (x - x')^2 \right)\]</div>
 <p>which is available as <a class="reference internal" href="kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kernel</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">()</span>
 </pre></div>
@@ -200,7 +200,7 @@ you add to it. You can think of them as variable names.</p>
 </div>
 <p>So <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a> takes two arguments; the first is a Python
 dictionary with labels as keys and arrays of function values as values, the
-second is the label on which we want the estimate.</p>
+second is the label of the points on which we want the estimate.</p>
 <p>Now we make a plot of everything:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 

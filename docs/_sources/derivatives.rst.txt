@@ -27,10 +27,10 @@ Taking derivatives
 The kernel of a derivative is just the derivative of the kernel:
 
 .. math::
-    \operatorname{Cov}[f'(x), f'(y)]
-    &= \frac \partial {\partial x} \frac \partial {\partial y}
-       \operatorname{Cov}[f(x), f(y)] = \\
-    &= \frac \partial {\partial x} \frac \partial {\partial y} k(x, y).
+    \operatorname{Cov}[f'(x), f'(x')]
+    &= \frac \partial {\partial x} \frac \partial {\partial x'}
+       \operatorname{Cov}[f(x), f(x')] = \\
+    &= \frac \partial {\partial x} \frac \partial {\partial x'} k(x, x').
 
 With :mod:`lsqfitgp` it's easy to use derivatives of functions in fits (the
 automatic derivative calculations are implemented with `jax
@@ -73,20 +73,28 @@ is a dictionary-like object, a :class:`gvar.BufferDict`::
 
 Output::
 
-   BufferDict([('foo', array([-3.64653765e-01, -3.23953952e-01, -2.82800970e-01, -2.41572117e-01,
-       -2.00706893e-01, -1.60677780e-01, -1.21912123e-01, -8.49858459e-02,
-    [...]
-       -1.26686658e-01, -1.08753542e-01, -9.11791067e-02, -7.39771797e-02,
-       -5.72100107e-02, -4.08530974e-02, -2.48040154e-02, -8.98723986e-03])),
-    ('bar', array([ 0.80291661,  0.81567938,  0.82096587,  0.81818041,  0.80666123,
-        0.78573645,  0.75479056,  0.7133369 ,  0.66094777,  0.59746258,
-    [...]
-        0.36215257,  0.36271008,  0.35954951,  0.35369713,  0.34610696,
-        0.33774402,  0.32955189,  0.32229015,  0.31659095,  0.31293504]))])
+   BufferDict({
+       'foo':
+       array([-0.11402307, -0.13106434, -0.15281161, -0.17887973, -0.20891296,
+              -0.24251195, -0.27929914, -0.31884674, -0.36082554, -0.40486661,
+              -0.45060696, -0.49775005, -0.54600385, -0.59508847, -0.64472969,
+              ...
+              -2.63530838, -2.57269031, -2.50366536, -2.42837376, -2.34700524,
+              -2.25988906, -2.16741678, -2.07009175, -1.96849014, -1.86329373,
+              -1.75520165, -1.64503595, -1.53361282, -1.42176569, -1.31041028]),
+       'bar':
+       array([-0.28986829, -0.38697043, -0.47703517, -0.5596318 , -0.63448716,
+              -0.70151704, -0.76081473, -0.81251086, -0.85690719, -0.89436659,
+              -0.9252808 , -0.95011071, -0.96927296, -0.98326304, -0.99243838,
+              ...
+               1.18240169,  1.31010815,  1.43645288,  1.55958856,  1.6775638 ,
+               1.78841069,  1.89030301,  1.9813785 ,  2.06002936,  2.12473898,
+               2.17429867,  2.20770577,  2.2242869 ,  2.22366448,  2.2058344 ]),
+   })
 
 In general :mod:`gvar`, and so also :mod:`lsqfitgp`, can work with arrays or
 dictionaries of arrays/scalars. This comes in handy to carry around all the
-numbers in one object without forgetting the names of the things.
+numbers in one object without forgetting the names of things.
 
 Looking at the plot, the points where the derivative is zero seem to
 correspond to minima/maxima of the function. Let's check this more accurately::

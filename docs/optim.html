@@ -165,31 +165,14 @@ the letter counting kernel in <a class="reference internal" href="customs.html#c
 a 2x improvement is disabling the symmetry check in <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span>
 <span class="pre">checksym=False)</span></code>.</p>
 </section>
-<section id="fitting-hyperparameters">
-<h2><span class="section-number">14.2. </span>Fitting hyperparameters<a class="headerlink" href="#fitting-hyperparameters" title="Permalink to this heading">¶</a></h2>
-<p>The function <a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> finds the “optimal” hyperparameters by
-feeding the GP-factory you give to it into a minimization routine that tries to
-change the hyperparameters one step at a time and each time recreates the GP
-object and does some computations to check how a “good fit” it is for the given
-data.</p>
-<p>From the point of view of computational efficiency this means that, apart from
-taking posterior samples, the other techniques explained in the previous
-section also apply here. In particular, when the number of datapoints <cite>n</cite>
-starts to be in the hundreds, to speed up the fit do:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;chol&#39;</span><span class="p">,</span> <span class="n">checkpos</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>when you create the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object in the factory function.</p>
-<p>Since the same calculations are repeated many times over, it would be
-convenient if the whole linear algebra operation was streamlined without
-passing again and again from all the scaffolding and bookkeeping done by
-<a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>, in particular when there model is complex and uses nontrivial
-kernels and many transformations. Enters the JAX JIT (just-in-time compiler).
-Since <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> uses JAX as computational backend, in many cases a piece
-of code doing stuff with a Gaussian process can be put into a function and
-compiled to low-level instructions with <code class="docutils literal notranslate"><span class="pre">jax.jit</span></code>, provided all the array
-operations are implemented with <code class="docutils literal notranslate"><span class="pre">jax.numpy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">numpy</span></code>, and gvars
-are avoided. Example:</p>
+<section id="the-jax-compiler">
+<h2><span class="section-number">14.2. </span>The JAX compiler<a class="headerlink" href="#the-jax-compiler" title="Permalink to this heading">¶</a></h2>
+<p>Since <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> uses JAX as computational backend, which provides a just
+in time compiler (JIT), in many cases a piece of code doing stuff with a
+Gaussian process can be put into a function and compiled to low-level
+instructions with <code class="docutils literal notranslate"><span class="pre">jax.jit</span></code>, provided all the array operations are
+implemented with <code class="docutils literal notranslate"><span class="pre">jax.numpy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">numpy</span></code>, and gvars are avoided.
+Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax</span>
 <span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">jnp</span>
 <span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
@@ -257,8 +240,24 @@ important tweak. Let’s check:</p>
 </pre></div>
 </div>
 <p>As expected.</p>
-<p>Back to the hyperparameters: <a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> applies the jit for you if
-passed the <code class="docutils literal notranslate"><span class="pre">jit=True</span></code> option, so you don’t have to deal with this manually.</p>
+</section>
+<section id="fitting-hyperparameters">
+<h2><span class="section-number">14.3. </span>Fitting hyperparameters<a class="headerlink" href="#fitting-hyperparameters" title="Permalink to this heading">¶</a></h2>
+<p>The function <a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> finds the “optimal” hyperparameters by
+feeding the GP-factory you give to it into a minimization routine that tries to
+change the hyperparameters one step at a time and each time recreates the GP
+object and does some computations to check how a “good fit” it is for the given
+data.</p>
+<p>From the point of view of computational efficiency this means that, apart from
+taking posterior samples, the other techniques explained in the previous
+sections also apply here. In particular, when the number of datapoints <cite>n</cite>
+starts to be in the hundreds, to speed up the fit do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;chol&#39;</span><span class="p">,</span> <span class="n">checkpos</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>when you create the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object in the factory function.
+<a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> applies the jit for you if passed the <code class="docutils literal notranslate"><span class="pre">jit=True</span></code>
+option, so you don’t have to deal with it yourself.</p>
 </section>
 </section>
 

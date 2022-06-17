@@ -216,6 +216,7 @@ c_w(x) &amp;= \text{number of times word $w$ appears in $x$}\end{split}\]</div>
 <p>The words are defined as non-empty substrings delimited by spaces or one of
 the following punctuation characters: ! « » ” “ ” ‘ ’ / ( ) ‘ ? ¡ ¿ „ ‚ &lt; &gt;
 , ; . : - – —.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 100).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -256,10 +257,10 @@ Astronomical Time Series</em>.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Constant">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Constant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Constant" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Constant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Constant" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constant kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(r) = 1\]</div>
+\[k(x, y) = 1\]</div>
 <p>This means that all points are completely correlated, thus it is equivalent
 to fitting with an horizontal line. This can be seen also by observing that
 1 = 1 x 1.</p>
@@ -285,6 +286,7 @@ another kernel to introduce anticorrelations.</p>
 <p>It is smooth and has a strict typical lengthscale, i.e., oscillations are
 strongly suppressed under a certain wavelength, and correlations are
 strongly suppressed over a certain distance.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 83).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -295,6 +297,7 @@ strongly suppressed over a certain distance.</p>
 \[k(x, y) = \exp(-|x - y|)\]</div>
 <p>In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
 it acts separately while the Matérn kernel is isotropic.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 85).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -343,6 +346,7 @@ the increments are correlated (tends to keep a slope).</p>
 1/2 kernel, for <cite>gamma</cite> = 0 it is the constant kernel. The process is
 differentiable only for <cite>gamma</cite> = 2, however as <cite>gamma</cite> gets closer to 2
 the variance of the non-derivable component goes to zero.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 86).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -360,6 +364,7 @@ point. By default <cite>scalefun</cite> returns 1 so it is a Gaussian kernel.</p
 <p>Consider that the default parameter <cite>scale</cite> acts before <cite>scalefun</cite>, so
 for example if <cite>scalefun(x) = x</cite> then <cite>scale</cite> has no effect. You should
 include all rescalings in <cite>scalefun</cite> to avoid surprises.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 93).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -399,6 +404,7 @@ Astronomical Time Series</em>.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = x \cdot y = \sum_i x_i y_i\]</div>
 <p>In 1D it is equivalent to fitting with a line passing by the origin.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 89).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -415,6 +421,7 @@ for 1 &lt;= <cite>nu</cite> &lt; 2 it is derivable but has not a decond derivati
 half-integer case (nu = 1/2, 3/2, …) uses internally a simpler formula so
 you should prefer it. Also, taking derivatives of the process is supported
 only for half-integer nu.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 84).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -460,6 +467,7 @@ only for half-integer nu.</p>
 layer with Gaussian priors on the weights and error function response. In
 other words, you can think of the process as a superposition of sigmoids
 where <cite>sigma0</cite> sets the dispersion of the centers of the sigmoids.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 90).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -490,6 +498,7 @@ when the distance between the points is less than 1. Parameter <cite>q</cite> in
 1, 2, 3) sets the differentiability, while parameter <cite>D</cite> sets the maximum
 dimensionality the kernel can be used with. Default is <cite>q</cite> = 0 (non
 derivable), <cite>D</cite> = 1 (can be used only in 1D).</p>
+<p>Reference: Rasmussen and Williams (2006, p. 87).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -506,6 +515,7 @@ derivable), <cite>D</cite> = 1 (can be used only in 1D).</p>
 periodic process. The usual <cite>scale</cite> parameter sets the period, with the
 default <cite>scale</cite> = 1 giving a period of 2π, while the <cite>outerscale</cite> parameter
 sets the length scale of the correlations.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 92).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -518,6 +528,7 @@ sets the length scale of the correlations.</p>
 <p>It is equivalent to a lengthscale mixture of Gaussian kernels where the
 scale distribution is a gamma with shape parameter <cite>alpha</cite>. For <cite>alpha</cite> -&gt;
 infinity, it becomes the Gaussian kernel. It is smooth.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 86).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -549,7 +560,7 @@ deviation 1/k!.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.White">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">White</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.White" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">White</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.White" title="Permalink to this definition">¶</a></dt>
 <dd><p>White noise kernel.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}k(x, y) = \begin{cases}
@@ -565,6 +576,7 @@ deviation 1/k!.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \min(x, y), \quad x, y &gt; 0\]</div>
 <p>A kernel representing a non-differentiable random walk starting at 0.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 94).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -572,10 +584,8 @@ deviation 1/k!.</p>
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">WienerIntegral</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.WienerIntegral" title="Permalink to this definition">¶</a></dt>
 <dd><p>Kernel for a process whose derivative is a Wiener process.</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}k(x, y) = \frac 12 \begin{cases}
-    x^2 (y - x/3) &amp; x &lt; y, \\
-    y^2 (x - y/3) &amp; y \le x
-\end{cases}\end{split}\]</div>
+\[k(x, y) = \frac 12 a^2 \left(b - \frac a3 \right),
+\quad a = \min(x, y), b = \max(x, y)\]</div>
 </dd></dl>
 
 </section>

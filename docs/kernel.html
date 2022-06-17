@@ -393,9 +393,11 @@ zero.</p>
 <dt><strong>kernel</strong><span class="classifier">callable</span></dt><dd><p>A function taking one argument <cite>r2</cite> which is the squared distance
 between x and y, plus optionally keyword arguments.</p>
 </dd>
-<dt><strong>input</strong><span class="classifier">{‘squared’, ‘soft’}</span></dt><dd><p>If ‘squared’ (default), <cite>kernel</cite> is passed the squared distance.
-If ‘soft’, <cite>kernel</cite> is passed the distance, and the distance of
-equal points is a small number instead of zero.</p>
+<dt><strong>input</strong><span class="classifier">{‘squared’, ‘hard’, ‘soft’, ‘raw’}</span></dt><dd><p>If ‘squared’ (default), <cite>kernel</cite> is passed the squared distance.
+If ‘hard’, it is passed the distance (not squared). If ‘soft’, it
+is passed the distance, and the distance of equal points is a small
+number instead of zero. If ‘raw’, the kernel is passed both points
+separately like non-stationary kernels.</p>
 </dd>
 <dt><strong>scale</strong><span class="classifier">scalar</span></dt><dd><p>The distance is divided by <cite>scale</cite>.</p>
 </dd>
