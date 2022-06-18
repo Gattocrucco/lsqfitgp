@@ -68,6 +68,7 @@ Stationary kernels
   * :func:`Harmonic`
   * :func:`HoleEffect`
   * :func:`Periodic`
+  * :func:`Pink`
 
 Other kernels
 ^^^^^^^^^^^^^
@@ -110,6 +111,7 @@ Documentation
 .. autofunction:: OrnsteinUhlenbeck
 .. autofunction:: PPKernel
 .. autofunction:: Periodic
+.. autofunction:: Pink
 .. autofunction:: RatQuad
 .. autofunction:: Rescaling
 .. autofunction:: Taylor
