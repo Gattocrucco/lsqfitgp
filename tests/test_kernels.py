@@ -53,6 +53,8 @@ pytestmark = pytest.mark.filterwarnings(
 # and very near 0. Add a test option for testing a certain list of parameters,
 # which defaults to loc and scale.
 
+# TODO systematically test higher dimensions now that maxdim allows it.
+
 class KernelTestABC(metaclass=abc.ABCMeta):
     
     @property
@@ -870,6 +872,17 @@ for test in [TestBessel, TestMatern]:
     util.xfail(test, 'test_positive_deriv_nd')
     util.xfail(test, 'test_symmetric_10')
     util.xfail(test, 'test_symmetric_21')
+
+# TODO a lot problems probably due to the crappy jax implementation of the
+# derivatives of sinc. Need to taylor-expand it manually.
+util.xfail(TestSinc, 'test_positive_deriv')
+util.xfail(TestSinc, 'test_positive_deriv2')
+util.xfail(TestSinc, 'test_positive_deriv_nd')
+util.xfail(TestSinc, 'test_positive_deriv2_nd')
+util.xfail(TestSinc, 'test_symmetric_10')
+util.xfail(TestSinc, 'test_symmetric_21')
+util.xfail(TestSinc, 'test_jit_deriv2')
+util.xfail(TestSinc, 'test_jit_deriv2_nd')
 
 # TODO often xpass, likely numerical precision problems
 util.xfail(TestGammaExp, 'test_positive_deriv2')

@@ -65,12 +65,15 @@ __all__ = [
     'HoleEffect',
     'Bessel',
     'Pink',
+    'Sinc',
 ]
 
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
 # by default in CrossKernel, add maxdim=1 to all 1D kernels, and let the user
 # choose how to deal with nd (add option for sum-separation). Make an example
 # about this in `multidimensional input`.
+
+# TODO try using jnp.polyval for polynomials (Bernoulli and Matern p/2).
 
 def _dot(x, y):
     return _Kernel._sum_recurse_dtype(lambda x, y: x * y, x, y)
@@ -1017,3 +1020,18 @@ def Pink(delta, dw=1):
     norm = jnp.log(1 + dw)
     return jnp.where(delta < 1e-8, jnp.cos(mean) * norm, r - l) / norm
     # TODO r - l is not precise when dw << 1
+
+@stationarykernel(forcekron=True, derivable=True, input='soft')
+def Sinc(delta):
+    """
+    Sinc kernel.
+    
+    .. math:: k(\\Delta) = \\sinc(\\Delta) =
+        \\frac{\\sin(\\pi\\Delta)}{\\pi\\Delta}.
+    
+    Reference: Tobar (2019).
+    """
+    return jnp.sinc(delta)
+    
+    # TODO is this isotropic? My current guess is that it works up to some
+    # dimension due to a coincidence but is not in general isotropic.

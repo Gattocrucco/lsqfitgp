@@ -527,8 +527,6 @@ con addproclintransf
 Circular kernel: 
 https://docs.pymc.io/pymc-examples/examples/gaussian_processes/GP-Circular.html
 
-Kernel stazionario sinc.
-
 Add order: int >= 0 parameter to Gibbs that rescales the kernel by
 (s(x)s(y))^order, useful when taking derivatives to have the derivative of
 order `order` with constant variance (check this is actually the case). =>
