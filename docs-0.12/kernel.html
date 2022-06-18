@@ -140,7 +140,7 @@ simpler and more functional way using the decorators <a class="reference interna
 <a class="reference internal" href="kerneldec.html#lsqfitgp.stationarykernel" title="lsqfitgp.stationarykernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">stationarykernel()</span></code></a> and <a class="reference internal" href="kerneldec.html#lsqfitgp.isotropickernel" title="lsqfitgp.isotropickernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">isotropickernel()</span></code></a>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Kernel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9223372036854775807</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for objects representing covariance kernels.</p>
 <p>A Kernel object is callable, the signature is obj(x, y). Kernel objects
 can be summed and multiplied between them and with scalars, or raised
@@ -170,12 +170,16 @@ dimensions over which <cite>forcekron</cite> applies.</p>
 </dd>
 <dt><strong>derivable</strong><span class="classifier">bool, int, None, or callable</span></dt><dd><p>Specifies how many times the kernel can be derived, only for error
 checking purposes. True means infinitely many times derivable. If
-callable, it is called with the same keyword arguments of <cite>kernel</cite>.
+callable, it is called with the same keyword arguments as <cite>kernel</cite>.
 If None (default) it means that the degree of derivability is
 unknown.</p>
 </dd>
 <dt><strong>saveargs</strong><span class="classifier">bool</span></dt><dd><p>If True, save the all the initialization arguments in a
 dictionary under the attribute <cite>initargs</cite>. Default False.</p>
+</dd>
+<dt><strong>maxdim</strong><span class="classifier">int, callable or None</span></dt><dd><p>The maximum input dimensionality accepted by the kernel. If
+callable, it is called with the same keyword arguments as the
+kernel. Default sys.maxsize.</p>
 </dd>
 <dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to <cite>kernel</cite>.</p>
 </dd>
@@ -186,6 +190,8 @@ dictionary under the attribute <cite>initargs</cite>. Default False.</p>
 <dt><strong>derivable</strong><span class="classifier">int or None</span></dt><dd><p>How many times the process represented by the kernel is derivable.
 <code class="docutils literal notranslate"><span class="pre">sys.maxsize</span></code> if it is smooth. <code class="docutils literal notranslate"><span class="pre">None</span></code> if the derivability is
 unknown.</p>
+</dd>
+<dt><strong>maxdim</strong><span class="classifier">int or None</span></dt><dd><p>Maximum input dimensionality. None means unknown.</p>
 </dd>
 </dl>
 </dd>
@@ -369,10 +375,10 @@ otherwise a Kernel-like one.</p>
 <dt><strong>kernel</strong><span class="classifier">callable</span></dt><dd><p>A function taking one argument <cite>delta</cite> which is the difference
 between x and y, plus optionally keyword arguments.</p>
 </dd>
-<dt><strong>input</strong><span class="classifier">{‘signed’, ‘soft’}</span></dt><dd><p>If ‘signed’ (default), <cite>kernel</cite> is passed the bare difference. If
+<dt><strong>input</strong><span class="classifier">{‘signed’, ‘soft’, ‘hard’}</span></dt><dd><p>If ‘signed’ (default), <cite>kernel</cite> is passed the bare difference. If
 ‘soft’, <cite>kernel</cite> is passed the absolute value of the difference,
 and the difference of equal points is a small number instead of
-zero.</p>
+zero. If ‘hard’, the absolute value.</p>
 </dd>
 <dt><strong>scale</strong><span class="classifier">scalar</span></dt><dd><p>The difference is divided by <cite>scale</cite>.</p>
 </dd>

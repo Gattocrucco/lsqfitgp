@@ -47,6 +47,7 @@ Index
 
 Isotropic kernels
 ^^^^^^^^^^^^^^^^^
+  * :func:`Bessel`
   * :func:`Constant`
   * :func:`ExpQuad`
   * :func:`GammaExp`
@@ -65,6 +66,7 @@ Stationary kernels
   * :func:`Expon`
   * :func:`Fourier`
   * :func:`Harmonic`
+  * :func:`HoleEffect`
   * :func:`Periodic`
 
 Other kernels
@@ -85,6 +87,7 @@ Other kernels
 Documentation
 -------------
 .. autofunction:: BagOfWords
+.. autofunction:: Bessel
 .. autofunction:: BrownianBridge
 .. autofunction:: Categorical
 .. autofunction:: Celerite
@@ -97,6 +100,7 @@ Documentation
 .. autofunction:: GammaExp
 .. autofunction:: Gibbs
 .. autofunction:: Harmonic
+.. autofunction:: HoleEffect
 .. autofunction:: Linear
 .. autofunction:: Matern
 .. autofunction:: Matern12
