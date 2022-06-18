@@ -100,6 +100,8 @@ class KernelTestBase(KernelTestABC):
             kernel = self.kernel_class(**kw)
             if kernel.derivable < deriv:
                 continue
+            if nd and kernel.maxdim < 2:
+                continue
             d = (deriv, 'f0') if nd else deriv
             cov = kernel.diff(d, d)(x[None, :], x[:, None])
             np.testing.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7)
@@ -180,6 +182,8 @@ class KernelTestBase(KernelTestABC):
                 continue
             kernel = self.kernel_class(**kw)
             if kernel.derivable < deriv:
+                continue
+            if nd and kernel.maxdim < 2:
                 continue
             d = (deriv, 'f0') if nd else deriv
             kernel = kernel.diff(d, d)
@@ -266,6 +270,8 @@ class KernelTestBase(KernelTestABC):
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 1:
                 continue
+            if kernel.maxdim < 2:
+                continue
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff('f0', 'f0')(x, x.T)
             r2 = kernel.diff('f0', 0).diff(0, 'f0')(x, x.T)
@@ -279,6 +285,8 @@ class KernelTestBase(KernelTestABC):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 2:
+                continue
+            if kernel.maxdim < 2:
                 continue
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
@@ -294,6 +302,8 @@ class KernelTestBase(KernelTestABC):
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 2:
                 continue
+            if kernel.maxdim < 2:
+                continue
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x, x.T)
@@ -303,13 +313,19 @@ class KernelTestBase(KernelTestABC):
             pytest.skip()
     
     def test_implicit_fields(self):
+        donesomething = False
         for kw in self.kwargs_list:
-            x1 = self.random_x_nd(3, **kw)[:, None]
+            x1 = self.random_x_nd(2, **kw)[:, None]
             x2 = self.make_x_nd_implicit(x1)
             covfun = self.kernel_class(**kw)
+            if covfun.maxdim < 2:
+                continue
             c1 = covfun(x1, x1.T)
             c2 = covfun(x2, x2.T)
             np.testing.assert_allclose(c1, c2, atol=1e-15, rtol=1e-14)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
     
     def test_loc_scale_nd(self):
         kernel = self.kernel_class
@@ -318,16 +334,23 @@ class KernelTestBase(KernelTestABC):
             pytest.skip()
         loc = -2  # < 0
         scale = 3 # > abs(loc)
+        donesomething = False
         for kw in self.kwargs_list:
             # TODO maybe put loc and scale in kw and let random_x adapt the
             # domain to loc and scale
-            x1 = self.random_x_nd(3, **kw)[:, None]
+            x1 = self.random_x_nd(2, **kw)[:, None]
             x2 = self.make_x_nd_implicit(x1)
             x2['f0'] -= loc
             x2['f0'] /= scale
-            c1 = kernel(loc=loc, scale=scale, **kw)(x1, x1.T)
+            covfun1 = kernel(loc=loc, scale=scale, **kw)
+            if covfun1.maxdim < 2:
+                continue
+            c1 = covfun1(x1, x1.T)
             c2 = kernel(**kw)(x2, x2.T)
             np.testing.assert_allclose(c1, c2, rtol=1e-12, atol=1e-13)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
     
     def test_weird_derivable(self):
         for kw in self.kwargs_list:
@@ -341,20 +364,27 @@ class KernelTestBase(KernelTestABC):
             assert covfun.derivable == 0
     
     def test_dim(self):
+        donesomething = False
         for kw in self.kwargs_list:
-            x1 = self.random_x_nd(3, **kw)[:, None]
+            x1 = self.random_x_nd(2, **kw)[:, None]
             x2 = x1['f0']
             # dtype = x1.dtype.fields['f0'][0]
             # x3 = np.empty(x1.shape, [('f0', dtype, (1,))])
             # x3['f0'] = x2[..., None]
             x3 = self.make_x_nd_implicit(x1[['f0']])
-            c1 = self.kernel_class(dim='f0', **kw)(x1, x1.T)
+            covfun1 = self.kernel_class(dim='f0', **kw)
+            if covfun1.maxdim < 2:
+                continue
+            c1 = covfun1(x1, x1.T)
             c2 = self.kernel_class(**kw)(x2, x2.T)
             c3 = self.kernel_class(dim='f0', **kw)(x3, x3.T)
             util.assert_equal(c1, c2)
             util.assert_equal(c1, c3)
             with pytest.raises(ValueError):
                 self.kernel_class(dim='f0', **kw)(x2, x2.T)
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
     
     def test_binary_type_error(self):
         for kw in self.kwargs_list:
@@ -425,6 +455,7 @@ class KernelTestBase(KernelTestABC):
             pytest.skip()
     
     def test_where(self):
+        donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             
@@ -432,6 +463,8 @@ class KernelTestBase(KernelTestABC):
             x0 = x['f0'][0]
             cond = lambda x: x < x0
             k1 = _Kernel.where(cond, kernel, 2 * kernel, dim='f0')
+            if k1.maxdim is None or k1.maxdim < 2:
+                continue
             k2 = _Kernel.where(lambda x: cond(x['f0']), kernel, 2 * kernel)
             c1 = k1(x[:, None], x[None, :])
             c2 = k2(x[:, None], x[None, :])
@@ -450,6 +483,10 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x(**kw)
             with pytest.raises(ValueError):
                 k1(x, x)
+            
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
     
     def test_rescale_swap(self):
         for kw in self.kwargs_list:

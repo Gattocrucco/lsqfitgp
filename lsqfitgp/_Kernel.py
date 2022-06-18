@@ -63,7 +63,7 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreducto
             result = _reduce_recurse_dtype(fun, *recargs, **reckw)
             
             dtype = x.dtype.fields[name][0]
-            if dtype.shape:
+            if dtype.subdtype is not None: # has shape
                 axis = tuple(range(-len(dtype.shape), 0))
                 red = jnpreductor if isinstance(result, jnp.ndarray) else npreductor
                 result = red(result, axis=axis)
@@ -89,13 +89,20 @@ def _transf_recurse_dtype(transf, x, *args):
         return transf(x, *args)
     else:
         x = _array.StructuredArray(x)
-        # TODO this would overwrite StructuredArrays passed by the user, but
-        # it's unlikely to be a problem in practice, right? => nope, it's
-        # a problem
+        # redundant creation of StructuredArrays with nested dtypes; whatever
         for name in x.dtype.names:
             newargs = tuple(y[name] for y in args)
             x[name] = _transf_recurse_dtype(transf, x[name], *newargs)
         return x
+
+def _nd(dtype):
+    if dtype.names is not None:
+        return sum(_nd(dtype[name]) for name in dtype.names)
+    elif dtype.subdtype is not None: # has shape
+        # note: has name ==> does not have shape
+        return numpy.prod(dtype.shape, dtype=int)
+    else:
+        return 1
 
 def _greatest_common_superclass(classes):
     # from https://stackoverflow.com/a/25787091/3942284
@@ -129,9 +136,13 @@ class CrossKernel:
             obj._maxderivable = (0, sys.maxsize)
         obj._kernel = core
         obj.initargs = None
+        obj._maxdim = None
+        # TODO implement maxdim like derivable (distinguish left/right
+        # argument and have minimum/maximum). Here take as minimum the minimum
+        # maxdim of the kernels and as maximum the sum of the maxima.
         return obj
     
-    def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcekron=False, derivable=None, saveargs=False, **kw):
+    def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcekron=False, derivable=None, saveargs=False, maxdim=sys.maxsize, **kw):
         """
         
         Base class for objects representing covariance kernels.
@@ -146,6 +157,8 @@ class CrossKernel:
             How many times the process represented by the kernel is derivable.
             ``sys.maxsize`` if it is smooth. ``None`` if the derivability is
             unknown.
+        maxdim : int or None
+            Maximum input dimensionality. None means unknown.
         
         Parameters
         ----------
@@ -172,12 +185,16 @@ class CrossKernel:
         derivable : bool, int, None, or callable
             Specifies how many times the kernel can be derived, only for error
             checking purposes. True means infinitely many times derivable. If
-            callable, it is called with the same keyword arguments of `kernel`.
+            callable, it is called with the same keyword arguments as `kernel`.
             If None (default) it means that the degree of derivability is
             unknown.
         saveargs : bool
             If True, save the all the initialization arguments in a
             dictionary under the attribute `initargs`. Default False.
+        maxdim : int, callable or None
+            The maximum input dimensionality accepted by the kernel. If
+            callable, it is called with the same keyword arguments as the
+            kernel. Default sys.maxsize.
         **kw
             Additional keyword arguments are passed to `kernel`.
         
@@ -223,7 +240,7 @@ class CrossKernel:
         assert isinstance(dim, (str, type(None)))
         forcekron = bool(forcekron)
         
-        # Convert `derivable` to an integer.
+        # Convert `derivable` to a tuple of integers.
         if callable(derivable):
             derivable = derivable(**kw)
         if derivable is None:
@@ -241,12 +258,26 @@ class CrossKernel:
         self._minderivable = (derivable[0], derivable[0])
         self._maxderivable = (derivable[1], derivable[1])
         
+        # Convert `maxdim` to a tuple of integers.
+        if callable(maxdim):
+            maxdim = maxdim(**kw)
+        assert maxdim is None or int(maxdim) == maxdim and maxdim >= 0
+        self._maxdim = maxdim
+        
         transf = lambda x: x
         
-        if isinstance(dim, str):
+        if maxdim is not None:
             def transf(x):
+                nd = _nd(x.dtype)
+                if nd > maxdim:
+                    raise ValueError(f'kernel called on type with dimensionality {nd} > maxdim={maxdim}')
+                return x
+        
+        if dim is not None:
+            def transf(x, transf=transf):
+                x = transf(x)
                 if x.dtype.names is None:
-                    raise ValueError(f'kernel called on non-structured array but dim="{dim}"')
+                    raise ValueError(f'kernel called on non-structured array but dim={dim!r}')
                 elif x.dtype.fields[dim][0].shape:
                     return x[[dim]]
                 else:
@@ -657,6 +688,10 @@ class Kernel(CrossKernel):
             return self._minderivable[0]
         else:
             return None
+    
+    @property
+    def maxdim(self):
+        return self._maxdim
         
     def _binary(self, value, op):
         if _isscalar(value) and _patch_jax.isconcrete(value):
@@ -712,7 +747,7 @@ class IsotropicKernel(StationaryKernel):
     # TODO add the `distance` parameter to supply an arbitrary distance, maybe
     # allow string keywords for premade distances, like euclidean, hamming,
     # p-norms. Question: the known isotropic kernels effectively work for any
-    # distance, or the proofs are only for the 2-norm?
+    # distance, or the proofs are only for the 2-norm? (I guess only 2-norm)
     
     # TODO it is not efficient that the distance is computed separately for
     # each kernel in a kernel expression, but probably it would be difficult

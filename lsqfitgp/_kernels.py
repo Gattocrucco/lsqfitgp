@@ -63,6 +63,7 @@ __all__ = [
     'Expon',
     'BagOfWords',
     'HoleEffect',
+    'Bessel',
 ]
 
 def _dot(x, y):
@@ -466,10 +467,13 @@ def FracBrownian(x, y, H=1/2):
     H2 = 2 * H
     return 1/2 * (x ** H2 + y ** H2 - jnp.abs(x - y) ** H2)
 
-def _ppkernel_derivable(**kw):
-    return kw.get('q', 0)
+def _ppkernel_derivable(q=0, **_):
+    return q
 
-@isotropickernel(input='soft', derivable=_ppkernel_derivable)
+def _ppkernel_maxdim(D=1, **_):
+    return D
+
+@isotropickernel(input='soft', derivable=_ppkernel_derivable, maxdim=_ppkernel_maxdim)
 def PPKernel(r, q=0, D=1):
     """
     Piecewise polynomial kernel.
@@ -491,9 +495,6 @@ def PPKernel(r, q=0, D=1):
     """
     
     # TODO get the general formula for any q.
-    
-    # TODO add error checking on the dimensionality in IsotropicKernel, init
-    # parameter `maxdim`.
     
     # TODO compute the kernel only on the nonzero points.
     
@@ -517,7 +518,7 @@ def PPKernel(r, q=0, D=1):
     return jnp.where(x > 0, x ** (j + q) * poly, 0)
 
 # redefine derivatives of min and max because jax default is to yield 1/2
-# when x == y, I need 1 but consistently between min/max
+# when x == y, while I need 1 but consistently between min/max
 
 @jax.custom_jvp
 def _minimum(x, y):
@@ -956,16 +957,19 @@ def _bessel_scale(nu):
 def _bessel_derivable(nu=0):
     return int(numpy.floor(nu / 2)) # not really sure about this
 
-@isotropickernel(derivable=_bessel_derivable, input='soft')
+def _bessel_maxdim(nu=0):
+    return 2 * (numpy.floor(nu) + 1)
+
+@isotropickernel(derivable=_bessel_derivable, input='soft', maxdim=_bessel_maxdim)
 def Bessel(r, nu=0):
     """
     Bessel kernel.
     
     .. math:: k(r) = \\Gamma(\\nu + 1) 2^\\nu (zr)^{-\\nu} J_{\\nu}(zr),
     
-    where `z` is the first zero of :math:`J_\\nu`.
-    
-    Can be used in up to :math:`2(\\nu + 1)` dimensions.
+    where `z` is the first zero of :math:`J_\\nu`. Can be used in up to
+    :math:`2(\\lfloor\\nu\\rfloor + 1)` dimensions and derived up to
+    :math:`\\lfloor\\nu/2\\rfloor` times.
     
     Reference: Rasmussen and Williams (2006, p. 89).
     """
@@ -979,4 +983,3 @@ def Bessel(r, nu=0):
     # 2 nu >= D - 2
     # 2 nu + 2 >= D
     # D <= 2 (nu + 1)
-    # TODO this needs a `maxdim` option like PPKernel
