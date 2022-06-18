@@ -69,6 +69,7 @@ Stationary kernels
   * :func:`HoleEffect`
   * :func:`Periodic`
   * :func:`Pink`
+  * :func:`Sinc`
 
 Other kernels
 ^^^^^^^^^^^^^
@@ -114,6 +115,7 @@ Documentation
 .. autofunction:: Pink
 .. autofunction:: RatQuad
 .. autofunction:: Rescaling
+.. autofunction:: Sinc
 .. autofunction:: Taylor
 .. autofunction:: White
 .. autofunction:: Wiener
