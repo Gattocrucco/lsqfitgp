@@ -64,10 +64,17 @@ __all__ = [
     'BagOfWords',
     'HoleEffect',
     'Bessel',
+    'Pink',
 ]
+
+# TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
+# by default in CrossKernel, add maxdim=1 to all 1D kernels, and let the user
+# choose how to deal with nd (add option for sum-separation). Make an example
+# about this in `multidimensional input`.
 
 def _dot(x, y):
     return _Kernel._sum_recurse_dtype(lambda x, y: x * y, x, y)
+    # TODO remove underscore from _Kernel functions used outside of _Kernel
     
 @isotropickernel(derivable=True, input='raw')
 def Constant(x, y):
@@ -983,3 +990,30 @@ def Bessel(r, nu=0):
     # 2 nu >= D - 2
     # 2 nu + 2 >= D
     # D <= 2 (nu + 1)
+    
+@stationarykernel(forcekron=True, derivable=1, input='hard')
+def Pink(delta, dw=1):
+    """
+    Pink noise kernel.
+    
+    .. math::
+        k(\\Delta) = \\frac 1 {\\log(1 + \\delta\\omega)}
+        \\int_1^{1+\\delta\\omega} \\mathrm d\\omega
+        \\frac{\\cos(\\omega\\Delta)}\\omega
+    
+    A process with power spectrum :math:`1/\\omega` truncated between 1 and
+    :math:`1 + \\delta\\omega`. :math:`\\omega` is the angular frequency
+    :math:`\\omega = 2\\pi f`. In the limit :math:`\\delta\\omega\\to\\infty`
+    it becomes white noise. Derivable one time.
+    
+    """
+    # TODO reference?
+    
+    # TODO use \Delta in all stationary kernels formulas.
+    
+    l = _patch_jax.ci(delta)
+    r = _patch_jax.ci(delta * (1 + dw))
+    mean = delta * (1 + dw / 2)
+    norm = jnp.log(1 + dw)
+    return jnp.where(delta < 1e-8, jnp.cos(mean) * norm, r - l) / norm
+    # TODO r - l is not precise when dw << 1

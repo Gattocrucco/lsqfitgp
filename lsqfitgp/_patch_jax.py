@@ -68,6 +68,7 @@ jv = makejaxufunc(special.jv, None, lambda v, z: jvp(v, z, 1))
 jvp = makejaxufunc(special.jvp, None, lambda v, z, n: jvp(v, z, n + 1), None)
 kv = makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
 kvp = makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
+ci = makejaxufunc(lambda x: special.sici(x)[1], lambda x: jnp.cos(x) / x)
 
 # See jax #1870, #2466, #9956, #11002 and
 # https://github.com/josipd/jax/blob/master/jax/experimental/jambax.py

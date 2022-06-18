@@ -527,11 +527,7 @@ con addproclintransf
 Circular kernel: 
 https://docs.pymc.io/pymc-examples/examples/gaussian_processes/GP-Circular.html
 
-Kernel stazionario sinc. Qual è la sua diagonalizzazione? (Ho scoperto che
-diagonalizzare il kernel si chiama teorema di Mercer, o decomposizione di
-tizio-caio-nonricordo.)
-
-Kernel rumore rosa, troncato tra due frequenze.
+Kernel stazionario sinc.
 
 Add order: int >= 0 parameter to Gibbs that rescales the kernel by
 (s(x)s(y))^order, useful when taking derivatives to have the derivative of

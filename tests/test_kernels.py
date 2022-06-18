@@ -48,6 +48,11 @@ pytestmark = pytest.mark.filterwarnings(
     r'ignore:Output seems independent of input',
 )
 
+# TODO a test taking first and second derivatives w.r.t. loc and scale, which
+# would apply also to non-derivable kernels. Make sure to have distances both 0
+# and very near 0. Add a test option for testing a certain list of parameters,
+# which defaults to loc and scale.
+
 class KernelTestABC(metaclass=abc.ABCMeta):
     
     @property
@@ -92,6 +97,9 @@ class KernelTestBase(KernelTestABC):
     @property
     def eps(self):
         return 200 * np.finfo(float).eps
+    
+    def test_public(self):
+        assert self.kernel_class in vars(lgp).values()
     
     def positive(self, deriv, nd=False):
         donesomething = False
@@ -879,7 +887,7 @@ util.xfail(TestTaylor, 'test_double_diff_nd_second')
 util.xfail(TestNNKernel, 'test_double_diff_nd_second')
 
 # TODO functions not supported by XLA. Wait for jax to add them?
-for test in [TestTaylor, TestBessel, TestMatern]:
+for test in [TestTaylor, TestBessel, TestMatern, TestPink]:
     util.xfail(test, 'test_jit')
     util.xfail(test, 'test_jit_deriv')
     util.xfail(test, 'test_jit_deriv2')
