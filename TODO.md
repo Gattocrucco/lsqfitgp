@@ -553,8 +553,6 @@ causal exponential quadratic
 decaying kernel
 logkernel
 
-Bessel kernel (GPML pag. 89)
-
 Look in the kernels reference I highlighted in the GPML bibliography
 
 ### Transformations

@@ -150,15 +150,12 @@ def _maternp_jvp(p, primals, tangents):
     xdot, = tangents
     return _maternp(x, p), _maternp_deriv(x, p) * xdot
 
-def _matern_derivable(**kw):
-    nu = kw.get('nu', None)
-    if jnp.isscalar(nu) and nu > 0 and (2 * nu) % 1 == 0:
-        return int(nu - 1/2)
-    else:
-        return False
+def _matern_derivable(nu=None):
+    return int(nu - 1/2)
 
 # TODO I'm using soft input for the Matérn kernels, however for the
 # half-integer case it is probably not necessary to use the softabs.
+# => Maybe I should have two separate kernel, Matern and Maternp2
 
 @isotropickernel(input='soft', derivable=_matern_derivable)
 def Matern(r, nu=None):
@@ -186,6 +183,9 @@ def Matern(r, nu=None):
         return _maternp(x, int(nu - 1/2))
     else:
         return 2 ** (1 - nu) / special.gamma(nu) * x ** nu * _patch_jax.kv(nu, x)
+        # TODO I need a function that computes directly x^nu K_nu(x), and its
+        # derivatives, because when taking the derivative, the two terms bring
+        # about a strong cancellation for x -> 0 (this is a hypothesis).
 
 @isotropickernel(input='soft', derivable=False)
 def Matern12(r):
@@ -546,7 +546,7 @@ def WienerIntegral(x, y):
     
     .. math::
         k(x, y) = \\frac 12 a^2 \\left(b - \\frac a3 \\right),
-        \\quad a = \min(x, y), b = \max(x, y)
+        \\quad a = \\min(x, y), b = \\max(x, y)
     
     """
     
@@ -936,9 +936,47 @@ def HoleEffect(delta):
     
     Hole effect kernel.
     
-    .. math:: k(r) = (1 - r) \exp(-r)
+    .. math:: k(r) = (1 - r) \\exp(-r)
     
     Reference: Dietrich and Newsam (1997, p. 1096).
     
     """
     return (1 - delta) * jnp.exp(-delta)
+
+def _bessel_scale(nu):
+    lnu = numpy.floor(nu)
+    rnu = numpy.ceil(nu)
+    zl, = special.jn_zeros(lnu, 1)
+    if lnu == rnu:
+        return zl
+    else:
+        zr, = special.jn_zeros(rnu, 1)
+        return zl + (nu - lnu) * (zr - zl) / (rnu - lnu)
+    
+def _bessel_derivable(nu=0):
+    return int(numpy.floor(nu / 2)) # not really sure about this
+
+@isotropickernel(derivable=_bessel_derivable, input='soft')
+def Bessel(r, nu=0):
+    """
+    Bessel kernel.
+    
+    .. math:: k(r) = \\Gamma(\\nu + 1) 2^\\nu (zr)^{-\\nu} J_{\\nu}(zr),
+    
+    where `z` is the first zero of :math:`J_\\nu`.
+    
+    Can be used in up to :math:`2(\\nu + 1)` dimensions.
+    
+    Reference: Rasmussen and Williams (2006, p. 89).
+    """
+    r = r * _bessel_scale(nu)
+    return special.gamma(nu + 1) * 2 ** nu * r ** -nu * _patch_jax.jv(nu, r)
+    # TODO I need a function that computes directly x^-nu J_nu(x), and its
+    # derivatives, because when taking the derivative, the two terms bring
+    # about a strong cancellation for x -> 0. (This is a hypothesis.)
+
+    # nu >= (D-2)/2
+    # 2 nu >= D - 2
+    # 2 nu + 2 >= D
+    # D <= 2 (nu + 1)
+    # TODO this needs a `maxdim` option like PPKernel

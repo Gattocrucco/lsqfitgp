@@ -140,7 +140,7 @@ class KernelTestBase(KernelTestABC):
                 continue
             b1 = kernel.diff(xderiv, yderiv)(x, y)
             b2 = kernel.diff(yderiv, xderiv)(y, x)
-            assert np.allclose(b1, b2)
+            np.testing.assert_allclose(b1, b2, atol=1e-11)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -227,7 +227,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x(**kw)
             r1 = kernel.diff(1, 1)(x[None, :], x[:, None])
             r2 = kernel.diff(1, 0).diff(0, 1)(x[None, :], x[:, None])
-            assert np.allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -241,7 +241,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x(**kw)
             r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
             r2 = kernel.diff(1, 1).diff(1, 1)(x[None, :], x[:, None])
-            assert np.allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -255,7 +255,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x(**kw)
             r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
             r2 = kernel.diff(2, 0).diff(0, 2)(x[None, :], x[:, None])
-            assert np.allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -269,7 +269,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff('f0', 'f0')(x, x.T)
             r2 = kernel.diff('f0', 0).diff(0, 'f0')(x, x.T)
-            assert np.allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -283,7 +283,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f0').diff('f1', 'f1')(x, x.T)
-            assert np.allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -612,9 +612,7 @@ def bow_rand(**kw):
         
 # Define a concrete subclass of KernelTestBase for each kernel.
 test_kwargs = {
-    _kernels.Matern: dict(kwargs_list=[
-        dict(nu=0.5), dict(nu=0.6), dict(nu=1.5), dict(nu=2.5)
-    ]),
+    _kernels.Matern: dict(kwargs_list=[dict(nu=nu + 0.5) for nu in range(5)] + [dict(nu=nu + 0.49) for nu in range(5)] + [dict(nu=nu + 0.51) for nu in range(5)]),
     _kernels.PPKernel: dict(kwargs_list=[
         dict(q=q, D=D) for q in range(4) for D in range(1, 6)
     ]),
@@ -640,6 +638,7 @@ test_kwargs = {
     _kernels.Gibbs: dict(kwargs_list=[dict(derivable=True)]),
     _kernels.Rescaling: dict(kwargs_list=[dict(derivable=True)]),
     _kernels.GammaExp: dict(kwargs_list=[dict(), dict(gamma=2)]),
+    _kernels.Bessel: dict(kwargs_list=[dict()] + [dict(nu=nu) for nu in range(5)] + [dict(nu=nu - 0.01) for nu in range(1, 5)] + [dict(nu=nu + 0.01) for nu in range(5)]),
 }
 
 for kernel in kernels:
@@ -664,7 +663,7 @@ def test_matern_half_integer():
         x, y = 3 * np.random.randn(2, 100)
         r1 = _kernels.Matern(nu=nu)(x, y)
         r2 = _kernels.Matern(nu=nualt)(x, y)
-        assert np.allclose(r1, r2)
+        np.testing.assert_allclose(r1, r2)
 
 def check_matern_spec_p(p, xderiv, yderiv):
     """
@@ -676,7 +675,7 @@ def check_matern_spec_p(p, xderiv, yderiv):
         x = np.random.randn(10)[:, None]
         r1 = _kernels.Matern(nu=nu).diff(xderiv, yderiv)(x, x.T)
         r2 = spec().diff(xderiv, yderiv)(x, x.T)
-        assert np.allclose(r1, r2)
+        np.testing.assert_allclose(r1, r2, atol=1e-14)
 
 def check_matern_spec(xderiv, yderiv):
     for p in range(3):
@@ -702,7 +701,7 @@ def test_wiener_integral():
     x, y = np.abs(np.random.randn(2, 100))
     r1 = _kernels.Wiener()(x, y)
     r2 = _kernels.WienerIntegral().diff(1, 1)(x, y)
-    assert np.allclose(r1, r2)
+    np.testing.assert_allclose(r1, r2)
 
 def bernoulli_poly_handwritten(n, x):
     return [
@@ -718,7 +717,7 @@ def bernoulli_poly_handwritten(n, x):
 def check_bernoulli(n, x):
     r1 = bernoulli_poly_handwritten(n, x)
     r2 = _kernels._bernoulli_poly(n, x)
-    assert np.allclose(r1, r2)
+    np.testing.assert_allclose(r1, r2)
 
 def test_bernoulli():
     for n in range(7):
@@ -736,7 +735,7 @@ def test_celerite_harmonic():
     B = 1 / (eta * Q)
     r1 = _kernels.Celerite(gamma=B, B=B)(x[:, None], x[None, :])
     r2 = _kernels.Harmonic(Q=Q, scale=eta)(x[:, None], x[None, :])
-    assert np.allclose(r1, r2)
+    np.testing.assert_allclose(r1, r2)
 
 def check_harmonic_continuous(deriv, Q0, Qderiv=False):
     eps = 1e-10
@@ -807,14 +806,25 @@ def test_matern_derivatives():
 util.xfail(TestMatern, 'test_positive_deriv2_nd')
 util.xfail(TestMatern, 'test_double_diff_nd_second_chopped')
 util.xfail(TestMatern52, 'test_positive_deriv2_nd')
-util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
-util.xfail(TestMatern52, 'test_jit_deriv2_nd')
+util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped') # seen xpassing
+util.xfail(TestMatern52, 'test_jit_deriv2_nd') # seen xpassing
 util.xfail(TestPPKernel, 'test_positive_deriv2_nd')
 util.xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
 util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
 util.xfail(TestGammaExp, 'test_positive_deriv2_nd')
 util.xfail(TestGammaExp, 'test_double_diff_nd_second_chopped')
 util.xfail(TestGammaExp, 'test_jit_deriv2_nd') # tipically xpasses
+util.xfail(TestBessel, 'test_positive_deriv2_nd')
+util.xfail(TestBessel, 'test_double_diff_nd_second_chopped')
+
+# TODO I suppose it's x^-nu J_nu(x) and x^nu K_nu(x) which give problems for x
+# -> 0.
+for test in [TestBessel, TestMatern]:
+    util.xfail(test, 'test_positive_deriv')
+    util.xfail(test, 'test_positive_deriv2') # this is num acc for Matern
+    util.xfail(test, 'test_positive_deriv_nd')
+    util.xfail(test, 'test_symmetric_10')
+    util.xfail(test, 'test_symmetric_21')
 
 # TODO often xpass, likely numerical precision problems
 util.xfail(TestGammaExp, 'test_positive_deriv2')
@@ -823,7 +833,7 @@ util.xfail(TestPPKernel, 'test_positive_deriv2')
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some
 # reason I don't catch it without taking a derivative. => This explanation is
-# likely wrong since the jit test fails too.
+# likely wrong since the jit test fails too, without checking positivity.
 util.xfail(TestPPKernel, 'test_positive_deriv_nd') # seen xpassing in the wild
 util.xfail(TestPPKernel, 'test_jit_deriv_nd')
 
@@ -832,11 +842,10 @@ util.xfail(TestTaylor, 'test_double_diff_nd_second')
 util.xfail(TestNNKernel, 'test_double_diff_nd_second')
 
 # TODO functions not supported by XLA. Wait for jax to add them?
-util.xfail(TestMatern, 'test_jit')
-util.xfail(TestMatern, 'test_jit_nd')
-util.xfail(TestTaylor, 'test_jit')
-util.xfail(TestTaylor, 'test_jit_deriv')
-util.xfail(TestTaylor, 'test_jit_deriv2')
-util.xfail(TestTaylor, 'test_jit_nd')
-util.xfail(TestTaylor, 'test_jit_deriv_nd')
-util.xfail(TestTaylor, 'test_jit_deriv2_nd')
+for test in [TestTaylor, TestBessel, TestMatern]:
+    util.xfail(test, 'test_jit')
+    util.xfail(test, 'test_jit_deriv')
+    util.xfail(test, 'test_jit_deriv2')
+    util.xfail(test, 'test_jit_nd')
+    util.xfail(test, 'test_jit_deriv_nd')
+    util.xfail(test, 'test_jit_deriv2_nd')
