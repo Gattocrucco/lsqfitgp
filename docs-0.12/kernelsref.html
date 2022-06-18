@@ -183,6 +183,7 @@ issue.</p>
 <li><p><a class="reference internal" href="#lsqfitgp.Harmonic" title="lsqfitgp.Harmonic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Harmonic()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.HoleEffect" title="lsqfitgp.HoleEffect"><code class="xref py py-func docutils literal notranslate"><span class="pre">HoleEffect()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Periodic" title="lsqfitgp.Periodic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Periodic()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Pink" title="lsqfitgp.Pink"><code class="xref py py-func docutils literal notranslate"><span class="pre">Pink()</span></code></a></p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -539,6 +540,20 @@ periodic process. The usual <cite>scale</cite> parameter sets the period, with t
 default <cite>scale</cite> = 1 giving a period of 2π, while the <cite>outerscale</cite> parameter
 sets the length scale of the correlations.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 92).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Pink">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Pink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Pink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pink noise kernel.</p>
+<div class="math notranslate nohighlight">
+\[k(\Delta) = \frac 1 {\log(1 + \delta\omega)}
+\int_1^{1+\delta\omega} \mathrm d\omega
+\frac{\cos(\omega\Delta)}\omega\]</div>
+<p>A process with power spectrum <span class="math notranslate nohighlight">\(1/\omega\)</span> truncated between 1 and
+<span class="math notranslate nohighlight">\(1 + \delta\omega\)</span>. <span class="math notranslate nohighlight">\(\omega\)</span> is the angular frequency
+<span class="math notranslate nohighlight">\(\omega = 2\pi f\)</span>. In the limit <span class="math notranslate nohighlight">\(\delta\omega\to\infty\)</span>
+it becomes white noise. Derivable one time.</p>
 </dd></dl>
 
 <dl class="py function">
