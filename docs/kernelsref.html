@@ -158,6 +158,7 @@ issue.</p>
 <h3><span class="section-number">1.1.1. </span>Isotropic kernels<a class="headerlink" href="#isotropic-kernels" title="Permalink to this heading">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
+<li><p><a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Bessel"><code class="xref py py-func docutils literal notranslate"><span class="pre">Bessel()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Constant"><code class="xref py py-func docutils literal notranslate"><span class="pre">Constant()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-func docutils literal notranslate"><span class="pre">ExpQuad()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.GammaExp" title="lsqfitgp.GammaExp"><code class="xref py py-func docutils literal notranslate"><span class="pre">GammaExp()</span></code></a></p></li>
@@ -180,6 +181,7 @@ issue.</p>
 <li><p><a class="reference internal" href="#lsqfitgp.Expon" title="lsqfitgp.Expon"><code class="xref py py-func docutils literal notranslate"><span class="pre">Expon()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Fourier" title="lsqfitgp.Fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">Fourier()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Harmonic" title="lsqfitgp.Harmonic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Harmonic()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.HoleEffect" title="lsqfitgp.HoleEffect"><code class="xref py py-func docutils literal notranslate"><span class="pre">HoleEffect()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Periodic" title="lsqfitgp.Periodic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Periodic()</span></code></a></p></li>
 </ul>
 </div></blockquote>
@@ -217,6 +219,18 @@ c_w(x) &amp;= \text{number of times word $w$ appears in $x$}\end{split}\]</div>
 the following punctuation characters: ! « » ” “ ” ‘ ’ / ( ) ‘ ? ¡ ¿ „ ‚ &lt; &gt;
 , ; . : - – —.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 100).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Bessel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Bessel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Bessel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bessel kernel.</p>
+<div class="math notranslate nohighlight">
+\[k(r) = \Gamma(\nu + 1) 2^\nu (zr)^{-\nu} J_{\nu}(zr),\]</div>
+<p>where <cite>z</cite> is the first zero of <span class="math notranslate nohighlight">\(J_\nu\)</span>. Can be used in up to
+<span class="math notranslate nohighlight">\(2(\lfloor\nu\rfloor + 1)\)</span> dimensions and derived up to
+<span class="math notranslate nohighlight">\(\lfloor\nu/2\rfloor\)</span> times.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 89).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -395,6 +409,15 @@ kernel.</p>
 <p>Reference: Daniel Foreman-Mackey, Eric Agol, Sivaram Ambikasaran, and Ruth
 Angus: <em>Fast and Scalable Gaussian Process Modeling With Applications To
 Astronomical Time Series</em>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.HoleEffect">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">HoleEffect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.HoleEffect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hole effect kernel.</p>
+<div class="math notranslate nohighlight">
+\[k(r) = (1 - r) \exp(-r)\]</div>
+<p>Reference: Dietrich and Newsam (1997, p. 1096).</p>
 </dd></dl>
 
 <dl class="py function">
