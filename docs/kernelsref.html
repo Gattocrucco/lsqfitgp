@@ -184,6 +184,7 @@ issue.</p>
 <li><p><a class="reference internal" href="#lsqfitgp.HoleEffect" title="lsqfitgp.HoleEffect"><code class="xref py py-func docutils literal notranslate"><span class="pre">HoleEffect()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Periodic" title="lsqfitgp.Periodic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Periodic()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Pink" title="lsqfitgp.Pink"><code class="xref py py-func docutils literal notranslate"><span class="pre">Pink()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Sinc" title="lsqfitgp.Sinc"><code class="xref py py-func docutils literal notranslate"><span class="pre">Sinc()</span></code></a></p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -582,6 +583,16 @@ sign of <cite>fun</cite> will be totally correlated, points with different sign 
 be totally anticorrelated. Use this kernel to modulate the variance of
 other kernels. By default <cite>stdfun</cite> returns a constant, so it is equivalent
 to <a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constant</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Sinc">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Sinc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Sinc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sinc kernel.</p>
+<div class="math notranslate nohighlight">
+\[k(\Delta) = \sinc(\Delta) =
+\frac{\sin(\pi\Delta)}{\pi\Delta}.\]</div>
+<p>Reference: Tobar (2019).</p>
 </dd></dl>
 
 <dl class="py function">
