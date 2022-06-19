@@ -283,9 +283,6 @@ def RatQuad(r2, alpha=2):
     if _patch_jax.isconcrete(alpha):
         assert 0 < alpha < jnp.inf, alpha
     return (1 + r2 / (2 * alpha)) ** -alpha
-    # TODO this is probably known as Cauchy in the geostatistic literature, but
-    # maybe just the case alpha=1. see Gneiting and Schlather (2006, p. 273),
-    # Lim and Li (2009, p. 1327).
 
 @kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):
@@ -377,9 +374,9 @@ def Periodic(delta, outerscale=1):
     Periodic Gaussian kernel.
     
     .. math::
-        k(x, y) = \\exp \\left(
+        k(\\Delta) = \\exp \\left(
         -2 \\left(
-        \\frac {\\sin((x - y) / 2)} {\\texttt{outerscale}}
+        \\frac {\\sin(\\Delta / 2)} {\\texttt{outerscale}}
         \\right)^2
         \\right)
     
@@ -447,7 +444,7 @@ def Cos(delta):
     Cosine kernel.
     
     .. math::
-        k(x, y) = \\cos(x - y)
+        k(\\Delta) = \\cos(\\Delta)
         = \\cos x \\cos y + \\sin x \\sin y
     
     Samples from this kernel are harmonic functions. It can be multiplied with
@@ -636,15 +633,15 @@ def _FourierBase(delta, n=2):
     Fourier kernel.
     
     .. math::
-        k(x, y) &= \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
+        k(\\Delta) &= \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
         \\frac {\\cos(2\\pi kx)}{k^n} \\frac {\\cos(2\\pi ky)}{k^n}
         + \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
         \\frac {\\sin(2\\pi kx)}{k^n} \\frac {\\sin(2\\pi ky)}{k^n} = \\\\
         &= \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
-        \\frac {\\cos(2\\pi k(x-y))} {k^{2n}} = \\\\
+        \\frac {\\cos(2\\pi k\\Delta)} {k^{2n}} = \\\\
         &= (-1)^{n+1}
         \\frac1{\\zeta(2n)} \\frac {(2\\pi)^{2n}} {2(2n)!}
-        B_{2n}(x-y \\bmod 1),
+        B_{2n}(\\Delta \\bmod 1),
     
     where :math:`B_s(x)` is a Bernoulli polynomial. It is equivalent to fitting
     with a Fourier series of period 1 with independent priors on the
@@ -666,7 +663,8 @@ def _FourierBase(delta, n=2):
     # series when I add a constant. => Maybe this will be solved when I
     # improve the transformations system.
     
-    assert int(n) == n and n >= 1, n # TODO I could allow n == 0 to be a constant kernel
+    assert int(n) == n and n >= 1, n
+    # TODO I could allow n == 0 to be a constant kernel
     s = 2 * n
     sign0 = -(-1) ** n
     factor = (2 * jnp.pi) ** s / (2 * special.factorial(s) * special.zeta(s))
@@ -759,8 +757,8 @@ def Celerite(delta, gamma=1, B=0):
     Celerite kernel.
     
     .. math::
-        k(x, y) = \\exp(-\\gamma|x - y|)
-        \\big( \\cos(x - y) + B \\sin(|x - y|) \\big)
+        k(\\Delta) = \\exp(-\\gamma|\\Delta|)
+        \\big( \\cos(\\Delta) + B \\sin(|\\Delta|) \\big)
     
     This is the covariance function of an AR(2) process with complex roots. The
     parameters must satisfy the condition :math:`|B| \\le \\gamma`. For
@@ -809,17 +807,17 @@ def Harmonic(delta, Q=1):
     Damped stochastically driven harmonic oscillator kernel.
     
     .. math::
-        k(x, y) =
-        \\exp\\left( -\\frac {\\tau} {Q} \\right)
+        k(\\Delta) =
+        \\exp\\left( -\\frac {|\\Delta|} {Q} \\right)
         \\begin{cases}
-            \\cosh(\\eta\\tau) + \\sinh(\\eta\\tau) / (\\eta Q)
+            \\cosh(\\eta\\Delta) + \\sinh(\\eta|\\Delta|) / (\\eta Q)
             & 0 < Q < 1 \\\\
-            1 + \\tau & Q = 1 \\\\
-            \\cos(\\eta\\tau) + \\sin(\\eta\\tau) / (\\eta Q)
+            1 + |\\Delta| & Q = 1 \\\\
+            \\cos(\\eta\\Delta) + \\sin(\\eta|\\Delta|) / (\\eta Q)
             & Q > 1,
         \\end{cases}
     
-    where :math:`\\tau = |x - y|` and :math:`\\eta = \\sqrt{|1 - 1/Q^2|}`.
+    where :math:`\\eta = \\sqrt{|1 - 1/Q^2|}`.
     
     The process is the solution to the stochastic differential equation
     
@@ -898,20 +896,20 @@ def _harmonic(x, Q):
 #     lambda g, ans, x, Q: (g.T * (-np.exp(-x) * x ** 3 / 3).T).T
 # )
 
-@stationarykernel(forcekron=True, derivable=False)
+@stationarykernel(forcekron=True, derivable=False, input='hard')
 def Expon(delta):
     """
     Exponential kernel.
     
     .. math::
-        k(x, y) = \\exp(-|x - y|)
+        k(\\Delta) = \\exp(-|\\Delta|)
     
     In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
     it acts separately while the Matérn kernel is isotropic.
 
     Reference: Rasmussen and Williams (2006, p. 85).
     """
-    return jnp.exp(-jnp.abs(delta))
+    return jnp.exp(-delta)
 
 _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]')
 
@@ -952,7 +950,7 @@ def HoleEffect(delta):
     
     Hole effect kernel.
     
-    .. math:: k(r) = (1 - r) \\exp(-r)
+    .. math:: k(\\Delta) = (1 - \\Delta) \\exp(-\\Delta)
     
     Reference: Dietrich and Newsam (1997, p. 1096).
     
@@ -1017,9 +1015,7 @@ def Pink(delta, dw=1):
     
     """
     # TODO reference?
-    
-    # TODO use \Delta in all stationary kernels formulas.
-    
+        
     l = _patch_jax.ci(delta)
     r = _patch_jax.ci(delta * (1 + dw))
     mean = delta * (1 + dw / 2)
@@ -1076,12 +1072,12 @@ def Cauchy(r2, alpha=2, beta=2):
         k(r) = \\left(1 + \\frac{r^\\alpha}{\\beta} \\right)^{-\\beta/\\alpha},
         \\quad \\alpha \\in (0, 2], \\beta > 0.
     
-    For `alpha=2` and `beta=2` (default), it is equivalent to
+    For ``alpha=2`` and ``beta=2`` (default), it is equivalent to
     ``RatQuad(alpha=1)``. In the geostatistics literature, this case is known
     as the Cauchy kernel, while for other values of the parameters it is called
     "generalized" Cauchy. For :math:`\\beta\\to\\infty` it is equivalent to
     ``GammaExp(gamma=alpha, scale=alpha ** (1/alpha))``, while for
-    :math:`\\beta\\to 0` to ``Constant``.
+    :math:`\\beta\\to 0` to ``Constant``. It is smooth only for ``alpha=2``.
     
     Reference: Gneiting and Schlather (2004, p. 273).
     """
