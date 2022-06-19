@@ -496,12 +496,6 @@ some articles somewhere.
 Are there interesting discontinuous processes apart from the white noise and
 its integrals?
 
-il kernel "cauchy" (1 + r^alpha)^-beta, 0 < alpha <= 2, beta > 0, è
-ottenibile a partire da quelli definiti? in realtà Cauchy standard sarebbe come
-la Cauchy, cioè alpha=2, beta=1, che equivale al "rational quadratic" per
-alpha=1. Comunque direi che manca, aggiungere GenCauchy. Credo sia isotropico.
-Citare l'articolo che lo introduce.
-
 il kernel Taylor posso ricavarlo analiticamente anche per funzioni
 che vanno giù più velocemente? Tipo (1/k!)^2n si riesce a fare? Scommetterei di
 sì visto che (1/k!)^2 si può
@@ -549,6 +543,8 @@ decaying kernel
 logkernel
 
 Look in the kernels reference I highlighted in the GPML bibliography
+
+bi- and multi-fractional brownian motion, see Lim and Teo (2009).
 
 ### Transformations
 

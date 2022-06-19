@@ -67,6 +67,7 @@ __all__ = [
     'Pink',
     'Sinc',
     'StationaryFracBrownian',
+    'Cauchy',
 ]
 
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
@@ -282,6 +283,8 @@ def RatQuad(r2, alpha=2):
     if _patch_jax.isconcrete(alpha):
         assert 0 < alpha < jnp.inf, alpha
     return (1 + r2 / (2 * alpha)) ** -alpha
+    # TODO this is probably known as Cauchy in the geostatistic literature.
+    # see Gneiting and Schlather (2006, p. 273).
 
 @kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):
@@ -1058,3 +1061,19 @@ def StationaryFracBrownian(delta, H=1/2):
         assert 0 < H < 1, H
     H2 = 2 * H
     return 1/2 * (jnp.abs(delta + 1) ** H2 + jnp.abs(delta - 1) ** H2 - 2 * jnp.abs(delta) ** H2)
+
+@isotropickernel(derivable=True)
+def Cauchy(r2, alpha=2, beta=2):
+    """
+    Generalized Cauchy kernel.
+    
+    ..math::
+        k(r) = (1 + r^\\alpha)^{-\\beta/\\alpha}, \\quad
+        \\alpha \\in (0, 2], \\beta \\ge 0.
+    
+    Reference: Gneiting and Schlather (2004, p. 273).
+    """
+    if _patch_jax.isconcrete(alpha, beta):
+        assert 0 < alpha <= 2, alpha
+        assert 0 <= beta, beta
+    return (1 + r2 ** (alpha / 2)) ** (-beta / alpha)
