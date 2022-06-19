@@ -48,6 +48,7 @@ Index
 Isotropic kernels
 ^^^^^^^^^^^^^^^^^
   * :func:`Bessel`
+  * :func:`Cauchy`
   * :func:`Constant`
   * :func:`ExpQuad`
   * :func:`GammaExp`
@@ -55,6 +56,7 @@ Isotropic kernels
   * :func:`Matern12`
   * :func:`Matern32`
   * :func:`Matern52`
+  * :func:`Maternp`
   * :func:`PPKernel`
   * :func:`RatQuad`
   * :func:`White`
@@ -70,6 +72,7 @@ Stationary kernels
   * :func:`Periodic`
   * :func:`Pink`
   * :func:`Sinc`
+  * :func:`StationaryFracBrownian`
 
 Other kernels
 ^^^^^^^^^^^^^
@@ -92,6 +95,7 @@ Documentation
 .. autofunction:: Bessel
 .. autofunction:: BrownianBridge
 .. autofunction:: Categorical
+.. autofunction:: Cauchy
 .. autofunction:: Celerite
 .. autofunction:: Constant
 .. autofunction:: Cos
@@ -108,6 +112,7 @@ Documentation
 .. autofunction:: Matern12
 .. autofunction:: Matern32
 .. autofunction:: Matern52
+.. autofunction:: Maternp
 .. autofunction:: NNKernel
 .. autofunction:: OrnsteinUhlenbeck
 .. autofunction:: PPKernel
@@ -116,6 +121,7 @@ Documentation
 .. autofunction:: RatQuad
 .. autofunction:: Rescaling
 .. autofunction:: Sinc
+.. autofunction:: StationaryFracBrownian
 .. autofunction:: Taylor
 .. autofunction:: White
 .. autofunction:: Wiener
