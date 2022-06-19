@@ -159,6 +159,7 @@ issue.</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Bessel"><code class="xref py py-func docutils literal notranslate"><span class="pre">Bessel()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Cauchy" title="lsqfitgp.Cauchy"><code class="xref py py-func docutils literal notranslate"><span class="pre">Cauchy()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Constant"><code class="xref py py-func docutils literal notranslate"><span class="pre">Constant()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-func docutils literal notranslate"><span class="pre">ExpQuad()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.GammaExp" title="lsqfitgp.GammaExp"><code class="xref py py-func docutils literal notranslate"><span class="pre">GammaExp()</span></code></a></p></li>
@@ -166,6 +167,7 @@ issue.</p>
 <li><p><a class="reference internal" href="#lsqfitgp.Matern12" title="lsqfitgp.Matern12"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern12()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Matern32" title="lsqfitgp.Matern32"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern32()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Matern52" title="lsqfitgp.Matern52"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern52()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Maternp" title="lsqfitgp.Maternp"><code class="xref py py-func docutils literal notranslate"><span class="pre">Maternp()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.PPKernel" title="lsqfitgp.PPKernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">PPKernel()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.RatQuad" title="lsqfitgp.RatQuad"><code class="xref py py-func docutils literal notranslate"><span class="pre">RatQuad()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.White" title="lsqfitgp.White"><code class="xref py py-func docutils literal notranslate"><span class="pre">White()</span></code></a></p></li>
@@ -185,6 +187,7 @@ issue.</p>
 <li><p><a class="reference internal" href="#lsqfitgp.Periodic" title="lsqfitgp.Periodic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Periodic()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Pink" title="lsqfitgp.Pink"><code class="xref py py-func docutils literal notranslate"><span class="pre">Pink()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Sinc" title="lsqfitgp.Sinc"><code class="xref py py-func docutils literal notranslate"><span class="pre">Sinc()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.StationaryFracBrownian" title="lsqfitgp.StationaryFracBrownian"><code class="xref py py-func docutils literal notranslate"><span class="pre">StationaryFracBrownian()</span></code></a></p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -228,10 +231,11 @@ the following punctuation characters: ! « » ” “ ” ‘ ’ / ( ) ‘ ? ¡
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Bessel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Bessel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bessel kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(r) = \Gamma(\nu + 1) 2^\nu (zr)^{-\nu} J_{\nu}(zr),\]</div>
-<p>where <cite>z</cite> is the first zero of <span class="math notranslate nohighlight">\(J_\nu\)</span>. Can be used in up to
-<span class="math notranslate nohighlight">\(2(\lfloor\nu\rfloor + 1)\)</span> dimensions and derived up to
-<span class="math notranslate nohighlight">\(\lfloor\nu/2\rfloor\)</span> times.</p>
+\[k(r) = \Gamma(\nu + 1) 2^\nu (sr)^{-\nu} J_{\nu}(sr),
+\quad s = 2 + \nu / 2,\]</div>
+<p>where <cite>s</cite> is a crude estimate of the half width at half maximum of
+<span class="math notranslate nohighlight">\(J_\nu\)</span>. Can be used in up to <span class="math notranslate nohighlight">\(2(\lfloor\nu\rfloor + 1)\)</span>
+dimensions and derived up to <span class="math notranslate nohighlight">\(\lfloor\nu/2\rfloor\)</span> times.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 89).</p>
 </dd></dl>
 
@@ -256,12 +260,30 @@ matrix of the values.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Cauchy">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Cauchy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Cauchy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generalized Cauchy kernel.</p>
+<dl class="simple">
+<dt>..math::</dt><dd><p>k(r) = left(1 + frac{r^alpha}{beta} right)^{-beta/alpha},
+quad alpha in (0, 2], beta &gt; 0.</p>
+</dd>
+</dl>
+<p>For <code class="docutils literal notranslate"><span class="pre">alpha=2</span></code> and <code class="docutils literal notranslate"><span class="pre">beta=2</span></code> (default), it is equivalent to
+<code class="docutils literal notranslate"><span class="pre">RatQuad(alpha=1)</span></code>. In the geostatistics literature, this case is known
+as the Cauchy kernel, while for other values of the parameters it is called
+“generalized” Cauchy. For <span class="math notranslate nohighlight">\(\beta\to\infty\)</span> it is equivalent to
+<code class="docutils literal notranslate"><span class="pre">GammaExp(gamma=alpha,</span> <span class="pre">scale=alpha</span> <span class="pre">**</span> <span class="pre">(1/alpha))</span></code>, while for
+<span class="math notranslate nohighlight">\(\beta\to 0\)</span> to <code class="docutils literal notranslate"><span class="pre">Constant</span></code>. It is smooth only for <code class="docutils literal notranslate"><span class="pre">alpha=2</span></code>.</p>
+<p>Reference: Gneiting and Schlather (2004, p. 273).</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Celerite">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Celerite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Celerite" title="Permalink to this definition">¶</a></dt>
 <dd><p>Celerite kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \exp(-\gamma|x - y|)
-\big( \cos(x - y) + B \sin(|x - y|) \big)\]</div>
+\[k(\Delta) = \exp(-\gamma|\Delta|)
+\big( \cos(\Delta) + B \sin(|\Delta|) \big)\]</div>
 <p>This is the covariance function of an AR(2) process with complex roots. The
 parameters must satisfy the condition <span class="math notranslate nohighlight">\(|B| \le \gamma\)</span>. For
 <span class="math notranslate nohighlight">\(B = \gamma\)</span> it is equivalent to the <a class="reference internal" href="#lsqfitgp.Harmonic" title="lsqfitgp.Harmonic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Harmonic</span></code></a> kernel with
@@ -278,7 +300,7 @@ Astronomical Time Series</em>.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = 1\]</div>
 <p>This means that all points are completely correlated, thus it is equivalent
-to fitting with an horizontal line. This can be seen also by observing that
+to fitting with a horizontal line. This can be seen also by observing that
 1 = 1 x 1.</p>
 </dd></dl>
 
@@ -287,7 +309,7 @@ to fitting with an horizontal line. This can be seen also by observing that
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Cos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Cos" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cosine kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \cos(x - y)
+\[k(\Delta) = \cos(\Delta)
 = \cos x \cos y + \sin x \sin y\]</div>
 <p>Samples from this kernel are harmonic functions. It can be multiplied with
 another kernel to introduce anticorrelations.</p>
@@ -310,7 +332,7 @@ strongly suppressed over a certain distance.</p>
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Expon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Expon" title="Permalink to this definition">¶</a></dt>
 <dd><p>Exponential kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \exp(-|x - y|)\]</div>
+\[k(\Delta) = \exp(-|\Delta|)\]</div>
 <p>In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
 it acts separately while the Matérn kernel is isotropic.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 85).</p>
@@ -321,15 +343,15 @@ it acts separately while the Matérn kernel is isotropic.</p>
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Fourier" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fourier kernel.</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}k(x, y) &amp;= \frac1{\zeta(2n)} \sum_{k=1}^\infty
+\[\begin{split}k(\Delta) &amp;= \frac1{\zeta(2n)} \sum_{k=1}^\infty
 \frac {\cos(2\pi kx)}{k^n} \frac {\cos(2\pi ky)}{k^n}
 + \frac1{\zeta(2n)} \sum_{k=1}^\infty
 \frac {\sin(2\pi kx)}{k^n} \frac {\sin(2\pi ky)}{k^n} = \\
 &amp;= \frac1{\zeta(2n)} \sum_{k=1}^\infty
-\frac {\cos(2\pi k(x-y))} {k^{2n}} = \\
+\frac {\cos(2\pi k\Delta)} {k^{2n}} = \\
 &amp;= (-1)^{n+1}
 \frac1{\zeta(2n)} \frac {(2\pi)^{2n}} {2(2n)!}
-B_{2n}(x-y \bmod 1),\end{split}\]</div>
+B_{2n}(\Delta \bmod 1),\end{split}\]</div>
 <p>where <span class="math notranslate nohighlight">\(B_s(x)\)</span> is a Bernoulli polynomial. It is equivalent to fitting
 with a Fourier series of period 1 with independent priors on the
 coefficients with mean zero and variance
@@ -388,16 +410,16 @@ include all rescalings in <cite>scalefun</cite> to avoid surprises.</p>
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Harmonic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Harmonic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Damped stochastically driven harmonic oscillator kernel.</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}k(x, y) =
-\exp\left( -\frac {\tau} {Q} \right)
+\[\begin{split}k(\Delta) =
+\exp\left( -\frac {|\Delta|} {Q} \right)
 \begin{cases}
-    \cosh(\eta\tau) + \sinh(\eta\tau) / (\eta Q)
+    \cosh(\eta\Delta) + \sinh(\eta|\Delta|) / (\eta Q)
     &amp; 0 &lt; Q &lt; 1 \\
-    1 + \tau &amp; Q = 1 \\
-    \cos(\eta\tau) + \sin(\eta\tau) / (\eta Q)
+    1 + |\Delta| &amp; Q = 1 \\
+    \cos(\eta\Delta) + \sin(\eta|\Delta|) / (\eta Q)
     &amp; Q &gt; 1,
 \end{cases}\end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(\tau = |x - y|\)</span> and <span class="math notranslate nohighlight">\(\eta = \sqrt{|1 - 1/Q^2|}\)</span>.</p>
+<p>where <span class="math notranslate nohighlight">\(\eta = \sqrt{|1 - 1/Q^2|}\)</span>.</p>
 <p>The process is the solution to the stochastic differential equation</p>
 <div class="math notranslate nohighlight">
 \[f''(x) + 2/Q f'(x) + f(x) = w(x),\]</div>
@@ -418,7 +440,7 @@ Astronomical Time Series</em>.</p>
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">HoleEffect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.HoleEffect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hole effect kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(r) = (1 - r) \exp(-r)\]</div>
+\[k(\Delta) = (1 - \Delta) \exp(-\Delta)\]</div>
 <p>Reference: Dietrich and Newsam (1997, p. 1096).</p>
 </dd></dl>
 
@@ -438,14 +460,12 @@ Astronomical Time Series</em>.</p>
 <dd><p>Matérn kernel of real order.</p>
 <div class="math notranslate nohighlight">
 \[k(r) = \frac {2^{1-\nu}} {\Gamma(\nu)} x^\nu K_\nu(x),
-\quad \nu = \texttt{nu} &gt; 0,
+\quad \nu &gt; 0,
 \quad x = \sqrt{2\nu} r\]</div>
-<p>The nearest integer below <cite>nu</cite> indicates how many times the Gaussian
-process is derivable: so for <cite>nu</cite> &lt; 1 it is continuous but not derivable,
-for 1 &lt;= <cite>nu</cite> &lt; 2 it is derivable but has not a decond derivative, etc. The
-half-integer case (nu = 1/2, 3/2, …) uses internally a simpler formula so
-you should prefer it. Also, taking derivatives of the process is supported
-only for half-integer nu.</p>
+<p>The nearest integer below <span class="math notranslate nohighlight">\(nu\)</span> indicates how many times the Gaussian
+process is derivable: so for <span class="math notranslate nohighlight">\(nu &lt; 1\)</span> it is continuous but not
+derivable, for <span class="math notranslate nohighlight">\(1 \le nu &lt; 2\)</span> it is derivable but has not a second
+derivative, etc.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 84).</p>
 </dd></dl>
 
@@ -471,6 +491,21 @@ only for half-integer nu.</p>
 <dd><p>Matérn kernel of order 5/2 (derivable two times).</p>
 <div class="math notranslate nohighlight">
 \[k(r) = (1 + x + x^2/3) \exp(-x), \quad x = \sqrt5 r\]</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Maternp">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Maternp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Maternp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Matérn kernel of half-integer order.</p>
+<div class="math notranslate nohighlight">
+\[k(r) &amp;= \frac {2^{1-\nu}} {\Gamma(\nu)} x^\nu K_\nu(x) = \
+&amp;= \exp(-x) \frac{\Gamma(p + 1)}{\Gamma(2p + 1)}
+\sum_{i=0}^p \frac{(p+i)!}{i!(p-i)!} (2x)^{p-i} \
+\nu = p + 1/2,
+p \in \mathbb N,
+x = \sqrt{2\nu} r\]</div>
+<p>The degree of derivability is <cite>p</cite>.</p>
+<p>Reference: Rasmussen and Williams (2006, p. 85).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -531,9 +566,9 @@ derivable), <cite>D</cite> = 1 (can be used only in 1D).</p>
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Periodic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outerscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Periodic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Periodic Gaussian kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \exp \left(
+\[k(\Delta) = \exp \left(
 -2 \left(
-\frac {\sin((x - y) / 2)} {\texttt{outerscale}}
+\frac {\sin(\Delta / 2)} {\texttt{outerscale}}
 \right)^2
 \right)\]</div>
 <p>A Gaussian kernel over a transformed periodic space. It represents a
@@ -590,9 +625,19 @@ to <a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Const
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Sinc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Sinc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sinc kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(\Delta) = \sinc(\Delta) =
+\[k(\Delta) = \operatorname{sinc}(\Delta) =
 \frac{\sin(\pi\Delta)}{\pi\Delta}.\]</div>
 <p>Reference: Tobar (2019).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.StationaryFracBrownian">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">StationaryFracBrownian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.StationaryFracBrownian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stationary fractional brownian motion kernel.</p>
+<div class="math notranslate nohighlight">
+\[k(\Delta) = \frac 12 (|\Delta+1|^{2H} + |\Delta-1|^{2H} - 2|\Delta|^{2H}),
+\quad H \in (0, 1)\]</div>
+<p>Reference: Gneiting and Schlather (2006, p. 272).</p>
 </dd></dl>
 
 <dl class="py function">
