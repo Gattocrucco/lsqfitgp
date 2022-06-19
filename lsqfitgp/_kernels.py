@@ -39,6 +39,7 @@ __all__ = [
     'ExpQuad',
     'Linear',
     'Matern',
+    'Maternp',
     'Matern12',
     'Matern32',
     'Matern52',
@@ -90,7 +91,7 @@ def Constant(x, y):
         k(x, y) = 1
     
     This means that all points are completely correlated, thus it is equivalent
-    to fitting with an horizontal line. This can be seen also by observing that
+    to fitting with a horizontal line. This can be seen also by observing that
     1 = 1 x 1.
     """
     return jnp.ones(jnp.broadcast_shapes(x.shape, y.shape))
@@ -163,12 +164,33 @@ def _maternp_jvp(p, primals, tangents):
     xdot, = tangents
     return _maternp(x, p), _maternp_deriv(x, p) * xdot
 
+def _maternp_derivable(p=None):
+    return p
+
+@isotropickernel(input='soft', derivable=_maternp_derivable)
+def Maternp(r, p=None):
+    """
+    Matérn kernel of half-integer order. 
+    
+    .. math::
+        k(r) &= \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x) = \\
+        &= \\exp(-x) \\frac{\\Gamma(p + 1)}{\\Gamma(2p + 1)}
+        \\sum_{i=0}^p \\frac{(p+i)!}{i!(p-i)!} (2x)^{p-i} \\
+        \\nu = p + 1/2,
+        p \\in \\mathbb N,
+        x = \\sqrt{2\\nu} r
+    
+    The degree of derivability is `p`.
+
+    Reference: Rasmussen and Williams (2006, p. 85).
+    """
+    if _patch_jax.isconcrete(p):
+        assert int(p) == p and p >= 0, p
+    x = jnp.sqrt(2 * p + 1) * r
+    return _maternp(x, p)
+
 def _matern_derivable(nu=None):
     return int(nu - 1/2)
-
-# TODO I'm using soft input for the Matérn kernels, however for the
-# half-integer case it is probably not necessary to use the softabs.
-# => Maybe I should have two separate kernel, Matern and Maternp2
 
 @isotropickernel(input='soft', derivable=_matern_derivable)
 def Matern(r, nu=None):
@@ -177,28 +199,23 @@ def Matern(r, nu=None):
     
     .. math::
         k(r) = \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x),
-        \\quad \\nu = \\texttt{nu} > 0,
+        \\quad \\nu > 0,
         \\quad x = \\sqrt{2\\nu} r
     
-    The nearest integer below `nu` indicates how many times the Gaussian
-    process is derivable: so for `nu` < 1 it is continuous but not derivable,
-    for 1 <= `nu` < 2 it is derivable but has not a decond derivative, etc. The
-    half-integer case (nu = 1/2, 3/2, ...) uses internally a simpler formula so
-    you should prefer it. Also, taking derivatives of the process is supported
-    only for half-integer nu.
+    The nearest integer below :math:`nu` indicates how many times the Gaussian
+    process is derivable: so for :math:`nu < 1` it is continuous but not
+    derivable, for :math:`1 \\le nu < 2` it is derivable but has not a second
+    derivative, etc.
 
     Reference: Rasmussen and Williams (2006, p. 84).
     """
     if _patch_jax.isconcrete(nu):
         assert 0 < nu < jnp.inf, nu
     x = jnp.sqrt(2 * nu) * r
-    if (2 * nu) % 1 == 0:
-        return _maternp(x, int(nu - 1/2))
-    else:
-        return 2 ** (1 - nu) / special.gamma(nu) * x ** nu * _patch_jax.kv(nu, x)
-        # TODO I need a function that computes directly x^nu K_nu(x), and its
-        # derivatives, because when taking the derivative, the two terms bring
-        # about a strong cancellation for x -> 0 (this is a hypothesis).
+    return 2 ** (1 - nu) / special.gamma(nu) * x ** nu * _patch_jax.kv(nu, x)
+    # TODO I need a function that computes directly x^nu K_nu(x), and its
+    # derivatives, because when taking the derivative, the two terms bring
+    # about a strong cancellation for x -> 0 (this is a hypothesis).
 
 @isotropickernel(input='soft', derivable=False)
 def Matern12(r):

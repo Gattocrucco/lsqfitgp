@@ -71,5 +71,5 @@ covreport:
 # and also a rule just to activate the venv
 # so the hierarchy is:
 # 1 true rule to create the venv
-# 2 true rule to activate it, depends on 1
+# 2 phony rule to activate it, depends on 1
 # 3 phony rule to delete the venv, recreate and activate it

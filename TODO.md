@@ -82,6 +82,8 @@ In the kernels reference, generate automatically:
   * in the index, a flag D0, D1, ..., D∞, D? for the derivability with the
     default parameters
 
+Explain somewhere the jax 32/64 bit thing.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu

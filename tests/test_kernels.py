@@ -660,6 +660,7 @@ def bow_rand(**kw):
 # Define a concrete subclass of KernelTestBase for each kernel.
 test_kwargs = {
     _kernels.Matern: dict(kwargs_list=[dict(nu=nu + 0.5) for nu in range(5)] + [dict(nu=nu + 0.49) for nu in range(5)] + [dict(nu=nu + 0.51) for nu in range(5)]),
+    _kernels.Maternp: dict(kwargs_list=[dict(p=p) for p in range(10)]),
     _kernels.PPKernel: dict(kwargs_list=[
         dict(q=q, D=D) for q in range(4) for D in range(1, 6)
     ]),
@@ -694,9 +695,8 @@ for kernel in kernels:
     newclass = KernelTestBase.make_subclass(kernel, **factory_kw)
     exec('{} = newclass'.format(newclass.__name__))
 
-# TODO probably the property can be overriden with a scalar
-TestGammaExp.eps = property(lambda self: 1e3 * np.finfo(float).eps)
-TestPPKernel.eps = property(lambda self: 1e3 * np.finfo(float).eps)
+TestGammaExp.eps = 1e3 * np.finfo(float).eps
+TestPPKernel.eps = 1e3 * np.finfo(float).eps
 
 def test_matern_half_integer():
     """
@@ -704,24 +704,19 @@ def test_matern_half_integer():
     formula for real nu.
     """
     for p in range(10):
-        nu = p + 1/2
-        assert nu - 1/2 == p
-        nualt = nu * (1 + 4 * np.finfo(float).eps)
-        assert nualt > nu
         x, y = 3 * np.random.randn(2, 100)
-        r1 = _kernels.Matern(nu=nu)(x, y)
-        r2 = _kernels.Matern(nu=nualt)(x, y)
+        r1 = _kernels.Matern(nu=p + 1/2)(x, y)
+        r2 = _kernels.Maternp(p=p)(x, y)
         np.testing.assert_allclose(r1, r2)
 
 def check_matern_spec_p(p, xderiv, yderiv):
     """
     Test implementations of specific cases of nu.
     """
-    nu = p + 1/2
     spec = eval('_kernels.Matern{}2'.format(1 + 2 * p))
     if spec().derivable >= max(xderiv, yderiv):
         x = np.random.randn(10)[:, None]
-        r1 = _kernels.Matern(nu=nu).diff(xderiv, yderiv)(x, x.T)
+        r1 = _kernels.Maternp(p=p).diff(xderiv, yderiv)(x, x.T)
         r2 = spec().diff(xderiv, yderiv)(x, x.T)
         np.testing.assert_allclose(r1, r2, atol=1e-14)
 
@@ -856,6 +851,9 @@ util.xfail(TestMatern, 'test_double_diff_nd_second_chopped')
 util.xfail(TestMatern52, 'test_positive_deriv2_nd')
 util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped') # seen xpassing
 util.xfail(TestMatern52, 'test_jit_deriv2_nd') # seen xpassing
+util.xfail(TestMaternp, 'test_positive_deriv2_nd')
+util.xfail(TestMaternp, 'test_double_diff_nd_second_chopped')
+util.xfail(TestMaternp, 'test_jit_deriv2_nd')
 util.xfail(TestPPKernel, 'test_positive_deriv2_nd')
 util.xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
 util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
@@ -885,7 +883,8 @@ util.xfail(TestSinc, 'test_symmetric_21')
 util.xfail(TestSinc, 'test_jit_deriv2')
 util.xfail(TestSinc, 'test_jit_deriv2_nd')
 
-# TODO often xpass, likely numerical precision problems
+# TODO some xpass, likely numerical precision problems
+util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
 util.xfail(TestGammaExp, 'test_positive_deriv2')
 util.xfail(TestPPKernel, 'test_positive_deriv2')
 
