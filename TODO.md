@@ -516,7 +516,7 @@ con attenzione quando beta è piccolo.
 
 Fare la versione del kernel Fourier con solo il seno. Nel caso n=1 viene il
 Brownian bridge. => no, dovrebbe funzionare prendendo la parte dispari
-con addproclintransf
+con addproclintransf, fare un esempio di prova
 
 Circular kernel: 
 https://docs.pymc.io/pymc-examples/examples/gaussian_processes/GP-Circular.html

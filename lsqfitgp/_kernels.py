@@ -283,8 +283,9 @@ def RatQuad(r2, alpha=2):
     if _patch_jax.isconcrete(alpha):
         assert 0 < alpha < jnp.inf, alpha
     return (1 + r2 / (2 * alpha)) ** -alpha
-    # TODO this is probably known as Cauchy in the geostatistic literature.
-    # see Gneiting and Schlather (2006, p. 273).
+    # TODO this is probably known as Cauchy in the geostatistic literature, but
+    # maybe just the case alpha=1. see Gneiting and Schlather (2006, p. 273),
+    # Lim and Li (2009, p. 1327).
 
 @kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):
@@ -958,15 +959,15 @@ def HoleEffect(delta):
     """
     return (1 - delta) * jnp.exp(-delta)
 
-def _bessel_scale(nu):
-    lnu = numpy.floor(nu)
-    rnu = numpy.ceil(nu)
-    zl, = special.jn_zeros(lnu, 1)
-    if lnu == rnu:
-        return zl
-    else:
-        zr, = special.jn_zeros(rnu, 1)
-        return zl + (nu - lnu) * (zr - zl) / (rnu - lnu)
+# def _bessel_scale(nu):
+#     lnu = numpy.floor(nu)
+#     rnu = numpy.ceil(nu)
+#     zl, = special.jn_zeros(lnu, 1)
+#     if lnu == rnu:
+#         return zl
+#     else:
+#         zr, = special.jn_zeros(rnu, 1)
+#         return zl + (nu - lnu) * (zr - zl) / (rnu - lnu)
     
 def _bessel_derivable(nu=0):
     return int(numpy.floor(nu / 2)) # not really sure about this
@@ -979,15 +980,16 @@ def Bessel(r, nu=0):
     """
     Bessel kernel.
     
-    .. math:: k(r) = \\Gamma(\\nu + 1) 2^\\nu (zr)^{-\\nu} J_{\\nu}(zr),
+    .. math:: k(r) = \\Gamma(\\nu + 1) 2^\\nu (sr)^{-\\nu} J_{\\nu}(sr),
+        \\quad s = 2 + \\nu / 2,
     
-    where `z` is the first zero of :math:`J_\\nu`. Can be used in up to
-    :math:`2(\\lfloor\\nu\\rfloor + 1)` dimensions and derived up to
-    :math:`\\lfloor\\nu/2\\rfloor` times.
+    where `s` is a crude estimate of the half width at half maximum of
+    :math:`J_\\nu`. Can be used in up to :math:`2(\\lfloor\\nu\\rfloor + 1)`
+    dimensions and derived up to :math:`\\lfloor\\nu/2\\rfloor` times.
     
     Reference: Rasmussen and Williams (2006, p. 89).
     """
-    r = r * _bessel_scale(nu)
+    r = r * (2 + nu / 2)
     return special.gamma(nu + 1) * 2 ** nu * r ** -nu * _patch_jax.jv(nu, r)
     # TODO I need a function that computes directly x^-nu J_nu(x), and its
     # derivatives, because when taking the derivative, the two terms bring
@@ -1052,7 +1054,7 @@ def StationaryFracBrownian(delta, H=1/2):
         k(\\Delta) = \\frac 12 (|\\Delta+1|^{2H} + |\\Delta-1|^{2H} - 2|\\Delta|^{2H}),
         \\quad H \\in (0, 1)
         
-    Reference: Gneiting and Schlater (2006, p. 272).
+    Reference: Gneiting and Schlather (2006, p. 272).
     """
     
     # TODO older reference, see [29] is GS06.
@@ -1062,18 +1064,28 @@ def StationaryFracBrownian(delta, H=1/2):
     H2 = 2 * H
     return 1/2 * (jnp.abs(delta + 1) ** H2 + jnp.abs(delta - 1) ** H2 - 2 * jnp.abs(delta) ** H2)
 
-@isotropickernel(derivable=True)
+def _cauchy_derivable(alpha=2, **_):
+    return alpha == 2
+
+@isotropickernel(derivable=_cauchy_derivable)
 def Cauchy(r2, alpha=2, beta=2):
     """
     Generalized Cauchy kernel.
     
     ..math::
-        k(r) = (1 + r^\\alpha)^{-\\beta/\\alpha}, \\quad
-        \\alpha \\in (0, 2], \\beta \\ge 0.
+        k(r) = \\left(1 + \\frac{r^\\alpha}{\\beta} \\right)^{-\\beta/\\alpha},
+        \\quad \\alpha \\in (0, 2], \\beta > 0.
+    
+    For `alpha=2` and `beta=2` (default), it is equivalent to
+    ``RatQuad(alpha=1)``. In the geostatistics literature, this case is known
+    as the Cauchy kernel, while for other values of the parameters it is called
+    "generalized" Cauchy. For :math:`\\beta\\to\\infty` it is equivalent to
+    ``GammaExp(gamma=alpha, scale=alpha ** (1/alpha))``, while for
+    :math:`\\beta\\to 0` to ``Constant``.
     
     Reference: Gneiting and Schlather (2004, p. 273).
     """
     if _patch_jax.isconcrete(alpha, beta):
         assert 0 < alpha <= 2, alpha
-        assert 0 <= beta, beta
-    return (1 + r2 ** (alpha / 2)) ** (-beta / alpha)
+        assert 0 < beta, beta
+    return (1 + r2 ** (alpha / 2) / beta) ** (-beta / alpha)
