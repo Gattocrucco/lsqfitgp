@@ -177,7 +177,7 @@ class StructuredArray:
         # TODO support casting and broadcasting
         assert prev.dtype == val.dtype
         assert prev.shape == val.shape
-        self._dict[key] = _readonlyview(val)
+        self._dict[key] = _readonlyview(_wrapifstructured(val))
     
     def reshape(self, *shape):
         """

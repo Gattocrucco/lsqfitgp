@@ -400,3 +400,11 @@ def test_readonly():
     with pytest.raises(ValueError):
         y0 = x['f0']
         x['f0'] = random_array(y0.shape, y0.dtype)
+
+def test_set_subfield():
+    y = random_array(5, [('a', [('b', float)])])
+    x = lgp.StructuredArray(y)
+    a = x['a']
+    x['a'] = random_array(a.shape, a.dtype)
+    b = x['a']['b']
+    x['a']['b'] = random_array(b.shape, b.dtype)

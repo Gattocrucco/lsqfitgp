@@ -1020,6 +1020,9 @@ def Pink(delta, dw=1):
     norm = jnp.log(1 + dw)
     return jnp.where(delta < 1e-8, jnp.cos(mean) * norm, r - l) / norm
     # TODO r - l is not precise when dw << 1
+    
+    # TODO add all colors. Integrating by parts I can do 1/omega^n for integer
+    # n. For n >= 2 it can be integrated to infinity.
 
 @stationarykernel(forcekron=True, derivable=True, input='soft')
 def Sinc(delta):

@@ -118,6 +118,8 @@ Cov[y, y] = Cov[Az, Az] + Cov[Bx, Bx] = A V_zz A^T + B V_xx B_T = V_yy  ==>
 
 I can choose A = I and then V_zz = V/V_xx. I have to decompose V_xx.
 
+gac, I rediscovered conditioning
+
 2022-04-22
 ==========
 
@@ -663,8 +665,12 @@ change of fitting method. Ideas about this:
    increase the size of the matrix, so it is numerically inaccurate doing
    the inference.
 
+Another fit that does not work is the periodic one in test_fit. Maybe exploring
+that will clear my understanding of using Laplace with a Gaussian process.
+
 2022-06-17
 ==========
 
 Thing that I could cite: Snelson et al., "Warped Gaussian Processes". It's a
-bit trivial but people expect you to cite everything.
+bit trivial but people expect you to cite everything. Everything was redone
+for Gaussian processes.
