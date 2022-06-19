@@ -66,6 +66,7 @@ __all__ = [
     'Bessel',
     'Pink',
     'Sinc',
+    'StationaryFracBrownian',
 ]
 
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
@@ -464,8 +465,8 @@ def FracBrownian(x, y, H=1/2):
     For `H` = 1/2 (default) it is the Wiener kernel. For `H` in (0, 1/2) the
     increments are anticorrelated (strong oscillation), for `H` in (1/2, 1)
     the increments are correlated (tends to keep a slope).
-    
     """
+    
     # TODO reference? look on wikipedia
     
     # TODO I think the correlation between successive same step increments
@@ -1029,7 +1030,7 @@ def Sinc(delta):
     """
     Sinc kernel.
     
-    .. math:: k(\\Delta) = \\sinc(\\Delta) =
+    .. math:: k(\\Delta) = \\operatorname{sinc}(\\Delta) =
         \\frac{\\sin(\\pi\\Delta)}{\\pi\\Delta}.
     
     Reference: Tobar (2019).
@@ -1038,3 +1039,22 @@ def Sinc(delta):
     
     # TODO is this isotropic? My current guess is that it works up to some
     # dimension due to a coincidence but is not in general isotropic.
+
+@stationarykernel(forcekron=True, derivable=False, input='signed')
+def StationaryFracBrownian(delta, H=1/2):
+    """
+    Stationary fractional brownian motion kernel.
+    
+    .. math::
+        k(\\Delta) = \\frac 12 (|\\Delta+1|^{2H} + |\\Delta-1|^{2H} - 2|\\Delta|^{2H}),
+        \\quad H \\in (0, 1)
+        
+    Reference: Gneiting and Schlater (2006, p. 272).
+    """
+    
+    # TODO older reference, see [29] is GS06.
+    
+    if _patch_jax.isconcrete(H):
+        assert 0 < H < 1, H
+    H2 = 2 * H
+    return 1/2 * (jnp.abs(delta + 1) ** H2 + jnp.abs(delta - 1) ** H2 - 2 * jnp.abs(delta) ** H2)

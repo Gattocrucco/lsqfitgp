@@ -640,6 +640,8 @@ corresponding transformation easily. In general series of kernels support this.
 => Wait, nope: being an integral, the individual expquad processes have zero
 variance.
 
+Lamperti transformation (stationary to self similar), see Lim and Li (2006).
+
 #### Nonlinear transformations
 
 Shteno supports analytical multiplications of GPs with moment matching. Can I
