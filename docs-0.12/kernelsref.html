@@ -263,17 +263,16 @@ matrix of the values.</p>
 <dt class="sig sig-object py" id="lsqfitgp.Cauchy">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Cauchy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Cauchy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generalized Cauchy kernel.</p>
-<dl class="simple">
-<dt>..math::</dt><dd><p>k(r) = left(1 + frac{r^alpha}{beta} right)^{-beta/alpha},
-quad alpha in (0, 2], beta &gt; 0.</p>
-</dd>
-</dl>
-<p>For <code class="docutils literal notranslate"><span class="pre">alpha=2</span></code> and <code class="docutils literal notranslate"><span class="pre">beta=2</span></code> (default), it is equivalent to
+<div class="math notranslate nohighlight">
+\[k(r) = \left(1 + \frac{r^\alpha}{\beta} \right)^{-\beta/\alpha},
+\quad \alpha \in (0, 2], \beta &gt; 0.\]</div>
+<p>For <span class="math notranslate nohighlight">\(\alpha=2\)</span> and <span class="math notranslate nohighlight">\(\beta=2\)</span> (default), it is equivalent to
 <code class="docutils literal notranslate"><span class="pre">RatQuad(alpha=1)</span></code>. In the geostatistics literature, this case is known
 as the Cauchy kernel, while for other values of the parameters it is called
 “generalized” Cauchy. For <span class="math notranslate nohighlight">\(\beta\to\infty\)</span> it is equivalent to
 <code class="docutils literal notranslate"><span class="pre">GammaExp(gamma=alpha,</span> <span class="pre">scale=alpha</span> <span class="pre">**</span> <span class="pre">(1/alpha))</span></code>, while for
-<span class="math notranslate nohighlight">\(\beta\to 0\)</span> to <code class="docutils literal notranslate"><span class="pre">Constant</span></code>. It is smooth only for <code class="docutils literal notranslate"><span class="pre">alpha=2</span></code>.</p>
+<span class="math notranslate nohighlight">\(\beta\to 0\)</span> to <code class="docutils literal notranslate"><span class="pre">Constant</span></code>. It is smooth only for
+<span class="math notranslate nohighlight">\(\alpha=2\)</span>.</p>
 <p>Reference: Gneiting and Schlather (2004, p. 273).</p>
 </dd></dl>
 
@@ -375,15 +374,16 @@ the increments are correlated (tends to keep a slope).</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.GammaExp">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GammaExp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GammaExp" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GammaExp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GammaExp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gamma exponential kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(r) = \exp(-r^\texttt{gamma}), \quad
-\texttt{gamma} \in [0, 2]\]</div>
-<p>For <cite>gamma</cite> = 2 it is the Gaussian kernel, for <cite>gamma</cite> = 1 it is the Matérn
-1/2 kernel, for <cite>gamma</cite> = 0 it is the constant kernel. The process is
-differentiable only for <cite>gamma</cite> = 2, however as <cite>gamma</cite> gets closer to 2
-the variance of the non-derivable component goes to zero.</p>
+\[k(r) = \exp(-r^\gamma), \quad
+\gamma \in [0, 2]\]</div>
+<p>For <span class="math notranslate nohighlight">\(\gamma = 2\)</span> it is the squared exponential kernel, for
+<span class="math notranslate nohighlight">\(\gamma = 1\)</span> (default) it is the Matérn 1/2 kernel, for
+<span class="math notranslate nohighlight">\(\gamma = 0\)</span> it is the constant kernel. The process is
+differentiable only for <span class="math notranslate nohighlight">\(\gamma = 2\)</span>, however as <span class="math notranslate nohighlight">\(\gamma\)</span>
+gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 86).</p>
 </dd></dl>
 
@@ -462,10 +462,10 @@ Astronomical Time Series</em>.</p>
 \[k(r) = \frac {2^{1-\nu}} {\Gamma(\nu)} x^\nu K_\nu(x),
 \quad \nu &gt; 0,
 \quad x = \sqrt{2\nu} r\]</div>
-<p>The nearest integer below <span class="math notranslate nohighlight">\(nu\)</span> indicates how many times the Gaussian
-process is derivable: so for <span class="math notranslate nohighlight">\(nu &lt; 1\)</span> it is continuous but not
-derivable, for <span class="math notranslate nohighlight">\(1 \le nu &lt; 2\)</span> it is derivable but has not a second
-derivative, etc.</p>
+<p>The nearest integer below <span class="math notranslate nohighlight">\(\nu\)</span> indicates how many times the
+Gaussian process is derivable: so for <span class="math notranslate nohighlight">\(\nu &lt; 1\)</span> it is continuous but
+not derivable, for <span class="math notranslate nohighlight">\(1 \le \nu &lt; 2\)</span> it is derivable but has not a
+second derivative, etc.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 84).</p>
 </dd></dl>
 
@@ -498,12 +498,12 @@ derivative, etc.</p>
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Maternp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Maternp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Matérn kernel of half-integer order.</p>
 <div class="math notranslate nohighlight">
-\[k(r) &amp;= \frac {2^{1-\nu}} {\Gamma(\nu)} x^\nu K_\nu(x) = \
+\[\begin{split}k(r) &amp;= \frac {2^{1-\nu}} {\Gamma(\nu)} x^\nu K_\nu(x) = \\
 &amp;= \exp(-x) \frac{\Gamma(p + 1)}{\Gamma(2p + 1)}
-\sum_{i=0}^p \frac{(p+i)!}{i!(p-i)!} (2x)^{p-i} \
-\nu = p + 1/2,
+\sum_{i=0}^p \frac{(p+i)!}{i!(p-i)!} (2x)^{p-i} \\
+\nu &amp;= p + 1/2,
 p \in \mathbb N,
-x = \sqrt{2\nu} r\]</div>
+x = \sqrt{2\nu} r\end{split}\]</div>
 <p>The degree of derivability is <cite>p</cite>.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 85).</p>
 </dd></dl>
@@ -598,10 +598,11 @@ it becomes white noise. Derivable one time.</p>
 <dd><p>Rational quadratic kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(r) = \left( 1 + \frac {r^2} {2 \alpha} \right)^{-\alpha},
-\quad \alpha = \texttt{alpha}\]</div>
-<p>It is equivalent to a lengthscale mixture of Gaussian kernels where the
-scale distribution is a gamma with shape parameter <cite>alpha</cite>. For <cite>alpha</cite> -&gt;
-infinity, it becomes the Gaussian kernel. It is smooth.</p>
+\quad \alpha &gt; 0\]</div>
+<p>It is equivalent to a lengthscale mixture of exponential quadratic kernels
+where the scale distribution is a gamma with shape parameter
+<span class="math notranslate nohighlight">\(\alpha\)</span>. For <span class="math notranslate nohighlight">\(\alpha\to\infty\)</span> it becomes the exponential
+quadratic. It is smooth.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 86).</p>
 </dd></dl>
 
