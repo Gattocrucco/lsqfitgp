@@ -262,8 +262,8 @@ def Matern52(r):
 def _gammaexp_derivable(gamma=1):
     return gamma == 2
 
-@isotropickernel(input='soft', derivable=_gammaexp_derivable)
-def GammaExp(r, gamma=1):
+@isotropickernel(derivable=_gammaexp_derivable)
+def GammaExp(r2, gamma=1):
     """
     Gamma exponential kernel.
     
@@ -271,17 +271,17 @@ def GammaExp(r, gamma=1):
         k(r) = \\exp(-r^\\gamma), \\quad
         \\gamma \\in [0, 2]
     
-    For :math:`\\gamma = 2` it is the Gaussian kernel, for :math:`\\gamma = 1`
-    it is the Matérn 1/2 kernel, for :math:`\\gamma = 0` it is the constant
-    kernel. The process is differentiable only for :math:`\\gamma = 2`, however
-    as :math:`\\gamma` gets closer to 2 the variance of the non-derivable
-    component goes to zero.
+    For :math:`\\gamma = 2` it is the squared exponential kernel, for
+    :math:`\\gamma = 1` (default) it is the Matérn 1/2 kernel, for
+    :math:`\\gamma = 0` it is the constant kernel. The process is
+    differentiable only for :math:`\\gamma = 2`, however as :math:`\\gamma`
+    gets closer to 2 the variance of the non-derivable component goes to zero.
 
     Reference: Rasmussen and Williams (2006, p. 86).
     """
     if _patch_jax.isconcrete(gamma):
         assert 0 <= gamma <= 2, gamma
-    return jnp.exp(-(r ** gamma))
+    return jnp.exp(-(r2 ** (gamma / 2)))
 
 @isotropickernel(derivable=True)
 def RatQuad(r2, alpha=2):
@@ -1091,12 +1091,13 @@ def Cauchy(r2, alpha=2, beta=2):
         k(r) = \\left(1 + \\frac{r^\\alpha}{\\beta} \\right)^{-\\beta/\\alpha},
         \\quad \\alpha \\in (0, 2], \\beta > 0.
     
-    For ``alpha=2`` and ``beta=2`` (default), it is equivalent to
+    For :math:`\\alpha=2` and :math:`\\beta=2` (default), it is equivalent to
     ``RatQuad(alpha=1)``. In the geostatistics literature, this case is known
     as the Cauchy kernel, while for other values of the parameters it is called
     "generalized" Cauchy. For :math:`\\beta\\to\\infty` it is equivalent to
     ``GammaExp(gamma=alpha, scale=alpha ** (1/alpha))``, while for
-    :math:`\\beta\\to 0` to ``Constant``. It is smooth only for ``alpha=2``.
+    :math:`\\beta\\to 0` to ``Constant``. It is smooth only for
+    :math:`\\alpha=2`.
     
     Reference: Gneiting and Schlather (2004, p. 273).
     """

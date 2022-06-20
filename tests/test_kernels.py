@@ -457,7 +457,6 @@ class KernelTestBase(KernelTestABC):
                 kw = dict(kw)
                 kw.update(input='signed')
                 c1 = kernel(**kw)(x1, x2)
-                kw = dict(kw)
                 kw.update(input='soft')
                 c2 = kernel(**kw)(x1, x2)
                 np.testing.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
@@ -858,9 +857,6 @@ util.xfail(TestMaternp, 'test_jit_deriv2_nd')
 util.xfail(TestPPKernel, 'test_positive_deriv2_nd')
 util.xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
 util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
-util.xfail(TestGammaExp, 'test_positive_deriv2_nd')
-util.xfail(TestGammaExp, 'test_double_diff_nd_second_chopped')
-util.xfail(TestGammaExp, 'test_jit_deriv2_nd') # tipically xpasses
 util.xfail(TestBessel, 'test_positive_deriv2_nd')
 util.xfail(TestBessel, 'test_double_diff_nd_second_chopped')
 
@@ -875,7 +871,6 @@ for test in [TestBessel, TestMatern]:
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
-util.xfail(TestGammaExp, 'test_positive_deriv2')
 util.xfail(TestPPKernel, 'test_positive_deriv2')
 
 # TODO This one should not fail, it's a first derivative! Probably it's the
