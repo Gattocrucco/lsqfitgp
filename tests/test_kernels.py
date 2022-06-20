@@ -858,9 +858,13 @@ util.xfail(TestPPKernel, 'test_positive_deriv2_nd')
 util.xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
 util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
 
-# TODO make a taylor_even function which takes x^2
+# TODO less numerically accurate than usual, I need finer options for tolerances
+# in tests. Tentative interface: a method that takes a method name and spits out
+# rtol, atol. => Not enough, derivatives are game-changers.
+#
+# May the precision problems be due to a crappy implementation of kvp in scipy?
 util.xfail(TestBessel, 'test_positive_deriv2_nd')
-util.xfail(TestBessel, 'test_double_diff_nd_second_chopped')
+util.xfail(TestBessel, 'test_double_diff_nd_second_chopped') # seen xpassing
 util.xfail(TestBessel, 'test_positive_deriv')
 util.xfail(TestBessel, 'test_positive_deriv2')
 

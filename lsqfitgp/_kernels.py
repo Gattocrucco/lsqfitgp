@@ -76,11 +76,10 @@ __all__ = [
 # choose how to deal with nd (add option for sum-separation). Make an example
 # about this in `multidimensional input`.
 
-# TODO try using jnp.polyval for polynomials (Bernoulli and Matern p/2).
+# TODO try using jnp.polyval for polynomials (Bernoulli, PPKernel, Maternp).
 
 def _dot(x, y):
-    return _Kernel._sum_recurse_dtype(lambda x, y: x * y, x, y)
-    # TODO remove underscore from _Kernel functions used outside of _Kernel
+    return _Kernel.sum_recurse_dtype(lambda x, y: x * y, x, y)
     
 @isotropickernel(derivable=True, input='raw')
 def Constant(x, y):
@@ -107,7 +106,7 @@ def White(x, y):
             0 & x \\neq y
         \\end{cases}
     """
-    return _Kernel._prod_recurse_dtype(lambda x, y: x == y, x, y).astype(int)
+    return _Kernel.prod_recurse_dtype(lambda x, y: x == y, x, y).astype(int)
 
 @isotropickernel(derivable=True)
 def ExpQuad(r2):
@@ -987,13 +986,13 @@ def HoleEffect(delta):
 #         return zl + (nu - lnu) * (zr - zl) / (rnu - lnu)
     
 def _bessel_derivable(nu=0):
-    return int(numpy.floor(nu / 2)) # not really sure about this
+    return nu // 2
 
 def _bessel_maxdim(nu=0):
     return 2 * (numpy.floor(nu) + 1)
 
-@isotropickernel(derivable=_bessel_derivable, input='soft', maxdim=_bessel_maxdim)
-def Bessel(r, nu=0):
+@isotropickernel(derivable=_bessel_derivable, maxdim=_bessel_maxdim)
+def Bessel(r2, nu=0):
     """
     Bessel kernel.
     
@@ -1006,8 +1005,8 @@ def Bessel(r, nu=0):
     
     Reference: Rasmussen and Williams (2006, p. 89).
     """
-    r = r * (2 + nu / 2)
-    return special.gamma(nu + 1) * _patch_jax.jvmod(nu, r)
+    r2 = r2 * jnp.sqrt(2 + nu / 2)
+    return special.gamma(nu + 1) * _patch_jax.jvmodx2(nu, r2)
 
     # nu >= (D-2)/2
     # 2 nu >= D - 2

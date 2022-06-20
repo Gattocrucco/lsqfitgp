@@ -159,33 +159,8 @@ def value_and_ops(f, *ops, has_aux=False, **kw): # pragma: no cover
             return aux + (y,)
     return lastfop
 
-@functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1))
-def sincder(n, m, x):
-    """
-    Compute sin(x)/x and its derivatives near x = 0
-    n = derivative
-    m = number of Taylor coefficients used
-    """
-    start = (n + 1) // 2
-    k = jnp.arange(start, start + m)
-    sign = jnp.where(k % 2, -1, 1)
-    k12 = 1 + 2 * k
-    c = sign * jnp.exp(jspecial.gammaln(k12) - jspecial.gammaln(1 + k12) - jspecial.gammaln(k12 - n))
-    coeff = jnp.zeros(2 * len(c) - 1 + n % 2).at[n % 2::2].set(c)
-    return jnp.polyval(coeff[::-1], x) # TODO unroll and skip zeros
-
-@sincder.defjvp
-def sincder_jvp(n, m, primals, tangents):
-    x, = primals
-    xt, = tangents
-    return sincder(n, m, x), sincder(n + 1, m, x) * xt
-
-def sinc(x):
-    return jnp.where(jnp.abs(x) < 1e-1, sincder(0, 6, jnp.pi * x), jnp.sinc(x))
-
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1, 2, 3))
 def taylor(coefgen, args, n, m, x):
-    # TODO make an even-only version for efficiency
     c = coefgen(n, n + m, *args)
     k = jnp.arange(n, n + m)
     c = c * jnp.exp(jspecial.gammaln(1 + k) - jspecial.gammaln(1 + k - n))
@@ -198,11 +173,20 @@ def taylor_jvp(coefgen, args, n, m, primals, tangents):
     return taylor(coefgen, args, n, m, x), taylor(coefgen, args, n + 1, m, x) * xt
 
 def coefgen_jvmod(s, e, nu):
-    k = jnp.arange(s, e)
-    m = k // 2
-    return jnp.where(k % 2, 0, (-1) ** m / jnp.exp(jspecial.gammaln(1 + m) + jspecial.gammaln(1 + m + nu)))
+    m = jnp.arange(s, e)
+    return (-1) ** m / jnp.exp(jspecial.gammaln(1 + m) + jspecial.gammaln(1 + m + nu))
 
-def jvmod(nu, x):
-    nearzero = taylor(coefgen_jvmod, (nu,), 0, 6, x / 2)
+def jvmodx2(nu, x2):
+    nearzero = taylor(coefgen_jvmod, (nu,), 0, 5, x2 / 4)
+    x = jnp.sqrt(x2)
     normal = (x / 2) ** -nu * jv(nu, x)
     return jnp.where(jnp.abs(x) < 1e-2, nearzero, normal)
+    
+def coefgen_sinc(s, e):
+    m = jnp.arange(s, e)
+    return (-1) ** m / jnp.exp(jspecial.gammaln(2 + 2 * m))
+
+def sinc(x):
+    nearzero = taylor(coefgen_sinc, (), 0, 6, jnp.square(jnp.pi * x))
+    normal = jnp.sinc(x)
+    return jnp.where(jnp.abs(x) < 1e-1, nearzero, normal)

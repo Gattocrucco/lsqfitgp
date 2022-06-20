@@ -76,11 +76,11 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreducto
         assert acc.shape == _array.broadcast(*args).shape
         return acc
 
-def _sum_recurse_dtype(fun, *args):
+def sum_recurse_dtype(fun, *args):
     plus = lambda a, b: a + b
     return _reduce_recurse_dtype(fun, *args, reductor=plus, npreductor=numpy.sum, jnpreductor=jnp.sum)
 
-def _prod_recurse_dtype(fun, *args):
+def prod_recurse_dtype(fun, *args):
     times = lambda a, b: a * b
     return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=numpy.prod, jnpreductor=jnp.prod)
 
@@ -300,7 +300,7 @@ class CrossKernel:
                 x = transf(x)
                 y = transf(y)
                 fun = lambda x, y: kernel(x, y, **kw)
-                return _prod_recurse_dtype(fun, x, y)
+                return prod_recurse_dtype(fun, x, y)
         else:
             _kernel = lambda x, y: kernel(transf(x), transf(y), **kw)
         
@@ -806,7 +806,7 @@ class IsotropicKernel(StationaryKernel):
             # compute the sum of squares
         
         def function(x, y, **kwargs):
-            q = _sum_recurse_dtype(func, x, y)
+            q = sum_recurse_dtype(func, x, y)
             return kernel(transf(q), **kwargs)
         
         Kernel.__init__(self, function, **kw)
