@@ -31,6 +31,7 @@ from jax.interpreters import batching
 from jax import tree_util
 from jax._src import ad_util
 from scipy import special
+from jax.scipy import special as jspecial
 
 def makejaxufunc(ufunc, *derivs):
     # TODO use jax.something.standard_primitive
@@ -157,3 +158,27 @@ def value_and_ops(f, *ops, has_aux=False, **kw): # pragma: no cover
         else:
             return aux + (y,)
     return lastfop
+
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1))
+def sincder(n, m, x):
+    """
+    Compute sin(x)/x and its derivatives near x = 0
+    n = derivative
+    m = number of Taylor coefficients used
+    """
+    start = (n + 1) // 2
+    k = jnp.arange(start, start + m)
+    sign = jnp.where(k % 2, -1, 1)
+    k12 = 1 + 2 * k
+    c = sign * jnp.exp(jspecial.gammaln(k12) - jspecial.gammaln(1 + k12) - jspecial.gammaln(k12 - n))
+    coeff = jnp.zeros(2 * len(c) - 1 + n % 2).at[n % 2::2].set(c)
+    return jnp.polyval(coeff[::-1], x) # unroll and skip zeros
+
+@sincder.defjvp
+def sincder_jvp(n, m, primals, tangents):
+    x, = primals
+    xt, = tangents
+    return sincder(n, m, x), sincder(n + 1, m, x) * xt
+
+def sinc(x):
+    return jnp.where(jnp.abs(x) < 1e-1, sincder(0, 6, jnp.pi * x), jnp.sinc(x))

@@ -173,10 +173,10 @@ def Maternp(r, p=None):
     Matérn kernel of half-integer order. 
     
     .. math::
-        k(r) &= \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x) = \\
+        k(r) &= \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x) = \\\\
         &= \\exp(-x) \\frac{\\Gamma(p + 1)}{\\Gamma(2p + 1)}
-        \\sum_{i=0}^p \\frac{(p+i)!}{i!(p-i)!} (2x)^{p-i} \\
-        \\nu = p + 1/2,
+        \\sum_{i=0}^p \\frac{(p+i)!}{i!(p-i)!} (2x)^{p-i} \\\\
+        \\nu &= p + 1/2,
         p \\in \\mathbb N,
         x = \\sqrt{2\\nu} r
     
@@ -202,10 +202,10 @@ def Matern(r, nu=None):
         \\quad \\nu > 0,
         \\quad x = \\sqrt{2\\nu} r
     
-    The nearest integer below :math:`nu` indicates how many times the Gaussian
-    process is derivable: so for :math:`nu < 1` it is continuous but not
-    derivable, for :math:`1 \\le nu < 2` it is derivable but has not a second
-    derivative, etc.
+    The nearest integer below :math:`\\nu` indicates how many times the
+    Gaussian process is derivable: so for :math:`\\nu < 1` it is continuous but
+    not derivable, for :math:`1 \\le \\nu < 2` it is derivable but has not a
+    second derivative, etc.
 
     Reference: Rasmussen and Williams (2006, p. 84).
     """
@@ -268,13 +268,14 @@ def GammaExp(r, gamma=1):
     Gamma exponential kernel.
     
     .. math::
-        k(r) = \\exp(-r^\\texttt{gamma}), \\quad
-        \\texttt{gamma} \\in [0, 2]
+        k(r) = \\exp(-r^\\gamma), \\quad
+        \\gamma \\in [0, 2]
     
-    For `gamma` = 2 it is the Gaussian kernel, for `gamma` = 1 it is the Matérn
-    1/2 kernel, for `gamma` = 0 it is the constant kernel. The process is
-    differentiable only for `gamma` = 2, however as `gamma` gets closer to 2
-    the variance of the non-derivable component goes to zero.
+    For :math:`\\gamma = 2` it is the Gaussian kernel, for :math:`\\gamma = 1`
+    it is the Matérn 1/2 kernel, for :math:`\\gamma = 0` it is the constant
+    kernel. The process is differentiable only for :math:`\\gamma = 2`, however
+    as :math:`\\gamma` gets closer to 2 the variance of the non-derivable
+    component goes to zero.
 
     Reference: Rasmussen and Williams (2006, p. 86).
     """
@@ -289,11 +290,12 @@ def RatQuad(r2, alpha=2):
     
     .. math::
         k(r) = \\left( 1 + \\frac {r^2} {2 \\alpha} \\right)^{-\\alpha},
-        \\quad \\alpha = \\texttt{alpha}
+        \\quad \\alpha > 0
     
-    It is equivalent to a lengthscale mixture of Gaussian kernels where the
-    scale distribution is a gamma with shape parameter `alpha`. For `alpha` ->
-    infinity, it becomes the Gaussian kernel. It is smooth.
+    It is equivalent to a lengthscale mixture of exponential quadratic kernels
+    where the scale distribution is a gamma with shape parameter
+    :math:`\\alpha`. For :math:`\\alpha\\to\\infty` it becomes the exponential
+    quadratic. It is smooth.
     
     Reference: Rasmussen and Williams (2006, p. 86).
     """
@@ -768,7 +770,7 @@ def _Celerite_derivable(**kw):
     else:
         return False
 
-@stationarykernel(forcekron=True, derivable=_Celerite_derivable)
+@stationarykernel(forcekron=True, derivable=_Celerite_derivable, input='hard')
 def Celerite(delta, gamma=1, B=0):
     """
     Celerite kernel.
@@ -789,9 +791,7 @@ def Celerite(delta, gamma=1, B=0):
     if _patch_jax.isconcrete(gamma, B):
         assert 0 <= gamma < jnp.inf, gamma
         assert abs(B) <= gamma, (B, gamma)
-    tau = jnp.abs(delta)
-    # TODO option input='abs' in StationaryKernel
-    return jnp.exp(-gamma * tau) * (jnp.cos(tau) + B * jnp.sin(tau))
+    return jnp.exp(-gamma * delta) * (jnp.cos(delta) + B * jnp.sin(delta))
 
 @kernel(forcekron=True, derivable=False)
 def BrownianBridge(x, y):
@@ -961,6 +961,8 @@ def BagOfWords(x, y):
     common = set(xbag) & set(ybag)
     return sum(xbag[k] * ybag[k] for k in common)
 
+# TODO add bag of characters and maybe other text kernels
+
 @stationarykernel(derivable=False, input='hard', forcekron=True)
 def HoleEffect(delta):
     """
@@ -1053,7 +1055,7 @@ def Sinc(delta):
     
     Reference: Tobar (2019).
     """
-    return jnp.sinc(delta)
+    return _patch_jax.sinc(delta)
     
     # TODO is this isotropic? My current guess is that it works up to some
     # dimension due to a coincidence but is not in general isotropic.
@@ -1085,7 +1087,7 @@ def Cauchy(r2, alpha=2, beta=2):
     """
     Generalized Cauchy kernel.
     
-    ..math::
+    .. math::
         k(r) = \\left(1 + \\frac{r^\\alpha}{\\beta} \\right)^{-\\beta/\\alpha},
         \\quad \\alpha \\in (0, 2], \\beta > 0.
     

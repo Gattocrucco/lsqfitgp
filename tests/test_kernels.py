@@ -469,12 +469,13 @@ class KernelTestBase(KernelTestABC):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             
+            if kernel.maxdim < 2:
+                continue
+            
             x = self.random_x_nd(2, **kw)
             x0 = x['f0'][0]
             cond = lambda x: x < x0
             k1 = _Kernel.where(cond, kernel, 2 * kernel, dim='f0')
-            if k1.maxdim is None or k1.maxdim < 2:
-                continue
             k2 = _Kernel.where(lambda x: cond(x['f0']), kernel, 2 * kernel)
             c1 = k1(x[:, None], x[None, :])
             c2 = k2(x[:, None], x[None, :])
@@ -871,17 +872,6 @@ for test in [TestBessel, TestMatern]:
     util.xfail(test, 'test_positive_deriv_nd')
     util.xfail(test, 'test_symmetric_10')
     util.xfail(test, 'test_symmetric_21')
-
-# TODO a lot problems probably due to the crappy jax implementation of the
-# derivatives of sinc. Need to taylor-expand it manually.
-util.xfail(TestSinc, 'test_positive_deriv')
-util.xfail(TestSinc, 'test_positive_deriv2')
-util.xfail(TestSinc, 'test_positive_deriv_nd')
-util.xfail(TestSinc, 'test_positive_deriv2_nd')
-util.xfail(TestSinc, 'test_symmetric_10')
-util.xfail(TestSinc, 'test_symmetric_21')
-util.xfail(TestSinc, 'test_jit_deriv2')
-util.xfail(TestSinc, 'test_jit_deriv2_nd')
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem

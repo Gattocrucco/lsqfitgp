@@ -674,3 +674,21 @@ that will clear my understanding of using Laplace with a Gaussian process.
 Thing that I could cite: Snelson et al., "Warped Gaussian Processes". It's a
 bit trivial but people expect you to cite everything. Everything was redone
 for Gaussian processes.
+
+2022-06-20
+==========
+
+sinc(x) = sin(x)/x
+
+sinc'(x) = cos(x)/x - sin(x)/x^2
+         = (cos(x)x - sin(x))/x^2 =
+         = cos(x) (x - tan(x)) / x^2
+
+I have to compute a - b with a - b ~ 0:
+
+a - b = b (a/b - 1)
+a - b = log exp(a - b) =
+      = log(exp(a/b - 1)^b) =
+      = b log exp(a/b - 1)
+
+Does not solve the problem, a/b is already imprecise.
