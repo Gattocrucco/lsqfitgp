@@ -31,9 +31,17 @@ def test_sinc():
     np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-15)
 
 def test_jvmodx2():
-    nu = np.linspace(0, 5, 10)
+    nu = np.linspace(-5, 5, 20)
     x = np.linspace(1e-15, 0.1, 1000)
     for v in nu:
         s1 = (x / 2) ** -v * special.jv(v, x)
         s2 = _patch_jax.jvmodx2(v, x ** 2)
+        np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
+
+def test_kvmodx2():
+    nu = np.linspace(0.1, 4.9, 20)
+    x = np.linspace(1e-15, 0.1, 1000)
+    for v in nu:
+        s1 = (x / 2) ** v * special.kv(v, x)
+        s2 = _patch_jax.kvmodx2(v, x ** 2)
         np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)

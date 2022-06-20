@@ -366,12 +366,11 @@ class KernelTestBase(KernelTestABC):
         for kw in self.kwargs_list:
             kw = dict(kw)
             kw.update(derivable=[1])
-            covfun = self.kernel_class(**kw)
-            assert covfun.derivable == sys.maxsize
-            kw = dict(kw)
-            kw.update(derivable=[])
-            covfun = self.kernel_class(**kw)
-            assert covfun.derivable == 0
+            with pytest.raises(TypeError):
+                self.kernel_class(**kw)
+            kw.update(derivable=1.5)
+            with pytest.raises(ValueError):
+                self.kernel_class(**kw)
     
     def test_dim(self):
         donesomething = False
@@ -846,11 +845,6 @@ def test_matern_derivatives():
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y. => use make_jaxpr to debug?
-util.xfail(TestMatern, 'test_positive_deriv2_nd')
-util.xfail(TestMatern, 'test_double_diff_nd_second_chopped')
-util.xfail(TestMatern52, 'test_positive_deriv2_nd')
-util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped') # seen xpassing
-util.xfail(TestMatern52, 'test_jit_deriv2_nd') # seen xpassing
 util.xfail(TestMaternp, 'test_positive_deriv2_nd')
 util.xfail(TestMaternp, 'test_double_diff_nd_second_chopped')
 util.xfail(TestMaternp, 'test_jit_deriv2_nd')
@@ -862,18 +856,17 @@ util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
 # in tests. Tentative interface: a method that takes a method name and spits out
 # rtol, atol. => Not enough, derivatives are game-changers.
 #
-# May the precision problems be due to a crappy implementation of kvp in scipy?
+# May the precision problems be due to a crappy implementation of jvp in scipy?
 util.xfail(TestBessel, 'test_positive_deriv2_nd')
 util.xfail(TestBessel, 'test_double_diff_nd_second_chopped') # seen xpassing
-util.xfail(TestBessel, 'test_positive_deriv')
+util.xfail(TestBessel, 'test_positive_deriv') # seen xpassing
 util.xfail(TestBessel, 'test_positive_deriv2')
 
-# TODO It's x^nu K_nu(x) which gives problems for x -> 0.
+# TODO fail due to nan on variance. why?
+util.xfail(TestMatern, 'test_positive_deriv2_nd')
 util.xfail(TestMatern, 'test_positive_deriv')
-util.xfail(TestMatern, 'test_positive_deriv2') # this is num acc
+util.xfail(TestMatern, 'test_positive_deriv2')
 util.xfail(TestMatern, 'test_positive_deriv_nd')
-util.xfail(TestMatern, 'test_symmetric_10')
-util.xfail(TestMatern, 'test_symmetric_21')
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem

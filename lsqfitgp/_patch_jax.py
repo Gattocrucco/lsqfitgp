@@ -67,6 +67,8 @@ j0 = makejaxufunc(special.j0, lambda x: -j1(x))
 j1 = makejaxufunc(special.j1, lambda x: (j0(x) - jv(2, x)) / 2.0)
 jv = makejaxufunc(special.jv, None, lambda v, z: jvp(v, z, 1))
 jvp = makejaxufunc(special.jvp, None, lambda v, z, n: jvp(v, z, n + 1), None)
+iv = makejaxufunc(special.iv, None, lambda v, z: ivp(v, z, 1))
+ivp = makejaxufunc(special.ivp, None, lambda v, z, n: ivp(v, z, n + 1), None)
 kv = makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
 kvp = makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
 ci = makejaxufunc(lambda x: special.sici(x)[1], lambda x: jnp.cos(x) / x)
@@ -172,16 +174,6 @@ def taylor_jvp(coefgen, args, n, m, primals, tangents):
     xt, = tangents
     return taylor(coefgen, args, n, m, x), taylor(coefgen, args, n + 1, m, x) * xt
 
-def coefgen_jvmod(s, e, nu):
-    m = jnp.arange(s, e)
-    return (-1) ** m / jnp.exp(jspecial.gammaln(1 + m) + jspecial.gammaln(1 + m + nu))
-
-def jvmodx2(nu, x2):
-    nearzero = taylor(coefgen_jvmod, (nu,), 0, 5, x2 / 4)
-    x = jnp.sqrt(x2)
-    normal = (x / 2) ** -nu * jv(nu, x)
-    return jnp.where(jnp.abs(x) < 1e-2, nearzero, normal)
-    
 def coefgen_sinc(s, e):
     m = jnp.arange(s, e)
     return (-1) ** m / jnp.exp(jspecial.gammaln(2 + 2 * m))
@@ -190,3 +182,36 @@ def sinc(x):
     nearzero = taylor(coefgen_sinc, (), 0, 6, jnp.square(jnp.pi * x))
     normal = jnp.sinc(x)
     return jnp.where(jnp.abs(x) < 1e-1, nearzero, normal)
+
+def sgngamma(x):
+    return jnp.where((x > 0) | (x % 2 < 1), 1, -1)
+
+def coefgen_jvmod(s, e, nu):
+    m = jnp.arange(s, e)
+    u = 1 + m + nu
+    return sgngamma(u) * (-1) ** m / jnp.exp(jspecial.gammaln(1 + m) + jspecial.gammaln(u))
+
+def jvmodx2(nu, x2):
+    nearzero = taylor(coefgen_jvmod, (nu,), 0, 5, x2 / 4)
+    x = jnp.sqrt(x2)
+    normal = (x / 2) ** -nu * jv(nu, x)
+    return jnp.where(x2 < 1e-4, nearzero, normal)
+    
+def coefgen_ivmod(s, e, nu):
+    m = jnp.arange(s, e)
+    u = 1 + m + nu
+    return sgngamma(u) * jnp.exp(-jspecial.gammaln(1 + m) - jspecial.gammaln(u))
+    
+def ivmodx2_nearzero(nu, x2):
+    return taylor(coefgen_ivmod, (nu,), 0, 5, x2 / 4)
+
+def kvmodx2_nearzero(nu, x2):
+    factor = jnp.pi / (2 * jnp.sin(jnp.pi * nu))
+    return factor * (ivmodx2_nearzero(-nu, x2) - (x2 / 4) ** nu * ivmodx2_nearzero(nu, x2))
+
+def kvmodx2(nu, x2):
+    # assert int(nu) != nu, nu
+    nearzero = kvmodx2_nearzero(nu, x2)
+    x = jnp.sqrt(x2)
+    normal = (x / 2) ** nu * kv(nu, x)
+    return jnp.where(x2 < 1e-4, nearzero, normal)

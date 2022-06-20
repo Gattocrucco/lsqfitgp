@@ -189,10 +189,10 @@ def Maternp(r, p=None):
     return _maternp(x, p)
 
 def _matern_derivable(nu=None):
-    return int(nu - 1/2)
+    return numpy.floor(nu)
 
-@isotropickernel(input='soft', derivable=_matern_derivable)
-def Matern(r, nu=None):
+@isotropickernel(derivable=_matern_derivable)
+def Matern(r2, nu=None):
     """
     Matérn kernel of real order. 
     
@@ -209,12 +209,10 @@ def Matern(r, nu=None):
     Reference: Rasmussen and Williams (2006, p. 84).
     """
     if _patch_jax.isconcrete(nu):
+        assert int(nu) != nu, nu # TODO remove this limitation
         assert 0 < nu < jnp.inf, nu
-    x = jnp.sqrt(2 * nu) * r
-    return 2 ** (1 - nu) / special.gamma(nu) * x ** nu * _patch_jax.kv(nu, x)
-    # TODO I need a function that computes directly x^nu K_nu(x), and its
-    # derivatives, because when taking the derivative, the two terms bring
-    # about a strong cancellation for x -> 0 (this is a hypothesis).
+    r2 = 2 * nu * r2
+    return 2 / special.gamma(nu) * _patch_jax.kvmodx2(nu, r2)
 
 @isotropickernel(input='soft', derivable=False)
 def Matern12(r):

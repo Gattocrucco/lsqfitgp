@@ -247,12 +247,11 @@ class CrossKernel:
             derivable = (0, sys.maxsize)
         elif isinstance(derivable, bool):
             derivable = sys.maxsize if derivable else 0
-        elif isinstance(derivable, (int, jnp.integer)):
+        elif int(derivable) == derivable:
             assert derivable >= 0
-        elif derivable:
-            derivable = sys.maxsize
+            derivable = int(derivable)
         else:
-            derivable = 0
+            raise ValueError(f'derivability degree {derivable!r} not valid')
         if not isinstance(derivable, tuple):
             derivable = (derivable, derivable)
         self._minderivable = (derivable[0], derivable[0])
