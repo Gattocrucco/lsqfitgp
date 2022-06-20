@@ -1007,10 +1007,7 @@ def Bessel(r, nu=0):
     Reference: Rasmussen and Williams (2006, p. 89).
     """
     r = r * (2 + nu / 2)
-    return special.gamma(nu + 1) * 2 ** nu * r ** -nu * _patch_jax.jv(nu, r)
-    # TODO I need a function that computes directly x^-nu J_nu(x), and its
-    # derivatives, because when taking the derivative, the two terms bring
-    # about a strong cancellation for x -> 0. (This is a hypothesis.)
+    return special.gamma(nu + 1) * _patch_jax.jvmod(nu, r)
 
     # nu >= (D-2)/2
     # 2 nu >= D - 2

@@ -857,17 +857,19 @@ util.xfail(TestMaternp, 'test_jit_deriv2_nd')
 util.xfail(TestPPKernel, 'test_positive_deriv2_nd')
 util.xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
 util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
+
+# TODO make a taylor_even function which takes x^2
 util.xfail(TestBessel, 'test_positive_deriv2_nd')
 util.xfail(TestBessel, 'test_double_diff_nd_second_chopped')
+util.xfail(TestBessel, 'test_positive_deriv')
+util.xfail(TestBessel, 'test_positive_deriv2')
 
-# TODO I suppose it's x^-nu J_nu(x) and x^nu K_nu(x) which give problems for x
-# -> 0.
-for test in [TestBessel, TestMatern]:
-    util.xfail(test, 'test_positive_deriv')
-    util.xfail(test, 'test_positive_deriv2') # this is num acc for Matern
-    util.xfail(test, 'test_positive_deriv_nd')
-    util.xfail(test, 'test_symmetric_10')
-    util.xfail(test, 'test_symmetric_21')
+# TODO It's x^nu K_nu(x) which gives problems for x -> 0.
+util.xfail(TestMatern, 'test_positive_deriv')
+util.xfail(TestMatern, 'test_positive_deriv2') # this is num acc
+util.xfail(TestMatern, 'test_positive_deriv_nd')
+util.xfail(TestMatern, 'test_symmetric_10')
+util.xfail(TestMatern, 'test_symmetric_21')
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem

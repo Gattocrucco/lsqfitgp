@@ -19,6 +19,7 @@
 
 import jax
 import numpy as np
+from scipy import special
 
 from lsqfitgp import _patch_jax
 import util
@@ -28,3 +29,11 @@ def test_sinc():
     s1 = np.sinc(x)
     s2 = _patch_jax.sinc(x)
     np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-15)
+
+def test_jvmod():
+    nu = np.linspace(0, 5, 10)
+    x = np.linspace(1e-15, 0.1, 1000)
+    for v in nu:
+        s1 = (x / 2) ** -v * special.jv(v, x)
+        s2 = _patch_jax.jvmod(v, x)
+        np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
