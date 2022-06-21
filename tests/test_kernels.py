@@ -687,6 +687,7 @@ test_kwargs = {
     _kernels.GammaExp: dict(kwargs_list=[dict(), dict(gamma=2)]),
     _kernels.Bessel: dict(kwargs_list=[dict()] + [dict(nu=nu) for nu in range(5)] + [dict(nu=nu - 0.01) for nu in range(1, 5)] + [dict(nu=nu + 0.01) for nu in range(5)]),
     _kernels.Cauchy: dict(kwargs_list=[dict(alpha=a, beta=b) for a in [0.001, 0.5, 0.999, 1, 1.001, 1.5, 1.999, 2] for b in [0.001, 0.5, 1, 1.5, 2, 4, 8]]),
+    _kernels.CausalExpQuad: dict(kwargs_list=[dict(alpha=a) for a in [0, 1, 2]]),
 }
 
 for kernel in kernels:
@@ -852,6 +853,8 @@ util.xfail(TestMaternp, 'test_jit_deriv2_nd')
 util.xfail(TestPPKernel, 'test_positive_deriv2_nd')
 util.xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
 util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
+util.xfail(TestCausalExpQuad, 'test_positive_deriv2_nd')
+util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped')
 
 # TODO less numerically accurate than usual, I need finer options for tolerances
 # in tests. Tentative interface: a method that takes a method name and spits out
@@ -875,6 +878,7 @@ util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
 util.xfail(TestPPKernel, 'test_positive_deriv2')
+util.xfail(TestCausalExpQuad, 'test_positive_deriv2') # likely 1 - erf cancel
 
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some

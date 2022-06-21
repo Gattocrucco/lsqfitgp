@@ -539,11 +539,6 @@ Classes: RandomWalkKernel, PeriodicKernel (che non è una sottoclasse di
 StationaryKernel, perché in linea di principio può anche essere non
 stazionario, lo aggiungo con ereditarietà multipla solo come flag)
 
-Kernels I didn't know from https://github.com/wesselb/mlkernels:
-causal exponential quadratic
-decaying kernel
-logkernel
-
 Look in the kernels reference I highlighted in the GPML bibliography
 
 bi- and multi-fractional brownian motion, see Lim and Teo (2009).

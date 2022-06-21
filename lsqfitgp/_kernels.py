@@ -69,6 +69,7 @@ __all__ = [
     'Sinc',
     'StationaryFracBrownian',
     'Cauchy',
+    'CausalExpQuad',
 ]
 
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
@@ -1099,3 +1100,33 @@ def Cauchy(r2, alpha=2, beta=2):
         assert 0 < alpha <= 2, alpha
         assert 0 < beta, beta
     return (1 + r2 ** (alpha / 2) / beta) ** (-beta / alpha)
+    
+def _causalexpquad_derivable(alpha=1):
+    return alpha == 0
+
+@isotropickernel(derivable=_causalexpquad_derivable, input='soft')
+def CausalExpQuad(r, alpha=1):
+    """
+    Causal exponential quadratic kernel.
+    
+    .. math::
+        k(r) = \\big(1 - \\erf(\\alpha r/4)\\big)
+        \\exp\\left(-\\frac12 r^2 \\right)
+        
+    From https://github.com/wesselb/mlkernels.
+    """
+    if _patch_jax.isconcrete(alpha):
+        assert alpha >= 0, alpha
+    return (1 - jspecial.erf(alpha / 4 * r)) * jnp.exp(-1/2 * jnp.square(r))
+    # TODO replace 1 - erf with something which is precise for high r,
+    # and parameterize with r2 and custom correct in the erf with inside and
+    # outside eps using erf'(0) = 1
+
+# @kernel(derivable=True)
+# def Decaying(x, y, beta=1):
+#     """infinitely divisible"""
+#     return beta / jnp.abs(x + y + beta)
+#
+# @isotropickernel(derivable=True, input='soft')
+# def Log(r):
+#     return jnp.log1p(r) / r
