@@ -160,9 +160,11 @@ issue.</p>
 <div><ul class="simple">
 <li><p><a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Bessel"><code class="xref py py-func docutils literal notranslate"><span class="pre">Bessel()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Cauchy" title="lsqfitgp.Cauchy"><code class="xref py py-func docutils literal notranslate"><span class="pre">Cauchy()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.CausalExpQuad" title="lsqfitgp.CausalExpQuad"><code class="xref py py-func docutils literal notranslate"><span class="pre">CausalExpQuad()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Constant"><code class="xref py py-func docutils literal notranslate"><span class="pre">Constant()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-func docutils literal notranslate"><span class="pre">ExpQuad()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.GammaExp" title="lsqfitgp.GammaExp"><code class="xref py py-func docutils literal notranslate"><span class="pre">GammaExp()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Log" title="lsqfitgp.Log"><code class="xref py py-func docutils literal notranslate"><span class="pre">Log()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Matern12" title="lsqfitgp.Matern12"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern12()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Matern32" title="lsqfitgp.Matern32"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern32()</span></code></a></p></li>
@@ -274,6 +276,16 @@ as the Cauchy kernel, while for other values of the parameters it is called
 <span class="math notranslate nohighlight">\(\beta\to 0\)</span> to <code class="docutils literal notranslate"><span class="pre">Constant</span></code>. It is smooth only for
 <span class="math notranslate nohighlight">\(\alpha=2\)</span>.</p>
 <p>Reference: Gneiting and Schlather (2004, p. 273).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.CausalExpQuad">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CausalExpQuad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.CausalExpQuad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Causal exponential quadratic kernel.</p>
+<div class="math notranslate nohighlight">
+\[k(r) = \big(1 - \erf(\alpha r/4)\big)
+\exp\left(-\frac12 r^2 \right)\]</div>
+<p>From <a class="reference external" href="https://github.com/wesselb/mlkernels">https://github.com/wesselb/mlkernels</a>.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -452,6 +464,15 @@ Astronomical Time Series</em>.</p>
 \[k(x, y) = x \cdot y = \sum_i x_i y_i\]</div>
 <p>In 1D it is equivalent to fitting with a line passing by the origin.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 89).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Log">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log kernel.</p>
+<div class="math notranslate nohighlight">
+\[k(r) = \log(1 + r) / r\]</div>
+<p>From <a class="reference external" href="https://github.com/wesselb/mlkernels">https://github.com/wesselb/mlkernels</a>.</p>
 </dd></dl>
 
 <dl class="py function">

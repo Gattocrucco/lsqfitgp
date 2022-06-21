@@ -49,9 +49,11 @@ Isotropic kernels
 ^^^^^^^^^^^^^^^^^
   * :func:`Bessel`
   * :func:`Cauchy`
+  * :func:`CausalExpQuad`
   * :func:`Constant`
   * :func:`ExpQuad`
   * :func:`GammaExp`
+  * :func:`Log`
   * :func:`Matern`
   * :func:`Matern12`
   * :func:`Matern32`
@@ -96,6 +98,7 @@ Documentation
 .. autofunction:: BrownianBridge
 .. autofunction:: Categorical
 .. autofunction:: Cauchy
+.. autofunction:: CausalExpQuad
 .. autofunction:: Celerite
 .. autofunction:: Constant
 .. autofunction:: Cos
@@ -108,6 +111,7 @@ Documentation
 .. autofunction:: Harmonic
 .. autofunction:: HoleEffect
 .. autofunction:: Linear
+.. autofunction:: Log
 .. autofunction:: Matern
 .. autofunction:: Matern12
 .. autofunction:: Matern32
