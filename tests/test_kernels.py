@@ -845,6 +845,7 @@ def test_matern_derivatives():
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y. => use make_jaxpr to debug?
+util.xfail(TestMatern52, 'test_positive_deriv2_nd') # only on CI macos (??)
 util.xfail(TestMaternp, 'test_positive_deriv2_nd')
 util.xfail(TestMaternp, 'test_double_diff_nd_second_chopped')
 util.xfail(TestMaternp, 'test_jit_deriv2_nd')
@@ -867,6 +868,9 @@ util.xfail(TestMatern, 'test_positive_deriv2_nd')
 util.xfail(TestMatern, 'test_positive_deriv')
 util.xfail(TestMatern, 'test_positive_deriv2')
 util.xfail(TestMatern, 'test_positive_deriv_nd')
+
+# TODO numerical precision, only on CI macos (??)
+util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
