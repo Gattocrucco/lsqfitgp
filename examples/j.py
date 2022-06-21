@@ -35,7 +35,7 @@ xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 300)
 y = np.sin(xdata)
 
-gp = lgp.GP(lgp.Matern(scale=5, nu=3))
+gp = lgp.GP(lgp.Matern(scale=5, nu=3.1))
 gp.addx(xdata, 'pere')
 gp.addx(xpred, 'banane')
 

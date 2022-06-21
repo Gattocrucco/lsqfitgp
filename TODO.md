@@ -550,6 +550,8 @@ bi- and multi-fractional brownian motion, see Lim and Teo (2009).
 
 Can I do a kernel with the Dirichlet function? (scipy.special.diric)
 
+ARIMA
+
 ### Transformations
 
 #### Pointwise infinite transformations
