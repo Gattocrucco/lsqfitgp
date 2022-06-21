@@ -70,6 +70,7 @@ __all__ = [
     'StationaryFracBrownian',
     'Cauchy',
     'CausalExpQuad',
+    'Log',
 ]
 
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
@@ -1126,7 +1127,15 @@ def CausalExpQuad(r, alpha=1):
 # def Decaying(x, y, beta=1):
 #     """infinitely divisible"""
 #     return beta / jnp.abs(x + y + beta)
-#
-# @isotropickernel(derivable=True, input='soft')
-# def Log(r):
-#     return jnp.log1p(r) / r
+
+@isotropickernel(derivable=False, input='soft')
+def Log(r):
+    """
+    Log kernel.
+    
+    .. math::
+        k(r) = \\log(1 + r) / r
+    
+    From https://github.com/wesselb/mlkernels.
+    """
+    return jnp.log1p(r) / r
