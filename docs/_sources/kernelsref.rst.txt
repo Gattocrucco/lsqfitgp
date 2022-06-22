@@ -81,6 +81,7 @@ Other kernels
   * :func:`BagOfWords`
   * :func:`BrownianBridge`
   * :func:`Categorical`
+  * :func:`Decaying`
   * :func:`FracBrownian`
   * :func:`Gibbs`
   * :func:`Linear`
@@ -102,6 +103,7 @@ Documentation
 .. autofunction:: Celerite
 .. autofunction:: Constant
 .. autofunction:: Cos
+.. autofunction:: Decaying
 .. autofunction:: ExpQuad
 .. autofunction:: Expon
 .. autofunction:: Fourier

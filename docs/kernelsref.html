@@ -200,6 +200,7 @@ issue.</p>
 <li><p><a class="reference internal" href="#lsqfitgp.BagOfWords" title="lsqfitgp.BagOfWords"><code class="xref py py-func docutils literal notranslate"><span class="pre">BagOfWords()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.BrownianBridge" title="lsqfitgp.BrownianBridge"><code class="xref py py-func docutils literal notranslate"><span class="pre">BrownianBridge()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Categorical" title="lsqfitgp.Categorical"><code class="xref py py-func docutils literal notranslate"><span class="pre">Categorical()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Decaying" title="lsqfitgp.Decaying"><code class="xref py py-func docutils literal notranslate"><span class="pre">Decaying()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.FracBrownian" title="lsqfitgp.FracBrownian"><code class="xref py py-func docutils literal notranslate"><span class="pre">FracBrownian()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Gibbs" title="lsqfitgp.Gibbs"><code class="xref py py-func docutils literal notranslate"><span class="pre">Gibbs()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Linear" title="lsqfitgp.Linear"><code class="xref py py-func docutils literal notranslate"><span class="pre">Linear()</span></code></a></p></li>
@@ -324,6 +325,17 @@ to fitting with a horizontal line. This can be seen also by observing that
 = \cos x \cos y + \sin x \sin y\]</div>
 <p>Samples from this kernel are harmonic functions. It can be multiplied with
 another kernel to introduce anticorrelations.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Decaying">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Decaying</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Decaying" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decaying kernel.</p>
+<div class="math notranslate nohighlight">
+\[k(\mathbf x, \mathbf y) =
+\frac{\|\boldsymbol\beta\|^2}
+{\|\mahtbf x + \mathbf y + \boldsymbol\beta\|^2}\]</div>
+<p>From <a class="reference external" href="https://github.com/wesselb/mlkernels">https://github.com/wesselb/mlkernels</a>.</p>
 </dd></dl>
 
 <dl class="py function">
