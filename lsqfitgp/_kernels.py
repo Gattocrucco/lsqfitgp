@@ -20,6 +20,7 @@
 import re
 import collections
 import functools
+import sys
 
 import jax
 import numpy
@@ -358,7 +359,7 @@ def Wiener(x, y):
         assert numpy.all(_patch_jax.concrete(y) >= 0)
     return jnp.minimum(x, y)
 
-@kernel(forcekron=True)
+@kernel(maxdim=sys.maxsize)
 def Gibbs(x, y, scalefun=lambda x: 1):
     """
     Gibbs kernel.
@@ -386,7 +387,8 @@ def Gibbs(x, y, scalefun=lambda x: 1):
         assert numpy.all(_patch_jax.concrete(sy) > 0)
     denom = sx ** 2 + sy ** 2
     factor = jnp.sqrt(2 * sx * sy / denom)
-    return factor * jnp.exp(-(x - y) ** 2 / denom)
+    distsq = _Kernel.sum_recurse_dtype(lambda x, y: (x - y) ** 2, x, y)
+    return factor * jnp.exp(-distsq / denom)
 
 @stationarykernel(derivable=True, forcekron=True)
 def Periodic(delta, outerscale=1):
@@ -1146,7 +1148,8 @@ def Decaying(x, y, beta=1):
     .. math::
         k(\\mathbf x, \\mathbf y) =
         \\frac{\\|\\boldsymbol\\beta\\|^2}
-        {\\|\\mahtbf x + \\mathbf y + \\boldsymbol\\beta\|^2}
+        {\\|\\mathbf x + \\mathbf y + \\boldsymbol\\beta\\|^2},
+        \\quad x_i, y_i > 0
     
     From https://github.com/wesselb/mlkernels.
     """
