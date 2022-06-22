@@ -110,10 +110,10 @@ def _concrete(x):
     # TODO maybe use jax.core.concrete_aval? But I'm not sure of what it does
 
 def concrete(*args):
+    result = tree_util.tree_map(_concrete, args)
     if len(args) == 1:
-        return _concrete(args[0])
-    else:
-        return tuple(map(_concrete, args))
+        result, = result
+    return result
 
 # TODO make stop_hessian work in reverse mode
 # see jax issue #10994
@@ -215,3 +215,7 @@ def kvmodx2(nu, x2):
     x = jnp.sqrt(x2)
     normal = (x / 2) ** nu * kv(nu, x)
     return jnp.where(x2 < 1e-4, nearzero, normal)
+
+def tree_all(predicate, *trees):
+    pred = tree_util.tree_map(predicate, *trees)
+    return tree_util.tree_reduce(lambda acc, p: acc and p, pred, True)

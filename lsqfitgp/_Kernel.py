@@ -84,7 +84,7 @@ def prod_recurse_dtype(fun, *args):
     times = lambda a, b: a * b
     return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=numpy.prod, jnpreductor=jnp.prod)
 
-def _transf_recurse_dtype(transf, x, *args):
+def transf_recurse_dtype(transf, x, *args):
     if x.dtype.names is None:
         return transf(x, *args)
     else:
@@ -92,7 +92,7 @@ def _transf_recurse_dtype(transf, x, *args):
         # redundant creation of StructuredArrays with nested dtypes; whatever
         for name in x.dtype.names:
             newargs = tuple(y[name] for y in args)
-            x[name] = _transf_recurse_dtype(transf, x[name], *newargs)
+            x[name] = transf_recurse_dtype(transf, x[name], *newargs)
         return x
 
 def _nd(dtype):
@@ -285,12 +285,12 @@ class CrossKernel:
         if loc is not None:
             if _patch_jax.isconcrete(loc):
                 assert -jnp.inf < loc < jnp.inf
-            transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x - loc, transf(x))
+            transf = lambda x, transf=transf: transf_recurse_dtype(lambda x: x - loc, transf(x))
         
         if scale is not None:
             if _patch_jax.isconcrete(scale):
                 assert 0 < scale < jnp.inf
-            transf = lambda x, transf=transf: _transf_recurse_dtype(lambda x: x / scale, transf(x))
+            transf = lambda x, transf=transf: transf_recurse_dtype(lambda x: x / scale, transf(x))
         
         # TODO when dim becomes deep, forcekron must apply also to subfields
         # for consistence. Maybe it should do it now already.
@@ -736,7 +736,7 @@ class StationaryKernel(Kernel):
             transf = lambda q : q / scale
         
         def function(x, y, **kwargs):
-            q = _transf_recurse_dtype(func, x, y)
+            q = transf_recurse_dtype(func, x, y)
             return kernel(transf(q), **kwargs)
         
         Kernel.__init__(self, function, **kw)

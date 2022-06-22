@@ -60,6 +60,8 @@ def broadcast_to(x, shape, **kw):
     """
     if isinstance(x, StructuredArray):
         return x.broadcast_to(shape, **kw)
+    elif isinstance(x, jnp.ndarray):
+        return jnp.broadcast_to(x, shape, **kw)
     else:
         return np.broadcast_to(x, shape, **kw)
 

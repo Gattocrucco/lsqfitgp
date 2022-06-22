@@ -25,6 +25,7 @@ import jax
 import numpy
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
+from jax import tree_util
 from scipy import special
 
 from . import _array
@@ -71,6 +72,7 @@ __all__ = [
     'Cauchy',
     'CausalExpQuad',
     'Log',
+    'Decaying',
 ]
 
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
@@ -1123,10 +1125,45 @@ def CausalExpQuad(r, alpha=1):
     # and parameterize with r2 and custom correct in the erf with inside and
     # outside eps using erf'(0) = 1
 
-# @kernel(derivable=True)
-# def Decaying(x, y, beta=1):
-#     """infinitely divisible"""
-#     return beta / jnp.abs(x + y + beta)
+def _isstructured(x):
+    return getattr(getattr(x, 'dtype', None), 'names', None) is not None
+
+def _broadcast_to_dtype(x, t):
+    if _isstructured(x) or t.names is None:
+        return jnp.asarray(x)
+    dummy = numpy.empty((), t)
+    dummy = _array.StructuredArray(dummy)
+    return tree_util.tree_map(lambda a: jnp.broadcast_to(x, a.shape), dummy)
+
+def _asstructured(x):
+    return _array.StructuredArray(x) if _isstructured(x) else x
+
+@kernel(derivable=True)
+def Decaying(x, y, beta=1):
+    """
+    Decaying kernel.
+    
+    .. math::
+        k(\\mathbf x, \\mathbf y) =
+        \\frac{\\|\\boldsymbol\\beta\\|^2}
+        {\\|\\mahtbf x + \\mathbf y + \\boldsymbol\\beta\|^2}
+    
+    From https://github.com/wesselb/mlkernels.
+    """
+    beta = _broadcast_to_dtype(beta, x.dtype)
+    if _patch_jax.isconcrete(x, y, beta):
+        x = _asstructured(x)
+        y = _asstructured(y)
+        X, Y, B = _patch_jax.concrete(x, y, beta)
+        assert _patch_jax.tree_all(lambda b: numpy.all(b > 0), B)
+        assert _patch_jax.tree_all(lambda x: numpy.all(x >= 0), X)
+        assert _patch_jax.tree_all(lambda y: numpy.all(y >= 0), Y)
+    bnorm = _dot(beta, beta)
+    shape = jnp.broadcast_shapes(x.shape, y.shape)
+    x = _array.broadcast_to(x, shape)
+    xyb = _Kernel.transf_recurse_dtype(lambda *args: sum(args), x, y, beta)
+    xybnorm = _dot(xyb, xyb)
+    return bnorm / xybnorm
 
 @isotropickernel(derivable=False, input='soft')
 def Log(r):
