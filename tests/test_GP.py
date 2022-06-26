@@ -377,7 +377,7 @@ def test_incompatible_dtypes():
     
     gp = lgp.GP(lgp.ExpQuad())
     gp.addx(np.zeros(1, 'd,d'), 0)
-    gp.addx(np.zeros(1, 'i,i'), 1)
+    # gp.addx(np.zeros(1, 'i,i'), 1) # succeeds only if numpy >= 1.23
     with pytest.raises(TypeError):
         gp.addx(np.zeros(1, 'd,d,d'), 2)
 
