@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for lsqfitgp/_patch_jax.py: 99%</title>
+    <title>Coverage for lsqfitgp/_patch_jax.py: 96%</title>
     <link rel="icon" sizes="32x32" href="favicon_32.png">
     <link rel="stylesheet" href="style.css" type="text/css">
     <script type="text/javascript" src="coverage_html.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>lsqfitgp/_patch_jax.py</b>:
-            <span class="pc_cov">99%</span>
+            <span class="pc_cov">96%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -56,8 +56,8 @@
         </aside>
         <h2>
             <span class="text">121 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">121<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">119<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">2<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">26<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">2<span class="text"> partial</span></button>
         </h2>
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="index.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io">coverage.py v6.4.1</a>,
-            created at 2022-06-22 20:58 +0000
+            created at 2022-06-26 23:35 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"/>
@@ -301,8 +301,8 @@
     <p class="run"><span class="n"><a id="t217" href="#t217">217</a></span><span class="t">    <span class="key">return</span> <span class="nam">jnp</span><span class="op">.</span><span class="nam">where</span><span class="op">(</span><span class="nam">x2</span> <span class="op">&lt;</span> <span class="num">1e-4</span><span class="op">,</span> <span class="nam">nearzero</span><span class="op">,</span> <span class="nam">normal</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs217" /><span class="r"><label for="ctxs217" class="ctx">4 ctx</label></span><span class="ctxs"><span>tests-macos-10.15-py3.8</span><span>tests-macos-latest-py3.10</span><span>tests-ubuntu-18.04-py3.8</span><span>tests-ubuntu-latest-py3.10</span></span></p>
     <p class="pln"><span class="n"><a id="t218" href="#t218">218</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t219" href="#t219">219</a></span><span class="t"><span class="key">def</span> <span class="nam">tree_all</span><span class="op">(</span><span class="nam">predicate</span><span class="op">,</span> <span class="op">*</span><span class="nam">trees</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs219" /><span class="r"><label for="ctxs219" class="ctx">6 ctx</label></span><span class="ctxs"><span>docs-macos-latest-py3.10</span><span>examples-macos-latest-py3.10</span><span>tests-macos-10.15-py3.8</span><span>tests-macos-latest-py3.10</span><span>tests-ubuntu-18.04-py3.8</span><span>tests-ubuntu-latest-py3.10</span></span></p>
-    <p class="run"><span class="n"><a id="t220" href="#t220">220</a></span><span class="t">    <span class="nam">pred</span> <span class="op">=</span> <span class="nam">tree_util</span><span class="op">.</span><span class="nam">tree_map</span><span class="op">(</span><span class="nam">predicate</span><span class="op">,</span> <span class="op">*</span><span class="nam">trees</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs220" /><span class="r"><label for="ctxs220" class="ctx">4 ctx</label></span><span class="ctxs"><span>tests-macos-10.15-py3.8</span><span>tests-macos-latest-py3.10</span><span>tests-ubuntu-18.04-py3.8</span><span>tests-ubuntu-latest-py3.10</span></span></p>
-    <p class="run"><span class="n"><a id="t221" href="#t221">221</a></span><span class="t">    <span class="key">return</span> <span class="nam">tree_util</span><span class="op">.</span><span class="nam">tree_reduce</span><span class="op">(</span><span class="key">lambda</span> <span class="nam">acc</span><span class="op">,</span> <span class="nam">p</span><span class="op">:</span> <span class="nam">acc</span> <span class="key">and</span> <span class="nam">p</span><span class="op">,</span> <span class="nam">pred</span><span class="op">,</span> <span class="key">True</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs221" /><span class="r"><label for="ctxs221" class="ctx">4 ctx</label></span><span class="ctxs"><span>tests-macos-10.15-py3.8</span><span>tests-macos-latest-py3.10</span><span>tests-ubuntu-18.04-py3.8</span><span>tests-ubuntu-latest-py3.10</span></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t220" href="#t220">220</a></span><span class="t">    <span class="nam">pred</span> <span class="op">=</span> <span class="nam">tree_util</span><span class="op">.</span><span class="nam">tree_map</span><span class="op">(</span><span class="nam">predicate</span><span class="op">,</span> <span class="op">*</span><span class="nam">trees</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t221" href="#t221">221</a></span><span class="t">    <span class="key">return</span> <span class="nam">tree_util</span><span class="op">.</span><span class="nam">tree_reduce</span><span class="op">(</span><span class="key">lambda</span> <span class="nam">acc</span><span class="op">,</span> <span class="nam">p</span><span class="op">:</span> <span class="nam">acc</span> <span class="key">and</span> <span class="nam">p</span><span class="op">,</span> <span class="nam">pred</span><span class="op">,</span> <span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -312,7 +312,7 @@
             <a id="nextFileLink" class="nav" href="index.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io">coverage.py v6.4.1</a>,
-            created at 2022-06-22 20:58 +0000
+            created at 2022-06-26 23:35 +0000
         </p>
     </div>
 </footer>
