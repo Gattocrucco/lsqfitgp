@@ -284,7 +284,7 @@ as the Cauchy kernel, while for other values of the parameters it is called
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CausalExpQuad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.CausalExpQuad" title="Permalink to this definition">¶</a></dt>
 <dd><p>Causal exponential quadratic kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(r) = \big(1 - \erf(\alpha r/4)\big)
+\[k(r) = \big(1 - \operatorname{erf}(\alpha r/4)\big)
 \exp\left(-\frac12 r^2 \right)\]</div>
 <p>From <a class="reference external" href="https://github.com/wesselb/mlkernels">https://github.com/wesselb/mlkernels</a>.</p>
 </dd></dl>
@@ -333,9 +333,10 @@ another kernel to introduce anticorrelations.</p>
 <dd><p>Decaying kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(\mathbf x, \mathbf y) =
-\frac{\|\boldsymbol\beta\|^2}
-{\|\mahtbf x + \mathbf y + \boldsymbol\beta\|^2}\]</div>
-<p>From <a class="reference external" href="https://github.com/wesselb/mlkernels">https://github.com/wesselb/mlkernels</a>.</p>
+\frac{\beta}{x + y + \beta},
+\quad x, y \ge 0, \beta &gt; 0\]</div>
+<p>It is infinitely divisible.</p>
+<p>Reference: Swersky, Snoek and Adams (2014).</p>
 </dd></dl>
 
 <dl class="py function">
