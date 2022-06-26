@@ -1115,7 +1115,7 @@ def CausalExpQuad(r, alpha=1):
     Causal exponential quadratic kernel.
     
     .. math::
-        k(r) = \\big(1 - \\erf(\\alpha r/4)\\big)
+        k(r) = \\big(1 - \\operatorname{erf}(\\alpha r/4)\\big)
         \\exp\\left(-\\frac12 r^2 \\right)
         
     From https://github.com/wesselb/mlkernels.
@@ -1127,46 +1127,27 @@ def CausalExpQuad(r, alpha=1):
     # and parameterize with r2 and custom correct in the erf with inside and
     # outside eps using erf'(0) = 1
 
-def _isstructured(x):
-    return getattr(getattr(x, 'dtype', None), 'names', None) is not None
-
-def _broadcast_to_dtype(x, t):
-    if _isstructured(x) or t.names is None:
-        return jnp.asarray(x)
-    dummy = numpy.empty((), t)
-    dummy = _array.StructuredArray(dummy)
-    return tree_util.tree_map(lambda a: jnp.broadcast_to(x, a.shape), dummy)
-
-def _asstructured(x):
-    return _array.StructuredArray(x) if _isstructured(x) else x
-
-@kernel(derivable=True)
+@kernel(derivable=True, maxdim=1)
 def Decaying(x, y, beta=1):
     """
     Decaying kernel.
     
     .. math::
         k(\\mathbf x, \\mathbf y) =
-        \\frac{\\|\\boldsymbol\\beta\\|^2}
-        {\\|\\mathbf x + \\mathbf y + \\boldsymbol\\beta\\|^2},
-        \\quad x_i, y_i > 0
+        \\frac{\\beta}{x + y + \\beta},
+        \\quad x, y \\ge 0, \\beta > 0
     
-    From https://github.com/wesselb/mlkernels.
+    It is infinitely divisible.
+    
+    Reference: Swersky, Snoek and Adams (2014).
     """
-    beta = _broadcast_to_dtype(beta, x.dtype)
+    # TODO high dimensional version of this, see mlkernels issue #3
     if _patch_jax.isconcrete(x, y, beta):
-        x = _asstructured(x)
-        y = _asstructured(y)
-        X, Y, B = _patch_jax.concrete(x, y, beta)
-        assert _patch_jax.tree_all(lambda b: numpy.all(b > 0), B)
-        assert _patch_jax.tree_all(lambda x: numpy.all(x >= 0), X)
-        assert _patch_jax.tree_all(lambda y: numpy.all(y >= 0), Y)
-    bnorm = _dot(beta, beta)
-    shape = jnp.broadcast_shapes(x.shape, y.shape)
-    x = _array.broadcast_to(x, shape)
-    xyb = _Kernel.transf_recurse_dtype(lambda *args: sum(args), x, y, beta)
-    xybnorm = _dot(xyb, xyb)
-    return bnorm / xybnorm
+        X, Y = _patch_jax.concrete(x, y)
+        assert beta > 0, beta
+        assert numpy.all(X >= 0)
+        assert numpy.all(Y >= 0)
+    return beta / (x + y + beta)
 
 @isotropickernel(derivable=False, input='soft')
 def Log(r):

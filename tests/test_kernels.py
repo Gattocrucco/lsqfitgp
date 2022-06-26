@@ -873,11 +873,6 @@ util.xfail(TestMatern, 'test_positive_deriv')
 util.xfail(TestMatern, 'test_positive_deriv2')
 util.xfail(TestMatern, 'test_positive_deriv_nd')
 
-# TODO should be valid in ND, what's up?
-util.xfail(TestDecaying, 'test_positive_nd')
-util.xfail(TestDecaying, 'test_positive_deriv_nd')
-util.xfail(TestDecaying, 'test_positive_deriv2_nd')
-
 # TODO numerical precision, only on CI macos (??)
 util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
 
