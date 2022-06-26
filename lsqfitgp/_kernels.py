@@ -81,7 +81,7 @@ __all__ = [
 # choose how to deal with nd (add option for sum-separation). Make an example
 # about this in `multidimensional input`.
 
-# TODO try using jnp.polyval for polynomials (Bernoulli, PPKernel, Maternp).
+# TODO try using jnp.polyval for polynomials (Bernoulli, Maternp).
 
 def _dot(x, y):
     return _Kernel.sum_recurse_dtype(lambda x, y: x * y, x, y)
@@ -540,15 +540,31 @@ def PPKernel(r, q=0, D=1):
     j = int(numpy.floor(D / 2)) + q + 1
     x = 1 - r
     if q == 0:
-        poly = 1
+        poly = [
+            [1],
+        ]
     elif q == 1:
-        poly = 1 + r * (j + 1)
+        poly = [
+            [1, 1],
+            [1],
+        ]
     elif q == 2:
-        poly = 1 + r * (j + 2 + r * ((1/3 * j +  4/3) * j + 1))
+        poly = [
+            [1/3, 4/3, 1],
+            [1, 2],
+            [1],
+        ]
     elif q == 3:
-        poly = 1 + r * (j + 3 + r * ((2/5 * j + 12/5) * j + 3 + r * (((1/15 * j + 3/5) * j + 23/15) * j + 1)))
+        poly = [
+            [1/15, 3/5, 23/15, 1],
+            [2/5, 12/5, 3],
+            [1, 3],
+            [1],
+        ]
     else:
         raise NotImplementedError
+    coeffs = jnp.array([jnp.polyval(jnp.array(pj), j) for pj in poly])
+    poly = jnp.polyval(coeffs, r)
     return jnp.where(x > 0, x ** (j + q) * poly, 0)
 
 # redefine derivatives of min and max because jax default is to yield 1/2
