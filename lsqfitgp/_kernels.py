@@ -1138,10 +1138,9 @@ def CausalExpQuad(r, alpha=1):
     """
     if _patch_jax.isconcrete(alpha):
         assert alpha >= 0, alpha
-    return (1 - jspecial.erf(alpha / 4 * r)) * jnp.exp(-1/2 * jnp.square(r))
-    # TODO replace 1 - erf with something which is precise for high r,
-    # and parameterize with r2 and custom correct in the erf with inside and
-    # outside eps using erf'(0) = 1
+    return jspecial.erfc(alpha / 4 * r) * jnp.exp(-1/2 * jnp.square(r))
+    # TODO parameterize with r2 and custom correct in the erf with inside and
+    # outside eps using erf'(0) = 2/√π
 
 @kernel(derivable=True, maxdim=1)
 def Decaying(x, y, beta=1):

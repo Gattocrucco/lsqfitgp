@@ -373,12 +373,13 @@ def test_incompatible_dtypes():
     gp = lgp.GP(lgp.ExpQuad())
     gp.addx(0, 0)
     with pytest.raises(TypeError):
-        gp.addx(np.array((0, 0), 'f8,f8'), 1)
+        gp.addx(np.zeros(1, 'd,d'), 1)
     
     gp = lgp.GP(lgp.ExpQuad())
-    gp.addx(np.array((0, 0), 'f8,f8'), 0)
+    gp.addx(np.zeros(1, 'd,d'), 0)
+    gp.addx(np.zeros(1, 'i,i'), 1)
     with pytest.raises(TypeError):
-        gp.addx(np.array((0, 0), 'i8,i8'), 1)
+        gp.addx(np.zeros(1, 'd,d,d'), 2)
 
 def test_explicit_deriv():
     gp = lgp.GP(lgp.ExpQuad())

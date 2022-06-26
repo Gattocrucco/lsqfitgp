@@ -816,8 +816,9 @@ def test_harmonic_deriv_derivQ_continuous_1():
 def test_nonfloat_eps():
     x = np.arange(20)
     c1 = _kernels.Matern12()(x, x)
-    c2 = np.exp(-np.finfo(float).eps)
-    util.assert_equal(c1, c2)
+    eps = np.finfo(float).eps
+    c2 = np.exp(-eps)
+    np.testing.assert_allclose(c1, c2, rtol=eps, atol=eps)
 
 def test_default_override():
     with pytest.warns(UserWarning):
@@ -879,7 +880,7 @@ util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
 util.xfail(TestPPKernel, 'test_positive_deriv2')
-util.xfail(TestCausalExpQuad, 'test_positive_deriv2') # likely 1 - erf cancel
+util.xfail(TestCausalExpQuad, 'test_positive_deriv2') # NOT 1 - erf cancel
 
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some
