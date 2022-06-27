@@ -688,7 +688,7 @@ test_kwargs = {
     _kernels.Bessel: dict(kwargs_list=[dict()] + [dict(nu=nu) for nu in range(5)] + [dict(nu=nu - 0.01) for nu in range(1, 5)] + [dict(nu=nu + 0.01) for nu in range(5)]),
     _kernels.Cauchy: dict(kwargs_list=[dict(alpha=a, beta=b) for a in [0.001, 0.5, 0.999, 1, 1.001, 1.5, 1.999, 2] for b in [0.001, 0.5, 1, 1.5, 2, 4, 8]]),
     _kernels.CausalExpQuad: dict(kwargs_list=[dict(alpha=a) for a in [0, 1, 2]]),
-    _kernels.Decaying: dict(random_x_fun=lambda beta=1, **_: np.random.uniform(0, 5, size=100)),
+    _kernels.Decaying: dict(random_x_fun=lambda **_: np.random.uniform(0, 5, size=100)),
 }
 
 for kernel in kernels:

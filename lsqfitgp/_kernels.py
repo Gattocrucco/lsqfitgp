@@ -1143,26 +1143,27 @@ def CausalExpQuad(r, alpha=1):
     # outside eps using erf'(0) = 2/√π
 
 @kernel(derivable=True, maxdim=1)
-def Decaying(x, y, beta=1):
+def Decaying(x, y):
     """
     Decaying kernel.
     
     .. math::
-        k(\\mathbf x, \\mathbf y) =
-        \\frac{\\beta}{x + y + \\beta},
-        \\quad x, y \\ge 0, \\beta > 0
+        k(x, y) =
+        \\frac{1}{1 + x + y},
+        \\quad x, y \\ge 0
     
     It is infinitely divisible.
     
     Reference: Swersky, Snoek and Adams (2014).
     """
     # TODO high dimensional version of this, see mlkernels issue #3
-    if _patch_jax.isconcrete(x, y, beta):
+    if _patch_jax.isconcrete(x, y):
         X, Y = _patch_jax.concrete(x, y)
-        assert beta > 0, beta
         assert numpy.all(X >= 0)
         assert numpy.all(Y >= 0)
-    return beta / (x + y + beta)
+    return 1 / (x + y + 1)
+    # use x + y + 1 instead of 1 + x + y because the latter is less numerically
+    # symmetric for small x and y
 
 @isotropickernel(derivable=False, input='soft')
 def Log(r):
