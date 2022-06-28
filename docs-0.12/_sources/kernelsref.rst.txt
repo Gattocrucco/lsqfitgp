@@ -55,12 +55,8 @@ Isotropic kernels
   * :func:`GammaExp`
   * :func:`Log`
   * :func:`Matern`
-  * :func:`Matern12`
-  * :func:`Matern32`
-  * :func:`Matern52`
   * :func:`Maternp`
   * :func:`PPKernel`
-  * :func:`RatQuad`
   * :func:`White`
 
 Stationary kernels
@@ -149,15 +145,6 @@ Documentation
 .. autofunction:: Matern
 .. image:: kernelsref-Matern.png
 .. image:: kernelsref-Matern-samples.png
-.. autofunction:: Matern12
-.. image:: kernelsref-Matern12.png
-.. image:: kernelsref-Matern12-samples.png
-.. autofunction:: Matern32
-.. image:: kernelsref-Matern32.png
-.. image:: kernelsref-Matern32-samples.png
-.. autofunction:: Matern52
-.. image:: kernelsref-Matern52.png
-.. image:: kernelsref-Matern52-samples.png
 .. autofunction:: Maternp
 .. image:: kernelsref-Maternp.png
 .. image:: kernelsref-Maternp-samples.png
@@ -176,9 +163,6 @@ Documentation
 .. autofunction:: Pink
 .. image:: kernelsref-Pink.png
 .. image:: kernelsref-Pink-samples.png
-.. autofunction:: RatQuad
-.. image:: kernelsref-RatQuad.png
-.. image:: kernelsref-RatQuad-samples.png
 .. autofunction:: Rescaling
 .. autofunction:: Sinc
 .. image:: kernelsref-Sinc.png
