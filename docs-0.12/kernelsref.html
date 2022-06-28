@@ -404,14 +404,16 @@ mean of the process over one period is forced to be zero.</p>
 <img alt="_images/kernelsref-Fourier-samples.png" src="_images/kernelsref-Fourier-samples.png" />
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.FracBrownian">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">FracBrownian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.FracBrownian" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fractional brownian motion kernel.</p>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">FracBrownian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.FracBrownian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bifractional Brownian motion kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \frac 12 (x^{2H} + y^{2H} - |x-y|^{2H}),
-\quad H \in (0, 1), \quad x, y \ge 0\]</div>
+\[k(x, y) = \frac 1{2^K} \big(
+    (|x|^{2H} + |y|^{2H})^K - |x-y|^{2HK}
+\big), \quad H, K \in (0, 1]\]</div>
 <p>For <cite>H</cite> = 1/2 (default) it is the Wiener kernel. For <cite>H</cite> in (0, 1/2) the
-increments are anticorrelated (strong oscillation), for <cite>H</cite> in (1/2, 1)
+increments are anticorrelated (strong oscillation), for <cite>H</cite> in (1/2, 1]
 the increments are correlated (tends to keep a slope).</p>
+<p>Reference: Houdré and Villa (2003).</p>
 </dd></dl>
 
 <img alt="_images/kernelsref-FracBrownian.png" src="_images/kernelsref-FracBrownian.png" />
@@ -451,6 +453,8 @@ include all rescalings in <cite>scalefun</cite> to avoid surprises.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 93).</p>
 </dd></dl>
 
+<img alt="_images/kernelsref-Gibbs.png" src="_images/kernelsref-Gibbs.png" />
+<img alt="_images/kernelsref-Gibbs-samples.png" src="_images/kernelsref-Gibbs-samples.png" />
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Harmonic">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Harmonic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Harmonic" title="Permalink to this definition">¶</a></dt>
@@ -678,7 +682,7 @@ to <a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Const
 <dd><p>Stationary fractional brownian motion kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(\Delta) = \frac 12 (|\Delta+1|^{2H} + |\Delta-1|^{2H} - 2|\Delta|^{2H}),
-\quad H \in (0, 1)\]</div>
+\quad H \in (0, 1]\]</div>
 <p>Reference: Gneiting and Schlather (2006, p. 272).</p>
 </dd></dl>
 
