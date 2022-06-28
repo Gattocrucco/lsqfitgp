@@ -166,12 +166,8 @@ issue.</p>
 <li><p><a class="reference internal" href="#lsqfitgp.GammaExp" title="lsqfitgp.GammaExp"><code class="xref py py-func docutils literal notranslate"><span class="pre">GammaExp()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Log" title="lsqfitgp.Log"><code class="xref py py-func docutils literal notranslate"><span class="pre">Log()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern()</span></code></a></p></li>
-<li><p><a class="reference internal" href="#lsqfitgp.Matern12" title="lsqfitgp.Matern12"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern12()</span></code></a></p></li>
-<li><p><a class="reference internal" href="#lsqfitgp.Matern32" title="lsqfitgp.Matern32"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern32()</span></code></a></p></li>
-<li><p><a class="reference internal" href="#lsqfitgp.Matern52" title="lsqfitgp.Matern52"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern52()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Maternp" title="lsqfitgp.Maternp"><code class="xref py py-func docutils literal notranslate"><span class="pre">Maternp()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.PPKernel" title="lsqfitgp.PPKernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">PPKernel()</span></code></a></p></li>
-<li><p><a class="reference internal" href="#lsqfitgp.RatQuad" title="lsqfitgp.RatQuad"><code class="xref py py-func docutils literal notranslate"><span class="pre">RatQuad()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.White" title="lsqfitgp.White"><code class="xref py py-func docutils literal notranslate"><span class="pre">White()</span></code></a></p></li>
 </ul>
 </div></blockquote>
@@ -273,14 +269,15 @@ matrix of the values.</p>
 <div class="math notranslate nohighlight">
 \[k(r) = \left(1 + \frac{r^\alpha}{\beta} \right)^{-\beta/\alpha},
 \quad \alpha \in (0, 2], \beta &gt; 0.\]</div>
-<p>For <span class="math notranslate nohighlight">\(\alpha=2\)</span> and <span class="math notranslate nohighlight">\(\beta=2\)</span> (default), it is equivalent to
-<code class="docutils literal notranslate"><span class="pre">RatQuad(alpha=1)</span></code>. In the geostatistics literature, this case is known
-as the Cauchy kernel, while for other values of the parameters it is called
-“generalized” Cauchy. For <span class="math notranslate nohighlight">\(\beta\to\infty\)</span> it is equivalent to
-<code class="docutils literal notranslate"><span class="pre">GammaExp(gamma=alpha,</span> <span class="pre">scale=alpha</span> <span class="pre">**</span> <span class="pre">(1/alpha))</span></code>, while for
-<span class="math notranslate nohighlight">\(\beta\to 0\)</span> to <code class="docutils literal notranslate"><span class="pre">Constant</span></code>. It is smooth only for
+<p>In the geostatistics literature, the case <span class="math notranslate nohighlight">\(\alpha=2\)</span> and
+<span class="math notranslate nohighlight">\(\beta=2\)</span> (default) is known as the Cauchy kernel. In the machine
+learning literature, the case <span class="math notranslate nohighlight">\(\alpha=2\)</span> (for any <span class="math notranslate nohighlight">\(\beta\)</span>) is
+known as the rational quadratic kernel. For <span class="math notranslate nohighlight">\(\beta\to\infty\)</span> it is
+equivalent to <code class="docutils literal notranslate"><span class="pre">GammaExp(gamma=alpha,</span> <span class="pre">scale=alpha</span> <span class="pre">**</span> <span class="pre">(1/alpha))</span></code>, while
+for <span class="math notranslate nohighlight">\(\beta\to 0\)</span> to <code class="docutils literal notranslate"><span class="pre">Constant</span></code>. It is smooth only for
 <span class="math notranslate nohighlight">\(\alpha=2\)</span>.</p>
-<p>Reference: Gneiting and Schlather (2004, p. 273).</p>
+<p>References: Gneiting and Schlather (2004, p. 273), Rasmussen and Williams
+(2006, p. 86).</p>
 </dd></dl>
 
 <img alt="_images/kernelsref-Cauchy.png" src="_images/kernelsref-Cauchy.png" />
@@ -425,11 +422,11 @@ the increments are correlated (tends to keep a slope).</p>
 <dd><p>Gamma exponential kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(r) = \exp(-r^\gamma), \quad
-\gamma \in [0, 2]\]</div>
+\gamma \in (0, 2]\]</div>
 <p>For <span class="math notranslate nohighlight">\(\gamma = 2\)</span> it is the squared exponential kernel, for
 <span class="math notranslate nohighlight">\(\gamma = 1\)</span> (default) it is the Matérn 1/2 kernel, for
-<span class="math notranslate nohighlight">\(\gamma = 0\)</span> it is the constant kernel. The process is
-differentiable only for <span class="math notranslate nohighlight">\(\gamma = 2\)</span>, however as <span class="math notranslate nohighlight">\(\gamma\)</span>
+<span class="math notranslate nohighlight">\(\gamma \to 0\)</span> it tends to white noise plus a constant. The process
+is differentiable only for <span class="math notranslate nohighlight">\(\gamma = 2\)</span>, however as <span class="math notranslate nohighlight">\(\gamma\)</span>
 gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 86).</p>
 </dd></dl>
@@ -537,36 +534,6 @@ second derivative, etc.</p>
 
 <img alt="_images/kernelsref-Matern.png" src="_images/kernelsref-Matern.png" />
 <img alt="_images/kernelsref-Matern-samples.png" src="_images/kernelsref-Matern-samples.png" />
-<dl class="py function">
-<dt class="sig sig-object py" id="lsqfitgp.Matern12">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Matern12</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Matern12" title="Permalink to this definition">¶</a></dt>
-<dd><p>Matérn kernel of order 1/2 (continuous, not derivable).</p>
-<div class="math notranslate nohighlight">
-\[k(r) = \exp(-r)\]</div>
-</dd></dl>
-
-<img alt="_images/kernelsref-Matern12.png" src="_images/kernelsref-Matern12.png" />
-<img alt="_images/kernelsref-Matern12-samples.png" src="_images/kernelsref-Matern12-samples.png" />
-<dl class="py function">
-<dt class="sig sig-object py" id="lsqfitgp.Matern32">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Matern32</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Matern32" title="Permalink to this definition">¶</a></dt>
-<dd><p>Matérn kernel of order 3/2 (derivable one time).</p>
-<div class="math notranslate nohighlight">
-\[k(r) = (1 + x) \exp(-x), \quad x = \sqrt3 r\]</div>
-</dd></dl>
-
-<img alt="_images/kernelsref-Matern32.png" src="_images/kernelsref-Matern32.png" />
-<img alt="_images/kernelsref-Matern32-samples.png" src="_images/kernelsref-Matern32-samples.png" />
-<dl class="py function">
-<dt class="sig sig-object py" id="lsqfitgp.Matern52">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Matern52</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Matern52" title="Permalink to this definition">¶</a></dt>
-<dd><p>Matérn kernel of order 5/2 (derivable two times).</p>
-<div class="math notranslate nohighlight">
-\[k(r) = (1 + x + x^2/3) \exp(-x), \quad x = \sqrt5 r\]</div>
-</dd></dl>
-
-<img alt="_images/kernelsref-Matern52.png" src="_images/kernelsref-Matern52.png" />
-<img alt="_images/kernelsref-Matern52-samples.png" src="_images/kernelsref-Matern52-samples.png" />
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Maternp">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Maternp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Maternp" title="Permalink to this definition">¶</a></dt>
@@ -678,22 +645,6 @@ it becomes white noise. Derivable one time.</p>
 
 <img alt="_images/kernelsref-Pink.png" src="_images/kernelsref-Pink.png" />
 <img alt="_images/kernelsref-Pink-samples.png" src="_images/kernelsref-Pink-samples.png" />
-<dl class="py function">
-<dt class="sig sig-object py" id="lsqfitgp.RatQuad">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">RatQuad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.RatQuad" title="Permalink to this definition">¶</a></dt>
-<dd><p>Rational quadratic kernel.</p>
-<div class="math notranslate nohighlight">
-\[k(r) = \left( 1 + \frac {r^2} {2 \alpha} \right)^{-\alpha},
-\quad \alpha &gt; 0\]</div>
-<p>It is equivalent to a lengthscale mixture of exponential quadratic kernels
-where the scale distribution is a gamma with shape parameter
-<span class="math notranslate nohighlight">\(\alpha\)</span>. For <span class="math notranslate nohighlight">\(\alpha\to\infty\)</span> it becomes the exponential
-quadratic. It is smooth.</p>
-<p>Reference: Rasmussen and Williams (2006, p. 86).</p>
-</dd></dl>
-
-<img alt="_images/kernelsref-RatQuad.png" src="_images/kernelsref-RatQuad.png" />
-<img alt="_images/kernelsref-RatQuad-samples.png" src="_images/kernelsref-RatQuad-samples.png" />
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Rescaling">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Rescaling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stdfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Rescaling" title="Permalink to this definition">¶</a></dt>
