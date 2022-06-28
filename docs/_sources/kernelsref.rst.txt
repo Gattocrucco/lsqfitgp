@@ -130,6 +130,8 @@ Documentation
 .. image:: kernelsref-GammaExp.png
 .. image:: kernelsref-GammaExp-samples.png
 .. autofunction:: Gibbs
+.. image:: kernelsref-Gibbs.png
+.. image:: kernelsref-Gibbs-samples.png
 .. autofunction:: Harmonic
 .. image:: kernelsref-Harmonic.png
 .. image:: kernelsref-Harmonic-samples.png
