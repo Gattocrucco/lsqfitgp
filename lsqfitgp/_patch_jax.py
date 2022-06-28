@@ -209,6 +209,9 @@ def kvmodx2_nearzero(nu, x2):
     factor = jnp.pi / (2 * jnp.sin(jnp.pi * nu))
     return factor * (ivmodx2_nearzero(-nu, x2) - (x2 / 4) ** nu * ivmodx2_nearzero(nu, x2))
 
+# TODO alternative for kvmod and its derivatives: see Abrahamsen (1997, p. 43).
+# still does not allow to use x^2 as input
+
 def kvmodx2(nu, x2):
     # assert int(nu) != nu, nu
     nearzero = kvmodx2_nearzero(nu, x2)

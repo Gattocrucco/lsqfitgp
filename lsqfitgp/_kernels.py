@@ -423,30 +423,36 @@ def Cos(delta):
     # TODO reference?
     return jnp.cos(delta)
 
-@kernel(forcekron=True, derivable=False)
-def FracBrownian(x, y, H=1/2):
+def _fracbrownian_derivable(H=1/2, K=1):
+    return H == 1 and K == 1
+    # TODO fails under tracing, return None if not concrete, maybe silence
+    # derivability warnings under tracing
+
+@kernel(forcekron=True, derivable=_fracbrownian_derivable)
+def FracBrownian(x, y, H=1/2, K=1):
     """
-    Fractional brownian motion kernel.
+    Bifractional Brownian motion kernel.
     
     .. math::
-        k(x, y) = \\frac 12 (x^{2H} + y^{2H} - |x-y|^{2H}),
-        \\quad H \\in (0, 1), \\quad x, y \\ge 0
+        k(x, y) = \\frac 1{2^K} \\big(
+            (|x|^{2H} + |y|^{2H})^K - |x-y|^{2HK}
+        \\big), \\quad H, K \\in (0, 1]
     
     For `H` = 1/2 (default) it is the Wiener kernel. For `H` in (0, 1/2) the
-    increments are anticorrelated (strong oscillation), for `H` in (1/2, 1)
+    increments are anticorrelated (strong oscillation), for `H` in (1/2, 1]
     the increments are correlated (tends to keep a slope).
+    
+    Reference: Houdré and Villa (2003).
     """
-    
-    # TODO reference? look on wikipedia
-    
+        
     # TODO I think the correlation between successive same step increments
     # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
-    if _patch_jax.isconcrete(H, x, y):
-        assert 0 < H < 1, H
-        assert numpy.all(_patch_jax.concrete(x) >= 0)
-        assert numpy.all(_patch_jax.concrete(y) >= 0)
+    
+    if _patch_jax.isconcrete(H, K):
+        assert 0 < H <= 1, H
+        assert 0 < K <= 1, K
     H2 = 2 * H
-    return 1/2 * (x ** H2 + y ** H2 - jnp.abs(x - y) ** H2)
+    return 1 / 2 ** K * ((jnp.abs(x) ** H2 + jnp.abs(y) ** H2) ** K - jnp.abs(x - y) ** (H2 * K))
 
 def _ppkernel_derivable(q=0, **_):
     return q
@@ -1027,25 +1033,29 @@ def Sinc(delta):
     # TODO is this isotropic? My current guess is that it works up to some
     # dimension due to a coincidence but is not in general isotropic.
 
-@stationarykernel(forcekron=True, derivable=False, input='signed')
+def _stationaryfracbrownian_derivable(H=1/2):
+    return H == 1
+
+@stationarykernel(forcekron=True, derivable=_stationaryfracbrownian_derivable, input='signed')
 def StationaryFracBrownian(delta, H=1/2):
     """
     Stationary fractional brownian motion kernel.
     
     .. math::
         k(\\Delta) = \\frac 12 (|\\Delta+1|^{2H} + |\\Delta-1|^{2H} - 2|\\Delta|^{2H}),
-        \\quad H \\in (0, 1)
+        \\quad H \\in (0, 1]
         
     Reference: Gneiting and Schlather (2006, p. 272).
     """
     
     # TODO older reference, see [29] is GS06.
-    # TODO maybe H can be in [0, 1], not (0, 1)
     
     if _patch_jax.isconcrete(H):
-        assert 0 < H < 1, H
+        assert 0 < H <= 1, H
     H2 = 2 * H
     return 1/2 * (jnp.abs(delta + 1) ** H2 + jnp.abs(delta - 1) ** H2 - 2 * jnp.abs(delta) ** H2)
+    
+    # TODO is the bifractional version of this valid?
 
 def _cauchy_derivable(alpha=2, **_):
     return alpha == 2

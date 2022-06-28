@@ -112,6 +112,17 @@ Documentation
 -------------
 """
 
+class Formula:
+    
+    def __init__(self, formula):
+        self.formula = formula
+    
+    def __repr__(self):
+        return self.formula
+    
+    def __call__(self, x):
+        return eval(self.formula, vars(np), dict(x=x))
+
 meta = dict(
     BagOfWords = dict(skip=True),
     Bessel = dict(range=[0, 10], kwlist=[dict(nu=v) for v in [0, 1, 2, 3]]),
@@ -124,9 +135,9 @@ meta = dict(
     Cos = dict(range=[0, 2 * np.pi]),
     Decaying = dict(range=[0, 2], srange=[0, 5]),
     Fourier = dict(range=[0, 2], kwlist=[dict(n=n) for n in [1, 2, 3]]),
-    FracBrownian = dict(kwlist=[dict(H=H) for H in [0.1, 0.5, 0.9]]),
+    FracBrownian = dict(kwlist=[dict(H=H, K=K) for H, K in [(0.1, 1), (0.5, 1), (0.9, 1), (0.9, 0.3)]], range=[-5, 5]),
     GammaExp = dict(kwlist=[dict(gamma=g) for g in [0.1, 1, 1.9]]),
-    Gibbs = dict(skip=True),
+    Gibbs = dict(kwlist=[dict(scalefun=Formula('where((0 < x) & (x < 0.1), 0.02, 1)'))], range=[-1, 1]),
     Harmonic = dict(range=[0, 4 * np.pi], kwlist=[dict(Q=Q) for Q in [1, 20]]),
     Matern = dict(kwlist=[dict(nu=v) for v in [0.1, 1.1, 5.1]]),
     Maternp = dict(kwlist=[dict(p=p) for p in [0, 1, 10]]),

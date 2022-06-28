@@ -491,8 +491,10 @@ Graph kernels from pyGPs:
 https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html. I also collected
 some articles somewhere.
 
-Are there interesting discontinuous processes apart from the white noise and
-its integrals?
+Are there interesting discontinuous processes apart from the white noise? =>
+I guess they would be something + white noise, so not interesting => nope,
+it's sufficient that there is a cusp for r->0, the gammaexp does this for
+gamma < 1, matern too for nu < 1/2
 
 il kernel Taylor posso ricavarlo analiticamente anche per funzioni
 che vanno giù più velocemente? Tipo (1/k!)^2n si riesce a fare? Scommetterei di
@@ -526,7 +528,7 @@ This is very generic so maybe it does not belong to the Gibbs? But the Gibbs
 is the only one accepting directly the scale instead of the corresponding
 transformation.
 
-Implement the kernels from Smola and Kondor (2003).
+Implement the kernels from Smola and Kondor (2003) (graphs).
 
 Kernels on graphs from Nicolentzos et al. (2019): see their GraKeL library.
 Also there was a library for graphs in python, I don't remember the name.
@@ -536,12 +538,18 @@ StationaryKernel, perché in linea di principio può anche essere non
 stazionario, lo aggiungo con ereditarietà multipla solo come flag)
 
 Look in the kernels reference I highlighted in the GPML bibliography
+(Abrahamsen 1997). => Spherical (p. 40) Gives formulas in dimensions 1, 2, 3,
+5. Appears generalizable for odd n, but maybe not for even n, is that why it
+doesn't give n=4? Is it a special case of PPKernel? Cubic (p. 41) is similarly
+a polynomial, but works in all dimensions I think.
 
-bi- and multi-fractional brownian motion, see Lim and Teo (2009).
+Multi-fractional brownian motion, see Lim and Teo (2009) => imperscrutable math
 
 Can I do a kernel with the Dirichlet function? (scipy.special.diric)
 
 ARIMA
+
+splines
 
 ### Transformations
 
