@@ -79,9 +79,8 @@ __all__ = [
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
 # by default in CrossKernel, add maxdim=1 to all 1D kernels, and let the user
 # choose how to deal with nd (add option for sum-separation). Make an example
-# about this in `multidimensional input`.
-
-# TODO try using jnp.polyval for polynomials (Bernoulli, Maternp).
+# about this in `multidimensional input`. Implement tests for separability
+# on all kernels.
 
 def _dot(x, y):
     return _Kernel.sum_recurse_dtype(lambda x, y: x * y, x, y)
@@ -112,6 +111,7 @@ def White(x, y):
         \\end{cases}
     """
     return _Kernel.prod_recurse_dtype(lambda x, y: x == y, x, y).astype(int)
+    # TODO maybe StructuredArray should support equality and other operations
 
 @isotropickernel(derivable=True)
 def ExpQuad(r2):
@@ -168,6 +168,19 @@ def _maternp_jvp(p, primals, tangents):
     xdot, = tangents
     return _maternp(x, p), _maternp_deriv(x, p) * xdot
 
+# TODO see if I can write a function to compute exp(-x) poly(x) and its
+# derivatives without cancellations => I can't, but I could use integer
+# arithmetic for the coefficients
+
+# @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
+# def _nexppol(coeffs, x):
+#     return jnp.exp(-x) * jnp.polyval(coeffs, x)
+#
+# @_nexppol.defjvp
+# def _nexppol_jvp(coeffs, primals, tangents):
+#     x, = primals
+#     xt, = tangents
+
 def _maternp_derivable(p=None):
     return p
 
@@ -178,7 +191,7 @@ def Maternp(r, p=None):
     
     .. math::
         k(r) &= \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x) = \\\\
-        &= \\exp(-x) \\frac{\\Gamma(p + 1)}{\\Gamma(2p + 1)}
+        &= \\exp(-x) \\frac{p!}{(2p)!}
         \\sum_{i=0}^p \\frac{(p+i)!}{i!(p-i)!} (2x)^{p-i} \\\\
         \\nu &= p + 1/2,
         p \\in \\mathbb N,
@@ -643,13 +656,9 @@ def _bernoulli_poly(n, x):
     x = x % 1
     cond = x < 0.5
     x = jnp.where(cond, x, 1 - x)
-    out = 0. * x # to handle the case n == 0
-    for c in coeffs[:-1]:
-        out += c
-        out *= x
-    out += coeffs[-1]
+    out = jnp.polyval(coeffs, x)
     if n % 2 == 1:
-        out *= jnp.where(cond, 1, -1)
+        out = out * jnp.where(cond, 1, -1)
     return out
 
 @_bernoulli_poly.defjvp
@@ -1089,6 +1098,7 @@ def StationaryFracBrownian(delta, H=1/2):
     """
     
     # TODO older reference, see [29] is GS06.
+    # TODO maybe H can be in [0, 1], not (0, 1)
     
     if _patch_jax.isconcrete(H):
         assert 0 < H < 1, H
@@ -1164,6 +1174,8 @@ def Decaying(x, y):
     return 1 / (x + y + 1)
     # use x + y + 1 instead of 1 + x + y because the latter is less numerically
     # symmetric for small x and y
+    
+    # TODO infinite divisibility checking system like maxdim and derivable
 
 @isotropickernel(derivable=False, input='soft')
 def Log(r):

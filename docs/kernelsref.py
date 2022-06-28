@@ -26,6 +26,9 @@ outputfile = 'kernelsref.rst'
 import inspect
 import sys
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 sys.path = ['.', '..'] + sys.path
 import lsqfitgp as lgp
 
@@ -109,10 +112,124 @@ Documentation
 -------------
 """
 
+meta = dict(
+    BagOfWords = dict(skip=True),
+    Bessel = dict(range=[0, 10], kwlist=[dict(nu=v) for v in [0, 1, 2, 3]]),
+    BrownianBridge = dict(range=[0, 1]),
+    Categorical = dict(skip=True),
+    Cauchy = dict(kwlist=[dict(alpha=1), dict(alpha=2), dict(beta=10)]),
+    CausalExpQuad = dict(kwlist=[dict(alpha=a) for a in [0, 1, 2]]),
+    Celerite = dict(kwlist=[dict(B=0), dict(B=1), dict(gamma=5)]),
+    Constant = dict(skip=True),
+    Cos = dict(range=[0, 2 * np.pi]),
+    Decaying = dict(range=[0, 2], srange=[0, 5]),
+    Fourier = dict(range=[0, 2], kwlist=[dict(n=n) for n in [1, 2, 3]]),
+    FracBrownian = dict(kwlist=[dict(H=H) for H in [0.1, 0.5, 0.9]]),
+    GammaExp = dict(kwlist=[dict(gamma=g) for g in [0.1, 1, 1.9]]),
+    Gibbs = dict(skip=True),
+    Harmonic = dict(range=[0, 4 * np.pi], kwlist=[dict(Q=Q) for Q in [1, 20]]),
+    Matern = dict(kwlist=[dict(nu=v) for v in [0.1, 1.1, 5.1]]),
+    Maternp = dict(kwlist=[dict(p=p) for p in [0, 1, 10]]),
+    Log = dict(range=[0, 10]),
+    OrnsteinUhlenbeck = dict(range=[0, 3], srange=[0, 10]),
+    PPKernel = dict(range=[0, 2], kwlist=[dict(q=q, D=D) for q in [0, 2] for D in [1, 2]]),
+    Periodic = dict(range=[0, 4 * np.pi], kwlist=[dict(outerscale=s) for s in [1, 0.2]]),
+    Pink = dict(range=[0, 10], kwlist=[dict(dw=d) for d in [0.1, 1, 10]]),
+    RatQuad = dict(kwlist=[dict(alpha=a) for a in [0.1, 1, 10]]),
+    Rescaling = dict(skip=True),
+    StationaryFracBrownian = dict(kwlist=[dict(H=H) for H in [0.1, 0.5, 0.9]]),
+    Taylor = dict(range=[0, 2]),
+    Wiener = dict(range=[0, 2]),
+    WienerIntegral = dict(range=[0, 2]),
+)
+
+fig = plt.figure(num='kernelsref', clear=True)
+
+gen = np.random.default_rng(202206281251)
+
 # documentation
 for kernel in kernels2:
     out += f"""\
 .. autofunction:: {kernel}
+"""
+    fig.clf()
+    ax = fig.subplots()
+    
+    m = meta.get(kernel, {})
+    
+    if m.get('skip', False):
+        continue
+
+    k = getattr(lgp, kernel)
+    l, r = m.get('range', [0, 5])
+    x = np.linspace(l, r, 1000)
+    
+    legend = m.get('kwlist')
+    for kw in m.get('kwlist', [{}]):
+        covfun = k(**kw)
+        label = ', '.join(f'{k} = {v}' for k, v in kw.items())
+        if issubclass(k, lgp.StationaryKernel):
+            acf = covfun(x[0], x)
+            ax.plot(x, acf, label=label)
+        else:
+            cov = covfun(x[None, :], x[:, None])
+            dx = (x[1] - x[0]) / 2
+            vmin = min(0, np.min(cov))
+            im = ax.imshow(cov, aspect='equal', origin='lower', vmin=vmin, extent=(x[0] - dx, x[-1] + dx, x[0] - dx, x[-1] + dx))
+            legend = False
+            break
+    
+    if legend:
+        ax.legend()
+    ax.set_title('Covariance function')
+    ax.set_xlabel('x')
+    if issubclass(k, lgp.StationaryKernel):
+        ax.set_ylabel(f'Cov[f(x), f({l})]')
+        dy = 0.1
+        ax.set_ylim(-1 - dy, 1 + dy)
+        ax.axvspan(l, r, -1, 0.5, color='#ddd')
+        ax.set_xlim(l, r)
+    else:
+        ax.set_ylabel("x'")
+        fig.colorbar(im, label="Cov[f(x), f(x')]")
+    figname = f'kernelsref-{kernel}.png'
+    fig.savefig(figname)
+    
+    out += f"""\
+.. image:: {figname}
+"""
+    
+    fig.clf()
+    ax = fig.subplots()
+
+    if 'srange' in m:
+        l, r = m['srange']
+        x = np.linspace(l, r, len(x))
+    
+    nsamples = 1 if m.get('kwlist', False) else 2
+    for kw in m.get('kwlist', [{}]):
+        covfun = k(**kw)
+        label = ', '.join(f'{k} = {v}' for k, v in kw.items())
+        cov = covfun(x[None, :], x[:, None])
+        try:
+            dec = lgp._linalg.CholGersh(cov)
+        except np.linalg.LinAlgError:
+            dec = lgp._linalg.EigCutFullRank(cov)
+        iid = gen.standard_normal(x.shape + (nsamples,))
+        samples = dec.correlate(iid)
+        for j, y in enumerate(samples.T):
+            ax.plot(x, y, label=None if j else label)
+    
+    if m.get('kwlist'):
+        ax.legend()
+    ax.set_title('Samples')
+    ax.set_xlabel('x')
+    ax.set_ylabel('f(x)')
+    figname = f'kernelsref-{kernel}-samples.png'
+    fig.savefig(figname)
+
+    out += f"""\
+.. image:: {figname}
 """
 
 print(f'writing to {outputfile}...')

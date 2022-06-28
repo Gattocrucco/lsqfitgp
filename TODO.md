@@ -73,11 +73,7 @@ of view of a statistician is a gaussian copula.
 
 In the kernels reference, generate automatically:
 
-  * a plot of the covariance profile for stationary kernels
-  
-  * a matrix heatmap for nonstationary kernels
-  
-  * a random sample from the process, both in 1D and 2D
+  * random samples in 2D when maxdim > 1 (after removing default forcekron)
   
   * in the index, a flag D0, D1, ..., D∞, D? for the derivability with the
     default parameters
