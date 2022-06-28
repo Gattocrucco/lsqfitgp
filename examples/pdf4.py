@@ -55,10 +55,10 @@ xtype = np.dtype([
 hyperprior = {
     'log(scale)': gvar.log(gvar.gvar(0.5, 0.5)),
     'log(ampl)' : gvar.log(gvar.gvar(1, 1)),
-    'log(alpha)': gvar.log(gvar.gvar(2, 1)),
+    'log(beta)': gvar.log(gvar.gvar(4, 2)),
 }
 def makekernel(hp):
-    return hp['ampl'] ** 2 * lgp.RatQuad(dim='x', scale=hp['scale'], alpha=hp['alpha']) * lgp.White(dim='pid')
+    return hp['ampl'] ** 2 * lgp.Cauchy(dim='x', scale=hp['scale'], beta=hp['beta']) * lgp.White(dim='pid')
 
 xdata = np.empty((nflav, nx), xtype)
 xdata['pid'] = pid[:, None]

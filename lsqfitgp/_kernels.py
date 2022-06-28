@@ -42,11 +42,7 @@ __all__ = [
     'Linear',
     'Matern',
     'Maternp',
-    'Matern12',
-    'Matern32',
-    'Matern52',
     'GammaExp',
-    'RatQuad',
     'NNKernel',
     'Wiener',
     'Gibbs',
@@ -231,48 +227,6 @@ def Matern(r2, nu=None):
         assert 0 < nu < jnp.inf, nu
     r2 = 2 * nu * r2
     return 2 / special.gamma(nu) * _patch_jax.kvmodx2(nu, r2)
-
-@isotropickernel(input='soft', derivable=False)
-def Matern12(r):
-    """
-    Matérn kernel of order 1/2 (continuous, not derivable).
-    
-    .. math::
-        k(r) = \\exp(-r)
-    """
-    return jnp.exp(-r)
-
-@jax.custom_jvp
-def _matern32(x):
-    return (1 + x) * jnp.exp(-x)
-
-_matern32.defjvps(lambda g, ans, x: g * -x * jnp.exp(-x))
-
-@isotropickernel(input='soft', derivable=1)
-def Matern32(r):
-    """
-    Matérn kernel of order 3/2 (derivable one time).
-    
-    .. math::
-        k(r) = (1 + x) \\exp(-x), \\quad x = \\sqrt3 r
-    """
-    return _matern32(jnp.sqrt(3) * r)
-
-@jax.custom_jvp
-def _matern52(x):
-    return (1 + x * (1 + x/3)) * jnp.exp(-x)
-
-_matern52.defjvps(lambda g, ans, x: g * -x/3 * _matern32(x))
-
-@isotropickernel(input='soft', derivable=2)
-def Matern52(r):
-    """
-    Matérn kernel of order 5/2 (derivable two times).
-    
-    .. math::
-        k(r) = (1 + x + x^2/3) \\exp(-x), \\quad x = \\sqrt5 r
-    """
-    return _matern52(jnp.sqrt(5) * r)
     
 def _gammaexp_derivable(gamma=1):
     return gamma == 2
@@ -284,39 +238,19 @@ def GammaExp(r2, gamma=1):
     
     .. math::
         k(r) = \\exp(-r^\\gamma), \\quad
-        \\gamma \\in [0, 2]
+        \\gamma \\in (0, 2]
     
     For :math:`\\gamma = 2` it is the squared exponential kernel, for
     :math:`\\gamma = 1` (default) it is the Matérn 1/2 kernel, for
-    :math:`\\gamma = 0` it is the constant kernel. The process is
-    differentiable only for :math:`\\gamma = 2`, however as :math:`\\gamma`
+    :math:`\\gamma \\to 0` it tends to white noise plus a constant. The process
+    is differentiable only for :math:`\\gamma = 2`, however as :math:`\\gamma`
     gets closer to 2 the variance of the non-derivable component goes to zero.
 
     Reference: Rasmussen and Williams (2006, p. 86).
     """
     if _patch_jax.isconcrete(gamma):
-        assert 0 <= gamma <= 2, gamma
+        assert 0 < gamma <= 2, gamma
     return jnp.exp(-(r2 ** (gamma / 2)))
-
-@isotropickernel(derivable=True)
-def RatQuad(r2, alpha=2):
-    """
-    Rational quadratic kernel.
-    
-    .. math::
-        k(r) = \\left( 1 + \\frac {r^2} {2 \\alpha} \\right)^{-\\alpha},
-        \\quad \\alpha > 0
-    
-    It is equivalent to a lengthscale mixture of exponential quadratic kernels
-    where the scale distribution is a gamma with shape parameter
-    :math:`\\alpha`. For :math:`\\alpha\\to\\infty` it becomes the exponential
-    quadratic. It is smooth.
-    
-    Reference: Rasmussen and Williams (2006, p. 86).
-    """
-    if _patch_jax.isconcrete(alpha):
-        assert 0 < alpha < jnp.inf, alpha
-    return (1 + r2 / (2 * alpha)) ** -alpha
 
 @kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):
@@ -888,6 +822,8 @@ def Harmonic(delta, Q=1):
     
     # TODO probably second derivatives w.r.t. Q at Q=1 are wrong.
     
+    # TODO will fail if Q is traced.
+    
     if _patch_jax.isconcrete(Q):
         assert 0 < Q < jnp.inf, Q
     
@@ -918,6 +854,12 @@ def Harmonic(delta, Q=1):
 def _sqrt1pm1(x):
     """sqrt(1 + x) - 1, numerically stable for small x"""
     return jnp.expm1(1/2 * jnp.log1p(x))
+
+@jax.custom_jvp
+def _matern32(x):
+    return (1 + x) * jnp.exp(-x)
+
+_matern32.defjvps(lambda g, ans, x: g * -x * jnp.exp(-x))
 
 def _harmonic(x, Q):
     return _matern32(x / Q) + jnp.exp(-x/Q) * (1 - Q) * jnp.square(x) * (1 + x/3)
@@ -1034,7 +976,7 @@ def Bessel(r2, nu=0):
     
     Reference: Rasmussen and Williams (2006, p. 89).
     """
-    r2 = r2 * jnp.sqrt(2 + nu / 2)
+    r2 = r2 * (2 + nu / 2) ** 2
     return special.gamma(nu + 1) * _patch_jax.jvmodx2(nu, r2)
 
     # nu >= (D-2)/2
@@ -1117,15 +1059,17 @@ def Cauchy(r2, alpha=2, beta=2):
         k(r) = \\left(1 + \\frac{r^\\alpha}{\\beta} \\right)^{-\\beta/\\alpha},
         \\quad \\alpha \\in (0, 2], \\beta > 0.
     
-    For :math:`\\alpha=2` and :math:`\\beta=2` (default), it is equivalent to
-    ``RatQuad(alpha=1)``. In the geostatistics literature, this case is known
-    as the Cauchy kernel, while for other values of the parameters it is called
-    "generalized" Cauchy. For :math:`\\beta\\to\\infty` it is equivalent to
-    ``GammaExp(gamma=alpha, scale=alpha ** (1/alpha))``, while for
-    :math:`\\beta\\to 0` to ``Constant``. It is smooth only for
+    In the geostatistics literature, the case :math:`\\alpha=2` and
+    :math:`\\beta=2` (default) is known as the Cauchy kernel. In the machine
+    learning literature, the case :math:`\\alpha=2` (for any :math:`\\beta`) is
+    known as the rational quadratic kernel. For :math:`\\beta\\to\\infty` it is
+    equivalent to ``GammaExp(gamma=alpha, scale=alpha ** (1/alpha))``, while
+    for :math:`\\beta\\to 0` to ``Constant``. It is smooth only for
     :math:`\\alpha=2`.
     
-    Reference: Gneiting and Schlather (2004, p. 273).
+    References: Gneiting and Schlather (2004, p. 273), Rasmussen and Williams
+    (2006, p. 86).
+    
     """
     if _patch_jax.isconcrete(alpha, beta):
         assert 0 < alpha <= 2, alpha

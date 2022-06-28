@@ -135,10 +135,9 @@ meta = dict(
     PPKernel = dict(range=[0, 2], kwlist=[dict(q=q, D=D) for q in [0, 2] for D in [1, 2]]),
     Periodic = dict(range=[0, 4 * np.pi], kwlist=[dict(outerscale=s) for s in [1, 0.2]]),
     Pink = dict(range=[0, 10], kwlist=[dict(dw=d) for d in [0.1, 1, 10]]),
-    RatQuad = dict(kwlist=[dict(alpha=a) for a in [0.1, 1, 10]]),
     Rescaling = dict(skip=True),
     StationaryFracBrownian = dict(kwlist=[dict(H=H) for H in [0.1, 0.5, 0.9]]),
-    Taylor = dict(range=[0, 2]),
+    Taylor = dict(range=[-2, 2]),
     Wiener = dict(range=[0, 2]),
     WienerIntegral = dict(range=[0, 2]),
 )

@@ -40,7 +40,7 @@ def pred(kw, seed, err):
     
     y = np.tanh(x)
     if err:
-        datagp = lgp.GP(0.1 ** 2 * lgp.RatQuad(scale=0.3))
+        datagp = lgp.GP(0.1 ** 2 * lgp.Cauchy(scale=0.3))
         datagp.addx(x, 'data')
         y = y + datagp.prior('data')
     

@@ -48,12 +48,12 @@ def test_no_checksym():
     util.assert_equal(*covs)
 
 def test_transf_scalar():
-    gp = lgp.GP(lgp.ExpQuad() + lgp.RatQuad())
+    gp = lgp.GP(lgp.ExpQuad() + lgp.Cauchy())
     x = np.arange(20)
     gp.addx(x, 'x')
     cov1 = gp.prior('x', raw=True)
     
-    gp = lgp.GP(lgp.where(lambda f: f, lgp.ExpQuad(dim='f1'), lgp.RatQuad(dim='f1'), dim='f0'))
+    gp = lgp.GP(lgp.where(lambda f: f, lgp.ExpQuad(dim='f1'), lgp.Cauchy(dim='f1'), dim='f0'))
     y = np.empty((2, len(x)), '?,f8')
     y['f0'] = np.reshape([0, 1], (2, 1))
     y['f1'] = x
@@ -86,7 +86,7 @@ def test_compare_transfs():
     def preparegp():
         gp = lgp.GP()
         gp.addproc(lgp.ExpQuad(), 'a')
-        gp.addproc(lgp.RatQuad(), 'b')
+        gp.addproc(lgp.Cauchy(), 'b')
         gp.addx(x, 'ax', proc='a')
         gp.addx(x, 'bx', proc='b')
         return gp

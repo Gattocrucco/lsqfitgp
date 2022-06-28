@@ -699,44 +699,28 @@ for kernel in kernels:
 TestGammaExp.eps = 1e3 * np.finfo(float).eps
 TestPPKernel.eps = 1e3 * np.finfo(float).eps
 
-def test_matern_half_integer():
+def check_matern_half_integer(deriv):
     """
     Check that the formula for half integer nu gives the same result of the
     formula for real nu.
     """
     for p in range(10):
-        x, y = 3 * np.random.randn(2, 100)
-        r1 = _kernels.Matern(nu=p + 1/2)(x, y)
-        r2 = _kernels.Maternp(p=p)(x, y)
-        np.testing.assert_allclose(r1, r2)
+        x = 3 * np.random.randn(100)
+        y = x + np.random.uniform(0.05, 3, 100)
+        k = _kernels.Matern(nu=p + 1/2)
+        d = min(k.derivable, deriv)
+        r1 = k.diff(d, d)(x, y)
+        r2 = _kernels.Maternp(p=p).diff(d, d)(x, y)
+        np.testing.assert_allclose(r1, r2, rtol=1e-5)
 
-def check_matern_spec_p(p, xderiv, yderiv):
-    """
-    Test implementations of specific cases of nu.
-    """
-    spec = eval('_kernels.Matern{}2'.format(1 + 2 * p))
-    if spec().derivable >= max(xderiv, yderiv):
-        x = np.random.randn(10)[:, None]
-        r1 = _kernels.Maternp(p=p).diff(xderiv, yderiv)(x, x.T)
-        r2 = spec().diff(xderiv, yderiv)(x, x.T)
-        np.testing.assert_allclose(r1, r2, atol=1e-14)
+def test_matern_half_integer_0():
+    check_matern_half_integer(0)
 
-def check_matern_spec(xderiv, yderiv):
-    for p in range(3):
-        check_matern_spec_p(p, xderiv, yderiv)
+def test_matern_half_integer_1():
+    check_matern_half_integer(1)
 
-def test_matern_spec_00():
-    check_matern_spec(0, 0)
-def test_matern_spec_10():
-    check_matern_spec(1, 0)
-def test_matern_spec_11():
-    check_matern_spec(1, 1)
-def test_matern_spec_20():
-    check_matern_spec(2, 0)
-def test_matern_spec_21():
-    check_matern_spec(2, 1)
-def test_matern_spec_22():
-    check_matern_spec(2, 2)
+def test_matern_half_integer_2():
+    check_matern_half_integer(2)
 
 def test_wiener_integral():
     """
@@ -815,14 +799,14 @@ def test_harmonic_deriv_derivQ_continuous_1():
 
 def test_nonfloat_eps():
     x = np.arange(20)
-    c1 = _kernels.Matern12()(x, x)
+    c1 = _kernels.Maternp(p=0)(x, x)
     eps = np.finfo(float).eps
     c2 = np.exp(-eps)
     np.testing.assert_allclose(c1, c2, rtol=eps, atol=eps)
 
 def test_default_override():
     with pytest.warns(UserWarning):
-        _kernels.Matern12(derivable=17)
+        _kernels.Maternp(p=0, derivable=17)
 
 def test_kernel_decorator_error():
     with pytest.raises(ValueError):
@@ -830,7 +814,7 @@ def test_kernel_decorator_error():
 
 def test_transf_not_implemented():
     meths = ['fourier', 'taylor']
-    kernel = _kernels.Matern12()
+    kernel = _kernels.Maternp(p=0)
     for meth in meths:
         with pytest.raises(NotImplementedError):
             getattr(kernel, meth)(True, None)
@@ -848,7 +832,6 @@ def test_matern_derivatives():
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y. => use make_jaxpr to debug?
-util.xfail(TestMatern52, 'test_positive_deriv2_nd') # only on CI macos (??)
 util.xfail(TestMaternp, 'test_positive_deriv2_nd')
 util.xfail(TestMaternp, 'test_double_diff_nd_second_chopped')
 util.xfail(TestMaternp, 'test_jit_deriv2_nd')
@@ -873,9 +856,6 @@ util.xfail(TestMatern, 'test_positive_deriv2_nd')
 util.xfail(TestMatern, 'test_positive_deriv')
 util.xfail(TestMatern, 'test_positive_deriv2')
 util.xfail(TestMatern, 'test_positive_deriv_nd')
-
-# TODO numerical precision, only on CI macos (??)
-util.xfail(TestMatern52, 'test_double_diff_nd_second_chopped')
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem

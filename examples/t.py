@@ -55,7 +55,7 @@ data = gvar.gvar(data_mean, np.full_like(data_mean, data_error))
 
 x = lgp.StructuredArray(x)
 def makegp(params):
-    kernel = lgp.RatQuad(scale=params['time_scale'], dim='time', alpha=1)
+    kernel = lgp.Cauchy(scale=params['time_scale'], dim='time', beta=2)
     kernel *= lgp.ExpQuad(scale=params['label_scale'], dim='label')
     gp = lgp.GP(kernel)
     x['time'] = jnp.array([time, time - params['delay']])

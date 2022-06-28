@@ -557,9 +557,9 @@ class ToeplitzBase(DecompTestCorr):
 
     def randsymmat(self, n):
         x = np.arange(n)
-        alpha = np.exp(1/3 * np.random.randn())
+        beta = 2 * np.exp(1/3 * np.random.randn())
         scale = np.exp(1/3 * np.random.randn())
-        kernel = _kernels.RatQuad(scale=scale, alpha=alpha)
+        kernel = _kernels.Cauchy(scale=scale, beta=beta)
         return np.pi * kernel(x[None, :], x[:, None])
     
     def mat(self, s, n):

@@ -40,7 +40,7 @@ y = np.sin(xdata)
 
 def makegp(par):
     scale = jnp.exp(par[0])
-    return lgp.GP(lgp.Matern52(scale=scale))
+    return lgp.GP(lgp.Maternp(p=2, scale=scale))
 
 def fun(par):
     gp = makegp(par)
