@@ -83,9 +83,11 @@ default values of the keyword parameters, apart from some specific cases like
 
 .. warning::
 
-   Taking second or higher order derivatives might give problems with isotropic
-   kernels with signature parameter `r`, while those with `r2` won't have any
-   issue.
+   Some kernels have problems with derivatives. No derivative works for
+   :class:`Matern`, use :class:`Maternp`. Second derivatives do not work for
+   :class:`Circular`, :class:`Maternp`, and :class:`PPKernel`. You may
+   encounter problems with second derivatives for :class:`CausalExpQuad`,
+   :class:`FracBrownian`, :class:`NNKernel`, and :class:`Taylor`.
 
 Index
 -----
@@ -131,6 +133,7 @@ meta = dict(
     Cauchy = dict(kwlist=[dict(alpha=1), dict(alpha=2), dict(beta=10)]),
     CausalExpQuad = dict(kwlist=[dict(alpha=a) for a in [0, 1, 2]]),
     Celerite = dict(kwlist=[dict(B=0), dict(B=1), dict(gamma=5)]),
+    Circular = dict(kwlist=[dict(c=c, tau=t) for c, t in [(np.pi, 4), (np.pi, 10), (0.5, 4)]], range=[0, 4 * np.pi]),
     Constant = dict(skip=True),
     Cos = dict(range=[0, 2 * np.pi]),
     Decaying = dict(range=[0, 2], srange=[0, 5]),

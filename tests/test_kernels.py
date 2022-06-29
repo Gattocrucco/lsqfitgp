@@ -886,3 +886,7 @@ for test in [TestTaylor, TestBessel, TestMatern, TestPink]:
     util.xfail(test, 'test_jit_nd')
     util.xfail(test, 'test_jit_deriv_nd')
     util.xfail(test, 'test_jit_deriv2_nd')
+
+# TODO problems near 0
+util.xfail(TestCircular, 'test_positive_deriv2')
+util.xfail(TestCircular, 'test_symmetric_21')

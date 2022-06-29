@@ -518,9 +518,6 @@ Fare la versione del kernel Fourier con solo il seno. Nel caso n=1 viene il
 Brownian bridge. => no, dovrebbe funzionare prendendo la parte dispari
 con addproclintransf, fare un esempio di prova
 
-Circular kernel: 
-https://docs.pymc.io/pymc-examples/examples/gaussian_processes/GP-Circular.html
-
 Add order: int >= 0 parameter to Gibbs that rescales the kernel by
 (s(x)s(y))^order, useful when taking derivatives to have the derivative of
 order `order` with constant variance (check this is actually the case). =>

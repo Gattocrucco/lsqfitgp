@@ -70,6 +70,7 @@ __all__ = [
     'CausalExpQuad',
     'Log',
     'Decaying',
+    'Circular',
 ]
 
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
@@ -1142,3 +1143,35 @@ def Log(r):
     From https://github.com/wesselb/mlkernels.
     """
     return jnp.log1p(r) / r
+
+# adapted from the "GP-circular" example in the PyMC documentation
+
+# TODO maxdim actually makes sense only for isotropic. I need a way to say
+# structured/non structured. Maybe all this should just live in the test suite.
+
+# TODO I'm not sure about the derivability degree
+
+# TODO Any stationary kernel supported on [0, pi] would be fine combined with
+# the geodesic distance.
+
+@stationarykernel(derivable=2, maxdim=1, input='soft')
+def Circular(delta, tau=4, c=jnp.pi):
+    """
+    Circular kernel.
+    
+    .. math:: k(x, y) &= W_c(d_{\\text{geo}}(x, y)), \\\\
+        W_c(t) &= \\left(1 + \\tau\\frac tc\\right)
+            \\left(1 - \\frac tc\\right)^\\tau_+,
+        \\quad c \\in (0, \\pi], \\tau \\ge 4, \\\\
+        d_{\\text{geo}}(x, y) &= \\arccos\\cos(x-y).
+    
+    It is a stationary periodic kernel with period :math:`2\\pi`.
+    
+    Reference: Padonou and Roustant (2016).
+    """
+    if _patch_jax.isconcrete(tau, c):
+        assert tau >= 4, tau
+        assert 0 < c <= jnp.pi, c
+    x = delta % (2 * jnp.pi)
+    t = jnp.minimum(x, 2 * jnp.pi - x)
+    return (1 + tau * t / c) * jnp.maximum(1 - t / c, 0) ** tau
