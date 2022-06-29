@@ -36,41 +36,41 @@ from . import _patch_jax
 from ._Kernel import kernel, stationarykernel, isotropickernel
 
 __all__ = [
-    'Constant',
-    'White',
-    'ExpQuad',
-    'Linear',
-    'Matern',
-    'Maternp',
-    'GammaExp',
-    'NNKernel',
-    'Wiener',
-    'Gibbs',
-    'Periodic',
-    'Categorical',
-    'Rescaling',
-    'Cos',
-    'FracBrownian',
-    'PPKernel',
-    'WienerIntegral',
-    'Taylor',
-    'Fourier',
-    'OrnsteinUhlenbeck',
-    'Celerite',
-    'BrownianBridge',
-    'Harmonic',
-    'Expon',
     'BagOfWords',
-    'HoleEffect',
     'Bessel',
-    'Pink',
-    'Sinc',
-    'StationaryFracBrownian',
+    'BrownianBridge',
+    'Categorical',
     'Cauchy',
     'CausalExpQuad',
-    'Log',
-    'Decaying',
+    'Celerite',
     'Circular',
+    'Constant',
+    'Cos',
+    'Decaying',
+    'Expon',
+    'ExpQuad',
+    'Fourier',
+    'FracBrownian',
+    'GammaExp',
+    'Gibbs',
+    'Harmonic',
+    'HoleEffect',
+    'Linear',
+    'Log',
+    'Matern',
+    'Maternp',
+    'NNKernel',
+    'OrnsteinUhlenbeck',
+    'Periodic',
+    'Pink',
+    'Rescaling',
+    'Sinc',
+    'StationaryFracBrownian',
+    'Taylor',
+    'Wendland',
+    'White',
+    'Wiener',
+    'WienerIntegral',
 ]
 
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
@@ -455,60 +455,59 @@ def FracBrownian(x, y, H=1/2, K=1):
     H2 = 2 * H
     return 1 / 2 ** K * ((jnp.abs(x) ** H2 + jnp.abs(y) ** H2) ** K - jnp.abs(x - y) ** (H2 * K))
 
-def _ppkernel_derivable(q=0, **_):
-    return q
+def _wendland_derivable(k=0, alpha=1):
+    return k
 
-def _ppkernel_maxdim(D=1, **_):
-    return D
+def _wendland_maxdim(k=0, alpha=1):
+    return numpy.floor(2 * alpha - 1)
 
-@isotropickernel(input='soft', derivable=_ppkernel_derivable, maxdim=_ppkernel_maxdim)
-def PPKernel(r, q=0, D=1):
+@isotropickernel(input='soft', derivable=_wendland_derivable, maxdim=_wendland_maxdim)
+def Wendland(r, k=0, alpha=1):
     """
-    Piecewise polynomial kernel.
+    Wendland kernel.
     
     .. math::
-        k(r) = \\text{polynomial}_{q,D}(r)
-        \\begin{cases}
-            1 - r & r \\in [0, 1)     \\\\
-            0     & \\text{otherwise}
-        \\end{cases}
+        k(r) &= \\frac1{B(2k+1,\\nu)}
+        \\int_r^\\infty \\mathrm du\\, (u^2 - r^2)^k (1 - u)_+^{\\nu-1}, \\\\
+        \\quad k &\\in \\mathbb N,\\ \\nu = k + \\alpha,\\ \\alpha \\ge 1.
     
     An isotropic kernel with finite support. The covariance is nonzero only
-    when the distance between the points is less than 1. Parameter `q` in (0,
-    1, 2, 3) sets the differentiability, while parameter `D` sets the maximum
-    dimensionality the kernel can be used with. Default is `q` = 0 (non
-    derivable), `D` = 1 (can be used only in 1D).
+    when the distance between the points is less than 1. Parameter `k` in (0,
+    1, 2, 3) sets the differentiability, while the maximum dimensionality the
+    kernel can be used in is :math:`\\lfloor 2\\alpha-1 \\rfloor`. Default is
+    :math:`k = 0` (non derivable), :math:`\\alpha = 1` (can be used only in
+    1D).
     
-    Reference: Rasmussen and Williams (2006, p. 87).
+    Reference: Gneiting (2002), Wendland (2004, p. 128), Rasmussen and Williams
+    (2006, p. 87), Porcu, Furrer and Nychka (2020, p. 4).
+    
     """
-    
-    # TODO get the general formula for any q.
-    
+        
     # TODO compute the kernel only on the nonzero points.
     
     # TODO find the nonzero points in O(nlogn) instead of O(n^2) by sorting
     # the inputs, and output a sparse matrix.
     
-    assert int(q) == q and 0 <= q <= 3
-    assert int(D) == D and D >= 1
-    j = int(numpy.floor(D / 2)) + q + 1
-    x = 1 - r
-    if q == 0:
+    if _patch_jax.isconcrete(k, alpha):
+        D = _wendland_maxdim(k, alpha)
+        assert D >= 1, D
+    
+    if k == 0:
         poly = [
             [1],
         ]
-    elif q == 1:
+    elif k == 1:
         poly = [
             [1, 1],
             [1],
         ]
-    elif q == 2:
+    elif k == 2:
         poly = [
             [1/3, 4/3, 1],
             [1, 2],
             [1],
         ]
-    elif q == 3:
+    elif k == 3:
         poly = [
             [1/15, 3/5, 23/15, 1],
             [2/5, 12/5, 3],
@@ -517,9 +516,11 @@ def PPKernel(r, q=0, D=1):
         ]
     else:
         raise NotImplementedError
-    coeffs = jnp.array([jnp.polyval(jnp.array(pj), j) for pj in poly])
+    
+    nu = k + alpha
+    coeffs = jnp.array([jnp.polyval(jnp.array(pj), nu) for pj in poly])
     poly = jnp.polyval(coeffs, r)
-    return jnp.where(x > 0, x ** (j + q) * poly, 0)
+    return jnp.where(r < 1, (1 - r) ** (nu + k) * poly, 0)
 
 # redefine derivatives of min and max because jax default is to yield 1/2
 # when x == y, while I need 1 but consistently between min/max
@@ -1149,29 +1150,27 @@ def Log(r):
 # TODO maxdim actually makes sense only for isotropic. I need a way to say
 # structured/non structured. Maybe all this should just live in the test suite.
 
-# TODO I'm not sure about the derivability degree
-
 # TODO Any stationary kernel supported on [0, pi] would be fine combined with
-# the geodesic distance.
+# the geodesic distance. Use the generic wendland kernel.
 
-@stationarykernel(derivable=2, maxdim=1, input='soft')
-def Circular(delta, tau=4, c=jnp.pi):
+@stationarykernel(derivable=1, maxdim=1, input='soft')
+def Circular(delta, tau=4, c=1/2):
     """
     Circular kernel.
     
     .. math:: k(x, y) &= W_c(d_{\\text{geo}}(x, y)), \\\\
         W_c(t) &= \\left(1 + \\tau\\frac tc\\right)
             \\left(1 - \\frac tc\\right)^\\tau_+,
-        \\quad c \\in (0, \\pi], \\tau \\ge 4, \\\\
-        d_{\\text{geo}}(x, y) &= \\arccos\\cos(x-y).
+        \\quad c \\in (0, 1/2], \\tau \\ge 4, \\\\
+        d_{\\text{geo}}(x, y) &= \\arccos\\cos(2\\pi(x-y)).
     
-    It is a stationary periodic kernel with period :math:`2\\pi`.
+    It is a stationary periodic kernel with period 1.
     
     Reference: Padonou and Roustant (2016).
     """
     if _patch_jax.isconcrete(tau, c):
         assert tau >= 4, tau
-        assert 0 < c <= jnp.pi, c
-    x = delta % (2 * jnp.pi)
-    t = jnp.minimum(x, 2 * jnp.pi - x)
+        assert 0 < c <= 1/2, c
+    x = delta % 1
+    t = jnp.minimum(x, 1 - x)
     return (1 + tau * t / c) * jnp.maximum(1 - t / c, 0) ** tau

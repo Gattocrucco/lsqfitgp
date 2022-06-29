@@ -85,7 +85,7 @@ default values of the keyword parameters, apart from some specific cases like
 
    Some kernels have problems with derivatives. No derivative works for
    :class:`Matern`, use :class:`Maternp`. Second derivatives do not work for
-   :class:`Circular`, :class:`Maternp`, and :class:`PPKernel`. You may
+   :class:`Circular`, :class:`Maternp`, and :class:`Wendland`. You may
    encounter problems with second derivatives for :class:`CausalExpQuad`,
    :class:`FracBrownian`, :class:`NNKernel`, and :class:`Taylor`.
 
@@ -133,9 +133,9 @@ meta = dict(
     Cauchy = dict(kwlist=[dict(alpha=1), dict(alpha=2), dict(beta=10)]),
     CausalExpQuad = dict(kwlist=[dict(alpha=a) for a in [0, 1, 2]]),
     Celerite = dict(kwlist=[dict(B=0), dict(B=1), dict(gamma=5)]),
-    Circular = dict(kwlist=[dict(c=c, tau=t) for c, t in [(np.pi, 4), (np.pi, 10), (0.5, 4)]], range=[0, 4 * np.pi]),
+    Circular = dict(kwlist=[dict(c=c, tau=t) for c, t in [(1/2, 4), (1/2, 10), (1/4, 4)]], range=[0, 2]),
     Constant = dict(skip=True),
-    Cos = dict(range=[0, 2 * np.pi]),
+    Cos = dict(range=[0, 4 * np.pi]),
     Decaying = dict(range=[0, 2], srange=[0, 5]),
     Fourier = dict(range=[0, 2], kwlist=[dict(n=n) for n in [1, 2, 3]]),
     FracBrownian = dict(kwlist=[dict(H=H, K=K) for H, K in [(0.1, 1), (0.5, 1), (0.9, 1), (0.9, 0.3)]], range=[-5, 5]),
@@ -143,15 +143,15 @@ meta = dict(
     Gibbs = dict(kwlist=[dict(scalefun=Formula('where((0 < x) & (x < 0.1), 0.02, 1)'))], range=[-1, 1]),
     Harmonic = dict(range=[0, 4 * np.pi], kwlist=[dict(Q=Q) for Q in [1, 20]]),
     Matern = dict(kwlist=[dict(nu=v) for v in [0.1, 1.1, 5.1]]),
-    Maternp = dict(kwlist=[dict(p=p) for p in [0, 1, 10]]),
+    Maternp = dict(kwlist=[dict(p=p) for p in [0, 1, 2]]),
     Log = dict(range=[0, 10]),
     OrnsteinUhlenbeck = dict(range=[0, 3], srange=[0, 10]),
-    PPKernel = dict(range=[0, 2], kwlist=[dict(q=q, D=D) for q in [0, 2] for D in [1, 2]]),
     Periodic = dict(range=[0, 4 * np.pi], kwlist=[dict(outerscale=s) for s in [1, 0.2]]),
     Pink = dict(range=[0, 10], kwlist=[dict(dw=d) for d in [0.1, 1, 10]]),
     Rescaling = dict(skip=True),
     StationaryFracBrownian = dict(kwlist=[dict(H=H) for H in [0.1, 0.5, 0.9]]),
     Taylor = dict(range=[-2, 2]),
+    Wendland = dict(range=[0, 2], kwlist=[dict(k=k, alpha=alpha) for k in [0, 2] for alpha in [1, 2]]),
     Wiener = dict(range=[0, 2]),
     WienerIntegral = dict(range=[0, 2]),
 )

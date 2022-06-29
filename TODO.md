@@ -382,6 +382,9 @@ operations in the right sequence with a positive Taylor series at the end.
 Simplest way: add operations as Kernel methods. Some numpy ufuncs would
 even recognize this and so for example np.tan(kernel) would work.
 
+Turning bands operator (Gneiting 2002, p. 501). Applies to isotropic kernels,
+introduces negative correlations. Preserves support and derivability.
+
 Look at what the Schoenberg theorem is (seen in seminar by Théo Galy-Fajou)
 
 Tentative coherent implementation of transformations and their compositions:
@@ -547,6 +550,10 @@ Can I do a kernel with the Dirichlet function? (scipy.special.diric)
 ARIMA
 
 splines
+
+truncated power (Gneiting 2002, p. 501).
+
+compact poly-harmonic (Gneiting 2002, p. 504).
 
 ### Transformations
 

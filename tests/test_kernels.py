@@ -660,8 +660,8 @@ def bow_rand(**kw):
 test_kwargs = {
     _kernels.Matern: dict(kwargs_list=[dict(nu=nu + 0.5) for nu in range(5)] + [dict(nu=nu + 0.49) for nu in range(5)] + [dict(nu=nu + 0.51) for nu in range(5)]),
     _kernels.Maternp: dict(kwargs_list=[dict(p=p) for p in range(10)]),
-    _kernels.PPKernel: dict(kwargs_list=[
-        dict(q=q, D=D) for q in range(4) for D in range(1, 6)
+    _kernels.Wendland: dict(kwargs_list=[
+        dict(k=k, alpha=a) for k in range(4) for a in np.linspace(1, 4, 10)
     ]),
     _kernels.Wiener: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.WienerIntegral: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
@@ -693,6 +693,7 @@ test_kwargs = {
     _kernels.CausalExpQuad: dict(kwargs_list=[dict(alpha=a) for a in [0, 1, 2]]),
     _kernels.Decaying: dict(random_x_fun=lambda **_: np.random.uniform(0, 5, size=100)),
     _kernels.StationaryFracBrownian: dict(kwargs_list=[dict(H=H) for H in [0.1, 0.5, 1]]),
+    _kernels.Circular: dict(kwargs_list=[dict(c=c, tau=t) for c, t in [(0.1, 4), (0.5, 4), (0.5, 8)]]),
 }
 
 for kernel in kernels:
@@ -701,7 +702,7 @@ for kernel in kernels:
     exec('{} = newclass'.format(newclass.__name__))
 
 TestGammaExp.eps = 1e3 * np.finfo(float).eps
-TestPPKernel.eps = 1e3 * np.finfo(float).eps
+TestWendland.eps = 1e3 * np.finfo(float).eps
 
 def check_matern_half_integer(deriv):
     """
@@ -839,9 +840,9 @@ def test_matern_derivatives():
 util.xfail(TestMaternp, 'test_positive_deriv2_nd')
 util.xfail(TestMaternp, 'test_double_diff_nd_second_chopped')
 util.xfail(TestMaternp, 'test_jit_deriv2_nd')
-util.xfail(TestPPKernel, 'test_positive_deriv2_nd')
-util.xfail(TestPPKernel, 'test_double_diff_nd_second_chopped')
-util.xfail(TestPPKernel, 'test_jit_deriv2_nd')
+util.xfail(TestWendland, 'test_positive_deriv2_nd')
+util.xfail(TestWendland, 'test_double_diff_nd_second_chopped')
+util.xfail(TestWendland, 'test_jit_deriv2_nd')
 util.xfail(TestCausalExpQuad, 'test_positive_deriv2_nd')
 util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped')
 
@@ -863,15 +864,15 @@ util.xfail(TestMatern, 'test_positive_deriv_nd')
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
-util.xfail(TestPPKernel, 'test_positive_deriv2')
+util.xfail(TestWendland, 'test_positive_deriv2') # normally xpasses
 util.xfail(TestCausalExpQuad, 'test_positive_deriv2') # NOT 1 - erf cancel
 
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some
 # reason I don't catch it without taking a derivative. => This explanation is
 # likely wrong since the jit test fails too, without checking positivity.
-util.xfail(TestPPKernel, 'test_positive_deriv_nd') # seen xpassing in the wild
-util.xfail(TestPPKernel, 'test_jit_deriv_nd')
+util.xfail(TestWendland, 'test_positive_deriv_nd') # seen xpassing in the wild
+util.xfail(TestWendland, 'test_jit_deriv_nd')
 
 # TODO These are not isotropic kernels, what is the problem?
 util.xfail(TestTaylor, 'test_double_diff_nd_second')
@@ -886,7 +887,3 @@ for test in [TestTaylor, TestBessel, TestMatern, TestPink]:
     util.xfail(test, 'test_jit_nd')
     util.xfail(test, 'test_jit_deriv_nd')
     util.xfail(test, 'test_jit_deriv2_nd')
-
-# TODO problems near 0
-util.xfail(TestCircular, 'test_positive_deriv2')
-util.xfail(TestCircular, 'test_symmetric_21')
