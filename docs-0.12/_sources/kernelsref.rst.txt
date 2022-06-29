@@ -38,9 +38,11 @@ default values of the keyword parameters, apart from some specific cases like
 
 .. warning::
 
-   Taking second or higher order derivatives might give problems with isotropic
-   kernels with signature parameter `r`, while those with `r2` won't have any
-   issue.
+   Some kernels have problems with derivatives. No derivative works for
+   :class:`Matern`, use :class:`Maternp`. Second derivatives do not work for
+   :class:`Circular`, :class:`Maternp`, and :class:`Wendland`. You may
+   encounter problems with second derivatives for :class:`CausalExpQuad`,
+   :class:`FracBrownian`, :class:`NNKernel`, and :class:`Taylor`.
 
 Index
 -----
@@ -56,12 +58,13 @@ Isotropic kernels
   * :func:`Log`
   * :func:`Matern`
   * :func:`Maternp`
-  * :func:`PPKernel`
+  * :func:`Wendland`
   * :func:`White`
 
 Stationary kernels
 ^^^^^^^^^^^^^^^^^^
   * :func:`Celerite`
+  * :func:`Circular`
   * :func:`Cos`
   * :func:`Expon`
   * :func:`Fourier`
@@ -107,6 +110,9 @@ Documentation
 .. autofunction:: Celerite
 .. image:: kernelsref-Celerite.png
 .. image:: kernelsref-Celerite-samples.png
+.. autofunction:: Circular
+.. image:: kernelsref-Circular.png
+.. image:: kernelsref-Circular-samples.png
 .. autofunction:: Constant
 .. autofunction:: Cos
 .. image:: kernelsref-Cos.png
@@ -156,9 +162,6 @@ Documentation
 .. autofunction:: OrnsteinUhlenbeck
 .. image:: kernelsref-OrnsteinUhlenbeck.png
 .. image:: kernelsref-OrnsteinUhlenbeck-samples.png
-.. autofunction:: PPKernel
-.. image:: kernelsref-PPKernel.png
-.. image:: kernelsref-PPKernel-samples.png
 .. autofunction:: Periodic
 .. image:: kernelsref-Periodic.png
 .. image:: kernelsref-Periodic-samples.png
@@ -175,6 +178,9 @@ Documentation
 .. autofunction:: Taylor
 .. image:: kernelsref-Taylor.png
 .. image:: kernelsref-Taylor-samples.png
+.. autofunction:: Wendland
+.. image:: kernelsref-Wendland.png
+.. image:: kernelsref-Wendland-samples.png
 .. autofunction:: White
 .. image:: kernelsref-White.png
 .. image:: kernelsref-White-samples.png
