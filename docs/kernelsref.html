@@ -148,9 +148,11 @@ default values of the keyword parameters, apart from some specific cases like
 <a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constant</span></code></a>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Taking second or higher order derivatives might give problems with isotropic
-kernels with signature parameter <cite>r</cite>, while those with <cite>r2</cite> won’t have any
-issue.</p>
+<p>Some kernels have problems with derivatives. No derivative works for
+<a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a>, use <a class="reference internal" href="#lsqfitgp.Maternp" title="lsqfitgp.Maternp"><code class="xref py py-class docutils literal notranslate"><span class="pre">Maternp</span></code></a>. Second derivatives do not work for
+<a class="reference internal" href="#lsqfitgp.Circular" title="lsqfitgp.Circular"><code class="xref py py-class docutils literal notranslate"><span class="pre">Circular</span></code></a>, <a class="reference internal" href="#lsqfitgp.Maternp" title="lsqfitgp.Maternp"><code class="xref py py-class docutils literal notranslate"><span class="pre">Maternp</span></code></a>, and <a class="reference internal" href="#lsqfitgp.Wendland" title="lsqfitgp.Wendland"><code class="xref py py-class docutils literal notranslate"><span class="pre">Wendland</span></code></a>. You may
+encounter problems with second derivatives for <a class="reference internal" href="#lsqfitgp.CausalExpQuad" title="lsqfitgp.CausalExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">CausalExpQuad</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.FracBrownian" title="lsqfitgp.FracBrownian"><code class="xref py py-class docutils literal notranslate"><span class="pre">FracBrownian</span></code></a>, <a class="reference internal" href="#lsqfitgp.NNKernel" title="lsqfitgp.NNKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NNKernel</span></code></a>, and <a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>.</p>
 </div>
 <section id="index">
 <h2><span class="section-number">1.1. </span>Index<a class="headerlink" href="#index" title="Permalink to this heading">¶</a></h2>
@@ -167,7 +169,7 @@ issue.</p>
 <li><p><a class="reference internal" href="#lsqfitgp.Log" title="lsqfitgp.Log"><code class="xref py py-func docutils literal notranslate"><span class="pre">Log()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-func docutils literal notranslate"><span class="pre">Matern()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Maternp" title="lsqfitgp.Maternp"><code class="xref py py-func docutils literal notranslate"><span class="pre">Maternp()</span></code></a></p></li>
-<li><p><a class="reference internal" href="#lsqfitgp.PPKernel" title="lsqfitgp.PPKernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">PPKernel()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Wendland" title="lsqfitgp.Wendland"><code class="xref py py-func docutils literal notranslate"><span class="pre">Wendland()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.White" title="lsqfitgp.White"><code class="xref py py-func docutils literal notranslate"><span class="pre">White()</span></code></a></p></li>
 </ul>
 </div></blockquote>
@@ -177,6 +179,7 @@ issue.</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><a class="reference internal" href="#lsqfitgp.Celerite" title="lsqfitgp.Celerite"><code class="xref py py-func docutils literal notranslate"><span class="pre">Celerite()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Circular" title="lsqfitgp.Circular"><code class="xref py py-func docutils literal notranslate"><span class="pre">Circular()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Cos" title="lsqfitgp.Cos"><code class="xref py py-func docutils literal notranslate"><span class="pre">Cos()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Expon" title="lsqfitgp.Expon"><code class="xref py py-func docutils literal notranslate"><span class="pre">Expon()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Fourier" title="lsqfitgp.Fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">Fourier()</span></code></a></p></li>
@@ -312,6 +315,22 @@ Astronomical Time Series</em>.</p>
 
 <img alt="_images/kernelsref-Celerite.png" src="_images/kernelsref-Celerite.png" />
 <img alt="_images/kernelsref-Celerite-samples.png" src="_images/kernelsref-Celerite-samples.png" />
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Circular">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Circular</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Circular" title="Permalink to this definition">¶</a></dt>
+<dd><p>Circular kernel.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}k(x, y) &amp;= W_c(d_{\text{geo}}(x, y)), \\
+W_c(t) &amp;= \left(1 + \tau\frac tc\right)
+    \left(1 - \frac tc\right)^\tau_+,
+\quad c \in (0, 1/2], \tau \ge 4, \\
+d_{\text{geo}}(x, y) &amp;= \arccos\cos(2\pi(x-y)).\end{split}\]</div>
+<p>It is a stationary periodic kernel with period 1.</p>
+<p>Reference: Padonou and Roustant (2016).</p>
+</dd></dl>
+
+<img alt="_images/kernelsref-Circular.png" src="_images/kernelsref-Circular.png" />
+<img alt="_images/kernelsref-Circular-samples.png" src="_images/kernelsref-Circular-samples.png" />
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Constant">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Constant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Constant" title="Permalink to this definition">¶</a></dt>
@@ -595,26 +614,6 @@ is provided as <a class="reference internal" href="#lsqfitgp.Expon" title="lsqfi
 <img alt="_images/kernelsref-OrnsteinUhlenbeck.png" src="_images/kernelsref-OrnsteinUhlenbeck.png" />
 <img alt="_images/kernelsref-OrnsteinUhlenbeck-samples.png" src="_images/kernelsref-OrnsteinUhlenbeck-samples.png" />
 <dl class="py function">
-<dt class="sig sig-object py" id="lsqfitgp.PPKernel">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">PPKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.PPKernel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Piecewise polynomial kernel.</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}k(r) = \text{polynomial}_{q,D}(r)
-\begin{cases}
-    1 - r &amp; r \in [0, 1)     \\
-    0     &amp; \text{otherwise}
-\end{cases}\end{split}\]</div>
-<p>An isotropic kernel with finite support. The covariance is nonzero only
-when the distance between the points is less than 1. Parameter <cite>q</cite> in (0,
-1, 2, 3) sets the differentiability, while parameter <cite>D</cite> sets the maximum
-dimensionality the kernel can be used with. Default is <cite>q</cite> = 0 (non
-derivable), <cite>D</cite> = 1 (can be used only in 1D).</p>
-<p>Reference: Rasmussen and Williams (2006, p. 87).</p>
-</dd></dl>
-
-<img alt="_images/kernelsref-PPKernel.png" src="_images/kernelsref-PPKernel.png" />
-<img alt="_images/kernelsref-PPKernel-samples.png" src="_images/kernelsref-PPKernel-samples.png" />
-<dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Periodic">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Periodic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outerscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Periodic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Periodic Gaussian kernel.</p>
@@ -702,6 +701,26 @@ deviation 1/k!.</p>
 
 <img alt="_images/kernelsref-Taylor.png" src="_images/kernelsref-Taylor.png" />
 <img alt="_images/kernelsref-Taylor-samples.png" src="_images/kernelsref-Taylor-samples.png" />
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Wendland">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Wendland</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Wendland" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wendland kernel.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}k(r) &amp;= \frac1{B(2k+1,\nu)}
+\int_r^\infty \mathrm du\, (u^2 - r^2)^k (1 - u)_+^{\nu-1}, \\
+\quad k &amp;\in \mathbb N,\ \nu = k + \alpha,\ \alpha \ge 1.\end{split}\]</div>
+<p>An isotropic kernel with finite support. The covariance is nonzero only
+when the distance between the points is less than 1. Parameter <cite>k</cite> in (0,
+1, 2, 3) sets the differentiability, while the maximum dimensionality the
+kernel can be used in is <span class="math notranslate nohighlight">\(\lfloor 2\alpha-1 \rfloor\)</span>. Default is
+<span class="math notranslate nohighlight">\(k = 0\)</span> (non derivable), <span class="math notranslate nohighlight">\(\alpha = 1\)</span> (can be used only in
+1D).</p>
+<p>Reference: Gneiting (2002), Wendland (2004, p. 128), Rasmussen and Williams
+(2006, p. 87), Porcu, Furrer and Nychka (2020, p. 4).</p>
+</dd></dl>
+
+<img alt="_images/kernelsref-Wendland.png" src="_images/kernelsref-Wendland.png" />
+<img alt="_images/kernelsref-Wendland-samples.png" src="_images/kernelsref-Wendland-samples.png" />
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.White">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">White</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.White" title="Permalink to this definition">¶</a></dt>
