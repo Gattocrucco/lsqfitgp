@@ -692,3 +692,9 @@ a - b = log exp(a - b) =
       = b log exp(a/b - 1)
 
 Does not solve the problem, a/b is already imprecise.
+
+2022-06-29
+==========
+
+I learned that the FK tables (the matrices PDF -> linear data) are 90 %
+diagonal and the entries are mostly positive.

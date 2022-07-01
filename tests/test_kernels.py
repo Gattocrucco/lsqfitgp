@@ -339,15 +339,15 @@ class KernelTestBase(KernelTestABC):
     
     def test_loc_scale_nd(self):
         kernel = self.kernel_class
-        skip = [_kernels.BagOfWords, _kernels.Categorical]
-        if kernel in skip:
-            pytest.skip()
         loc = -2  # < 0
         scale = 3 # > abs(loc)
         donesomething = False
         for kw in self.kwargs_list:
             # TODO maybe put loc and scale in kw and let random_x adapt the
             # domain to loc and scale
+            x = self.random_x(**kw)
+            if not np.issubdtype(x.dtype, np.inexact):
+                continue
             x1 = self.random_x_nd(2, **kw)[:, None]
             x2 = self.make_x_nd_implicit(x1)
             x2['f0'] -= loc
@@ -447,9 +447,12 @@ class KernelTestBase(KernelTestABC):
     
     def test_soft_input(self):
         kernel = self.kernel_class
+        donesomething = False
         if issubclass(kernel, _Kernel.StationaryKernel) and not issubclass(kernel, _Kernel.IsotropicKernel):
             for kw in self.kwargs_list:
                 x1 = self.random_x(**kw)
+                if not np.issubdtype(x1.dtype, np.inexact):
+                    continue
                 x2 = x1 - 1 / np.pi
                 if np.any(np.abs(x1 - x2) < 1e-6):
                     pytest.xfail()
@@ -459,7 +462,8 @@ class KernelTestBase(KernelTestABC):
                 kw.update(input='soft')
                 c2 = kernel(**kw)(x1, x2)
                 np.testing.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
-        else:
+                donesomething = True
+        if not donesomething:
             pytest.skip()
     
     def test_where(self):
@@ -694,6 +698,12 @@ test_kwargs = {
     _kernels.Decaying: dict(random_x_fun=lambda **_: np.random.uniform(0, 5, size=100)),
     _kernels.StationaryFracBrownian: dict(kwargs_list=[dict(H=H) for H in [0.1, 0.5, 1]]),
     _kernels.Circular: dict(kwargs_list=[dict(c=c, tau=t) for c, t in [(0.1, 4), (0.5, 4), (0.5, 8)]]),
+    _kernels.MA: dict(
+        random_x_fun=lambda **_: np.random.randint(0, 100, 100),
+        kwargs_list=[dict(w=w) for w in [
+            [], [0], [1], [1, 1], [1, -1], [2, 1], [1, 2, 3, 4, 5], np.random.randn(30),
+        ]],
+    ),
 }
 
 for kernel in kernels:
@@ -833,7 +843,9 @@ def test_matern_derivatives():
         x = np.linspace(0, 10, 100)
         test_util.check_grads(lambda x: _kernels._maternp(x, p), (x,), 2)
 
-#####################  XFAILS  #####################
+#####################  XFAILS/SKIPS  #####################
+
+util.skip(TestMA, 'test_normalized')
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y. => use make_jaxpr to debug?

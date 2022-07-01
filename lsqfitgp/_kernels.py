@@ -57,6 +57,7 @@ __all__ = [
     'HoleEffect',
     'Linear',
     'Log',
+    'MA',
     'Matern',
     'Maternp',
     'NNKernel',
@@ -652,6 +653,8 @@ def _FourierBase(delta, n=2):
     # series when I add a constant. => Maybe this will be solved when I
     # improve the transformations system.
     
+    # TODO ND version. The separable product is not equivalent I think.
+    
     assert int(n) == n and n >= 1, n
     # TODO I could allow n == 0 to be a constant kernel
     s = 2 * n
@@ -1151,7 +1154,11 @@ def Log(r):
 # structured/non structured. Maybe all this should just live in the test suite.
 
 # TODO Any stationary kernel supported on [0, pi] would be fine combined with
-# the geodesic distance. Use the generic wendland kernel.
+# the geodesic distance. Use the generic wendland kernel. Options:
+# 1) add here the parameters of Wendland
+# 2) add a distance option in stationary to use the angular distance, then
+#    let the user apply it to wendland => the problem is that the user would
+#    need to be careful with positiveness, while wendland checks it for him
 
 @stationarykernel(derivable=1, maxdim=1, input='soft')
 def Circular(delta, tau=4, c=1/2):
@@ -1174,3 +1181,14 @@ def Circular(delta, tau=4, c=1/2):
     x = delta % 1
     t = jnp.minimum(x, 1 - x)
     return (1 + tau * t / c) * jnp.maximum(1 - t / c, 0) ** tau
+
+# use positive delta because negative indices wrap around
+@stationarykernel(derivable=False, maxdim=1, input='hard')
+def MA(delta, w=None):
+    w = jnp.asarray(w)
+    assert w.ndim == 1
+    if len(w):
+        corr = jnp.convolve(w, w[::-1])
+        return corr.at[delta + len(w) - 1].get(mode='fill', fill_value=0)
+    else:
+        return jnp.zeros(delta.shape)

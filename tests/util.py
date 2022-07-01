@@ -37,12 +37,13 @@ def mark(cls, meth, mark):
     impl = getattr(cls, meth)
     if not meth.startswith('test_'):
         warnings.warn(f'method {cls.__name__}.{meth} not prefixed with test_')
-    @getattr(pytest.mark, mark)
+    marker = getattr(pytest.mark, mark)
+    @marker
     @functools.wraps(impl) # `wraps` needed because pytest uses the method name
     def newimpl(self):
         # wrap because otherwise the superclass method would be marked too,
         # but set the mark temporarily to allow introspection
-        pytest.mark.xfail(impl)
+        marker(impl)
         try:
             impl(self)
         finally:
