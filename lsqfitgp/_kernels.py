@@ -1185,6 +1185,19 @@ def Circular(delta, tau=4, c=1/2):
 # use positive delta because negative indices wrap around
 @stationarykernel(derivable=False, maxdim=1, input='hard')
 def MA(delta, w=None):
+    """
+    Moving average kernel.
+    
+    .. math::
+        k(\\Delta) = \\sum_{k=|\\Delta|}^{n-1} w_k w_{k-|\\Delta|},
+        \\quad \\mathbf w = (w_0, \ldots, w_{n-1}).
+    
+    It is the autocovariance function of a moving average with weights
+    :math:`\\mathbf w` applied to white noise.
+    
+    The inputs must be integers.
+    
+    """
     w = jnp.asarray(w)
     assert w.ndim == 1
     if len(w):

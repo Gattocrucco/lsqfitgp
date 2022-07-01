@@ -142,6 +142,11 @@ meta = dict(
     GammaExp = dict(kwlist=[dict(gamma=g) for g in [0.1, 1, 1.9]]),
     Gibbs = dict(kwlist=[dict(scalefun=Formula('where((0 < x) & (x < 0.1), 0.02, 1)'))], range=[-1, 1]),
     Harmonic = dict(range=[0, 4 * np.pi], kwlist=[dict(Q=Q) for Q in [1, 20]]),
+    MA = dict(x=np.arange(50), kwlist=[dict(w=w) for w in [
+        2 * np.array([1, -1, 1, -1, 1, -1]),
+        np.array([5, 4, 3, 2, 1]),
+        2 * np.array([1, 1, 1, 1, 1]),
+    ]]),
     Matern = dict(kwlist=[dict(nu=v) for v in [0.1, 1.1, 5.1]]),
     Maternp = dict(kwlist=[dict(p=p) for p in [0, 1, 2]]),
     Log = dict(range=[0, 10]),
@@ -174,8 +179,13 @@ for kernel in kernels2:
         continue
 
     k = getattr(lgp, kernel)
-    l, r = m.get('range', [0, 5])
-    x = np.linspace(l, r, 1000)
+    if 'x' in m:
+        x = m['x']
+        l = np.min(x)
+        r = np.max(x)
+    else:
+        l, r = m.get('range', [0, 5])
+        x = np.linspace(l, r, 1000)
     
     legend = m.get('kwlist')
     for kw in m.get('kwlist', [{}]):
@@ -198,8 +208,10 @@ for kernel in kernels2:
     ax.set_xlabel('x')
     if issubclass(k, lgp.StationaryKernel):
         ax.set_ylabel(f'Cov[f(x), f({l})]')
+        b, t = ax.get_ylim()
         dy = 0.1
-        ax.set_ylim(-1 - dy, 1 + dy)
+        lim = max([abs(b), abs(t), 1 + dy])
+        ax.set_ylim(-lim, lim)
         ax.axvspan(l, r, -1, 0.5, color='#ddd')
         ax.set_xlim(l, r)
     else:
