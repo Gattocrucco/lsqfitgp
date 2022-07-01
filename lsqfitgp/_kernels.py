@@ -487,7 +487,9 @@ def Wendland(r, k=0, alpha=1):
     # TODO compute the kernel only on the nonzero points.
     
     # TODO find the nonzero points in O(nlogn) instead of O(n^2) by sorting
-    # the inputs, and output a sparse matrix.
+    # the inputs, and output a sparse matrix => on second thought this should
+    # be a general mechanism implemented in GP that gives sparse x and y to
+    # the kernel
     
     if _patch_jax.isconcrete(k, alpha):
         D = _wendland_maxdim(k, alpha)
@@ -1190,14 +1192,19 @@ def MA(delta, w=None):
     
     .. math::
         k(\\Delta) = \\sum_{k=|\\Delta|}^{n-1} w_k w_{k-|\\Delta|},
-        \\quad \\mathbf w = (w_0, \ldots, w_{n-1}).
+        \\quad \\mathbf w = (w_0, \\ldots, w_{n-1}).
     
-    It is the autocovariance function of a moving average with weights
-    :math:`\\mathbf w` applied to white noise.
+    The inputs must be integers. It is the autocovariance function of a moving
+    average with weights :math:`\\mathbf w` applied to white noise:
     
-    The inputs must be integers.
+    .. math::
+        k(i, j) &= \\operatorname{Cov}[y_i, y_j], \\\\
+        y_i &= \\sum_{k=0}^{n-1} w_k \\epsilon_{i-k}, \\\\
+        \\operatorname{Cov}[\\epsilon_i,\\epsilon_j] &= \\delta_{ij}.
     
     """
+    # TODO reference? must find some standard book with a treatment which is
+    # not too formal yet writes clearly about the covariance function
     w = jnp.asarray(w)
     assert w.ndim == 1
     if len(w):
@@ -1205,3 +1212,10 @@ def MA(delta, w=None):
         return corr.at[delta + len(w) - 1].get(mode='fill', fill_value=0)
     else:
         return jnp.zeros(delta.shape)
+
+# TODO AR kernel
+# - generate the companion matrix of the characteristic polynomial
+# - diagonalize it to get the roots
+# - evaluate the polynomial but for each root in turn to get the coefficients
+#   (not really sure about this part)
+# - evaluate the combination of powers

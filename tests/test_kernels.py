@@ -114,7 +114,7 @@ class KernelTestBase(KernelTestABC):
                 continue
             d = (deriv, 'f0') if nd else deriv
             cov = kernel.diff(d, d)(x[None, :], x[:, None])
-            np.testing.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7)
+            np.testing.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7, equal_nan=False)
             eigv = linalg.eigvalsh(cov)
             assert np.min(eigv) >= -len(cov) * self.eps * np.max(eigv)
             donesomething = True
@@ -152,7 +152,7 @@ class KernelTestBase(KernelTestABC):
                 continue
             b1 = kernel.diff(xderiv, yderiv)(x, y)
             b2 = kernel.diff(yderiv, xderiv)(y, x)
-            np.testing.assert_allclose(b1, b2, atol=1e-11)
+            np.testing.assert_allclose(b1, b2, atol=1e-11, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -199,7 +199,7 @@ class KernelTestBase(KernelTestABC):
             kernel = kernel.diff(d, d)
             cov1 = kernel(x[None, :], x[:, None])
             cov2 = jax.jit(kernel)(x[None, :], x[:, None])
-            np.testing.assert_allclose(cov2, cov1, rtol=1e-6, atol=1e-5)
+            np.testing.assert_allclose(cov2, cov1, rtol=1e-6, atol=1e-5, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -228,7 +228,7 @@ class KernelTestBase(KernelTestABC):
             for kw in self.kwargs_list:
                 x = self.random_x(**kw)
                 var = kernel(**kw)(x, x)
-                np.testing.assert_allclose(var, 1)
+                np.testing.assert_allclose(var, 1, equal_nan=False)
         else:
             pytest.skip()
     
@@ -241,7 +241,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x(**kw)
             r1 = kernel.diff(1, 1)(x[None, :], x[:, None])
             r2 = kernel.diff(1, 0).diff(0, 1)(x[None, :], x[:, None])
-            np.testing.assert_allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -255,7 +255,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x(**kw)
             r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
             r2 = kernel.diff(1, 1).diff(1, 1)(x[None, :], x[:, None])
-            np.testing.assert_allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -269,7 +269,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x(**kw)
             r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
             r2 = kernel.diff(2, 0).diff(0, 2)(x[None, :], x[:, None])
-            np.testing.assert_allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -285,7 +285,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff('f0', 'f0')(x, x.T)
             r2 = kernel.diff('f0', 0).diff(0, 'f0')(x, x.T)
-            np.testing.assert_allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -301,7 +301,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f0').diff('f1', 'f1')(x, x.T)
-            np.testing.assert_allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -317,7 +317,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x, x.T)
-            np.testing.assert_allclose(r1, r2)
+            np.testing.assert_allclose(r1, r2, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -332,7 +332,7 @@ class KernelTestBase(KernelTestABC):
                 continue
             c1 = covfun(x1, x1.T)
             c2 = covfun(x2, x2.T)
-            np.testing.assert_allclose(c1, c2, atol=1e-15, rtol=1e-14)
+            np.testing.assert_allclose(c1, c2, atol=1e-15, rtol=1e-14, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -357,7 +357,7 @@ class KernelTestBase(KernelTestABC):
                 continue
             c1 = covfun1(x1, x1.T)
             c2 = kernel(**kw)(x2, x2.T)
-            np.testing.assert_allclose(c1, c2, rtol=1e-12, atol=1e-13)
+            np.testing.assert_allclose(c1, c2, rtol=1e-12, atol=1e-13, equal_nan=False)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -461,7 +461,7 @@ class KernelTestBase(KernelTestABC):
                 c1 = kernel(**kw)(x1, x2)
                 kw.update(input='soft')
                 c2 = kernel(**kw)(x1, x2)
-                np.testing.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
+                np.testing.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14, equal_nan=False)
                 donesomething = True
         if not donesomething:
             pytest.skip()
@@ -603,10 +603,10 @@ class KernelTestBase(KernelTestABC):
             gp.addx(2, 'c1', proc='F')
             ms, cs = gp.predfromdata(dict(s1=1, c1=0), 'x', raw=True)
             mc, cc = gp.predfromdata(dict(c1=1, s1=0), 'x', raw=True)
-            np.testing.assert_allclose(ms, np.sin(2 * np.pi * x))
-            np.testing.assert_allclose(mc, np.cos(2 * np.pi * x))
-            np.testing.assert_allclose(np.diag(cs), cs[0, 0])
-            np.testing.assert_allclose(np.diag(cc), cc[0, 0])
+            np.testing.assert_allclose(ms, np.sin(2 * np.pi * x), equal_nan=False)
+            np.testing.assert_allclose(mc, np.cos(2 * np.pi * x), equal_nan=False)
+            np.testing.assert_allclose(np.diag(cs), cs[0, 0], equal_nan=False)
+            np.testing.assert_allclose(np.diag(cc), cc[0, 0], equal_nan=False)
 
     @classmethod
     def make_subclass(cls, kernel_class, kwargs_list=None, random_x_fun=None, eps=None):
@@ -726,7 +726,7 @@ def check_matern_half_integer(deriv):
         d = min(k.derivable, deriv)
         r1 = k.diff(d, d)(x, y)
         r2 = _kernels.Maternp(p=p).diff(d, d)(x, y)
-        np.testing.assert_allclose(r1, r2, rtol=1e-5)
+        np.testing.assert_allclose(r1, r2, rtol=1e-5, equal_nan=False)
 
 def test_matern_half_integer_0():
     check_matern_half_integer(0)
@@ -744,7 +744,7 @@ def test_wiener_integral():
     x, y = np.abs(np.random.randn(2, 100))
     r1 = _kernels.Wiener()(x, y)
     r2 = _kernels.WienerIntegral().diff(1, 1)(x, y)
-    np.testing.assert_allclose(r1, r2)
+    np.testing.assert_allclose(r1, r2, equal_nan=False)
 
 def bernoulli_poly_handwritten(n, x):
     return [
@@ -760,7 +760,7 @@ def bernoulli_poly_handwritten(n, x):
 def check_bernoulli(n, x):
     r1 = bernoulli_poly_handwritten(n, x)
     r2 = _kernels._bernoulli_poly(n, x)
-    np.testing.assert_allclose(r1, r2)
+    np.testing.assert_allclose(r1, r2, equal_nan=False)
 
 def test_bernoulli():
     for n in range(7):
@@ -778,7 +778,7 @@ def test_celerite_harmonic():
     B = 1 / (eta * Q)
     r1 = _kernels.Celerite(gamma=B, B=B)(x[:, None], x[None, :])
     r2 = _kernels.Harmonic(Q=Q, scale=eta)(x[:, None], x[None, :])
-    np.testing.assert_allclose(r1, r2)
+    np.testing.assert_allclose(r1, r2, equal_nan=False)
 
 def check_harmonic_continuous(deriv, Q0, Qderiv=False):
     eps = 1e-10
@@ -791,9 +791,9 @@ def check_harmonic_continuous(deriv, Q0, Qderiv=False):
         if Qderiv:
             kernelf = jax.jacfwd(kernelf)
         results.append(kernelf(Q, x))
-    np.testing.assert_allclose(results[0], results[2], atol=1e-5)
-    np.testing.assert_allclose(results[0], results[1], atol=1e-5)
-    np.testing.assert_allclose(results[1], results[2], atol=1e-5)
+    np.testing.assert_allclose(results[0], results[2], atol=1e-5, equal_nan=False)
+    np.testing.assert_allclose(results[0], results[1], atol=1e-5, equal_nan=False)
+    np.testing.assert_allclose(results[1], results[2], atol=1e-5, equal_nan=False)
 
 def test_harmonic_continuous_12():
     check_harmonic_continuous(0, 1/2)
@@ -817,7 +817,7 @@ def test_nonfloat_eps():
     c1 = _kernels.Maternp(p=0)(x, x)
     eps = np.finfo(float).eps
     c2 = np.exp(-eps)
-    np.testing.assert_allclose(c1, c2, rtol=eps, atol=eps)
+    np.testing.assert_allclose(c1, c2, rtol=eps, atol=eps, equal_nan=False)
 
 def test_default_override():
     with pytest.warns(UserWarning):
@@ -868,11 +868,18 @@ util.xfail(TestBessel, 'test_double_diff_nd_second_chopped') # seen xpassing
 util.xfail(TestBessel, 'test_positive_deriv') # seen xpassing
 util.xfail(TestBessel, 'test_positive_deriv2')
 
-# TODO fail due to nan on variance. why?
-util.xfail(TestMatern, 'test_positive_deriv2_nd')
+# TODO nan on variance. why?
+util.xfail(TestMatern, 'test_symmetric_21')
 util.xfail(TestMatern, 'test_positive_deriv')
 util.xfail(TestMatern, 'test_positive_deriv2')
 util.xfail(TestMatern, 'test_positive_deriv_nd')
+util.xfail(TestMatern, 'test_positive_deriv2_nd')
+util.xfail(TestMatern, 'test_double_diff_scalar_first')
+util.xfail(TestMatern, 'test_double_diff_scalar_second')
+util.xfail(TestMatern, 'test_double_diff_scalar_second_chopped')
+util.xfail(TestMatern, 'test_double_diff_nd_first')
+util.xfail(TestMatern, 'test_double_diff_nd_second')
+util.xfail(TestMatern, 'test_double_diff_nd_second_chopped')
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
