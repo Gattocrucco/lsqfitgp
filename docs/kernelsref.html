@@ -185,6 +185,7 @@ encounter problems with second derivatives for <a class="reference internal" hre
 <li><p><a class="reference internal" href="#lsqfitgp.Fourier" title="lsqfitgp.Fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">Fourier()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Harmonic" title="lsqfitgp.Harmonic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Harmonic()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.HoleEffect" title="lsqfitgp.HoleEffect"><code class="xref py py-func docutils literal notranslate"><span class="pre">HoleEffect()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.MA" title="lsqfitgp.MA"><code class="xref py py-func docutils literal notranslate"><span class="pre">MA()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Periodic" title="lsqfitgp.Periodic"><code class="xref py py-func docutils literal notranslate"><span class="pre">Periodic()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Pink" title="lsqfitgp.Pink"><code class="xref py py-func docutils literal notranslate"><span class="pre">Pink()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Sinc" title="lsqfitgp.Sinc"><code class="xref py py-func docutils literal notranslate"><span class="pre">Sinc()</span></code></a></p></li>
@@ -540,6 +541,23 @@ Astronomical Time Series</em>.</p>
 
 <img alt="_images/kernelsref-Log.png" src="_images/kernelsref-Log.png" />
 <img alt="_images/kernelsref-Log-samples.png" src="_images/kernelsref-Log-samples.png" />
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.MA">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">MA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.MA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Moving average kernel.</p>
+<div class="math notranslate nohighlight">
+\[k(\Delta) = \sum_{k=|\Delta|}^{n-1} w_k w_{k-|\Delta|},
+\quad \mathbf w = (w_0, \ldots, w_{n-1}).\]</div>
+<p>The inputs must be integers. It is the autocovariance function of a moving
+average with weights <span class="math notranslate nohighlight">\(\mathbf w\)</span> applied to white noise:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}k(i, j) &amp;= \operatorname{Cov}[y_i, y_j], \\
+y_i &amp;= \sum_{k=0}^{n-1} w_k \epsilon_{i-k}, \\
+\operatorname{Cov}[\epsilon_i,\epsilon_j] &amp;= \delta_{ij}.\end{split}\]</div>
+</dd></dl>
+
+<img alt="_images/kernelsref-MA.png" src="_images/kernelsref-MA.png" />
+<img alt="_images/kernelsref-MA-samples.png" src="_images/kernelsref-MA-samples.png" />
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Matern">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Matern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Matern" title="Permalink to this definition">¶</a></dt>

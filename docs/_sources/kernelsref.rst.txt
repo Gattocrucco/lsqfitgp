@@ -70,6 +70,7 @@ Stationary kernels
   * :func:`Fourier`
   * :func:`Harmonic`
   * :func:`HoleEffect`
+  * :func:`MA`
   * :func:`Periodic`
   * :func:`Pink`
   * :func:`Sinc`
@@ -150,6 +151,9 @@ Documentation
 .. autofunction:: Log
 .. image:: kernelsref-Log.png
 .. image:: kernelsref-Log-samples.png
+.. autofunction:: MA
+.. image:: kernelsref-MA.png
+.. image:: kernelsref-MA-samples.png
 .. autofunction:: Matern
 .. image:: kernelsref-Matern.png
 .. image:: kernelsref-Matern-samples.png
