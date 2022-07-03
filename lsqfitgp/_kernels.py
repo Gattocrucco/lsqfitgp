@@ -141,30 +141,30 @@ def Linear(x, y):
     """
     return _dot(x, y)
 
-@functools.partial(jax.custom_jvp, nondiff_argnums=(1,))
-def _maternp(x, p):
-    poly = 1
-    for k in reversed(range(p)):
-        c_kp1_over_ck = (p - k) / ((2 * p - k) * (k + 1))
-        poly *= c_kp1_over_ck * 2 * x
-        poly += 1
-    return jnp.exp(-x) * poly
-
-def _maternp_deriv(x, p):
-    if p == 0:
-        return -jnp.exp(-x)
-    poly = 1
-    for k in reversed(range(1, p)):
-        c_kp1_over_ck = (p - k) / ((2 * p - k - 1) * k)
-        poly = 1 + poly * c_kp1_over_ck * 2 * x
-    poly = poly / (1 - 2 * p) * x
-    return jnp.exp(-x) * poly
-
-@_maternp.defjvp
-def _maternp_jvp(p, primals, tangents):
-    x, = primals
-    xdot, = tangents
-    return _maternp(x, p), _maternp_deriv(x, p) * xdot
+# @functools.partial(jax.custom_jvp, nondiff_argnums=(1,))
+# def _maternp(x, p):
+#     poly = 1
+#     for k in reversed(range(p)):
+#         c_kp1_over_ck = (p - k) / ((2 * p - k) * (k + 1))
+#         poly *= c_kp1_over_ck * 2 * x
+#         poly += 1
+#     return jnp.exp(-x) * poly
+#
+# def _maternp_deriv(x, p):
+#     if p == 0:
+#         return -jnp.exp(-x)
+#     poly = 1
+#     for k in reversed(range(1, p)):
+#         c_kp1_over_ck = (p - k) / ((2 * p - k - 1) * k)
+#         poly = 1 + poly * c_kp1_over_ck * 2 * x
+#     poly = poly / (1 - 2 * p) * x
+#     return jnp.exp(-x) * poly
+#
+# @_maternp.defjvp
+# def _maternp_jvp(p, primals, tangents):
+#     x, = primals
+#     xdot, = tangents
+#     return _maternp(x, p), _maternp_deriv(x, p) * xdot
 
 # TODO see if I can write a function to compute exp(-x) poly(x) and its
 # derivatives without cancellations => I can't, but I could use integer
@@ -182,8 +182,8 @@ def _maternp_jvp(p, primals, tangents):
 def _maternp_derivable(p=None):
     return p
 
-@isotropickernel(input='soft', derivable=_maternp_derivable)
-def Maternp(r, p=None):
+@isotropickernel(derivable=_maternp_derivable)
+def Maternp(r2, p=None):
     """
     Matérn kernel of half-integer order. 
     
@@ -201,8 +201,9 @@ def Maternp(r, p=None):
     """
     if _patch_jax.isconcrete(p):
         assert int(p) == p and p >= 0, p
-    x = jnp.sqrt(2 * p + 1) * r
-    return _maternp(x, p)
+    r2 = (2 * p + 1) * r2
+    return _patch_jax.kvmodx2_hi(r2 + 1e-30, p)
+    # TODO see if I can remove the 1e-30 improving kvmodx2_hi_jvp
 
 def _matern_derivable(nu=None):
     fnu = numpy.floor(nu)
@@ -1222,3 +1223,6 @@ def MA(delta, w=None):
 # Alternative: parameterize with roots and amplitudes, then add class method
 # to convert parameters to coefficients
 # Alternative: rotate the yule-walker equations
+# Question: is the exponential mixture parametrization valid with roots with
+# multiplicity? For high enough distance I'm sure it is, there may be problems
+# near zero

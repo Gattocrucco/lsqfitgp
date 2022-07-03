@@ -241,6 +241,9 @@ def kvmodx2(nu, x2, norm_offset=0):
     # return jnp.where(x2 < 1e-4, nearzero, normal)
     return jnp.where(x2, normal, 1 / jnp.prod(nu + jnp.arange(norm_offset)))
 
+# TODO derivatives for integer nu do not work. Surely for integer nu <= 0 the
+# value at x = 0 is inf and not the one I'm using, but it's not just that.
+
 # d/dx (x^v Kv(x)) = -x^v Kv-1(x)       (Abrahamsen 1997, p. 43)
 # d/dx ~Kv(x) =
 #   = d/dx (√x/2)^v Kv(√x) =
@@ -257,8 +260,28 @@ def kvmodx2_jvp(nu, norm_offset, primals, tangents):
     primal = kvmodx2(nu, x2, norm_offset)
     tangent = -x2t * kvmodx2(nu - 1, x2, norm_offset + 1) / 4
     return primal, tangent
-    
-# TODO implement kvmodx2_hi to replace maternp
+
+@functools.partial(jax.custom_jvp, nondiff_argnums=(1,))
+def kvmodx2_hi(x2, p):
+    # nu = p + 1/2, p integer >= 0
+    x = jnp.sqrt(x2)
+    poly = 1
+    for k in reversed(range(p)):
+        c_kp1_over_ck = (p - k) / ((2 * p - k) * (k + 1))
+        poly = 1 + poly * c_kp1_over_ck * 2 * x
+    return jnp.exp(-x) * poly
+
+@kvmodx2_hi.defjvp
+def kvmodx2_hi_jvp(p, primals, tangents):
+    x2, = primals
+    x2t, = tangents
+    primal = kvmodx2_hi(x2, p)
+    if p == 0:
+        x = jnp.sqrt(x2)
+        tangent = -x2t * jnp.exp(-x) / (2 * x)
+    else:
+        tangent = -x2t / (p - 1/2) * kvmodx2_hi(x2, p - 1) / 4
+    return primal, tangent
 
 def tree_all(predicate, *trees):
     pred = tree_util.tree_map(predicate, *trees)

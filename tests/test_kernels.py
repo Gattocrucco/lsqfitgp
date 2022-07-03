@@ -845,10 +845,10 @@ def test_transf_not_implemented():
         with pytest.raises(NotImplementedError):
             getattr(kernel, meth)(True, True)
 
-def test_matern_derivatives():
-    for p in range(10):
-        x = np.linspace(0, 10, 100)
-        test_util.check_grads(lambda x: _kernels._maternp(x, p), (x,), 2)
+# def test_matern_derivatives():
+#     for p in range(10):
+#         x = np.linspace(0, 10, 100)
+#         test_util.check_grads(lambda x: _kernels._maternp(x, p), (x,), 2)
 
 #####################  XFAILS/SKIPS  #####################
 
@@ -856,9 +856,9 @@ util.skip(TestMA, 'test_normalized')
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y. => use make_jaxpr to debug?
-util.xfail(TestMaternp, 'test_positive_deriv2_nd')
-util.xfail(TestMaternp, 'test_double_diff_nd_second_chopped')
-util.xfail(TestMaternp, 'test_jit_deriv2_nd')
+# util.xfail(TestMaternp, 'test_positive_deriv2_nd')
+# util.xfail(TestMaternp, 'test_double_diff_nd_second_chopped')
+# util.xfail(TestMaternp, 'test_jit_deriv2_nd')
 util.xfail(TestWendland, 'test_positive_deriv2_nd')
 util.xfail(TestWendland, 'test_double_diff_nd_second_chopped')
 util.xfail(TestWendland, 'test_jit_deriv2_nd')
@@ -883,7 +883,7 @@ util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped')
 # util.xfail(TestMatern, 'test_double_diff_nd_second_chopped')
 
 # TODO some xpass, likely numerical precision problems
-util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
+# util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
 util.xfail(TestWendland, 'test_positive_deriv2') # normally xpasses
 util.xfail(TestCausalExpQuad, 'test_positive_deriv2') # NOT 1 - erf cancel
 

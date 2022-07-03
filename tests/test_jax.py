@@ -57,6 +57,20 @@ def test_kvmodx2():
     xz = np.linspace(0, 1, 1000)
     np.testing.assert_equal(_patch_jax.kvmodx2(0, xz), np.where(xz, 0, 1))
 
+def test_kvmodx2_hi():
+    x = np.linspace(1e-15, 10, 1000)
+    x2 = x ** 2
+    for p in range(5):
+        v = p + 1/2
+        f1 = lambda x: _patch_jax.kvmodx2_hi(x, p)
+        f2 = lambda x: _patch_jax.kvmodx2(v, x)
+        for _ in range(3):
+            s1 = f1(x2)
+            s2 = f2(x2)
+            np.testing.assert_allclose(s1, s2, atol=0, rtol=1e-14)
+            f1 = _patch_jax.elementwise_grad(f1)
+            f2 = _patch_jax.elementwise_grad(f2)
+
 def randpoly(n):
     while True:
         a = np.random.randn(n)
