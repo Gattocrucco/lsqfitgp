@@ -141,44 +141,6 @@ def Linear(x, y):
     """
     return _dot(x, y)
 
-# @functools.partial(jax.custom_jvp, nondiff_argnums=(1,))
-# def _maternp(x, p):
-#     poly = 1
-#     for k in reversed(range(p)):
-#         c_kp1_over_ck = (p - k) / ((2 * p - k) * (k + 1))
-#         poly *= c_kp1_over_ck * 2 * x
-#         poly += 1
-#     return jnp.exp(-x) * poly
-#
-# def _maternp_deriv(x, p):
-#     if p == 0:
-#         return -jnp.exp(-x)
-#     poly = 1
-#     for k in reversed(range(1, p)):
-#         c_kp1_over_ck = (p - k) / ((2 * p - k - 1) * k)
-#         poly = 1 + poly * c_kp1_over_ck * 2 * x
-#     poly = poly / (1 - 2 * p) * x
-#     return jnp.exp(-x) * poly
-#
-# @_maternp.defjvp
-# def _maternp_jvp(p, primals, tangents):
-#     x, = primals
-#     xdot, = tangents
-#     return _maternp(x, p), _maternp_deriv(x, p) * xdot
-
-# TODO see if I can write a function to compute exp(-x) poly(x) and its
-# derivatives without cancellations => I can't, but I could use integer
-# arithmetic for the coefficients
-
-# @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
-# def _nexppol(coeffs, x):
-#     return jnp.exp(-x) * jnp.polyval(coeffs, x)
-#
-# @_nexppol.defjvp
-# def _nexppol_jvp(coeffs, primals, tangents):
-#     x, = primals
-#     xt, = tangents
-
 def _maternp_derivable(p=None):
     return p
 

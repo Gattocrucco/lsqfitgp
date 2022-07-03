@@ -278,7 +278,7 @@ def kvmodx2_hi_jvp(p, primals, tangents):
     primal = kvmodx2_hi(x2, p)
     if p == 0:
         x = jnp.sqrt(x2)
-        tangent = -x2t * jnp.exp(-x) / (2 * x)
+        tangent = -x2t * jnp.exp(-x) / (2 * x) # <--- problems!
     else:
         tangent = -x2t / (p - 1/2) * kvmodx2_hi(x2, p - 1) / 4
     return primal, tangent
