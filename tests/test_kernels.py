@@ -821,7 +821,7 @@ def test_harmonic_deriv_derivQ_continuous_1():
 
 def test_nonfloat_eps():
     x = np.arange(20)
-    c1 = _kernels.Maternp(p=0)(x, x)
+    c1 = _kernels.Wendland()(x, x)
     eps = np.finfo(float).eps
     c2 = np.exp(-eps)
     np.testing.assert_allclose(c1, c2, rtol=eps, atol=eps, equal_nan=False)
