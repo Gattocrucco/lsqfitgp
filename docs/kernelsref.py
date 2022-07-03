@@ -83,11 +83,11 @@ default values of the keyword parameters, apart from some specific cases like
 
 .. warning::
 
-   Some kernels have problems with derivatives. No derivative works for
-   :class:`Matern`, use :class:`Maternp`. Second derivatives do not work for
-   :class:`Circular`, :class:`Maternp`, and :class:`Wendland`. You may
-   encounter problems with second derivatives for :class:`CausalExpQuad`,
-   :class:`FracBrownian`, :class:`NNKernel`, and :class:`Taylor`.
+   Some kernels have problems with derivatives. Second derivatives do not work
+   for :class:`Circular`, :class:`Maternp`, and :class:`Wendland`. The degree
+   of derivability is halved for :class:`Matern`. You may encounter problems
+   with second derivatives for :class:`CausalExpQuad`, :class:`FracBrownian`,
+   :class:`NNKernel`, and :class:`Taylor`.
 
 Index
 -----
@@ -141,7 +141,7 @@ meta = dict(
     FracBrownian = dict(kwlist=[dict(H=H, K=K) for H, K in [(0.1, 1), (0.5, 1), (0.9, 1), (0.9, 0.3)]], range=[-5, 5]),
     GammaExp = dict(kwlist=[dict(gamma=g) for g in [0.1, 1, 1.9]]),
     Gibbs = dict(kwlist=[dict(scalefun=Formula('where((0 < x) & (x < 0.1), 0.02, 1)'))], range=[-1, 1]),
-    Harmonic = dict(range=[0, 4 * np.pi], kwlist=[dict(Q=Q) for Q in [1, 20]]),
+    Harmonic = dict(range=[0, 4 * np.pi], kwlist=[dict(Q=Q) for Q in [1/20, 1, 20]]),
     MA = dict(x=np.arange(50), kwlist=[dict(w=w) for w in [
         2 * np.array([1, -1, 1, -1, 1, -1]),
         np.array([5, 4, 3, 2, 1]),

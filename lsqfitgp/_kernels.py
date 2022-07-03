@@ -205,7 +205,9 @@ def Maternp(r, p=None):
     return _maternp(x, p)
 
 def _matern_derivable(nu=None):
-    return numpy.floor(nu)
+    return numpy.floor(nu) // 2
+    # TODO remove positive nu limitation in kvmodx2 and set derivability to
+    # floor(nu)
 
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
@@ -1219,3 +1221,6 @@ def MA(delta, w=None):
 # - evaluate the polynomial but for each root in turn to get the coefficients
 #   (not really sure about this part)
 # - evaluate the combination of powers
+# Alternative: parameterize with roots and amplitudes, then add class method
+# to convert parameters to coefficients
+# Alternative: rotate the yule-walker equations

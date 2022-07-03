@@ -592,6 +592,9 @@ I can not currently use directly a fft because it returns complex output. The
 user needs to manually separate the real and imaginary parts. (It's still quite
 usable)
 
+Discrete derivatives. They can be done manually, but they are common with ARIMA
+so it may be convenient to have a method.
+
 #### Fourier
   
 Apply a Fourier transform or a DTFT on a kernel which represents a transient

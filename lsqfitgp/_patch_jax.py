@@ -209,9 +209,7 @@ def kvmodx2_nearzero(nu, x2):
     factor = jnp.pi / (2 * jnp.sin(jnp.pi * nu))
     return factor * (ivmodx2_nearzero(-nu, x2) - (x2 / 4) ** nu * ivmodx2_nearzero(nu, x2))
 
-# TODO alternative for kvmod and its derivatives: see Abrahamsen (1997, p. 43).
-# still does not allow to use x^2 as input
-
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def kvmodx2(nu, x2):
     # assert int(nu) != nu, nu
     nearzero = kvmodx2_nearzero(nu, x2)
@@ -219,6 +217,43 @@ def kvmodx2(nu, x2):
     normal = (x / 2) ** nu * kv(nu, x)
     return jnp.where(x2 < 1e-4, nearzero, normal)
 
+# d/dx (x^v Kv(x)) = -x^v Kv-1(x)       (Abrahamsen 1997, p. 43)
+# d/dx ~Kv(x) =
+#   = d/dx (√x/2)^v Kv(√x) =
+#   = 2^-v d/dx (√x)^v Kv(√x) =
+#   = -2^-v (√x)^v Kv-1(√x) 1/(2√x) =
+#   = -2^-(v+1) √x^(v-1) Kv-1(√x) =
+#   = -1/4 (√x/2)^(v-1) Kv-1(√x) =
+#   = -1/4 ~Kv-1(x)
+
+@kvmodx2.defjvp
+def kvmodx2_jvp(nu, primals, tangents):
+    x2, = primals
+    x2t, = tangents
+    return kvmodx2(nu, x2), -x2t * kvmodx2(nu - 1, x2) / 4
+
 def tree_all(predicate, *trees):
     pred = tree_util.tree_map(predicate, *trees)
     return tree_util.tree_reduce(lambda acc, p: acc and p, pred, True)
+
+def companion(a):
+    """mimics scipy.linalg.companion
+    coefficients ordered high to low"""
+    a = jnp.asarray(a)
+    assert a.ndim == 1 and a.size >= 2 and a[0] != 0, a
+    row = -a[1:] / (1.0 * a[0])
+    n = a.size
+    col_indices = jnp.arange(n - 2)
+    row_indices = 1 + col_indices
+    c = jnp.zeros((n - 1, n - 1), row.dtype)
+    return c.at[0, :].set(row).at[row_indices, col_indices].set(1)
+
+def polyroots(c):
+    """mimics numpy.polynomial.polynomial.polyroots
+    coefficients low to high"""
+    m = companion(c[::-1])
+    return jnp.sort(jnp.linalg.eigvals(m.T))
+    # transpose to mimic polyroots, which says that this particular ordering
+    # increases precision, but I'm not sure the transposition actually helps,
+    # it's probably more about the difference between scipy's companion and
+    # numpy's polycompanion

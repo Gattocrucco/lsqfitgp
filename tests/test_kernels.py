@@ -868,18 +868,17 @@ util.xfail(TestBessel, 'test_double_diff_nd_second_chopped') # seen xpassing
 util.xfail(TestBessel, 'test_positive_deriv') # seen xpassing
 util.xfail(TestBessel, 'test_positive_deriv2')
 
-# TODO nan on variance. why?
-util.xfail(TestMatern, 'test_symmetric_21')
-util.xfail(TestMatern, 'test_positive_deriv')
-util.xfail(TestMatern, 'test_positive_deriv2')
-util.xfail(TestMatern, 'test_positive_deriv_nd')
-util.xfail(TestMatern, 'test_positive_deriv2_nd')
-util.xfail(TestMatern, 'test_double_diff_scalar_first')
-util.xfail(TestMatern, 'test_double_diff_scalar_second')
-util.xfail(TestMatern, 'test_double_diff_scalar_second_chopped')
-util.xfail(TestMatern, 'test_double_diff_nd_first')
-util.xfail(TestMatern, 'test_double_diff_nd_second')
-util.xfail(TestMatern, 'test_double_diff_nd_second_chopped')
+# util.xfail(TestMatern, 'test_symmetric_21')
+# util.xfail(TestMatern, 'test_positive_deriv')
+# util.xfail(TestMatern, 'test_positive_deriv2')
+# util.xfail(TestMatern, 'test_positive_deriv_nd')
+# util.xfail(TestMatern, 'test_positive_deriv2_nd')
+# util.xfail(TestMatern, 'test_double_diff_scalar_first')
+# util.xfail(TestMatern, 'test_double_diff_scalar_second')
+# util.xfail(TestMatern, 'test_double_diff_scalar_second_chopped')
+# util.xfail(TestMatern, 'test_double_diff_nd_first')
+# util.xfail(TestMatern, 'test_double_diff_nd_second')
+# util.xfail(TestMatern, 'test_double_diff_nd_second_chopped')
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
