@@ -186,17 +186,21 @@ def sinc(x):
 def sgngamma(x):
     return jnp.where((x > 0) | (x % 2 < 1), 1, -1)
 
-def coefgen_jvmod(s, e, nu):
-    m = jnp.arange(s, e)
-    u = 1 + m + nu
-    return sgngamma(u) * (-1) ** m / jnp.exp(jspecial.gammaln(1 + m) + jspecial.gammaln(u))
+def gamma(x):
+    return sgngamma(x) * jnp.exp(jspecial.gammaln(x))
+
+# def coefgen_jvmod(s, e, nu):
+#     m = jnp.arange(s, e)
+#     u = 1 + m + nu
+#     return sgngamma(u) * (-1) ** m / jnp.exp(jspecial.gammaln(1 + m) + jspecial.gammaln(u))
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def jvmodx2(nu, x2):
-    nearzero = taylor(coefgen_jvmod, (nu,), 0, 5, x2 / 4)
     x = jnp.sqrt(x2)
     normal = (x / 2) ** -nu * jv(nu, x)
-    return jnp.where(x2 < 1e-4, nearzero, normal)
+    # nearzero = taylor(coefgen_jvmod, (nu,), 0, 5, x2 / 4)
+    # return jnp.where(x2 < 1e-4, nearzero, normal)
+    return jnp.where(x2, normal, 1 / gamma(nu + 1))
 
 # (1/x d/dx)^m (x^-v J_v(x)) = (-1)^m x^-(v+m) J_v+m(x)
 #                                   (Abramowitz and Stegun, p. 361, 9.1.30)

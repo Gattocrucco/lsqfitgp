@@ -39,6 +39,7 @@ def test_jvmodx2():
         s1 = (x / 2) ** -v * special.jv(v, x)
         s2 = _patch_jax.jvmodx2(v, x ** 2)
         np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
+        np.testing.assert_allclose(_patch_jax.jvmodx2(v, 0), 1 / special.gamma(v + 1), rtol=1e-14)
         test_util.check_grads(lambda x: _patch_jax.jvmodx2(v, x ** 2), (x,), 2)
 
 def test_kvmodx2():
