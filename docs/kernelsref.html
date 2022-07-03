@@ -148,11 +148,16 @@ default values of the keyword parameters, apart from some specific cases like
 <a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Constant"><code class="xref py py-class docutils literal notranslate"><span class="pre">Constant</span></code></a>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Some kernels have problems with derivatives. No derivative works for
-<a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a>, use <a class="reference internal" href="#lsqfitgp.Maternp" title="lsqfitgp.Maternp"><code class="xref py py-class docutils literal notranslate"><span class="pre">Maternp</span></code></a>. Second derivatives do not work for
-<a class="reference internal" href="#lsqfitgp.Circular" title="lsqfitgp.Circular"><code class="xref py py-class docutils literal notranslate"><span class="pre">Circular</span></code></a>, <a class="reference internal" href="#lsqfitgp.Maternp" title="lsqfitgp.Maternp"><code class="xref py py-class docutils literal notranslate"><span class="pre">Maternp</span></code></a>, and <a class="reference internal" href="#lsqfitgp.Wendland" title="lsqfitgp.Wendland"><code class="xref py py-class docutils literal notranslate"><span class="pre">Wendland</span></code></a>. You may
+<p>Some kernels have problems with derivatives. Second derivatives do not work
+for <a class="reference internal" href="#lsqfitgp.Circular" title="lsqfitgp.Circular"><code class="xref py py-class docutils literal notranslate"><span class="pre">Circular</span></code></a>, <a class="reference internal" href="#lsqfitgp.Maternp" title="lsqfitgp.Maternp"><code class="xref py py-class docutils literal notranslate"><span class="pre">Maternp</span></code></a>, and <a class="reference internal" href="#lsqfitgp.Wendland" title="lsqfitgp.Wendland"><code class="xref py py-class docutils literal notranslate"><span class="pre">Wendland</span></code></a>. You may
 encounter problems with second derivatives for <a class="reference internal" href="#lsqfitgp.CausalExpQuad" title="lsqfitgp.CausalExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">CausalExpQuad</span></code></a>,
-<a class="reference internal" href="#lsqfitgp.FracBrownian" title="lsqfitgp.FracBrownian"><code class="xref py py-class docutils literal notranslate"><span class="pre">FracBrownian</span></code></a>, <a class="reference internal" href="#lsqfitgp.NNKernel" title="lsqfitgp.NNKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NNKernel</span></code></a>, and <a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>.</p>
+<a class="reference internal" href="#lsqfitgp.FracBrownian" title="lsqfitgp.FracBrownian"><code class="xref py py-class docutils literal notranslate"><span class="pre">FracBrownian</span></code></a>, <a class="reference internal" href="#lsqfitgp.NNKernel" title="lsqfitgp.NNKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NNKernel</span></code></a>, and <a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>.
+<a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a> is not derivable for integer <span class="math notranslate nohighlight">\(\nu\)</span>.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The following kernels are not compatible with the JAX JIT: <a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Bessel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bessel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a>, <a class="reference internal" href="#lsqfitgp.Pink" title="lsqfitgp.Pink"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pink</span></code></a>, <a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>.</p>
 </div>
 <section id="index">
 <h2><span class="section-number">1.1. </span>Index<a class="headerlink" href="#index" title="Permalink to this heading">¶</a></h2>
@@ -564,7 +569,7 @@ y_i &amp;= \sum_{k=0}^{n-1} w_k \epsilon_{i-k}, \\
 <dd><p>Matérn kernel of real order.</p>
 <div class="math notranslate nohighlight">
 \[k(r) = \frac {2^{1-\nu}} {\Gamma(\nu)} x^\nu K_\nu(x),
-\quad \nu &gt; 0,
+\quad \nu \ge 0,
 \quad x = \sqrt{2\nu} r\]</div>
 <p>The nearest integer below <span class="math notranslate nohighlight">\(\nu\)</span> indicates how many times the
 Gaussian process is derivable: so for <span class="math notranslate nohighlight">\(\nu &lt; 1\)</span> it is continuous but
