@@ -191,12 +191,31 @@ def coefgen_jvmod(s, e, nu):
     u = 1 + m + nu
     return sgngamma(u) * (-1) ** m / jnp.exp(jspecial.gammaln(1 + m) + jspecial.gammaln(u))
 
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def jvmodx2(nu, x2):
     nearzero = taylor(coefgen_jvmod, (nu,), 0, 5, x2 / 4)
     x = jnp.sqrt(x2)
     normal = (x / 2) ** -nu * jv(nu, x)
     return jnp.where(x2 < 1e-4, nearzero, normal)
-    
+
+# (1/x d/dx)^m (x^-v J_v(x)) = (-1)^m x^-(v+m) J_v+m(x)
+#                                   (Abramowitz and Stegun, p. 361, 9.1.30)
+# --> 1/x d/dx (x^-v J_v(x)) = -x^-(v+1) J_v+1(x)
+# --> d/dx (x^-v J_v(x)) = -x^-v J_v+1(x)
+# --> d/ds ~J_v(s) =
+#   = d/ds (√s/2)^-v J_v(√s) =
+#   = 2^v d/ds √s^-v J_v(√s) =
+#   = -2^v √s^-v J_v+1(√s) 1/2√s =
+#   = -2^(v-1) √s^-(v+1) J_v+1(√s) =
+#   = -1/4 (√s/2)^(v+1) J_v+1(√s) =
+#   = -1/4 ~J_v+1(s)
+
+@jvmodx2.defjvp
+def jvmodx2_jvp(nu, primals, tangents):
+    x2, = primals
+    x2t, = tangents
+    return jvmodx2(nu, x2), -x2t * jvmodx2(nu + 1, x2) / 4
+
 def coefgen_ivmod(s, e, nu):
     m = jnp.arange(s, e)
     u = 1 + m + nu

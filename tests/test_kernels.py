@@ -858,15 +858,10 @@ util.xfail(TestWendland, 'test_jit_deriv2_nd')
 util.xfail(TestCausalExpQuad, 'test_positive_deriv2_nd')
 util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped')
 
-# TODO less numerically accurate than usual, I need finer options for tolerances
-# in tests. Tentative interface: a method that takes a method name and spits out
-# rtol, atol. => Not enough, derivatives are game-changers.
-#
-# May the precision problems be due to a crappy implementation of jvp in scipy?
-util.xfail(TestBessel, 'test_positive_deriv2_nd')
-util.xfail(TestBessel, 'test_double_diff_nd_second_chopped') # seen xpassing
-util.xfail(TestBessel, 'test_positive_deriv') # seen xpassing
-util.xfail(TestBessel, 'test_positive_deriv2')
+# util.xfail(TestBessel, 'test_positive_deriv2_nd')
+# util.xfail(TestBessel, 'test_double_diff_nd_second_chopped')
+# util.xfail(TestBessel, 'test_positive_deriv')
+# util.xfail(TestBessel, 'test_positive_deriv2')
 
 # util.xfail(TestMatern, 'test_symmetric_21')
 # util.xfail(TestMatern, 'test_positive_deriv')
