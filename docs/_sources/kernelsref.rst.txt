@@ -38,16 +38,12 @@ default values of the keyword parameters, apart from some specific cases like
 
 .. warning::
 
-   Some kernels have problems with derivatives. Second derivatives do not work
-   for :class:`Circular`, :class:`Maternp`, and :class:`Wendland`. You may
-   encounter problems with second derivatives for :class:`CausalExpQuad`,
-   :class:`FracBrownian`, :class:`NNKernel`, and :class:`Taylor`.
-   :class:`Matern` is not derivable for integer :math:`\nu`.
-
-.. warning::
-
-    The following kernels are not compatible with the JAX JIT: :class:`Bessel`,
-    :class:`Matern`, :class:`Pink`, :class:`Taylor`.
+   You may encounter problems with second derivatives for
+   :class:`CausalExpQuad`, :class:`FracBrownian`, :class:`NNKernel`,
+   :class:`Taylor`, and with first derivatives too for :class:`Wendland` (but
+   only in more than one dimension). :class:`Matern` is not derivable for
+   integer :math:`\nu`. The following kernels are not compatible with the JAX
+   JIT: :class:`Bessel`, :class:`Matern`, :class:`Pink`, :class:`Taylor`.
 
 Index
 -----
