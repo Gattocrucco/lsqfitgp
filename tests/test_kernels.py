@@ -662,7 +662,14 @@ def bow_rand(**kw):
         
 # Define a concrete subclass of KernelTestBase for each kernel.
 test_kwargs = {
-    _kernels.Matern: dict(kwargs_list=[dict(nu=nu + 0.5) for nu in range(5)] + [dict(nu=nu + 0.49) for nu in range(5)] + [dict(nu=nu + 0.51) for nu in range(5)]),
+    _kernels.Matern: dict(kwargs_list=
+        [dict(nu=v + 0.5 ) for v in range(   5)] +
+        [dict(nu=v + 0.49) for v in range(   5)] +
+        [dict(nu=v + 0.51) for v in range(   5)] +
+        [dict(nu=v       ) for v in range(   5)] +
+        [dict(nu=v - 0.01) for v in range(1, 5)] +
+        [dict(nu=v + 0.01) for v in range(   5)]
+    ),
     _kernels.Maternp: dict(kwargs_list=[dict(p=p) for p in range(10)]),
     _kernels.Wendland: dict(kwargs_list=[
         dict(k=k, alpha=a) for k in range(4) for a in np.linspace(1, 4, 10)

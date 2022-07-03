@@ -84,10 +84,15 @@ default values of the keyword parameters, apart from some specific cases like
 .. warning::
 
    Some kernels have problems with derivatives. Second derivatives do not work
-   for :class:`Circular`, :class:`Maternp`, and :class:`Wendland`. The degree
-   of derivability is halved for :class:`Matern`. You may encounter problems
-   with second derivatives for :class:`CausalExpQuad`, :class:`FracBrownian`,
-   :class:`NNKernel`, and :class:`Taylor`.
+   for :class:`Circular`, :class:`Maternp`, and :class:`Wendland`. You may
+   encounter problems with second derivatives for :class:`CausalExpQuad`,
+   :class:`FracBrownian`, :class:`NNKernel`, and :class:`Taylor`.
+   :class:`Matern` is not derivable for integer :math:`\\nu`.
+
+.. warning::
+
+    The following kernels are not compatible with the JAX JIT: :class:`Bessel`,
+    :class:`Matern`, :class:`Pink`, :class:`Taylor`.
 
 Index
 -----
@@ -147,7 +152,7 @@ meta = dict(
         np.array([5, 4, 3, 2, 1]),
         2 * np.array([1, 1, 1, 1, 1]),
     ]]),
-    Matern = dict(kwlist=[dict(nu=v) for v in [0.1, 1.1, 5.1]]),
+    Matern = dict(kwlist=[dict(nu=v) for v in [0.1, 1, 1.5, 2]]),
     Maternp = dict(kwlist=[dict(p=p) for p in [0, 1, 2]]),
     Log = dict(range=[0, 10]),
     OrnsteinUhlenbeck = dict(range=[0, 3], srange=[0, 10]),

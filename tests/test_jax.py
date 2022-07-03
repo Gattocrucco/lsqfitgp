@@ -43,13 +43,19 @@ def test_jvmodx2():
         test_util.check_grads(lambda x: _patch_jax.jvmodx2(v, x ** 2), (x,), 2)
 
 def test_kvmodx2():
-    nu = np.linspace(2.1, 4.9, 20) # TODO nu <= 2 (negative too)
+    nu = np.linspace(-5, 5, 20)
     x = np.linspace(1e-15, 0.1, 1000)
+    xsoft = np.linspace(1, 10, 1000)
     for v in nu:
-        s1 = (x / 2) ** v * special.kv(v, x)
+        s1 = 2 / special.gamma(v) * (x / 2) ** v * special.kv(v, x)
         s2 = _patch_jax.kvmodx2(v, x ** 2)
         np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
-        test_util.check_grads(lambda x: _patch_jax.kvmodx2(v, x ** 2), (x,), 2)
+        np.testing.assert_allclose(_patch_jax.kvmodx2(v, 0), 1, rtol=1e-14)
+        test_util.check_grads(lambda x: _patch_jax.kvmodx2(v, x ** 2), (xsoft,), 2)
+        # for no in range(5):
+        #     np.testing.assert_allclose(_patch_jax.kvmodx2(v, 1e-15, no), _patch_jax.kvmodx2(v, 0, no), equal_nan=False)
+    xz = np.linspace(0, 1, 1000)
+    np.testing.assert_equal(_patch_jax.kvmodx2(0, xz), np.where(xz, 0, 1))
 
 def randpoly(n):
     while True:

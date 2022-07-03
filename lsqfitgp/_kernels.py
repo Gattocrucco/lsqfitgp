@@ -205,9 +205,8 @@ def Maternp(r, p=None):
     return _maternp(x, p)
 
 def _matern_derivable(nu=None):
-    return numpy.floor(nu) // 2
-    # TODO remove positive nu limitation in kvmodx2 and set derivability to
-    # floor(nu)
+    fnu = numpy.floor(nu)
+    return fnu if nu != fnu else 0 # TODO remove this limitation
 
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
@@ -216,7 +215,7 @@ def Matern(r2, nu=None):
     
     .. math::
         k(r) = \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x),
-        \\quad \\nu > 0,
+        \\quad \\nu \\ge 0,
         \\quad x = \\sqrt{2\\nu} r
     
     The nearest integer below :math:`\\nu` indicates how many times the
@@ -227,10 +226,9 @@ def Matern(r2, nu=None):
     Reference: Rasmussen and Williams (2006, p. 84).
     """
     if _patch_jax.isconcrete(nu):
-        assert int(nu) != nu, nu # TODO remove this limitation
-        assert 0 < nu < jnp.inf, nu
-    r2 = 2 * nu * r2
-    return 2 / special.gamma(nu) * _patch_jax.kvmodx2(nu, r2)
+        assert 0 <= nu < jnp.inf, nu
+    r2 = 2 * jnp.where(nu, nu, 1) * r2
+    return _patch_jax.kvmodx2(nu, r2)
     
 def _gammaexp_derivable(gamma=1):
     return gamma == 2

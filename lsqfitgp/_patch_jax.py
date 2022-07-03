@@ -220,25 +220,26 @@ def jvmodx2_jvp(nu, primals, tangents):
     x2t, = tangents
     return jvmodx2(nu, x2), -x2t * jvmodx2(nu + 1, x2) / 4
 
-def coefgen_ivmod(s, e, nu):
-    m = jnp.arange(s, e)
-    u = 1 + m + nu
-    return sgngamma(u) * jnp.exp(-jspecial.gammaln(1 + m) - jspecial.gammaln(u))
-    
-def ivmodx2_nearzero(nu, x2):
-    return taylor(coefgen_ivmod, (nu,), 0, 5, x2 / 4)
+# def coefgen_ivmod(s, e, nu):
+#     m = jnp.arange(s, e)
+#     u = 1 + m + nu
+#     return sgngamma(u) * jnp.exp(-jspecial.gammaln(1 + m) - jspecial.gammaln(u))
+#
+# def ivmodx2_nearzero(nu, x2):
+#     return taylor(coefgen_ivmod, (nu,), 0, 5, x2 / 4)
+#
+# def kvmodx2_nearzero(nu, x2):
+#     factor = jnp.pi / (2 * jnp.sin(jnp.pi * nu))
+#     return factor * (ivmodx2_nearzero(-nu, x2) - (x2 / 4) ** nu * ivmodx2_nearzero(nu, x2))
 
-def kvmodx2_nearzero(nu, x2):
-    factor = jnp.pi / (2 * jnp.sin(jnp.pi * nu))
-    return factor * (ivmodx2_nearzero(-nu, x2) - (x2 / 4) ** nu * ivmodx2_nearzero(nu, x2))
-
-@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
-def kvmodx2(nu, x2):
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0, 2))
+def kvmodx2(nu, x2, norm_offset=0):
     # assert int(nu) != nu, nu
-    nearzero = kvmodx2_nearzero(nu, x2)
     x = jnp.sqrt(x2)
-    normal = (x / 2) ** nu * kv(nu, x)
-    return jnp.where(x2 < 1e-4, nearzero, normal)
+    normal = 2 / gamma(nu + norm_offset) * (x / 2) ** nu * kv(nu, x)
+    # nearzero = kvmodx2_nearzero(nu, x2)
+    # return jnp.where(x2 < 1e-4, nearzero, normal)
+    return jnp.where(x2, normal, 1 / jnp.prod(nu + jnp.arange(norm_offset)))
 
 # d/dx (x^v Kv(x)) = -x^v Kv-1(x)       (Abrahamsen 1997, p. 43)
 # d/dx ~Kv(x) =
@@ -250,10 +251,14 @@ def kvmodx2(nu, x2):
 #   = -1/4 ~Kv-1(x)
 
 @kvmodx2.defjvp
-def kvmodx2_jvp(nu, primals, tangents):
+def kvmodx2_jvp(nu, norm_offset, primals, tangents):
     x2, = primals
     x2t, = tangents
-    return kvmodx2(nu, x2), -x2t * kvmodx2(nu - 1, x2) / 4
+    primal = kvmodx2(nu, x2, norm_offset)
+    tangent = -x2t * kvmodx2(nu - 1, x2, norm_offset + 1) / 4
+    return primal, tangent
+    
+# TODO implement kvmodx2_hi to replace maternp
 
 def tree_all(predicate, *trees):
     pred = tree_util.tree_map(predicate, *trees)
