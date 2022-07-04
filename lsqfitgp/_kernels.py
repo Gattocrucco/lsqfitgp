@@ -26,7 +26,7 @@ import jax
 import numpy
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
-from jax import tree_util
+from jax import tree_util, lax
 from scipy import special
 
 from . import _array
@@ -1073,8 +1073,7 @@ def CausalExpQuad(r, alpha=1):
     if _patch_jax.isconcrete(alpha):
         assert alpha >= 0, alpha
     return jspecial.erfc(alpha / 4 * r) * jnp.exp(-1/2 * jnp.square(r))
-    # TODO parameterize with r2 and custom correct in the erf with inside and
-    # outside eps using erf'(0) = 2/√π
+    # TODO taylor-expand erfc near 0 and use r2
 
 @kernel(derivable=True, maxdim=1)
 def Decaying(x, y):
@@ -1187,4 +1186,84 @@ def MA(delta, w=None):
 # Alternative: rotate the yule-walker equations
 # Question: is the exponential mixture parametrization valid with roots with
 # multiplicity? For high enough distance I'm sure it is, there may be problems
-# near zero
+# near zero => Guy on wikipedia
+# https://en.wikipedia.org/wiki/Talk:Autoregressive_model#Multiplicities_in_characteristic_polynomial
+# says the general form is a combination of t^r y^-t, with y a root and r
+# an integer going up to y's multiplicity - 1. (ask Luca for a book about this)
+# Tentative interface: four parametrizations:
+# 1) w : (p,)
+#       autoregressive weights
+# 2) y : (p,)
+#       roots > 1
+#    a : (p,)
+#       amplitudes >= 0 for the terms y^-t
+# 3) y : (n,)
+#       roots
+#    a : (n, m)
+#       amplitudes for the terms t^0 y^-t, ..., t^m-1 y^-t (p = n * m)
+# 4) c : (p + 1,)
+#       first terms of the autocovariance function
+# => Problem: there are nontrivial positivity constraints on the coefficients
+# in the case with multiplicity
+
+def _yule_walker(acf):
+    """
+    acf = autocovariance at lag 0...p
+    output: autoregressive coefficients at lag 1...p
+    """
+    acf = jnp.asarray(acf)
+    assert acf.ndim == 1
+    t = acf[:-1]
+    b = acf[1:]
+    if t.size:
+        return _linalg._toeplitz.solve(t, b)
+        # TODO does it become circulant if I extend phi with zeroes?
+    else:
+        return jnp.empty(0)
+
+def _yule_walker_inv_mat(coef):
+    coef = jnp.asarray(coef)
+    assert coef.ndim == 1
+    p = len(coef)
+    m = jnp.arange(p + 1)[:, None] # rows
+    n = m.T # columns
+    phi = jnp.pad(coef, (1, 1))
+    kp = jnp.clip(m + n, 0, p + 1)
+    km = jnp.clip(m - n, 0, p + 1)
+    return jnp.eye(p + 1) - (phi[kp] + phi[km]) / jnp.where(n, 1, 2)
+    # TODO I think that if I split the negative gammas it becomes a circulant
+    # system
+    
+def _yule_walker_inv(coef):
+    """
+    coef = autoregressive coefficients at lag 1...p
+    output: autocovariance at lag 0...p, assuming driving noise has sdev 1
+    """
+    a = _yule_walker_inv_mat(coef)
+    b = jnp.zeros(len(a)).at[0].set(1)
+    acf = jnp.linalg.solve(a, b)
+    return acf
+
+def _ar_evolve(coef, start, noise):
+    """
+    coef = autoregressive coefficients at lag 1...p
+    start = first p values of the process (increasing time)
+    noise = n noise values added at each step
+    output: n new process values
+    """
+    coef = jnp.asarray(coef)
+    start = jnp.asarray(start)
+    noise = jnp.asarray(noise)
+    assert coef.ndim == 1 and coef.shape == start.shape and noise.ndim == 1
+    return _ar_evolve_jit(coef, start, noise)
+
+@jax.jit
+def _ar_evolve_jit(coef, start, noise):
+    def f(carry, eps):
+        vals, coef = carry
+        nextval = coef @ vals + eps
+        if vals.size:
+            vals = jnp.roll(vals, -1).at[-1].set(nextval)
+        return (vals, coef), nextval
+    _, ev = lax.scan(f, (start, coef[::-1]), noise, unroll=16)
+    return ev

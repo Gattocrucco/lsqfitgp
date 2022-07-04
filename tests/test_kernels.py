@@ -858,7 +858,6 @@ util.xfail(TestCausalExpQuad, 'test_positive_deriv2_nd')
 util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped')
 
 # TODO some xpass, likely numerical precision problems
-# util.xfail(TestMaternp, 'test_positive_deriv2') # likely high p problem
 util.xfail(TestWendland, 'test_positive_deriv2') # normally xpasses
 util.xfail(TestCausalExpQuad, 'test_positive_deriv2') # NOT 1 - erf cancel
 

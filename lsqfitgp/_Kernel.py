@@ -130,7 +130,7 @@ class CrossKernel:
             mind = [k._minderivable for k in kernels]
             maxd = [k._maxderivable for k in kernels]
             obj._minderivable = tuple(numpy.min(mind, 0))
-            obj._maxderivable = tuple(numpy.max(maxd, 0))
+            obj._maxderivable = tuple(numpy.max(maxd, 0)) # TODO or is it the sum?
         else:
             obj._minderivable = (0, sys.maxsize)
             obj._maxderivable = (0, sys.maxsize)
@@ -351,6 +351,8 @@ class CrossKernel:
         if _isscalar(value):
             val = value
             value = self._newkernel_from(lambda x, y: val, [self])
+            # TODO this may add too much uncertainty in the derivability
+            # check
         if not isinstance(value, CrossKernel):
             return NotImplemented
         return self._nary(op, [self, value], self.side.BOTH)
@@ -780,6 +782,11 @@ class IsotropicKernel(StationaryKernel):
             The distance is divided by `scale`.
         **kw
             Additional keyword arguments are passed to the :class:`Kernel` init.
+        
+        Notes
+        -----
+        The 'soft' option will cause problems with second derivatives in more
+        than one dimension.
                 
         """
         if input == 'raw':
@@ -828,7 +835,6 @@ def _makekernelsubclass(kernel, superclass, **prekw):
         named_object = kernel
     
     name = getattr(named_object, '__name__', 'DecoratedKernel')
-    # newclass = type(name, (superclass,), {})
     newclass = types.new_class(name, (superclass,))
         
     prekwset = set(prekw)
@@ -985,7 +991,6 @@ def where(condfun, kernel1, kernel2, dim=None):
 # choose(lambda comp: comp, [kernel0, kernel1, kernel2, ...], dim='comp')
 # example where `comp` is a string field, and without using `dim`:
 # choose(lambda x: x['comp'], {'a': kernela, 'b': kernelb})
-# define Kernel._nary using a cycle of _binary
 
 class Zero(IsotropicKernel):
     

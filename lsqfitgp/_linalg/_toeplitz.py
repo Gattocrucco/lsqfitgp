@@ -77,7 +77,7 @@ class SymLevinson(_seqalg.Producer):
     
     def __init__(self, t):
         """t = first row of the matrix"""
-        t = jnp.asarray(t)
+        t = jnp.asarray(t, float)
         assert t.ndim == 1
         # assert t[0] > 0, '1-th leading minor is not positive definite'
         self.t = t
@@ -91,6 +91,7 @@ class SymLevinson(_seqalg.Producer):
         self.phi2 = jnp.zeros(n)
         self.nu = self.t[0]
         self.tlag = jnp.roll(self.t, -1)
+        del self.t
         
     def iter_out(self, i):
         """i-th row of L^-1"""

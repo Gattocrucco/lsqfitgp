@@ -43,7 +43,6 @@ class AutoPyTree:
         self = cls.__new__(cls)
         self._aux_data = aux_data
         jax_vars, other_vars = aux_data
-        # print(f'packing {jax_vars} into {cls.__name__}')
         for n, v in zip(jax_vars, children):
             setattr(self, n, v)
         for n, v in other_vars:

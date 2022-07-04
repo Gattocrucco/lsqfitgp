@@ -234,11 +234,8 @@ def jvmodx2_jvp(nu, primals, tangents):
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 2))
 def kvmodx2(nu, x2, norm_offset=0):
-    # assert int(nu) != nu, nu
     x = jnp.sqrt(x2)
     normal = 2 / gamma(nu + norm_offset) * (x / 2) ** nu * kv(nu, x)
-    # nearzero = kvmodx2_nearzero(nu, x2)
-    # return jnp.where(x2 < 1e-4, nearzero, normal)
     return jnp.where(x2, normal, 1 / jnp.prod(nu + jnp.arange(norm_offset)))
 
 # TODO derivatives for integer nu do not work. Surely for integer nu <= 0 the

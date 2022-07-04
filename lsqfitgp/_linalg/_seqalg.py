@@ -151,6 +151,7 @@ class MatMulRowByFull(MatMulIterByFull):
         if self.vec:
             abi = jnp.squeeze(abi, -1)
         return abi
+    # TODO do a Producer version that does not save ab
     
     def iter(self, i, ai):
         self.ab = self.ab.at[i, :].set(ai @ self.b)
