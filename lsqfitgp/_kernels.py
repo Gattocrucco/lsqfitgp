@@ -1176,35 +1176,6 @@ def MA(delta, w=None):
         return jnp.zeros(delta.shape)
 
 # TODO AR kernel
-# - generate the companion matrix of the characteristic polynomial
-# - diagonalize it to get the roots
-# - evaluate the polynomial but for each root in turn to get the coefficients
-#   (not really sure about this part)
-# - evaluate the combination of powers
-# Alternative: parameterize with roots and amplitudes, then add class method
-# to convert parameters to coefficients
-# Alternative: rotate the yule-walker equations
-# Question: is the exponential mixture parametrization valid with roots with
-# multiplicity? For high enough distance I'm sure it is, there may be problems
-# near zero => Guy on wikipedia
-# https://en.wikipedia.org/wiki/Talk:Autoregressive_model#Multiplicities_in_characteristic_polynomial
-# says the general form is a combination of t^r y^-t, with y a root and r
-# an integer going up to y's multiplicity - 1. (ask Luca for a book about this)
-# Tentative interface: four parametrizations:
-# 1) w : (p,)
-#       autoregressive weights
-# 2) y : (p,)
-#       roots > 1
-#    a : (p,)
-#       amplitudes >= 0 for the terms y^-t
-# 3) y : (n,)
-#       roots
-#    a : (n, m)
-#       amplitudes for the terms t^0 y^-t, ..., t^m-1 y^-t (p = n * m)
-# 4) c : (p + 1,)
-#       first terms of the autocovariance function
-# => Problem: there are nontrivial positivity constraints on the coefficients
-# in the case with multiplicity
 
 def _yule_walker(acf):
     """

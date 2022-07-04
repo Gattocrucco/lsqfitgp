@@ -698,3 +698,94 @@ Does not solve the problem, a/b is already imprecise.
 
 I learned that the FK tables (the matrices PDF -> linear data) are 90 %
 diagonal and the entries are mostly positive.
+
+2022-07-04
+==========
+
+AR kernel
+---------
+
+- generate the companion matrix of the characteristic polynomial
+- diagonalize it to get the roots
+- evaluate the polynomial but for each root in turn to get the coefficients
+  (not really sure about this part)
+- evaluate the combination of powers
+
+Alternative: parameterize with roots and amplitudes, then add class method
+to convert parameters to coefficients
+
+Alternative: rotate the yule-walker equations
+
+Question: is the exponential mixture parametrization valid with roots with
+multiplicity? For high enough distance I'm sure it is, there may be problems
+near zero => Guy on wikipedia
+https://en.wikipedia.org/wiki/Talk:Autoregressive_model#Multiplicities_in_characteristic_polynomial
+says the general form is a combination of t^r y^-t, with y a root and r
+an integer going up to y's multiplicity - 1. (ask Luca for a book about this)
+
+Tentative interface: four parametrizations:
+1) w : (p,)
+      autoregressive weights
+2) y : (p,)
+      roots > 1
+   a : (p,)
+      amplitudes >= 0 for the terms y^-t
+3) y : (n,)
+      roots
+   a : (n, m)
+      amplitudes for the terms t^0 y^-t, ..., t^m-1 y^-t (p = n * m)
+4) c : (p + 1,)
+      first terms of the autocovariance function
+
+=> Problem: there are nontrivial positivity constraints on the coefficients
+in the case with multiplicity
+
+=> Actually, even though (2) is always pos def, the amplitudes are uniquely
+determined by the roots through the char poly. So I should take the roots
+and amplitudes, generate the polynomial, compute the acf, and solve a linear
+system for the amplitudes. I can't do this right away from the coefficients
+because I need the multiplicity of the roots; my intuition suggests that
+it is numerically more stable to evolve the acf instead of using the
+analytical expression. The speed should be analogous in practical cases.
+
+Problem with evolving the acf: the maximum lag, and thus the length of the
+array, is determined by the data. This is not permitted under the jit =>
+add a parameter maxlag, fill with nan for lags not computed.
+
+New tentative parametrizations:
+1) w : (p,)
+      autoregressive weights
+   maxlag : int
+      maximum precomputed lag, outside will be filled with nan (must be
+      specified even without jit---otherwise the eventual failure under jit is
+      confusing)
+2) c : (p + 1,)
+      first terms of the autocovariance function
+   maxlag : int
+      maximum precomputed lag, outside will be filled with nan
+3) y : (p,) complex
+      roots > 1, multiplicity inferred with strict comparison (need a bit
+      of work to group roots under the jit due to fixed size, but can be
+      done)
+4) f : (p,) complex
+      y = exp(f)
+5) y : (n,) complex
+      Roots
+   m : (n,) int
+      Multiplicities
+6) f, m like (4)-(5)
+
+Problem: the complex roots must be conjugate-paired. If I take the real part,
+implicitly it's like I'm duplicating any complex root which isn't paired.
+However this also means that the actual AR order is higher than the number of
+roots provided.
+
+Actually, must the roots necessarily come in pairs? => Yes, and this holds
+also with any multiplicity
+https://en.wikipedia.org/wiki/Complex_conjugate_root_theorem
+
+This poses continuity problems in the parametrization. I guess that as the
+imaginary part of a complex root goes to zero, there will be numerical accuracy
+issues since the solution must tend to a multi-pole filter. What should happen
+is that the imaginary part of the amplitude diverges to compensate the period
+of the sine going to infinity, this gives a linear slope in the limit.
