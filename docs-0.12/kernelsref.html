@@ -179,6 +179,7 @@ JIT: <a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Besse
 <h3><span class="section-number">1.1.2. </span>Stationary kernels<a class="headerlink" href="#stationary-kernels" title="Permalink to this heading">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
+<li><p><a class="reference internal" href="#lsqfitgp.AR" title="lsqfitgp.AR"><code class="xref py py-func docutils literal notranslate"><span class="pre">AR()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Celerite" title="lsqfitgp.Celerite"><code class="xref py py-func docutils literal notranslate"><span class="pre">Celerite()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Circular" title="lsqfitgp.Circular"><code class="xref py py-func docutils literal notranslate"><span class="pre">Circular()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Cos" title="lsqfitgp.Cos"><code class="xref py py-func docutils literal notranslate"><span class="pre">Cos()</span></code></a></p></li>
@@ -217,6 +218,94 @@ JIT: <a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Besse
 </section>
 <section id="documentation">
 <h2><span class="section-number">1.2. </span>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.AR">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">AR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slnr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lnc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.AR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Autoregressive kernel.</p>
+<p>You have to specify one and only one of the sets of parameters
+<cite>phi+maxlag</cite>, <cite>gamma+maxlag</cite>, <cite>slnr+lnc</cite>.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>phi</strong><span class="classifier">(p,) real</span></dt><dd><p>The autoregressive coefficients at lag 1…p.</p>
+</dd>
+<dt><strong>gamma</strong><span class="classifier">(p + 1,) real</span></dt><dd><p>The autocovariance at lag 0…p.</p>
+</dd>
+<dt><strong>maxlag</strong><span class="classifier">int</span></dt><dd><p>The maximum lag that the kernel will be evaluated on. If the actual
+inputs produce higher lags, the missing values are filled with <code class="docutils literal notranslate"><span class="pre">nan</span></code>.</p>
+</dd>
+<dt><strong>slnr</strong><span class="classifier">(nr,) real</span></dt><dd><p>The real roots of the characteristic polynomial, expressed in the
+following way: <code class="docutils literal notranslate"><span class="pre">sign(slnr)</span></code> is the sign of the root, and
+<code class="docutils literal notranslate"><span class="pre">abs(snlr)</span></code> is the natural logarithm of the absolute value.</p>
+</dd>
+<dt><strong>lnc</strong><span class="classifier">(nc,) complex</span></dt><dd><p>The natural logarithm of the complex roots of the characteristic
+polynomial (<span class="math notranslate nohighlight">\(\log z = \log|z| + i\arg z\)</span>), where each root
+also stands for its paired conjugate.</p>
+<p>In <cite>slnr</cite> and <cite>lnc</cite>, the multiplicity of a root is expressed by
+repeating the root in the array (not necessarily next to each other).
+Only exact repetition counts; very close yet distinct roots are treated
+as separate and lead to numerical instability. Two complex roots also
+count as equal if conjugate, and the argument is standardized to
+<span class="math notranslate nohighlight">\([0, 2\pi)\)</span>. Complex roots which are real or almost real are not
+a problem numerically, although they make the actual order lower than
+<code class="docutils literal notranslate"><span class="pre">nr</span> <span class="pre">+</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">nc</span></code>.</p>
+</dd>
+<dt><strong>norm</strong><span class="classifier">bool</span></dt><dd><p>If True, normalize the autocovariance to be 1 at lag 0. If False
+(default), normalize such that the variance of the generating noise is
+1, or use the user-provided normalization if <cite>gamma</cite> is specified.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This is the covariance function of a stationary autoregressive process,
+which is defined recursively as</p>
+<div class="math notranslate nohighlight">
+\[y_i = \sum_{k=1}^p \phi_k y_{i-k} + \epsilon_i,\]</div>
+<p>where <span class="math notranslate nohighlight">\(\epsilon_i\)</span> is white noise, i.e.,
+<span class="math notranslate nohighlight">\(\operatorname{Cov}[\epsilon_i, \epsilon_j] = \delta_{ij}\)</span>. The
+length <span class="math notranslate nohighlight">\(p\)</span> of the vector of coefficients <span class="math notranslate nohighlight">\(\boldsymbol\phi\)</span>
+is the <cite>order</cite> of the process.</p>
+<p>The covariance function can be expressed in two ways. First as the same
+recursion defining the process:</p>
+<div class="math notranslate nohighlight">
+\[\gamma_m = \sum_{k=1}^p \phi_k \gamma_{m-k} + \delta_{m0},\]</div>
+<p>where <span class="math notranslate nohighlight">\(\gamma_m \equiv \operatorname{Cov}[y_i, y_{i+m}]\)</span>. This is
+called <cite>Yule-Walker equation</cite>. Second, as a linear combination of mixed
+power-exponentials:</p>
+<div class="math notranslate nohighlight">
+\[\gamma_m = \sum_{j=1}^n
+            \sum_{l=1}^{\mu_j}
+            a_{jl} |m|^{l-1} x_j^{-|m|},\]</div>
+<p>where <span class="math notranslate nohighlight">\(x_j\)</span> and <span class="math notranslate nohighlight">\(\mu_j\)</span> are the (complex) roots and
+corresponding multiplicities of the <cite>characteristic polynomial</cite></p>
+<div class="math notranslate nohighlight">
+\[P(x) = 1 - \sum_{k=1}^p \phi_k x^k,\]</div>
+<p>and the <span class="math notranslate nohighlight">\(a_{jl}\)</span> are uniquely determined complex coefficients. The
+<span class="math notranslate nohighlight">\(\boldsymbol\phi\)</span> vector is valid iff <span class="math notranslate nohighlight">\(|x_j|&gt;1, \forall j\)</span>.</p>
+<p>There are three alternative parametrization for this kernel.</p>
+<p>If you specify <cite>phi</cite>, the first terms of the covariance are computed
+solving the Yule-Walker equation, and then evolved up to <cite>maxlag</cite>. It
+is necessary to specify <cite>maxlag</cite> instead of letting the code figure it out
+from the actual inputs for technical reasons.</p>
+<p>Likewise, if you specify <cite>gamma</cite>, the coefficients are obtained with
+Yule-Walker and then used to evolve the covariance. The only difference is
+that the normalization can be different: starting from <cite>phi</cite>, the variance
+of the generating noise <span class="math notranslate nohighlight">\(\epsilon\)</span> is fixed to 1, while giving
+<cite>gamma</cite> directly implies an arbitrary value.</p>
+<p>Instead, if you specify the roots with <cite>slnr</cite> and <cite>lnc</cite>, the coefficients
+are obtained from the polynomial defined in terms of the roots, and then
+the amplitudes <span class="math notranslate nohighlight">\(a_{jl}\)</span> are computed by solving a linear system with
+the covariance (from YW) as RHS. Finally, the full covariance function is
+evaluated with the analytical expression.</p>
+<p>The reasons for using the logarithm are that 1) in practice the roots are
+tipically close to 1, so the logarithm is numerically more accurate, and 2)
+the logarithm is readily interpretable as the inverse of the correlation
+length.</p>
+</dd></dl>
+
+<img alt="_images/kernelsref-AR.png" src="_images/kernelsref-AR.png" />
+<img alt="_images/kernelsref-AR-samples.png" src="_images/kernelsref-AR-samples.png" />
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.BagOfWords">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">BagOfWords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BagOfWords" title="Permalink to this definition">¶</a></dt>
