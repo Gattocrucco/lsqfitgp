@@ -789,3 +789,94 @@ imaginary part of a complex root goes to zero, there will be numerical accuracy
 issues since the solution must tend to a multi-pole filter. What should happen
 is that the imaginary part of the amplitude diverges to compensate the period
 of the sine going to infinity, this gives a linear slope in the limit.
+
+2022-07-05
+==========
+
+New AR parametrization:
+
+ 1) w : (p,)
+        autoregressive weights
+    maxlag : int
+        maximum precomputed lag, outside will be filled with nan (must be
+        specified even without jit---otherwise the eventual failure under jit is
+        confusing)
+ 2) c : (p + 1,)
+        first terms of the autocovariance function
+    maxlag
+ 3) lnr : (n,) real
+        logarithm of real roots (multiplicity 1), > 0
+    lnc : (m,) complex
+        logarithm of complex roots (multiplicity 2), real part > 0
+    mr : (n,) int
+    mc : (m,) int
+        multiplicities of roots, if None assumed 1, no check for equality
+
+Problem: how do I implement the multiplicity-dependent terms in a
+jit-compatible way? The size of the system changes based on the data. => Put
+the roots in an array with multiplicity indicated by repetition. After sorting,
+scan keeps track of repetition (a fixed size state is sufficient for this) and
+generates the appropriate powers of t as needed along the way.
+
+Problem 2: zero imaginary part in complex roots. I think this can be solved
+with a pseudoinverse without further problems.
+
+Problem 3: sign of real roots. I can take the sign of `lnr` as the sign and
+its absolute value as logarithm. (The reason for using logarithms is that
+roots near 1 would be numerically inaccurate. Also, the logarithm is
+interpretable as the inverse of the correlation length.)
+
+New AR parametrization:
+
+ 1) w : (p,)
+        autoregressive weights
+    maxlag : int
+        maximum precomputed lag, outside will be filled with nan (must be
+        specified even without jit---otherwise the eventual failure under jit
+        is confusing)
+
+    Implementation: compute the acf with inverse YW and evolve it up to
+    maxlag. Do not check that the w are valid.
+
+ 2) c : (p + 1,)
+        first terms of the autocovariance function
+    maxlag
+
+    Implementation: compute the coefficients with YW and evolve the acf like
+    above. Do not check c is valid.
+
+ 3) slnr : (n,) real
+        logarithm of real roots (multiplicity = 1 x exact repetitions), the
+        sign is the sign of the root and the absolute value is the logarithm
+    lnc : (m,) complex
+        logarithm of complex roots (multiplicity = 2 x exact repetitions), real
+        part > 0
+    
+    The multiplicity is assessed with strict equality. Very close yet distinct
+    roots are treated as separate and lead to numerical instability. The order
+    of the AR is n + 2 * m. Complex roots which are actually real or almost
+    real lower the actual order but are not numerically problematic.
+    
+    Implementation: sort, then loop keeping track of repetitions generating the
+    coefficients of the linear system for the amplitudes of the acf. Do a
+    pseudoinverse to accomodate real or almost real complex roots. Generate the
+    polynomial from the roots and compute the acf (the RHS) with inverse YW.
+    Finally evaluate the analytical expression of the acf.
+
+Problem: it would be very useful for the user to have a check on the validity
+of w and c.
+
+For w I can generate the polynomial, compute the roots and check they are above
+1. In practice I expect the roots to be quite close to 1 because otherwise the
+correlation length is less than 1 time step. I estimate this check to be
+numerically accurate only up to ~tens of coefficients. Since I obtain the roots
+as eigenvalues, I could use as tolerance the same I use for positivity checks.
+I fear additional numerical instability I'm unaware of.
+
+For c I can generate w from YW and check w. Since YW is invertible, obtaining a
+valid w means that c was valid.
+
+The most annoying task in all this is porting polyfromroots to jax. I bet that
+a naive implementation would be too inefficient and inaccurate.
+
+Also add the parameter conversion functions as static methods.

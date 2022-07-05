@@ -65,6 +65,18 @@ class SymSchur(_seqalg.Producer):
         gamma = jnp.sqrt((1 - rho) * (1 + rho))
         self.g = (g + g[::-1] * rho) / gamma
     
+    # TODO Schur, Levinson, and in general algorithms with triangular matrices
+    # are not efficient as I implement them because due to the constraint of
+    # fixed size in the jit I can not take advantage of the triangularity and
+    # the number of operations doubles. This could be solved with a blocked
+    # version which decreases the block size a few times, n blocks brings down
+    # the increase factor to 1 + 1/n. The compilation time and code size would
+    # be proportional to n. Aligning block size to powers of 2 would help
+    # caching the compilation, bringing the compilation time to the normal one
+    # after warmup.
+    #
+    # Anyway, this 2 factor is not currently relevant.
+
 class SymLevinson(_seqalg.Producer):
     """
     Cholesky decomposition of the *inverse* of a symmetric Toeplitz matrix

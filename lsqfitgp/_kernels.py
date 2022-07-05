@@ -1175,8 +1175,6 @@ def MA(delta, w=None):
     else:
         return jnp.zeros(delta.shape)
 
-# TODO AR kernel
-
 def _yule_walker(acf):
     """
     acf = autocovariance at lag 0...p
@@ -1226,15 +1224,128 @@ def _ar_evolve(coef, start, noise):
     start = jnp.asarray(start)
     noise = jnp.asarray(noise)
     assert coef.ndim == 1 and coef.shape == start.shape and noise.ndim == 1
-    return _ar_evolve_jit(coef, start, noise)
 
-@jax.jit
-def _ar_evolve_jit(coef, start, noise):
     def f(carry, eps):
-        vals, coef = carry
+        vals, cc, roll = carry
+        coef = lax.dynamic_slice(cc, [vals.size - roll], [vals.size])
         nextval = coef @ vals + eps
         if vals.size:
-            vals = jnp.roll(vals, -1).at[-1].set(nextval)
-        return (vals, coef), nextval
-    _, ev = lax.scan(f, (start, coef[::-1]), noise, unroll=16)
+            vals = vals.at[roll].set(nextval)
+        # maybe for some weird reason like alignment, actual rolling would
+        # be faster. whatever
+        roll = (roll + 1) % vals.size
+        return (vals, cc, roll), nextval
+    
+    cc = jnp.concatenate([coef, coef])[::-1]
+    _, ev = lax.scan(f, (start, cc, 0), noise, unroll=16)
     return ev
+
+@stationarkernel(derivable=False, maxdim=1, input='hard')
+def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None):
+    """
+    Autoregressive kernel.
+        
+    Parameters
+    ----------
+    You have to specify one and only one of the sets of parameters
+    `phi`+`maxlag`, `gamma`+`maxlag`, `slnr`+`lnc`.
+    
+    phi : (p,) real
+        The autoregressive coefficients at lag 1...p.
+    gamma : (p + 1,) real
+        The autocovariance function at lag 0...p.
+    maxlag : int
+        The maximum lag that the kernel will be evaluated on. If the actual
+        inputs produce higher lags, the missing values are filled with ``nan``.
+    slnr : (nr,) real
+        The real roots of the characteristic polynomial, expressed in the
+        following way: ``sign(slnr)`` is the sign of the root, and
+        ``abs(snlr)`` is the natural logarithm of the absolute value.
+    lnc : (nc,) complex
+        The natural logarithm of the complex roots of the characteristic
+        polynomial (:math:`\\log z = \\log|z| + i\\arg z`), where each root
+        also stands for its paired conjugate.
+    
+    In `slnr` and `lnc`, the multiplicity of a root is expressed by repeating
+    the root in the array (not necessarily next to each other). Only exact
+    repetition counts; very close yet distinct roots are treated as separate
+    and lead to numerical instability. Two complex roots also count as equal if
+    conjugate, and the argument is standardized to :math:`[0, 2\\pi)`. Complex
+    roots which are real or almost real are not a problem numerically, although
+    they make the actual order lower than ``nr + 2 * nc``.
+    
+    Methods
+    -------
+    These (static) methods convert between parametrizations.
+    
+    gamma_from_phi : phi -> gamma
+    phi_from_gamma : gamma -> phi
+    phi_from_roots : slnr, lnc -> phi
+    extend_gamma : gamma -> covariance up to some lag
+    
+    Notes
+    -----
+    This is the covariance function of a stationary autoregressive process,
+    which is defined recursively as
+    
+    .. math::
+        y_i = \\sum_{k=1}^p \\phi_k y_{i-k} + \\epsilon_i,
+    
+    where :math:`\\epsilon_i` is white noise, i.e.,
+    :math:`\\operatorname{Cov}[\\epsilon_i, \\epsilon_j] = \\delta_{ij}`. The
+    length :math:`p` of the vector of coefficients :math:`\\boldsymbol\\phi`
+    is the `order` of the process.
+    
+    The covariance function can be expressed in two ways. First as the same
+    recursion defining the process:
+    
+    .. math::
+        \\gamma_m = \\sum_{k=1}^p \\phi_k \\gamma_{m-k} + \\delta_{m0},
+    
+    where :math:`\\gamma_m \\equiv \\operatorname{Cov}[y_i, y_{i+m}]`. This is
+    called `Yule-Walker equation`. Second, as a linear combination of mixed
+    power-exponentials:
+    
+    .. math::
+        \\gamma_m = \\sum_{j=1}^n
+                    \\sum_{l=1}^{\\mu_j}
+                    a_{jl} |m|^{l-1} x_j^{-|m|},
+    
+    where :math:`x_j` and :math:`\\mu_j` are the (complex) roots and
+    corresponding multiplicities of the `characteristic polynomial`
+    
+    .. math::
+        P(x) = 1 - \\sum_{k=1}^p \\phi_k x^k,
+    
+    and the :math:`a_{jl}` are uniquely determined complex coefficients. The
+    :math:`\\boldsymbol\\phi` vector is valid iff :math:`|x_j|>1, \\forall j`.
+    
+    There are three alternative parametrization for this kernel.
+    
+    If you specify `phi`, the first terms of the covariance are computed
+    solving the Yule-Walker equation, and then evolved up to `maxlag`. It
+    is necessary to specify `maxlag` instead of letting the code figure it out
+    from the actual inputs for technical reasons.
+    
+    Likewise, if you specify `gamma`, the coefficients are obtained with
+    Yule-Walker and then used to evolve the covariance. The only difference is
+    that the normalization can be different: starting from `phi`, the variance
+    of the generating noise :math:`\\epsilon` is fixed to 1, while giving
+    `gamma` directly implies an arbitrary value.
+    
+    Instead, if you specify the roots with `slnr` and `lnc`, the coefficients
+    are obtained from the polynomial defined in terms of the roots, and then
+    the amplitudes :math:`a_{jl}` are computed by solving a linear system with
+    the covariance (from YW) as RHS. Finally, the full covariance function is
+    evaluated with the analytical expression.
+    
+    The reasons for using the logarithm are that 1) in practice the roots are
+    tipically close to 1, so the logarithm is numerically more accurate, and 2)
+    the logarithm is readily interpretable as the inverse of the correlation
+    length.
+    
+    """
+    pass
+
+class AR(_ARBase):
+    pass

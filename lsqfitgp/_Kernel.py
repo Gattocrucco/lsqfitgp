@@ -722,6 +722,9 @@ class StationaryKernel(Kernel):
             Additional keyword arguments are passed to the :class:`Kernel` init.
                 
         """
+        
+        # TODO using 'signed', 'abs', 'softabs' as labels could be clearer.
+        
         if input == 'soft':
             func = lambda x, y: _softabs(x - y)
         elif input == 'signed':
