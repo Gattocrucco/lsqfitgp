@@ -880,3 +880,14 @@ The most annoying task in all this is porting polyfromroots to jax. I bet that
 a naive implementation would be too inefficient and inaccurate.
 
 Also add the parameter conversion functions as static methods.
+
+--------
+
+Problem: even though the roots as logarithms preserve the numerical accuracy
+near 1, I have to determine phi and then gamma from the characteristic
+polynomial. Phi can not come out accurate in general because I need to pass
+from the actual roots, also think about AR(1) where phi = 1/root. However this
+affects only the amplitudes, not the decay. Moreover, with slow decay, if I 
+use as RHS the first p terms, they will all be almost equal, so the system for
+the amplitudes is very degenerate. I should pick the lags based on the
+correlation lengths.

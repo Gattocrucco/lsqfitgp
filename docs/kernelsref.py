@@ -127,6 +127,15 @@ class Formula:
         return eval(self.formula, vars(np), dict(x=x))
 
 meta = dict(
+    AR = dict(x=np.arange(50), kwlist=[
+        dict(phi=np.array(phi), maxlag=50, norm=True) for phi in [
+            [0.9], [1.82, -0.83],
+        ]
+    ] + [
+        dict(gamma=np.array(gamma), maxlag=50) for gamma in [
+            [1, 0.99],
+        ]
+    ]),
     BagOfWords = dict(skip=True),
     Bessel = dict(range=[0, 10], kwlist=[dict(nu=v) for v in [0, 1, 2, 3]]),
     BrownianBridge = dict(range=[0, 1]),
@@ -143,9 +152,9 @@ meta = dict(
     GammaExp = dict(kwlist=[dict(gamma=g) for g in [0.1, 1, 1.9]]),
     Gibbs = dict(kwlist=[dict(scalefun=Formula('where((0 < x) & (x < 0.1), 0.02, 1)'))], range=[-1, 1]),
     Harmonic = dict(range=[0, 4 * np.pi], kwlist=[dict(Q=Q) for Q in [1/20, 1, 20]]),
-    MA = dict(x=np.arange(50), kwlist=[dict(w=w) for w in [
+    MA = dict(x=np.arange(50), kwlist=[dict(w=np.array(w)) for w in [
         2 * np.array([1, -1, 1, -1, 1, -1]),
-        np.array([5, 4, 3, 2, 1]),
+        [5, 4, 3, 2, 1],
         2 * np.array([1, 1, 1, 1, 1]),
     ]]),
     Matern = dict(kwlist=[dict(nu=v) for v in [0.1, 1, 1.5, 2]]),

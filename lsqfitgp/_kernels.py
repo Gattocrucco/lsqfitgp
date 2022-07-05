@@ -36,6 +36,7 @@ from . import _patch_jax
 from ._Kernel import kernel, stationarykernel, isotropickernel
 
 __all__ = [
+    'AR',
     'BagOfWords',
     'Bessel',
     'BrownianBridge',
@@ -1224,7 +1225,11 @@ def _ar_evolve(coef, start, noise):
     start = jnp.asarray(start)
     noise = jnp.asarray(noise)
     assert coef.ndim == 1 and coef.shape == start.shape and noise.ndim == 1
+    return _ar_evolve_jit(coef, start, noise)
 
+@jax.jit
+def _ar_evolve_jit(coef, start, noise):
+    
     def f(carry, eps):
         vals, cc, roll = carry
         coef = lax.dynamic_slice(cc, [vals.size - roll], [vals.size])
@@ -1240,20 +1245,20 @@ def _ar_evolve(coef, start, noise):
     _, ev = lax.scan(f, (start, cc, 0), noise, unroll=16)
     return ev
 
-@stationarkernel(derivable=False, maxdim=1, input='hard')
-def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None):
+@stationarykernel(derivable=False, maxdim=1, input='hard')
+def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=False):
     """
     Autoregressive kernel.
         
+    You have to specify one and only one of the sets of parameters
+    `phi+maxlag`, `gamma+maxlag`, `slnr+lnc`.
+
     Parameters
     ----------
-    You have to specify one and only one of the sets of parameters
-    `phi`+`maxlag`, `gamma`+`maxlag`, `slnr`+`lnc`.
-    
     phi : (p,) real
         The autoregressive coefficients at lag 1...p.
     gamma : (p + 1,) real
-        The autocovariance function at lag 0...p.
+        The autocovariance at lag 0...p.
     maxlag : int
         The maximum lag that the kernel will be evaluated on. If the actual
         inputs produce higher lags, the missing values are filled with ``nan``.
@@ -1266,22 +1271,18 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None):
         polynomial (:math:`\\log z = \\log|z| + i\\arg z`), where each root
         also stands for its paired conjugate.
     
-    In `slnr` and `lnc`, the multiplicity of a root is expressed by repeating
-    the root in the array (not necessarily next to each other). Only exact
-    repetition counts; very close yet distinct roots are treated as separate
-    and lead to numerical instability. Two complex roots also count as equal if
-    conjugate, and the argument is standardized to :math:`[0, 2\\pi)`. Complex
-    roots which are real or almost real are not a problem numerically, although
-    they make the actual order lower than ``nr + 2 * nc``.
-    
-    Methods
-    -------
-    These (static) methods convert between parametrizations.
-    
-    gamma_from_phi : phi -> gamma
-    phi_from_gamma : gamma -> phi
-    phi_from_roots : slnr, lnc -> phi
-    extend_gamma : gamma -> covariance up to some lag
+        In `slnr` and `lnc`, the multiplicity of a root is expressed by
+        repeating the root in the array (not necessarily next to each other).
+        Only exact repetition counts; very close yet distinct roots are treated
+        as separate and lead to numerical instability. Two complex roots also
+        count as equal if conjugate, and the argument is standardized to
+        :math:`[0, 2\\pi)`. Complex roots which are real or almost real are not
+        a problem numerically, although they make the actual order lower than
+        ``nr + 2 * nc``.
+    norm : bool
+        If True, normalize the autocovariance to be 1 at lag 0. If False
+        (default), normalize such that the variance of the generating noise is
+        1, or use the user-provided normalization if `gamma` is specified.
     
     Notes
     -----
@@ -1345,7 +1346,117 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None):
     length.
     
     """
-    pass
+    cond = (
+        (phi is not None and maxlag is not None and gamma is None and slnr is None and lnc is None) or
+        (phi is None and maxlag is not None and gamma is not None and slnr is None and lnc is None) or
+        (phi is None and maxlag is None and gamma is None and (slnr is not None or lnc is not None))
+    )
+    if not cond:
+        raise ValueError('invalid set of specified parameters')
+    
+    # TODO maybe I could allow redundantly specifying gamma and phi, e.g., for
+    # numerical accuracy reasons if they are determined from an analytical
+    # expression.
+    
+    if phi is None and gamma is None:
+        return _ar_with_roots(delta, slnr, lnc, norm)
+    else:
+        return _ar_with_phigamma(delta, phi, gamma, maxlag, norm)
+
+def _ar_with_roots(delta, slnr, lnc, norm):
+    raise NotImplementedError
+    # TODO write a first version with numpy's polyfromroots
+
+def _ar_with_phigamma(delta, phi, gamma, maxlag, norm):
+    if phi is None:
+        phi = AR.phi_from_gamma(gamma)
+    if gamma is None:
+        gamma = AR.gamma_from_phi(phi)
+    if norm:
+        gamma = gamma / gamma[0]
+    acf = AR.extend_gamma(gamma, phi, maxlag + 1 - len(gamma))
+    return acf.at[delta].get(mode='fill', fill_value=jnp.nan)
 
 class AR(_ARBase):
-    pass
+    
+    @staticmethod
+    def phi_from_gamma(gamma):
+        """
+        Determine the autoregressive coefficients from the covariance.
+        
+        Parameters
+        ----------
+        gamma : (p + 1,) array
+            The autocovariance at lag 0...p.
+        
+        Return
+        ------
+        phi : (p,) array
+            The autoregressive coefficients at lag 1...p.
+        """
+        return _yule_walker(gamma)
+    
+    @staticmethod
+    def gamma_from_phi(phi):
+        """
+        Determine the covariance from the autoregressive coefficients.
+
+        Parameters
+        ----------
+        phi : (p,) array
+            The autoregressive coefficients at lag 1...p.
+        
+        Return
+        ------
+        gamma : (p + 1,) array
+            The autocovariance at lag 0...p. The normalization is
+            with noise variance 1.
+        """
+        return _yule_walker_inv(phi)
+    
+    @staticmethod
+    def extend_gamma(gamma, phi, n):
+        """
+        Extends values of the covariance function to higher lags.
+        
+        Parameters
+        ----------
+        gamma : (m,) array
+            The autocovariance at lag q-m+1...q, with q >= 0.
+        phi : (p,) array
+            The autoregressive coefficients at lag 1...p.
+        n : int
+            The number of new values to generate.
+        
+        Return
+        ------
+        ext : (m + n,) array
+            The autocovariance at lag q-m+1...q+n.
+        """
+        gamma = jnp.asarray(gamma)
+        ext = _ar_evolve(phi, gamma[len(gamma) - len(phi):], jnp.broadcast_to(0., (n,)))
+        return jnp.concatenate([gamma, ext])
+    
+    @staticmethod
+    def phi_from_roots(slnr, lnc):
+        """
+        Determine the autoregressive coefficients from the roots of the
+        characteristic polynomial.
+        
+        Parameters
+        ----------
+        slnr : (nr,) real
+            The real roots of the characteristic polynomial, expressed in the
+            following way: ``sign(slnr)`` is the sign of the root, and
+            ``abs(snlr)`` is the natural logarithm of the absolute value.
+        lnc : (nc,) complex
+            The natural logarithm of the complex roots of the characteristic
+            polynomial (:math:`\\log z = \\log|z| + i\\arg z`), where each root
+            also stands for its paired conjugate.
+        
+        Return
+        ------
+        phi : (p,) array
+            The autoregressive coefficients at lag 1...p.
+        """
+        raise NotImplementedError

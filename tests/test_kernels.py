@@ -232,6 +232,16 @@ class KernelTestBase(KernelTestABC):
         else:
             pytest.skip()
     
+    def test_stationary(self):
+        kernel = self.kernel_class
+        if issubclass(kernel, _Kernel.StationaryKernel):
+            for kw in self.kwargs_list:
+                x = self.random_x(**kw)
+                var = kernel(**kw)(x, x)
+                np.testing.assert_allclose(var, var[0], equal_nan=False)
+        else:
+            pytest.skip()
+
     def test_double_diff_scalar_first(self):
         donesomething = False
         for kw in self.kwargs_list:
@@ -711,6 +721,14 @@ test_kwargs = {
             [], [0], [1], [1, 1], [1, -1], [2, 1], [1, 2, 3, 4, 5], np.random.randn(30),
         ]],
     ),
+    _kernels.AR: dict(
+        random_x_fun=lambda **_: np.random.randint(0, 100, 100),
+        kwargs_list=[dict(phi=phi, maxlag=100) for phi in [
+            [], [0], [-0.5], [0.5], [0.9], [-0.9], [0.5, 0], [0, 0.5], 3 * [0] + [0.5],
+        ]] + [dict(gamma=gamma, maxlag=100) for gamma in [
+            [0], [1], [1, 0], [1, 0.5], [1, 0.5, 0.25], [1, -0.9],
+        ]],
+    ),
 }
 
 for kernel in kernels:
@@ -847,6 +865,7 @@ def test_transf_not_implemented():
 
 #####################  XFAILS/SKIPS  #####################
 
+util.skip(TestAR, 'test_normalized')
 util.skip(TestMA, 'test_normalized')
 
 # TODO These are isotropic kernels with the input='soft' option. The problems

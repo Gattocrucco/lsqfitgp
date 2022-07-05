@@ -540,14 +540,14 @@ stazionario, lo aggiungo con ereditarietà multipla solo come flag)
 Look in the kernels reference I highlighted in the GPML bibliography
 (Abrahamsen 1997). => Spherical (p. 40) Gives formulas in dimensions 1, 2, 3,
 5. Appears generalizable for odd n, but maybe not for even n, is that why it
-doesn't give n=4? Is it a special case of PPKernel? Cubic (p. 41) is similarly
-a polynomial, but works in all dimensions I think.
+doesn't give n=4? Is it a special case of PPKernel? => I think not. Cubic (p.
+41) is similarly a polynomial, but works in all dimensions I think.
 
 Multi-fractional brownian motion, see Lim and Teo (2009) => imperscrutable math
 
 Can I do a kernel with the Dirichlet function? (scipy.special.diric)
 
-ARIMA
+ARIMA, and something to flatten a VARIMA and back
 
 splines
 
