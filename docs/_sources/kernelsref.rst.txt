@@ -64,6 +64,7 @@ Isotropic kernels
 
 Stationary kernels
 ^^^^^^^^^^^^^^^^^^
+  * :func:`AR`
   * :func:`Celerite`
   * :func:`Circular`
   * :func:`Cos`
@@ -95,6 +96,9 @@ Other kernels
 
 Documentation
 -------------
+.. autofunction:: AR
+.. image:: kernelsref-AR.png
+.. image:: kernelsref-AR-samples.png
 .. autofunction:: BagOfWords
 .. autofunction:: Bessel
 .. image:: kernelsref-Bessel.png
