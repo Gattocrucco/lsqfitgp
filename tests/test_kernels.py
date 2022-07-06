@@ -761,6 +761,8 @@ def test_matern_half_integer_1():
 
 def test_matern_half_integer_2():
     check_matern_half_integer(2)
+    
+# TODO continuity tests for the derivatives of matern at 0
 
 def test_wiener_integral():
     """

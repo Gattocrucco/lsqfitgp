@@ -236,10 +236,15 @@ def jvmodx2_jvp(nu, primals, tangents):
 def kvmodx2(nu, x2, norm_offset=0):
     x = jnp.sqrt(x2)
     normal = 2 / gamma(nu + norm_offset) * (x / 2) ** nu * kv(nu, x)
-    return jnp.where(x2, normal, 1 / jnp.prod(nu + jnp.arange(norm_offset)))
+    atzero = 1 / jnp.prod(nu + jnp.arange(norm_offset))
+    return jnp.where(x2, normal, atzero)
 
-# TODO derivatives for integer nu do not work. Surely for integer nu <= 0 the
-# value at x = 0 is inf and not the one I'm using, but it's not just that.
+# TODO derivatives of matern not working for integer nu, I tried putting inf or
+# 0 as return values for nu < 0, x2 == 0 but didn't work
+
+# TODO Surely for nu < 0 the value at x = 0 is inf and not the one I'm using,
+# however this seems to make things work because it will be multiplied by a
+# stronger zero at some point and using inf would produce a nan.
 
 # d/dx (x^v Kv(x)) = -x^v Kv-1(x)       (Abrahamsen 1997, p. 43)
 # d/dx ~Kv(x) =

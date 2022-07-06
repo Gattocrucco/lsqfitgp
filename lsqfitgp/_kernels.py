@@ -169,8 +169,8 @@ def Maternp(r2, p=None):
     # TODO see if I can remove the 1e-30 improving kvmodx2_hi_jvp
 
 def _matern_derivable(nu=None):
-    fnu = numpy.floor(nu)
-    return fnu if nu != fnu else 0 # TODO remove this limitation
+    fnu = max(0, numpy.ceil(nu) - 1)
+    return fnu if nu != int(nu) else 0 # TODO remove this limitation
 
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
@@ -182,10 +182,10 @@ def Matern(r2, nu=None):
         \\quad \\nu \\ge 0,
         \\quad x = \\sqrt{2\\nu} r
     
-    The nearest integer below :math:`\\nu` indicates how many times the
-    Gaussian process is derivable: so for :math:`\\nu < 1` it is continuous but
-    not derivable, for :math:`1 \\le \\nu < 2` it is derivable but has not a
-    second derivative, etc.
+    The process is :math:`\\lceil\\nu\\rceil-1` times derivable: so for
+    :math:`0 \\le \\nu \\le 1` it is not derivable, for :math:`1 < \\nu \\le 2`
+    it is derivable but has not a second derivative, etc. The highest
+    derivative is continuous iff :math:`\\nu\\bmod 1 \\ge 1/2`.
 
     Reference: Rasmussen and Williams (2006, p. 84).
     """

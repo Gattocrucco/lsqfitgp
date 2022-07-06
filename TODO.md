@@ -547,7 +547,7 @@ Multi-fractional brownian motion, see Lim and Teo (2009) => imperscrutable math
 
 Can I do a kernel with the Dirichlet function? (scipy.special.diric)
 
-ARIMA, and something to flatten a VARIMA and back
+ARIMA, and something to flatten a VARIMA and back, and continuous equivalent.
 
 splines
 

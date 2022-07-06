@@ -52,8 +52,10 @@ def test_kvmodx2():
         np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
         np.testing.assert_allclose(_patch_jax.kvmodx2(v, 0), 1, rtol=1e-14)
         test_util.check_grads(lambda x: _patch_jax.kvmodx2(v, x ** 2), (xsoft,), 2)
-        # for no in range(5):
-        #     np.testing.assert_allclose(_patch_jax.kvmodx2(v, 1e-15, no), _patch_jax.kvmodx2(v, 0, no), equal_nan=False)
+        if v >= 0.5: # negative diverges, and below 0.5 d/dx at 0 is inf
+            for no in range(5):
+                np.testing.assert_allclose(_patch_jax.kvmodx2(v, 1e-15, no), _patch_jax.kvmodx2(v, 0, no), equal_nan=False)
+        # TODO really need to check at 0 in other cases
     xz = np.linspace(0, 1, 1000)
     np.testing.assert_equal(_patch_jax.kvmodx2(0, xz), np.where(xz, 0, 1))
 

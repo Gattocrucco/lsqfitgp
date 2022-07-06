@@ -890,4 +890,24 @@ from the actual roots, also think about AR(1) where phi = 1/root. However this
 affects only the amplitudes, not the decay. Moreover, with slow decay, if I 
 use as RHS the first p terms, they will all be almost equal, so the system for
 the amplitudes is very degenerate. I should pick the lags based on the
-correlation lengths.
+correlation lengths. => Or is there some way to directly obtain the phi for
+the decimated process? That way I can move the "effective" roots away from 1.
+=> I think that multiplying all the logarithms by an integer constant would
+be sufficient.
+
+2022-07-06
+==========
+
+Complete reasoning: using the analytical expression of the autocovariance,
+I can obtain the one of the decimated process simply by raising all roots to
+the decimation. The amplitudes do not change.
+
+Question: is this an autoregressive process? Because the amplitudes are
+determined by the roots. => Yes because I can expand recursively to obtain the
+lagged y. However, the order will in general be infinite.
+
+Thinking in Fourier space, the relationship between the amplitudes w/ and w/o
+dilated roots is not trivial. Maybe in the end the first idea, determining
+analytically the amplitudes, was the right one. The denominator is a product of
+differences of the roots, which can be computed accurately with complex
+sum(logaddexp).
