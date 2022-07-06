@@ -294,7 +294,7 @@ class DecompTestBase(DecompTestABC):
                 if not stopg:
                     d2K = self.mathess(s, n)
                     sol -= b.T @ self.solve(K, d2K) @ Kc
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-6)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-5)
     
     def test_quad_vec(self):
         self.check_quad(self.randvec)

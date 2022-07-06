@@ -911,3 +911,9 @@ dilated roots is not trivial. Maybe in the end the first idea, determining
 analytically the amplitudes, was the right one. The denominator is a product of
 differences of the roots, which can be computed accurately with complex
 sum(logaddexp).
+
+Actually, logaddexp won't be numerically accurate on a difference. In general
+it is impossible to recover accuracy because the roots can be arbitrarily close
+in relative error (even in logarithm parametrization) and so their difference
+is inherently imprecise. This means that log(roots) is not the best
+parametrization for accuracy, I need to use diff(sort(log(roots)), prepend=0).

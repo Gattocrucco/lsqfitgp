@@ -820,10 +820,10 @@ class IsotropicKernel(StationaryKernel):
         
         Kernel.__init__(self, function, **kw)
 
-# TODO the _eps in _kernels is more elegant
 def _eps(x):
     if jnp.issubdtype(x.dtype, jnp.inexact):
         return jnp.finfo(x.dtype).eps
+        # finfo(x) does not work in numpy 1.20
     else:
         return jnp.finfo(jnp.empty(())).eps
 

@@ -172,10 +172,7 @@ def _matern_derivable(nu=None):
     return max(0, numpy.ceil(nu) - 1)
 
 def _eps(x):
-    try:
-        return jnp.finfo(x).eps
-    except ValueError:
-        return jnp.finfo(jnp.empty(0)).eps
+    return _Kernel._eps(jnp.asarray(x))
 
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
