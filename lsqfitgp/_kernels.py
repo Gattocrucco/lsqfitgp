@@ -169,8 +169,13 @@ def Maternp(r2, p=None):
     # TODO see if I can remove the 1e-30 improving kvmodx2_hi_jvp
 
 def _matern_derivable(nu=None):
-    fnu = max(0, numpy.ceil(nu) - 1)
-    return fnu if nu != int(nu) else 0 # TODO remove this limitation
+    return max(0, numpy.ceil(nu) - 1)
+
+def _eps(x):
+    try:
+        return jnp.finfo(x).eps
+    except ValueError:
+        return jnp.finfo(jnp.empty(0)).eps
 
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
@@ -191,6 +196,8 @@ def Matern(r2, nu=None):
     """
     if _patch_jax.isconcrete(nu):
         assert 0 <= nu < jnp.inf, nu
+    nu = jnp.where(nu != jnp.floor(nu), nu, nu * (1 + _eps(nu)))
+    # TODO remove integer nu hack after fixing kvmodx2
     r2 = 2 * jnp.where(nu, nu, 1) * r2
     return _patch_jax.kvmodx2(nu, r2)
     
