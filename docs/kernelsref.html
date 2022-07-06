@@ -151,9 +151,9 @@ default values of the keyword parameters, apart from some specific cases like
 <p>You may encounter problems with second derivatives for
 <a class="reference internal" href="#lsqfitgp.CausalExpQuad" title="lsqfitgp.CausalExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">CausalExpQuad</span></code></a>, <a class="reference internal" href="#lsqfitgp.FracBrownian" title="lsqfitgp.FracBrownian"><code class="xref py py-class docutils literal notranslate"><span class="pre">FracBrownian</span></code></a>, <a class="reference internal" href="#lsqfitgp.NNKernel" title="lsqfitgp.NNKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">NNKernel</span></code></a>,
 <a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>, and with first derivatives too for <a class="reference internal" href="#lsqfitgp.Wendland" title="lsqfitgp.Wendland"><code class="xref py py-class docutils literal notranslate"><span class="pre">Wendland</span></code></a> (but
-only in more than one dimension). <a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a> is not derivable for
-integer <span class="math notranslate nohighlight">\(\nu\)</span>. The following kernels are not compatible with the JAX
-JIT: <a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Bessel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bessel</span></code></a>, <a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a>, <a class="reference internal" href="#lsqfitgp.Pink" title="lsqfitgp.Pink"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pink</span></code></a>, <a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>.</p>
+only in more than one dimension). The following kernels are not compatible
+with the JAX JIT: <a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Bessel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bessel</span></code></a>, <a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a>, <a class="reference internal" href="#lsqfitgp.Pink" title="lsqfitgp.Pink"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pink</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>.</p>
 </div>
 <section id="index">
 <h2><span class="section-number">1.1. </span>Index<a class="headerlink" href="#index" title="Permalink to this heading">¶</a></h2>
@@ -656,10 +656,10 @@ y_i &amp;= \sum_{k=0}^{n-1} w_k \epsilon_{i-k}, \\
 \[k(r) = \frac {2^{1-\nu}} {\Gamma(\nu)} x^\nu K_\nu(x),
 \quad \nu \ge 0,
 \quad x = \sqrt{2\nu} r\]</div>
-<p>The nearest integer below <span class="math notranslate nohighlight">\(\nu\)</span> indicates how many times the
-Gaussian process is derivable: so for <span class="math notranslate nohighlight">\(\nu &lt; 1\)</span> it is continuous but
-not derivable, for <span class="math notranslate nohighlight">\(1 \le \nu &lt; 2\)</span> it is derivable but has not a
-second derivative, etc.</p>
+<p>The process is <span class="math notranslate nohighlight">\(\lceil\nu\rceil-1\)</span> times derivable: so for
+<span class="math notranslate nohighlight">\(0 \le \nu \le 1\)</span> it is not derivable, for <span class="math notranslate nohighlight">\(1 &lt; \nu \le 2\)</span>
+it is derivable but has not a second derivative, etc. The highest
+derivative is continuous iff <span class="math notranslate nohighlight">\(\nu\bmod 1 \ge 1/2\)</span>.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 84).</p>
 </dd></dl>
 
