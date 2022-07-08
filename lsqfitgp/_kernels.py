@@ -81,6 +81,10 @@ __all__ = [
 # about this in `multidimensional input`. Implement tests for separability
 # on all kernels.
 
+# TODO maybe I could have a continuity check like derivable, but to be useful
+# it would be callable-only and take the derivation order. But I don't think
+# any potential user needs it.
+
 def _dot(x, y):
     return _Kernel.sum_recurse_dtype(lambda x, y: x * y, x, y)
     
@@ -982,12 +986,9 @@ def Pink(delta, dw=1):
     l = _patch_jax.ci(delta)
     r = _patch_jax.ci(delta * (1 + dw))
     mean = delta * (1 + dw / 2)
-    norm = jnp.log(1 + dw)
-    return jnp.where(delta < 1e-8, jnp.cos(mean) * norm, r - l) / norm
-    # TODO r - l is not precise when dw << 1
-    
-    # TODO add all colors. Integrating by parts I can do 1/omega^n for integer
-    # n. For n >= 2 it can be integrated to infinity.
+    norm = jnp.log1p(dw)
+    tol = jnp.sqrt(jnp.finfo(jnp.empty(0).dtype).eps)
+    return jnp.where(delta * dw < tol, jnp.cos(mean), (r - l) / norm)
 
 @stationarykernel(forcekron=True, derivable=True, input='soft')
 def Sinc(delta):
@@ -1356,7 +1357,7 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     
     # TODO maybe I could allow redundantly specifying gamma and phi, e.g., for
     # numerical accuracy reasons if they are determined from an analytical
-    # expression.
+    # expression. Also slnr xor lnc None means length 0.
     
     if phi is None and gamma is None:
         return _ar_with_roots(delta, slnr, lnc, norm)
@@ -1364,8 +1365,7 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
         return _ar_with_phigamma(delta, phi, gamma, maxlag, norm)
 
 def _ar_with_roots(delta, slnr, lnc, norm):
-    raise NotImplementedError
-    # TODO write a first version with numpy's polyfromroots
+    phi = AR.phi_from_roots(snlr, lnc)
 
 def _ar_with_phigamma(delta, phi, gamma, maxlag, norm):
     if phi is None:
@@ -1456,7 +1456,16 @@ class AR(_ARBase):
         
         Return
         ------
-        phi : (p,) array
-            The autoregressive coefficients at lag 1...p.
+        phi : (p,) real
+            The autoregressive coefficients at lag 1...p, with p = nr + 2 nc.
         """
-        raise NotImplementedError
+        slnr = jnp.asarray(slnr)
+        lnc = jnp.asarray(lnc)
+        assert slnr.ndim == lnc.ndim == 1
+        r = jnp.sign(slnr) * jnp.exp(jnp.abs(slnr))
+        c = jnp.exp(lnc)
+        roots = jnp.concatenate([r.astype(complex), c, jnp.conj(c)])
+        coef = numpy.polynomial.polynomial.polyfromroots(roots)
+        np.testing.assert_allclose(coef.imag, 0, rtol=0, atol=(1e-15 + 1e-14 * coef.real))
+        coef = coef.real
+        return -coef[1:] / coef[0]
