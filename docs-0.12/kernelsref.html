@@ -182,6 +182,7 @@ with the JAX JIT: <a class="reference internal" href="#lsqfitgp.Bessel" title="l
 <li><p><a class="reference internal" href="#lsqfitgp.AR" title="lsqfitgp.AR"><code class="xref py py-func docutils literal notranslate"><span class="pre">AR()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Celerite" title="lsqfitgp.Celerite"><code class="xref py py-func docutils literal notranslate"><span class="pre">Celerite()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Circular" title="lsqfitgp.Circular"><code class="xref py py-func docutils literal notranslate"><span class="pre">Circular()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Color" title="lsqfitgp.Color"><code class="xref py py-func docutils literal notranslate"><span class="pre">Color()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Cos" title="lsqfitgp.Cos"><code class="xref py py-func docutils literal notranslate"><span class="pre">Cos()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Expon" title="lsqfitgp.Expon"><code class="xref py py-func docutils literal notranslate"><span class="pre">Expon()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Fourier" title="lsqfitgp.Fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">Fourier()</span></code></a></p></li>
@@ -422,6 +423,23 @@ d_{\text{geo}}(x, y) &amp;= \arccos\cos(2\pi(x-y)).\end{split}\]</div>
 
 <img alt="_images/kernelsref-Circular.png" src="_images/kernelsref-Circular.png" />
 <img alt="_images/kernelsref-Circular-samples.png" src="_images/kernelsref-Circular-samples.png" />
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.Color">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Color</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Color" title="Permalink to this definition">¶</a></dt>
+<dd><p>Colored noise kernel.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}k(\Delta) &amp;= (n-1) \Re E_n(-i\Delta) = \\
+&amp;= (n-1) \int_1^\infty \mathrm d\omega
+\frac{\cos(\omega\Delta)}{\omega^n},
+\quad n \in \mathbb N, n \ge 2.\end{split}\]</div>
+<p>A process with power spectrum <span class="math notranslate nohighlight">\(1/\omega^n\)</span> truncated below
+<span class="math notranslate nohighlight">\(\omega = 1\)</span>. <span class="math notranslate nohighlight">\(\omega\)</span> is the angular frequency
+<span class="math notranslate nohighlight">\(\omega = 2\pi f\)</span>. Derivable <span class="math notranslate nohighlight">\(\lfloor n/2 \rfloor - 1\)</span>
+times.</p>
+</dd></dl>
+
+<img alt="_images/kernelsref-Color.png" src="_images/kernelsref-Color.png" />
+<img alt="_images/kernelsref-Color-samples.png" src="_images/kernelsref-Color-samples.png" />
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.Constant">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Constant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Constant" title="Permalink to this definition">¶</a></dt>
