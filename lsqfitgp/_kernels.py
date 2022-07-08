@@ -994,15 +994,15 @@ def Pink(delta, dw=1):
 def _color_derivable(n=2):
     return n // 2 - 1
 
-@stationarykernel(maxdim=1, derivable=_color_derivable, input='soft')
+@stationarykernel(maxdim=1, derivable=_color_derivable, input='hard')
 def Color(delta, n=2):
     """
     Colored noise kernel.
     
     .. math::
-        k(\\Delta) = (n-1)
-        \\int_1^\\infty \\mathrm d\\omega
-        \\frac{\\cos(\\omega\\Delta)}\\omega^n,
+        k(\\Delta) &= (n-1) \\Re E_n(-i\\Delta) = \\\\
+        &= (n-1) \\int_1^\\infty \\mathrm d\\omega
+        \\frac{\\cos(\\omega\\Delta)}{\\omega^n},
         \\quad n \\in \\mathbb N, n \\ge 2.
     
     A process with power spectrum :math:`1/\\omega^n` truncated below
@@ -1019,27 +1019,31 @@ def Color(delta, n=2):
 def _color(n, x):
     
     # f_n(x) = (n-1) int_1^∞ dw e^ixw / w^n
+    #        = (n-1) E_n(-ix) =
     #        = (n-1) I_n(x)
     #
     # I_n(x) = int_1^∞ dw e^iw / w^n =
     #        = 1/(n-1) (e^ix + ix I_n-1(x))
     #        = 1/(n-1)! [(ix)^n-1 I_1(x) +
     #          + e^ix sum_k=0^n-2 (ix)^k (n-2-k)!]
-    #
-    # I_1(x) = int_1^∞ dw e^iwx / w =
-    #        = int_x^∞ du e^iu / u =
-    #        = Ci(∞) - Ci(x) + i (Si(∞) - Si(x)) =
-    #        = 0 - Ci(x) + i (π/2 - Si(x))
-    #        = i π/2 - Ei(x)
+    
+    # TODO neither scipy nor jax provide a complex expn, scipy has a complex
+    # exp1. See
+    # https://en.wikipedia.org/wiki/Trigonometric_integral#Efficient_evaluation
+    # to implement exp1 myself to enable the jit
+    
+    # TODO not numerically accurate for large x, at n=6 it is barely
+    # acceptable
     
     k = jnp.arange(n - 1)
     kfact = jnp.cumprod(k.at[0].set(1))
     n_2fact = kfact[-1]
-    I_1 = 1j * jnp.pi / 2 - _patch_jax.ei(x) # imag part not accurate for x -> ∞
     ix = 1j * x
-    I_n_part1 = ix ** (n - 1) * I_1 # diverges for x -> ∞
-    terms = ix[..., None] ** k * kfact[::-1]
-    I_n_part2 = jnp.exp(ix) * jnp.sum(terms, axis=-1)
+    I_1 = special.exp1(-ix)
+    I_1 = jnp.where(x, I_1, 0) # Re I_1(x) ~ log(x) for x -> 0
+    I_n_part1 = ix ** (n - 1) * I_1
+    coefs = kfact[(...,) + (None,) * ix.ndim]
+    I_n_part2 = jnp.exp(ix) * jnp.polyval(coefs, ix)
     return (I_n_part1 + I_n_part2) / n_2fact
 
 @_color.defjvp
