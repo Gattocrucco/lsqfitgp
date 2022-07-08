@@ -171,9 +171,6 @@ def Maternp(r2, p=None):
 def _matern_derivable(nu=None):
     return max(0, numpy.ceil(nu) - 1)
 
-def _eps(x):
-    return _Kernel._eps(jnp.asarray(x))
-
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
     """
@@ -193,9 +190,8 @@ def Matern(r2, nu=None):
     """
     if _patch_jax.isconcrete(nu):
         assert 0 <= nu < jnp.inf, nu
-    nu = jnp.where(nu != jnp.floor(nu), nu, nu * (1 + _eps(nu)))
-    # TODO remove integer nu hack after fixing kvmodx2
-    r2 = 2 * jnp.where(nu, nu, 1) * r2
+    r2 = 2 * jnp.where(nu, nu, 1) * r2  # for v = 0 the correct limit is white
+                                        # noise, so I avoid doing r2 * 0
     return _patch_jax.kvmodx2(nu, r2)
     
 def _gammaexp_derivable(gamma=1):

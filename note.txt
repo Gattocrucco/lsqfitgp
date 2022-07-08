@@ -917,3 +917,217 @@ it is impossible to recover accuracy because the roots can be arbitrarily close
 in relative error (even in logarithm parametrization) and so their difference
 is inherently imprecise. This means that log(roots) is not the best
 parametrization for accuracy, I need to use diff(sort(log(roots)), prepend=0).
+
+Or is it more convenient log (r_i+1 - r_i)/r_i, with r_0 = 1? This would be in
+(-oo, oo) and be about the same value for evenly spaced lengthscales (need to
+check this). Then if I compute the logarithm of the amplitudes with proper
+combinations of logsumexp, I can write the autocovariance as a logsumexp itself,
+which maybe allows to have arbitrarily close roots.
+
+This parametrization implies that I have to treat all roots as complex. Might
+as well take the real part only in the end. Wait, do I sort by real part or by
+modulus? Maybe the parametrization should handle separately real parts and
+phases => The phase is bad as parameter, must use numbers in (-oo, oo).
+
+2022-07-07
+==========
+
+A random walk on the phase as prior does not make much sense, so maybe the
+phases should be kept separate and not parametrized incrementally?
+
+Tentative: use
+
+    z_i = log (|r_i+1| - |r_i|)/|r_i|,  r_0 = 1,
+    
+and x_i, y_i such that arg(r_i) = atan2(y_i, x_i).
+
+The quantities I need to obtain from xyz are log(r_i) and r_i - r_j for any
+pair i, j. => I can already see it does not work: the differences in the
+phases are not numerically accurate.
+
+If I use z_i = log(r_i+1/r_i), a uniform i.i.d. prior on arg(z_i) implies a
+uniform i.i.d. prior on arg(r_i).
+
+    r_i = r_i/r_i-1 r_i-1/r_i-2 ... r_1/r_0
+    
+    log(r_i) = z_i-1 + z_i-2 + ... + z_0 = sum_k=0^i-1 z_k
+    log(r_0) = 0
+    
+    d_i = r_i+1 - r_i = exp(sum_k=0^i z_k) - exp(sum_k=0^i-1 z_k) =
+        = exp(sum_k=0^i-1 z_k) (exp(z_i) - 1) =
+        = r_i expm1(z_i)
+
+Can I break the accuracy of this? Take
+
+    r_1 ~ 1, r_2 ~ -1, r_3 ~ 1.
+    
+So we have that r_1 is very close to r_3, but r2 is distant from both.
+
+    r_2/r_1 ~ -1  -->  z_1 ~ 0 + i pi
+    r_3/r_2 ~ -1  -->  z_2 ~ 0 + i pi
+    
+    d_1 = r_1 (e^z_1 - 1) ~ 1 (-1 -1) = -2
+    d_2 = r_2 (e^z_2 - 1) ~ -1 (-1 -1) = 2
+    
+    r_3 - r_1 = d_1 + d_2 ~ 0  -->  cancellation!
+
+If the parametrization is ordered w.r.t. the modulus, then it statisfies r_i >
+1 but distant roots can be closer than neighbor roots because the phases
+rotates. With lexicographical order there is the same problem. Indeed, I can
+have paths on the complex plane such that roots get arbitrarily close again
+after an arbitrarily long time (as a spiral). Indeed the fundamental problem
+is that it is not possible to sort complex numbers topologically.
+
+What is the least evil then? Depending on how the user wants to put the roots
+around, different parametrizations would be appropriate. The base
+parametrization should be convenient for generic use, and not impede any
+sensible strategy from being adopted.
+
+First I can send the donut into the open circle with the transformation 1/r.
+Then maybe I can send the border of the circle to infinity somehow, to have
+a parametrization in full R^2. What is the appropriate way here to send a
+radius in [0, 1) to one in [0, infty)? It should probably be something that
+plays nicely with complex numbers.
+
+However I think it can't be done with an olomorphic function because the
+radial stretching doesn't preserve angles.
+
+Tentative:
+
+    |z| = -log(1 - 1/|r|)
+    arg z = -arg r
+
+For |r| -> oo, |z| ~ 1/|r| -> 0
+
+For |r| -> 1+, |z| = -log (|r| - 1)/|r| -> -log(|r| - 1) -> inf
+
+If r = 1 + e, e << 1, the lengthscale is 1/log r = 1/log(1 + e) ~ 1/e. The
+logarithm of the lengthscale is ~ log(1/e) = -log e = -log(r - 1).
+
+Thus |z|, if somewhat large, is interpretable as the logarithm of the
+correlation length.
+
+For r -> oo, scale is 1/log r while z is 1/r. So scale is 1/log(1/z), z is
+
+    s = 1/log r
+    log r = 1/s
+    r = exp(1/s)
+    z = 1/r = exp(-1/s)
+
+Thus for small z, infinitesimal changes bring the correlation length away from
+zero, which makes sense since below 1 at some point it's all white noise the
+same.
+
+For |r| -> oo, z behaves like (complex) 1/r, since
+
+    |z| ~ 1/|r|, and
+    arg z = -arg r.
+
+This means that locally in 0 the circle is sent to itself, this means that the
+derivatives can be defined. The stretch becomes "less olomorphic" moving
+towards the border.
+
+Now about the differences. Since there is no general compact strategy to
+represent accurate differences, I need the user to pass (optionally) the full
+matrix of pairwise differences. They have to be in z space to have domain R^2.
+
+    1 - 1/|r| = exp(-|z|)
+    1/|r| = 1 - exp(-|z|)
+    |r| = 1/(1 - exp(-|z|)) = -1/expm1(-|z|)
+    arg r = -arg z
+    r = |r|exp(i arg r)
+    
+Ho d = z - z' (oppure su modulo e fase) e voglio calcolare r - r' usando d.
+    
+(Usare |z|^2 = -log(1 - 1/|r|^2) mi aiuterebbe? Boh)
+
+    r - r' = |r|exp(i arg r) - |r'|exp(i arg r') =
+           = |r|exp(i arg r)(1 - |r'/r|exp(i(arg r' - arg r)))
+    
+    |r'/r| = (1 - exp(-|z|)) / (1 - exp(-|z'|)) =
+           = (exp(|z|') - exp(-|z| + |z'|)) / (exp(|z'|) - 1) = ?
+    
+    1/|r'| - 1/|r| = (1 - exp(-|z|')) - (1 - exp(-|z|)) =
+                   = exp(-|z|) - exp(-|z'|) =
+                   = exp(-|z|) (1 - exp(|z| - |z'|)) =
+                   = -exp(-|z|) expm1(|z| - |z'|)
+    
+    |r'/r| = |r'|(1/|r| - 1/|r'|) - 1 --> ?
+
+Ok I have it:
+
+    |r| - |r'| = 1/(1 - exp(-|z|)) - 1/(1 - exp(-|z'|)) =
+               = (1 - exp(-|z'|) - 1 + exp(-|z|)) / ((1 - exp(-|z|))(1 - exp(-|z'|))) =
+               = |r||r'|exp(-|z'|)(exp(|z'| - |z|) - 1) =
+               = |r||r'|exp(-|z'|)expm1(|z'| - |z|)
+    
+    r - r' = |r|exp(i arg r) - |r'|exp(i arg r') =
+           = |r|exp(i arg r) - |r|exp(i arg r') + |r|exp(i arg r') - |r'|exp(i arg r') =
+           = |r|exp(i arg r) (1 - exp(i (arg r' - arg r))) + (|r| - |r'|)exp(i arg r') =
+           = -r expm1(i (arg r' - arg r)) + (|r| - |r'|)exp(i arg r')
+
+Mmm but I'm actually interested in 1/(r - r'). So
+    
+    x = 1/r
+    |x| = 1 - exp(-|z|)
+    arg x = arg z
+    
+    r - r' = 1/x - 1/x' =
+           = (x' - x)/(xx')
+    
+    1/(r - r') = xx'/(x' - x)
+    
+    |x'| - |x| = exp(-|z|) - exp(-|z'|) =
+               = exp(-|z'|) (exp(|z'| - |z|) - 1)
+    
+    x' - x = |x'|exp(i arg x') - |x|exp(i arg x) =
+           = (|x'| - |x|)exp(i arg x) + |x'| (1 - exp(i (arg x - arg x'))) =
+           = exp(-|z'|) (exp(|z'| - |z|) - 1) exp(i arg x) +
+             + (1 - exp(-|z|')) (1 - exp(i (arg x - arg x')))
+        
+    xx' = |x||x'|exp(i (arg x + arg x'))
+
+About the same, can't really write it in a better way. Now it remains to get
+the differences in |z| and arg z from the one in z = a + ib.
+
+    |z| - |z'| = √(a^2 + b^2) - √(a'^2 + b'^2) =
+               = |z'|(|z/z'| - 1) =
+               = |z'|(√((a^2 + b^2)/(a'^2 + b'^2)) - 1)
+
+I have sqrtm1, so let's go inside
+
+    A = a - a'
+    B = b - b'
+
+    |z|^2 = a^2 + b^2 =
+          = (a' + A)^2 + (b' + B)^2 =
+          = a'^2 + b'^2 + 2(a'A + b'B) + A^2 + B^2 =
+          = |z'|^2  +  2(a'A + b'B) + A^2 + B^2
+
+Then the phase
+
+    tan arg z' = b'/a'
+               = (b - B)/(a - A) =
+               = b/(a - A) - B/(a - A) =
+               = b/a 1/(1 - A/a) - B(a - A)
+    
+    (f = arg z - arg z')
+    
+               = tan (arg z - f) =
+               = (tan arg z + tan f) / (1 - tan arg z tan f)
+
+Etc., I guess the calculation can be expressed in terms of cosm1. => No, wait:
+I can do it inverting the expression for z - z' in terms of |z| - |z'|, it
+contains 1 - exp(i (arg z - arg z')), which is directly what I need.
+
+    z' - z = (|z'| - |z|)exp(i arg z) + |z'| (1 - exp(i (arg z - arg z'))) -->
+    
+    --> 1 - exp(i (arg z - arg z')) =
+        = (z' - z)/|z'| + (|z| - |z'|)/|z'| z/|z|
+        
+Maybe I could have a parametrization in terms of |z|, a, b where
+
+    z = |z|(a + ib)/hypot(a, b)
+    
+to have uniform phase distribution but |z| away from zero. => But then |z|
+would have to be parametrized with log|z|, log(log(scale))... not convenient.

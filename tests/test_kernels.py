@@ -232,6 +232,50 @@ class KernelTestBase(KernelTestABC):
         else:
             pytest.skip()
     
+    def check_continuous_at_zero(self, deriv):
+        kernel = self.kernel_class
+        if not issubclass(kernel, _Kernel.StationaryKernel):
+            pytest.skip()
+        
+        donesomething = False
+        for kw in self.kwargs_list:
+            t = self.random_x(**kw).dtype
+            if not np.issubdtype(t, np.inexact):
+                pytest.skip()
+            k = kernel(**kw)
+            if k.derivable < deriv:
+                continue
+            
+            # discontinuos kernels
+            if kernel == _kernels.Cauchy and kw.get('alpha', 2) < 1:
+                continue
+            if kernel == _kernels.Matern and kw['nu'] - deriv < 0.5:
+                continue
+            if kernel == _kernels.GammaExp and kw.get('gamma', 1) < 1:
+                continue
+            if kernel == _kernels.StationaryFracBrownian and kw.get('H', 0.5) < 0.5:
+                continue
+            if kernel == _kernels.White:
+                continue
+            
+            k = k.diff(deriv, deriv)
+            c0 = k(0, 0)
+            c1 = k(0, 1e-15)
+            np.testing.assert_allclose(c1, c0, rtol=1e-10, equal_nan=False)
+            
+            donesomething = True
+        if not donesomething:
+            pytest.skip()
+        
+    def test_continuous_at_zero_0(self):
+        self.check_continuous_at_zero(0)
+
+    def test_continuous_at_zero_1(self):
+        self.check_continuous_at_zero(1)
+
+    def test_continuous_at_zero_2(self):
+        self.check_continuous_at_zero(2)
+
     def test_stationary(self):
         kernel = self.kernel_class
         if issubclass(kernel, _Kernel.StationaryKernel):
@@ -617,7 +661,7 @@ class KernelTestBase(KernelTestABC):
             np.testing.assert_allclose(mc, np.cos(2 * np.pi * x), equal_nan=False)
             np.testing.assert_allclose(np.diag(cs), cs[0, 0], equal_nan=False)
             np.testing.assert_allclose(np.diag(cc), cc[0, 0], equal_nan=False)
-
+    
     @classmethod
     def make_subclass(cls, kernel_class, kwargs_list=None, random_x_fun=None, eps=None):
         name = 'Test' + kernel_class.__name__
@@ -745,13 +789,13 @@ def check_matern_half_integer(deriv):
     formula for real nu.
     """
     for p in range(10):
-        x = 3 * np.random.randn(100)
-        y = x + np.random.uniform(0.05, 3, 100)
+        x = 3 * np.random.randn(100)[None, :]
+        y = x.T
         k = _kernels.Matern(nu=p + 1/2)
         d = min(k.derivable, deriv)
         r1 = k.diff(d, d)(x, y)
         r2 = _kernels.Maternp(p=p).diff(d, d)(x, y)
-        np.testing.assert_allclose(r1, r2, rtol=1e-5, equal_nan=False)
+        np.testing.assert_allclose(r1, r2, rtol=1e-10, equal_nan=False)
 
 def test_matern_half_integer_0():
     check_matern_half_integer(0)
@@ -762,8 +806,6 @@ def test_matern_half_integer_1():
 def test_matern_half_integer_2():
     check_matern_half_integer(2)
     
-# TODO continuity tests for the derivatives of matern at 0
-
 def test_wiener_integral():
     """
     Test that the derivative of the Wiener integral is the Wiener.
@@ -874,9 +916,11 @@ util.skip(TestMA, 'test_normalized')
 # arise where x == y. => use make_jaxpr to debug?
 util.xfail(TestWendland, 'test_positive_deriv2_nd')
 util.xfail(TestWendland, 'test_double_diff_nd_second_chopped')
+util.xfail(TestWendland, 'test_continuous_at_zero_2')
 util.xfail(TestWendland, 'test_jit_deriv2_nd')
 util.xfail(TestCausalExpQuad, 'test_positive_deriv2_nd')
 util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped')
+util.xfail(TestCausalExpQuad, 'test_continuous_at_zero_2')
 
 # TODO some xpass, likely numerical precision problems
 util.xfail(TestWendland, 'test_positive_deriv2') # normally xpasses

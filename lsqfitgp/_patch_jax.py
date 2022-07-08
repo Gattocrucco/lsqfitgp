@@ -189,17 +189,10 @@ def sgngamma(x):
 def gamma(x):
     return sgngamma(x) * jnp.exp(jspecial.gammaln(x))
 
-# def coefgen_jvmod(s, e, nu):
-#     m = jnp.arange(s, e)
-#     u = 1 + m + nu
-#     return sgngamma(u) * (-1) ** m / jnp.exp(jspecial.gammaln(1 + m) + jspecial.gammaln(u))
-
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def jvmodx2(nu, x2):
     x = jnp.sqrt(x2)
     normal = (x / 2) ** -nu * jv(nu, x)
-    # nearzero = taylor(coefgen_jvmod, (nu,), 0, 5, x2 / 4)
-    # return jnp.where(x2 < 1e-4, nearzero, normal)
     return jnp.where(x2, normal, 1 / gamma(nu + 1))
 
 # (1/x d/dx)^m (x^-v J_v(x)) = (-1)^m x^-(v+m) J_v+m(x)
@@ -220,40 +213,27 @@ def jvmodx2_jvp(nu, primals, tangents):
     x2t, = tangents
     return jvmodx2(nu, x2), -x2t * jvmodx2(nu + 1, x2) / 4
 
-# def coefgen_ivmod(s, e, nu):
-#     m = jnp.arange(s, e)
-#     u = 1 + m + nu
-#     return sgngamma(u) * jnp.exp(-jspecial.gammaln(1 + m) - jspecial.gammaln(u))
-#
-# def ivmodx2_nearzero(nu, x2):
-#     return taylor(coefgen_ivmod, (nu,), 0, 5, x2 / 4)
-#
-# def kvmodx2_nearzero(nu, x2):
-#     factor = jnp.pi / (2 * jnp.sin(jnp.pi * nu))
-#     return factor * (ivmodx2_nearzero(-nu, x2) - (x2 / 4) ** nu * ivmodx2_nearzero(nu, x2))
-
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 2))
 def kvmodx2(nu, x2, norm_offset=0):
     x = jnp.sqrt(x2)
     normal = 2 / gamma(nu + norm_offset) * (x / 2) ** nu * kv(nu, x)
     atzero = 1 / jnp.prod(nu + jnp.arange(norm_offset))
+    atzero = jnp.where(nu > 0, atzero, 1) # for nu < 0 the correct limit
+                                          # would be inf, but in practice it
+                                          # gets cancelled by a stronger 0
+                                          # when taking derivatives of Matern
+                                          # and this is a cheap way to avoid
+                                          # nans
     return jnp.where(x2, normal, atzero)
 
-# TODO derivatives of matern not working for integer nu, I tried putting inf or
-# 0 as return values for nu < 0, x2 == 0 but didn't work
-
-# TODO Surely for nu < 0 the value at x = 0 is inf and not the one I'm using,
-# however this seems to make things work because it will be multiplied by a
-# stronger zero at some point and using inf would produce a nan.
-
 # d/dx (x^v Kv(x)) = -x^v Kv-1(x)       (Abrahamsen 1997, p. 43)
-# d/dx ~Kv(x) =
-#   = d/dx (√x/2)^v Kv(√x) =
-#   = 2^-v d/dx (√x)^v Kv(√x) =
-#   = -2^-v (√x)^v Kv-1(√x) 1/(2√x) =
-#   = -2^-(v+1) √x^(v-1) Kv-1(√x) =
-#   = -1/4 (√x/2)^(v-1) Kv-1(√x) =
-#   = -1/4 ~Kv-1(x)
+# d/ds ~Kv(s) =
+#   = d/ds (√s/2)^v Kv(√s) =
+#   = 2^-v d/ds (√s)^v Kv(√s) =
+#   = -2^-v (√s)^v Kv-1(√s) 1/(2√s) =
+#   = -2^-(v+1) √s^(v-1) Kv-1(√s) =
+#   = -1/4 (√s/2)^(v-1) Kv-1(√s) =
+#   = -1/4 ~Kv-1(s)
 
 @kvmodx2.defjvp
 def kvmodx2_jvp(nu, norm_offset, primals, tangents):
