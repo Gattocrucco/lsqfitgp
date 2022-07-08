@@ -773,6 +773,7 @@ test_kwargs = {
             [0], [1], [1, 0], [1, 0.5], [1, 0.5, 0.25], [1, -0.9],
         ]],
     ),
+    _kernels.Color: dict(kwargs_list=[dict(n=n) for n in [2, 3, 4, 5, 6]]),
 }
 
 for kernel in kernels:
@@ -939,7 +940,7 @@ util.xfail(TestNNKernel, 'test_double_diff_nd_second')
 util.xfail(TestFracBrownian, 'test_double_diff_nd_second')
 
 # TODO functions not supported by XLA. Wait for jax to add them?
-for test in [TestTaylor, TestBessel, TestMatern, TestPink]:
+for test in [TestTaylor, TestBessel, TestMatern, TestPink, TestColor]:
     util.xfail(test, 'test_jit')
     util.xfail(test, 'test_jit_deriv')
     util.xfail(test, 'test_jit_deriv2')

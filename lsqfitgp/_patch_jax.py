@@ -71,6 +71,12 @@ iv = makejaxufunc(special.iv, None, lambda v, z: ivp(v, z, 1))
 ivp = makejaxufunc(special.ivp, None, lambda v, z, n: ivp(v, z, n + 1), None)
 kv = makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
 kvp = makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
+
+def _ei(x):
+    si, ci = special.sici(x)
+    return ci + 1j * si
+ei = makejaxufunc(_ei, lambda x: jnp.cos(x) / x + 1j * jnp.sinc(x / jnp.pi))
+si = makejaxufunc(lambda x: special.sici(x)[0], lambda x: jnp.sinc(x / jnp.pi))
 ci = makejaxufunc(lambda x: special.sici(x)[1], lambda x: jnp.cos(x) / x)
 
 # See jax #1870, #2466, #9956, #11002 and

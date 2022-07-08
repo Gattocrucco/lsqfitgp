@@ -45,6 +45,7 @@ __all__ = [
     'CausalExpQuad',
     'Celerite',
     'Circular',
+    'Color',
     'Constant',
     'Cos',
     'Decaying',
@@ -982,13 +983,77 @@ def Pink(delta, dw=1):
     
     """
     # TODO reference?
-        
+
     l = _patch_jax.ci(delta)
     r = _patch_jax.ci(delta * (1 + dw))
     mean = delta * (1 + dw / 2)
     norm = jnp.log1p(dw)
     tol = jnp.sqrt(jnp.finfo(jnp.empty(0).dtype).eps)
     return jnp.where(delta * dw < tol, jnp.cos(mean), (r - l) / norm)
+
+def _color_derivable(n=2):
+    return n // 2 - 1
+
+@stationarykernel(maxdim=1, derivable=_color_derivable, input='soft')
+def Color(delta, n=2):
+    """
+    Colored noise kernel.
+    
+    .. math::
+        k(\\Delta) = (n-1)
+        \\int_1^\\infty \\mathrm d\\omega
+        \\frac{\\cos(\\omega\\Delta)}\\omega^n,
+        \\quad n \\in \\mathbb N, n \\ge 2.
+    
+    A process with power spectrum :math:`1/\\omega^n` truncated below
+    :math:`\\omega = 1`. :math:`\\omega` is the angular frequency
+    :math:`\\omega = 2\\pi f`. Derivable :math:`\\lfloor n/2 \\rfloor - 1`
+    times.
+     
+    """
+    # TODO reference?
+    assert int(n) == n and n >= 2, n
+    return _color(n, delta).real
+
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
+def _color(n, x):
+    
+    # f_n(x) = (n-1) int_1^∞ dw e^ixw / w^n
+    #        = (n-1) I_n(x)
+    #
+    # I_n(x) = int_1^∞ dw e^iw / w^n =
+    #        = 1/(n-1) (e^ix + ix I_n-1(x))
+    #        = 1/(n-1)! [(ix)^n-1 I_1(x) +
+    #          + e^ix sum_k=0^n-2 (ix)^k (n-2-k)!]
+    #
+    # I_1(x) = int_1^∞ dw e^iwx / w =
+    #        = int_x^∞ du e^iu / u =
+    #        = Ci(∞) - Ci(x) + i (Si(∞) - Si(x)) =
+    #        = 0 - Ci(x) + i (π/2 - Si(x))
+    #        = i π/2 - Ei(x)
+    
+    k = jnp.arange(n - 1)
+    kfact = jnp.cumprod(k.at[0].set(1))
+    n_2fact = kfact[-1]
+    I_1 = 1j * jnp.pi / 2 - _patch_jax.ei(x) # imag part not accurate for x -> ∞
+    ix = 1j * x
+    I_n_part1 = ix ** (n - 1) * I_1 # diverges for x -> ∞
+    terms = ix[..., None] ** k * kfact[::-1]
+    I_n_part2 = jnp.exp(ix) * jnp.sum(terms, axis=-1)
+    return (I_n_part1 + I_n_part2) / n_2fact
+
+@_color.defjvp
+def _color_jvp(n, primals, tangents):
+    
+    # f_n'(x) = (n-1) d/dx int_1^∞ dw e^iwx / w^n =
+    #         = (n-1) int_1^∞ dw iw e^iwx w^n =
+    #         = (n-1)/(n-2) i f_n-1(x)
+        
+    x, = primals
+    xt, = tangents
+    primal = _color(n, x)
+    tangent = xt * (n - 1) / (n - 2) * 1j * _color(n - 1, x)
+    return primal, tangent
 
 @stationarykernel(forcekron=True, derivable=True, input='soft')
 def Sinc(delta):
