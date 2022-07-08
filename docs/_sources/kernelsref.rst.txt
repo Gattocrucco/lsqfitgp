@@ -67,6 +67,7 @@ Stationary kernels
   * :func:`AR`
   * :func:`Celerite`
   * :func:`Circular`
+  * :func:`Color`
   * :func:`Cos`
   * :func:`Expon`
   * :func:`Fourier`
@@ -119,6 +120,9 @@ Documentation
 .. autofunction:: Circular
 .. image:: kernelsref-Circular.png
 .. image:: kernelsref-Circular-samples.png
+.. autofunction:: Color
+.. image:: kernelsref-Color.png
+.. image:: kernelsref-Color-samples.png
 .. autofunction:: Constant
 .. autofunction:: Cos
 .. image:: kernelsref-Cos.png
