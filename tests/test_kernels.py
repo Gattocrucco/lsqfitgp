@@ -773,7 +773,7 @@ test_kwargs = {
             [0], [1], [1, 0], [1, 0.5], [1, 0.5, 0.25], [1, -0.9],
         ]],
     ),
-    _kernels.Color: dict(kwargs_list=[dict(n=n) for n in [2, 3, 4, 5, 6]]),
+    _kernels.Color: dict(kwargs_list=[dict(n=n) for n in [2, 3, 4, 5, 6, 20]]),
 }
 
 for kernel in kernels:

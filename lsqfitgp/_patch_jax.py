@@ -163,6 +163,13 @@ def value_and_ops(f, *ops, has_aux=False, **kw): # pragma: no cover
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1, 2, 3))
 def taylor(coefgen, args, n, m, x):
+    """
+    coefgen : function = start, end -> taylor coefficients for powers start:end
+    args : tuple = additional arguments to coefgen
+    n : int = derivation order
+    m : int = number of coefficients used
+    x : argument
+    """
     c = coefgen(n, n + m, *args)
     k = jnp.arange(n, n + m)
     c = c * jnp.exp(jspecial.gammaln(1 + k) - jspecial.gammaln(1 + k - n))
@@ -294,31 +301,38 @@ def polyroots(c):
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def expn_imag(n, x):
     """
-    Compute E_n(-ix), n integer >= 1, x real >= 0
+    Compute E_n(-ix), n integer >= 2, x real >= 0
     """
     
-    # DLMF 8.19.7
-        
-    # TODO neither scipy nor jax provide a complex expn, scipy has a complex
-    # exp1. See
-    # https://en.wikipedia.org/wiki/Trigonometric_integral#Efficient_evaluation
-    # to implement exp1 myself to enable the jit
+    # expn_imag_smallx loses accuracy due to cancellation between two terms
+    # ~ x^n-2, while the result ~ x^-1, thus the relative error ~ x^-1/x^n-2 =
+    # = x^-(n-1)
+    #
+    # error of expn_imag_smallx: eps z^n-1 E_1(z) / Gamma(n) ~
+    #                            ~ eps z^n-2 / Gamma(n)
+    #
+    # error of expn_asymp: e^-z/z (n)_nt e^z/z^nt-1 E_n+nt(z) =
+    #                      = (n)_nt / z^nt E_n+nt(z) ~
+    #                      ~ (n)_nt / z^nt+1
+    #
+    # set the errors equal:
+    #   eps z^n-2 / Gamma(n) = (n)_nt / z^nt+1  -->
+    #   -->  z = (Gamma(n + nt) / eps)^1/(n+nt-1)
     
-    # TODO not numerically accurate for large x, at n=6 it is barely
-    # acceptable. The problem is the cancellation between part1 and part2,
-    # both ~ x^n-2.
-
-    k = jnp.arange(n)
-    kfact = jnp.cumprod(k.at[0].set(1))
-    n_1fact = kfact[-1]
-    ix = 1j * x
-    E_1 = special.exp1(-ix)
-    if n >= 2:
-        E_1 = jnp.where(x, E_1, 0) # Re E_1(ix) ~ log(x) for x -> 0
-    part1 = ix ** (n - 1) * E_1
-    coefs = kfact[:-1][(...,) + (None,) * ix.ndim]
-    part2 = jnp.exp(ix) * jnp.polyval(coefs, ix)
-    return (part1 + part2) / n_1fact
+    # TODO fix n > 20, it is probably sufficient to use something like
+    # softmin(1/(n-1), 1/x) e^-ix, where the softmin scale increases with n
+    # (how?)
+    
+    dt = jnp.empty(0).dtype
+    if dt == jnp.float32:
+        nt = 10
+    else:
+        nt = 20 # close to optimal in n range where this implementation works
+    eps = jnp.finfo(dt).eps
+    knee = (special.gamma(n + nt) / eps) ** (1 / (n + nt - 1))
+    small = expn_imag_smallx(n, x)
+    large = expn_asymp(n, -1j * x, nt)
+    return jnp.where(x < knee, small, large)
 
 @expn_imag.defjvp
 def expn_imag_jvp(n, primals, tangents):
@@ -328,3 +342,40 @@ def expn_imag_jvp(n, primals, tangents):
     x, = primals
     xt, = tangents
     return expn_imag(n, x), xt * 1j * expn_imag(n - 1, x)
+
+def expn_imag_smallx(n, x):
+        
+    # DLMF 8.19.7
+    
+    # TODO See
+    # https://en.wikipedia.org/wiki/Trigonometric_integral#Efficient_evaluation
+    # to implement exp1 myself to enable the jit
+
+    k = jnp.arange(n)
+    kfact = jnp.cumprod(k.at[0].set(1))
+    n_1fact = kfact[-1]
+    ix = 1j * x
+    E_1 = special.exp1(-ix)
+    E_1 = jnp.where(x, E_1, 0) # Re E_1(ix) ~ log(x) for x -> 0
+    part1 = ix ** (n - 1) * E_1
+    coefs = kfact[:-1][(...,) + (None,) * ix.ndim]
+    part2 = jnp.exp(ix) * jnp.polyval(coefs, ix)
+    return (part1 + part2) / n_1fact
+
+def poch(x, k):
+    return jnp.exp(jspecial.gammaln(x + k) - jspecial.gammaln(x)) # DLMF 5.2.5
+    
+def expn_asymp_coefgen(s, e, n):
+    k = jnp.arange(s, e)
+    return (-1) ** k * poch(n, k)
+
+def expn_asymp(n, z, nt):
+    """
+    Compute E_n(z) for large |z|, |arg z| < 3/2 π. `nt` is the number of terms
+    used in the asymptotic series.
+    """
+    
+    # DLMF 8.20.2
+    
+    invz = 1 / z
+    return jnp.exp(-z) * invz * taylor(expn_asymp_coefgen, (n,), 0, nt, invz)
