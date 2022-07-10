@@ -145,7 +145,7 @@ meta = dict(
     CausalExpQuad = dict(kwlist=[dict(alpha=a) for a in [0, 1, 2]]),
     Celerite = dict(kwlist=[dict(B=0), dict(B=1), dict(gamma=5)]),
     Circular = dict(kwlist=[dict(c=c, tau=t) for c, t in [(1/2, 4), (1/2, 10), (1/4, 4)]], range=[0, 2]),
-    Color = dict(range=[0, 4 * np.pi], kwlist=[dict(n=n) for n in [2, 4, 6]]),
+    Color = dict(range=[0, 4 * np.pi], kwlist=[dict(n=n) for n in [2, 4, 6, 20]]),
     Constant = dict(skip=True),
     Cos = dict(range=[0, 4 * np.pi]),
     Decaying = dict(range=[0, 2], srange=[0, 5]),
