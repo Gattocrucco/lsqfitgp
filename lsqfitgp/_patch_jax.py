@@ -290,3 +290,41 @@ def polyroots(c):
     # increases precision, but I'm not sure the transposition actually helps,
     # it's probably more about the difference between scipy's companion and
     # numpy's polycompanion
+
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
+def expn_imag(n, x):
+    """
+    Compute E_n(-ix), n integer >= 1, x real >= 0
+    """
+    
+    # DLMF 8.19.7
+        
+    # TODO neither scipy nor jax provide a complex expn, scipy has a complex
+    # exp1. See
+    # https://en.wikipedia.org/wiki/Trigonometric_integral#Efficient_evaluation
+    # to implement exp1 myself to enable the jit
+    
+    # TODO not numerically accurate for large x, at n=6 it is barely
+    # acceptable. The problem is the cancellation between part1 and part2,
+    # both ~ x^n-2.
+
+    k = jnp.arange(n)
+    kfact = jnp.cumprod(k.at[0].set(1))
+    n_1fact = kfact[-1]
+    ix = 1j * x
+    E_1 = special.exp1(-ix)
+    if n >= 2:
+        E_1 = jnp.where(x, E_1, 0) # Re E_1(ix) ~ log(x) for x -> 0
+    part1 = ix ** (n - 1) * E_1
+    coefs = kfact[:-1][(...,) + (None,) * ix.ndim]
+    part2 = jnp.exp(ix) * jnp.polyval(coefs, ix)
+    return (part1 + part2) / n_1fact
+
+@expn_imag.defjvp
+def expn_imag_jvp(n, primals, tangents):
+    
+    # DLMF 8.19.13
+    
+    x, = primals
+    xt, = tangents
+    return expn_imag(n, x), xt * 1j * expn_imag(n - 1, x)

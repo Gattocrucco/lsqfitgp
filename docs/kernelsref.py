@@ -86,9 +86,10 @@ default values of the keyword parameters, apart from some specific cases like
    You may encounter problems with second derivatives for
    :class:`CausalExpQuad`, :class:`FracBrownian`, :class:`NNKernel`,
    :class:`Taylor`, and with first derivatives too for :class:`Wendland` (but
-   only in more than one dimension). The following kernels are not compatible
-   with the JAX JIT: :class:`Bessel`, :class:`Matern`, :class:`Pink`,
-   :class:`Taylor`.
+   only in more than one dimension). :class:`Color` stops working for long
+   distances as :math:`n` is increased. The following kernels are not
+   compatible with the JAX JIT: :class:`Bessel`, :class:`Color`,
+   :class:`Matern`, :class:`Pink`, :class:`Taylor`.
 
 Index
 -----
