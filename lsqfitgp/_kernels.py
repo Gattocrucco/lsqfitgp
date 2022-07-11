@@ -1013,7 +1013,7 @@ def Color(delta, n=2):
     """
     # TODO reference?
     
-    # TODO real n > 1
+    # TODO real n > 1 => use usual series for small z and cont frac for large?
     
     # TODO integration limit dw like Pink, use None to mean inf since the
     # derivability changes and I can not use values for conditions due to the
@@ -1029,11 +1029,26 @@ def Color(delta, n=2):
     # imaginary parameters. DLMF says there is no known fixed-precision
     # implementation!
     #
-    # See
-    # https://www.boost.org/doc/libs/1_79_0/libs/math/doc/html/math_toolkit/sf_gamma/igamma.html
-    # https://dlmf.nist.gov/8.9
-    # https://dlmf.nist.gov/8.2.E7
-    # to be continued...
+    # int_l^h dw w^n e^-ixw =                               t = ixw
+    #   = (ix)^-(n+1) int_ixl^ixh dt t^n e^-t =
+    #   = (ix)^-(n+1) gammainc(n + 1, ixl, ixh) =           z = ix, a = n+1
+    #   = z^-a gammainc(a, lz, hz) =
+    #   = z^-a (gamma(a, hz) - gamma(a, lz)) =
+    #   = z^-a (Gamma(a, lz) - Gamma(a, hz))
+    #
+    # int_0^1 dw w^n e^-ixw =
+    #   = Gamma(n + 1) gamma*(n + 1, ix)
+    # https://www.boost.org/doc/libs/1_79_0/libs/math/doc/html/math_toolkit/sf_gamma/igamma.html boost impl of gamma(a,x) and Gamma(a,x) for real x
+    # https://dlmf.nist.gov/8.2.E7 gamma*(a, z)
+    # https://dlmf.nist.gov/8.8.E14 d/da gamma*(a, z)
+    # https://dlmf.nist.gov/8.8.E15 d^n/dz^n z^-a gamma(a, z)
+    # https://dlmf.nist.gov/8.9 continued fractions for gamma* and Gamma
+    # https://dlmf.nist.gov/8.11.E2 asymp series for Gamma(a, z)
+    # https://dlmf.nist.gov/8.12 series for a->∞ in terms of erfc (do I have complex erfc? => yes scipy, no jax)
+    # https://dlmf.nist.gov/8.19.E17 continued fraction for E_n(z)
+    # https://dlmf.nist.gov/8.20.E6 series of E_n(z) for large n
+    # https://dlmf.nist.gov/8.27.i reference to Padé of gammainc for complex z
+    # https://dlmf.nist.gov/8.28.vii reference to impl of E_n(z) for complex z
     
     assert int(n) == n and n >= 2, n
     return (n - 1) * _patch_jax.expn_imag(n, delta).real
