@@ -319,15 +319,15 @@ def expn_imag(n, x):
     #   eps z^n-2 / Gamma(n) = (n)_nt / z^nt+1  -->
     #   -->  z = (Gamma(n + nt) / eps)^1/(n+nt-1)
     
-    # TODO fix n > 20, it is probably sufficient to use something like
-    # softmin(1/(n-1), 1/x) e^-ix, where the softmin scale increases with n
-    # (how?)
+    # TODO improve accuracy at large n, it is probably sufficient to use
+    # something like softmin(1/(n-1), 1/x) e^-ix, where the softmin scale
+    # increases with n (how?)
     
     dt = jnp.empty(0).dtype
     if dt == jnp.float32:
-        nt = 10
+        nt = 10 # TODO optimize to raise maximum n
     else:
-        nt = 20 # close to optimal in n range where this implementation works
+        nt = 20 # TODO optimize to raise maximum n
     eps = jnp.finfo(dt).eps
     knee = (special.gamma(n + nt) / eps) ** (1 / (n + nt - 1))
     small = expn_imag_smallx(n, x)
@@ -347,16 +347,19 @@ def expn_imag_smallx(n, x):
         
     # DLMF 8.19.7
     
-    k = jnp.arange(n)
-    kfact = jnp.cumprod(k.at[0].set(1))
-    n_1fact = kfact[-1]
+    k = jnp.arange(n).astype(float)
+    fact = jnp.cumprod(k.at[0].set(1))
+    n_1fact = fact[-1]
     ix = 1j * x
     E_1 = exp1_imag(x) # E_1(-ix)
     E_1 = jnp.where(x, E_1, 0) # Re E_1(-ix) ~ log(x) for x -> 0
     part1 = ix ** (n - 1) * E_1
-    coefs = kfact[:-1][(...,) + (None,) * ix.ndim]
+    coefs = fact[:-1][(...,) + (None,) * ix.ndim]
     part2 = jnp.exp(ix) * jnp.polyval(coefs, ix)
     return (part1 + part2) / n_1fact
+    
+    # TODO to make this work with jit n, since the maximum n is something
+    # like 30, I can always compute all the terms and set some of them to zero
 
 def poch(x, k):
     return jnp.exp(jspecial.gammaln(x + k) - jspecial.gammaln(x)) # DLMF 5.2.5
@@ -522,7 +525,15 @@ def _exp1_imag_largex(x):
 @jax.jit
 def exp1_imag(x):
     """
-    Compute E_1(-ix) = int_1^oo dt e^it / t, for x > 0
+    Compute E_1(-ix) = int_1^oo dt e^ixt / t, for x > 0
     Reference: Rowe et al. (2015, app. B)
     """
     return jnp.where(x < 4, _exp1_imag_smallx(x), _exp1_imag_largex(x))
+    
+    # TODO This is 40x faster than special.exp1(-1j * x) and 2x than
+    # special.sici(x), and since the jit has to run (I'm guessing) through both
+    # branches of jnp.where, a C/Cython implementation would be 4x faster. Maybe
+    # PR it to scipy for sici, after checking the accuracy against mpmath and
+    # the actual C performance.
+
+    # Do Padé approximants work for complex functions?

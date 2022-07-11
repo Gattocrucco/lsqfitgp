@@ -1013,13 +1013,31 @@ def Color(delta, n=2):
     """
     # TODO reference?
     
-    # TODO real n
+    # TODO real n > 1
     
-    # TODO integration limit dw like Pink, allow None=inf
+    # TODO integration limit dw like Pink, use None to mean inf since the
+    # derivability changes and I can not use values for conditions due to the
+    # jit, delete Pink
+    
+    # TODO The most general possible version I can imagine is int_a^b dw e^iwx
+    # w^n with n in R. With n < -1 b=None is allowed, and a=None with n < 1,
+    # meaning inf and 0. Since the general implementation would be slower, I can
+    # detect n is an integer (at compile time) to use expn_imag. Afterward
+    # delete Sinc and call this Power.
+    #
+    # This is the generalized incomplete gamma function with real argument and
+    # imaginary parameters. DLMF says there is no known fixed-precision
+    # implementation!
+    #
+    # See
+    # https://www.boost.org/doc/libs/1_79_0/libs/math/doc/html/math_toolkit/sf_gamma/igamma.html
+    # https://dlmf.nist.gov/8.9
+    # https://dlmf.nist.gov/8.2.E7
+    # to be continued...
     
     assert int(n) == n and n >= 2, n
     return (n - 1) * _patch_jax.expn_imag(n, delta).real
-
+    
 @stationarykernel(forcekron=True, derivable=True, input='soft')
 def Sinc(delta):
     """
@@ -1197,8 +1215,12 @@ def MA(delta, w=None):
         \\operatorname{Cov}[\\epsilon_i,\\epsilon_j] &= \\delta_{ij}.
     
     """
+    
     # TODO reference? must find some standard book with a treatment which is
     # not too formal yet writes clearly about the covariance function
+    
+    # TODO nd version with w.ndim == n, it's a nd convolution
+    
     w = jnp.asarray(w)
     assert w.ndim == 1
     if len(w):

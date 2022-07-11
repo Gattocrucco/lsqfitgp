@@ -175,8 +175,7 @@ class KernelTestBase(KernelTestABC):
     def test_symmetric_22(self):
         self.symmetric_offdiagonal(2, 2)
     
-    # def test_symmetric_33(self):
-    #     self.symmetric_offdiagonal(3, 3)
+    # TODO test higher derivatives?
     
     def jit(self, deriv=0, nd=False):
         donesomething = False
@@ -203,6 +202,10 @@ class KernelTestBase(KernelTestABC):
             donesomething = True
         if not donesomething:
             pytest.skip()
+    
+    # TODO jit with kw as arguments. use static_argnames filtering by dtype.
+    
+    # TODO test vmap
     
     def test_jit(self):
         self.jit()
