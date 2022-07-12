@@ -153,7 +153,7 @@ default values of the keyword parameters, apart from some specific cases like
 <a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>, and with first derivatives too for <a class="reference internal" href="#lsqfitgp.Wendland" title="lsqfitgp.Wendland"><code class="xref py py-class docutils literal notranslate"><span class="pre">Wendland</span></code></a> (but
 only in more than one dimension). <a class="reference internal" href="#lsqfitgp.Color" title="lsqfitgp.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> stops working for <span class="math notranslate nohighlight">\(n
 &gt; 20\)</span>. The following kernels are not compatible with the JAX JIT:
-<a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Bessel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bessel</span></code></a>, <a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a>, <a class="reference internal" href="#lsqfitgp.Pink" title="lsqfitgp.Pink"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pink</span></code></a>, <a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>.</p>
+<a class="reference internal" href="#lsqfitgp.Bessel" title="lsqfitgp.Bessel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bessel</span></code></a>, <a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a>, <a class="reference internal" href="#lsqfitgp.Taylor" title="lsqfitgp.Taylor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Taylor</span></code></a>.</p>
 </div>
 <section id="index">
 <h2><span class="section-number">1.1. </span>Index<a class="headerlink" href="#index" title="Permalink to this heading">¶</a></h2>
@@ -763,9 +763,12 @@ sets the length scale of the correlations.</p>
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Pink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Pink" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pink noise kernel.</p>
 <div class="math notranslate nohighlight">
-\[k(\Delta) = \frac 1 {\log(1 + \delta\omega)}
+\[\begin{split}k(\Delta) &amp;= \frac 1 {\log(1 + \delta\omega)}
 \int_1^{1+\delta\omega} \mathrm d\omega
-\frac{\cos(\omega\Delta)}\omega\]</div>
+\frac{\cos(\omega\Delta)}\omega = \\
+&amp;= \frac {     \operatorname{Ci}(\Delta (1 + \delta\omega))
+                - \operatorname{Ci}(\Delta)                   }
+{\log(1 + \delta\omega)}\end{split}\]</div>
 <p>A process with power spectrum <span class="math notranslate nohighlight">\(1/\omega\)</span> truncated between 1 and
 <span class="math notranslate nohighlight">\(1 + \delta\omega\)</span>. <span class="math notranslate nohighlight">\(\omega\)</span> is the angular frequency
 <span class="math notranslate nohighlight">\(\omega = 2\pi f\)</span>. In the limit <span class="math notranslate nohighlight">\(\delta\omega\to\infty\)</span>
