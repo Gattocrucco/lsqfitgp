@@ -88,7 +88,7 @@ default values of the keyword parameters, apart from some specific cases like
    :class:`Taylor`, and with first derivatives too for :class:`Wendland` (but
    only in more than one dimension). :class:`Color` stops working for :math:`n
    > 20`. The following kernels are not compatible with the JAX JIT:
-   :class:`Bessel`, :class:`Matern`, :class:`Pink`, :class:`Taylor`.
+   :class:`Bessel`, :class:`Matern`, :class:`Taylor`.
 
 Index
 -----

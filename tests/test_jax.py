@@ -96,7 +96,7 @@ def test_polyroots():
         r2 = _patch_jax.polyroots(a[::-1])
         np.testing.assert_allclose(r1, r2, atol=1e-15, rtol=1e-12)
 
-def test_exp1_imag():
+def test_exp1_imag_and_ci():
     xs = [
         np.linspace(1e-15, 100, 1000),
         np.logspace(2, 20, 1000),
@@ -105,3 +105,7 @@ def test_exp1_imag():
         y1 = _patch_jax.exp1_imag(x)
         y2 = special.exp1(-1j * x)
         np.testing.assert_allclose(y1, y2, atol=0, rtol=1e-14)
+        
+        y1 = _patch_jax.ci(x)
+        _, y2 = special.sici(x)
+        np.testing.assert_allclose(y1, y2, atol=1e-15, rtol=1e-15)

@@ -943,7 +943,7 @@ util.xfail(TestNNKernel, 'test_double_diff_nd_second')
 util.xfail(TestFracBrownian, 'test_double_diff_nd_second')
 
 # TODO functions not supported by XLA. Wait for jax to add them?
-for test in [TestTaylor, TestBessel, TestMatern, TestPink]:
+for test in [TestTaylor, TestBessel, TestMatern]:
     util.xfail(test, 'test_jit')
     util.xfail(test, 'test_jit_deriv')
     util.xfail(test, 'test_jit_deriv2')

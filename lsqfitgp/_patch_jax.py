@@ -71,7 +71,6 @@ iv = makejaxufunc(special.iv, None, lambda v, z: ivp(v, z, 1))
 ivp = makejaxufunc(special.ivp, None, lambda v, z, n: ivp(v, z, n + 1), None)
 kv = makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
 kvp = makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
-ci = makejaxufunc(lambda x: special.sici(x)[1], lambda x: jnp.cos(x) / x)
 
 # See jax #1870, #2466, #9956, #11002 and
 # https://github.com/josipd/jax/blob/master/jax/experimental/jambax.py
@@ -537,3 +536,13 @@ def exp1_imag(x):
     # the actual C performance.
 
     # Do Padé approximants work for complex functions?
+
+@jax.custom_jvp
+def ci(x):
+    return -exp1_imag(x).real
+
+@ci.defjvp
+def _ci_jvp(primals, tangents):
+    x, = primals
+    xt, = tangents
+    return ci(x), xt * jnp.cos(x) / x

@@ -966,15 +966,18 @@ def Bessel(r2, nu=0):
     # 2 nu + 2 >= D
     # D <= 2 (nu + 1)
     
-@stationarykernel(forcekron=True, derivable=1, input='hard')
+@stationarykernel(maxdim=1, derivable=1, input='hard')
 def Pink(delta, dw=1):
     """
     Pink noise kernel.
     
     .. math::
-        k(\\Delta) = \\frac 1 {\\log(1 + \\delta\\omega)}
+        k(\\Delta) &= \\frac 1 {\\log(1 + \\delta\\omega)}
         \\int_1^{1+\\delta\\omega} \\mathrm d\\omega
-        \\frac{\\cos(\\omega\\Delta)}\\omega
+        \\frac{\\cos(\\omega\\Delta)}\\omega = \\\\
+        &= \\frac {     \\operatorname{Ci}(\\Delta (1 + \\delta\\omega))
+                        - \\operatorname{Ci}(\\Delta)                   }
+        {\\log(1 + \\delta\\omega)}
     
     A process with power spectrum :math:`1/\\omega` truncated between 1 and
     :math:`1 + \\delta\\omega`. :math:`\\omega` is the angular frequency
@@ -989,6 +992,9 @@ def Pink(delta, dw=1):
     mean = delta * (1 + dw / 2)
     norm = jnp.log1p(dw)
     tol = jnp.sqrt(jnp.finfo(jnp.empty(0).dtype).eps)
+    
+    # TODO choose better this tolerance by estimating error terms
+    
     return jnp.where(delta * dw < tol, jnp.cos(mean), (r - l) / norm)
 
 def _color_derivable(n=2):
