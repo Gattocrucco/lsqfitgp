@@ -8,7 +8,8 @@ Add a Raises section to GP methods that can trigger covariance matrix checks.
 
 Add 'Examples' sections in docstrings
 
-Interlinks with gvar and lsqfit docs.
+Interlinks with gvar and lsqfit docs. => See intersphinx
+https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#module-sphinx.ext.intersphinx
 
 Mention that `numpy.lib.recfunctions.unstructured_to_structured` may be used
 for euclidean multidimensional input.
@@ -554,6 +555,9 @@ splines
 truncated power (Gneiting 2002, p. 501).
 
 compact poly-harmonic (Gneiting 2002, p. 504).
+
+The autocorrelation of any distribution is pos def stationary, in particular
+the intersection volume of a solid and a translated copy of it.
 
 ### Transformations
 

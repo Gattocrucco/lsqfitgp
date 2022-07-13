@@ -63,7 +63,7 @@ extensions = [
     # 'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
-    'numpydoc'
+    'numpydoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -101,7 +101,11 @@ html_static_path = ['_static']
 
 master_doc = 'index'
 
+
+# -- Options -------------------------------------------------
+
 autoclass_content = 'both'
+autodoc_preserve_defaults = True
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False

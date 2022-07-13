@@ -51,12 +51,17 @@ examples: $(EXAMPLES)
 $(EXAMPLES):
 	COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) coverage run --context=examples$(COVERAGE_SUFFIX) examples/runexamples.py $@
 
+docs/%ref.rst: docs/%ref.py
+	cd docs && python $(notdir $<)
+
+GENDOCS := $(addsuffix .rst, $(basename $(wildcard docs/*ref.py)))
+.PHONY: gendocs
+gendocs: $(GENDOCS)
+
 docscode:
 	cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) coverage run --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX) runcode.py *.rst
 
-docs:
-	cd docs && python kernelsref.py
-	cd docs && python examplesref.py
+docs: gendocs
 	make -C docs html
 
 covreport:

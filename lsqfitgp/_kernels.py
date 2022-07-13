@@ -635,6 +635,8 @@ def _FourierBase(delta, n=2):
 
 class Fourier(_FourierBase):
     
+    __doc__ = _FourierBase.__doc__
+    
     # TODO write a method of _KernelBase that makes a new kernel from the
     # current one to be used as starting point by all the transformation
     # methods. It should have an option on how much the subclass should be
@@ -950,7 +952,7 @@ def Bessel(r2, nu=0):
     Bessel kernel.
     
     .. math:: k(r) = \\Gamma(\\nu + 1) 2^\\nu (sr)^{-\\nu} J_{\\nu}(sr),
-        \\quad s = 2 + \\nu / 2,
+        \\quad s = 2 + \\nu / 2, \\nu > 0,
     
     where `s` is a crude estimate of the half width at half maximum of
     :math:`J_\\nu`. Can be used in up to :math:`2(\\lfloor\\nu\\rfloor + 1)`
@@ -958,6 +960,8 @@ def Bessel(r2, nu=0):
     
     Reference: Rasmussen and Williams (2006, p. 89).
     """
+    if _patch_jax.isconcrete(nu):
+        assert 0 <= nu < jnp.inf, nu
     r2 = r2 * (2 + nu / 2) ** 2
     return special.gamma(nu + 1) * _patch_jax.jvmodx2(nu, r2)
 
@@ -1054,7 +1058,7 @@ def Color(delta, n=2):
     # https://dlmf.nist.gov/8.19.E17 continued fraction for E_n(z)
     # https://dlmf.nist.gov/8.20.E6 series of E_n(z) for large n
     # https://dlmf.nist.gov/8.27.i reference to Padé of gammainc for complex z
-    # https://dlmf.nist.gov/8.28.vii reference to impl of E_n(z) for complex z
+    # 683.f impl of E_n(z) for complex z (license?)
     
     assert int(n) == n and n >= 2, n
     return (n - 1) * _patch_jax.expn_imag(n, delta).real
@@ -1221,7 +1225,7 @@ def Circular(delta, tau=4, c=1/2):
 @stationarykernel(derivable=False, maxdim=1, input='hard')
 def MA(delta, w=None):
     """
-    Moving average kernel.
+    Discrete moving average kernel.
     
     .. math::
         k(\\Delta) = \\sum_{k=|\\Delta|}^{n-1} w_k w_{k-|\\Delta|},
@@ -1322,7 +1326,7 @@ def _ar_evolve_jit(coef, start, noise):
 @stationarykernel(derivable=False, maxdim=1, input='hard')
 def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=False):
     """
-    Autoregressive kernel.
+    Discrete autoregressive kernel.
         
     You have to specify one and only one of the sets of parameters
     `phi+maxlag`, `gamma+maxlag`, `slnr+lnc`.
@@ -1430,15 +1434,12 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     
     # TODO maybe I could allow redundantly specifying gamma and phi, e.g., for
     # numerical accuracy reasons if they are determined from an analytical
-    # expression. Also slnr xor lnc None means length 0.
+    # expression.
     
     if phi is None and gamma is None:
         return _ar_with_roots(delta, slnr, lnc, norm)
     else:
         return _ar_with_phigamma(delta, phi, gamma, maxlag, norm)
-
-def _ar_with_roots(delta, slnr, lnc, norm):
-    phi = AR.phi_from_roots(snlr, lnc)
 
 def _ar_with_phigamma(delta, phi, gamma, maxlag, norm):
     if phi is None:
@@ -1450,7 +1451,72 @@ def _ar_with_phigamma(delta, phi, gamma, maxlag, norm):
     acf = AR.extend_gamma(gamma, phi, maxlag + 1 - len(gamma))
     return acf.at[delta].get(mode='fill', fill_value=jnp.nan)
 
+def _ar_with_roots(delta, slnr, lnc, norm):
+    slnr = jnp.asarray(slnr).sort()
+    lnc = jnp.asarray(lnc).sort()
+    phi = AR.phi_from_roots(slnr, lnc)
+    gamma = AR.gamma_from_phi(phi)
+    if norm:
+        gamma /= gamma[0]
+    lag = jnp.arange(1, gamma.size)
+    mat = _gamma_from_ampl_matmul(slnr, lnc, lag, jnp.eye(lag.size))
+    ampl = jnp.linalg.solve(mat, gamma[1:]) # TODO pseudo-inverse
+    acf = _gamma_from_ampl_matmul(slnr, lnc, delta, ampl)
+    if _patch_jax.isconcrete(acf):
+        numpy.testing.assert_allclose(acf.imag, 0, rtol=0, atol=1e-7)
+    return acf.real
+
+@jax.jit
+def _gamma_from_ampl_matmul(slnr, lnc, lag, ampl):
+    vec = ampl.ndim == 1
+    if vec:
+        ampl = ampl[:, None]
+    p = slnr.size + 2 * lnc.size
+    assert p == ampl.shape[-2]
+    
+    shape = jnp.broadcast_shapes(lag.shape[:-1], ampl.shape[:-2])
+    out = jnp.zeros(shape + lag.shape[-1:] + ampl.shape[-1:], complex)
+
+    val = (jnp.nan, 0, out, slnr, lag)
+    def loop(i, val):
+        prevroot, repeat, out, slnr, lag = val
+        root = slnr[i]
+        repeat = jnp.where(root == prevroot, repeat + 1, 0)
+        prevroot = root
+        power = lag ** repeat
+        sign = jnp.sign(root) ** lag
+        exp = jnp.exp(-jnp.abs(root) * lag)
+        col = power * sign * exp
+        out += col[..., :, None] * ampl[..., i, :]
+        return prevroot, repeat, out, slnr, lag
+    if slnr.size:
+        _, _, out, _, _ = lax.fori_loop(0, slnr.size, loop, val)
+    
+    val = (jnp.nan, 0, out, lnc, lag)
+    def loop(i, val):
+        prevroot, repeat, out, lnc, lag = val
+        root = lnc[i]
+        repeat = jnp.where(root == prevroot, repeat + 1, 0)
+        prevroot = root
+        power = lag ** repeat
+        exp = jnp.exp(-root * lag)
+        # TODO real system
+        col = power * exp
+        idx = 2 * i + slnr.size
+        out += col[..., :, None] * ampl[..., idx, :]
+        out += col[..., :, None].conj() * ampl[..., idx + 1, :]
+        return prevroot, repeat, out, lnc, lag
+    if lnc.size:
+        _, _, out, _, _ = lax.fori_loop(0, lnc.size, loop, val)
+    
+    if vec:
+        out = out.squeeze(-1)
+    
+    return out
+
 class AR(_ARBase):
+    
+    __doc__ = _ARBase.__doc__
     
     @staticmethod
     def phi_from_gamma(gamma):
@@ -1462,8 +1528,8 @@ class AR(_ARBase):
         gamma : (p + 1,) array
             The autocovariance at lag 0...p.
         
-        Return
-        ------
+        Returns
+        -------
         phi : (p,) array
             The autoregressive coefficients at lag 1...p.
         """
@@ -1479,8 +1545,8 @@ class AR(_ARBase):
         phi : (p,) array
             The autoregressive coefficients at lag 1...p.
         
-        Return
-        ------
+        Returns
+        -------
         gamma : (p + 1,) array
             The autocovariance at lag 0...p. The normalization is
             with noise variance 1.
@@ -1501,8 +1567,8 @@ class AR(_ARBase):
         n : int
             The number of new values to generate.
         
-        Return
-        ------
+        Returns
+        -------
         ext : (m + n,) array
             The autocovariance at lag q-m+1...q+n.
         """
@@ -1527,8 +1593,8 @@ class AR(_ARBase):
             polynomial (:math:`\\log z = \\log|z| + i\\arg z`), where each root
             also stands for its paired conjugate.
         
-        Return
-        ------
+        Returns
+        -------
         phi : (p,) real
             The autoregressive coefficients at lag 1...p, with p = nr + 2 nc.
         """
@@ -1539,6 +1605,7 @@ class AR(_ARBase):
         c = jnp.exp(lnc)
         roots = jnp.concatenate([r.astype(complex), c, jnp.conj(c)])
         coef = numpy.polynomial.polynomial.polyfromroots(roots)
-        np.testing.assert_allclose(coef.imag, 0, rtol=0, atol=(1e-15 + 1e-14 * coef.real))
+        # TODO port polyfromroots to jax
+        numpy.testing.assert_allclose(coef.imag, 0, rtol=0, atol=1e-7)
         coef = coef.real
         return -coef[1:] / coef[0]

@@ -106,7 +106,7 @@ for superclass, title in zip(classes, titles):
         obj = getattr(lgp, kernels[i])
         if issubclass(obj, superclass):
             out += f"""\
-  * :func:`{kernels[i]}`
+  * :class:`{kernels[i]}`
 """
             del kernels[i]
 
@@ -135,9 +135,14 @@ meta = dict(
         dict(gamma=np.array(gamma), maxlag=50) for gamma in [
             [1, 0.99],
         ]
+    ] + [
+        dict(slnr=np.array(r), lnc=np.array(c), norm=True) for r, c in [
+            ([1/10], [1/10 + 1j]),
+            (3 * [1/4], []),
+        ]
     ]),
     BagOfWords = dict(skip=True),
-    Bessel = dict(range=[0, 10], kwlist=[dict(nu=v) for v in [0, 1, 2, 3]]),
+    Bessel = dict(range=[0, 10], kwlist=[dict(nu=v) for v in [0, 1, 2, 3.5]]),
     BrownianBridge = dict(range=[0, 1]),
     Categorical = dict(skip=True),
     Cauchy = dict(kwlist=[dict(alpha=1), dict(alpha=2), dict(beta=10)]),
@@ -178,9 +183,14 @@ gen = np.random.default_rng(202206281251)
 
 # documentation
 for kernel in kernels2:
+    k = getattr(lgp, kernel)
+    sig = str(inspect.signature(k))
     out += f"""\
-.. autofunction:: {kernel}
+.. autoclass:: {kernel}{sig}
+    :members:
+    :class-doc-from: class
 """
+
     fig.clf()
     ax = fig.subplots()
     
@@ -189,7 +199,6 @@ for kernel in kernels2:
     if m.get('skip', False):
         continue
 
-    k = getattr(lgp, kernel)
     if 'x' in m:
         x = m['x']
         l = np.min(x)
