@@ -50,156 +50,232 @@ Index
 
 Isotropic kernels
 ^^^^^^^^^^^^^^^^^
-  * :func:`Bessel`
-  * :func:`Cauchy`
-  * :func:`CausalExpQuad`
-  * :func:`Constant`
-  * :func:`ExpQuad`
-  * :func:`GammaExp`
-  * :func:`Log`
-  * :func:`Matern`
-  * :func:`Maternp`
-  * :func:`Wendland`
-  * :func:`White`
+  * :class:`Bessel`
+  * :class:`Cauchy`
+  * :class:`CausalExpQuad`
+  * :class:`Constant`
+  * :class:`ExpQuad`
+  * :class:`GammaExp`
+  * :class:`Log`
+  * :class:`Matern`
+  * :class:`Maternp`
+  * :class:`Wendland`
+  * :class:`White`
 
 Stationary kernels
 ^^^^^^^^^^^^^^^^^^
-  * :func:`AR`
-  * :func:`Celerite`
-  * :func:`Circular`
-  * :func:`Color`
-  * :func:`Cos`
-  * :func:`Expon`
-  * :func:`Fourier`
-  * :func:`Harmonic`
-  * :func:`HoleEffect`
-  * :func:`MA`
-  * :func:`Periodic`
-  * :func:`Pink`
-  * :func:`Sinc`
-  * :func:`StationaryFracBrownian`
+  * :class:`AR`
+  * :class:`Celerite`
+  * :class:`Circular`
+  * :class:`Color`
+  * :class:`Cos`
+  * :class:`Expon`
+  * :class:`Fourier`
+  * :class:`Harmonic`
+  * :class:`HoleEffect`
+  * :class:`MA`
+  * :class:`Periodic`
+  * :class:`Pink`
+  * :class:`Sinc`
+  * :class:`StationaryFracBrownian`
 
 Other kernels
 ^^^^^^^^^^^^^
-  * :func:`BagOfWords`
-  * :func:`BrownianBridge`
-  * :func:`Categorical`
-  * :func:`Decaying`
-  * :func:`FracBrownian`
-  * :func:`Gibbs`
-  * :func:`Linear`
-  * :func:`NNKernel`
-  * :func:`OrnsteinUhlenbeck`
-  * :func:`Rescaling`
-  * :func:`Taylor`
-  * :func:`Wiener`
-  * :func:`WienerIntegral`
+  * :class:`BagOfWords`
+  * :class:`BrownianBridge`
+  * :class:`Categorical`
+  * :class:`Decaying`
+  * :class:`FracBrownian`
+  * :class:`Gibbs`
+  * :class:`Linear`
+  * :class:`NNKernel`
+  * :class:`OrnsteinUhlenbeck`
+  * :class:`Rescaling`
+  * :class:`Taylor`
+  * :class:`Wiener`
+  * :class:`WienerIntegral`
 
 Documentation
 -------------
-.. autofunction:: AR
+.. autoclass:: AR(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=False)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-AR.png
 .. image:: kernelsref-AR-samples.png
-.. autofunction:: BagOfWords
-.. autofunction:: Bessel
+.. autoclass:: BagOfWords(x, y)
+    :members:
+    :class-doc-from: class
+.. autoclass:: Bessel(r2, nu=0)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Bessel.png
 .. image:: kernelsref-Bessel-samples.png
-.. autofunction:: BrownianBridge
+.. autoclass:: BrownianBridge(x, y)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-BrownianBridge.png
 .. image:: kernelsref-BrownianBridge-samples.png
-.. autofunction:: Categorical
-.. autofunction:: Cauchy
+.. autoclass:: Categorical(x, y, cov=None)
+    :members:
+    :class-doc-from: class
+.. autoclass:: Cauchy(r2, alpha=2, beta=2)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Cauchy.png
 .. image:: kernelsref-Cauchy-samples.png
-.. autofunction:: CausalExpQuad
+.. autoclass:: CausalExpQuad(r, alpha=1)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-CausalExpQuad.png
 .. image:: kernelsref-CausalExpQuad-samples.png
-.. autofunction:: Celerite
+.. autoclass:: Celerite(delta, gamma=1, B=0)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Celerite.png
 .. image:: kernelsref-Celerite-samples.png
-.. autofunction:: Circular
+.. autoclass:: Circular(delta, tau=4, c=0.5)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Circular.png
 .. image:: kernelsref-Circular-samples.png
-.. autofunction:: Color
+.. autoclass:: Color(delta, n=2)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Color.png
 .. image:: kernelsref-Color-samples.png
-.. autofunction:: Constant
-.. autofunction:: Cos
+.. autoclass:: Constant(x, y)
+    :members:
+    :class-doc-from: class
+.. autoclass:: Cos(delta)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Cos.png
 .. image:: kernelsref-Cos-samples.png
-.. autofunction:: Decaying
+.. autoclass:: Decaying(x, y)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Decaying.png
 .. image:: kernelsref-Decaying-samples.png
-.. autofunction:: ExpQuad
+.. autoclass:: ExpQuad(r2)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-ExpQuad.png
 .. image:: kernelsref-ExpQuad-samples.png
-.. autofunction:: Expon
+.. autoclass:: Expon(delta)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Expon.png
 .. image:: kernelsref-Expon-samples.png
-.. autofunction:: Fourier
+.. autoclass:: Fourier(delta, n=2)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Fourier.png
 .. image:: kernelsref-Fourier-samples.png
-.. autofunction:: FracBrownian
+.. autoclass:: FracBrownian(x, y, H=0.5, K=1)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-FracBrownian.png
 .. image:: kernelsref-FracBrownian-samples.png
-.. autofunction:: GammaExp
+.. autoclass:: GammaExp(r2, gamma=1)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-GammaExp.png
 .. image:: kernelsref-GammaExp-samples.png
-.. autofunction:: Gibbs
+.. autoclass:: Gibbs(x, y, scalefun=<function <lambda> at 0x12dd7c5e0>)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Gibbs.png
 .. image:: kernelsref-Gibbs-samples.png
-.. autofunction:: Harmonic
+.. autoclass:: Harmonic(delta, Q=1)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Harmonic.png
 .. image:: kernelsref-Harmonic-samples.png
-.. autofunction:: HoleEffect
+.. autoclass:: HoleEffect(delta)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-HoleEffect.png
 .. image:: kernelsref-HoleEffect-samples.png
-.. autofunction:: Linear
+.. autoclass:: Linear(x, y)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Linear.png
 .. image:: kernelsref-Linear-samples.png
-.. autofunction:: Log
+.. autoclass:: Log(r)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Log.png
 .. image:: kernelsref-Log-samples.png
-.. autofunction:: MA
+.. autoclass:: MA(delta, w=None)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-MA.png
 .. image:: kernelsref-MA-samples.png
-.. autofunction:: Matern
+.. autoclass:: Matern(r2, nu=None)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Matern.png
 .. image:: kernelsref-Matern-samples.png
-.. autofunction:: Maternp
+.. autoclass:: Maternp(r2, p=None)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Maternp.png
 .. image:: kernelsref-Maternp-samples.png
-.. autofunction:: NNKernel
+.. autoclass:: NNKernel(x, y, sigma0=1)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-NNKernel.png
 .. image:: kernelsref-NNKernel-samples.png
-.. autofunction:: OrnsteinUhlenbeck
+.. autoclass:: OrnsteinUhlenbeck(x, y)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-OrnsteinUhlenbeck.png
 .. image:: kernelsref-OrnsteinUhlenbeck-samples.png
-.. autofunction:: Periodic
+.. autoclass:: Periodic(delta, outerscale=1)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Periodic.png
 .. image:: kernelsref-Periodic-samples.png
-.. autofunction:: Pink
+.. autoclass:: Pink(delta, dw=1)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Pink.png
 .. image:: kernelsref-Pink-samples.png
-.. autofunction:: Rescaling
-.. autofunction:: Sinc
+.. autoclass:: Rescaling(x, y, stdfun=None)
+    :members:
+    :class-doc-from: class
+.. autoclass:: Sinc(delta)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Sinc.png
 .. image:: kernelsref-Sinc-samples.png
-.. autofunction:: StationaryFracBrownian
+.. autoclass:: StationaryFracBrownian(delta, H=0.5)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-StationaryFracBrownian.png
 .. image:: kernelsref-StationaryFracBrownian-samples.png
-.. autofunction:: Taylor
+.. autoclass:: Taylor(x, y)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Taylor.png
 .. image:: kernelsref-Taylor-samples.png
-.. autofunction:: Wendland
+.. autoclass:: Wendland(r, k=0, alpha=1)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Wendland.png
 .. image:: kernelsref-Wendland-samples.png
-.. autofunction:: White
+.. autoclass:: White(x, y)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-White.png
 .. image:: kernelsref-White-samples.png
-.. autofunction:: Wiener
+.. autoclass:: Wiener(x, y)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-Wiener.png
 .. image:: kernelsref-Wiener-samples.png
-.. autofunction:: WienerIntegral
+.. autoclass:: WienerIntegral(x, y)
+    :members:
+    :class-doc-from: class
 .. image:: kernelsref-WienerIntegral.png
 .. image:: kernelsref-WienerIntegral-samples.png
