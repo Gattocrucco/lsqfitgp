@@ -1352,11 +1352,10 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
         In `slnr` and `lnc`, the multiplicity of a root is expressed by
         repeating the root in the array (not necessarily next to each other).
         Only exact repetition counts; very close yet distinct roots are treated
-        as separate and lead to numerical instability. Two complex roots also
-        count as equal if conjugate, and the argument is standardized to
-        :math:`[0, 2\\pi)`. Complex roots which are real or almost real are not
-        a problem numerically, although they make the actual order lower than
-        ``nr + 2 * nc``.
+        as separate and lead to numerical instability, in particular complex
+        roots which are actually real or very close to the real line. Two
+        complex roots also count as equal if conjugate, and the argument is
+        standardized to :math:`[0, 2\\pi)`.
     norm : bool
         If True, normalize the autocovariance to be 1 at lag 0. If False
         (default), normalize such that the variance of the generating noise is
@@ -1453,14 +1452,18 @@ def _ar_with_phigamma(delta, phi, gamma, maxlag, norm):
 
 def _ar_with_roots(delta, slnr, lnc, norm):
     slnr = jnp.asarray(slnr).sort()
-    lnc = jnp.asarray(lnc).sort()
+    lnc = jnp.asarray(lnc)
+    imag = jnp.abs(lnc.imag) % (2 * jnp.pi)
+    imag = jnp.where(imag > jnp.pi, 2 * jnp.pi - imag, imag)
+    lnc = lnc.real + 1j * imag
+    lnc = lnc.sort()
     phi = AR.phi_from_roots(slnr, lnc)
     gamma = AR.gamma_from_phi(phi)
     if norm:
         gamma /= gamma[0]
     lag = jnp.arange(1, gamma.size)
     mat = _gamma_from_ampl_matmul(slnr, lnc, lag, jnp.eye(lag.size))
-    ampl = jnp.linalg.solve(mat, gamma[1:]) # TODO pseudo-inverse
+    ampl = jnp.linalg.solve(mat, gamma[1:])
     acf = _gamma_from_ampl_matmul(slnr, lnc, delta, ampl)
     if _patch_jax.isconcrete(acf):
         numpy.testing.assert_allclose(acf.imag, 0, rtol=0, atol=1e-7)
@@ -1603,7 +1606,7 @@ class AR(_ARBase):
         assert slnr.ndim == lnc.ndim == 1
         r = jnp.sign(slnr) * jnp.exp(jnp.abs(slnr))
         c = jnp.exp(lnc)
-        roots = jnp.concatenate([r.astype(complex), c, jnp.conj(c)])
+        roots = jnp.concatenate([r, c, jnp.conj(c)])
         coef = numpy.polynomial.polynomial.polyfromroots(roots)
         # TODO port polyfromroots to jax
         numpy.testing.assert_allclose(coef.imag, 0, rtol=0, atol=1e-7)

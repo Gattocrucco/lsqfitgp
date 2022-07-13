@@ -51,8 +51,8 @@ def test_gen_ar_acf():
 def test_yule_walker_inv():
     for p in plist:
         acf = gen_ar_acf(p)
-        phi = lgp._kernels.AR.phi_from_gamma(acf)
-        acf2 = lgp._kernels.AR.gamma_from_phi(phi)
+        phi = lgp.AR.phi_from_gamma(acf)
+        acf2 = lgp.AR.gamma_from_phi(phi)
         acf /= acf[0]
         acf2 /= acf2[0]
         np.testing.assert_allclose(acf2, acf, rtol=1e-12)
@@ -60,10 +60,10 @@ def test_yule_walker_inv():
 def test_yule_walker_inv_extend():
     for p in plist:
         acf = gen_ar_acf(p)
-        phi = lgp._kernels.AR.phi_from_gamma(acf)
-        acf2 = lgp._kernels.AR.gamma_from_phi(phi)
+        phi = lgp.AR.phi_from_gamma(acf)
+        acf2 = lgp.AR.gamma_from_phi(phi)
         phi3 = np.pad(phi, (0, 1 + p))
-        acf3 = lgp._kernels.AR.gamma_from_phi(phi3)
+        acf3 = lgp.AR.gamma_from_phi(phi3)
         np.testing.assert_allclose(acf3[:len(acf2)], acf2, rtol=1e-14)
 
 def test_yule_walker_inv_evolve():
@@ -71,8 +71,8 @@ def test_yule_walker_inv_evolve():
         acf = gen_ar_acf(p)
         phi = lgp._kernels.AR.phi_from_gamma(acf)
         phi2 = np.pad(phi, (0, 1 + p))
-        acf2 = lgp._kernels.AR.gamma_from_phi(phi2)
-        acf3 = lgp._kernels.AR.extend_gamma(acf2[:1 + p], phi, 1 + p)
+        acf2 = lgp.AR.gamma_from_phi(phi2)
+        acf3 = lgp.AR.extend_gamma(acf2[:1 + p], phi, 1 + p)
         np.testing.assert_allclose(acf3, acf2, rtol=1e-13)
 
 def test_yule_walker_inv_0():
@@ -82,6 +82,23 @@ def test_yule_walker_inv_0():
 def test_yule_walker_inv_1():
     bound = 1 - 1e-8
     phi = np.random.uniform(-bound, bound)
-    acf = lgp._kernels.AR.gamma_from_phi([phi])
+    acf = lgp.AR.gamma_from_phi([phi])
     acf2 = 1 / ((1 - phi) * (1 + phi)) * phi ** np.arange(2)
     np.testing.assert_allclose(acf, acf2, rtol=1e-15)
+
+def test_phase_degeneracy():
+    phases = [
+        [[1], [-1]],
+        [[1], [1 + 2 * np.pi]],
+        [[1], [1 - 2 * np.pi]],
+        [[1, -1], [1, 1]],
+        [[0], [4 * np.pi]],
+        [[0], [-4 * np.pi]],
+    ]
+    lag = np.arange(100)
+    def lnc(ph):
+        return 0.1 + 1j * np.array(ph)
+    for ph1, ph2 in phases:
+        c1 = lgp.AR(slnr=[], lnc=lnc(ph1))(0, lag)
+        c2 = lgp.AR(slnr=[], lnc=lnc(ph2))(0, lag)
+        np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-15)

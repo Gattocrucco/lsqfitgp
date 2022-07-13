@@ -137,8 +137,8 @@ meta = dict(
         ]
     ] + [
         dict(slnr=np.array(r), lnc=np.array(c), norm=True) for r, c in [
-            ([1/10], [1/10 + 1j]),
-            (3 * [1/4], []),
+            ([0.1], [0.1 + 1j]),
+            (3 * [0.2], []),
         ]
     ]),
     BagOfWords = dict(skip=True),
