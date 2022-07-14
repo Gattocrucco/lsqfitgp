@@ -1254,75 +1254,6 @@ def MA(delta, w=None):
     else:
         return jnp.zeros(delta.shape)
 
-def _yule_walker(acf):
-    """
-    acf = autocovariance at lag 0...p
-    output: autoregressive coefficients at lag 1...p
-    """
-    acf = jnp.asarray(acf)
-    assert acf.ndim == 1
-    t = acf[:-1]
-    b = acf[1:]
-    if t.size:
-        return _linalg._toeplitz.solve(t, b)
-        # TODO does it become circulant if I extend phi with zeroes?
-    else:
-        return jnp.empty(0)
-
-def _yule_walker_inv_mat(coef):
-    coef = jnp.asarray(coef)
-    assert coef.ndim == 1
-    p = len(coef)
-    m = jnp.arange(p + 1)[:, None] # rows
-    n = m.T # columns
-    phi = jnp.pad(coef, (1, 1))
-    kp = jnp.clip(m + n, 0, p + 1)
-    km = jnp.clip(m - n, 0, p + 1)
-    return jnp.eye(p + 1) - (phi[kp] + phi[km]) / jnp.where(n, 1, 2)
-    # TODO I think that if I split the negative gammas it becomes a circulant
-    # system
-    
-def _yule_walker_inv(coef):
-    """
-    coef = autoregressive coefficients at lag 1...p
-    output: autocovariance at lag 0...p, assuming driving noise has sdev 1
-    """
-    a = _yule_walker_inv_mat(coef)
-    b = jnp.zeros(len(a)).at[0].set(1)
-    acf = jnp.linalg.solve(a, b)
-    return acf
-
-def _ar_evolve(coef, start, noise):
-    """
-    coef = autoregressive coefficients at lag 1...p
-    start = first p values of the process (increasing time)
-    noise = n noise values added at each step
-    output: n new process values
-    """
-    coef = jnp.asarray(coef)
-    start = jnp.asarray(start)
-    noise = jnp.asarray(noise)
-    assert coef.ndim == 1 and coef.shape == start.shape and noise.ndim == 1
-    return _ar_evolve_jit(coef, start, noise)
-
-@jax.jit
-def _ar_evolve_jit(coef, start, noise):
-    
-    def f(carry, eps):
-        vals, cc, roll = carry
-        coef = lax.dynamic_slice(cc, [vals.size - roll], [vals.size])
-        nextval = coef @ vals + eps
-        if vals.size:
-            vals = vals.at[roll].set(nextval)
-        # maybe for some weird reason like alignment, actual rolling would
-        # be faster. whatever
-        roll = (roll + 1) % vals.size
-        return (vals, cc, roll), nextval
-    
-    cc = jnp.concatenate([coef, coef])[::-1]
-    _, ev = lax.scan(f, (start, cc, 0), noise, unroll=16)
-    return ev
-
 @stationarykernel(derivable=False, maxdim=1, input='hard')
 def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=False):
     """
@@ -1353,9 +1284,10 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
         repeating the root in the array (not necessarily next to each other).
         Only exact repetition counts; very close yet distinct roots are treated
         as separate and lead to numerical instability, in particular complex
-        roots which are actually real or very close to the real line. Two
-        complex roots also count as equal if conjugate, and the argument is
-        standardized to :math:`[0, 2\\pi)`.
+        roots very close to the real line. An exactly real complex root behaves
+        like a pair of identical real roots. Two complex roots also count as
+        equal if conjugate, and the argument is standardized to :math:`[0,
+        2\\pi)`.
     norm : bool
         If True, normalize the autocovariance to be 1 at lag 0. If False
         (default), normalize such that the variance of the generating noise is
@@ -1426,7 +1358,7 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     cond = (
         (phi is not None and maxlag is not None and gamma is None and slnr is None and lnc is None) or
         (phi is None and maxlag is not None and gamma is not None and slnr is None and lnc is None) or
-        (phi is None and maxlag is None and gamma is None and (slnr is not None or lnc is not None))
+        (phi is None and maxlag is None and gamma is None and slnr is not None and lnc is not None)
     )
     if not cond:
         raise ValueError('invalid set of specified parameters')
@@ -1450,67 +1382,181 @@ def _ar_with_phigamma(delta, phi, gamma, maxlag, norm):
     acf = AR.extend_gamma(gamma, phi, maxlag + 1 - len(gamma))
     return acf.at[delta].get(mode='fill', fill_value=jnp.nan)
 
+def _yule_walker(gamma):
+    """
+    gamma = autocovariance at lag 0...p
+    output: autoregressive coefficients at lag 1...p
+    """
+    gamma = jnp.asarray(gamma)
+    assert gamma.ndim == 1
+    t = gamma[:-1]
+    b = gamma[1:]
+    if t.size:
+        return _linalg._toeplitz.solve(t, b)
+    else:
+        return jnp.empty(0)
+
+def _yule_walker_inv_mat(phi):
+    phi = jnp.asarray(phi)
+    assert phi.ndim == 1
+    p = len(phi)
+    m = jnp.arange(p + 1)[:, None] # rows
+    n = m.T # columns
+    phi = jnp.pad(phi, (1, 1))
+    kp = jnp.clip(m + n, 0, p + 1)
+    km = jnp.clip(m - n, 0, p + 1)
+    return jnp.eye(p + 1) - (phi[kp] + phi[km]) / jnp.where(n, 1, 2)
+    
+def _yule_walker_inv(phi):
+    """
+    phi = autoregressive coefficients at lag 1...p
+    output: autocovariance at lag 0...p, assuming driving noise has sdev 1
+    """
+    a = _yule_walker_inv_mat(phi)
+    b = jnp.zeros(len(a)).at[0].set(1)
+    # gamma = _pseudo_solve(a, b)
+    gamma = jnp.linalg.solve(a, b)
+    return gamma
+
+def _ar_evolve(phi, start, noise):
+    """
+    phi = autoregressive coefficients at lag 1...p
+    start = first p values of the process (increasing time)
+    noise = n noise values added at each step
+    output: n new process values
+    """
+    phi = jnp.asarray(phi)
+    start = jnp.asarray(start)
+    noise = jnp.asarray(noise)
+    assert phi.ndim == 1 and phi.shape == start.shape and noise.ndim == 1
+    return _ar_evolve_jit(phi, start, noise)
+
+@jax.jit
+def _ar_evolve_jit(phi, start, noise):
+    
+    def f(carry, eps):
+        vals, cc, roll = carry
+        phi = lax.dynamic_slice(cc, [vals.size - roll], [vals.size])
+        nextval = phi @ vals + eps
+        if vals.size:
+            vals = vals.at[roll].set(nextval)
+        # maybe for some weird reason like alignment, actual rolling would
+        # be faster. whatever
+        roll = (roll + 1) % vals.size
+        return (vals, cc, roll), nextval
+    
+    cc = jnp.concatenate([phi, phi])[::-1]
+    _, ev = lax.scan(f, (start, cc, 0), noise, unroll=16)
+    return ev
+
 def _ar_with_roots(delta, slnr, lnc, norm):
-    slnr = jnp.asarray(slnr).sort()
-    lnc = jnp.asarray(lnc)
+    slnr = jnp.asarray(slnr).astype(float).sort()
+    lnc = jnp.asarray(lnc).astype(complex)
     imag = jnp.abs(lnc.imag) % (2 * jnp.pi)
     imag = jnp.where(imag > jnp.pi, 2 * jnp.pi - imag, imag)
     lnc = lnc.real + 1j * imag
     lnc = lnc.sort()
-    phi = AR.phi_from_roots(slnr, lnc)
-    gamma = AR.gamma_from_phi(phi)
+    phi = AR.phi_from_roots(slnr, lnc) # <---- weak
+    gamma = AR.gamma_from_phi(phi) # <---- point
+    
+    # TODO Currently gamma is not even pos def for high multiplicity/roots close
+    # to 1. Raw patch: make a function _fix_bad_gamma. The badness condition is
+    # gamma[0] < 0 or any(abs(gamma) > gamma[0]). The fix takes the smallest
+    # log|root| and assumes it alone determines gamma. Question: if then I
+    # iterate with the solution found, does it converge to the correct solution?
+    
+    p = phi.size
+
     if norm:
         gamma /= gamma[0]
-    lag = jnp.arange(1, gamma.size)
-    mat = _gamma_from_ampl_matmul(slnr, lnc, lag, jnp.eye(lag.size))
-    ampl = jnp.linalg.solve(mat, gamma[1:])
-    acf = _gamma_from_ampl_matmul(slnr, lnc, delta, ampl)
-    if _patch_jax.isconcrete(acf):
-        numpy.testing.assert_allclose(acf.imag, 0, rtol=0, atol=1e-7)
-    return acf.real
+    lag = jnp.arange(p + 1)
+    mat = _gamma_from_ampl_matmul(slnr, lnc, lag, jnp.eye(1 + p))
+    ampl = jnp.linalg.solve(mat, gamma)
+    lag = delta if delta.ndim else delta[None]
+    acf = _gamma_from_ampl_matmul(slnr, lnc, lag, ampl)
+    return acf if delta.ndim else acf.squeeze(0)
+
+    # yw = _yule_walker_inv_mat(phi)
+    # b = jnp.zeros(p + 1).at[0].set(1)
+    # ampl = jnp.linalg.solve(yw @ mat, b)
+    # lag = delta if delta.ndim else delta[None]
+    # acf = _gamma_from_ampl_matmul(slnr, lnc, lag, ampl)
+    # if norm:
+    #     acf0 = _gamma_from_ampl_matmul(slnr, lnc, jnp.array([0]), ampl)
+    #     acf /= acf0
+    # return acf if delta.ndim else acf.squeeze(0)
+
+# def _pseudo_solve(a, b):
+#     # this is less accurate than jnp.linalg.solve
+#     u, s, vh = jnp.linalg.svd(a)
+#     eps = jnp.finfo(a.dtype).eps
+#     s0 = s[0] if s.size else 0
+#     invs = jnp.where(s < s0 * eps * len(a), 0, 1 / s)
+#     return jnp.einsum('ij,j,jk,k', vh.conj().T, invs, u.conj().T, b)
 
 @jax.jit
-def _gamma_from_ampl_matmul(slnr, lnc, lag, ampl):
+def _gamma_from_ampl_matmul(slnr, lnc, lag, ampl, lagnorm=None):
+
     vec = ampl.ndim == 1
     if vec:
         ampl = ampl[:, None]
     p = slnr.size + 2 * lnc.size
-    assert p == ampl.shape[-2]
+    assert ampl.shape[-2] == p + 1
+    if lagnorm is None:
+        lagnorm = p
     
-    shape = jnp.broadcast_shapes(lag.shape[:-1], ampl.shape[:-2])
-    out = jnp.zeros(shape + lag.shape[-1:] + ampl.shape[-1:], complex)
-
-    val = (jnp.nan, 0, out, slnr, lag)
+    def logcol(root, lag, llag, repeat):
+        return -root * lag + jnp.where(repeat, repeat * llag, 0)
+    
+    def lognorm(root, repeat, lagnorm):
+        maxnorm = jnp.where(repeat, repeat * (-1 + jnp.log(repeat / root)), 0)
+        defnorm = logcol(root, lagnorm, jnp.log(lagnorm), repeat)
+        maxloc = repeat / root
+        return jnp.where(maxloc <= lagnorm, maxnorm, defnorm)
+    
+    # roots at infinity
+    col = jnp.where(lag, 0, 1)
+    out = col[..., :, None] * ampl[..., 0, :]
+    
+    # real roots
+    llag = jnp.log(lag)
+    val = (jnp.nan, 0, out, slnr, lag, llag, lagnorm)
     def loop(i, val):
-        prevroot, repeat, out, slnr, lag = val
+        prevroot, repeat, out, slnr, lag, llag, lagnorm = val
         root = slnr[i]
         repeat = jnp.where(root == prevroot, repeat + 1, 0)
         prevroot = root
-        power = lag ** repeat
         sign = jnp.sign(root) ** lag
-        exp = jnp.exp(-jnp.abs(root) * lag)
-        col = power * sign * exp
-        out += col[..., :, None] * ampl[..., i, :]
-        return prevroot, repeat, out, slnr, lag
+        aroot = jnp.abs(root)
+        lcol = logcol(aroot, lag, llag, repeat)
+        norm = lognorm(aroot, repeat, lagnorm)
+        col = sign * jnp.exp(lcol - norm)
+        out += col[..., :, None] * ampl[..., 1 + i, :]
+        return prevroot, repeat, out, slnr, lag, llag, lagnorm
     if slnr.size:
-        _, _, out, _, _ = lax.fori_loop(0, slnr.size, loop, val)
+        _, _, out, _, _, _, _ = lax.fori_loop(0, slnr.size, loop, val)
     
-    val = (jnp.nan, 0, out, lnc, lag)
+    # complex roots
+    val = (jnp.nan, 0, out, lnc, lag, llag, lagnorm)
     def loop(i, val):
-        prevroot, repeat, out, lnc, lag = val
+        prevroot, repeat, out, lnc, lag, llag, lagnorm = val
         root = lnc[i]
         repeat = jnp.where(root == prevroot, repeat + 1, 0)
         prevroot = root
-        power = lag ** repeat
-        exp = jnp.exp(-root * lag)
-        # TODO real system
-        col = power * exp
-        idx = 2 * i + slnr.size
-        out += col[..., :, None] * ampl[..., idx, :]
-        out += col[..., :, None].conj() * ampl[..., idx + 1, :]
-        return prevroot, repeat, out, lnc, lag
+        lcol = logcol(root, lag, llag, repeat)
+        norm = lognorm(root.real, repeat, lagnorm)
+        col = jnp.exp(lcol - norm)
+        idx = 1 + slnr.size + 2 * i
+        out += col.real[..., :, None] * ampl[..., idx, :]
+        
+        # real complex root = a pair of identical real roots
+        repeat = jnp.where(root.imag, repeat, repeat + 1)
+        col1 = jnp.where(root.imag, -col.imag, col.real * lag)
+        out += col1[..., :, None] * ampl[..., idx + 1, :]
+        
+        return prevroot, repeat, out, lnc, lag, llag, lagnorm
     if lnc.size:
-        _, _, out, _, _ = lax.fori_loop(0, lnc.size, loop, val)
+        _, _, out, _, _, _, _ = lax.fori_loop(0, lnc.size, loop, val)
     
     if vec:
         out = out.squeeze(-1)
@@ -1553,6 +1599,11 @@ class AR(_ARBase):
         gamma : (p + 1,) array
             The autocovariance at lag 0...p. The normalization is
             with noise variance 1.
+        
+        Notes
+        -----
+        The result is wildly inaccurate for roots with high multiplicity and/or
+        close to 1.
         """
         return _yule_walker_inv(phi)
     
@@ -1609,6 +1660,6 @@ class AR(_ARBase):
         roots = jnp.concatenate([r, c, jnp.conj(c)])
         coef = numpy.polynomial.polynomial.polyfromroots(roots)
         # TODO port polyfromroots to jax
-        numpy.testing.assert_allclose(coef.imag, 0, rtol=0, atol=1e-7)
+        numpy.testing.assert_allclose(coef.imag, 0, rtol=0, atol=1e-4)
         coef = coef.real
         return -coef[1:] / coef[0]

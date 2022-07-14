@@ -73,7 +73,7 @@ def test_yule_walker_inv_evolve():
         phi2 = np.pad(phi, (0, 1 + p))
         acf2 = lgp.AR.gamma_from_phi(phi2)
         acf3 = lgp.AR.extend_gamma(acf2[:1 + p], phi, 1 + p)
-        np.testing.assert_allclose(acf3, acf2, rtol=1e-13)
+        np.testing.assert_allclose(acf3, acf2, atol=1e-300, rtol=1e-13)
 
 def test_yule_walker_inv_0():
     acf = lgp._kernels.AR.gamma_from_phi(np.empty(0))
@@ -92,8 +92,8 @@ def test_phase_degeneracy():
         [[1], [1 + 2 * np.pi]],
         [[1], [1 - 2 * np.pi]],
         [[1, -1], [1, 1]],
-        [[0], [4 * np.pi]],
-        [[0], [-4 * np.pi]],
+        [[0.01], [0.01 + 4 * np.pi]],
+        [[0.01], [0.01 - 4 * np.pi]],
     ]
     lag = np.arange(100)
     def lnc(ph):
@@ -101,4 +101,44 @@ def test_phase_degeneracy():
     for ph1, ph2 in phases:
         c1 = lgp.AR(slnr=[], lnc=lnc(ph1))(0, lag)
         c2 = lgp.AR(slnr=[], lnc=lnc(ph2))(0, lag)
-        np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-15)
+        np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-14)
+
+def test_real_complex():
+    lag = np.arange(100)
+    for r in np.logspace(-5, 0, 10):
+        for n in range(3):
+            for m in range(2):
+                add = list(np.arange(1, m + 1) * 0.1 + 1j)
+                c1 = lgp.AR(slnr=2 * n * [r], lnc=add)(0, lag)
+                c2 = lgp.AR(slnr=[], lnc=add + n * [r])(0, lag)
+                np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-9)
+
+def test_ar0():
+    lag = np.arange(100)
+    acf = np.where(lag, 0, 1)
+    params = [
+        dict(phi=[], maxlag=lag.size),
+        dict(gamma=[1], maxlag=lag.size),
+        dict(slnr=[], lnc=[]),
+    ]
+    for kw in params:
+        for norm in range(1):
+            c = lgp.AR(**kw, norm=norm)(0, lag)
+            np.testing.assert_allclose(c, acf, atol=0, rtol=0)
+
+def test_ar1():
+    lag = np.arange(100)
+    for phi in np.logspace(-5, -0.001, 10):
+        acf = 1 / ((1 - phi) * (1 + phi)) * phi ** lag
+        params = [
+            dict(phi=[phi], maxlag=lag.size),
+            dict(gamma=acf[:2], maxlag=lag.size),
+            dict(slnr=[-np.log(phi)], lnc=[]),
+        ]
+        for kw in params:
+            for norm in range(1):
+                c = lgp.AR(**kw, norm=norm)(0, lag)
+                den = acf[0] if norm else 1
+                np.testing.assert_allclose(c, acf / den, atol=1e-300, rtol=1e-13)
+
+# TODO test_ar2

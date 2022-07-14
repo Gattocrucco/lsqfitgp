@@ -1137,3 +1137,10 @@ would have to be parametrized with log|z|, log(log(scale))... not convenient.
 
 The roots at infinity mean that the effective order of the AR is lower, so
 shrinkage to z = 0 selects for short AR.
+
+2022-07-14
+==========
+
+To parametrize arbitrary roots effectively, I have to find a way to map an
+arbitrary invalid difference matrix to a valid one, or in general a
+latent parametrization of a difference matrix.

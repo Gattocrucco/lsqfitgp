@@ -51,7 +51,10 @@ examples: $(EXAMPLES)
 $(EXAMPLES):
 	COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) coverage run --context=examples$(COVERAGE_SUFFIX) examples/runexamples.py $@
 
-docs/%ref.rst: docs/%ref.py
+docs/kernelsref.rst: docs/kernelsref.py lsqfitgp/_kernels.py
+	cd docs && python $(notdir $<)
+
+docs/examplesref.rst: docs/examplesref.py
 	cd docs && python $(notdir $<)
 
 GENDOCS := $(addsuffix .rst, $(basename $(wildcard docs/*ref.py)))
