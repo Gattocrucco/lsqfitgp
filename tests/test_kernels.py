@@ -790,6 +790,18 @@ test_kwargs = {
         ]],
     ),
     _kernels.Color: dict(kwargs_list=[dict(n=n) for n in [2, 3, 4, 5, 6, 20]]),
+    _kernels.BART: dict(kwargs_list=[
+        dict(
+            splits=_kernels.BART.splits_from_coord(np.random.randn(10, 1)),
+            alpha=a,
+            beta=b,
+            maxd=d,
+        )
+        for a in [0., 1., 0.95]
+        for b in [0, 1, 2, 10]
+        for d in [0, 1, 2, 3]
+    ]),
+    # TODO I need a way to use nd splits only with nd x
 }
 
 for kernel in kernels:

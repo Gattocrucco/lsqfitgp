@@ -139,6 +139,4 @@ def test_ar1():
             for norm in range(1):
                 c = lgp.AR(**kw, norm=norm)(0, lag)
                 den = acf[0] if norm else 1
-                np.testing.assert_allclose(c, acf / den, atol=1e-300, rtol=1e-13)
-
-# TODO test_ar2
+                np.testing.assert_allclose(c, acf / den, atol=1e-300, rtol=1e-12)

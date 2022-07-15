@@ -126,6 +126,15 @@ class Formula:
     def __call__(self, x):
         return eval(self.formula, vars(np), dict(x=x))
 
+# TODO nd plot for kernels with maxdim > 1, key kwlist_nd has precedence over
+# kwlist
+
+def bart_splits(n):
+    x = np.random.uniform(1, 4, (n, 1))
+    _, s = lgp.BART.splits_from_coord(x)
+    s = np.unique(np.around(s, 1))
+    return [len(s)], s
+
 meta = dict(
     AR = dict(x=np.arange(50), kwlist=[
         dict(phi=np.array(phi), maxlag=50, norm=True) for phi in [
@@ -141,6 +150,7 @@ meta = dict(
             (3 * [0.2], []),
         ]
     ]),
+    BART = dict(kwlist=[dict(splits=bart_splits(11))]),
     BagOfWords = dict(skip=True),
     Bessel = dict(range=[0, 10], kwlist=[dict(nu=v) for v in [0, 1, 2, 3.5]]),
     BrownianBridge = dict(range=[0, 1]),
@@ -205,7 +215,7 @@ for kernel in kernels2:
         r = np.max(x)
     else:
         l, r = m.get('range', [0, 5])
-        x = np.linspace(l, r, 1000)
+        x = np.linspace(l, r, 500)
     
     legend = m.get('kwlist')
     for kw in m.get('kwlist', [{}]):

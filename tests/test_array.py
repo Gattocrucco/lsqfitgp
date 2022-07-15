@@ -21,6 +21,7 @@ import sys
 import itertools
 
 import numpy as np
+from numpy.lib import recfunctions
 from jax import tree_util
 import pytest
 
@@ -39,6 +40,8 @@ def fill_array_at_random(x):
     if x.dtype.names:
         for name in x.dtype.names:
             fill_array_at_random(x[name])
+    elif x.dtype == bool:
+        x[...] = np.random.randint(0, 2, x.shape)
     elif np.issubdtype(x.dtype, np.number):
         x[...] = 100 * np.random.randn(*x.shape)
     else:
@@ -54,7 +57,7 @@ def crosscheck_operation(op, *arrays, **kw):
     r1 = op(*arrays, **kw)
     r2 = op(*map(lgp.StructuredArray, map(np.copy, arrays)), **kw)
     
-    if not isinstance(r1, tuple):
+    if not isinstance(r1, (tuple, list)):
         r1 = (r1,)
         r2 = (r2,)
     
@@ -69,8 +72,7 @@ def crosscheck_operation(op, *arrays, **kw):
         util.assert_equal(res1, res2)
 
 def test_broadcast_to():
-    def op(array, shape):
-        return lgp.broadcast_to(array, shape)
+    op = np.broadcast_to # uses __array_function__
     dtypes = [
         [('f0', float)],
         'f,f',
@@ -102,8 +104,7 @@ def test_broadcast_to():
         crosscheck_operation(op, array, shape=transf(shape))
 
 def test_broadcast_arrays():
-    def op(array1, array2):
-        return lgp.broadcast_arrays(array1, array2)
+    op = np.broadcast_arrays # uses __array_function__
     dtypes = [
         [('f0', float)],
         'f,f',
@@ -408,3 +409,29 @@ def test_set_subfield():
     x['a'] = random_array(a.shape, a.dtype)
     b = x['a']['b']
     x['a']['b'] = random_array(b.shape, b.dtype)
+
+def test_s2u():
+    dtypes = [
+        [('f0', float)],
+        'f,f',
+        'f,d,f',
+        # 'f,O',
+        # structured_to_unstructured does not work on object arrays, see
+        # numpy issue #21990
+        'S25,U10,?',
+        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
+        [('a', [('aa', 'f,f', 2), ('ab', float)], 3)],
+    ]
+    shapes = [
+        (),
+        (0,),
+        (1,),
+        (1, 0),
+        (0, 1),
+        (10,),
+        (1, 2, 3),
+        (2, 3, 4),
+    ]
+    for dtype, shape in itertools.product(dtypes, shapes):
+        array = random_array(shape, dtype)
+        crosscheck_operation(recfunctions.structured_to_unstructured, array)

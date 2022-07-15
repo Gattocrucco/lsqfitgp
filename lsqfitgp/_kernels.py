@@ -37,6 +37,7 @@ from ._Kernel import kernel, stationarykernel, isotropickernel
 
 __all__ = [
     'AR',
+    'BART',
     'BagOfWords',
     'Bessel',
     'BrownianBridge',
@@ -85,6 +86,9 @@ __all__ = [
 # TODO maybe I could have a continuity check like derivable, but to be useful
 # it would be callable-only and take the derivation order. But I don't think
 # any potential user needs it.
+
+# TODO add explicit exponent parameter to infinitely divisible kernels, and
+# check the exponent is an int in __pow__.
 
 def _dot(x, y):
     return _Kernel.sum_recurse_dtype(lambda x, y: x * y, x, y)
@@ -1464,6 +1468,8 @@ def _ar_with_roots(delta, slnr, lnc, norm):
     # gamma[0] < 0 or any(abs(gamma) > gamma[0]). The fix takes the smallest
     # log|root| and assumes it alone determines gamma. Question: if then I
     # iterate with the solution found, does it converge to the correct solution?
+    # => no, it just gives 0 amplitude to other roots. Maybe I should determine
+    # some necessary constraints on the amplitudes for positivity.
     
     p = phi.size
 
@@ -1663,3 +1669,356 @@ class AR(_ARBase):
         numpy.testing.assert_allclose(coef.imag, 0, rtol=0, atol=1e-4)
         coef = coef.real
         return -coef[1:] / coef[0]
+
+def _bart_maxdim(splits=None, **_):
+    splits = _check_splits(splits)
+    return splits[0].size
+
+# TODO consider letting derivable=True and returning Zero
+
+@kernel(maxdim=_bart_maxdim, derivable=False)
+def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
+    """
+    BART kernel.
+    
+    Parameters
+    ----------
+    alpha, beta : scalar
+        The parameters of the branching probability.
+    maxd : int
+        The maximum depth of the trees.
+    splits : pair of arrays
+        The first is an int (p,) array containing the number of splitting
+        points along each dimension, the second has shape (n, p) and contains
+        the sorted splitting points in each column, filled with high values
+        after the length.
+    
+    Methods
+    -------
+    splits_from_coord
+    indices_from_coord
+    
+    Notes
+    -----
+    This is the covariance function of the latent mean prior of BART (Bayesian
+    Additive Regression Trees) [1]_ in the limit of an infinite number of
+    trees, and with an upper bound on the depth of the trees. This prior is the
+    distribution of the function
+    
+    .. math::
+        f(\\mathbf x) = \\lim_{m\\to\\infty}
+        \\sum_{j=1}^m g(\\mathbf x; T_j, M_j),
+    
+    where each :math:`g(\\mathbf x; T_j, M_j)` is a decision tree evaluated at
+    :math:`\\mathbf x`, with structure :math:`T_j` and leaf values :math:`M_j`.
+    The trees are i.i.d., with the following distribution for :math:`T_j`: for
+    a node at depth :math:`d`, with :math:`d = 0` for the root, the probability
+    of not being a leaf, conditional on its existence and its ancestors only, is
+    
+    .. math::
+        P_d = \\alpha (1+d)^{-\\beta}, \\quad
+        \\alpha \\in [0, 1], \\quad \\beta \\ge 0.
+    
+    For a non-leaf node, conditional on existence and ancestors, the splitting
+    variable has uniform distribution amongst the variables with any splitting
+    points not used by ancestors, and the splitting point has uniform
+    distribution amongst the available ones. The splitting points are fixed,
+    tipically from the data.
+    
+    The distribution of leaves :math:`M_j` is i.i.d. Normal with variance
+    :math:`1/m`, such that :math:`f(x)` has variance 1. In the limit
+    :math:`m\\to\\infty`, the distribution of :math:`f(x)` becomes a Gaussian
+    process.
+    
+    Since the trees are independent, the covariance function can be computed
+    for a single tree. Consider two coordinates :math:`x` and :math:`y`, with
+    :math:`x \\le y`. Let :math:`n^-`, :math:`n^0` and :math:`n^+` be the
+    number of splitting points respectively before :math:`x`, between
+    :math:`x`, :math:`y` and after :math:`y`. Next, define :math:`\\mathbf
+    n^-`, :math:`\\mathbf n^0` and :math:`\\mathbf n^+` as the vectors of such
+    quantities for each dimension, with a total of :math:`p` dimensions. Then
+    the covariance function can be written recursively as
+    
+    .. math::
+        \\newcommand{\\nvecs}{\\mathbf n^-, \\mathbf n^0, \\mathbf n^+}
+        k(\\mathbf x, \\mathbf y) &= k_0(\\nvecs), \\\\
+        k_D(\\nvecs) &= 1, \\\\
+        k_d(\\nvecs) &= 1 - P_d \\Bigg(1 - \\frac1p
+            \\sum_{i=1}^p \\frac1{n^-_i + n^0_i + n^+_i} \\Bigg( \\\\
+                &\\qquad \\sum_{k=0}^{n^-_i - 1}
+                k_{d+1}(\\mathbf n^-_{n^-_i=k}, \\mathbf n^0, \\mathbf n^+)
+                + {} \\\\
+                &\\qquad \\sum_{k=0}^{n^+_i - 1}
+                k_{d+1}(\\mathbf n^-, \\mathbf n^0, \\mathbf n^+_{n^+_i=k})
+            \\Bigg)
+        \\Bigg),
+    
+    where it is intended that when :math:`n^-_i = n^0_i = n^+_i = 0`, the term
+    of the summation yields 0.
+    
+    The introduction of a maximum depth :math:`D` is necessary for
+    computational feasibility. As :math:`D` increases, the result converges to
+    the one without depth limit. In setting :math:`D`, consider that
+    :math:`\\beta` regulates the distribution of the depth, with high values
+    strongly favoring shallow trees.
+    
+    In the maximum allowed depth is 1, i.e., either :math:`D = 1` or
+    :math:`\\beta\\to\\infty`, the kernel assumes the simple form
+    
+    .. math::
+        k(\\mathbf x, \\mathbf y) = 1 - \\frac\\alpha p \\sum_{i=1}^p
+        \\frac{n^0_i}{n^-_i + n^0_i + n^+_i},
+    
+    which is separable along dimensions.
+    
+    References
+    ----------
+    .. [1] Hugh A. Chipman, Edward I. George, Robert E. McCulloch "BART:
+        Bayesian additive regression trees," The Annals of Applied Statistics,
+        Ann. Appl. Stat. 4(1), 266-298, (March 2010).
+    """
+    if _patch_jax.isconcrete(alpha, beta):
+        assert 0 <= alpha <= 1, alpha
+        assert beta >= 0, beta
+    assert maxd == int(maxd) and maxd >= 0, maxd
+    splits = _check_splits(splits)
+    if not x.dtype.names:
+        x = x[..., None]
+    if not y.dtype.names:
+        y = y[..., None]
+    ix = BART.indices_from_coord(x, splits)
+    iy = BART.indices_from_coord(y, splits)
+    l = jnp.minimum(ix, iy)
+    r = jnp.maximum(ix, iy)
+    before = l
+    between = r - l
+    after = splits[0] - r
+    return bart_correlation_maxd(before, between, after, alpha, beta, maxd)
+    
+    # TODO options to:
+    # - use lower/upper bound (is lower pos def?)
+    # - interpolate (is linear interp pos def?)
+    # - approximate as stationary (is it pos def?)
+    # - allow index input
+
+class BART(_BARTBase):
+    
+    __doc__ = _BARTBase.__doc__
+    
+    @staticmethod
+    def splits_from_coord(x):
+        """
+        Generate splitting points from data.
+        
+        Parameters
+        ----------
+        x : array of numbers
+            The data. Can be passed in two formats: 1) a structured array where
+            each leaf field represents a dimension, 2) a normal array where the
+            last axis runs over dimensions. In the structured case, each
+            index in any shaped field is a different dimension.
+        
+        Returns
+        -------
+        length : int (p,) array
+            The number of splitting points along each of `p` dimensions.
+        splits : (n, p) array
+            Each column contains the sorted splitting points along a dimension.
+            The splitting points are the midpoints between consecutive
+            coordinates appearing in `x` for that dimension. Column
+            ``splits[:, i]`` contains splitting points only up to ``length[i]``,
+            while afterward it is filled with a very large value.
+        
+        """
+        x = _check_x(x)
+        x = x.reshape(-1, x.shape[-1]) if x.size else x.reshape(1, x.shape[-1])
+        x = jnp.sort(x, axis=0)
+        midpoints = (x[:-1, :] + x[1:, :]) / 2
+        return _unique_vectorized(midpoints)
+    
+    @staticmethod
+    def indices_from_coord(x, splits):
+        """
+        Convert coordinates to indices w.r.t. splitting points.
+        
+        Parameters
+        ----------
+        x : array of numbers
+            The coordinates. Can be passed in two formats: 1) a structured
+            array where each leaf field represents a dimension, 2) a normal
+            array where the last axis runs over dimensions. In the structured
+            case, each index in any shaped field is a different dimension.
+        splits : pair of arrays
+            The first is an int (p,) array containing the number of splitting
+            points along each dimension, the second has shape (n, p) and
+            contains the sorted splitting points in each column, filled with
+            high values after the length.
+        
+        Returns
+        -------
+        ix : int array
+            An array with the same shape as `x`, unless `x` is a structured
+            array, in which case the last axis of `ix` is the flattened version
+            of the structured type. `ix` contains indices mapping `x` to
+            positions between splitting points along each coordinate, with the
+            following convention: index 0 means before the first split, index
+            i > 0 means between split i - 1 and split i.
+        
+        """
+        x = _check_x(x)
+        splits = _check_splits(splits)
+        assert x.shape[-1] == splits[0].size
+        return _searchsorted_vectorized(splits[1], x)
+
+def _check_x(x):
+    x = _array.asarray(x)
+    if x.dtype.names:
+        x = numpy.structured_to_unstructured(x)
+    return x
+
+def _check_splits(splits):
+    l, s = splits
+    l = jnp.asarray(l)
+    s = jnp.asarray(s)
+    assert l.ndim == 1 and 1 <= s.ndim <= 2
+    if s.ndim == 1:
+        s = s[:, None]
+    assert l.size == s.shape[1]
+    return l, s
+
+@jax.jit
+def _unique_vectorized(X):
+    """
+    X : (..., p)
+    length : int (p,)
+    unique : (n, p)
+    """
+    if jnp.issubdtype(X.dtype, jnp.inexact):
+        info = jnp.finfo
+    else:
+        info = jnp.iinfo
+    fill = info(X.dtype).max
+    def loop(_, x):
+        u = jnp.unique(x, size=x.size, fill_value=fill)
+        l = jnp.searchsorted(u, fill)
+        return _, (l, u)
+    _, (length, unique) = lax.scan(loop, None, X.T)
+    return length, unique.T
+
+@functools.partial(jax.jit, static_argnames=('side',))
+def _searchsorted_vectorized(A, V, **kw):
+    """
+    A : (n, p)
+    V : (..., p)
+    out : (..., p)
+    """
+    def loop(_, av):
+        return _, jnp.searchsorted(*av, **kw)
+    _, out = lax.scan(loop, None, (A.T, V.T))
+    return out.T
+
+@functools.partial(jax.jit, static_argnums=(5, 6, 7))
+def _bart_correlation_maxd_recursive(nminus, n0, nplus, alpha, beta, maxd, d, upper):
+    
+    if d >= maxd and upper:
+        return 1.
+    
+    pnt = alpha / (1 + d) ** beta
+    
+    if d >= maxd and not upper:
+        return 1 - pnt
+        
+    p = len(nminus)
+
+    if d + 1 >= maxd:
+        nout = nminus + nplus
+        terms = nout / (nout + n0)
+        if not upper:
+            pnt1 = alpha / (2 + d) ** beta
+            terms *= pnt1
+        sump = jnp.sum(jnp.where(n0, terms, 1))
+        return 1 - pnt * (1 - sump / p)
+    
+    # TODO hardcode d + 2 case?
+    
+    val = (0., nminus, n0, nplus)
+    def loop(i, val):
+        sump, nminus, n0, nplus = val
+
+        nminusi = nminus[i]
+        n0i = n0[i]
+        nplusi = nplus[i]
+        
+        val = (0., nminus, n0, nplus, i, nminusi)
+        def loop(k, val):
+            sumn, nminus, n0, nplus, i, nminusi = val
+            
+            nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
+            nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
+            
+            sumn += _bart_correlation_maxd_recursive(nminus, n0, nplus, alpha, beta, maxd, d + 1, upper)
+            
+            nminus = nminus.at[i].set(nminusi)
+            nplus = nplus.at[i].set(nplusi)
+            
+            return sumn, nminus, n0, nplus, i, nminusi
+        
+        sumn, nminus, n0, nplus, _, _ = lax.fori_loop(0, nminusi + nplusi, loop, val)
+
+        sump += jnp.where(n0i, sumn / (nminusi + n0i + nplusi), 1)
+
+        return sump, nminus, n0, nplus
+
+    sump, _, _, _ = lax.fori_loop(0, p, loop, val)
+
+    return 1 - pnt * (1 - sump / p)
+    
+_bart_correlation_maxd_vectorized = jax.vmap(_bart_correlation_maxd_recursive, [
+    0, 0, 0, None, None, None, None, None,
+])
+    
+def bart_correlation_maxd(splitsbefore, splitsbetween, splitsafter, alpha, beta, maxd, upper=True):
+    """
+    Compute the BART prior correlation between two points.
+    
+    The correlation is computed approximately by limiting the maximum depth
+    of the trees. Limiting trees to depth 1 is equivalent to setting beta to
+    infinity.
+        
+    Parameters
+    ----------
+    splitsbefore : int (..., p) array
+        The number of splitting points less than the two points, separately
+        along each coordinate.
+    splitsbetween : int (..., p) array
+        The number of splitting points between the two points, separately along
+        each coordinate.
+    splitsafter : int (..., p) array
+        The number of splitting points greater than the two points, separately
+        along each coordinate.
+    alpha, beta : scalar
+        The hyperparameters of the branching probability.
+    maxd : int
+        The maximum depth of the trees. The root has depth zero.
+    upper : bool
+        If True (default), the result is an upper bound on the limit of
+        infinite maxd. If False, it is a lower bound.
+    
+    Return
+    ------
+    corr : scalar
+        The prior correlation.
+    """
+    args = [splitsbefore, splitsbetween, splitsafter]
+    args = list(map(jnp.asarray, args))
+    for a in args:
+        assert a.ndim >= 1
+    p = args[0].shape[-1]
+    for a in args:
+        assert a.shape[-1] == p
+    args = jnp.broadcast_arrays(*args)
+    shape = args[0].shape[:-1]
+    args = [a.reshape(-1, p) for a in args]
+    out = _bart_correlation_maxd_vectorized(*args, alpha, beta, int(maxd), 0, upper)
+    return out.reshape(shape)
+
