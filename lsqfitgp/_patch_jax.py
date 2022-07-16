@@ -275,28 +275,6 @@ def tree_all(predicate, *trees):
     pred = tree_util.tree_map(predicate, *trees)
     return tree_util.tree_reduce(lambda acc, p: acc and p, pred, True)
 
-def companion(a):
-    """mimics scipy.linalg.companion
-    coefficients ordered high to low"""
-    a = jnp.asarray(a)
-    assert a.ndim == 1 and a.size >= 2 and a[0] != 0, a
-    row = -a[1:] / (1.0 * a[0])
-    n = a.size
-    col_indices = jnp.arange(n - 2)
-    row_indices = 1 + col_indices
-    c = jnp.zeros((n - 1, n - 1), row.dtype)
-    return c.at[0, :].set(row).at[row_indices, col_indices].set(1)
-
-def polyroots(c):
-    """mimics numpy.polynomial.polynomial.polyroots
-    coefficients low to high"""
-    m = companion(c[::-1])
-    return jnp.sort(jnp.linalg.eigvals(m.T))
-    # transpose to mimic polyroots, which says that this particular ordering
-    # increases precision, but I'm not sure the transposition actually helps,
-    # it's probably more about the difference between scipy's companion and
-    # numpy's polycompanion
-
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def expn_imag(n, x):
     """

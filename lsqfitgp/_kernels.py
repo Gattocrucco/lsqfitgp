@@ -1751,7 +1751,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
                 &\\qquad \\sum_{k=0}^{n^+_i - 1}
                 k_{d+1}(\\mathbf n^-, \\mathbf n^0, \\mathbf n^+_{n^+_i=k})
             \\Bigg)
-        \\Bigg),
+        \\Bigg), \\quad d < D,
     
     where it is intended that when :math:`n^-_i = n^0_i = n^+_i = 0`, the term
     of the summation yields 0.
@@ -1937,7 +1937,7 @@ def _bart_correlation_maxd_recursive(nminus, n0, nplus, alpha, beta, maxd, d, up
             pnt1 = alpha / (2 + d) ** beta
             terms *= pnt1
         sump = jnp.sum(jnp.where(n0, terms, 1))
-        return 1 - pnt * (1 - sump / p)
+        return 1 - pnt * (1 - sump / p).astype(float)
     
     # TODO hardcode d + 2 case?
     
@@ -1963,7 +1963,7 @@ def _bart_correlation_maxd_recursive(nminus, n0, nplus, alpha, beta, maxd, d, up
             
             return sumn, nminus, n0, nplus, i, nminusi
         
-        sumn, nminus, n0, nplus, _, _ = lax.fori_loop(0, nminusi + nplusi, loop, val)
+        sumn, nminus, n0, nplus, _, _ = lax.fori_loop(jnp.int32(0), nminusi + nplusi, loop, val)
 
         sump += jnp.where(n0i, sumn / (nminusi + n0i + nplusi), 1)
 
@@ -2010,7 +2010,7 @@ def bart_correlation_maxd(splitsbefore, splitsbetween, splitsafter, alpha, beta,
         The prior correlation.
     """
     args = [splitsbefore, splitsbetween, splitsafter]
-    args = list(map(jnp.asarray, args))
+    args = [jnp.asarray(a, 'i4') for a in args]
     for a in args:
         assert a.ndim >= 1
     p = args[0].shape[-1]
@@ -2019,6 +2019,8 @@ def bart_correlation_maxd(splitsbefore, splitsbetween, splitsafter, alpha, beta,
     args = jnp.broadcast_arrays(*args)
     shape = args[0].shape[:-1]
     args = [a.reshape(-1, p) for a in args]
-    out = _bart_correlation_maxd_vectorized(*args, alpha, beta, int(maxd), 0, upper)
+    alpha = jnp.array(alpha, float)
+    beta = jnp.array(beta, float)
+    out = _bart_correlation_maxd_vectorized(*args, alpha, beta, int(maxd), 0, bool(upper))
     return out.reshape(shape)
 

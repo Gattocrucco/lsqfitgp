@@ -79,23 +79,6 @@ def randpoly(n):
         if a[0] != 0:
             return a
 
-def test_companion():
-    a = randpoly(20)
-    c1 = _patch_jax.companion(a)
-    c2 = linalg.companion(a)
-    assert c1.dtype == c2.dtype
-    util.assert_equal(c1, c2)
-    with pytest.raises(AssertionError):
-        a[0] = 0
-        _patch_jax.companion(a)
-
-def test_polyroots():
-    for n in [2, 20]:
-        a = randpoly(n)
-        r1 = np.polynomial.polynomial.polyroots(a[::-1])
-        r2 = _patch_jax.polyroots(a[::-1])
-        np.testing.assert_allclose(r1, r2, atol=1e-15, rtol=1e-12)
-
 def test_exp1_imag_and_ci():
     xs = [
         np.linspace(1e-15, 100, 1000),

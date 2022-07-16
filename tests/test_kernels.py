@@ -824,7 +824,7 @@ def check_matern_half_integer(deriv):
         d = min(k.derivable, deriv)
         r1 = k.diff(d, d)(x, y)
         r2 = _kernels.Maternp(p=p).diff(d, d)(x, y)
-        np.testing.assert_allclose(r1, r2, rtol=1e-10, equal_nan=False)
+        np.testing.assert_allclose(r1, r2, rtol=1e-10, atol=1e-16, equal_nan=False)
 
 def test_matern_half_integer_0():
     check_matern_half_integer(0)

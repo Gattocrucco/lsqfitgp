@@ -1190,8 +1190,7 @@ class GP:
                     if _patch_jax.isconcrete(block):
                         blockT = self._makecovblock(col, row)
                         assert _patch_jax.isconcrete(blockT)
-                        B = _patch_jax.concrete(block)
-                        BT = _patch_jax.concrete(blockT)
+                        B, BT = _patch_jax.concrete(block, blockT)
                         if not numpy.allclose(B.T, BT):
                             msg = 'covariance block {!r} is not symmetric'
                             raise RuntimeError(msg.format((row, col)))
