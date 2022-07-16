@@ -1,0 +1,343 @@
+.. file generated automatically by lsqfitgp/docs/examplesref.py
+
+.. currentmodule:: lsqfitgp
+
+.. _examplesref:
+
+Example scripts
+===============
+
+This is an index of the example scripts in the ``examples`` directory in the
+repository. The links point to the file preview on github.
+
+Short index
+-----------
+a_ b_ bernoulli_ c_ d_ dft_ doubleint_ e_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
+
+Long index
+----------
+
+.. _a:
+
+  * `a.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/a.py>`_: EXAMPLE A.
+
+    Where the oscillating nature of an unknown function is revealed
+    from but a few points, though only to a certain distance.
+    
+    .. image:: ../examples/plot/a.png
+
+.. _b:
+
+  * `b.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/b.py>`_: EXAMPLE B.
+
+    Where it is discovered that the derivative of the unknown function
+    is orthogonal to the function itself, and furthermore that it is
+    orange instead of blue.
+    
+    .. image:: ../examples/plot/b.png
+
+.. _bernoulli:
+
+  * `bernoulli.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/bernoulli.py>`_: Check the symmetry of the Bernoulli polynomials
+    
+    .. image:: ../examples/plot/bernoulli.png
+
+.. _c:
+
+  * `c.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/c.py>`_: EXAMPLE C.
+
+    Where a nonlinear transformation hides the true height of some
+    crosses.
+    
+    .. image:: ../examples/plot/c.png
+
+.. _d:
+
+  * `d.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/d.py>`_: EXAMPLE D.
+
+    Where the primitive of our function takes some freedom to move
+    up and down.
+    
+    .. image:: ../examples/plot/d.png
+
+.. _dft:
+
+  * `dft.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/dft.py>`_: Constrain the discrete Fourier transform of a periodic process. Shows how
+    to use GP.addlintransf.
+    
+    .. image:: ../examples/plot/dft.png
+
+.. _doubleint:
+
+  * `doubleint.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/doubleint.py>`_: Test of double integral constraint
+    
+    .. image:: ../examples/plot/doubleint.png
+
+.. _e:
+
+  * `e.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/e.py>`_: EXAMPLE E.
+
+    Where observing both a function and its derivative put some
+    restraint on their behaviour.
+    
+    .. image:: ../examples/plot/e.png
+
+.. _f:
+
+  * `f.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/f.py>`_: EXAMPLE F.
+
+    Where apparently in these times it is not anymore possible to
+    know exactly where one gentleman's function will pass.
+    
+    .. image:: ../examples/plot/f.png
+
+.. _fourier:
+
+  * `fourier.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/fourier.py>`_: Constraint the values of Fourier series coefficients
+    
+    .. image:: ../examples/plot/fourier.png
+
+.. _g:
+
+  * `g.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/g.py>`_: EXAMPLE G.
+
+    Where two ways of expressing one's beliefs are compared and found,
+    satisfactorily, to be quite similar.
+    
+    .. image:: ../examples/plot/g.png
+
+.. _h:
+
+  * `h.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/h.py>`_: EXAMPLE H.
+
+    Where at first sight nothing has changed, but behind the scenes
+    important information has been lost forever.
+    
+    .. image:: ../examples/plot/h.png
+
+.. _i:
+
+  * `i.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/i.py>`_: EXAMPLE I.
+
+    Where, due to obscure political reasons, we insist on forgetting
+    important details that a reasonable man's mind would be fond of
+    recalling later.
+    
+    .. image:: ../examples/plot/i.png
+
+.. _j:
+
+  * `j.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/j.py>`_: EXAMPLE J.
+
+    Where the excessive smoothness of the prediction is found not
+    to satisfy our manly tastes.
+    
+    .. image:: ../examples/plot/j.png
+
+.. _k:
+
+  * `k.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/k.py>`_: EXAMPLE K.
+
+    Where lady K finds out that every gentleman hides his rougher
+    corners in his derivative.
+    
+    .. image:: ../examples/plot/k.png
+
+.. _l:
+
+  * `l.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/l.py>`_: EXAMPLE L.
+
+    Where two formulas give the same results and so math triumphs
+    once again.
+    
+    .. image:: ../examples/plot/l.png
+
+.. _m:
+
+  * `m.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/m.py>`_: EXAMPLE M.
+
+    Where we discover that, unlike elephants, Matérn processes
+    prefer to forget after less than one data step.
+    
+    .. image:: ../examples/plot/m.png
+
+.. _n:
+
+  * `n.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/n.py>`_: EXAMPLE N.
+
+    Where we wonder how much a derivative is allowed to do her own
+    business compared to her mistress.
+    
+    .. image:: ../examples/plot/n.png
+
+.. _o:
+
+  * `o.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/o.py>`_: EXAMPLE O.
+
+    Where mister N's enquiry is repeated by different means.
+    
+    .. image:: ../examples/plot/o.png
+
+.. _p:
+
+  * `p.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/p.py>`_: EXAMPLE P.
+
+    Where an overwhelming amount of datapoints is revelead to be
+    nothing more than a pile of ten eigenfunctions.
+    
+    .. image:: ../examples/plot/p.png
+
+.. _pdf1:
+
+  * `pdf1.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf1.py>`_: Fit of parton distributions functions (PDFs)
+    
+    .. image:: ../examples/plot/pdf1.png
+
+.. _pdf2:
+
+  * `pdf2.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf2.py>`_: Fit of parton distributions functions (PDFs)
+
+    The difference from pdf1.py is that we define the transformation on processes
+    instead of on their finite realizations
+    
+    .. image:: ../examples/plot/pdf2.png
+
+.. _pdf3:
+
+  * `pdf3.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf3.py>`_: Fit of parton distributions functions (PDFs)
+
+    Like pdf2, but with correct integral constraints and naming this time
+    
+    .. image:: ../examples/plot/pdf3.png
+
+.. _pdf4:
+
+  * `pdf4.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf4.py>`_: Fit of parton distribution functions (PDFs)
+
+    Like pdf3, but with hyperparameters
+    
+    .. image:: ../examples/plot/pdf4.png
+
+.. _pdf5:
+
+  * `pdf5.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf5.py>`_: Fit of parton distributions functions (PDFs)
+
+    Like pdf3, but with nonlinear data
+    
+    .. image:: ../examples/plot/pdf5.png
+
+.. _pdf6:
+
+  * `pdf6.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf6.py>`_: Fit of parton distributions functions (PDFs)
+
+    Like pdf5, but with uncertainties on M and M2
+    
+    .. image:: ../examples/plot/pdf6.png
+
+.. _pdf7:
+
+  * `pdf7.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf7.py>`_: Fit of parton distributions functions (PDFs)
+
+    Like pdf6, but with hyperparameters
+    
+    .. image:: ../examples/plot/pdf7.png
+
+.. _pdf8:
+
+  * `pdf8.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf8.py>`_: Fit of parton distributions functions (PDFs)
+
+    Like pdf7, but with more realistic PDFs
+    
+    .. image:: ../examples/plot/pdf8.png
+
+.. _q:
+
+  * `q.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/q.py>`_: EXAMPLE Q.
+
+    Where we extend a pattern of waves in space, but do not dare
+    look too far from our data.
+    
+    .. image:: ../examples/plot/q.png
+
+.. _r:
+
+  * `r.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/r.py>`_: EXAMPLE R.
+
+    Where we decide to introduce a strong anisotropy despite
+    evidence of its absence.
+    
+    .. image:: ../examples/plot/r.png
+
+.. _s:
+
+  * `s.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/s.py>`_: EXAMPLE S.
+
+    Where different coordinates unite together under a single
+    field name.
+    
+    .. image:: ../examples/plot/s.png
+
+.. _t:
+
+  * `t.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/t.py>`_: EXAMPLE T.
+
+    Where we pretend to discover that two series of events
+    were in fact one the delayed and imperfect copy of the
+    other.
+    
+    .. image:: ../examples/plot/t.png
+
+.. _u:
+
+  * `u.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/u.py>`_: EXAMPLE U.
+
+    Where we infer the temporal scale of a process assuming
+    another process is correlated with its derivative.
+    
+    .. image:: ../examples/plot/u.png
+
+.. _v:
+
+  * `v.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/v.py>`_: EXAMPLE V.
+
+    Where we go on an expedition to survey the many and wondrous
+    kernels that inhabit our software.
+    
+    .. image:: ../examples/plot/v.png
+
+.. _w:
+
+  * `w.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/w.py>`_: EXAMPLE W.
+
+    Where, with limited success, we recover the identity of two
+    mixed functions knowing their speed of variation.
+    
+    .. image:: ../examples/plot/w.png
+
+.. _x:
+
+  * `x.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/x.py>`_: EXAMPLE X.
+
+    Where the derivatives of an interesting correlation function
+    are put to harsh a trial.
+    
+    .. image:: ../examples/plot/x.png
+
+.. _y:
+
+  * `y.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/y.py>`_: EXAMPLE Y.
+
+    Where a Fourier kernel forces some random samples to have
+    zero mean.
+    
+    .. image:: ../examples/plot/y.png
+
+.. _z:
+
+  * `z.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/z.py>`_: EXAMPLE Z.
+
+    Where we sail in an infinite dimensional space to sum two
+    numbers.
+    
+    .. image:: ../examples/plot/z.png
+

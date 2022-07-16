@@ -1,0 +1,726 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>6. Gaussian process class &#8212; lsqfitgp 0.13 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="7. Structured arrays wrapping" href="array.html" />
+    <link rel="prev" title="5. Derivative specification" href="deriv.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">lsqfitgp 0.13</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="userguide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">1. Kernels reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">2. Generic kernel classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">3. Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelop.html">4. Kernel operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deriv.html">5. Derivative specification</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">6. Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fit.html">8. Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="reference.html">Reference manual</a><ul>
+      <li>Previous: <a href="deriv.html" title="previous chapter"><span class="section-number">5. </span>Derivative specification</a></li>
+      <li>Next: <a href="array.html" title="next chapter"><span class="section-number">7. </span>Structured arrays wrapping</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="deriv.html" title="Previous document"><span class="section-number">5. </span>Derivative specification</a>
+        </li>
+        <li>
+          <a href="array.html" title="Next document"><span class="section-number">7. </span>Structured arrays wrapping</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="gaussian-process-class">
+<span id="gp"></span><h1><span class="section-number">6. </span>Gaussian process class<a class="headerlink" href="#gaussian-process-class" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.GP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkfinite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posepsfac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Object that represents a Gaussian process over arbitrary input.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>covfun</strong><span class="classifier">Kernel or None</span></dt><dd><p>An instance of <cite>Kernel</cite> representing the covariance kernel of the
+default process of the GP object. It can be left unspecified.</p>
+</dd>
+<dt><strong>solver</strong><span class="classifier">str</span></dt><dd><p>The algorithm used to decompose the prior covariance matrix. See list
+below for the available solvers. Default is <cite>eigcut+</cite> which is slow but
+robust.</p>
+<dl class="simple">
+<dt>‘eigcut+’</dt><dd><p>Promote small (or negative) eigenvalues to a minimum value.</p>
+</dd>
+<dt>‘eigcut-’</dt><dd><p>Remove small (or negative) eigenvalues.</p>
+</dd>
+<dt>‘svdcut+’</dt><dd><p>Promote small eigenvalues to a minimum value, keeping their sign.</p>
+</dd>
+<dt>‘svdcut-’</dt><dd><p>Remove small eigenvalues.</p>
+</dd>
+<dt>‘lowrank’</dt><dd><p>Reduce the rank of the matrix. The complexity is O(n^2 r) where
+<cite>n</cite> is the matrix size and <cite>r</cite> the required rank, while the other
+algorithms are O(n^3). Slow for small sizes.</p>
+</dd>
+<dt>‘chol’</dt><dd><p>Cholesky decomposition after regularizing the matrix with a
+Gershgorin estimate of the maximum eigenvalue. The fastest of the
+O(n^3) algorithms.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>checkpos</strong><span class="classifier">bool</span></dt><dd><p>If True (default), raise a <cite>LinAlgError</cite> if the prior covariance matrix
+turns out non positive within numerical error.</p>
+</dd>
+<dt><strong>checksym</strong><span class="classifier">bool</span></dt><dd><p>If True (default), check that the prior covariance matrix is
+symmetric. If False, only half of the matrix is computed.</p>
+</dd>
+<dt><strong>checkfinite</strong><span class="classifier">bool</span></dt><dd><p>If True (default), check that the prior covariance matrix does not
+contain infs or nans.</p>
+</dd>
+<dt><strong>checklin</strong><span class="classifier">bool</span></dt><dd><p>If True (default), the method <cite>addlintransf</cite> will check that the
+given transformation is linear on a random input tensor.</p>
+</dd>
+<dt><strong>posepsfac</strong><span class="classifier">number</span></dt><dd><p>The threshold used to check if the prior covariance matrix is positive
+definite is multiplied by this factor (default 1).</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the solver.</p>
+<dl class="simple">
+<dt>eps<span class="classifier">positive float</span></dt><dd><p>For solvers ‘eigcut+’, ‘eigcut-’, ‘svdcut+’, ‘svdcut-’, ‘chol’.
+Specifies the threshold for considering small the eigenvalues,
+relative to the maximum eigenvalue. The default is matrix size *
+float epsilon.</p>
+</dd>
+<dt>rank<span class="classifier">positive integer</span></dt><dd><p>For the ‘lowrank’ solver, the target rank. It should be much
+smaller than the matrix size for the method to be convenient.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addx</span></code></a>(x[, key, deriv, proc])</p></td>
+<td><p>Add points where the Gaussian process is evaluated.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addlintransf</span></code></a>(transf, keys, key[, checklin])</p></td>
+<td><p>Define a finite linear transformation of the evaluated process.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addtransf</span></code></a>(tensors, key[, axes])</p></td>
+<td><p>Apply a linear transformation to already specified process points.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addcov" title="lsqfitgp.GP.addcov"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addcov</span></code></a>(covblocks[, key])</p></td>
+<td><p>Add user-defined prior covariance matrix blocks.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproc" title="lsqfitgp.GP.addproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproc</span></code></a>([kernel, key, deriv])</p></td>
+<td><p>Add an independent process.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproctransf" title="lsqfitgp.GP.addproctransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproctransf</span></code></a>(ops, key[, deriv])</p></td>
+<td><p>Define a new process as a linear combination of other processes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproclintransf" title="lsqfitgp.GP.addproclintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproclintransf</span></code></a>(transf, keys, key[, deriv, ...])</p></td>
+<td><p>Define a new process as a linear combination of other processes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addkernelop" title="lsqfitgp.GP.addkernelop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addkernelop</span></code></a>(method, arg, key[, proc])</p></td>
+<td><p>Define a new process as the transformation of an existing one.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocderiv" title="lsqfitgp.GP.addprocderiv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocderiv</span></code></a>(deriv, key[, proc])</p></td>
+<td><p>Define a new process as the derivative of an existing one.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocxtransf" title="lsqfitgp.GP.addprocxtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocxtransf</span></code></a>(transf, key[, proc])</p></td>
+<td><p>Define a new process by transforming the inputs of another one.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addprocrescale" title="lsqfitgp.GP.addprocrescale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addprocrescale</span></code></a>(scalefun, key[, proc])</p></td>
+<td><p>Define a new process as a rescaling of an existing one.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prior</span></code></a>([key, raw])</p></td>
+<td><p>Return an array or a dictionary of arrays of gvars representing the prior for the Gaussian process.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.pred" title="lsqfitgp.GP.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(given[, key, givencov, fromdata, raw, ...])</p></td>
+<td><p>Compute the posterior.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromfit" title="lsqfitgp.GP.predfromfit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromfit</span></code></a>(*args, **kw)</p></td>
+<td><p>Like <cite>pred</cite> with <cite>fromdata=False</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predfromdata</span></code></a>(*args, **kw)</p></td>
+<td><p>Like <cite>pred</cite> with <cite>fromdata=True</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">marginal_likelihood</span></code></a>(given[, givencov, separate])</p></td>
+<td><p>Compute the logarithm of the probability of the data.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addcov">
+<span class="sig-name descname"><span class="pre">addcov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covblocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addcov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add user-defined prior covariance matrix blocks.</p>
+<p>Covariance matrices defined with <cite>addcov</cite> represent arbitrary
+finite-dimensional zero-mean Gaussian variables, assumed independent
+from all other variables in the GP object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>covblocks</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>If an array: a covariance matrix (or tensor) to be added under key
+<cite>key</cite>. If a dictionary: a mapping from pairs of keys to the
+corresponding covariance matrix blocks. A missing off-diagonal
+block in the dictionary is interpreted as a matrix of zeros,
+unless the corresponding transposed block is specified.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>If <cite>covblocks</cite> is an array, the dictionary key under which
+<cite>covblocks</cite> is added. Can not be specified if <cite>covblocks</cite> is a
+dictionary.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>KeyError</strong><span class="classifier"></span></dt><dd><p>A key is already used in the GP.</p>
+</dd>
+<dt><strong>ValueError</strong><span class="classifier"></span></dt><dd><p><cite>covblocks</cite> and/or <cite>key</cite> are malformed or inconsistent.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addkernelop">
+<span class="sig-name descname"><span class="pre">addkernelop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addkernelop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process as the transformation of an existing one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>method</strong><span class="classifier">str</span></dt><dd><p>A method of <cite>Kernel</cite> taking two arguments which returns a
+transformed kernel.</p>
+</dd>
+<dt><strong>arg</strong><span class="classifier">object</span></dt><dd><p>A valid argument to the method.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>Key for the new process.</p>
+</dd>
+<dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>Key of the process to be transformed. If not specified, use the
+default process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addlintransf">
+<span class="sig-name descname"><span class="pre">addlintransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addlintransf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a finite linear transformation of the evaluated process.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transf</strong><span class="classifier">callable</span></dt><dd><p>A function with signature <cite>f(array1, array2, …) -&gt; array</cite> which
+computes the linear transformation. The function must be
+jax-traceable, i.e., use jax.numpy instead of numpy.</p>
+</dd>
+<dt><strong>keys</strong><span class="classifier">sequence</span></dt><dd><p>Keys of parts of the process to be passed as inputs to the
+transformation.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The key of the newly defined points.</p>
+</dd>
+<dt><strong>checklin</strong><span class="classifier">bool</span></dt><dd><p>If True (default), check that the given function is linear in its
+inputs. The default can be overridden at initialization of the GP
+object. Note that an affine function (x -&gt; a + bx) is not linear.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>RuntimeError</strong><span class="classifier"></span></dt><dd><p>The transformation seems not to be linear. To disable the linearity
+check, initialize the GP with <cite>checklin=False</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addproc">
+<span class="sig-name descname"><span class="pre">addproc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an independent process.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>kernel</strong><span class="classifier">Kernel</span></dt><dd><p>A kernel for the process. If None, use the default kernel. The
+difference between the default process and a process defined with
+the default kernel is that, although they have the same kernel,
+they are independent.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the process in the GP object. If not
+specified, sets the kernel of the default process.</p>
+</dd>
+<dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>Derivatives to take on the process defined by the kernel.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addprocderiv">
+<span class="sig-name descname"><span class="pre">addprocderiv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deriv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocderiv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process as the derivative of an existing one.</p>
+<div class="math notranslate nohighlight">
+\[g(x) = \frac{\partial^n}{\partial x^n} f(x)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>Derivation order.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The key of the new process.</p>
+</dd>
+<dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>The key of the process to be derived. If not specified, use the
+default process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addproclintransf">
+<span class="sig-name descname"><span class="pre">addproclintransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproclintransf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process as a linear combination of other processes.</p>
+<p>Let f_i(x), i = 1, 2, … be already defined processes, and T
+a linear map from processes to a single process. The new process is</p>
+<blockquote>
+<div><p>h(x) = T(f_1, f_2, …)(x).</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transf</strong><span class="classifier">callable</span></dt><dd><p>A function with signature <cite>transf(callable, callable, …) -&gt; callable</cite>.</p>
+</dd>
+<dt><strong>keys</strong><span class="classifier">sequence</span></dt><dd><p>The keys of the processes to be passed to the transformation.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the new process in the GP object.</p>
+</dd>
+<dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>The linear combination is derived as specified by this
+parameter.</p>
+</dd>
+<dt><strong>checklin</strong><span class="classifier">bool</span></dt><dd><p>If True, check if the transformation is linear. Default False.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The linearity check may fail if the transformation does nontrivial
+operations with the inner function input.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addprocrescale">
+<span class="sig-name descname"><span class="pre">addprocrescale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scalefun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocrescale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process as a rescaling of an existing one.</p>
+<div class="math notranslate nohighlight">
+\[g(x) = s(x)f(x)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>scalefun</strong><span class="classifier">callable</span></dt><dd><p>A function from the domain of the process to a scalar.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The key of the new process.</p>
+</dd>
+<dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>The key of the process to be transformed. If not specified, use the
+default process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addproctransf">
+<span class="sig-name descname"><span class="pre">addproctransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ops</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproctransf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process as a linear combination of other processes.</p>
+<p>Let f_i(x), i = 1, 2, … be already defined processes, and g_i(x) be
+deterministic functions. The new process is defined as</p>
+<blockquote>
+<div><p>h(x) = g_1(x) f_1(x) + g_2(x) f_2(x) + …</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ops</strong><span class="classifier">dict</span></dt><dd><p>A dictionary mapping process keys to scalars or scalar
+functions. The functions must take an argument of the same kind
+of the domain of the process.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the new process in the GP object.</p>
+</dd>
+<dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>The linear combination is derived as specified by this
+parameter.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addprocxtransf">
+<span class="sig-name descname"><span class="pre">addprocxtransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addprocxtransf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a new process by transforming the inputs of another one.</p>
+<div class="math notranslate nohighlight">
+\[g(x) = f(T(x))\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transf</strong><span class="classifier">callable</span></dt><dd><p>A function mapping the new kind input to the input expected by the
+transformed process.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The key of the new process.</p>
+</dd>
+<dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>The key of the process to be transformed. If not specified, use the
+default process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addtransf">
+<span class="sig-name descname"><span class="pre">addtransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addtransf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a linear transformation to already specified process points. The
+result of the transformation is represented by a new key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>tensors</strong><span class="classifier">dict</span></dt><dd><p>Dictionary mapping keys of the GP to arrays/scalars. Each array is
+matrix-multiplied with the process array represented by its key,
+while scalars are just multiplied. Finally, the keys are summed
+over.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>A new key under which the transformation is placed.</p>
+</dd>
+<dt><strong>axes</strong><span class="classifier">int</span></dt><dd><p>Number of axes to be summed over for matrix multiplication,
+referring to trailing axes for tensors in <cite>tensors</cite>, and to
+heading axes for process points. Default 1.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The multiplication between the tensors and the process is done with
+np.tensordot with, by default, 1-axis contraction. For &gt;2d arrays this
+is different from numpy’s matrix multiplication, which would act on the
+second-to-last dimension of the second array.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.addx">
+<span class="sig-name descname"><span class="pre">addx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add points where the Gaussian process is evaluated.</p>
+<p>The GP object keeps the various x arrays in a dictionary. If <cite>x</cite> is an
+array, you have to specify its dictionary key with the <cite>key</cite> parameter.
+Otherwise, you can directly pass a dictionary for <cite>x</cite>.</p>
+<p>To specify that on the given <cite>x</cite> a derivative of the process instead of
+the process itself should be evaluated, use the parameter <cite>deriv</cite>.</p>
+<p><cite>addx</cite> never copies the input arrays if they are numpy arrays, so if
+you change their contents before doing something with the GP, the
+change will be reflected on the result. However, after the GP has
+computed internally its covariance matrix, the x are ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>The points to be added.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>If <cite>x</cite> is an array, the dictionary key under which <cite>x</cite> is added.
+Can not be specified if <cite>x</cite> is a dictionary.</p>
+</dd>
+<dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>Derivative specification. A <a class="reference internal" href="deriv.html#lsqfitgp.Deriv" title="lsqfitgp.Deriv"><code class="xref py py-class docutils literal notranslate"><span class="pre">Deriv</span></code></a> object or something that
+can be converted to <a class="reference internal" href="deriv.html#lsqfitgp.Deriv" title="lsqfitgp.Deriv"><code class="xref py py-class docutils literal notranslate"><span class="pre">Deriv</span></code></a>.</p>
+</dd>
+<dt><strong>proc</strong><span class="classifier">hashable</span></dt><dd><p>The process to be evaluated on the points. If not specified, use
+the default process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.marginal_likelihood">
+<span class="sig-name descname"><span class="pre">marginal_likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">given</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givencov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.marginal_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the logarithm of the probability of the data.</p>
+<p>The probability is computed under the Gaussian prior and Gaussian error
+model. It is also called marginal likelihood or bayes factor. If <cite>y</cite> is
+the data and <cite>g</cite> is the Gaussian process, this is</p>
+<div class="math notranslate nohighlight">
+\[\log \int p(y|g) p(g) \mathrm{d} g.\]</div>
+<p>Unlike <cite>pred()</cite>, you can’t compute this with a fit result instead of
+data. If you used the Gaussian process as latent variable in a fit,
+use the whole fit to compute the marginal likelihood. E.g. <cite>lsqfit</cite>
+always computes the logGBF (it’s the same thing).</p>
+<p>The input is an array or dictionary of arrays, <cite>given</cite>. The contents of
+<cite>given</cite> represent the input data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>given</strong><span class="classifier">dictionary of arrays</span></dt><dd><p>The data for some/all of the points in the GP. The arrays can
+contain either gvars or normal numbers, the latter being
+equivalent to zero-uncertainty gvars.</p>
+</dd>
+<dt><strong>givencov</strong><span class="classifier">dictionary of arrays, optional</span></dt><dd><p>Covariance matrix of <cite>given</cite>. If not specified, the covariance
+is extracted from <cite>given</cite> with <cite>gvar.evalcov(given)</cite>.</p>
+</dd>
+<dt><strong>separate</strong><span class="classifier">bool</span></dt><dd><p>If True, return separately the logdet term and the residuals term.
+Default False.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the matrix decomposition.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>If <code class="docutils literal notranslate"><span class="pre">separate</span> <span class="pre">==</span> <span class="pre">False</span></code> (default):</dt><dd></dd>
+<dt><strong>logp</strong><span class="classifier">scalar</span></dt><dd><p>The logarithm of the marginal likelihood.</p>
+</dd>
+<dt>If <code class="docutils literal notranslate"><span class="pre">separate</span> <span class="pre">==</span> <span class="pre">True</span></code>:</dt><dd></dd>
+<dt><strong>logdet</strong><span class="classifier">scalar</span></dt><dd><p>The term of the marginal likelihood containing the logarithm of
+the determinant of the prior covariance matrix, without the -1/2
+factor.</p>
+</dd>
+<dt><strong>residuals</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>A vector whose squared 2-norm multiplied by -1/2 gives the other
+term of the marginal likelihood.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.pred">
+<span class="sig-name descname"><span class="pre">pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">given</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givencov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fromdata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepcorr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.pred" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the posterior.</p>
+<p>The posterior can be computed either for all points or for a subset,
+and either directly from data or from a posterior obtained with a fit.
+The latter case is for when the Gaussian process was used in a fit with
+other parameters.</p>
+<p>The output is a collection of gvars, either an array or a dictionary
+of arrays. They are properly correlated with gvars returned by
+<cite>prior</cite> and with the input data/fit.</p>
+<p>The input is a dictionary of arrays, <cite>given</cite>, with keys corresponding
+to the keys in the GP as added by <cite>addx</cite> or <cite>addtransf</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>given</strong><span class="classifier">dictionary of arrays</span></dt><dd><p>The data or fit result for some/all of the points in the GP.
+The arrays can contain either gvars or normal numbers, the latter
+being equivalent to zero-uncertainty gvars.</p>
+</dd>
+<dt><strong>key</strong><span class="classifier">None, key or list of keys, optional</span></dt><dd><p>If None, compute the posterior for all points in the GP (also those
+used in <cite>given</cite>). Otherwise only those specified by key.</p>
+</dd>
+<dt><strong>givencov</strong><span class="classifier">dictionary of arrays, optional</span></dt><dd><p>Covariance matrix of <cite>given</cite>. If not specified, the covariance
+is extracted from <cite>given</cite> with <cite>gvar.evalcov(given)</cite>.</p>
+</dd>
+<dt><strong>fromdata</strong><span class="classifier">bool</span></dt><dd><p>Mandatory. Specify if the contents of <cite>given</cite> are data or already
+a posterior.</p>
+</dd>
+<dt><strong>raw</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, instead of returning a collection of gvars, return
+the mean and the covariance. When the mean is a dictionary, the
+covariance is a dictionary whose keys are pairs of keys of the
+mean (the same format used by <cite>gvar.evalcov</cite>). Default False.</p>
+</dd>
+<dt><strong>keepcorr</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), the returned gvars are correlated with the
+prior and the data/fit. If False, they have the correct covariance
+between themselves, but are independent from all other preexisting
+gvars.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>If raw=False (default):</dt><dd></dd>
+<dt><strong>posterior</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>A collections of gvars representing the posterior.</p>
+</dd>
+<dt>If raw=True:</dt><dd></dd>
+<dt><strong>pmean</strong><span class="classifier">array or dictionary of arrays</span></dt><dd><p>The mean of the posterior. Equivalent to <cite>gvar.mean(posterior)</cite>.</p>
+</dd>
+<dt><strong>pcov</strong><span class="classifier">2D array or dictionary of 2D arrays</span></dt><dd><p>The covariance matrix of the posterior. If <cite>pmean</cite> is a dictionary,
+the keys of <cite>pcov</cite> are pairs of keys of <cite>pmean</cite>. Equivalent to
+<cite>gvar.evalcov(posterior)</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.predfromdata">
+<span class="sig-name descname"><span class="pre">predfromdata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.predfromdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like <cite>pred</cite> with <cite>fromdata=True</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.predfromfit">
+<span class="sig-name descname"><span class="pre">predfromfit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.predfromfit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like <cite>pred</cite> with <cite>fromdata=False</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.prior">
+<span class="sig-name descname"><span class="pre">prior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.prior" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an array or a dictionary of arrays of gvars representing the
+prior for the Gaussian process. The returned object is not unique but
+the gvars stored inside are, so all the correlations are kept between
+objects returned by different calls to <cite>prior</cite>.</p>
+<p>Calling without arguments returns the complete prior as a dictionary.
+If you specify <cite>key</cite>, only the array for the requested key is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key</strong><span class="classifier">None, key or list of keys</span></dt><dd><p>Key(s) corresponding to one passed to <cite>addx</cite> or <cite>addtransf</cite>. None
+for all keys.</p>
+</dd>
+<dt><strong>raw</strong><span class="classifier">bool</span></dt><dd><p>If True, instead of returning a collection of gvars return
+their covariance matrix as would be returned by <cite>gvar.evalcov</cite>.
+Default False.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>If raw=False (default):</dt><dd></dd>
+<dt><strong>prior</strong><span class="classifier">np.ndarray or gvar.BufferDict</span></dt><dd><p>A collection of gvars representing the prior.</p>
+</dd>
+<dt>If raw=True:</dt><dd></dd>
+<dt><strong>cov</strong><span class="classifier">np.ndarray or dict</span></dt><dd><p>The covariance matrix of the prior.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="deriv.html" title="Previous document"><span class="section-number">5. </span>Derivative specification</a>
+        </li>
+        <li>
+          <a href="array.html" title="Next document"><span class="section-number">7. </span>Structured arrays wrapping</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020-2022, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/gp.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
