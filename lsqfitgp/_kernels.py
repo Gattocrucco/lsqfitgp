@@ -226,6 +226,8 @@ def GammaExp(r2, gamma=1):
     if _patch_jax.isconcrete(gamma):
         assert 0 < gamma <= 2, gamma
     return jnp.exp(-(r2 ** (gamma / 2)))
+    # TODO extend to gamma=0, the correct limit is
+    # e^-1 constant + (1 - e^-1) white noise
 
 @kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):

@@ -1144,3 +1144,37 @@ shrinkage to z = 0 selects for short AR.
 To parametrize arbitrary roots effectively, I have to find a way to map an
 arbitrary invalid difference matrix to a valid one, or in general a
 latent parametrization of a difference matrix.
+
+2022-07-16
+==========
+
+release notes for 0.12:
+
+--removed maternX2
+--removed ratquad
+--added cauchy
+--added maxdim check
+--support numpy functions on StructuredArray
+--conversion StructuredArray -> array
+--conversion StructuredArray -> unstructured
+--Constant and White support arbitrary input (not just numerical)
+--Matern now works with any derivative for any nu, extended to nu=0
+--fix derivatives for GammaExp
+--Gibbs works in nd
+--fractional -> bifractional
+--extend fractional to negative axis
+--rename ppkernel -> wendland, accept real parameter
+--extend fourier to arbitrarily large n
+--hole effect kernel
+--bessel kernel
+--pink kernel
+--color kernel
+--sinc kernel
+--stationary frac brownian
+--causalexpquad
+--decaying
+--log
+--circular
+--MA
+--AR
+--BART
