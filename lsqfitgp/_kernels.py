@@ -616,11 +616,12 @@ def _FourierBase(delta, n=2):
         \\frac {\\sin(2\\pi kx)}{k^n} \\frac {\\sin(2\\pi ky)}{k^n} = \\\\
         &= \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
         \\frac {\\cos(2\\pi k\\Delta)} {k^{2n}} = \\\\
+        &= \\frac{\\Re F(\\Delta, 2n)}{\\zeta(2n)} = \\\\
         &= (-1)^n \\frac {(2\\pi)^{2n}} {2\\Gamma(2n)}
         \\frac{\\zeta(1 - 2n, \\Delta \\bmod 1)}{\\zeta(2n)} = \\\\
         &= (-1)^{n+1}
         \\frac1{\\zeta(2n)} \\frac {(2\\pi)^{2n}} {2(2n)!}
-        B_{2n}(\\Delta \\bmod 1).
+        \\tilde B_{2n}(\\Delta).
     
     It is equivalent to fitting with a Fourier series of period 1 with
     independent priors on the coefficients with mean zero and variance
@@ -629,7 +630,8 @@ def _FourierBase(delta, n=2):
     Note that the :math:`k = 0` term is not included in the summation, so the
     mean of the process over one period is forced to be zero.
     
-    Reference: https://dlmf.nist.gov/25.11.E14, https://dlmf.nist.gov/25.11.E9.
+    Reference: https://dlmf.nist.gov/25.13.E1, https://dlmf.nist.gov/25.11.E9,
+    https://dlmf.nist.gov/25.11.E14.
     
     """
     
@@ -659,7 +661,16 @@ def _FourierBase(delta, n=2):
     # return norm * jspecial.zeta(1 - s, a)
 
     # TODO real n
+    # should I rename it Zeta?
     # zeta(1-s, a) diverges for s -> oo
+    #
+    # in terms of hurwitz zeta:
+    # https://dlmf.nist.gov/25.13.E2
+    # zeta(1-s, a) diverges for s -> oo, but anyway it's a cosine above 60
+    #
+    # in terms of the polylogarithm:
+    # https://dlmf.nist.gov/25.12.E10 def of polylogarithm
+    # https://dlmf.nist.gov/25.12.E13 relation with hurwitz zeta
     
 class Fourier(_FourierBase):
     
