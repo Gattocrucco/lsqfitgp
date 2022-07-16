@@ -144,9 +144,9 @@ you can set a whole field/subfield.</p>
 change the content of a field of the StructuredArray, however, the
 reference to the original array for that field is lost.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">)])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">)])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">StructuredArray</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s1">&#39;f&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="c1"># this is allowed</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s1">&#39;f&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="c1"># this is allowed</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">)</span> <span class="c1"># this raises an error</span>
 </pre></div>
 </div>
@@ -157,26 +157,29 @@ reference to the original array for that field is lost.</p>
 <h2><span class="section-number">7.2. </span>Functions<a class="headerlink" href="#functions" title="Permalink to this heading">¶</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.asarray">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">asarray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.asarray" title="Permalink to this definition">¶</a></dt>
-<dd><p>Version of np.asarray that works with StructuredArray.</p>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">asarray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.asarray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Version of numpy.asarray that works with StructuredArray and JAX arrays.
+If x is not a numpy array, returns a JAX array if possible.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.broadcast">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">broadcast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">arrays</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.broadcast" title="Permalink to this definition">¶</a></dt>
-<dd><p>Version of np.broadcast that works with StructuredArray.</p>
+<dd><p>Version of numpy.broadcast that works with StructuredArray.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.broadcast_arrays">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">broadcast_arrays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">arrays</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.broadcast_arrays" title="Permalink to this definition">¶</a></dt>
-<dd><p>Version of np.broadcast_arrays that works with StructuredArray.</p>
+<dd><p>Version of numpy.broadcast_arrays that works with StructuredArray and JAX
+arrays.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.broadcast_to">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">broadcast_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.broadcast_to" title="Permalink to this definition">¶</a></dt>
-<dd><p>Version of np.broadcast_to that works with StructuredArray.</p>
+<dd><p>Version of numpy.broadcast_to that works with StructuredArray and JAX
+arrays.</p>
 </dd></dl>
 
 </section>
