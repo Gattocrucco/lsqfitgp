@@ -310,7 +310,7 @@ def asarray(x):
         return x
     try:
         return jnp.asarray(x)
-    except TypeError:
+    except (TypeError, ValueError):
         return numpy.asarray(x)
 
 @StructuredArray._implements(recfunctions.structured_to_unstructured)

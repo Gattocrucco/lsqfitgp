@@ -81,6 +81,8 @@ In the kernels reference, generate automatically:
 
 Explain somewhere the jax 32/64 bit thing.
 
+Fix spacing in the documentation with custom css.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu

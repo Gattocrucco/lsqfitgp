@@ -630,6 +630,11 @@ def _FourierBase(delta, n=2):
     
     # TODO ND version. The separable product is not equivalent I think.
     
+    # TODO generalize to real n, I think it is the Hurwitz zeta function
+    # (scipy.special.zeta) since for integer n it's a Bernoulli polynomial,
+    # see https://dlmf.nist.gov/25.11.E9. It's implemented in jax so I can use
+    # it right away.
+    
     assert int(n) == n and n >= 1, n
     # TODO I could allow n == 0 to be a constant kernel
     s = 2 * n
@@ -1798,7 +1803,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     # TODO options to:
     # - use lower/upper bound (is lower pos def?)
     # - interpolate (is linear interp pos def?)
-    # - approximate as stationary (is it pos def?)
+    # - approximate as stationary w.r.t. indices (is it pos def?)
     # - allow index input
 
 class BART(_BARTBase):
@@ -1939,7 +1944,14 @@ def _bart_correlation_maxd_recursive(nminus, n0, nplus, alpha, beta, maxd, d, up
         sump = jnp.sum(jnp.where(n0, terms, 1))
         return 1 - pnt * (1 - sump / p).astype(float)
     
-    # TODO hardcode d + 2 case?
+    # TODO hardcode d + 2 case to something O(np)
+    #
+    # the sum I need is sum_k=0^n-1 1/(a+k), this is zeta(1, a) - zeta(1, a+n)
+    # (https://dlmf.nist.gov/25.11.E4) however it's inf at 1.
+    #
+    # since a is an integer, it can be expressed as a difference of harmonic
+    # numbers, which can be calculated from the digamma function
+    # (https://dlmf.nist.gov/5.4.E14).
     
     val = (0., nminus, n0, nplus)
     def loop(i, val):
