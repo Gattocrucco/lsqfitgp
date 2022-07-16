@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>1. Kernels reference &#8212; lsqfitgp 0.12 documentation</title>
+    <title>1. Kernels reference &#8212; lsqfitgp 0.13 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -30,7 +30,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">lsqfitgp 0.12</a></h1>
+<h1 class="logo"><a href="index.html">lsqfitgp 0.13</a></h1>
 
 
 
@@ -776,17 +776,19 @@ it acts separately while the Matérn kernel is isotropic.</p>
 \frac {\sin(2\pi kx)}{k^n} \frac {\sin(2\pi ky)}{k^n} = \\
 &amp;= \frac1{\zeta(2n)} \sum_{k=1}^\infty
 \frac {\cos(2\pi k\Delta)} {k^{2n}} = \\
+&amp;= \frac{\Re F(\Delta, 2n)}{\zeta(2n)} = \\
 &amp;= (-1)^n \frac {(2\pi)^{2n}} {2\Gamma(2n)}
 \frac{\zeta(1 - 2n, \Delta \bmod 1)}{\zeta(2n)} = \\
 &amp;= (-1)^{n+1}
 \frac1{\zeta(2n)} \frac {(2\pi)^{2n}} {2(2n)!}
-B_{2n}(\Delta \bmod 1).\end{split}\]</div>
+\tilde B_{2n}(\Delta).\end{split}\]</div>
 <p>It is equivalent to fitting with a Fourier series of period 1 with
 independent priors on the coefficients with mean zero and variance
 <span class="math notranslate nohighlight">\(1/(\zeta(2n)k^{2n})\)</span>. The process is <span class="math notranslate nohighlight">\(n - 1\)</span> times derivable.</p>
 <p>Note that the <span class="math notranslate nohighlight">\(k = 0\)</span> term is not included in the summation, so the
 mean of the process over one period is forced to be zero.</p>
-<p>Reference: <a class="reference external" href="https://dlmf.nist.gov/25.11.E14">https://dlmf.nist.gov/25.11.E14</a>, <a class="reference external" href="https://dlmf.nist.gov/25.11.E9">https://dlmf.nist.gov/25.11.E9</a>.</p>
+<p>Reference: <a class="reference external" href="https://dlmf.nist.gov/25.13.E1">https://dlmf.nist.gov/25.13.E1</a>, <a class="reference external" href="https://dlmf.nist.gov/25.11.E9">https://dlmf.nist.gov/25.11.E9</a>,
+<a class="reference external" href="https://dlmf.nist.gov/25.11.E14">https://dlmf.nist.gov/25.11.E14</a>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.Fourier.fourier">
 <span class="sig-name descname"><span class="pre">fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doy</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Fourier.fourier" title="Permalink to this definition">¶</a></dt>
@@ -858,7 +860,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x130bc8670&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x136264670&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
