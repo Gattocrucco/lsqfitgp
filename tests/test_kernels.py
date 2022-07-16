@@ -662,8 +662,9 @@ class KernelTestBase(KernelTestABC):
             mc, cc = gp.predfromdata(dict(c1=1, s1=0), 'x', raw=True)
             np.testing.assert_allclose(ms, np.sin(2 * np.pi * x), equal_nan=False)
             np.testing.assert_allclose(mc, np.cos(2 * np.pi * x), equal_nan=False)
-            np.testing.assert_allclose(np.diag(cs), cs[0, 0], equal_nan=False)
-            np.testing.assert_allclose(np.diag(cc), cc[0, 0], equal_nan=False)
+            eps = np.finfo(cs.dtype).eps
+            np.testing.assert_allclose(np.diag(cs), cs[0, 0], atol=eps, equal_nan=False)
+            np.testing.assert_allclose(np.diag(cc), cc[0, 0], atol=eps, equal_nan=False)
     
     @classmethod
     def make_subclass(cls, kernel_class, kwargs_list=None, random_x_fun=None, eps=None):
@@ -676,7 +677,7 @@ class KernelTestBase(KernelTestABC):
         if random_x_fun is not None:
             subclass.random_x = lambda self, **kw: random_x_fun(**kw)
         if eps is not None:
-            subclass.eps = property(lambda self: eps)
+            subclass.eps = eps
         return subclass
 
 def matrix_square(A):
@@ -730,7 +731,7 @@ test_kwargs = {
     _kernels.Maternp: dict(kwargs_list=[dict(p=p) for p in range(10)]),
     _kernels.Wendland: dict(kwargs_list=[
         dict(k=k, alpha=a) for k in range(4) for a in np.linspace(1, 4, 10)
-    ]),
+    ], eps=1e3 * np.finfo(float).eps),
     _kernels.Wiener: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.WienerIntegral: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
     _kernels.FracBrownian: dict(
@@ -744,7 +745,7 @@ test_kwargs = {
     ], random_x_fun=lambda **kw: np.random.randint(10, size=100)),
     _kernels.NNKernel: dict(eps=4 * np.finfo(float).eps),
     _kernels.Fourier: dict(kwargs_list=[
-        dict(n=n) for n in range(1, 5)
+        dict(n=n) for n in [1, 2, 3, 4, 5, 29, 1000]
     ], eps=2048 * np.finfo(float).eps),
     _kernels.Celerite: dict(kwargs_list=[
         dict(), dict(gamma=1, B=1), dict(gamma=0, B=0), dict(gamma=10, B=0)
@@ -755,7 +756,7 @@ test_kwargs = {
     _kernels.BagOfWords: dict(random_x_fun=bow_rand),
     _kernels.Gibbs: dict(kwargs_list=[dict(derivable=True)]),
     _kernels.Rescaling: dict(kwargs_list=[dict(derivable=True)]),
-    _kernels.GammaExp: dict(kwargs_list=[dict(), dict(gamma=2)]),
+    _kernels.GammaExp: dict(kwargs_list=[dict(), dict(gamma=2)], eps=1e3 * np.finfo(float).eps),
     _kernels.Bessel: dict(kwargs_list=[dict()] + [dict(nu=nu) for nu in range(5)] + [dict(nu=nu - 0.01) for nu in range(1, 5)] + [dict(nu=nu + 0.01) for nu in range(5)] + [dict(nu=nu + 0.5) for nu in range(5)]),
     _kernels.Cauchy: dict(kwargs_list=[dict(alpha=a, beta=b) for a in [0.001, 0.5, 0.999, 1, 1.001, 1.5, 1.999, 2] for b in [0.001, 0.5, 1, 1.5, 2, 4, 8]]),
     _kernels.CausalExpQuad: dict(kwargs_list=[dict(alpha=a) for a in [0, 1, 2]]),
@@ -808,9 +809,6 @@ for kernel in kernels:
     factory_kw = test_kwargs.get(kernel, {})
     newclass = KernelTestBase.make_subclass(kernel, **factory_kw)
     exec('{} = newclass'.format(newclass.__name__))
-
-TestGammaExp.eps = 1e3 * np.finfo(float).eps
-TestWendland.eps = 1e3 * np.finfo(float).eps
 
 def check_matern_half_integer(deriv):
     """

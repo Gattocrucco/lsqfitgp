@@ -564,9 +564,11 @@ def Taylor(x, y):
     val = 2 * jnp.sqrt(jnp.abs(mul))
     return jnp.where(mul >= 0, jspecial.i0(val), _patch_jax.j0(val))
 
-@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def _bernoulli_poly(n, x):
     # takes x mod 1
+    # TODO to make this jittable, hardcode size to 60 and truncate by writing
+    # zeros
+    n = int(n)
     bernoulli = special.bernoulli(n)
     k = numpy.arange(n + 1)
     binom = special.binom(n, k)
@@ -579,18 +581,28 @@ def _bernoulli_poly(n, x):
         out = out * jnp.where(cond, 1, -1)
     return out
 
-@_bernoulli_poly.defjvp
-def _bernoulli_poly_jvp(n, primals, tangents):
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
+def _fourier(s, x):
+    tau = 2 * jnp.pi
+    lognorm = s * jnp.log(tau) - jspecial.gammaln(s + 1)
+    norm = jnp.exp(lognorm) / 2
+    cond = s < 60
+    smalls = norm * _bernoulli_poly(s if cond else 1, x)
+    # s -> ∞: -Re e^2πix / i^s
+    # don't use 1j ** s because it is very inaccurate
+    arg = tau * x
+    sign = jnp.where((s // 2) % 2, 1, -1)
+    larges = sign * jnp.where(s % 2, jnp.sin(arg), jnp.cos(arg))
+    return jnp.where(cond, smalls, larges.real)
+
+@_fourier.defjvp
+def _fourier_jvp(s, primals, tangents):
     x, = primals
     xt, = tangents
-    if n:
-        t = n * _bernoulli_poly(n - 1, x) * xt
-    else:
-        t = 0 * xt
-    return _bernoulli_poly(n, x), t
+    return _fourier(s, x), 2 * jnp.pi * _fourier(s - 1, x) * xt
 
-def _fourier_derivable(**kw):
-    return kw.get('n', 2) - 1
+def _fourier_derivable(n=2):
+    return n - 1
 
 @stationarykernel(forcekron=True, derivable=_fourier_derivable, saveargs=True)
 def _FourierBase(delta, n=2):
@@ -604,22 +616,25 @@ def _FourierBase(delta, n=2):
         \\frac {\\sin(2\\pi kx)}{k^n} \\frac {\\sin(2\\pi ky)}{k^n} = \\\\
         &= \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
         \\frac {\\cos(2\\pi k\\Delta)} {k^{2n}} = \\\\
+        &= (-1)^n \\frac {(2\\pi)^{2n}} {2\\Gamma(2n)}
+        \\frac{\\zeta(1 - 2n, \\Delta \\bmod 1)}{\\zeta(2n)} = \\\\
         &= (-1)^{n+1}
         \\frac1{\\zeta(2n)} \\frac {(2\\pi)^{2n}} {2(2n)!}
-        B_{2n}(\\Delta \\bmod 1),
+        B_{2n}(\\Delta \\bmod 1).
     
-    where :math:`B_s(x)` is a Bernoulli polynomial. It is equivalent to fitting
-    with a Fourier series of period 1 with independent priors on the
-    coefficients with mean zero and variance
-    :math:`1/(\\zeta(2n)k^{2n})`. The process is :math:`n - 1` times
-    derivable.
+    It is equivalent to fitting with a Fourier series of period 1 with
+    independent priors on the coefficients with mean zero and variance
+    :math:`1/(\\zeta(2n)k^{2n})`. The process is :math:`n - 1` times derivable.
     
     Note that the :math:`k = 0` term is not included in the summation, so the
     mean of the process over one period is forced to be zero.
     
+    Reference: https://dlmf.nist.gov/25.11.E14, https://dlmf.nist.gov/25.11.E9.
+    
     """
     
-    # TODO reference? Maybe I can find it as "Bernoulli" kernel?
+    # TODO reference as covariance function? I had found something with
+    # fourier and bernoulli but lost it. Maybe known as zeta?
     
     # TODO maxk parameter to truncate the series. I have to manually sum the
     # components? => Bad idea then. => Can I sum analitically the residual?
@@ -630,18 +645,22 @@ def _FourierBase(delta, n=2):
     
     # TODO ND version. The separable product is not equivalent I think.
     
-    # TODO generalize to real n, I think it is the Hurwitz zeta function
-    # (scipy.special.zeta) since for integer n it's a Bernoulli polynomial,
-    # see https://dlmf.nist.gov/25.11.E9. It's implemented in jax so I can use
-    # it right away.
-    
     assert int(n) == n and n >= 1, n
     # TODO I could allow n == 0 to be a constant kernel
+        
     s = 2 * n
-    sign0 = -(-1) ** n
-    factor = (2 * jnp.pi) ** s / (2 * special.factorial(s) * special.zeta(s))
-    return sign0 * factor * _bernoulli_poly(s, delta)
+    return -(-1) ** n * _fourier(s, delta) / jspecial.zeta(s, 1)
 
+    # implementation for integer n with zeta:
+    # s = 2 * n
+    # a = delta % 1
+    # lognorm = s * jnp.log(2 * jnp.pi) - jspecial.gammaln(s)
+    # norm = (-1) ** n * jnp.exp(lognorm) / (2 * jspecial.zeta(s, 1))
+    # return norm * jspecial.zeta(1 - s, a)
+
+    # TODO real n
+    # zeta(1-s, a) diverges for s -> oo
+    
 class Fourier(_FourierBase):
     
     __doc__ = _FourierBase.__doc__
