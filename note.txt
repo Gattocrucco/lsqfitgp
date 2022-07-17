@@ -1178,3 +1178,16 @@ release notes for 0.12:
 --MA
 --AR
 --BART
+
+2022-07-17
+==========
+
+Are all the amplitudes of the AR correlation always positive? (With an
+appropriate convention for phases)
+
+The characteristic polynomial is P(x) = 1 - phi @ x^n, and all the roots have
+|x| > 1. P(0) = 1 + 0j, but I don't know how to extend the positivity on the
+complex plane. Maybe there is something about radii like with power series.
+
+I dunno. I should expose a function to compute the amplitudes and try to get
+them negative to see if it's a good idea.

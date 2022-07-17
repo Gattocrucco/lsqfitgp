@@ -612,22 +612,22 @@ def _FourierBase(delta, n=2):
     Fourier kernel.
     
     .. math::
-        k(\\Delta) &= \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
+        k(\\Delta) &= \\frac1{\\zeta(2n)} \\left( \\sum_{k=1}^\\infty
         \\frac {\\cos(2\\pi kx)}{k^n} \\frac {\\cos(2\\pi ky)}{k^n}
-        + \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
-        \\frac {\\sin(2\\pi kx)}{k^n} \\frac {\\sin(2\\pi ky)}{k^n} = \\\\
-        &= \\frac1{\\zeta(2n)} \\sum_{k=1}^\\infty
-        \\frac {\\cos(2\\pi k\\Delta)} {k^{2n}} = \\\\
-        &= \\frac{\\Re F(\\Delta, 2n)}{\\zeta(2n)} = \\\\
-        &= (-1)^n \\frac {(2\\pi)^{2n}} {2\\Gamma(2n)}
-        \\frac{\\zeta(1 - 2n, \\Delta \\bmod 1)}{\\zeta(2n)} = \\\\
+        + \\sum_{k=1}^\\infty \\frac {\\sin(2\\pi kx)}{k^n}
+        \\frac {\\sin(2\\pi ky)}{k^n} \\right) = \\\\
+        &= \\frac1{\\zeta(s)} \\sum_{k=1}^\\infty
+        \\frac {\\cos(2\\pi k\\Delta)} {k^s} = \\qquad (s = 2n)\\\\
+        &= \\frac{\\Re F(\\Delta, s)}{\\zeta(s)} = \\\\
+        &= (-1)^n \\frac {(2\\pi)^s} {2\\Gamma(s)}
+        \\frac {\\zeta(1 - s, \\Delta \\bmod 1)} {\\zeta(s)} = \\\\
         &= (-1)^{n+1}
-        \\frac1{\\zeta(2n)} \\frac {(2\\pi)^{2n}} {2(2n)!}
-        \\tilde B_{2n}(\\Delta).
+        \\frac {(2\\pi)^s} {2s!}
+        \\frac {\\tilde B_s(\\Delta)} {\\zeta(s)}.
     
     It is equivalent to fitting with a Fourier series of period 1 with
     independent priors on the coefficients with mean zero and variance
-    :math:`1/(\\zeta(2n)k^{2n})`. The process is :math:`n - 1` times derivable.
+    :math:`1/(\\zeta(s)k^s)`. The process is :math:`n - 1` times derivable.
     
     Note that the :math:`k = 0` term is not included in the summation, so the
     mean of the process over one period is forced to be zero.
@@ -663,7 +663,11 @@ def _FourierBase(delta, n=2):
     # return norm * jspecial.zeta(1 - s, a)
 
     # TODO real n
-    # should I rename it Zeta?
+    #
+    # should I rename it Zeta? I thought about calling the parameter nu in
+    # analogy with Matern but it's quite different since here n=1/2 is white
+    # noise
+    #
     # zeta(1-s, a) diverges for s -> oo
     #
     # in terms of hurwitz zeta:
@@ -1125,7 +1129,7 @@ def _stationaryfracbrownian_derivable(H=1/2):
 @stationarykernel(forcekron=True, derivable=_stationaryfracbrownian_derivable, input='signed')
 def StationaryFracBrownian(delta, H=1/2):
     """
-    Stationary fractional brownian motion kernel.
+    Stationary fractional Brownian motion kernel.
     
     .. math::
         k(\\Delta) = \\frac 12 (|\\Delta+1|^{2H} + |\\Delta-1|^{2H} - 2|\\Delta|^{2H}),
@@ -1506,7 +1510,8 @@ def _ar_with_roots(delta, slnr, lnc, norm):
     # log|root| and assumes it alone determines gamma. Question: if then I
     # iterate with the solution found, does it converge to the correct solution?
     # => no, it just gives 0 amplitude to other roots. Maybe I should determine
-    # some necessary constraints on the amplitudes for positivity.
+    # some necessary constraints on the amplitudes for positivity. => Related
+    # question: are the amplitudes always positive?
     
     p = phi.size
 
@@ -1700,18 +1705,22 @@ class AR(_ARBase):
         assert slnr.ndim == lnc.ndim == 1
         r = jnp.sign(slnr) * jnp.exp(jnp.abs(slnr))
         c = jnp.exp(lnc)
-        roots = jnp.concatenate([r, c, jnp.conj(c)])
-        coef = numpy.polynomial.polynomial.polyfromroots(roots)
-        # TODO port polyfromroots to jax
-        numpy.testing.assert_allclose(coef.imag, 0, rtol=0, atol=1e-4)
-        coef = coef.real
+        roots = jnp.concatenate([r, c, c.conj()]).sort()
+        coef = jnp.poly(roots)
+        if _patch_jax.isconcrete(coef):
+            c = _patch_jax.concrete(coef)
+            numpy.testing.assert_allclose(numpy.imag(c), 0, rtol=0, atol=1e-4)
+        coef = jnp.atleast_1d(coef.real)[::-1]
+        # coef = numpy.polynomial.polynomial.polyfromroots(roots)
+        # numpy.testing.assert_allclose(coef.imag, 0, rtol=0, atol=1e-4)
+        # coef = coef.real
         return -coef[1:] / coef[0]
 
 def _bart_maxdim(splits=None, **_):
     splits = _check_splits(splits)
     return splits[0].size
 
-# TODO consider letting derivable=True and returning Zero
+# TODO consider letting derivable=True and returning Zero => NO
 
 @kernel(maxdim=_bart_maxdim, derivable=False)
 def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):

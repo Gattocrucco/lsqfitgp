@@ -101,7 +101,7 @@ def test_phase_degeneracy():
     for ph1, ph2 in phases:
         c1 = lgp.AR(slnr=[], lnc=lnc(ph1))(0, lag)
         c2 = lgp.AR(slnr=[], lnc=lnc(ph2))(0, lag)
-        np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-14)
+        np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-13)
 
 def test_real_complex():
     lag = np.arange(100)
@@ -140,3 +140,5 @@ def test_ar1():
                 c = lgp.AR(**kw, norm=norm)(0, lag)
                 den = acf[0] if norm else 1
                 np.testing.assert_allclose(c, acf / den, atol=1e-300, rtol=1e-12)
+
+# TODO test reflection of extend_gamma
