@@ -939,9 +939,6 @@ def test_transf_not_implemented():
 util.skip(TestAR, 'test_normalized')
 util.skip(TestMA, 'test_normalized')
 
-# actually a failure, but it's slow
-util.skip(TestAR, 'test_jit')
-
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y. => use make_jaxpr to debug?
 util.xfail(TestWendland, 'test_positive_deriv2_nd')

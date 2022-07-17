@@ -677,6 +677,9 @@ def _FourierBase(delta, n=2):
     # in terms of the polylogarithm:
     # https://dlmf.nist.gov/25.12.E10 def of polylogarithm
     # https://dlmf.nist.gov/25.12.E13 relation with hurwitz zeta
+    #
+    # scipy does not implement zeta(s,a) for s < 1. jax does but the
+    # accuracy is crap (open an issue)
     
 class Fourier(_FourierBase):
     
@@ -1495,35 +1498,21 @@ def _ar_evolve_jit(phi, start, noise):
     return ev
 
 def _ar_with_roots(delta, slnr, lnc, norm):
-    slnr = jnp.asarray(slnr).astype(float).sort()
-    lnc = jnp.asarray(lnc).astype(complex)
-    imag = jnp.abs(lnc.imag) % (2 * jnp.pi)
-    imag = jnp.where(imag > jnp.pi, 2 * jnp.pi - imag, imag)
-    lnc = lnc.real + 1j * imag
-    lnc = lnc.sort()
     phi = AR.phi_from_roots(slnr, lnc) # <---- weak
     gamma = AR.gamma_from_phi(phi) # <---- point
-    
-    # TODO Currently gamma is not even pos def for high multiplicity/roots close
-    # to 1. Raw patch: make a function _fix_bad_gamma. The badness condition is
-    # gamma[0] < 0 or any(abs(gamma) > gamma[0]). The fix takes the smallest
-    # log|root| and assumes it alone determines gamma. Question: if then I
-    # iterate with the solution found, does it converge to the correct solution?
-    # => no, it just gives 0 amplitude to other roots. Maybe I should determine
-    # some necessary constraints on the amplitudes for positivity. => Related
-    # question: are the amplitudes always positive?
-    
-    p = phi.size
-
     if norm:
         gamma /= gamma[0]
-    lag = jnp.arange(p + 1)
-    mat = _gamma_from_ampl_matmul(slnr, lnc, lag, jnp.eye(1 + p))
-    ampl = jnp.linalg.solve(mat, gamma)
-    lag = delta if delta.ndim else delta[None]
-    acf = _gamma_from_ampl_matmul(slnr, lnc, lag, ampl)
-    return acf if delta.ndim else acf.squeeze(0)
+    ampl = AR.ampl_from_roots(slnr, lnc, gamma)
+    acf = AR.cov_from_ampl(slnr, lnc, ampl, delta)
+    return acf
 
+    # TODO Currently gamma is not even pos def for high multiplicity/roots close
+    # to 1. Raw patch: the badness condition is gamma[0] < 0 or any(abs(gamma) >
+    # gamma[0]) or gamma inf/nan. Take the smallest log|root| and assume it
+    # alone determines gamma. This is best implemented as an option in
+    # _gamma_from_ampl_matmul.
+    
+    # p = phi.size
     # yw = _yule_walker_inv_mat(phi)
     # b = jnp.zeros(p + 1).at[0].set(1)
     # ampl = jnp.linalg.solve(yw @ mat, b)
@@ -1534,13 +1523,13 @@ def _ar_with_roots(delta, slnr, lnc, norm):
     #     acf /= acf0
     # return acf if delta.ndim else acf.squeeze(0)
 
-# def _pseudo_solve(a, b):
-#     # this is less accurate than jnp.linalg.solve
-#     u, s, vh = jnp.linalg.svd(a)
-#     eps = jnp.finfo(a.dtype).eps
-#     s0 = s[0] if s.size else 0
-#     invs = jnp.where(s < s0 * eps * len(a), 0, 1 / s)
-#     return jnp.einsum('ij,j,jk,k', vh.conj().T, invs, u.conj().T, b)
+def _pseudo_solve(a, b):
+    # this is less accurate than jnp.linalg.solve
+    u, s, vh = jnp.linalg.svd(a)
+    eps = jnp.finfo(a.dtype).eps
+    s0 = s[0] if s.size else 0
+    invs = jnp.where(s < s0 * eps * len(a), 0, 1 / s)
+    return jnp.einsum('ij,j,jk,k', vh.conj().T, invs, u.conj().T, b)
 
 @jax.jit
 def _gamma_from_ampl_matmul(slnr, lnc, lag, ampl, lagnorm=None):
@@ -1563,6 +1552,8 @@ def _gamma_from_ampl_matmul(slnr, lnc, lag, ampl, lagnorm=None):
         return jnp.where(maxloc <= lagnorm, maxnorm, defnorm)
     
     # roots at infinity
+    # TODO remove this because it's degenerate with large roots, handle the
+    # p=0 case outside of this function
     col = jnp.where(lag, 0, 1)
     out = col[..., :, None] * ampl[..., 0, :]
     
@@ -1615,8 +1606,8 @@ class AR(_ARBase):
     
     __doc__ = _ARBase.__doc__
     
-    @staticmethod
-    def phi_from_gamma(gamma):
+    @classmethod
+    def phi_from_gamma(cls, gamma):
         """
         Determine the autoregressive coefficients from the covariance.
         
@@ -1630,10 +1621,11 @@ class AR(_ARBase):
         phi : (p,) array
             The autoregressive coefficients at lag 1...p.
         """
+        gamma = cls._process_gamma(gamma)
         return _yule_walker(gamma)
     
-    @staticmethod
-    def gamma_from_phi(phi):
+    @classmethod
+    def gamma_from_phi(cls, phi):
         """
         Determine the covariance from the autoregressive coefficients.
 
@@ -1653,17 +1645,22 @@ class AR(_ARBase):
         The result is wildly inaccurate for roots with high multiplicity and/or
         close to 1.
         """
+        phi = cls._process_phi(phi)
         return _yule_walker_inv(phi)
+        
+        # TODO fails (nan) for very small roots. In that case the answer is that
+        # gamma is a constant vector. However I can't get the constant out of
+        # a degenerate phi, I need the roots, and I don't know the formula.
     
-    @staticmethod
-    def extend_gamma(gamma, phi, n):
+    @classmethod
+    def extend_gamma(cls, gamma, phi, n):
         """
         Extends values of the covariance function to higher lags.
         
         Parameters
         ----------
         gamma : (m,) array
-            The autocovariance at lag q-m+1...q, with q >= 0.
+            The autocovariance at lag q-m+1...q, with q >= 0 and m >= p + 1.
         phi : (p,) array
             The autoregressive coefficients at lag 1...p.
         n : int
@@ -1674,12 +1671,14 @@ class AR(_ARBase):
         ext : (m + n,) array
             The autocovariance at lag q-m+1...q+n.
         """
-        gamma = jnp.asarray(gamma)
+        gamma = cls._process_gamma(gamma)
+        phi = cls._process_phi(phi)
+        assert gamma.size > phi.size
         ext = _ar_evolve(phi, gamma[len(gamma) - len(phi):], jnp.broadcast_to(0., (n,)))
         return jnp.concatenate([gamma, ext])
     
-    @staticmethod
-    def phi_from_roots(slnr, lnc):
+    @classmethod
+    def phi_from_roots(cls, slnr, lnc):
         """
         Determine the autoregressive coefficients from the roots of the
         characteristic polynomial.
@@ -1700,12 +1699,34 @@ class AR(_ARBase):
         phi : (p,) real
             The autoregressive coefficients at lag 1...p, with p = nr + 2 nc.
         """
-        slnr = jnp.asarray(slnr)
-        lnc = jnp.asarray(lnc)
-        assert slnr.ndim == lnc.ndim == 1
+        slnr, lnc = cls._process_roots(slnr, lnc)
         r = jnp.sign(slnr) * jnp.exp(jnp.abs(slnr))
         c = jnp.exp(lnc)
+        
+        # TODO fails for overflow with very high roots. The effect of very high
+        # roots is just to set to zero high order coefficients, however since
+        # jnp.poly is normalized with 1 * x^p I can't just put the large roots
+        # in and let the coefficient go to zero, I get overflow. And within the
+        # jit I can't vary the size of the array. => set the large roots to
+        # zero, then roll right the polynomial by the number of large roots.
+        # I have to be stricter than inf to avoid overflow, the bar should be
+        # the pth-root of float.max. Ideally I would need a jnp.poly with
+        # normalization 1 * x^0.
+        
         roots = jnp.concatenate([r, c, c.conj()]).sort()
+        
+        # TODO is there an ordering which increases accuracy? (I've checked
+        # the result is not invariant under permutation)
+        
+        # => solution to both todos: the implementation of jnp.poly (and
+        # np.poly) is inferior to the one of
+        # np.polynomial.polynomial.polyfromroots, which cares about numerical
+        # accuracy and would reduce compilation time if ported to jax (current
+        # one is O(p), that would be O(log p)). Port that to jax changing
+        # convention on the normalization: use (x - r) when |r| < 1, and (x/r -
+        # 1) when |r| > 1. => open an issue both for jax (adopt implementation
+        # of polyfromroots) and numpy (add option to change normalization)
+        
         coef = jnp.poly(roots)
         if _patch_jax.isconcrete(coef):
             c = _patch_jax.concrete(coef)
@@ -1715,6 +1736,70 @@ class AR(_ARBase):
         # numpy.testing.assert_allclose(coef.imag, 0, rtol=0, atol=1e-4)
         # coef = coef.real
         return -coef[1:] / coef[0]
+    
+    @classmethod
+    def ampl_from_roots(cls, slnr, lnc, gamma):
+        slnr, lnc = cls._process_roots(slnr, lnc)
+        gamma = cls._process_gamma(gamma)
+        assert gamma.size == 1 + slnr.size + 2 * lnc.size
+        lag = jnp.arange(gamma.size)
+        mat = _gamma_from_ampl_matmul(slnr, lnc, lag, jnp.eye(gamma.size))
+        # return jnp.linalg.solve(mat, gamma)
+        return _pseudo_solve(mat, gamma)
+        
+        # TODO I'm using pseudo-solve only because of large roots degeneracy
+        # in _gamma_from_ampl_matmul, remove it after solving that
+        
+        # TODO maybe I can increase the precision of the solve with some
+        # ordering of the columns of mat, I guess (reversed) global sort of the
+        # roots
+    
+    @classmethod
+    def cov_from_ampl(cls, slnr, lnc, ampl, lag):
+        slnr, lnc = cls._process_roots(slnr, lnc)
+        ampl = cls._process_ampl(ampl)
+        assert ampl.size == 1 + slnr.size + 2 * lnc.size
+        lag = cls._process_lag(lag)
+        scalar = lag.ndim == 0
+        if scalar:
+            lag = lag[None]
+        acf = _gamma_from_ampl_matmul(slnr, lnc, lag, ampl)
+        return acf.squeeze(0) if scalar else acf
+    
+    @staticmethod
+    def _process_roots(slnr, lnc):
+        slnr = jnp.asarray(slnr, float).sort()
+        lnc = jnp.asarray(lnc, complex)
+        assert slnr.ndim == lnc.ndim == 1
+        imag = jnp.abs(lnc.imag) % (2 * jnp.pi)
+        imag = jnp.where(imag > jnp.pi, 2 * jnp.pi - imag, imag)
+        lnc = lnc.real + 1j * imag
+        lnc = lnc.sort()
+        return slnr, lnc
+    
+    @staticmethod
+    def _process_gamma(gamma):
+        gamma = jnp.asarray(gamma, float)
+        assert gamma.ndim == 1 and gamma.size >= 1
+        return gamma
+    
+    @staticmethod
+    def _process_phi(phi):
+        phi = jnp.asarray(phi, float)
+        assert phi.ndim == 1
+        return phi
+    
+    @staticmethod
+    def _process_ampl(ampl):
+        ampl = jnp.asarray(ampl, float)
+        assert ampl.ndim == 1 and ampl.size >= 1
+        return ampl
+    
+    @staticmethod
+    def _process_lag(lag):
+        lag = jnp.asarray(lag)
+        assert jnp.issubdtype(lag, jnp.integer)
+        return lag.astype(int)
 
 def _bart_maxdim(splits=None, **_):
     splits = _check_splits(splits)

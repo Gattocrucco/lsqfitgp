@@ -1191,3 +1191,5 @@ complex plane. Maybe there is something about radii like with power series.
 
 I dunno. I should expose a function to compute the amplitudes and try to get
 them negative to see if it's a good idea.
+
+=> It's not a good idea.
