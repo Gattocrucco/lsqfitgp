@@ -131,9 +131,8 @@ class Formula:
 
 def bart_splits(n):
     x = np.random.uniform(1, 4, (n, 1))
-    _, s = lgp.BART.splits_from_coord(x)
-    s = np.unique(np.around(s, 1))
-    return [len(s)], s
+    l, s = lgp.BART.splits_from_coord(x)
+    return [l.item()], np.asarray(s.squeeze(1))
 
 meta = dict(
     AR = dict(x=np.arange(50), kwlist=[
@@ -150,7 +149,7 @@ meta = dict(
             (3 * [0.2], []),
         ]
     ]),
-    BART = dict(kwlist=[dict(splits=bart_splits(11))]),
+    BART = dict(kwlist=[dict(splits=bart_splits(100), maxd=d) for d in [2, 1]]),
     BagOfWords = dict(skip=True),
     Bessel = dict(range=[0, 10], kwlist=[dict(nu=v) for v in [0, 1, 2, 3.5]]),
     BrownianBridge = dict(range=[0, 1]),
@@ -191,6 +190,8 @@ fig = plt.figure(num='kernelsref', clear=True)
 
 gen = np.random.default_rng(202206281251)
 
+printoptions = dict(precision=2, threshold=6, edgeitems=2)
+
 # documentation
 for kernel in kernels2:
     k = getattr(lgp, kernel)
@@ -220,7 +221,8 @@ for kernel in kernels2:
     legend = m.get('kwlist')
     for kw in m.get('kwlist', [{}]):
         covfun = k(**kw)
-        label = ', '.join(f'{k} = {v}' for k, v in kw.items())
+        with np.printoptions(**printoptions):
+            label = ', '.join(f'{k} = {v}' for k, v in kw.items())
         if issubclass(k, lgp.StationaryKernel):
             acf = covfun(x[0], x)
             ax.plot(x, acf, label=label)
@@ -264,7 +266,8 @@ for kernel in kernels2:
     nsamples = 1 if m.get('kwlist', False) else 2
     for kw in m.get('kwlist', [{}]):
         covfun = k(**kw)
-        label = ', '.join(f'{k} = {v}' for k, v in kw.items())
+        with np.printoptions(**printoptions):
+            label = ', '.join(f'{k} = {v}' for k, v in kw.items())
         cov = covfun(x[None, :], x[:, None])
         try:
             dec = lgp._linalg.CholGersh(cov)

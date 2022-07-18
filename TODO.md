@@ -132,17 +132,15 @@ Chiamare GP -> _GPBase e poi fare una sottoclasse GP e mettere tutti i metodi
 di convenienza che non accedono a cose interne in GP.
 
 Fare una github action che carica la release su PyPI quando faccio la release
-su github. => Non è che però è un rischio? In questo modo il mio account
-github controllerebbe cosa finisce su PyPI perché dovrei metterci le chiavi di
-accesso. Dovrei attivare l'autenticazione a due fattori. => Vantaggio: potrei
-testare anche l'installazione da PyPI dopo aver caricato la release.
+su github. => Non è che però è un rischio? In questo modo il mio account github
+controllerebbe cosa finisce su PyPI perché dovrei metterci le chiavi di accesso
 
 In defining abstract methods, use the single line syntax:
 
     @abc.abstractmethod
     def cippa(*_): pass
 
-such that there is not need to add # pragma: no cover.
+such that there is not need to add # pragma: no cover (I hope, try it)
 
 ## New functionality
 

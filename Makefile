@@ -48,21 +48,23 @@ EXAMPLES := $(filter-out examples/pdf8.py, $(EXAMPLES))
 
 examples: $(EXAMPLES)
 
+ENV = MPLBACKEND=agg
+
 $(EXAMPLES):
-	COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) coverage run --context=examples$(COVERAGE_SUFFIX) examples/runexamples.py $@
+	COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) $(ENV) coverage run --context=examples$(COVERAGE_SUFFIX) examples/runexamples.py $@
 
 docs/kernelsref.rst: docs/kernelsref.py lsqfitgp/_kernels.py
-	cd docs && python $(notdir $<)
+	cd docs && $(ENV) python $(notdir $<)
 
 docs/examplesref.rst: docs/examplesref.py
-	cd docs && python $(notdir $<)
+	cd docs && $(ENV) python $(notdir $<)
 
 GENDOCS := $(addsuffix .rst, $(basename $(wildcard docs/*ref.py)))
 .PHONY: gendocs
 gendocs: $(GENDOCS)
 
 docscode:
-	cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) coverage run --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX) runcode.py *.rst
+	cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) $(ENV) coverage run --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX) runcode.py *.rst
 
 docs: gendocs
 	make -C docs html

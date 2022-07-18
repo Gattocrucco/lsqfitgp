@@ -678,8 +678,15 @@ def _FourierBase(delta, n=2):
     # https://dlmf.nist.gov/25.12.E10 def of polylogarithm
     # https://dlmf.nist.gov/25.12.E13 relation with hurwitz zeta
     #
-    # scipy does not implement zeta(s,a) for s < 1. jax does but the
-    # accuracy is crap (open an issue)
+    # scipy does not implement zeta(x,q) for x < 1. jax does but the
+    # accuracy is crap. I have to implement my own version.
+    #
+    # Johansson (2015)
+    #
+    # idea: use https://dlmf.nist.gov/25.11.E7 with n = 30, approximate as
+    # an harmonic function above s = 60, the remainder term is an high degree
+    # periodic bernoulli polynomial ~ harmonic function so the integral is an
+    # exponential integral
     
 class Fourier(_FourierBase):
     
