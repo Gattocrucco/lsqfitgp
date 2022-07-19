@@ -567,7 +567,7 @@ def Taylor(x, y):
     return jnp.where(mul >= 0, jspecial.i0(val), _patch_jax.j0(val))
 
 def _bernoulli_poly(n, x):
-    # takes x mod 1
+    # periodic Bernoulli polynomial (takes x mod 1)
     # TODO to make this jittable, hardcode size to 60 and truncate by writing
     # zeros
     n = int(n)
@@ -595,7 +595,7 @@ def _fourier(s, x):
     arg = tau * x
     sign = jnp.where((s // 2) % 2, 1, -1)
     larges = sign * jnp.where(s % 2, jnp.sin(arg), jnp.cos(arg))
-    return jnp.where(cond, smalls, larges.real)
+    return jnp.where(cond, smalls, larges)
 
 @_fourier.defjvp
 def _fourier_jvp(s, primals, tangents):
@@ -1892,7 +1892,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
         \\Bigg), \\quad d < D,
     
     where it is intended that when :math:`n^-_i = n^0_i = n^+_i = 0`, the term
-    of the summation yields 0.
+    of the summation yields 1.
     
     The introduction of a maximum depth :math:`D` is necessary for
     computational feasibility. As :math:`D` increases, the result converges to
@@ -1931,13 +1931,19 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     before = l
     between = r - l
     after = splits[0] - r
-    return bart_correlation_maxd(before, between, after, alpha, beta, maxd)
+    return BART.correlation(before, between, after, alpha, beta, maxd, True)
     
     # TODO options to:
     # - use lower/upper bound (is lower pos def?)
-    # - interpolate (is linear interp pos def?)
+    # - convex combination of upper/lower bound (what is the best lambda?)
+    # - interpolate (is linear interp pos def? => I think it can be seen as
+    #   the covariance of the interpolation)
     # - approximate as stationary w.r.t. indices (is it pos def?)
     # - allow index input
+    #
+    # Idea: the lower bound is good when the trees are deep, the upper bound
+    # when they are shallow. There may be a lambda(alpha, beta) to combine the
+    # bounds that gives a very accurate approximation.
 
 class BART(_BARTBase):
     
@@ -2007,6 +2013,65 @@ class BART(_BARTBase):
         splits = _check_splits(splits)
         assert x.shape[-1] == splits[0].size
         return _searchsorted_vectorized(splits[1], x)
+    
+    @staticmethod
+    def correlation(splitsbefore, splitsbetween, splitsafter, alpha, beta, upper, maxd, debug=False):
+        """
+        Compute the BART prior correlation between two points.
+
+        Apart from arguments `maxd` and `debug`, this method is fully
+        vectorized.
+    
+        Parameters
+        ----------
+        splitsbefore : int (p,) array
+            The number of splitting points less than the two points, separately
+            along each coordinate.
+        splitsbetween : int (p,) array
+            The number of splitting points between the two points, separately
+            along each coordinate.
+        splitsafter : int (p,) array
+            The number of splitting points greater than the two points,
+            separately along each coordinate.
+        alpha, beta : scalar
+            The hyperparameters of the branching probability.
+        upper : bool
+            If True, the result is an upper bound on the limit of infinite
+            maxd. If False, it is a lower bound.
+        maxd : int
+            The maximum depth of the trees. The root has depth zero.
+        debug : bool
+            If True, disable shortcuts in the tree recursion. Default False.
+
+        Return
+        ------
+        corr : scalar
+            The prior correlation.
+        """
+        ft, it = {
+            True : (jnp.float64, jnp.int64),
+            False: (jnp.float32, jnp.int32),
+        }[jax.config.read('jax_enable_x64')]
+        # a jax function applied to an int32 gives a float32 even with x64
+        # enabled, so I have to sync the types to avoid losing precision in the
+        # digamma
+        args  = [splitsbefore, splitsbetween, splitsafter, alpha, beta,     upper]
+        ndims = [           1,             1,           1,     0,    0,         0]
+        types = [          it,            it,          it,    ft,   ft, jnp.bool_]
+        args = [jnp.asarray(a, t) for a, t in zip(args, types)]
+        for a, n in zip(args, ndims):
+            assert a.ndim >= n
+        p = args[0].shape[-1]
+        for a, n in zip(args, ndims):
+            assert n == 0 or a.shape[-1] == p
+        shapes = [a.shape[:a.ndim - n] for a, n in zip(args, ndims)]
+        shape = jnp.broadcast_shapes(*shapes)
+        args = [
+            jnp.broadcast_to(a, shape + a.shape[a.ndim - n:]).reshape((-1,) + a.shape[a.ndim - n:])
+            for a, n in zip(args, ndims)
+        ]
+        out = _bart_correlation_maxd_vectorized(*args, int(maxd), 0, bool(debug))
+        return out.reshape(shape)
 
 def _check_x(x):
     x = _array.asarray(x)
@@ -2055,36 +2120,46 @@ def _searchsorted_vectorized(A, V, **kw):
     _, out = lax.scan(loop, None, (A.T, V.T))
     return out.T
 
-@functools.partial(jax.jit, static_argnums=(5, 6, 7))
-def _bart_correlation_maxd_recursive(nminus, n0, nplus, alpha, beta, maxd, d, upper):
-    
-    if d >= maxd and upper:
-        return 1.
+@functools.partial(jax.jit, static_argnums=(6, 7, 8))
+def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug):
     
     pnt = alpha / (1 + d) ** beta
     
-    if d >= maxd and not upper:
-        return 1 - pnt
-        
+    if d >= maxd:
+        return jnp.where(upper, 1, 1 - pnt)
+    
     p = len(nminus)
 
-    if d + 1 >= maxd:
+    if d + 1 >= maxd and not debug:
         nout = nminus + nplus
         terms = nout / (nout + n0)
-        if not upper:
-            pnt1 = alpha / (2 + d) ** beta
-            terms *= pnt1
-        sump = jnp.sum(jnp.where(n0, terms, 1))
-        return 1 - pnt * (1 - sump / p).astype(float)
+        pnt1 = alpha / (2 + d) ** beta
+        terms = jnp.where(upper, terms, terms * (1 - pnt1))
+        terms = jnp.where(n0, terms, 1)
+        sump = jnp.sum(terms)
+        return 1 - pnt * (1 - sump / p)
     
-    # TODO hardcode d + 2 case to something O(np)
-    #
-    # the sum I need is sum_k=0^n-1 1/(a+k), this is zeta(1, a) - zeta(1, a+n)
-    # (https://dlmf.nist.gov/25.11.E4) however it's inf at 1.
-    #
-    # since a is an integer, it can be expressed as a difference of harmonic
-    # numbers, which can be calculated from the digamma function
-    # (https://dlmf.nist.gov/5.4.E14).
+    if d + 2 >= maxd and not debug:
+        pnt1 = alpha / (2 + d) ** beta
+        pt2 = jnp.where(upper, 1, 1 - alpha / (3 + d) ** beta)
+        nout = nminus + nplus
+        ntot = nout + n0
+        mis = p - jnp.count_nonzero(n0)
+        
+        ta = jnp.where(n0, nout / ntot, 0)
+        sa = jnp.sum(ta)
+        sump = (1 - pnt1) * sa
+        tb = jnp.where(n0, nout / ntot * pt2, 1)
+        sb = jnp.sum(tb)
+        sab = jnp.sum(ta * tb)
+        harm = 2 * jspecial.digamma(ntot) - jspecial.digamma(n0 + nplus) - jspecial.digamma(n0 + nminus)
+        # https://dlmf.nist.gov/5.4.E14 digamma gives the harmonic numbers
+        tc = jnp.where(n0, n0 * harm / ntot, 0)
+        sc = jnp.sum(tc)
+        sump += pnt1 / p * (sa * sb - sab + pt2 * (sa - sc))
+        sump += mis
+        
+        return 1 - pnt * (1 - sump / p)
     
     val = (0., nminus, n0, nplus)
     def loop(i, val):
@@ -2101,14 +2176,16 @@ def _bart_correlation_maxd_recursive(nminus, n0, nplus, alpha, beta, maxd, d, up
             nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
             nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
             
-            sumn += _bart_correlation_maxd_recursive(nminus, n0, nplus, alpha, beta, maxd, d + 1, upper)
+            sumn += _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d + 1, debug)
             
             nminus = nminus.at[i].set(nminusi)
             nplus = nplus.at[i].set(nplusi)
             
             return sumn, nminus, n0, nplus, i, nminusi
         
-        sumn, nminus, n0, nplus, _, _ = lax.fori_loop(jnp.int32(0), nminusi + nplusi, loop, val)
+        # if needed I can stop recursion by passing 0 as iteration end
+        zero = jnp.array(0, nminusi.dtype)
+        sumn, nminus, n0, nplus, _, _ = lax.fori_loop(zero, nminusi + nplusi, loop, val)
 
         sump += jnp.where(n0i, sumn / (nminusi + n0i + nplusi), 1)
 
@@ -2117,55 +2194,25 @@ def _bart_correlation_maxd_recursive(nminus, n0, nplus, alpha, beta, maxd, d, up
     sump, _, _, _ = lax.fori_loop(0, p, loop, val)
 
     return 1 - pnt * (1 - sump / p)
-    
-_bart_correlation_maxd_vectorized = jax.vmap(_bart_correlation_maxd_recursive, [
-    0, 0, 0, None, None, None, None, None,
-])
-    
-def bart_correlation_maxd(splitsbefore, splitsbetween, splitsafter, alpha, beta, maxd, upper=True):
-    """
-    Compute the BART prior correlation between two points.
-    
-    The correlation is computed approximately by limiting the maximum depth
-    of the trees. Limiting trees to depth 1 is equivalent to setting beta to
-    infinity.
-        
-    Parameters
-    ----------
-    splitsbefore : int (..., p) array
-        The number of splitting points less than the two points, separately
-        along each coordinate.
-    splitsbetween : int (..., p) array
-        The number of splitting points between the two points, separately along
-        each coordinate.
-    splitsafter : int (..., p) array
-        The number of splitting points greater than the two points, separately
-        along each coordinate.
-    alpha, beta : scalar
-        The hyperparameters of the branching probability.
-    maxd : int
-        The maximum depth of the trees. The root has depth zero.
-    upper : bool
-        If True (default), the result is an upper bound on the limit of
-        infinite maxd. If False, it is a lower bound.
-    
-    Return
-    ------
-    corr : scalar
-        The prior correlation.
-    """
-    args = [splitsbefore, splitsbetween, splitsafter]
-    args = [jnp.asarray(a, 'i4') for a in args]
-    for a in args:
-        assert a.ndim >= 1
-    p = args[0].shape[-1]
-    for a in args:
-        assert a.shape[-1] == p
-    args = jnp.broadcast_arrays(*args)
-    shape = args[0].shape[:-1]
-    args = [a.reshape(-1, p) for a in args]
-    alpha = jnp.array(alpha, float)
-    beta = jnp.array(beta, float)
-    out = _bart_correlation_maxd_vectorized(*args, alpha, beta, int(maxd), 0, bool(upper))
-    return out.reshape(shape)
 
+_bart_correlation_maxd_vectorized = jax.vmap(_bart_correlation_maxd, 6 * [0] + 3 * [None])
+
+# TODO some bart-specific tests
+# - lower <= upper
+# - upper decreases as maxd increases
+# - lower increases as maxd increases
+# - upper - lower tends to zero for maxd -> oo
+# - upper = lower in cases where the solution is exact
+#   - beta = inf
+#   - alpha = 0
+#   - n^0 = 0
+# - increases as beta increases
+# - decreases as alpha increases
+# - correlation = 1 for n^0 = 0, even if n^- = n^+ = 0, unless lower and maxd=0
+# - invariant under swapping of n^-, n^+
+# - invariant under simultaneous permutation of n^0, n^-, n^+
+# - invariant under addition of dimensions with n^0 = 0
+# - decreases as n^0 increases at fixed n^tot
+# - always in [0, 1]
+# - test maxd = 0, 1 with handwritten solution
+# - compare with/without debug

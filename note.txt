@@ -1192,4 +1192,23 @@ complex plane. Maybe there is something about radii like with power series.
 I dunno. I should expose a function to compute the amplitudes and try to get
 them negative to see if it's a good idea.
 
-=> It's not a good idea.
+=> It's not a good idea, obvious in hindsight.
+
+2022-07-19
+==========
+
+Above I wrote that I can compute the AR amplitudes accurately if I start from
+the differences between the roots. However, as the roots get close together,
+the amplitudes diverge with opposite phases with a precise cancellation to make
+the exponentials into a power law. This means that probably I also need the
+next order differences, and so on.
+
+But when the roots are close I expect the shape to be more or less fixed. It's
+the damn power law I know exactly. So maybe I can change formula when
+the roots are closer than something. The only thing that I still can't compute
+is the final variance. I have the same problem in computing gamma, where with
+very small roots I know it's practically constant, however the normalization
+heavily depends on how close they are.
+
+Since huge normalizations are not really interesting, I can solve this kind of
+problems by always normalizing the variance to 1.

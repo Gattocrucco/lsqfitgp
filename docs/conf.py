@@ -102,7 +102,7 @@ html_static_path = ['_static']
 master_doc = 'index'
 
 
-# -- Options -------------------------------------------------
+# -- Other options -------------------------------------------------
 
 autoclass_content = 'both'
 autodoc_preserve_defaults = True

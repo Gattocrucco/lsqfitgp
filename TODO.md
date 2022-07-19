@@ -81,8 +81,6 @@ In the kernels reference, generate automatically:
 
 Explain somewhere the jax 32/64 bit thing.
 
-Fix spacing in the documentation with custom css.
-
 add a thanks section to the readme. SuperGauss, mlkernels, ...? (with authors)
 
 ## Fixes and tests
@@ -170,7 +168,7 @@ share a lot of internals and the cache would avoid decomposing matrices twice.
 Bayesian optimization: I found only one decent quick-and-lean python package,
 bayesian-optimization, but I'm not satisfied with it nor with its
 documentation. If I don't find out something better I'd like to study the
-matter and write something.
+matter and write something. => see the recent book "Surrogates"
 
 ### Low-rank/regression
 
@@ -187,6 +185,10 @@ Deve funzionare sia per regressione lineare con covariate e priore arbitrari,
 sia per una componente del kernel di basso rango... forse è chiedere troppo,
 per cominciare accontentiamoci di regressione. Interfaccia?? Visto che voglio
 mettere addkernel, potrei mettere addregres, e poi sommo con addtransf
+
+=> The regression can be implemented with addcov + addlintransf. Woodsbury
+should be used automatically whenever there is a shape bottleneck in the
+chain of transformations which implies low rank.
 
 ### New interfaces
 
