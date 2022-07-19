@@ -37,8 +37,13 @@ release: $(RELEASE_TARGETS)
 	rm -r dist
 	python setup.py sdist bdist_wheel
 
+PY = MPLBACKEND=agg coverage run
+TESTSPY = COVERAGE_FILE=.coverage.tests$(COVERAGE_SUFFIX) $(PY) --context=tests$(COVERAGE_SUFFIX)
+EXAMPLESPY = COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) $(PY) --context=examples$(COVERAGE_SUFFIX)
+DOCSPY = cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) $(PY) --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX)
+
 tests:
-	COVERAGE_FILE=.coverage.tests$(COVERAGE_SUFFIX) coverage run --context=tests$(COVERAGE_SUFFIX) -m pytest
+	$(TESTSPY) -m pytest
 
 EXAMPLES = $(wildcard examples/*.py)
 EXAMPLES := $(filter-out examples/runexamples.py, $(EXAMPLES))
@@ -48,23 +53,21 @@ EXAMPLES := $(filter-out examples/pdf8.py, $(EXAMPLES))
 
 examples: $(EXAMPLES)
 
-ENV = MPLBACKEND=agg
-
 $(EXAMPLES):
-	COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) $(ENV) coverage run --context=examples$(COVERAGE_SUFFIX) examples/runexamples.py $@
+	$(EXAMPLESPY) examples/runexamples.py $@
 
-docs/kernelsref.rst: docs/kernelsref.py lsqfitgp/_kernels.py
-	cd docs && $(ENV) python $(notdir $<)
+docs/kernelsref.rst: docs/kernelsref.py lsqfitgp/_kernels.py lsqfitgp/_patch_jax.py
+	$(DOCSPY) $(notdir $<)
 
-docs/examplesref.rst: docs/examplesref.py
-	cd docs && $(ENV) python $(notdir $<)
+docs/examplesref.rst: docs/examplesref.py lsqfitgp/*.py lsqfitgp/*/*.py
+	$(DOCSPY) $(notdir $<)
 
 GENDOCS := $(addsuffix .rst, $(basename $(wildcard docs/*ref.py)))
 .PHONY: gendocs
 gendocs: $(GENDOCS)
 
 docscode:
-	cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) $(ENV) coverage run --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX) runcode.py *.rst
+	$(DOCSPY) runcode.py *.rst
 
 docs: gendocs
 	make -C docs html
