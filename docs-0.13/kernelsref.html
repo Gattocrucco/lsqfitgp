@@ -469,7 +469,7 @@ k_d(\nvecs) &amp;= 1 - P_d \Bigg(1 - \frac1p
     \Bigg)
 \Bigg), \quad d &lt; D,\end{split}\]</div>
 <p>where it is intended that when <span class="math notranslate nohighlight">\(n^-_i = n^0_i = n^+_i = 0\)</span>, the term
-of the summation yields 0.</p>
+of the summation yields 1.</p>
 <p>The introduction of a maximum depth <span class="math notranslate nohighlight">\(D\)</span> is necessary for
 computational feasibility. As <span class="math notranslate nohighlight">\(D\)</span> increases, the result converges to
 the one without depth limit. In setting <span class="math notranslate nohighlight">\(D\)</span>, consider that
@@ -501,6 +501,38 @@ Ann. Appl. Stat. 4(1), 266-298, (March 2010).</p>
 </tr>
 </tbody>
 </table>
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.BART.correlation">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">correlation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">splitsbefore</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsbetween</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsafter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART.correlation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the BART prior correlation between two points.</p>
+<p>Apart from arguments <cite>maxd</cite> and <cite>debug</cite>, this method is fully
+vectorized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>splitsbefore</strong><span class="classifier">int (p,) array</span></dt><dd><p>The number of splitting points less than the two points, separately
+along each coordinate.</p>
+</dd>
+<dt><strong>splitsbetween</strong><span class="classifier">int (p,) array</span></dt><dd><p>The number of splitting points between the two points, separately
+along each coordinate.</p>
+</dd>
+<dt><strong>splitsafter</strong><span class="classifier">int (p,) array</span></dt><dd><p>The number of splitting points greater than the two points,
+separately along each coordinate.</p>
+</dd>
+<dt><strong>alpha, beta</strong><span class="classifier">scalar</span></dt><dd><p>The hyperparameters of the branching probability.</p>
+</dd>
+<dt><strong>upper</strong><span class="classifier">bool</span></dt><dd><p>If True, the result is an upper bound on the limit of infinite
+maxd. If False, it is a lower bound.</p>
+</dd>
+<dt><strong>maxd</strong><span class="classifier">int</span></dt><dd><p>The maximum depth of the trees. The root has depth zero.</p>
+</dd>
+<dt><strong>debug</strong><span class="classifier">bool</span></dt><dd><p>If True, disable shortcuts in the tree recursion. Default False.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.BART.indices_from_coord">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">indices_from_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splits</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART.indices_from_coord" title="Permalink to this definition">¶</a></dt>
@@ -860,7 +892,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x130c6c700&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x131a48790&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
