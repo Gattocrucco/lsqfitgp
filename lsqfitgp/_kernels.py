@@ -1835,6 +1835,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     -------
     splits_from_coord
     indices_from_coord
+    correlation
     
     Notes
     -----
@@ -2062,6 +2063,7 @@ class BART(_BARTBase):
         for a, n in zip(args, ndims):
             assert a.ndim >= n
         p = args[0].shape[-1]
+        assert p >= 1
         for a, n in zip(args, ndims):
             assert n == 0 or a.shape[-1] == p
         shapes = [a.shape[:a.ndim - n] for a, n in zip(args, ndims)]
@@ -2196,23 +2198,3 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
     return 1 - pnt * (1 - sump / p)
 
 _bart_correlation_maxd_vectorized = jax.vmap(_bart_correlation_maxd, 6 * [0] + 3 * [None])
-
-# TODO some bart-specific tests
-# - lower <= upper
-# - upper decreases as maxd increases
-# - lower increases as maxd increases
-# - upper - lower tends to zero for maxd -> oo
-# - upper = lower in cases where the solution is exact
-#   - beta = inf
-#   - alpha = 0
-#   - n^0 = 0
-# - increases as beta increases
-# - decreases as alpha increases
-# - correlation = 1 for n^0 = 0, even if n^- = n^+ = 0, unless lower and maxd=0
-# - invariant under swapping of n^-, n^+
-# - invariant under simultaneous permutation of n^0, n^-, n^+
-# - invariant under addition of dimensions with n^0 = 0
-# - decreases as n^0 increases at fixed n^tot
-# - always in [0, 1]
-# - test maxd = 0, 1 with handwritten solution
-# - compare with/without debug

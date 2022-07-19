@@ -83,6 +83,8 @@ Explain somewhere the jax 32/64 bit thing.
 
 add a thanks section to the readme. SuperGauss, mlkernels, ...? (with authors)
 
+Add an example with regression + gp
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
