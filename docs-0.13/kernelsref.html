@@ -423,10 +423,10 @@ after the length.</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>This is the covariance function of the latent mean prior of BART (Bayesian
+<p>This is the covariance function of the latent mean prior of BART (Bayes
 Additive Regression Trees) <a class="reference internal" href="#r0b7d3b51c950-1" id="id1">[1]</a> in the limit of an infinite number of
-trees, and with an upper bound on the depth of the trees. This prior is the
-distribution of the function</p>
+trees, and with an upper bound <span class="math notranslate nohighlight">\(D\)</span> on the depth of the trees. This
+prior is the distribution of the function</p>
 <div class="math notranslate nohighlight">
 \[f(\mathbf x) = \lim_{m\to\infty}
 \sum_{j=1}^m g(\mathbf x; T_j, M_j),\]</div>
@@ -468,13 +468,15 @@ k_d(\nvecs) &amp;= 1 - P_d \Bigg(1 - \frac1p
         k_{d+1}(\mathbf n^-, \mathbf n^0, \mathbf n^+_{n^+_i=k})
     \Bigg)
 \Bigg), \quad d &lt; D,\end{split}\]</div>
-<p>where it is intended that when <span class="math notranslate nohighlight">\(n^-_i = n^0_i = n^+_i = 0\)</span>, the term
-of the summation yields 1.</p>
+<p>where it is intended that when <span class="math notranslate nohighlight">\(n^0_i = 0\)</span>, the term of the outer
+summation yields 1 irrespectively of other values.</p>
 <p>The introduction of a maximum depth <span class="math notranslate nohighlight">\(D\)</span> is necessary for
 computational feasibility. As <span class="math notranslate nohighlight">\(D\)</span> increases, the result converges to
-the one without depth limit. In setting <span class="math notranslate nohighlight">\(D\)</span>, consider that
-<span class="math notranslate nohighlight">\(\beta\)</span> regulates the distribution of the depth, with high values
-strongly favoring shallow trees.</p>
+the one without depth limit. For <span class="math notranslate nohighlight">\(D \le 2\)</span> (the default value), the
+covariance is implemented in closed form and takes <span class="math notranslate nohighlight">\(O(p)\)</span> to compute.
+For <span class="math notranslate nohighlight">\(D &gt; 2\)</span>, the computational complexity grows exponentially as
+<span class="math notranslate nohighlight">\(O(p(np)^{D-2})\)</span>, where <span class="math notranslate nohighlight">\(n\)</span> is the average number of splitting
+points along a dimension.</p>
 <p>In the maximum allowed depth is 1, i.e., either <span class="math notranslate nohighlight">\(D = 1\)</span> or
 <span class="math notranslate nohighlight">\(\beta\to\infty\)</span>, the kernel assumes the simple form</p>
 <div class="math notranslate nohighlight">
@@ -498,6 +500,9 @@ Ann. Appl. Stat. 4(1), 266-298, (March 2010).</p>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.BART.indices_from_coord" title="lsqfitgp.BART.indices_from_coord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">indices_from_coord</span></code></a>(x, splits)</p></td>
 <td><p>Convert coordinates to indices w.r.t.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.BART.correlation" title="lsqfitgp.BART.correlation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">correlation</span></code></a>(splitsbefore, splitsbetween, ...)</p></td>
+<td><p>Compute the BART prior correlation between two points.</p></td>
 </tr>
 </tbody>
 </table>
@@ -892,7 +897,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x131a48790&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x135f2a3b0&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
