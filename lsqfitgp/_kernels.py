@@ -1812,8 +1812,6 @@ def _bart_maxdim(splits=None, **_):
     splits = _check_splits(splits)
     return splits[0].size
 
-# TODO consider letting derivable=True and returning Zero => NO
-
 @kernel(maxdim=_bart_maxdim, derivable=False)
 def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     """
@@ -1839,10 +1837,10 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     
     Notes
     -----
-    This is the covariance function of the latent mean prior of BART (Bayesian
+    This is the covariance function of the latent mean prior of BART (Bayes
     Additive Regression Trees) [1]_ in the limit of an infinite number of
-    trees, and with an upper bound on the depth of the trees. This prior is the
-    distribution of the function
+    trees, and with an upper bound :math:`D` on the depth of the trees. This
+    prior is the distribution of the function
     
     .. math::
         f(\\mathbf x) = \\lim_{m\\to\\infty}
@@ -1892,14 +1890,16 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
             \\Bigg)
         \\Bigg), \\quad d < D,
     
-    where it is intended that when :math:`n^-_i = n^0_i = n^+_i = 0`, the term
-    of the summation yields 1.
+    where it is intended that when :math:`n^0_i = 0`, the term of the outer
+    summation yields 1 irrespectively of other values.
     
     The introduction of a maximum depth :math:`D` is necessary for
     computational feasibility. As :math:`D` increases, the result converges to
-    the one without depth limit. In setting :math:`D`, consider that
-    :math:`\\beta` regulates the distribution of the depth, with high values
-    strongly favoring shallow trees.
+    the one without depth limit. For :math:`D \\le 2` (the default value), the
+    covariance is implemented in closed form and takes :math:`O(p)` to compute.
+    For :math:`D > 2`, the computational complexity grows exponentially as
+    :math:`O(p(np)^{D-2})`, where :math:`n` is the average number of splitting
+    points along a dimension.
     
     In the maximum allowed depth is 1, i.e., either :math:`D = 1` or
     :math:`\\beta\\to\\infty`, the kernel assumes the simple form
@@ -1934,17 +1934,27 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     after = splits[0] - r
     return BART.correlation(before, between, after, alpha, beta, maxd, True)
     
-    # TODO options to:
+    # TODO
     # - use lower/upper bound (is lower pos def?)
     # - convex combination of upper/lower bound (what is the best lambda?)
     # - interpolate (is linear interp pos def? => I think it can be seen as
     #   the covariance of the interpolation)
     # - approximate as stationary w.r.t. indices (is it pos def?)
     # - allow index input
-    #
-    # Idea: the lower bound is good when the trees are deep, the upper bound
-    # when they are shallow. There may be a lambda(alpha, beta) to combine the
-    # bounds that gives a very accurate approximation.
+    # - staticmethod to prune splits to target number
+
+    # The lower bound is good when the trees are deep, the upper bound when they
+    # are shallow. There may be a lambda(alpha, beta) to combine the bounds that
+    # gives a very accurate approximation.
+
+    # Stationarity would be useful to accelerate inference a lot. Maybe it is
+    # sufficient to set the toeplitz flag in GP instead of doing something here
+    # (=> no, could be confusing, make it really stationary), I have to check
+    # that the covariance from an edge to a point is a valid stationary
+    # autocorrelation.
+    
+    # Is there a way to contract 2 levels of recursion even if they are not at
+    # the bottom?
 
 class BART(_BARTBase):
     
