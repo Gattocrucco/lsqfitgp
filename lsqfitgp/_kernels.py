@@ -1749,6 +1749,10 @@ class AR(_ARBase):
             numpy.testing.assert_equal(c[0].item(), 1)
             numpy.testing.assert_allclose(numpy.imag(c), 0, rtol=0, atol=1e-4)
         return -coef.real[1:]
+        
+        # TODO possibly not accurate for large p. Do a test with an
+        # implementation of poly which uses integer roots and non-fft convolve
+        # (maybe add it as an option to my to-be-written implementation of poly)
     
     @classmethod
     def ampl_from_roots(cls, slnr, lnc, gamma):
@@ -1780,11 +1784,26 @@ class AR(_ARBase):
             lag = lag[None]
         acf = _gamma_from_ampl_matmul(slnr, lnc, lag, ampl)
         return acf.squeeze(0) if scalar else acf
+        
+    @staticmethod
+    def phi_vertices(p):
+        assert int(p) == p and p >= 0, p
+        roots = jnp.where(jnp.arange(p + 1)[:, None] <= jnp.arange(p), 1, -1)
+        return jax.vmap(lambda r: -jnp.atleast_1d(jnp.poly(r))[1:])(roots)
+        # TODO possibly not accurate for large p, see phi_from_roots
+    
+    @staticmethod
+    def phi_from_baricentric(a, vertices):
+        a = jnp.asarray(a)
+        vertices = jnp.asarray(vertices)
+        assert a.ndim == 1 and vertices.ndim == 2
+        assert a.size == vertices.shape[0]
+        assert vertices.shape[0] == vertices.shape[1] + 1
+        return jnp.sum(a[:, None] * vertices, 0) / jnp.sum(a)
     
     # TODO methods:
     # - gamma_from_roots which uses quadrature fourier transf of spectrum
-    # - phi_vertices(p) to generate matrix of vertices of phi simplex
-    # - phi_from_baricentric(a, vertices) with a > 0 not normalized
+    # - baricentric_from_phi
     
     @staticmethod
     def _process_roots(slnr, lnc):

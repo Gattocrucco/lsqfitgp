@@ -1250,3 +1250,8 @@ Method to allow arbitrarily many large roots in np.poly:
     4) use poly
     5) reverse
     6) rescale with cumprod(|x_0|)
+
+--------
+
+What is the meaning of the phi in the center of the simplex? It is zero at odd
+lags. How does a truncated phi appear in baricentric?
