@@ -141,4 +141,6 @@ def test_ar1():
                 den = acf[0] if norm else 1
                 np.testing.assert_allclose(c, acf / den, atol=1e-300, rtol=1e-12)
 
-# TODO test reflection of extend_gamma
+# TODO
+# test reflection of extend_gamma
+# test ar2 (see Hamilton)

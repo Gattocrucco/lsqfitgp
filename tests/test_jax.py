@@ -26,6 +26,8 @@ import pytest
 from lsqfitgp import _patch_jax
 import util
 
+gen = np.random.default_rng(202207201419)
+
 def test_sinc():
     x = np.linspace(-0.1, 0.1, 1000)
     s1 = np.sinc(x)
@@ -75,7 +77,7 @@ def test_kvmodx2_hi():
 
 def randpoly(n):
     while True:
-        a = np.random.randn(n)
+        a = gen.random.standard_normal(n)
         if a[0] != 0:
             return a
 
@@ -92,3 +94,12 @@ def test_exp1_imag_and_ci():
         y1 = _patch_jax.ci(x)
         _, y2 = special.sici(x)
         np.testing.assert_allclose(y1, y2, atol=1e-15, rtol=1e-15)
+
+def test_expm1x():
+    x = np.linspace(-2, 2, 10000)
+    y = _patch_jax.expm1x(x)
+    y2 = x * x / 2 * special.hyp1f1(1, 3, x)
+    np.testing.assert_array_max_ulp(y, y2, 8)
+    y = _patch_jax.expm1x(x.astype('f'))
+    np.testing.assert_array_max_ulp(y, y2.astype('f'), 4)
+    test_util.check_grads(_patch_jax.expm1x, (x,), 2)

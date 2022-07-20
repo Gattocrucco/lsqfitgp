@@ -1212,3 +1212,31 @@ heavily depends on how close they are.
 
 Since huge normalizations are not really interesting, I can solve this kind of
 problems by always normalizing the variance to 1.
+
+2022-07-20
+==========
+
+Can I write exp(x) - 1 - x as a hypergeometric function?
+
+    exp(x) - 1 - x = 
+    = sum_k=2^oo x^k / k! =
+    = x^2 sum_k=0^oo x^k / (k + 2)! =
+    = x^2 sum_k=0^oo k!/(k+2)! x^k / k! =
+    
+        k!/(k+2)! = 1·2···k / 1·2···k+2 = 1/2 (1)_k/(3)_k
+    
+    = x^2/2 sum_k=0^oo (1)_k/(3)_k x^k / k! =
+    = x^2/2 1F1(1, 3, x)
+
+However in scipy 1F1 is implented by summing the taylor series, and 1F1 is not
+implemented in jax, so whatever.
+
+--------
+
+I think that the space of allowed phi is a simplex whose vertices are the
+polynomials with roots either -1 or 1. To prove it, I need to prove that
+    1) any convex cobination of valid phi is valid
+    2) any valid phi can be expressed as a convex combination of the vertices
+Regarding 1), see
+https://en.wikipedia.org/wiki/Geometrical_properties_of_polynomial_roots
+https://en.wikipedia.org/wiki/Rouché%27s_theorem

@@ -1007,7 +1007,8 @@ def Bessel(r2, nu=0):
     Bessel kernel.
     
     .. math:: k(r) = \\Gamma(\\nu + 1) 2^\\nu (sr)^{-\\nu} J_{\\nu}(sr),
-        \\quad s = 2 + \\nu / 2, \\nu > 0,
+        \\quad s = 2 + \\nu / 2,
+        \\quad \\nu \\ge 0,
     
     where `s` is a crude estimate of the half width at half maximum of
     :math:`J_\\nu`. Can be used in up to :math:`2(\\lfloor\\nu\\rfloor + 1)`
@@ -1278,7 +1279,7 @@ def Circular(delta, tau=4, c=1/2):
 
 # use positive delta because negative indices wrap around
 @stationarykernel(derivable=False, maxdim=1, input='hard')
-def MA(delta, w=None):
+def MA(delta, w=None, norm=False):
     """
     Discrete moving average kernel.
     
@@ -1294,18 +1295,23 @@ def MA(delta, w=None):
         y_i &= \\sum_{k=0}^{n-1} w_k \\epsilon_{i-k}, \\\\
         \\operatorname{Cov}[\\epsilon_i,\\epsilon_j] &= \\delta_{ij}.
     
+    If `norm` is True, the variance is normalized to 1, which amounts to
+    normalizing :math:`\\mathbf w` to unit length.
+    
     """
     
     # TODO reference? must find some standard book with a treatment which is
     # not too formal yet writes clearly about the covariance function
     
     # TODO nd version with w.ndim == n, it's a nd convolution
-    
+        
     w = jnp.asarray(w)
     assert w.ndim == 1
     if len(w):
-        corr = jnp.convolve(w, w[::-1])
-        return corr.at[delta + len(w) - 1].get(mode='fill', fill_value=0)
+        cov = jnp.convolve(w, w[::-1])
+        if norm:
+            cov /= cov[len(w) - 1]
+        return cov.at[delta + len(w) - 1].get(mode='fill', fill_value=0)
     else:
         return jnp.zeros(delta.shape)
 
@@ -1518,6 +1524,22 @@ def _ar_with_roots(delta, slnr, lnc, norm):
     # gamma[0]) or gamma inf/nan. Take the smallest log|root| and assume it
     # alone determines gamma. This is best implemented as an option in
     # _gamma_from_ampl_matmul.
+    
+    # Is numerical integration of the spectrum a feasible way to get the
+    # covariance? The roots correspond to peaks, and they get very high as the
+    # roots get close to 1. But I know where the peaks are in advance => nope
+    # because the e^iwx oscillates arbitrarily fast. However maybe I can compute
+    # the first p terms, which solves my current problem with gamma. I guess I
+    # just have to use a multiple of p of quadrature points. The spectrum
+    # oscillates too but only up to mode p. The total calculation cost is then
+    # O(p^2), better than current O(p^3). See Hamilton (1994, p. 155).
+    
+    # Other solution (Hamilton p. 319): the covariance should be equal to the
+    # impulse response, so I can get gamma from phi by an evolution starting
+    # from zeros. => Nope, it's equal only for AR(1).
+    
+    # condition for phi: in the region phi >= 0, it must be sum(phi) <= 1
+    # (Hamilton p. 659).
     
     # p = phi.size
     # yw = _yule_walker_inv_mat(phi)
@@ -1734,6 +1756,9 @@ class AR(_ARBase):
         # 1) when |r| > 1. => open an issue both for jax (adopt implementation
         # of polyfromroots) and numpy (add option to change normalization)
         
+        # simpler solution: transform the roots with 1/z such that they lie in
+        # the unit circle, then reverse the polynomial
+        
         coef = jnp.poly(roots)
         if _patch_jax.isconcrete(coef):
             c = _patch_jax.concrete(coef)
@@ -1945,13 +1970,15 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
 
     # The lower bound is good when the trees are deep, the upper bound when they
     # are shallow. There may be a lambda(alpha, beta) to combine the bounds that
-    # gives a very accurate approximation.
+    # gives a very accurate approximation. => Or maybe the lambda should be
+    # used at the bottom of the recursion.
 
     # Stationarity would be useful to accelerate inference a lot. Maybe it is
     # sufficient to set the toeplitz flag in GP instead of doing something here
     # (=> no, could be confusing, make it really stationary), I have to check
     # that the covariance from an edge to a point is a valid stationary
-    # autocorrelation.
+    # autocorrelation. => Nope, it does not accelerate because in ND the
+    # resulting matrix is not a composition of Toeplitz matrices.
     
     # Is there a way to contract 2 levels of recursion even if they are not at
     # the bottom?

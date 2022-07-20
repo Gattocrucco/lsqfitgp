@@ -524,3 +524,22 @@ def _ci_jvp(primals, tangents):
     x, = primals
     xt, = tangents
     return ci(x), xt * jnp.cos(x) / x
+
+@jax.custom_jvp
+@jax.jit
+def expm1x(x):
+    """
+    Compute accurately exp(x) - 1 - x = x^2/2 1F1(1, 3, x).
+    """
+    n = 10 if x.dtype == jnp.float32 else 17
+    k = jnp.arange(2, n + 1)
+    f = jnp.cumprod(k)
+    coef = jnp.array(1, x.dtype) / f[::-1]
+    smallx = x * x * jnp.polyval(coef, x, unroll=n)
+    return jnp.where(jnp.abs(x) < 1, smallx, jnp.expm1(x) - x)
+
+@expm1x.defjvp
+def _expm1x_jvp(p, t):
+    x, = p
+    xt, = t
+    return expm1x(x), jnp.expm1(x) * xt
