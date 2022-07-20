@@ -24,26 +24,28 @@ from numpy.polynomial import polynomial
 from scipy import linalg
 import pytest
 
-sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
 import util
 
+gen = np.random.default_rng(202207202302)
+
 def gen_ar_acf(p):
     if p:
-        mod = np.random.uniform(1.1, 10, p)
-        phase = np.random.uniform(0, 2 * np.pi, p)
+        mod = gen.uniform(1.1, 10, p)
+        phase = gen.uniform(0, 2 * np.pi, p)
         root = mod * np.exp(1j * phase)
-        ampl = np.abs(np.random.randn(p))
+        ampl = np.abs(gen.standard_normal(p))
         tau = np.arange(p + 1)
         return np.sum(ampl * root ** -tau[:, None], axis=1).real
     else:
-        return np.abs(np.random.randn(1))
+        return np.abs(gen.standard_normal(1))
 
 plist = [0, 1, 2, 10, 30, 100]
 
 def test_gen_ar_acf():
     for p in plist:
         acf = gen_ar_acf(p)
+        assert acf.ndim == 1 and acf.size == 1 + p
         mat = linalg.toeplitz(acf)
         w = linalg.eigvalsh(mat)
         assert np.min(w) >= -np.max(w) * len(mat) * np.finfo(float).eps
@@ -81,7 +83,7 @@ def test_yule_walker_inv_0():
 
 def test_yule_walker_inv_1():
     bound = 1 - 1e-8
-    phi = np.random.uniform(-bound, bound)
+    phi = gen.uniform(-bound, bound)
     acf = lgp.AR.gamma_from_phi([phi])
     acf2 = 1 / ((1 - phi) * (1 + phi)) * phi ** np.arange(2)
     np.testing.assert_allclose(acf, acf2, rtol=1e-15)
@@ -111,7 +113,7 @@ def test_real_complex():
                 add = list(np.arange(1, m + 1) * 0.1 + 1j)
                 c1 = lgp.AR(slnr=2 * n * [r], lnc=add)(0, lag)
                 c2 = lgp.AR(slnr=[], lnc=add + n * [r])(0, lag)
-                np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-9)
+                np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-8)
 
 def test_ar0():
     lag = np.arange(100)
@@ -141,6 +143,22 @@ def test_ar1():
                 den = acf[0] if norm else 1
                 np.testing.assert_allclose(c, acf / den, atol=1e-300, rtol=1e-12)
 
+def test_ar2():
+    p = 2
+    vertices = np.stack([
+        lgp.AR.phi_from_roots(l * [-0.] + (p - l) * [0], [])
+        for l in range(p + 1)
+    ])
+    a = np.abs(gen.standard_normal(p + 1))
+    phi = np.sum(a[:, None] * vertices, 0) / np.sum(a)
+    # TODO formula for the correlation?
+
+def test_zero_slnr():
+    for p in range(1, 10):
+        for s in [1, -1]:
+            p1 = lgp.AR.phi_from_roots(p * [s * 0.], [])
+            p2 = -np.atleast_1d(np.poly(p * [s]))[1:]
+            np.testing.assert_equal(p1, p2)
+
 # TODO
 # test reflection of extend_gamma
-# test ar2 (see Hamilton)

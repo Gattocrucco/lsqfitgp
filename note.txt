@@ -1240,3 +1240,13 @@ polynomials with roots either -1 or 1. To prove it, I need to prove that
 Regarding 1), see
 https://en.wikipedia.org/wiki/Geometrical_properties_of_polynomial_roots
 https://en.wikipedia.org/wiki/Rouché%27s_theorem
+
+--------
+
+Method to allow arbitrarily many large roots in np.poly:
+    1) find the smallest in modulus non-zero root x_0
+    2) rescale all roots such that |x_0| = 1
+    3) invert roots, let zero roots be inf (check complex does not produce nan)
+    4) use poly
+    5) reverse
+    6) rescale with cumprod(|x_0|)

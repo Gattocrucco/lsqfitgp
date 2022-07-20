@@ -1303,7 +1303,8 @@ def MA(delta, w=None, norm=False):
     # TODO reference? must find some standard book with a treatment which is
     # not too formal yet writes clearly about the covariance function
     
-    # TODO nd version with w.ndim == n, it's a nd convolution
+    # TODO nd version with w.ndim == n, it's a nd convolution. use
+    # jax.scipy.signal.correlate.
         
     w = jnp.asarray(w)
     assert w.ndim == 1
@@ -1729,48 +1730,29 @@ class AR(_ARBase):
             The autoregressive coefficients at lag 1...p, with p = nr + 2 nc.
         """
         slnr, lnc = cls._process_roots(slnr, lnc)
-        r = jnp.sign(slnr) * jnp.exp(jnp.abs(slnr))
-        c = jnp.exp(lnc)
+        r = jnp.copysign(jnp.exp(-jnp.abs(slnr)), slnr) # works with +/-0
+        c = jnp.exp(-lnc)
         
-        # TODO fails for overflow with very high roots. The effect of very high
-        # roots is just to set to zero high order coefficients, however since
-        # jnp.poly is normalized with 1 * x^p I can't just put the large roots
-        # in and let the coefficient go to zero, I get overflow. And within the
-        # jit I can't vary the size of the array. => set the large roots to
-        # zero, then roll right the polynomial by the number of large roots.
-        # I have to be stricter than inf to avoid overflow, the bar should be
-        # the pth-root of float.max. Ideally I would need a jnp.poly with
-        # normalization 1 * x^0.
+        # minus sign in the exponentials to do 1/z, the poly output is already
+        # reversed
+                
+        roots = jnp.concatenate([r, c, c.conj()]).sort() # <-- polyroots sorts
+        coef = jnp.atleast_1d(jnp.poly(roots))
         
-        roots = jnp.concatenate([r, c, c.conj()]).sort()
+        # TODO the implementation of jnp.poly (and np.poly) is inferior to the
+        # one of np.polynomial.polynomial.polyfromroots, which cares about
+        # numerical accuracy and would reduce compilation time if ported to jax
+        # (current one is O(p), that would be O(log p)).
         
-        # TODO is there an ordering which increases accuracy? (I've checked
-        # the result is not invariant under permutation)
-        
-        # => solution to both todos: the implementation of jnp.poly (and
-        # np.poly) is inferior to the one of
-        # np.polynomial.polynomial.polyfromroots, which cares about numerical
-        # accuracy and would reduce compilation time if ported to jax (current
-        # one is O(p), that would be O(log p)). Port that to jax changing
-        # convention on the normalization: use (x - r) when |r| < 1, and (x/r -
-        # 1) when |r| > 1. => open an issue both for jax (adopt implementation
-        # of polyfromroots) and numpy (add option to change normalization)
-        
-        # simpler solution: transform the roots with 1/z such that they lie in
-        # the unit circle, then reverse the polynomial
-        
-        coef = jnp.poly(roots)
-        if _patch_jax.isconcrete(coef):
+        if _patch_jax.isconcrete(coef) and coef.size:
             c = _patch_jax.concrete(coef)
+            numpy.testing.assert_equal(c[0].item(), 1)
             numpy.testing.assert_allclose(numpy.imag(c), 0, rtol=0, atol=1e-4)
-        coef = jnp.atleast_1d(coef.real)[::-1]
-        # coef = numpy.polynomial.polynomial.polyfromroots(roots)
-        # numpy.testing.assert_allclose(coef.imag, 0, rtol=0, atol=1e-4)
-        # coef = coef.real
-        return -coef[1:] / coef[0]
+        return -coef.real[1:]
     
     @classmethod
     def ampl_from_roots(cls, slnr, lnc, gamma):
+        # TODO docs
         slnr, lnc = cls._process_roots(slnr, lnc)
         gamma = cls._process_gamma(gamma)
         assert gamma.size == 1 + slnr.size + 2 * lnc.size
@@ -1788,6 +1770,7 @@ class AR(_ARBase):
     
     @classmethod
     def cov_from_ampl(cls, slnr, lnc, ampl, lag):
+        # TODO docs
         slnr, lnc = cls._process_roots(slnr, lnc)
         ampl = cls._process_ampl(ampl)
         assert ampl.size == 1 + slnr.size + 2 * lnc.size
@@ -1797,6 +1780,11 @@ class AR(_ARBase):
             lag = lag[None]
         acf = _gamma_from_ampl_matmul(slnr, lnc, lag, ampl)
         return acf.squeeze(0) if scalar else acf
+    
+    # TODO methods:
+    # - gamma_from_roots which uses quadrature fourier transf of spectrum
+    # - phi_vertices(p) to generate matrix of vertices of phi simplex
+    # - phi_from_baricentric(a, vertices) with a > 0 not normalized
     
     @staticmethod
     def _process_roots(slnr, lnc):
