@@ -6,23 +6,17 @@ Python module for manipulating Gaussian processes. Features:
 
   * Use [gvar](https://github.com/gplepage/gvar) to keep track transparently of
     correlations between prior, data and posterior.
-
   * Fit a latent Gaussian process in a nonlinear model with
     [lsqfit](https://github.com/gplepage/lsqfit).
-    
   * [JAX](https://github.com/google/jax)-friendly.
-  
   * Supports multidimensional structured non-numerical input with named
     dimensions.
-    
   * Apply arbitrary linear transformations to the process, finite and
     infinite.
-  
   * Use dictionaries to manipulate hyperparameters and hyperpriors. Use
     `gvar.BufferDict` to transparently apply transformations.
-    
   * Get a covariance matrix for the optimized hyperparameters.
-  
+
 ## Installation
 
 Python >= 3.8 required. Then:
@@ -106,6 +100,5 @@ This software contains code adapted from the following sources:
 
   * [TOEPLITZ_CHOLESKY](http://people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html)
     by John Burkardt (LGPL license)
-    
   * [SuperGauss](https://cran.r-project.org/package=SuperGauss) by
     Yun Ling and Martin Lysy (GPL license)
