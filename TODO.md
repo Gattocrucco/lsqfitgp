@@ -81,8 +81,6 @@ In the kernels reference, generate automatically:
 
 Explain somewhere the jax 32/64 bit thing.
 
-add a thanks section to the readme. SuperGauss, mlkernels, ...? (with authors)
-
 Add an example with regression + gp
 
 ## Fixes and tests

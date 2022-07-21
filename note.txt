@@ -1255,3 +1255,33 @@ Method to allow arbitrarily many large roots in np.poly:
 
 What is the meaning of the phi in the center of the simplex? It is zero at odd
 lags. How does a truncated phi appear in baricentric?
+
+2022-07-21
+==========
+
+Method to obtain the amplitudes of the AR covariance:
+
+    1) The z transform (with sign +) of gamma is 1/P(z)
+    2) Thus gamma_m = 1/m! d^m/dz^m 1/P(z)|_z=0
+    3) Decompose 1/P(z) as sum_k c_k / (1 - lambda_k z)
+    4) The c_k are given by Hamilton (1994, p. 34-35), or in general see
+       https://en.wikipedia.org/wiki/Partial_fraction_decomposition
+    5) Use that d^m/dz^m 1/(1 - az)^l = (m+l-1)!/(l-1)! a^m / (1 - az)^m+l =
+                                      = (l)_m a^m / (1 - az)^m+l
+
+When two roots are close, assuming no other roots are close, I just need the
+difference to write a stable formula. When (inverse) roots are close to zero,
+even if they are close together, I think the correct limit is zero.
+
+--------
+
+scipy.special.binom does not obey https://dlmf.nist.gov/1.2.E6. maybe open an
+issue.
+
+--------
+
+I think that https://dlmf.nist.gov/25.11.E7 is wrong or incoherent with
+https://dlmf.nist.gov/1.2.E6, according to which (n k) = 0 if n is an integer <
+k. => Nope, it just means the last term and some of the higher terms of the
+summation vanish, the first terms of the summation are nonzero because in (n k)
+n < 0.

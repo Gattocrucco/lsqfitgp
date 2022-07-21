@@ -22,6 +22,7 @@ from jax import test_util
 import numpy as np
 from scipy import special, linalg
 import pytest
+import mpmath
 
 from lsqfitgp import _patch_jax
 import util
@@ -103,3 +104,33 @@ def test_expm1x():
     y = _patch_jax.expm1x(x.astype('f'))
     np.testing.assert_array_max_ulp(y, y2.astype('f'), 4)
     test_util.check_grads(_patch_jax.expm1x, (x,), 2)
+
+zeta = np.vectorize(lambda *args: float(mpmath.zeta(*args)))
+
+def test_hurwitz_zeta():
+    s = np.linspace(-10, 0, 100)[:, None]
+    a = np.linspace(0, 1, 100)
+    z1 = zeta(s, a)
+    z2 = _patch_jax.hurwitz_zeta(s, a)
+    eps = np.finfo(float).eps
+    tol = 60 * eps * np.max(np.abs(z1), 1)
+    maxdiff = np.max(np.abs(z2 - z1), 1)
+    assert np.all(maxdiff < tol)
+
+def test_hurwitz_zeta_vectorized():
+    s = np.linspace(-10, 0, 100)
+    a = np.linspace(0, 1, 100)
+    z1 = _patch_jax.hurwitz_zeta(s, a)
+    z2 = np.vectorize(_patch_jax.hurwitz_zeta)(s, a)
+    np.testing.assert_array_max_ulp(z1, z2, 500)
+    # TODO what?? 500 ULP?? what??
+
+def test_gamma():
+    x = np.linspace(-100, 100, 1000)
+    g1 = special.gamma(x)
+    g2 = _patch_jax.gamma(x)
+    np.testing.assert_array_max_ulp(g2, g1, 1500)
+
+# TODO test periodic zeta (half-integer s for now)
+
+# TODO test expn

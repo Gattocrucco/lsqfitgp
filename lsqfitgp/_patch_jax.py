@@ -21,6 +21,7 @@ from jax.config import config
 config.update("jax_enable_x64", True)
 
 import functools
+import math
 
 import jax
 from jax import core
@@ -324,8 +325,8 @@ def expn_imag_smallx(n, x):
         
     # DLMF 8.19.7
     
-    k = jnp.arange(n).astype(float)
-    fact = jnp.cumprod(k.at[0].set(1))
+    k = jnp.arange(n)
+    fact = jnp.cumprod(k.at[0].set(1), dtype=float)
     n_1fact = fact[-1]
     ix = 1j * x
     E_1 = exp1_imag(x) # E_1(-ix)
@@ -340,6 +341,8 @@ def expn_imag_smallx(n, x):
 
 def poch(x, k):
     return jnp.exp(jspecial.gammaln(x + k) - jspecial.gammaln(x)) # DLMF 5.2.5
+    # TODO does not handle properly special cases with x and/or k nonpositive
+    # integers
     
 def expn_asymp_coefgen(s, e, n):
     k = jnp.arange(s, e)
@@ -543,3 +546,76 @@ def _expm1x_jvp(p, t):
     x, = p
     xt, = t
     return expm1x(x), jnp.expm1(x) * xt
+
+def _float_type(*args):
+    t = jnp.result_type(*args)
+    return t if jnp.issubdtype(t, jnp.inexact) else jnp.float64
+
+def _zeta_series(s, a1):
+    """
+    hurwitz zeta(s, 1 - a1)
+    assuming s < 0 and a1 <= 1/2
+    https://dlmf.nist.gov/25.11.E10
+    """
+    t = _float_type(s, a1)
+    minz = 0.0037 # = min(2 gamma(s) / (2 pi)^s) for s <= 0
+    nmax = int(math.ceil(-math.log2(jnp.finfo(t).eps * minz)))
+    n = jnp.arange(nmax + 1)
+    ns = n + s[..., None]
+    ns1 = ns - 1
+    ns1_limit = jnp.where(ns1 == 0, 1, ns1)
+    ns1_limit = jnp.where(ns1 == 1, 0, ns1_limit)
+    # TODO this == 1 worries me, maybe sometimes it's violated, use shift
+    a1 = a1[..., None]
+    factor = jnp.cumprod((ns1_limit * a1 / n).at[..., 0].set(1), -1, t)
+    zeta = special.zeta(ns)
+    # scipy's zeta is about 20 ulp accurate, so I guess most of the error of
+    # this implementation originates there, no point in tweaking other things
+    # TODO a jax compatible implementation of zeta (port scipy.zeta?) maybe
+    # there is an algorithm to generate a sequence of values of zeta
+    zeta_limit = jnp.where(ns1 == 0, 1, zeta)
+    kw = dict(precision=lax.Precision.HIGHEST)
+    series = jnp.matmul(factor[..., None, :], zeta_limit[..., :, None], **kw)
+    return series.squeeze((-2, -1))
+
+# @jax.jit
+def hurwitz_zeta(s, a):
+    """
+    For 0 <= a <= 1 and -S <= s <= 0 with S not too large
+    """
+    s = jnp.asarray(s)
+    a = jnp.asarray(a)
+    cond = a < 1/2  # do a + 1 to bring a closer to 1
+    a1 = jnp.where(cond, -a, 1. - a)
+    zeta = _zeta_series(s, a1)  # https://dlmf.nist.gov/25.11.E10
+    zeta += jnp.where(cond, a ** -s, 0)  # https://dlmf.nist.gov/25.11.E3
+    return zeta
+
+def periodic_zeta(x, s):
+    """
+    s > 1, x real
+    """
+    t = _float_type(x, s)
+    eps = jnp.finfo(t).eps
+    nmax = 50
+    larges = jnp.ceil(-jnp.log(eps) / jnp.log(nmax)) # 1/nmax^s < eps
+
+    # large s  https://dlmf.nist.gov/25.13.E1
+    n = jnp.arange(nmax + 1)
+    terms = jnp.exp(-2j * jnp.pi * x[..., None] - s[..., None] * jnp.log(n))
+    # TODO I think there is a fast way to compute log(range), see Johansson
+    # (2015). => not relevant here
+    z_larges = jnp.sum(terms, -1)
+    
+    # small s  https://dlmf.nist.gov/25.13.E2
+    s1 = 1 - s
+    hz_x = hurwitz_zeta(s1, x)
+    hz_1x = hurwitz_zeta(s1, 1 - x)
+    phase_x = jnp.exp(1j * jnp.pi * s1 / 2)
+    phase_1x = phase_x.conj()
+    factor = gamma(s1) / (2 * jnp.pi) ** s1
+    z_smalls = factor * (phase_x * hz_x + phase_1x * hz_1x)
+    # TODO breaks for integer s (cancellation * inf), probably I should
+    # expand the hurwitz zeta series into the formula for the periodic zeta
+    
+    return jnp.where(s < larges, z_smalls, z_larges)

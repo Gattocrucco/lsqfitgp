@@ -84,3 +84,28 @@ online at
 [gattocrucco.github.io/lsqfitgp/htmlcov](https://gattocrucco.github.io/lsqfitgp/htmlcov/).
 To browse it locally after `make tests` etc., do `make covreport` and open
 `htmlcov/index.html` in your browser.
+
+## Similar libraries
+
+  * [stheno](https://github.com/wesselb/stheno)
+  * [tinygp](https://github.com/dfm/tinygp)
+
+See also [Comparison of Gaussian process Software](https://en.wikipedia.org/wiki/Comparison_of_Gaussian_process_software)
+on Wikipedia.
+
+## License
+
+This software is released under the [GPL](https://www.gnu.org/licenses/).
+Amongst other things, it implies that, if you release an adaptation of this
+software, *[or even a program just importing it as external
+library](https://www.gnu.org/licenses/gpl-faq.html.en#IfLibraryIsGPL)*, you
+have to release its code as open source with a license at least as strong as
+the GPL.
+
+This software contains code adapted from the following sources:
+
+  * [TOEPLITZ_CHOLESKY](http://people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html)
+    by John Burkardt (LGPL license)
+    
+  * [SuperGauss](https://cran.r-project.org/package=SuperGauss) by
+    Yun Ling and Martin Lysy (GPL license)

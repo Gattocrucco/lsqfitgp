@@ -13,3 +13,4 @@ twine
 wheel
 ipython
 ipdb
+mpmath
