@@ -623,7 +623,8 @@ the following punctuation characters: ! « » ” “ ” ‘ ’ / ( ) ‘ ? ¡
 <dd><p>Bessel kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(r) = \Gamma(\nu + 1) 2^\nu (sr)^{-\nu} J_{\nu}(sr),
-\quad s = 2 + \nu / 2, \nu &gt; 0,\]</div>
+\quad s = 2 + \nu / 2,
+\quad \nu \ge 0,\]</div>
 <p>where <cite>s</cite> is a crude estimate of the half width at half maximum of
 <span class="math notranslate nohighlight">\(J_\nu\)</span>. Can be used in up to <span class="math notranslate nohighlight">\(2(\lfloor\nu\rfloor + 1)\)</span>
 dimensions and derived up to <span class="math notranslate nohighlight">\(\lfloor\nu/2\rfloor\)</span> times.</p>
@@ -897,7 +898,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x135f2a3b0&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x13760aa70&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
@@ -983,7 +984,7 @@ Astronomical Time Series</em>.</p>
 <img alt="_images/kernelsref-Log-samples.png" src="_images/kernelsref-Log-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.MA">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">MA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.MA" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">MA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.MA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Discrete moving average kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(\Delta) = \sum_{k=|\Delta|}^{n-1} w_k w_{k-|\Delta|},
@@ -994,6 +995,8 @@ average with weights <span class="math notranslate nohighlight">\(\mathbf w\)</s
 \[\begin{split}k(i, j) &amp;= \operatorname{Cov}[y_i, y_j], \\
 y_i &amp;= \sum_{k=0}^{n-1} w_k \epsilon_{i-k}, \\
 \operatorname{Cov}[\epsilon_i,\epsilon_j] &amp;= \delta_{ij}.\end{split}\]</div>
+<p>If <cite>norm</cite> is True, the variance is normalized to 1, which amounts to
+normalizing <span class="math notranslate nohighlight">\(\mathbf w\)</span> to unit length.</p>
 </dd></dl>
 
 <img alt="_images/kernelsref-MA.png" src="_images/kernelsref-MA.png" />
