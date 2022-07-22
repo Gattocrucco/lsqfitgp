@@ -42,7 +42,7 @@ setuptools.setup(
     python_requires='>=3.8', # first version with functools.cached_property
     install_requires=[
         'numpy>=1.20', # first version with broadcast_shapes
-        'scipy>=1.3.2', # first providing py3.8 wheels
+        'scipy>=1.4.1', # first supporting special.zeta(negative number)
         'jax>=0.3.13', # release at adoption
         'jaxlib>=0.3.10', # release at adoption
         'gvar>=1.10', # first version with new gvars correlated with old ones
