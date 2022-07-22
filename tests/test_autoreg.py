@@ -159,16 +159,5 @@ def test_zero_slnr():
             p1 = lgp.AR.phi_from_roots(p * [s * 0.], [])
             p2 = -np.atleast_1d(np.poly(p * [s]))[1:]
             np.testing.assert_equal(p1, p2)
-
-def test_phi_vertices():
-    v0 = np.empty((1, 0))
-    np.testing.assert_equal(lgp.AR.phi_vertices(0), v0)
-    v1 = np.array([[1], [-1]])
-    np.testing.assert_equal(lgp.AR.phi_vertices(1), v1)
-    v2 = np.array([[ 2, -1],
-                   [ 0,  1],
-                   [-2, -1]])
-    np.testing.assert_equal(lgp.AR.phi_vertices(2), v2)
-
 # TODO
 # test reflection of extend_gamma
