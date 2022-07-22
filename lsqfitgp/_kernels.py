@@ -2125,6 +2125,8 @@ class BART(_BARTBase):
         ]
         out = _bart_correlation_maxd_vectorized(*args, int(maxd), 0, bool(debug))
         return out.reshape(shape)
+        
+        # TODO use jnp.vectorize
 
 def _check_x(x):
     x = _array.asarray(x)

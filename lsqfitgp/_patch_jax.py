@@ -555,7 +555,7 @@ def _float_type(*args):
 def _hurwitz_zeta_series(s, a1, onlyeven=False):
     """
     hurwitz zeta(s, 1 - a1)
-    assuming -S <= s < 0 and |a1| <= 1/2 with S ~ some decade
+    assuming -S <= s <= 0 and |a1| <= 1/2 with S ~ some decade
     https://dlmf.nist.gov/25.11.E10
     """
     t = _float_type(s, a1)
@@ -576,6 +576,7 @@ def _hurwitz_zeta_series(s, a1, onlyeven=False):
     zeta = special.zeta(ns)
     # scipy's zeta is about 20 ulp accurate, so I guess most of the error of
     # this implementation originates there, no point in tweaking other things
+    # zeta(negative even integer) = 0, but difficult to use with vect
     # TODO a jax compatible implementation of zeta (port scipy.zeta?) maybe
     # there is an algorithm to generate a sequence of values of zeta
     zeta_limit = jnp.where(ns1 == 0, 1, zeta)
@@ -657,13 +658,34 @@ def periodic_zeta_real_2(x, s):
     x %= 1  # in [0, 1)
     x = jnp.where(x < 1/2, x, 1 - x)  # in [0, 1/2]
     s1 = 1 - s  # < 0
-    hz_x1x = x ** -s1 + 2 * _hurwitz_zeta_series(s1, x, onlyeven=True)
     pi = (2 * jnp.pi) ** -s1
     gam = gamma(s1)
     cos = jnp.cos(jnp.pi / 2 * s1)
-    gamcos_odds1 = jnp.where(s % 4, -1, 1) * jnp.pi / (2 * gamma(s))
-    gamcos = jnp.where(s % 2, gam * cos, gamcos_odds1)
-    z_smalls = pi * gamcos * hz_x1x
-    # TODO breaks for odd s: gamcos = inf, hz_x1x = 0
+    hz = x ** -s1 + 2 * _hurwitz_zeta_series(s1, x, onlyeven=True)
+    
+    # pole canceling
+    gam = jnp.where(s % 1, gam, jnp.where(s % 2, 1, -1) / gamma(s)) # int s1
+    cos = jnp.where(s % 2, cos, jnp.where(s % 4, 1, -1) * jnp.pi / 2) # odd s1
+    # TODO zero of hz for even s1
+    # TODO very inaccurate near the cancellations, need to extend them
+    # with radius 0.01 (cancel the power directly into the series?)
+    
+    # strategy to solve the cancellation problems:
+    # 1) let -q be the nearest integer to s1, such that s1 = -q + a with
+    #    |a| <= 1/2
+    # 2) if q even, go to (3), else go to (6)
+    # 3) take out the q-th power from the series and subtract it from the
+    #    external power, the numerically stable form is
+    #    x^q-a - x^q = x^q expm1(-a log x), force 0 if x = 0
+    # 4) use the reflection formula https://dlmf.nist.gov/25.4.E1 to
+    #    compute accurately zeta(a) - zeta(0) = zeta(a) + 1/2 (probably
+    #    converting cos to sin and handling the poles is sufficient)
+    # 5) in the q-th term, replace zeta(a) with zeta(a) + 1/2 to match
+    #    the power brought out
+    # 6) q odd: derive an accurate expression for cos(π/2 s1) Gamma(s1) (see
+    #    4).
+    
+    z_smalls = pi * gam * cos * hz
+    # TODO should work for s = 1, finite for noninteger x, +inf for integer x
     
     return jnp.where(s < larges, z_smalls, z_larges)
