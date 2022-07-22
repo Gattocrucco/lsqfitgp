@@ -187,7 +187,7 @@ Documentation
     :class-doc-from: class
 .. image:: kernelsref-GammaExp.png
 .. image:: kernelsref-GammaExp-samples.png
-.. autoclass:: Gibbs(x, y, scalefun=<function <lambda> at 0x135f2a3b0>)
+.. autoclass:: Gibbs(x, y, scalefun=<function <lambda> at 0x13760aa70>)
     :members:
     :class-doc-from: class
 .. image:: kernelsref-Gibbs.png
@@ -212,7 +212,7 @@ Documentation
     :class-doc-from: class
 .. image:: kernelsref-Log.png
 .. image:: kernelsref-Log-samples.png
-.. autoclass:: MA(delta, w=None)
+.. autoclass:: MA(delta, w=None, norm=False)
     :members:
     :class-doc-from: class
 .. image:: kernelsref-MA.png
