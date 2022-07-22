@@ -550,6 +550,7 @@ def _expm1x_jvp(p, t):
 def _float_type(*args):
     t = jnp.result_type(*args)
     return t if jnp.issubdtype(t, jnp.inexact) else jnp.float64
+    # TODO in jax somewhere there is _promote_dtypes_inexact, look it up
 
 def _hurwitz_zeta_series(s, a1):
     """

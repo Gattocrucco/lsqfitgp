@@ -1771,8 +1771,6 @@ class AR(_ARBase):
         # TODO possibly not accurate for large p. Do a test with an
         # implementation of poly which uses integer roots and non-fft convolve
         # (maybe add it as an option to my to-be-written implementation of poly)
-        # it can be probably written more efficiently with binomial power
-        # expansion
 
     @classmethod
     def ampl_from_roots(cls, slnr, lnc, gamma):
@@ -1805,25 +1803,14 @@ class AR(_ARBase):
         acf = _gamma_from_ampl_matmul(slnr, lnc, lag, ampl)
         return acf.squeeze(0) if scalar else acf
         
-    @staticmethod
-    def phi_vertices(p):
-        assert int(p) == p and p >= 0, p
-        roots = jnp.where(jnp.arange(p + 1)[:, None] <= jnp.arange(p), 1, -1)
-        return jax.vmap(lambda r: -jnp.atleast_1d(jnp.poly(r))[1:])(roots)
-        # TODO possibly not accurate for large p, see phi_from_roots
-    
-    @staticmethod
-    def phi_from_baricentric(a, vertices):
-        a = jnp.asarray(a)
-        vertices = jnp.asarray(vertices)
-        assert a.ndim == 1 and vertices.ndim == 2
-        assert a.size == vertices.shape[0]
-        assert vertices.shape[0] == vertices.shape[1] + 1
-        return jnp.sum(a[:, None] * vertices, 0) / jnp.sum(a)
+    @classmethod
+    def inverse_roots_from_phi(cls, phi):
+        phi = cls._process_phi(phi)
+        poly = jnp.concatenate([jnp.ones(1), -phi])
+        return jnp.roots(poly, strip_zeros=False)
     
     # TODO methods:
     # - gamma_from_roots which uses quadrature fourier transf of spectrum
-    # - baricentric_from_phi
     
     @staticmethod
     def _process_roots(slnr, lnc):
