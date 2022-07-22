@@ -131,6 +131,18 @@ def test_gamma():
     g2 = _patch_jax.gamma(x)
     np.testing.assert_array_max_ulp(g2, g1, 1500)
 
-# TODO test periodic zeta (half-integer s for now)
+@np.vectorize
+def periodic_zeta_real(x, s):
+    return float(mpmath.polylog(s, np.exp(2j * np.pi * x)).real)
+
+def test_periodic_zeta():
+    x = np.linspace(-1, 2, 100)
+    s = 0.5 + np.arange(1, 61)[:, None]
+    z1 = periodic_zeta_real(x, s)
+    z2 = _patch_jax.periodic_zeta_real(x, s)
+    eps = np.finfo(float).eps
+    tol = np.where(s.squeeze() < 2, 1e8, 33) * eps * np.max(np.abs(z1), 1)
+    maxdiff = np.max(np.abs(z2 - z1), 1)
+    assert np.all(maxdiff < tol)
 
 # TODO test expn

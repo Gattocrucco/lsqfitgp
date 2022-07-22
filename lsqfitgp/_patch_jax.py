@@ -551,10 +551,10 @@ def _float_type(*args):
     t = jnp.result_type(*args)
     return t if jnp.issubdtype(t, jnp.inexact) else jnp.float64
 
-def _zeta_series(s, a1):
+def _hurwitz_zeta_series(s, a1):
     """
     hurwitz zeta(s, 1 - a1)
-    assuming s < 0 and a1 <= 1/2
+    assuming -S <= s < 0 and |a1| <= 1/2 with S ~ some decade
     https://dlmf.nist.gov/25.11.E10
     """
     t = _float_type(s, a1)
@@ -585,37 +585,43 @@ def hurwitz_zeta(s, a):
     """
     s = jnp.asarray(s)
     a = jnp.asarray(a)
+    
     cond = a < 1/2  # do a + 1 to bring a closer to 1
     a1 = jnp.where(cond, -a, 1. - a)
-    zeta = _zeta_series(s, a1)  # https://dlmf.nist.gov/25.11.E10
+    zeta = _hurwitz_zeta_series(s, a1)  # https://dlmf.nist.gov/25.11.E10
     zeta += jnp.where(cond, a ** -s, 0)  # https://dlmf.nist.gov/25.11.E3
     return zeta
 
-def periodic_zeta(x, s):
+# @jax.jit
+def periodic_zeta_real(x, s):
     """
-    s > 1, x real
+    compute Re F(x,s) = Re Li_s(e^2πix)
+    real part of https://dlmf.nist.gov/25.13
+    for real s > 1, real x
     """
+    x = jnp.asarray(x)
+    s = jnp.asarray(s)
+    
     t = _float_type(x, s)
     eps = jnp.finfo(t).eps
     nmax = 50
-    larges = jnp.ceil(-jnp.log(eps) / jnp.log(nmax)) # 1/nmax^s < eps
+    larges = math.ceil(-math.log(eps) / math.log(nmax)) # 1/nmax^s < eps
 
     # large s  https://dlmf.nist.gov/25.13.E1
-    n = jnp.arange(nmax + 1)
-    terms = jnp.exp(-2j * jnp.pi * x[..., None] - s[..., None] * jnp.log(n))
-    # TODO I think there is a fast way to compute log(range), see Johansson
-    # (2015). => not relevant here
+    n = jnp.arange(1, nmax + 1)
+    terms = jnp.cos(2 * jnp.pi * n * x[..., None]) / n ** s[..., None]
     z_larges = jnp.sum(terms, -1)
     
     # small s  https://dlmf.nist.gov/25.13.E2
-    s1 = 1 - s
+    x %= 1  # in [0, 1)
+    s1 = 1 - s  # < 0
     hz_x = hurwitz_zeta(s1, x)
     hz_1x = hurwitz_zeta(s1, 1 - x)
-    phase_x = jnp.exp(1j * jnp.pi * s1 / 2)
-    phase_1x = phase_x.conj()
-    factor = gamma(s1) / (2 * jnp.pi) ** s1
-    z_smalls = factor * (phase_x * hz_x + phase_1x * hz_1x)
+    phase = jnp.cos(jnp.pi / 2 * s1)
+    factor = gamma(s1) * (2 * jnp.pi) ** -s1
+    z_smalls = factor * phase * (hz_x + hz_1x)
     # TODO breaks for integer s (cancellation * inf), probably I should
-    # expand the hurwitz zeta series into the formula for the periodic zeta
+    # expand the hurwitz zeta series into the formula for the periodic zeta,
+    # also hz_x + hz_1x is probably wildly inaccurate for s = 1.5
     
     return jnp.where(s < larges, z_smalls, z_larges)
