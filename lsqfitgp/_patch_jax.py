@@ -552,7 +552,7 @@ def _float_type(*args):
     return t if jnp.issubdtype(t, jnp.inexact) else jnp.float64
     # TODO in jax somewhere there is _promote_dtypes_inexact, look it up
 
-def _hurwitz_zeta_series(s, a1):
+def _hurwitz_zeta_series(s, a1, onlyeven=False):
     """
     hurwitz zeta(s, 1 - a1)
     assuming -S <= s < 0 and |a1| <= 1/2 with S ~ some decade
@@ -569,6 +569,10 @@ def _hurwitz_zeta_series(s, a1):
     # TODO this == 1 worries me, maybe sometimes it's violated, use shift
     a1 = a1[..., None]
     factor = jnp.cumprod((ns1_limit * a1 / n).at[..., 0].set(1), -1, t)
+    if onlyeven:
+        ns = ns[..., ::2]
+        ns1 = ns1[..., ::2]
+        factor = factor[..., ::2]
     zeta = special.zeta(ns)
     # scipy's zeta is about 20 ulp accurate, so I guess most of the error of
     # this implementation originates there, no point in tweaking other things
@@ -624,5 +628,42 @@ def periodic_zeta_real(x, s):
     # TODO breaks for integer s (cancellation * inf), probably I should
     # expand the hurwitz zeta series into the formula for the periodic zeta,
     # also hz_x + hz_1x is probably wildly inaccurate for s = 1.5
+    
+    return jnp.where(s < larges, z_smalls, z_larges)
+
+# @jax.jit
+def periodic_zeta_real_2(x, s):
+    """
+    compute Re F(x,s) = Re Li_s(e^2πix)
+    real part of https://dlmf.nist.gov/25.13.E1
+    for real s > 1, real x
+    """
+    x = jnp.asarray(x)
+    s = jnp.asarray(s)
+    
+    t = _float_type(x, s)
+    eps = jnp.finfo(t).eps
+    nmax = 50
+    larges = math.ceil(-math.log(eps) / math.log(nmax)) # 1/nmax^s < eps
+
+    # large s, https://dlmf.nist.gov/25.13.E1
+    n = jnp.arange(1, nmax + 1)
+    terms = jnp.cos(2 * jnp.pi * n * x[..., None]) / n ** s[..., None]
+    z_larges = jnp.sum(terms, -1)
+    
+    # small s, https://dlmf.nist.gov/25.11.E10 and
+    # https://dlmf.nist.gov/25.11.E3 expanded into
+    # https://dlmf.nist.gov/25.13.E2
+    x %= 1  # in [0, 1)
+    x = jnp.where(x < 1/2, x, 1 - x)  # in [0, 1/2]
+    s1 = 1 - s  # < 0
+    hz_x1x = x ** -s1 + 2 * _hurwitz_zeta_series(s1, x, onlyeven=True)
+    pi = (2 * jnp.pi) ** -s1
+    gam = gamma(s1)
+    cos = jnp.cos(jnp.pi / 2 * s1)
+    gamcos_odds1 = jnp.where(s % 4, -1, 1) * jnp.pi / (2 * gamma(s))
+    gamcos = jnp.where(s % 2, gam * cos, gamcos_odds1)
+    z_smalls = pi * gamcos * hz_x1x
+    # TODO breaks for odd s: gamcos = inf, hz_x1x = 0
     
     return jnp.where(s < larges, z_smalls, z_larges)

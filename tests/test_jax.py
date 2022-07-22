@@ -133,15 +133,21 @@ def test_gamma():
 
 @np.vectorize
 def periodic_zeta_real(x, s):
-    return float(mpmath.polylog(s, np.exp(2j * np.pi * x)).real)
+    with mpmath.workdps(32):
+        arg = mpmath.exp(2j * mpmath.pi * x)
+    return float(mpmath.polylog(s, arg).real)
 
 def test_periodic_zeta():
     x = np.linspace(-1, 2, 100)
-    s = 0.5 + np.arange(1, 61)[:, None]
+    ssup = 31
+    s = np.concatenate([
+        0.5 + np.arange(1, ssup),
+        np.arange(2, ssup, 2),
+    ])[:, None]
     z1 = periodic_zeta_real(x, s)
-    z2 = _patch_jax.periodic_zeta_real(x, s)
+    z2 = _patch_jax.periodic_zeta_real_2(x, s)
     eps = np.finfo(float).eps
-    tol = np.where(s.squeeze() < 2, 1e8, 33) * eps * np.max(np.abs(z1), 1)
+    tol = 38 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
 
