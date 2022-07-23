@@ -598,42 +598,12 @@ def hurwitz_zeta(s, a):
     zeta += jnp.where(cond, a ** -s, 0)  # https://dlmf.nist.gov/25.11.E3
     return zeta
 
+def _standard_x(x):
+    x %= 1
+    return jnp.where(x < 1/2, x, 1 - x)
+
 # @jax.jit
 def periodic_zeta_real(x, s):
-    """
-    compute Re F(x,s) = Re Li_s(e^2πix)
-    real part of https://dlmf.nist.gov/25.13
-    for real s > 1, real x
-    """
-    x = jnp.asarray(x)
-    s = jnp.asarray(s)
-    
-    t = _float_type(x, s)
-    eps = jnp.finfo(t).eps
-    nmax = 50
-    larges = math.ceil(-math.log(eps) / math.log(nmax)) # 1/nmax^s < eps
-
-    # large s  https://dlmf.nist.gov/25.13.E1
-    n = jnp.arange(1, nmax + 1)
-    terms = jnp.cos(2 * jnp.pi * n * x[..., None]) / n ** s[..., None]
-    z_larges = jnp.sum(terms, -1)
-    
-    # small s  https://dlmf.nist.gov/25.13.E2
-    x %= 1  # in [0, 1)
-    s1 = 1 - s  # < 0
-    hz_x = hurwitz_zeta(s1, x)
-    hz_1x = hurwitz_zeta(s1, 1 - x)
-    phase = jnp.cos(jnp.pi / 2 * s1)
-    factor = gamma(s1) * (2 * jnp.pi) ** -s1
-    z_smalls = factor * phase * (hz_x + hz_1x)
-    # TODO breaks for integer s (cancellation * inf), probably I should
-    # expand the hurwitz zeta series into the formula for the periodic zeta,
-    # also hz_x + hz_1x is probably wildly inaccurate for s = 1.5
-    
-    return jnp.where(s < larges, z_smalls, z_larges)
-
-# @jax.jit
-def periodic_zeta_real_2(x, s):
     """
     compute Re F(x,s) = Re Li_s(e^2πix)
     real part of https://dlmf.nist.gov/25.13.E1
@@ -643,24 +613,31 @@ def periodic_zeta_real_2(x, s):
     s = jnp.asarray(s)
     
     t = _float_type(x, s)
+    s = s.astype(t) # avoid n^s overflow
     eps = jnp.finfo(t).eps
     nmax = 50
     larges = math.ceil(-math.log(eps) / math.log(nmax)) # 1/nmax^s < eps
 
     # large s, https://dlmf.nist.gov/25.13.E1
     n = jnp.arange(1, nmax + 1)
-    terms = jnp.cos(2 * jnp.pi * n * x[..., None]) / n ** s[..., None]
+    nx = _standard_x(n * x[..., None])
+    terms = jnp.cos(2 * jnp.pi * nx) / n ** s[..., None]
     z_larges = jnp.sum(terms, -1)
     
     # small s, https://dlmf.nist.gov/25.11.E10 and
     # https://dlmf.nist.gov/25.11.E3 expanded into
     # https://dlmf.nist.gov/25.13.E2
-    x %= 1  # in [0, 1)
-    x = jnp.where(x < 1/2, x, 1 - x)  # in [0, 1/2]
+    x = _standard_x(x) # x in [0, 1/2]
     s1 = 1 - s  # < 0
+    q = -jnp.around(s1)
+    a = s1 + q
+    # now s1 == -q + a with q integer >= 0 and |a| <= 1/2
     pi = (2 * jnp.pi) ** -s1
     gam = gamma(s1)
-    cos = jnp.cos(jnp.pi / 2 * s1)
+    arg = jnp.pi / 2 * a
+    cos = jnp.where(q % 2, jnp.sin(arg), jnp.cos(arg))
+    cos *= jnp.where(q // 2 % 2, -1, 1)
+    # cos = cos(π/2 s1) but numerically accurate near integers
     hz = x ** -s1 + 2 * _hurwitz_zeta_series(s1, x, onlyeven=True)
     
     # pole canceling
@@ -672,7 +649,7 @@ def periodic_zeta_real_2(x, s):
     
     # strategy to solve the cancellation problems:
     # 1) let -q be the nearest integer to s1, such that s1 = -q + a with
-    #    |a| <= 1/2
+    #    |a| <= 1/2 (DONE)
     # 2) if q even, go to (3), else go to (6)
     # 3) take out the q-th power from the series and subtract it from the
     #    external power, the numerically stable form is
@@ -681,11 +658,16 @@ def periodic_zeta_real_2(x, s):
     #    compute accurately zeta(a) - zeta(0) = zeta(a) + 1/2 (probably
     #    converting cos to sin and handling the poles is sufficient)
     # 5) in the q-th term, replace zeta(a) with zeta(a) + 1/2 to match
-    #    the power brought out
+    #    the power brought out => actually, the whole coefficient, not just the
+    #    zeta, unless I add the whole coefficient to the external power
+    #    (use double subtraction and search for a sum rule for Gamma)
     # 6) q odd: derive an accurate expression for cos(π/2 s1) Gamma(s1) (see
-    #    4).
+    #    4). (DONE)
     
     z_smalls = pi * gam * cos * hz
     # TODO should work for s = 1, finite for noninteger x, +inf for integer x
     
     return jnp.where(s < larges, z_smalls, z_larges)
+
+# TODO use jnp.piecewise, which only computes necessary cases, and
+# lax.while_loop, to avoid unnecessary iterations

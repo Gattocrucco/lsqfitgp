@@ -22,6 +22,7 @@ from jax import test_util
 import numpy as np
 from scipy import special, linalg
 import pytest
+from pytest import mark
 import mpmath
 
 from lsqfitgp import _patch_jax
@@ -135,19 +136,28 @@ def test_gamma():
 def periodic_zeta_real(x, s):
     with mpmath.workdps(32):
         arg = mpmath.exp(2j * mpmath.pi * x)
-    return float(mpmath.polylog(s, arg).real)
+        return float(mpmath.polylog(s, arg).real)
+        # the doubled working precision serves two purposes:
+        # 1) compute accurately arg, for example, with x=1 the result would
+        #    have a small imaginary part which changes the result significantly
+        # 2) polylog is inaccurate for s near an integer (mpmath issue #634)
 
-def test_periodic_zeta():
-    x = np.linspace(-1, 2, 100)
-    ssup = 31
-    s = np.concatenate([
-        0.5 + np.arange(1, ssup),
-        np.arange(2, ssup, 2),
-    ])[:, None]
+@mark.parametrize('s', [
+    pytest.param(0.5 + np.arange(1, 20), id='halfint'),
+    pytest.param(np.arange(2, 20, 2), id='even'),
+    pytest.param(1e-13 + np.arange(2, 15, 2), id='evenplus'),
+    pytest.param(-1e-13 + np.arange(2, 15, 2), id='evenminus'),
+    pytest.param(np.arange(3, 20, 2), id='odd', marks=mark.xfail),
+    pytest.param(1e-13 + np.arange(3, 15, 2), id='oddplus', marks=mark.xfail),
+    pytest.param(-1e-13 + np.arange(3, 15, 2), id='oddminus', marks=mark.xfail),
+])
+def test_periodic_zeta(s):
+    x = np.linspace(-1, 2, 52)
+    s = s[:, None]
     z1 = periodic_zeta_real(x, s)
-    z2 = _patch_jax.periodic_zeta_real_2(x, s)
+    z2 = _patch_jax.periodic_zeta_real(x, s)
     eps = np.finfo(float).eps
-    tol = 38 * eps * np.max(np.abs(z1), 1)
+    tol = 40 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
 

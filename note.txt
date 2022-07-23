@@ -1285,3 +1285,130 @@ https://dlmf.nist.gov/1.2.E6, according to which (n k) = 0 if n is an integer <
 k. => Nope, it just means the last term and some of the higher terms of the
 summation vanish, the first terms of the summation are nonzero because in (n k)
 n < 0.
+
+2022-07-23
+==========
+
+Even after computing in a numerically stable way cos(π/2(1-s)), the periodic
+zeta becomes inaccurate close enough to even s. The problems just begin at
+smaller scale (surely < 1e-4 compared to 1e-2 before). Since the inaccuracy
+increases smoothly as x comes closer to half integer, which is the condition
+under which the series for the hurwitz zeta has larger terms, it must be some
+problem there. Since I obtain the pochhammer symbol and the factorial with
+direct multiplication, I guess the most likely culprit is scipy's zeta. Maybe
+it's inaccurate near negative odd integers but not exactly at negative odd
+integers, possibly because it uses the reflection formula.
+
+=> Nope, scipy's zeta seems accurate enough for small odd integer s (< 10 ULP).
+On the other hand, it goes to >100 ULP for large negative s in general,
+possibly because of the cosine in the reflection formula. Maybe open an issue.
+
+So the culprit could be scipy's zeta pole? => nope, it's perfect:
+
+    In [685]: special.zeta(1+1e-15)*(1+1e-15-1)
+    Out[685]: 1.0000000000000004
+    
+    In [686]: special.zeta(1+2e-16)*(1+2e-16-1)
+    Out[686]: 0.9999999999999998
+
+Other problem: the inaccuracy appears even for s that should be dealt with by
+the polylog series. What??
+
+    In [675]: lgp._patch_jax.periodic_zeta_real(.5,12+1e-15).item()
+    Out[675]: -0.9997576851438581
+
+    In [676]: periodic_zeta_real(.5,12+1e-15).item()
+    Out[676]: -0.9997577024369573
+
+Went through it with pdb, the function correctly returns large s, and large s
+and small s agree to 6 ulp:
+
+    ipdb> p z_smalls.item()
+    -0.9997576851438587
+    ipdb> p z_larges.item()
+    -0.9997576851438581
+
+So maybe mpmath is wrong? I already knew it was probably using a different
+formula for integer s in the polylog, so it could be possible.
+
+My implementation:
+
+    In [688]: for x in lgp._patch_jax.periodic_zeta_real(.5,12+10.**-arange(1,20)):
+         ...:     print(x)
+         ...: 
+    -0.9997738459102947
+    -0.9997593517493558
+    -0.9997578523212023
+    -0.999757701866772
+    -0.9997576868162014
+    -0.9997576853110928
+    -0.9997576851605816
+    -0.9997576851455304
+    -0.9997576851440254
+    -0.9997576851438748
+    -0.9997576851438598
+    -0.9997576851438583
+    -0.9997576851438581
+    -0.9997576851438581
+    -0.9997576851438581
+    -0.9997576851438581
+    -0.9997576851438581
+    -0.9997576851438581
+    -0.9997576851438581
+
+Mpmath:
+
+    In [689]: for x in periodic_zeta_real(.5,12+10.**-arange(1,20)):
+         ...:     print(x)
+         ...: 
+    -0.9997738459102948
+    -0.9997593517493558
+    -0.9997578523212024
+    -0.9997577018667723
+    -0.9997576868162014
+    -0.9997576853110931
+    -0.9997576851605819
+    -0.9997576851455319
+    -0.9997576851440595
+    -0.999757685144186
+    -0.9997576851451117
+    -0.9997576851619757
+    -0.999757685340211
+    -0.9997576864396291
+    -0.9997577024369573
+    -0.9997576851438582
+    -0.9997576851438582
+    -0.9997576851438582
+    -0.9997576851438582
+
+Ok, seems mpmath sure enough. Can I fix it brutally by increasing the precision?
+
+    In [692]: @np.vectorize
+         ...: def periodic_zeta_real(x, s):
+         ...:     with mpmath.workdps(32):
+         ...:         arg = mpmath.exp(2j * mpmath.pi * x)
+         ...:         return float(mpmath.polylog(s, arg).real)
+         ...: 
+
+    In [693]: for x in periodic_zeta_real(.5,12+10.**-arange(1,20)):
+         ...:     print(x)
+         ...: 
+    -0.9997738459102948
+    -0.9997593517493558
+    -0.9997578523212024
+    -0.9997577018667723
+    -0.9997576868162014
+    -0.999757685311093
+    -0.9997576851605817
+    -0.9997576851455305
+    -0.9997576851440254
+    -0.9997576851438749
+    -0.9997576851438599
+    -0.9997576851438583
+    -0.9997576851438582
+    -0.9997576851438582
+    -0.9997576851438582
+    -0.9997576851438582
+    -0.9997576851438582
+    -0.9997576851438582
+    -0.9997576851438582
