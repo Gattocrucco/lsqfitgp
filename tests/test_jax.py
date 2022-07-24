@@ -142,23 +142,90 @@ def periodic_zeta_real(x, s):
         #    have a small imaginary part which changes the result significantly
         # 2) polylog is inaccurate for s near an integer (mpmath issue #634)
 
-@mark.parametrize('s', [
-    pytest.param(0.5 + np.arange(1, 20), id='halfint'),
-    pytest.param(np.arange(2, 20, 2), id='even'),
-    pytest.param(1e-13 + np.arange(2, 15, 2), id='evenplus'),
-    pytest.param(-1e-13 + np.arange(2, 15, 2), id='evenminus'),
-    pytest.param(np.arange(3, 20, 2), id='odd', marks=mark.xfail),
-    pytest.param(1e-13 + np.arange(3, 15, 2), id='oddplus', marks=mark.xfail),
-    pytest.param(-1e-13 + np.arange(3, 15, 2), id='oddminus', marks=mark.xfail),
+@mark.parametrize('sgn', [
+    pytest.param(1, id='pos'),
+    pytest.param(-1, id='neg'),
 ])
-def test_periodic_zeta(s):
+@mark.parametrize('d', [
+    pytest.param(0, id='at'),
+    pytest.param(1e-4, id='close'),
+    pytest.param(1e-13, id='veryclose'),
+])
+@mark.parametrize('s', [
+    pytest.param(0.5 + np.arange(1, 15), id='half'),
+    pytest.param(np.arange(2, 15, 2), id='even'),
+    pytest.param(np.arange(3, 15, 2), id='odd', marks=mark.xfail),
+])
+def test_periodic_zeta(s, d, sgn):
+    if d == 0 and sgn < 0:
+        pytest.skip()
     x = np.linspace(-1, 2, 52)
-    s = s[:, None]
+    s = s[:, None] + sgn * d
     z1 = periodic_zeta_real(x, s)
     z2 = _patch_jax.periodic_zeta_real(x, s)
     eps = np.finfo(float).eps
-    tol = 40 * eps * np.max(np.abs(z1), 1)
+    tol = 60 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
+
+@mark.parametrize('s', [
+    pytest.param((1 - 1e-15) * np.linspace(-1, 1, 101), id='widerange'),
+    pytest.param(0.5 * np.linspace(-1, 1, 101), id='medrange'),
+    pytest.param(1e-8 * np.linspace(-1, 1, 101), id='shortrange'),
+    pytest.param(1e-14 * np.linspace(-1, 1, 101), id='tinyrange'),
+])
+def test_zeta_zero(s):
+    with mpmath.workdps(40):
+        z1 = np.array([float(mpmath.zeta(s) - mpmath.zeta(0)) for s in s])
+    z2 = _patch_jax._zeta_zero(s)
+    np.testing.assert_array_max_ulp(z1, z2, 2)
+
+@mark.parametrize('s', [
+    pytest.param(1, id='pos'),
+    pytest.param(-1, id='neg'),
+])
+@mark.parametrize('e', [
+    pytest.param(0.5 * np.linspace(0, 1, 51), id='medrange'),
+    pytest.param(1e-8 * np.linspace(0, 1, 51), id='shortrange'),
+    pytest.param(1e-14 * np.linspace(0, 1, 51), id='tinyrange'),
+])
+@mark.parametrize('x', [
+    pytest.param(2, id='nearpole'),
+    pytest.param(np.arange(3, 15), id='farpole'),
+])
+def test_gamma_incr(x, e, s):
+    x = np.reshape(x, (-1, 1))
+    @np.vectorize
+    def func(x, e):
+        with mpmath.workdps(40):
+            x = mpmath.mpf(float(x))
+            e = mpmath.mpf(float(e))
+            denom = mpmath.gamma(x) * mpmath.gamma(1 + e)
+            return float(mpmath.gamma(x + e) / denom - 1)
+    e *= s
+    e = np.where(x == 1, np.abs(e), e)
+    g1 = func(x, e)
+    g2 = _patch_jax._gamma_incr(x, e)
+    np.testing.assert_array_max_ulp(g2, g1, 5)
+
+@mark.parametrize('s', [
+    pytest.param(1, id='pos'),
+    pytest.param(-1, id='neg'),
+])
+@mark.parametrize('x', [
+    pytest.param(0.5 * np.linspace(0, 1, 51), id='medrange'),
+    pytest.param(1e-8 * np.linspace(0, 1, 51), id='shortrange'),
+    pytest.param(1e-14 * np.linspace(0, 1, 51), id='tinyrange'),
+])
+def test_gammaln1(x, s):
+    @np.vectorize
+    def func(x):
+        with mpmath.workdps(40):
+            x = mpmath.mpf(float(x))
+            return float(mpmath.loggamma(1 + x))
+    x *= s
+    g1 = func(x)
+    g2 = _patch_jax._gammaln1(x)
+    np.testing.assert_array_max_ulp(g2, g1, 2)
 
 # TODO test expn

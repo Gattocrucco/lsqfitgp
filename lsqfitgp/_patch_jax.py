@@ -552,7 +552,7 @@ def _float_type(*args):
     return t if jnp.issubdtype(t, jnp.inexact) else jnp.float64
     # TODO in jax somewhere there is _promote_dtypes_inexact, look it up
 
-def _hurwitz_zeta_series(s, a1, onlyeven=False):
+def _hurwitz_zeta_series(s, a1, onlyeven=False, skipterm=None):
     """
     hurwitz zeta(s, 1 - a1)
     assuming -S <= s <= 0 and |a1| <= 1/2 with S ~ some decade
@@ -570,9 +570,12 @@ def _hurwitz_zeta_series(s, a1, onlyeven=False):
     a1 = a1[..., None]
     factor = jnp.cumprod((ns1_limit * a1 / n).at[..., 0].set(1), -1, t)
     if onlyeven:
+        n = n[::2]
         ns = ns[..., ::2]
         ns1 = ns1[..., ::2]
         factor = factor[..., ::2]
+    if skipterm is not None:
+        factor = jnp.where(n == skipterm[..., None], 0, factor)
     zeta = special.zeta(ns)
     # scipy's zeta is about 20 ulp accurate, so I guess most of the error of
     # this implementation originates there, no point in tweaking other things
@@ -638,36 +641,175 @@ def periodic_zeta_real(x, s):
     cos = jnp.where(q % 2, jnp.sin(arg), jnp.cos(arg))
     cos *= jnp.where(q // 2 % 2, -1, 1)
     # cos = cos(π/2 s1) but numerically accurate near integers
-    hz = x ** -s1 + 2 * _hurwitz_zeta_series(s1, x, onlyeven=True)
+    hze = 2 * _hurwitz_zeta_series(s1, x, onlyeven=True, skipterm=q)
+    # hze = ζ(s1,x) + ζ(s1,-x) without the x^q term in the series
+    peven = _power_diff(x, q, a)
+    # if q is even, peven accurately handles the sum of the external power
+    # x^-s1 due to 25.11.E3 with the q-th term (cancellation)
+    power = jnp.where(q % 2, x ** -s1, peven) # the q-th term is 0 if q is odd
+    hz = power + hze # = ζ(s1,x) + ζ(s1,1-x)
     
     # pole canceling
     gam = jnp.where(s % 1, gam, jnp.where(s % 2, 1, -1) / gamma(s)) # int s1
     cos = jnp.where(s % 2, cos, jnp.where(s % 4, 1, -1) * jnp.pi / 2) # odd s1
-    # TODO zero of hz for even s1
-    # TODO very inaccurate near the cancellations, need to extend them
-    # with radius 0.01 (cancel the power directly into the series?)
-    
-    # strategy to solve the cancellation problems:
-    # 1) let -q be the nearest integer to s1, such that s1 = -q + a with
-    #    |a| <= 1/2 (DONE)
-    # 2) if q even, go to (3), else go to (6)
-    # 3) take out the q-th power from the series and subtract it from the
-    #    external power, the numerically stable form is
-    #    x^q-a - x^q = x^q expm1(-a log x), force 0 if x = 0
-    # 4) use the reflection formula https://dlmf.nist.gov/25.4.E1 to
-    #    compute accurately zeta(a) - zeta(0) = zeta(a) + 1/2 (probably
-    #    converting cos to sin and handling the poles is sufficient)
-    # 5) in the q-th term, replace zeta(a) with zeta(a) + 1/2 to match
-    #    the power brought out => actually, the whole coefficient, not just the
-    #    zeta, unless I add the whole coefficient to the external power
-    #    (use double subtraction and search for a sum rule for Gamma)
-    # 6) q odd: derive an accurate expression for cos(π/2 s1) Gamma(s1) (see
-    #    4). (DONE)
-    
+    # TODO hz zero at even s1
+        
     z_smalls = pi * gam * cos * hz
     # TODO should work for s = 1, finite for noninteger x, +inf for integer x
     
     return jnp.where(s < larges, z_smalls, z_larges)
 
-# TODO use jnp.piecewise, which only computes necessary cases, and
+def _power_diff(x, q, a):
+    """ compute x^q-a + q-th term of hurwitz_zeta_series(-q+a, x) for even q """
+    pint = x ** q
+    pz = jnp.where(q, 0, jnp.where(a, -1, 0)) # = 0^q-a - 0^q
+    pdif = jnp.where(x, pint * jnp.expm1(-a * jnp.log(x)), pz) # = x^q-a - x^q
+    gamincr = jnp.where(q, _gamma_incr(1 + q, -a), 0)
+    # gamincr = Γ(1+q-a) / Γ(1+q)Γ(1-a)  -  1
+    zz = _zeta_zero(a) # = ζ(a) - ζ(0)
+    qdif = 2 * (1 + gamincr) * zz - gamincr # = (q-th term) - (q-th term)|_a=0
+    return pdif + pint * qdif
+
+def _zeta_zero(s):
+    """
+    Compute zeta(s) - zeta(0) for |s| < 1 accurately
+    """
+    
+    # f(s) = zeta(s) - 1 / (s - 1)
+    # I have the Taylor series of f(s)
+    # zeta(s) - zeta(0) = f(s) + 1 / (s - 1) + 1/2 =
+    # = f(s) + 1/(s-1) + 1 - 1 + 1/2 =
+    # = f(s) - 1/2 + s/(s-1)
+    
+    t = _float_type(s)
+    coef = jnp.array(_zeta_zero_coef, t).at[0].set(0)
+    fact = jnp.cumprod(jnp.arange(coef.size).at[0].set(1), dtype=t)
+    coef /= fact
+    f = jnp.polyval(coef[::-1], s)
+    return f + s / (s - 1)
+
+_zeta_zero_coef = [         # = _gen_zeta_zero_coef(17)
+    0.5,
+    0.08106146679532726,
+    -0.006356455908584851,
+    -0.004711166862254448,
+    0.002896811986292041,
+    -0.00023290755845472455,
+    -0.0009368251300509295,
+    0.0008498237650016692,
+    -0.00023243173551155957,
+    -0.00033058966361229646,
+    0.0005432341157797085,
+    -0.00037549317290726367,
+    -1.960353628101392e-05,
+    0.00040724123256303315,
+    -0.0005704920132817777,
+    0.0003939270789812044,
+    8.345880582550168e-05,
+]
+
+def _gen_zeta_zero_coef(n):
+    """
+    Compute first n derivatives of zeta(s) - 1/(s-1) at s = 0
+    """
+    import mpmath as mp
+    with mp.workdps(32):
+        func = lambda s: mp.zeta(s) - 1 / (s - 1)
+        return [float(mp.diff(func, 0, k)) for k in range(n)]
+
+def _gamma_incr(x, e):
+    """
+    Compute Γ(x+e) / (Γ(x)Γ(1+e)) - 1 accurately for x >= 2 and |e| < 1/2
+    """
+    
+    # G(x + e) / G(x)G(1+e) - 1 =
+    # = expm1(log(G(x + e) / G(x)G(1+e))) =
+    # = expm1(log G(x + e) - log G(x) - log G(1 + e))
+    
+    t = _float_type(x, e)
+    n = 23 if t == jnp.float64 else 10
+    # n such that 1/2^n 1/n! d^n/dx^n log G(x) |_x=2 < eps
+    k = jnp.arange(n).reshape((n,) + (1,) * max(x.ndim, e.ndim))
+    coef = jspecial.polygamma(k, x)
+    fact = jnp.cumprod(1 + k, 0, t)
+    coef /= fact
+    gammaln = e * jnp.polyval(coef[::-1], e)
+    return jnp.expm1(gammaln - _gammaln1(e))
+    
+    # Like _gammaln1, I thought that writing as log Γ(1+x+e) - log Γ(1+x) +
+    # - log1p(e/x) would increase accuracy, instead it deteriorates
+
+def _gammaln1(x):
+    """ compute log Γ(1+x) accurately for |x| <= 1/2 """
+    
+    t = _float_type(x)
+    coef = jnp.array(_gammaln1_coef_1[:48], t) # 48 found by trial and error
+    return x * jnp.polyval(coef[::-1], x)
+    
+    # I thought that writing this as log Γ(2+x) - log1p(x) would be more
+    # accurate but it isn't
+
+_gammaln1_coef_1 = [        # = _gen_gammaln1_coef(53, 1)
+    -0.5772156649015329,
+    0.8224670334241132,
+    -0.40068563438653143,
+    0.27058080842778454,
+    -0.20738555102867398,
+    0.1695571769974082,
+    -0.1440498967688461,
+    0.12550966952474304,
+    -0.11133426586956469,
+    0.1000994575127818,
+    -0.09095401714582904,
+    0.083353840546109,
+    -0.0769325164113522,
+    0.07143294629536133,
+    -0.06666870588242046,
+    0.06250095514121304,
+    -0.058823978658684585,
+    0.055555767627403614,
+    -0.05263167937961666,
+    0.05000004769810169,
+    -0.047619070330142226,
+    0.04545455629320467,
+    -0.04347826605304026,
+    0.04166666915034121,
+    -0.04000000119214014,
+    0.03846153903467518,
+    -0.037037037312989324,
+    0.035714285847333355,
+    -0.034482758684919304,
+    0.03333333336437758,
+    -0.03225806453115042,
+    0.03125000000727597,
+    -0.030303030306558044,
+    0.029411764707594344,
+    -0.02857142857226011,
+    0.027777777778181998,
+    -0.027027027027223673,
+    0.02631578947377995,
+    -0.025641025641072283,
+    0.025000000000022737,
+    -0.024390243902450117,
+    0.023809523809529224,
+    -0.023255813953491015,
+    0.02272727272727402,
+    -0.022222222222222855,
+    0.021739130434782917,
+    -0.021276595744681003,
+    0.02083333333333341,
+    -0.02040816326530616,
+    0.020000000000000018,
+    -0.019607843137254912,
+    0.019230769230769235,
+    -0.01886792452830189,
+]
+
+def _gen_gammaln1_coef(n, x):
+    """ compute Taylor coefficients of log Γ(x) """
+    import mpmath as mp
+    with mp.workdps(32):
+        return [float(mp.polygamma(k, x) / mp.fac(k + 1)) for k in range(n)]
+
+# TODO in general use jnp.piecewise, which only computes necessary cases, and
 # lax.while_loop, to avoid unnecessary iterations
