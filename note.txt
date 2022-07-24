@@ -1537,3 +1537,84 @@ Who's the culprit? Trying values of x in 1...2 it appears that:
   - the inaccuracy is in general much worse (2000 ULP)
 
 Whatever, I don't need it for the periodic zeta.
+
+--------
+
+Failing qdiff tests:
+
+qzero-xother        600-2000 ULP    
+qeven-xnearzero     10^14-18 ULP    (not real problem, was ~underflow)
+
+qzero-xother-medrange: the only really bad guy is x=0.16, a=-0.02
+qzero-xother-shortrange: 25 bad guys, all have x=0.16, various a
+qzero-xother-tinyrange: 25 bad guys, all have x=0.16, various a
+
+Since there are 25 a x 1 q, 25 is all the times x was 0.16. So 0.16 is a
+particularly bad value that breaks the series. Must be some sort of error
+resonance in the multiplications. Maybe I should compute all terms individually
+instead of using cumprod?
+
+=> Wait it's q=0, there's no series involved! (And there would not be in any
+case a series in x so whatever I was confused.) The only operations involving
+x are x ** q and expm1(-a log(x)).
+
+Since q=0, x**q = 1. And it does not work for any value of a, so it probably
+isn't expm1, it should be log(x).
+
+Checking expm1(-a log(x)), jax against mpmath, with a=-0.02 and x=0.16, gives 0
+ULP of error.
+
+So, it's actually x=0.15999999999999998, but the single evaluation does not
+change.
+
+Nor if I use exactly the same input arrays of the test.
+
+Look at the worst precision for qzero-xother-medrange:
+
+    In [5]: x.squeeze()[i[-100:,0]]
+    Out[5]: 
+    array([0.1 , 0.14, 0.12, 0.24, 0.12, 0.12, 0.1 , 0.14, 0.14, 0.26, 0.24,
+           0.26, 0.16, 0.2 , 0.1 , 0.14, 0.14, 0.1 , 0.14, 0.12, 0.24, 0.1 ,
+           0.16, 0.2 , 0.2 , 0.12, 0.2 , 0.24, 0.14, 0.14, 0.2 , 0.2 , 0.18,
+           0.22, 0.2 , 0.14, 0.18, 0.1 , 0.24, 0.2 , 0.12, 0.12, 0.12, 0.12,
+           0.2 , 0.24, 0.24, 0.12, 0.2 , 0.18, 0.2 , 0.22, 0.12, 0.14, 0.18,
+           0.18, 0.2 , 0.14, 0.14, 0.2 , 0.18, 0.16, 0.16, 0.16, 0.18, 0.16,
+           0.14, 0.2 , 0.18, 0.16, 0.16, 0.18, 0.16, 0.2 , 0.18, 0.14, 0.18,
+           0.18, 0.18, 0.16, 0.18, 0.16, 0.18, 0.18, 0.16, 0.16, 0.16, 0.16,
+           0.16, 0.18, 0.16, 0.16, 0.16, 0.18, 0.16, 0.16, 0.18, 0.16, 0.18,
+           0.16])
+
+Problem identified: cancellation in pdif + qdif. Worst for x=0.1591562038550412:
+
+    In [64]: f = lambda x, func=func: _patch_jax._power_diff(np.array(x), np.array(0), np.arra
+        ...: y(-1e-15)).item() / func(x, 0, -1e-15) - 1
+
+    In [66]: optimize.minimize_scalar(f, bounds=(0.01, 0.5), method='bounded')
+    Out[66]: 
+         fun: -3.287381478145335e-11
+     message: 'Solution found.'
+        nfev: 24
+         nit: 24
+      status: 0
+     success: True
+           x: 0.1591562038550412
+
+    In [67]: np.expm1(1e-15*np.log(0.1591562038550412)).item()
+    Out[67]: -1.8378691448322458e-15
+
+    In [68]: 2*_patch_jax._zeta_zero(-1e-15).item()
+    Out[68]: 1.8378770664093433e-15
+
+Possible solution: I can't just set to 0 things below tol, I have to ignore
+digits below tol.
+
+In the meanwhile, I may have identified the source of problems for the whole
+periodic zeta: inaccurate scipy's zeta zero near -2:
+
+    In [913]: f(2,1e-10)
+    Out[913]: -0.030448487956593377
+
+    In [914]: mpmath.diff(mpmath.zeta,-2)
+    Out[914]: mpf('-0.030448457058393271')
+
+So the error is in hze. Maybe open an issue on scipy.

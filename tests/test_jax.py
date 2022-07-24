@@ -202,7 +202,7 @@ def test_gamma_incr(x, e, s):
             e = mpmath.mpf(float(e))
             denom = mpmath.gamma(x) * mpmath.gamma(1 + e)
             return float(mpmath.gamma(x + e) / denom - 1)
-    e *= s
+    e = e * s
     e = np.where(x == 1, np.abs(e), e)
     g1 = func(x, e)
     g2 = _patch_jax._gamma_incr(x, e)
@@ -223,9 +223,57 @@ def test_gammaln1(x, s):
         with mpmath.workdps(40):
             x = mpmath.mpf(float(x))
             return float(mpmath.loggamma(1 + x))
-    x *= s
+    x = x * s
     g1 = func(x)
     g2 = _patch_jax._gammaln1(x)
     np.testing.assert_array_max_ulp(g2, g1, 2)
+
+@mark.parametrize('s', [
+    pytest.param(1, id='pos'),
+    pytest.param(-1, id='neg'),
+])
+@mark.parametrize('a', [
+    pytest.param(0.5 * np.linspace(0.04, 1, 25), id='medrange'),
+    pytest.param(1e-8 * np.linspace(0.04, 1, 25), id='shortrange'),
+    pytest.param(1e-14 * np.linspace(0.04, 1, 25), id='tinyrange'),
+])
+@mark.parametrize('x', [
+    pytest.param(0, id='xzero'),
+    pytest.param(np.logspace(-100, -3, 25), id='xnearzero'),
+    pytest.param(0.5, id='xhalf'),
+    pytest.param(np.linspace(0.02, 0.48, 24), id='xother'),
+])
+@mark.parametrize('q', [
+    pytest.param(0, id='qzero'),
+    pytest.param(np.arange(2, 11, 2), id='qeven')
+])
+def test_power_diff(x, q, a, s):
+    if np.any(q == 0) and np.any(s > 0):
+        pytest.skip()
+    x = np.reshape(x, (-1, 1, 1))
+    q = np.reshape(q, (-1, 1))
+    a = a * s # don't use inplace *= since arguments are not copied
+    @np.vectorize
+    def func(x, q, a):
+        with mpmath.workdps(40):
+            x = mpmath.mpf(float(x))
+            q = mpmath.mpf(float(q))
+            a = mpmath.mpf(float(a))
+            num = mpmath.gamma(1 + q - a)
+            denom = mpmath.gamma(1 - a) * mpmath.gamma(1 + q)
+            zeta = mpmath.zeta(a)
+            term = 2 * num / denom * zeta * x ** q
+            power = x ** (q - a)
+            return float(power + term)
+    p1 = func(x, q, a)
+    p2 = _patch_jax._power_diff(x, q, a)
+    if not np.any(q) and np.any(x):
+        tol = 3 * np.max(np.abs(p1), 0) * np.finfo(float).eps
+        assert np.all(np.abs(p1 - p2) < tol)
+    else:
+        tol = np.finfo(float).eps ** 2 / 2
+        p1 = np.maximum(p1, tol)
+        p2 = np.maximum(p2, tol)
+        np.testing.assert_array_max_ulp(p2, p1, 16)
 
 # TODO test expn

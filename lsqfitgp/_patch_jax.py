@@ -662,13 +662,13 @@ def periodic_zeta_real(x, s):
 def _power_diff(x, q, a):
     """ compute x^q-a + q-th term of hurwitz_zeta_series(-q+a, x) for even q """
     pint = x ** q
-    pz = jnp.where(q, 0, jnp.where(a, -1, 0)) # = 0^q-a - 0^q
-    pdif = jnp.where(x, pint * jnp.expm1(-a * jnp.log(x)), pz) # = x^q-a - x^q
+    pz = jnp.where(q, 0, jnp.where(a, -1, 0)) # * 0^q = 0^q-a - 0^q
+    pdif = jnp.where(x, jnp.expm1(-a * jnp.log(x)), pz) # * x^q = x^q-a - x^q
     gamincr = jnp.where(q, _gamma_incr(1 + q, -a), 0)
     # gamincr = Γ(1+q-a) / Γ(1+q)Γ(1-a)  -  1
     zz = _zeta_zero(a) # = ζ(a) - ζ(0)
     qdif = 2 * (1 + gamincr) * zz - gamincr # = (q-th term) - (q-th term)|_a=0
-    return pdif + pint * qdif
+    return pint * (pdif + qdif)
 
 def _zeta_zero(s):
     """
