@@ -1618,3 +1618,14 @@ periodic zeta: inaccurate scipy's zeta zero near -2:
     Out[914]: mpf('-0.030448457058393271')
 
 So the error is in hze. Maybe open an issue on scipy.
+
+--------
+
+scipy's zeta does x % 4 instead of x % 2, and indeed the zeros are less
+accurate. However for x multiple of 4 they are still not good. Maybe it depends
+on how they compute the Gamma (Lanczos approximation).
+
+My own implementation of zeta works almost perfectly, if not that at z = -16
+the zero breaks. The reason is the 1 - s taken for the reflection. I need to
+keep s1 split into -q + a, pass q and a to _hurwitz_zeta_series, and also to
+zeta, such that a never changes as it is added to larger integers.

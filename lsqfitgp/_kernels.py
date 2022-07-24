@@ -655,56 +655,15 @@ def _FourierBase(delta, n=2):
     s = 2 * n
     return -(-1) ** n * _fourier(s, delta) / jspecial.zeta(s, 1)
 
-    # implementation for integer n with zeta:
-    # s = 2 * n
-    # a = delta % 1
-    # lognorm = s * jnp.log(2 * jnp.pi) - jspecial.gammaln(s)
-    # norm = (-1) ** n * jnp.exp(lognorm) / (2 * jspecial.zeta(s, 1))
-    # return norm * jspecial.zeta(1 - s, a)
-
     # TODO real n
     
     # should I rename it Zeta? I thought about calling the parameter nu in
     # analogy with Matern but it's quite different since here n=1/2 is white
     # noise
     
-    # in terms of hurwitz zeta:
-    # https://dlmf.nist.gov/25.13.E2
-    # zeta(1-s, a) diverges for s -> oo, but anyway it's a cosine above 60
-    
-    # in terms of the polylogarithm:
-    # https://dlmf.nist.gov/25.12.E10 def of polylogarithm
-    # https://dlmf.nist.gov/25.12.E13 relation with hurwitz zeta
-    
-    # scipy does not implement zeta(x,q) for x < 1. jax does but the accuracy is
-    # crap. I have to implement my own version.
-    
-    # Johansson (2015)
-    
-    # idea: use https://dlmf.nist.gov/25.11.E7 with n = 30, approximate as a
-    # harmonic function above s = 60, the remainder term is an high degree
-    # periodic bernoulli polynomial ~ harmonic function so the integral is an
-    # exponential integral
-    
-    # actually above s=10 I can sum directly the series of the periodic zeta, so
-    # use 25.11.E7 only for s < 10 (but I still have to use it with base n=30 to
-    # approximate the remainder as an exponential integral)
-    
-    # Note that when s is an integer, the residual and some trailing terms of
-    # the summation yield 0 due to the binomial coeff vanishing (see
-    # https://dlmf.nist.gov/1.2.E6). However, with non-integer s, I think both
-    # terms become very large, leading to cancellations. For s < 10, the
-    # Bernoulli numbers are still < 1, so there are no problems. However I
-    # wanted s=60 to approximate the remainder as expn.
-    
-    # Idea: I can approximate the bernoulli in the integrand as its truncated
-    # fourier series, so turning the integrals into a sum of expn.
-    
-    # other idea: try https://dlmf.nist.gov/25.11.E10 with a > 1/2 and then
-    # reflect. I think it stops working for large s, but I only need s < 10. =>
-    # problem: for the periodic zeta I need the reflection, so I can't reflect.
-    # However, I can move with within |1-a| <= 1/2 with
-    # https://dlmf.nist.gov/25.11.E4.
+    # after extending to real n, keep the version for integer n, and use it
+    # based on the type of the input so that it's static, because the integer
+    # version is much more accurate
     
 class Fourier(_FourierBase):
     

@@ -576,15 +576,12 @@ def _hurwitz_zeta_series(s, a1, onlyeven=False, skipterm=None):
         factor = factor[..., ::2]
     if skipterm is not None:
         factor = jnp.where(n == skipterm[..., None], 0, factor)
-    zeta = special.zeta(ns)
+    zet = zeta(ns)
     # scipy's zeta is about 20 ulp accurate, so I guess most of the error of
     # this implementation originates there, no point in tweaking other things
-    # zeta(negative even integer) = 0, but difficult to use with vect
-    # TODO a jax compatible implementation of zeta (port scipy.zeta?) maybe
-    # there is an algorithm to generate a sequence of values of zeta
-    zeta_limit = jnp.where(ns1 == 0, 1, zeta)
+    zet_limit = jnp.where(ns1 == 0, 1, zet)
     kw = dict(precision=lax.Precision.HIGHEST)
-    series = jnp.matmul(factor[..., None, :], zeta_limit[..., :, None], **kw)
+    series = jnp.matmul(factor[..., None, :], zet_limit[..., :, None], **kw)
     return series.squeeze((-2, -1))
 
 # @jax.jit
@@ -637,10 +634,7 @@ def periodic_zeta_real(x, s):
     # now s1 == -q + a with q integer >= 0 and |a| <= 1/2
     pi = (2 * jnp.pi) ** -s1
     gam = gamma(s1)
-    arg = jnp.pi / 2 * a
-    cos = jnp.where(q % 2, jnp.sin(arg), jnp.cos(arg))
-    cos *= jnp.where(q // 2 % 2, -1, 1)
-    # cos = cos(π/2 s1) but numerically accurate near integers
+    cos = _cos_pi2(q, -a) # = cos(π/2 s1) but numerically accurate for small a
     hze = 2 * _hurwitz_zeta_series(s1, x, onlyeven=True, skipterm=q)
     # hze = ζ(s1,x) + ζ(s1,-x) without the x^q term in the series
     peven = _power_diff(x, q, a)
@@ -658,6 +652,12 @@ def periodic_zeta_real(x, s):
     # TODO should work for s = 1, finite for noninteger x, +inf for integer x
     
     return jnp.where(s < larges, z_smalls, z_larges)
+
+def _cos_pi2(n, x):
+    """ compute cos(π/2 (n + x)) for n integer, accurate for small x """
+    arg = -jnp.pi / 2 * x
+    cos = jnp.where(n % 2, jnp.sin(arg), jnp.cos(arg))
+    return cos * jnp.where(n // 2 % 2, -1, 1)
 
 def _power_diff(x, q, a):
     """ compute x^q-a + q-th term of hurwitz_zeta_series(-q+a, x) for even q """
@@ -747,7 +747,8 @@ def _gammaln1(x):
     return x * jnp.polyval(coef[::-1], x)
     
     # I thought that writing this as log Γ(2+x) - log1p(x) would be more
-    # accurate but it isn't
+    # accurate but it isn't, probably there's a cancellation for some values of
+    # x
 
 _gammaln1_coef_1 = [        # = _gen_gammaln1_coef(53, 1)
     -0.5772156649015329,
@@ -811,5 +812,30 @@ def _gen_gammaln1_coef(n, x):
     with mp.workdps(32):
         return [float(mp.polygamma(k, x) / mp.fac(k + 1)) for k in range(n)]
 
+def zeta(s):
+    # return jnp.piecewise(s, [
+    #     s >= 1,
+    # ], [
+    #     _zeta_right,
+    #     _zeta_left,
+    # ]) # uncomment when _zeta_right is traceable
+    return jnp.where(s >= 1, _zeta_right(s), _zeta_left(s))
+
+def _zeta_right(s):
+    return special.zeta(s)
+    # TODO port scipy's implementation to jax
+
+def _zeta_left(s):
+    # reflection formula https://dlmf.nist.gov/25.4.E1
+    s1 = 1 - s # > 0
+    pi = 2 * (2 * jnp.pi) ** -s1
+    n = jnp.around(s1)
+    x = s1 - n # now s1 == n + x with n integer and |x| ≤ 1/2
+    cos = _cos_pi2(n, x) # = cos(π/2 s1) but accurate for small x
+    gam = gamma(s1)
+    zeta = _zeta_right(s1)
+    return pi * cos * gam * zeta
+
 # TODO in general use jnp.piecewise, which only computes necessary cases, and
-# lax.while_loop, to avoid unnecessary iterations
+# lax.while_loop, to avoid unnecessary iterations. Note that piecewise requires
+# traceable functions.

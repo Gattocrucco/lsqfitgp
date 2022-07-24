@@ -154,17 +154,19 @@ def periodic_zeta_real(x, s):
 @mark.parametrize('s', [
     pytest.param(0.5 + np.arange(1, 15), id='half'),
     pytest.param(np.arange(2, 15, 2), id='even'),
-    pytest.param(np.arange(3, 15, 2), id='odd', marks=mark.xfail),
+    pytest.param(np.arange(3, 15, 2), id='odd'),
 ])
 def test_periodic_zeta(s, d, sgn):
     if d == 0 and sgn < 0:
+        pytest.skip()
+    if np.all(s % 2) and not np.any(s % 1) and not np.any(d):
         pytest.skip()
     x = np.linspace(-1, 2, 52)
     s = s[:, None] + sgn * d
     z1 = periodic_zeta_real(x, s)
     z2 = _patch_jax.periodic_zeta_real(x, s)
     eps = np.finfo(float).eps
-    tol = 60 * eps * np.max(np.abs(z1), 1)
+    tol = 90 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
 
@@ -275,5 +277,19 @@ def test_power_diff(x, q, a, s):
         p1 = np.maximum(p1, tol)
         p2 = np.maximum(p2, tol)
         np.testing.assert_array_max_ulp(p2, p1, 16)
+
+@mark.parametrize('s', [
+    pytest.param(-2, id='-2'),
+    pytest.param(-np.arange(4, 101, 2), id='negeven', marks=mark.xfail),
+])
+def test_zeta_zeros(s):
+    @np.vectorize
+    def func(s):
+        return float(mpmath.diff(mpmath.zeta, s))
+    z1 = func(s)
+    eps = np.max(np.abs(s)) * np.finfo(float).eps * 2
+    se = s + eps
+    z2 = _patch_jax.zeta(se) / (se - s)
+    np.testing.assert_array_max_ulp(z2, z1, 2)
 
 # TODO test expn
