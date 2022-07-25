@@ -552,34 +552,51 @@ def _float_type(*args):
     return t if jnp.issubdtype(t, jnp.inexact) else jnp.float64
     # TODO in jax somewhere there is _promote_dtypes_inexact, look it up
 
-def _hurwitz_zeta_series(s, a1, onlyeven=False, skipterm=None):
+def _hurwitz_zeta_series(m, x, a1, onlyeven=False, skipterm=None):
     """
-    hurwitz zeta(s, 1 - a1)
+    hurwitz zeta(s = m + x, a = 1 - a1) with integer m
+    meant to be used with |x| ≤ 1/2, but no actual restriction
     assuming -S <= s <= 0 and |a1| <= 1/2 with S ~ some decade
     https://dlmf.nist.gov/25.11.E10
     """
-    t = _float_type(s, a1)
+    
+    # decide number of terms to sum
+    t = _float_type(m, x, a1)
     minz = 0.0037 # = min(2 gamma(s) / (2 pi)^s) for s <= 0
     nmax = int(math.ceil(-math.log2(jnp.finfo(t).eps * minz)))
     n = jnp.arange(nmax + 1)
-    ns = n + s[..., None]
-    ns1 = ns - 1
-    ns1_limit = jnp.where(ns1 == 0, 1, ns1)
+    
+    # make arguments broadcastable with n
+    x = x[..., None]
+    m = m[..., None]
+    a1 = a1[..., None]
+    if skipterm is not None:
+        skipterm = skipterm[..., None]
+    
+    # compute pochhammer symbol, factorial and power terms
+    nm = n + m
+    ns1 = nm - 1 + x # = n + s - 1
+    ns1_limit = jnp.where(ns1 == 0, 1, ns1) # pochhammer zero cancels zeta pole
     ns1_limit = jnp.where(ns1 == 1, 0, ns1_limit)
     # TODO this == 1 worries me, maybe sometimes it's violated, use shift
-    a1 = a1[..., None]
     factor = jnp.cumprod((ns1_limit * a1 / n).at[..., 0].set(1), -1, t)
+    
+    # handle tweaks to the series
     if onlyeven:
         n = n[::2]
-        ns = ns[..., ::2]
+        nm = nm[..., ::2]
         ns1 = ns1[..., ::2]
         factor = factor[..., ::2]
     if skipterm is not None:
-        factor = jnp.where(n == skipterm[..., None], 0, factor)
-    zet = zeta(ns)
+        factor = jnp.where(n == skipterm, 0, factor)
+    
+    # compute zeta term
+    zet = zeta(x, nm) # = zeta(n + s)
     # scipy's zeta is about 20 ulp accurate, so I guess most of the error of
     # this implementation originates there, no point in tweaking other things
-    zet_limit = jnp.where(ns1 == 0, 1, zet)
+    zet_limit = jnp.where(ns1 == 0, 1, zet) # pole cancelled by pochhammer
+    
+    # sum series
     kw = dict(precision=lax.Precision.HIGHEST)
     series = jnp.matmul(factor[..., None, :], zet_limit[..., :, None], **kw)
     return series.squeeze((-2, -1))
@@ -594,7 +611,8 @@ def hurwitz_zeta(s, a):
     
     cond = a < 1/2  # do a + 1 to bring a closer to 1
     a1 = jnp.where(cond, -a, 1. - a)
-    zeta = _hurwitz_zeta_series(s, a1)  # https://dlmf.nist.gov/25.11.E10
+    zero = jnp.array(0)
+    zeta = _hurwitz_zeta_series(zero, s, a1)  # https://dlmf.nist.gov/25.11.E10
     zeta += jnp.where(cond, a ** -s, 0)  # https://dlmf.nist.gov/25.11.E3
     return zeta
 
@@ -635,7 +653,7 @@ def periodic_zeta_real(x, s):
     pi = (2 * jnp.pi) ** -s1
     gam = gamma(s1)
     cos = _cos_pi2(q, -a) # = cos(π/2 s1) but numerically accurate for small a
-    hze = 2 * _hurwitz_zeta_series(s1, x, onlyeven=True, skipterm=q)
+    hze = 2 * _hurwitz_zeta_series(-q, a, x, onlyeven=True, skipterm=q)
     # hze = ζ(s1,x) + ζ(s1,-x) without the x^q term in the series
     peven = _power_diff(x, q, a)
     # if q is even, peven accurately handles the sum of the external power
@@ -819,8 +837,8 @@ def zeta(s, n=0):
     # ], [
     #     _zeta_right,
     #     _zeta_left,
-    # ]) # uncomment when _zeta_right is traceable
-    return jnp.where(s >= 1, _zeta_right(s, n), _zeta_left(s, n))
+    # ]) # use when _zeta_right is traceable
+    return jnp.where(n + s >= 1, _zeta_right(s, n), _zeta_left(s, n))
 
 def _zeta_right(s, n):
     return special.zeta(n + s)
@@ -831,12 +849,19 @@ def _zeta_left(s, n):
     m = 1 - n
     x = -s
     # m + x = 1 - (n + s) = 1 - n - s
-    pi = 2 * (2 * jnp.pi) ** -(m + x)
-    cos = _cos_pi2(m, x) # = cos(π/2 (1 - s)) but accurate for small x
-    gam = gamma(m + x)
-    zeta = _zeta_right(x, m)
-    return pi * cos * gam * zeta
+    mx = m + x # > 0
+    pi = 2 * (2 * jnp.pi) ** -mx
+    cos = _cos_pi2(m, x) # = cos(π/2 (m + x)) but accurate for small x
+    gam = gamma(mx)
+    zet = _zeta_right(x, m)
+    
+    # cancel zeta pole at 1
+    cos = jnp.where(mx == 1, -jnp.pi / 2, cos)
+    zet = jnp.where(mx == 1,           1, zet)
+        
+    return pi * cos * gam * zet
 
 # TODO in general use jnp.piecewise, which only computes necessary cases, and
 # lax.while_loop, to avoid unnecessary iterations. Note that piecewise requires
-# traceable functions.
+# traceable functions. Also, piecewise needs the input to be a single array,
+# use lax.switch manually for multiple arguments.
