@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import pytest
 from pytest import mark
 
 import lsqfitgp as lgp
@@ -30,10 +31,16 @@ smark = mark.parametrize('sb,sbw,sa', sum([[
     np.zeros((3, p), int),
     (gen.integers(0, 10, p), np.zeros(p), gen.integers(0, 10, p)),
 ] for p in plist], []))
-amark = mark.parametrize('a', np.linspace(0, 1, 9))
-bmark = mark.parametrize('b', np.concatenate([
-    np.linspace(0, 10, 11), [np.inf]
-]))
+amark = mark.parametrize('a', [
+    pytest.param(0, id='a0'),
+    pytest.param(1, id='a1'),
+    pytest.param(np.linspace(0.01, 0.99, 7)[:, None], id='aother'),
+])
+bmark = mark.parametrize('b', [
+    pytest.param(0, id='b0'),
+    pytest.param(np.inf, id='binf'),
+    pytest.param(np.linspace(1, 10, 10), id='bother'),
+])
 umark = mark.parametrize('u', [False, True])
 mdmark = mark.parametrize('md', range(5))
 
@@ -99,7 +106,7 @@ def test_corr_1(sb, sbw, sa, a, b, u, md):
     """correlation = 1 if n^0 = 0"""
     if u or md:
         c = lgp.BART.correlation(sb, sbw, sa, a, b, u, md)
-        np.testing.assert_array_max_ulp(c, 1)
+        np.testing.assert_array_max_ulp(c, np.broadcast_to(1, c.shape))
 
 @mdmark
 @umark
@@ -125,7 +132,7 @@ def test_perm_dims(sb, sbw, sa, a, b, u, md):
     perm = gen.permutation(sb.size)
     c = lgp.BART.correlation(sb, sbw, sa, a, b, u, md)
     cp = lgp.BART.correlation(sb[perm], sbw[perm], sa[perm], a, b, u, md)
-    np.testing.assert_array_max_ulp(c, cp, 2)
+    np.testing.assert_array_max_ulp(c, cp, 3)
 
 @mdmark
 @umark
@@ -157,21 +164,28 @@ def test_incr_n0(sb, sbw, sa, a, b, u, md):
     ci = lgp.BART.correlation(sb, sbw, sa, a, b, u, md)
     np.testing.assert_array_max_ulp(ci, np.minimum(c, ci))
 
+def values(mark):
+    vals = mark.args[1]
+    return sum((getattr(v, 'values', (v,)) for v in vals), ())
+
 @mark.parametrize('sb,sbw,sa,a,b,md', [
+    # n^0 = 0
     (gen.integers(0, 10, p), np.zeros(p), gen.integers(0, 10, p), a, b, d)
     for p in plist
-    for a in amark.args[1]
-    for b in bmark.args[1]
+    for a in values(amark)
+    for b in values(bmark)
     for d in range(1, mdmark.args[1].stop)
 ] + [
+    # alpha = 0
     (gen.integers(0, 10, p), gen.integers(1, 10, p), gen.integers(0, 10, p), 0, b, d)
     for p in plist
-    for b in bmark.args[1]
+    for b in values(bmark)
     for d in range(0, mdmark.args[1].stop)
 ] + [
+    # beta = inf
     (gen.integers(0, 10, p), gen.integers(1, 10, p), gen.integers(0, 10, p), a, np.inf, d)
     for p in plist
-    for a in amark.args[1]
+    for a in values(amark)
     for d in range(1, mdmark.args[1].stop)
 ])
 def test_lower_eq_upper(sb, sbw, sa, a, b, md):
@@ -194,8 +208,8 @@ def test_lower_eq_upper(sb, sbw, sa, a, b, md):
 def test_0_1(sb, sbw, sa, a, b, u, md):
     """0 <= correlation <= 1"""
     c = lgp.BART.correlation(sb, sbw, sa, a, b, u, md)
-    np.testing.assert_array_max_ulp(0, np.minimum(0, c))
-    np.testing.assert_array_max_ulp(1, np.maximum(1, c))
+    np.testing.assert_array_max_ulp(np.broadcast_to(0, c.shape), np.minimum(0, c))
+    np.testing.assert_array_max_ulp(np.broadcast_to(1, c.shape), np.maximum(1, c))
 
 @mark.parametrize('md', range(4))
 @umark
