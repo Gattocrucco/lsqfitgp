@@ -812,28 +812,29 @@ def _gen_gammaln1_coef(n, x):
     with mp.workdps(32):
         return [float(mp.polygamma(k, x) / mp.fac(k + 1)) for k in range(n)]
 
-def zeta(s):
+def zeta(s, n=0):
+    """ compute ζ(n + s) with integer n, accurate for even n < 0 and small s """
     # return jnp.piecewise(s, [
     #     s >= 1,
     # ], [
     #     _zeta_right,
     #     _zeta_left,
     # ]) # uncomment when _zeta_right is traceable
-    return jnp.where(s >= 1, _zeta_right(s), _zeta_left(s))
+    return jnp.where(s >= 1, _zeta_right(s, n), _zeta_left(s, n))
 
-def _zeta_right(s):
-    return special.zeta(s)
+def _zeta_right(s, n):
+    return special.zeta(n + s)
     # TODO port scipy's implementation to jax
 
-def _zeta_left(s):
+def _zeta_left(s, n):
     # reflection formula https://dlmf.nist.gov/25.4.E1
-    s1 = 1 - s # > 0
-    pi = 2 * (2 * jnp.pi) ** -s1
-    n = jnp.around(s1)
-    x = s1 - n # now s1 == n + x with n integer and |x| ≤ 1/2
-    cos = _cos_pi2(n, x) # = cos(π/2 s1) but accurate for small x
-    gam = gamma(s1)
-    zeta = _zeta_right(s1)
+    m = 1 - n
+    x = -s
+    # m + x = 1 - (n + s) = 1 - n - s
+    pi = 2 * (2 * jnp.pi) ** -(m + x)
+    cos = _cos_pi2(m, x) # = cos(π/2 (1 - s)) but accurate for small x
+    gam = gamma(m + x)
+    zeta = _zeta_right(x, m)
     return pi * cos * gam * zeta
 
 # TODO in general use jnp.piecewise, which only computes necessary cases, and

@@ -1629,3 +1629,10 @@ My own implementation of zeta works almost perfectly, if not that at z = -16
 the zero breaks. The reason is the 1 - s taken for the reflection. I need to
 keep s1 split into -q + a, pass q and a to _hurwitz_zeta_series, and also to
 zeta, such that a never changes as it is added to larger integers.
+
+2022-07-25
+==========
+
+Some residual inaccuracy in my zeta zeros for somewhat large negative s
+(1000 ULP) is totally due to jnp.exp(jspecial.gammaln(s)). I guess it's the
+gammaln and not the exp. Open an issue on jax.

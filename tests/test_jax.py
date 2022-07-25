@@ -280,16 +280,28 @@ def test_power_diff(x, q, a, s):
 
 @mark.parametrize('s', [
     pytest.param(-2, id='-2'),
-    pytest.param(-np.arange(4, 101, 2), id='negeven', marks=mark.xfail),
+    pytest.param(-np.arange(4, 11, 2), id='small'),
+    pytest.param(-np.arange(12, 101, 2), id='large'),
 ])
 def test_zeta_zeros(s):
     @np.vectorize
     def func(s):
-        return float(mpmath.diff(mpmath.zeta, s))
+        with mpmath.workdps(20):
+            return float(mpmath.diff(mpmath.zeta, s))
+    def handwritten(s):
+        pi = 2 * (2 * np.pi) ** (s - 1)
+        n = np.around(s)
+        sgn = np.where(n % 4, -1, 1)
+        cos = np.pi / 2 * sgn
+        gamma = _patch_jax.gamma(1 - s)
+        zeta = _patch_jax.zeta(1 - s)
+        return pi * cos * gamma * zeta
+    z0 = handwritten(s)
     z1 = func(s)
-    eps = np.max(np.abs(s)) * np.finfo(float).eps * 2
-    se = s + eps
-    z2 = _patch_jax.zeta(se) / (se - s)
-    np.testing.assert_array_max_ulp(z2, z1, 2)
+    ulp = 24 if np.all(s >= -10) else 1101
+    np.testing.assert_array_max_ulp(z0, z1, ulp)
+    eps = 1e-30
+    z2 = _patch_jax.zeta(eps, s) / eps
+    np.testing.assert_array_max_ulp(z2, z1, ulp)
 
 # TODO test expn
