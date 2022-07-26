@@ -562,8 +562,7 @@ def _hurwitz_zeta_series(m, x, a1, onlyeven=False, skipterm=None):
     
     # decide number of terms to sum
     t = _float_type(m, x, a1)
-    minz = 0.0037 # = min(2 gamma(s) / (2 pi)^s) for s <= 0
-    nmax = int(math.ceil(-math.log2(jnp.finfo(t).eps * minz)))
+    nmax = _hze_nmax(t)
     n = jnp.arange(nmax + 1)
     
     # make arguments broadcastable with n
@@ -601,6 +600,85 @@ def _hurwitz_zeta_series(m, x, a1, onlyeven=False, skipterm=None):
     series = jnp.matmul(factor[..., None, :], zet_limit[..., :, None], **kw)
     return series.squeeze((-2, -1))
 
+def _hze_nmax(t):
+    minz = 0.0037 # = min(2 gamma(s) / (2 pi)^s) for s <= 0
+    return int(math.ceil(-math.log2(jnp.finfo(t).eps * minz)))
+
+def _dds_hzs_onlyeven_evens(m, a1):
+    """
+    Derivative w.r.t. x of _hurwitz_zeta_series(m, x, a1, onlyeven=True) with
+    negative even integer m at x = 0.
+    """
+
+    # decide number of terms to sum
+    t = _float_type(m, a1)
+    nmax = _hze_nmax(t)
+    n = jnp.arange(nmax + 1)
+
+    # make arguments broadcastable with n
+    a1, m = jnp.broadcast_arrays(a1, m) # needed for take_along_axis
+    m = m[..., None]
+    a1 = a1[..., None]
+
+    # common calculations
+    ns = n + m
+    ns1 = ns - 1
+    negs = -m
+    pfa = jnp.cumprod((ns1 * a1 / n).at[..., 0].set(1), -1, t)
+    n_fact = jnp.cumprod(n.at[0].set(1), -1, t)
+    s_fact = n_fact.at[negs].get(mode='fill', fill_value=jnp.nan)
+    base = jnp.repeat(a1, n.size, -1).at[..., 0].set(1)
+    pow_a1_n = jnp.cumprod(base, -1, t)
+
+    # take even terms
+    ns = ns[..., ::2]
+    pfa = pfa[..., ::2]
+    ns1 = ns1[..., ::2]
+
+    # terms with n < -s
+    dds1 = pfa * _zeta_deriv_evens(ns)
+
+    # term with n = -s
+    harm = jnp.cumsum((1 / n).at[0].set(0))
+    harm_s = harm.at[negs].get(mode='fill', fill_value=jnp.nan)
+    pow_a1_negs = jnp.take_along_axis(pow_a1_n, negs, -1)
+    # pow_a1_negs = pow_a1_n.at[..., negs].get(mode='fill', fill_value=jnp.nan)
+    dds2 = (1/2 * harm_s + _zeta_deriv_evens(0)) * pow_a1_negs
+
+    # terms with n > -s
+    gamma_ns = n_fact.at[ns1].get(mode='fill', fill_value=jnp.nan)
+    dds3 = gamma_ns / n_fact[::2] * s_fact * zeta(0, ns) * pow_a1_n[..., ::2]
+
+    # sum series
+    n = n[::2]
+    terms = jnp.where(n < negs, dds1, jnp.where(n > negs, dds3, dds2))
+    return jnp.sum(terms, -1)
+
+def _zeta_deriv_evens(s):
+    t = _float_type(s)
+    lut = jnp.array(_zeta_deriv_evens_lut, t)
+    lut = jnp.pad(lut, (1, 1), constant_values=jnp.nan)
+    index = (s - _zde_lut_start) // 2
+    index = jnp.clip(index + 1, 0, lut.size - 1)
+    return lut.at[index].get(mode='clip')
+
+_zde_lut_start = -12
+
+_zeta_deriv_evens_lut = [   # = _gen_zeta_deriv_evens_lut(-12, 1)
+    0.063270583341463,
+    -0.018929926338140373,
+    0.008316161985602248,
+    -0.005899759143515937,
+    0.007983811450268625,
+    -0.03044845705839327,
+    -0.9189385332046728,
+]
+
+def _gen_zeta_deriv_evens_lut(start, stop):
+    import mpmath as mp
+    with mp.workdps(32):
+        return [float(mp.diff(mp.zeta, s)) for s in range(start, stop, 2)]
+    
 # @jax.jit
 def hurwitz_zeta(s, a):
     """
@@ -616,10 +694,6 @@ def hurwitz_zeta(s, a):
     zeta += jnp.where(cond, a ** -s, 0)  # https://dlmf.nist.gov/25.11.E3
     return zeta
 
-def _standard_x(x):
-    x %= 1
-    return jnp.where(x < 1/2, x, 1 - x)
-
 # @jax.jit
 def periodic_zeta_real(x, s):
     """
@@ -627,29 +701,48 @@ def periodic_zeta_real(x, s):
     real part of https://dlmf.nist.gov/25.13.E1
     for real s > 1, real x
     """
+    
     x = jnp.asarray(x)
     s = jnp.asarray(s)
     
+    # decide boundary for large/small s implementation
     t = _float_type(x, s)
-    s = s.astype(t) # avoid n^s overflow
     eps = jnp.finfo(t).eps
     nmax = 50
     larges = math.ceil(-math.log(eps) / math.log(nmax)) # 1/nmax^s < eps
+    
+    z_larges = _periodic_zeta_real_larges(x, s, nmax)
+    z_smalls = _periodic_zeta_real_smalls(x, s)
 
-    # large s, https://dlmf.nist.gov/25.13.E1
+    return jnp.where(s < larges, z_smalls, z_larges)
+
+def _standard_x(x):
+    """ bring x in [1, 1/2] by modulus and reflection """
+    x %= 1
+    return jnp.where(x < 1/2, x, 1 - x)
+
+def _periodic_zeta_real_larges(x, s, nmax):
+    """ https://dlmf.nist.gov/25.13.E1 """
+
+    t = _float_type(x, s)
+    s = s.astype(t) # avoid n^s overflow with integer s
     n = jnp.arange(1, nmax + 1)
     nx = _standard_x(n * x[..., None])
     terms = jnp.cos(2 * jnp.pi * nx) / n ** s[..., None]
-    z_larges = jnp.sum(terms, -1)
-    
-    # small s, https://dlmf.nist.gov/25.11.E10 and
-    # https://dlmf.nist.gov/25.11.E3 expanded into
-    # https://dlmf.nist.gov/25.13.E2
+    return jnp.sum(terms, -1)
+
+def _periodic_zeta_real_smalls(x, s):
+    """
+    https://dlmf.nist.gov/25.11.E10 and https://dlmf.nist.gov/25.11.E3 expanded
+    into https://dlmf.nist.gov/25.13.E2
+    """
     x = _standard_x(x) # x in [0, 1/2]
     s1 = 1 - s  # < 0
-    q = -jnp.around(s1)
+    
+    q = -jnp.around(s1).astype(int)
     a = s1 + q
     # now s1 == -q + a with q integer >= 0 and |a| <= 1/2
+    
     pi = (2 * jnp.pi) ** -s1
     gam = gamma(s1)
     cos = _cos_pi2(q, -a) # = cos(π/2 s1) but numerically accurate for small a
@@ -664,12 +757,11 @@ def periodic_zeta_real(x, s):
     # pole canceling
     gam = jnp.where(s % 1, gam, jnp.where(s % 2, 1, -1) / gamma(s)) # int s1
     cos = jnp.where(s % 2, cos, jnp.where(s % 4, 1, -1) * jnp.pi / 2) # odd s1
-    # TODO hz zero at even s1
+    pderiv = jnp.where(x, -jnp.log(x) * x ** -s1, 0) # even s1
+    hz = jnp.where(s1 % 2, hz, pderiv + 2 * _dds_hzs_onlyeven_evens(-q, x))
         
-    z_smalls = pi * gam * cos * hz
+    return pi * gam * cos * hz
     # TODO should work for s = 1, finite for noninteger x, +inf for integer x
-    
-    return jnp.where(s < larges, z_smalls, z_larges)
 
 def _cos_pi2(n, x):
     """ compute cos(π/2 (n + x)) for n integer, accurate for small x """
@@ -678,7 +770,9 @@ def _cos_pi2(n, x):
     return cos * jnp.where(n // 2 % 2, -1, 1)
 
 def _power_diff(x, q, a):
-    """ compute x^q-a + q-th term of hurwitz_zeta_series(-q+a, x) for even q """
+    """
+    compute x^q-a + q-th term of 2 * hurwitz_zeta_series(-q, a, x)
+    """
     pint = x ** q
     pz = jnp.where(q, 0, jnp.where(a, -1, 0)) # * 0^q = 0^q-a - 0^q
     pdif = jnp.where(x, jnp.expm1(-a * jnp.log(x)), pz) # * x^q = x^q-a - x^q

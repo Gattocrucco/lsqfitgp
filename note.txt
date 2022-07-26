@@ -1636,3 +1636,10 @@ zeta, such that a never changes as it is added to larger integers.
 Some residual inaccuracy in my zeta zeros for somewhat large negative s
 (1000 ULP) is totally due to jnp.exp(jspecial.gammaln(s)). I guess it's the
 gammaln and not the exp. Open an issue on jax.
+
+2022-07-26
+==========
+
+jax.random.poisson seems very slow, open an issue
+
+does scipy's zeta just return 1 above a certain s? It should

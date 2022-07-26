@@ -159,12 +159,13 @@ def periodic_zeta_real(x, s):
 def test_periodic_zeta(s, d, sgn):
     if d == 0 and sgn < 0:
         pytest.skip()
-    if np.all(s % 2) and not np.any(s % 1) and not np.any(d):
-        pytest.skip()
+
     x = np.linspace(-1, 2, 52)
     s = s[:, None] + sgn * d
+    
     z1 = periodic_zeta_real(x, s)
     z2 = _patch_jax.periodic_zeta_real(x, s)
+    
     eps = np.finfo(float).eps
     tol = 90 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
