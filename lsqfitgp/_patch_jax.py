@@ -27,6 +27,7 @@ import jax
 from jax import core
 from jax import lax
 from jax import numpy as jnp
+import numpy
 from jax.interpreters import ad
 from jax.interpreters import batching
 from jax import tree_util
@@ -926,12 +927,6 @@ def _gen_gammaln1_coef(n, x):
 
 def zeta(s, n=0):
     """ compute ζ(n + s) with integer n, accurate for even n < 0 and small s """
-    # return jnp.piecewise(s, [
-    #     s >= 1,
-    # ], [
-    #     _zeta_right,
-    #     _zeta_left,
-    # ]) # use when _zeta_right is traceable
     return jnp.where(n + s >= 1, _zeta_right(s, n), _zeta_left(s, n))
 
 def _zeta_right(s, n):
@@ -954,6 +949,45 @@ def _zeta_left(s, n):
     zet = jnp.where(mx == 1,           1, zet)
         
     return pi * cos * gam * zet
+
+def _periodic_bernoulli(n, x):
+    # TODO to make this jittable, hardcode size to 60 and truncate by writing
+    # zeros
+    n = int(n)
+    bernoulli = special.bernoulli(n)
+    k = numpy.arange(n + 1)
+    binom = special.binom(n, k)
+    coeffs = binom[::-1] * bernoulli
+    x = x % 1
+    cond = x < 0.5
+    x = jnp.where(cond, x, 1 - x)
+    out = jnp.polyval(coeffs, x)
+    if n % 2 == 1:
+        out = out * jnp.where(cond, 1, -1)
+    return out
+
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
+def scaled_periodic_bernoulli(n, x):
+    """ periodic Bernoulli polynomial scaled such that B_n(0) = ζ(n) """
+    tau = 2 * jnp.pi
+    lognorm = n * jnp.log(tau) - jspecial.gammaln(n + 1)
+    norm = jnp.exp(lognorm) / 2
+    cond = n < 60
+    smalls = norm * _periodic_bernoulli(n if cond else 1, x)
+    # n -> ∞: -Re e^2πix / i^n
+    # don't use 1j ** n because it is very inaccurate
+    arg = tau * x
+    sign = jnp.where((n // 2) % 2, 1, -1)
+    larges = sign * jnp.where(n % 2, jnp.sin(arg), jnp.cos(arg))
+    return jnp.where(cond, smalls, larges)
+
+@scaled_periodic_bernoulli.defjvp
+def _scaled_periodic_bernoulli_jvp(n, primals, tangents):
+    x, = primals
+    xt, = tangents
+    primal = scaled_periodic_bernoulli(n, x)
+    tangent = 2 * jnp.pi * scaled_periodic_bernoulli(n - 1, x) * xt
+    return primal, tangent
 
 # TODO in general use jnp.piecewise, which only computes necessary cases, and
 # lax.while_loop, to avoid unnecessary iterations. Note that piecewise requires

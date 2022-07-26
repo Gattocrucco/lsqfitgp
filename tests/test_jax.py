@@ -318,4 +318,25 @@ def test_zeta():
     z2 = _patch_jax.zeta(s, n)
     np.testing.assert_array_max_ulp(z2, z1, 58)
 
+def bernoulli_poly_handwritten(n, x):
+    return [
+        lambda x: 1,
+        lambda x: x - 1/2,
+        lambda x: x**2 - x + 1/6,
+        lambda x: x**3 - 3/2 * x**2 + 1/2 * x,
+        lambda x: x**4 - 2 * x**3 + x**2 - 1/30,
+        lambda x: x**5 - 5/2 * x**4 + 5/3 * x**3 - 1/6 * x,
+        lambda x: x**6 - 3 * x**5 + 5/2 * x**4 - 1/2 * x**2 + 1/42
+    ][n](x)
+
+def check_bernoulli(n, x):
+    r1 = bernoulli_poly_handwritten(n, x)
+    r2 = _patch_jax._periodic_bernoulli(n, x)
+    np.testing.assert_allclose(r1, r2, equal_nan=False)
+
+def test_bernoulli():
+    for n in range(7):
+        x = gen.uniform(0, 1, size=100)
+        check_bernoulli(n, x)
+
 # TODO test expn

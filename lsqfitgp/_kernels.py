@@ -566,43 +566,6 @@ def Taylor(x, y):
     val = 2 * jnp.sqrt(jnp.abs(mul))
     return jnp.where(mul >= 0, jspecial.i0(val), _patch_jax.j0(val))
 
-def _bernoulli_poly(n, x):
-    # periodic Bernoulli polynomial (takes x mod 1)
-    # TODO to make this jittable, hardcode size to 60 and truncate by writing
-    # zeros
-    n = int(n)
-    bernoulli = special.bernoulli(n)
-    k = numpy.arange(n + 1)
-    binom = special.binom(n, k)
-    coeffs = binom[::-1] * bernoulli
-    x = x % 1
-    cond = x < 0.5
-    x = jnp.where(cond, x, 1 - x)
-    out = jnp.polyval(coeffs, x)
-    if n % 2 == 1:
-        out = out * jnp.where(cond, 1, -1)
-    return out
-
-@functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
-def _fourier(s, x):
-    tau = 2 * jnp.pi
-    lognorm = s * jnp.log(tau) - jspecial.gammaln(s + 1)
-    norm = jnp.exp(lognorm) / 2
-    cond = s < 60
-    smalls = norm * _bernoulli_poly(s if cond else 1, x)
-    # s -> ∞: -Re e^2πix / i^s
-    # don't use 1j ** s because it is very inaccurate
-    arg = tau * x
-    sign = jnp.where((s // 2) % 2, 1, -1)
-    larges = sign * jnp.where(s % 2, jnp.sin(arg), jnp.cos(arg))
-    return jnp.where(cond, smalls, larges)
-
-@_fourier.defjvp
-def _fourier_jvp(s, primals, tangents):
-    x, = primals
-    xt, = tangents
-    return _fourier(s, x), 2 * jnp.pi * _fourier(s - 1, x) * xt
-
 def _fourier_derivable(n=2):
     return n - 1
 
@@ -653,7 +616,7 @@ def _FourierBase(delta, n=2):
     # TODO I could allow n == 0 to be a constant kernel
         
     s = 2 * n
-    return -(-1) ** n * _fourier(s, delta) / jspecial.zeta(s, 1)
+    return -(-1) ** n * _patch_jax.scaled_periodic_bernoulli(s, delta) / jspecial.zeta(s, 1)
 
     # TODO real n
     
