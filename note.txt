@@ -1654,3 +1654,26 @@ In scipy there ought to be a test that checks that zeta(53) == 1 + eps and not
 1 (currently ok).
 
 mpmath.polylog(s, 1) != zeta(s), open an issue.
+
+--------
+
+List of possible issues to open:
+
+- mpmath.polylog(s, 1) != zeta(s)
+    => turns out the problem is the exponentiation of 2j * pi, if I pass 1
+    directly it works fine, I think it is mathematically correct
+- jax.random.poisson seems very slow
+- jnp.polyval does not respect integer types, while numpy.polyval does
+    => OPEN
+- jax.scipy.special.gammaln seems too inaccurate for large negative argument
+- scipy.special.binom does not obey https://dlmf.nist.gov/1.2.E6
+    => there's an open PR #15216
+
+scipy.zeta:
+- does scipy's zeta just return 1 above a certain s?
+- Is jax's zeta more accurate than scipy's zeta?
+- Is scipy's hurwitz zeta more accurate than scipy's zeta?
+- test that checks that scipy.zeta(53) == 1 + eps and not 1
+- scipy.zeta zeros are inaccurate
+- scipy.zeta inaccurate for large negative s
+- hurwitz zeta for s < 1, 0 <= a <= 1

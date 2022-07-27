@@ -114,7 +114,7 @@ def test_hurwitz_zeta():
     z1 = zeta(s, a)
     z2 = _patch_jax.hurwitz_zeta(s, a)
     eps = np.finfo(float).eps
-    tol = 340 * eps * np.max(np.abs(z1), 1)
+    tol = 350 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
 
@@ -183,7 +183,7 @@ def test_periodic_zeta(s, d, sgn, i):
     z2 = _patch_jax.periodic_zeta(x, s, i)
     
     eps = np.finfo(float).eps
-    tol = 100 * eps * np.max(np.abs(z1), 1)
+    tol = 110 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
 
@@ -242,7 +242,7 @@ def test_gamma_incr(x, e, s):
     e = np.where(x == 1, np.abs(e), e)
     g1 = func(x, e)
     g2 = _patch_jax._gamma_incr(x, e)
-    np.testing.assert_array_max_ulp(g2, g1, 5)
+    np.testing.assert_array_max_ulp(g2, g1, 7)
 
 @mark.parametrize('s', [
     pytest.param(1, id='pos'),
@@ -305,8 +305,9 @@ def test_power_diff(x, q, a, s):
     p1 = func(x, q, a)
     p2 = _patch_jax._power_diff(x, q, a)
     if np.all(q <= 1) and np.any(x):
-        tol = 18 * np.max(np.abs(p1), 0) * np.finfo(float).eps
-        assert np.all(np.abs(p1 - p2) < tol)
+        tol = 20 * np.max(np.abs(p1), 0) * np.finfo(float).eps
+        maxdiff = np.max(np.abs(p1 - p2), 0)
+        assert np.all(maxdiff < tol)
     else:
         tol = np.finfo(float).eps ** 2 / 2
         cond = np.abs(p1) < tol
@@ -334,7 +335,7 @@ def test_zeta_zeros(s):
         return pi * cos * gamma * zeta
     z0 = handwritten(s)
     z1 = func(s)
-    ulp = 23 if np.all(s >= -10) else 1113
+    ulp = 24 if np.all(s >= -10) else 1113
     np.testing.assert_array_max_ulp(z0, z1, ulp)
     eps = 1e-30
     z2 = _patch_jax.zeta(eps, s) / eps
@@ -351,7 +352,7 @@ def test_zeta():
             return float(mpmath.zeta(s + n)) if n + s != 1 else np.inf
     z1 = func(s, n)
     z2 = _patch_jax.zeta(s, n)
-    np.testing.assert_array_max_ulp(z2, z1, 67)
+    np.testing.assert_array_max_ulp(z2, z1, 72)
 
 def bernoulli_poly_handwritten(n, x):
     return [
