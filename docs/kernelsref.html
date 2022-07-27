@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
     <title>1. Kernels reference &#8212; lsqfitgp 0.13 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -185,7 +185,6 @@ only in more than one dimension). <a class="reference internal" href="#lsqfitgp.
 <li><p><a class="reference internal" href="#lsqfitgp.Color" title="lsqfitgp.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Cos" title="lsqfitgp.Cos"><code class="xref py py-class docutils literal notranslate"><span class="pre">Cos</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Expon" title="lsqfitgp.Expon"><code class="xref py py-class docutils literal notranslate"><span class="pre">Expon</span></code></a></p></li>
-<li><p><a class="reference internal" href="#lsqfitgp.Fourier" title="lsqfitgp.Fourier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fourier</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Harmonic" title="lsqfitgp.Harmonic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Harmonic</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.HoleEffect" title="lsqfitgp.HoleEffect"><code class="xref py py-class docutils literal notranslate"><span class="pre">HoleEffect</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.MA" title="lsqfitgp.MA"><code class="xref py py-class docutils literal notranslate"><span class="pre">MA</span></code></a></p></li>
@@ -193,6 +192,7 @@ only in more than one dimension). <a class="reference internal" href="#lsqfitgp.
 <li><p><a class="reference internal" href="#lsqfitgp.Pink" title="lsqfitgp.Pink"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pink</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.Sinc" title="lsqfitgp.Sinc"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sinc</span></code></a></p></li>
 <li><p><a class="reference internal" href="#lsqfitgp.StationaryFracBrownian" title="lsqfitgp.StationaryFracBrownian"><code class="xref py py-class docutils literal notranslate"><span class="pre">StationaryFracBrownian</span></code></a></p></li>
+<li><p><a class="reference internal" href="#lsqfitgp.Zeta" title="lsqfitgp.Zeta"><code class="xref py py-class docutils literal notranslate"><span class="pre">Zeta</span></code></a></p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -535,6 +535,12 @@ maxd. If False, it is a lower bound.</p>
 </dd>
 </dl>
 </dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>corr</strong><span class="classifier">scalar</span></dt><dd><p>The prior correlation.</p>
+</dd>
+</dl>
+</dd>
 </dl>
 </dd></dl>
 
@@ -612,7 +618,7 @@ while afterward it is filled with a very large value.</p>
 \[\begin{split}k(x, y) &amp;= \sum_{w \in \text{words}} c_w(x) c_w(y), \\
 c_w(x) &amp;= \text{number of times word $w$ appears in $x$}\end{split}\]</div>
 <p>The words are defined as non-empty substrings delimited by spaces or one of
-the following punctuation characters: ! « » ” “ ” ‘ ’ / ( ) ‘ ? ¡ ¿ „ ‚ &lt; &gt;
+the following punctuation characters: ! « » “ “ ” ‘ ’ / ( ) ‘ ? ¡ ¿ „ ‚ &lt; &gt;
 , ; . : - – —.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 100).</p>
 </dd></dl>
@@ -804,66 +810,6 @@ it acts separately while the Matérn kernel is isotropic.</p>
 <img alt="_images/kernelsref-Expon.png" src="_images/kernelsref-Expon.png" />
 <img alt="_images/kernelsref-Expon-samples.png" src="_images/kernelsref-Expon-samples.png" />
 <dl class="py class">
-<dt class="sig sig-object py" id="lsqfitgp.Fourier">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Fourier" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fourier kernel.</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}k(\Delta) &amp;= \frac1{\zeta(2n)} \left( \sum_{k=1}^\infty
-\frac {\cos(2\pi kx)}{k^n} \frac {\cos(2\pi ky)}{k^n}
-+ \sum_{k=1}^\infty \frac {\sin(2\pi kx)}{k^n}
-\frac {\sin(2\pi ky)}{k^n} \right) = \\
-&amp;= \frac1{\zeta(s)} \sum_{k=1}^\infty
-\frac {\cos(2\pi k\Delta)} {k^s} = \qquad (s = 2n)\\
-&amp;= \frac{\Re F(\Delta, s)}{\zeta(s)} = \\
-&amp;= (-1)^n \frac {(2\pi)^s} {2\Gamma(s)}
-\frac {\zeta(1 - s, \Delta \bmod 1)} {\zeta(s)} = \\
-&amp;= (-1)^{n+1}
-\frac {(2\pi)^s} {2s!}
-\frac {\tilde B_s(\Delta)} {\zeta(s)}.\end{split}\]</div>
-<p>It is equivalent to fitting with a Fourier series of period 1 with
-independent priors on the coefficients with mean zero and variance
-<span class="math notranslate nohighlight">\(1/(\zeta(s)k^s)\)</span>. The process is <span class="math notranslate nohighlight">\(n - 1\)</span> times derivable.</p>
-<p>Note that the <span class="math notranslate nohighlight">\(k = 0\)</span> term is not included in the summation, so the
-mean of the process over one period is forced to be zero.</p>
-<p>Reference: <a class="reference external" href="https://dlmf.nist.gov/25.13.E1">https://dlmf.nist.gov/25.13.E1</a>, <a class="reference external" href="https://dlmf.nist.gov/25.11.E9">https://dlmf.nist.gov/25.11.E9</a>,
-<a class="reference external" href="https://dlmf.nist.gov/25.11.E14">https://dlmf.nist.gov/25.11.E14</a>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="lsqfitgp.Fourier.fourier">
-<span class="sig-name descname"><span class="pre">fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doy</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Fourier.fourier" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the Fourier series of the kernel.</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}h(k, y) = \begin{cases}
-    \frac2T \int_0^T \mathrm dx\, k(x, y)
-    \cos\left(\frac{2\pi}T \frac k2 x\right)
-    &amp; \text{if $k$ is even} \\
-    \frac2T \int_0^T \mathrm dx\, k(x, y)
-    \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
-    &amp; \text{if $k$ is odd}
-\end{cases}\end{split}\]</div>
-<p>The period <cite>T</cite> is implicit in the definition of the kernel.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>dox, doy</strong><span class="classifier">bool</span></dt><dd><p>Specify if to compute the series w.r.t. x, y or both. If both are
-False, this is a no-op.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>h</strong><span class="classifier">Kernel-like</span></dt><dd><p>A Kernel-like object computing the Fourier series. If dox and
-doy are equal, it is a Kernel.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<img alt="_images/kernelsref-Fourier.png" src="_images/kernelsref-Fourier.png" />
-<img alt="_images/kernelsref-Fourier-samples.png" src="_images/kernelsref-Fourier-samples.png" />
-<dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.FracBrownian">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">FracBrownian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.FracBrownian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bifractional Brownian motion kernel.</p>
@@ -898,7 +844,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x12ebcee60&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x1358d3c70&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
@@ -1221,6 +1167,66 @@ kernel can be used in is <span class="math notranslate nohighlight">\(\lfloor 2\
 
 <img alt="_images/kernelsref-WienerIntegral.png" src="_images/kernelsref-WienerIntegral.png" />
 <img alt="_images/kernelsref-WienerIntegral-samples.png" src="_images/kernelsref-WienerIntegral-samples.png" />
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.Zeta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Zeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Zeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Zeta kernel.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}k(\Delta)
+&amp;= \frac{\Re F(\Delta, s)}{\zeta(s)} =
+\qquad (s = 1 + 2 \nu, \quad \nu \ge 0) \\
+&amp;= \frac1{\zeta(s)} \sum_{k=1}^\infty
+\frac {\cos(2\pi k\Delta)} {k^s} = \\
+&amp;= -(-1)^{s/2}
+\frac {(2\pi)^s} {2s!}
+\frac {\tilde B_s(\Delta)} {\zeta(s)}
+\quad \text{for even integer $s$.}\end{split}\]</div>
+<p>It is equivalent to fitting with a Fourier series of period 1 with
+independent priors on the coefficients with mean zero and variance
+<span class="math notranslate nohighlight">\(1/(\zeta(s)k^s)\)</span> for the <span class="math notranslate nohighlight">\(k\)</span>-th term. Analogously to
+<a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a>, the process is <span class="math notranslate nohighlight">\(\lceil\nu\rceil - 1\)</span> times
+derivable, and the highest derivative is continuous iff <span class="math notranslate nohighlight">\(\nu\bmod 1
+\ge 1/2\)</span>.</p>
+<p>Note that the <span class="math notranslate nohighlight">\(k = 0\)</span> term is not included in the summation, so the
+mean of the process over one period is forced to be zero.</p>
+<p>Reference: <a class="reference external" href="https://dlmf.nist.gov/25.13.E1">https://dlmf.nist.gov/25.13.E1</a>, <a class="reference external" href="https://dlmf.nist.gov/25.11.E9">https://dlmf.nist.gov/25.11.E9</a>,
+<a class="reference external" href="https://dlmf.nist.gov/25.11.E14">https://dlmf.nist.gov/25.11.E14</a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.Zeta.fourier">
+<span class="sig-name descname"><span class="pre">fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doy</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Zeta.fourier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Fourier series of the kernel.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}h(k, y) = \begin{cases}
+    \frac2T \int_0^T \mathrm dx\, k(x, y)
+    \cos\left(\frac{2\pi}T \frac k2 x\right)
+    &amp; \text{if $k$ is even} \\
+    \frac2T \int_0^T \mathrm dx\, k(x, y)
+    \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
+    &amp; \text{if $k$ is odd}
+\end{cases}\end{split}\]</div>
+<p>The period <cite>T</cite> is implicit in the definition of the kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>dox, doy</strong><span class="classifier">bool</span></dt><dd><p>Specify if to compute the series w.r.t. x, y or both. If both are
+False, this is a no-op.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>h</strong><span class="classifier">Kernel-like</span></dt><dd><p>A Kernel-like object computing the Fourier series. If dox and
+doy are equal, it is a Kernel.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<img alt="_images/kernelsref-Zeta.png" src="_images/kernelsref-Zeta.png" />
+<img alt="_images/kernelsref-Zeta-samples.png" src="_images/kernelsref-Zeta-samples.png" />
 </section>
 </section>
 
@@ -1250,7 +1256,7 @@ kernel can be used in is <span class="math notranslate nohighlight">\(\lfloor 2\
       &copy;2020-2022, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
