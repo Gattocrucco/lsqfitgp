@@ -52,7 +52,6 @@ __all__ = [
     'Decaying',
     'Expon',
     'ExpQuad',
-    'Fourier',
     'FracBrownian',
     'GammaExp',
     'Gibbs',
@@ -75,6 +74,7 @@ __all__ = [
     'White',
     'Wiener',
     'WienerIntegral',
+    'Zeta',
 ]
 
 # TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
@@ -566,31 +566,31 @@ def Taylor(x, y):
     val = 2 * jnp.sqrt(jnp.abs(mul))
     return jnp.where(mul >= 0, jspecial.i0(val), _patch_jax.j0(val))
 
-def _fourier_derivable(n=2):
-    return n - 1
+def _zeta_derivable(nu=None):
+    return max(0, numpy.ceil(nu) - 1)
 
-@stationarykernel(forcekron=True, derivable=_fourier_derivable, saveargs=True)
-def _FourierBase(delta, n=2):
+@stationarykernel(maxdim=1, derivable=_zeta_derivable, saveargs=True)
+def _ZetaBase(delta, nu=None):
     """
-    Fourier kernel.
+    Zeta kernel.
     
     .. math::
-        k(\\Delta) &= \\frac1{\\zeta(2n)} \\left( \\sum_{k=1}^\\infty
-        \\frac {\\cos(2\\pi kx)}{k^n} \\frac {\\cos(2\\pi ky)}{k^n}
-        + \\sum_{k=1}^\\infty \\frac {\\sin(2\\pi kx)}{k^n}
-        \\frac {\\sin(2\\pi ky)}{k^n} \\right) = \\\\
+        k(\\Delta)
+        &= \\frac{\\Re F(\\Delta, s)}{\\zeta(s)} =
+        \\qquad (s = 1 + 2 \\nu, \\quad \\nu \\ge 0) \\\\
         &= \\frac1{\\zeta(s)} \\sum_{k=1}^\\infty
-        \\frac {\\cos(2\\pi k\\Delta)} {k^s} = \\qquad (s = 2n)\\\\
-        &= \\frac{\\Re F(\\Delta, s)}{\\zeta(s)} = \\\\
-        &= (-1)^n \\frac {(2\\pi)^s} {2\\Gamma(s)}
-        \\frac {\\zeta(1 - s, \\Delta \\bmod 1)} {\\zeta(s)} = \\\\
-        &= (-1)^{n+1}
+        \\frac {\\cos(2\\pi k\\Delta)} {k^s} = \\\\
+        &= -(-1)^{s/2}
         \\frac {(2\\pi)^s} {2s!}
-        \\frac {\\tilde B_s(\\Delta)} {\\zeta(s)}.
+        \\frac {\\tilde B_s(\\Delta)} {\\zeta(s)}
+        \\quad \\text{for even integer $s$.}
     
     It is equivalent to fitting with a Fourier series of period 1 with
     independent priors on the coefficients with mean zero and variance
-    :math:`1/(\\zeta(s)k^s)`. The process is :math:`n - 1` times derivable.
+    :math:`1/(\\zeta(s)k^s)` for the :math:`k`-th term. Analogously to
+    :class:`Matern`, the process is :math:`\\lceil\\nu\\rceil - 1` times
+    derivable, and the highest derivative is continuous iff :math:`\\nu\\bmod 1
+    \\ge 1/2`.
     
     Note that the :math:`k = 0` term is not included in the summation, so the
     mean of the process over one period is forced to be zero.
@@ -603,34 +603,28 @@ def _FourierBase(delta, n=2):
     # TODO reference as covariance function? I had found something with
     # fourier and bernoulli but lost it. Maybe known as zeta?
     
-    # TODO maxk parameter to truncate the series. I have to manually sum the
-    # components? => Bad idea then. => Can I sum analitically the residual?
-    
     # TODO add constant as option, otherwise I can't compute the Fourier
     # series when I add a constant. => Maybe this will be solved when I
     # improve the transformations system.
     
     # TODO ND version. The separable product is not equivalent I think.
     
-    assert int(n) == n and n >= 1, n
-    # TODO I could allow n == 0 to be a constant kernel
+    if _patch_jax.isconcrete(nu):
+        assert 0 <= nu < jnp.inf, nu
         
-    s = 2 * n
-    return -(-1) ** n * _patch_jax.scaled_periodic_bernoulli(s, delta) / jspecial.zeta(s, 1)
-
-    # TODO real n
+    s = 1 + 2 * nu
+    nupos = _patch_jax.periodic_zeta(delta, s) / _patch_jax.zeta(s)
+    nuzero = jnp.where(delta % 1, 0, 1)
+    return jnp.where(s > 1, nupos, nuzero)
     
-    # should I rename it Zeta? I thought about calling the parameter nu in
-    # analogy with Matern but it's quite different since here n=1/2 is white
-    # noise
+    # return -(-1) ** (s // 2) * _patch_jax.scaled_periodic_bernoulli(s, delta) / jspecial.zeta(s, 1)
     
-    # after extending to real n, keep the version for integer n, and use it
-    # based on the type of the input so that it's static, because the integer
-    # version is much more accurate
+    # TODO use the bernoully version for integer even s, based on the type of
+    # the input so that it's static, because it is much more accurate
     
-class Fourier(_FourierBase):
+class Zeta(_ZetaBase):
     
-    __doc__ = _FourierBase.__doc__
+    __doc__ = _ZetaBase.__doc__
     
     # TODO write a method of _KernelBase that makes a new kernel from the
     # current one to be used as starting point by all the transformation
@@ -654,19 +648,19 @@ class Fourier(_FourierBase):
         if not dox and not doy:
             return self
         
-        n = self.initargs.get('n', 2)
-        s = 2 * n
+        nu = self.initargs['nu']
+        s = 1 + 2 * nu
         
         if dox and doy:
             def kernel(k, q):
                 order = jnp.ceil(k / 2)
-                denom = order ** s * special.zeta(s)
+                denom = order ** s * _patch_jax.zeta(s)
                 return jnp.where((k == q) & (k > 0), 1 / denom, 0)
         
         else:
             def kernel(k, y):
                 order = jnp.ceil(k / 2)
-                denom = order ** s * special.zeta(s)
+                denom = order ** s * _patch_jax.zeta(s)
                 odd = k % 2
                 arg = 2 * jnp.pi * order * y
                 return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)

@@ -703,7 +703,7 @@ def hurwitz_zeta(s, a):
     return zeta
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(1, 2))
-@functools.partial(jax.jit, static_argnums=(2,))
+# @functools.partial(jax.jit, static_argnums=(2,))
 def periodic_zeta(x, s, imag=False):
     """
     compute F(x,s) = Li_s(e^2πix) for real s > 1, real x
@@ -957,6 +957,7 @@ def _gen_gammaln1_coef(n, x):
     with mp.workdps(32):
         return [float(mp.polygamma(k, x) / mp.fac(k + 1)) for k in range(n)]
 
+# @jax.jit
 def zeta(s, n=0):
     """ compute ζ(n + s) with integer n, accurate for even n < 0 and small s """
     return jnp.where(n + s >= 1, _zeta_right(s, n), _zeta_left(s, n))
@@ -970,16 +971,16 @@ def _zeta_left(s, n):
     x = -s
     # m + x = 1 - (n + s) = 1 - n - s
     mx = m + x # > 0
-    pi = 2 * (2 * jnp.pi) ** -mx
+    logpi = -mx * jnp.log(2 * jnp.pi)
     cos = _cos_pi2(m, x) # = cos(π/2 (m + x)) but accurate for small x
-    gam = gamma(mx)
+    loggam = jspecial.gammaln(mx)
     zet = _zeta_right(x, m)
     
     # cancel zeta pole at 1
     cos = jnp.where(mx == 1, -jnp.pi / 2, cos)
     zet = jnp.where(mx == 1,           1, zet)
         
-    return pi * cos * gam * zet
+    return 2 * jnp.exp(logpi + loggam) * cos * zet
 
 def _periodic_bernoulli(n, x):
     # TODO to make this jittable, hardcode size to 60 and truncate by writing

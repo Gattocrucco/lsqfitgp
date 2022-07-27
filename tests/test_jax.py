@@ -334,7 +334,7 @@ def test_zeta_zeros(s):
         return pi * cos * gamma * zeta
     z0 = handwritten(s)
     z1 = func(s)
-    ulp = 24 if np.all(s >= -10) else 1101
+    ulp = 23 if np.all(s >= -10) else 1113
     np.testing.assert_array_max_ulp(z0, z1, ulp)
     eps = 1e-30
     z2 = _patch_jax.zeta(eps, s) / eps
@@ -351,7 +351,7 @@ def test_zeta():
             return float(mpmath.zeta(s + n)) if n + s != 1 else np.inf
     z1 = func(s, n)
     z2 = _patch_jax.zeta(s, n)
-    np.testing.assert_array_max_ulp(z2, z1, 58)
+    np.testing.assert_array_max_ulp(z2, z1, 67)
 
 def bernoulli_poly_handwritten(n, x):
     return [

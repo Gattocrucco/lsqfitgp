@@ -744,9 +744,9 @@ test_kwargs = {
         dict(cov=matrix_square(np.random.randn(10, 10)))
     ], random_x_fun=lambda **kw: np.random.randint(10, size=100)),
     _kernels.NNKernel: dict(eps=4 * np.finfo(float).eps),
-    _kernels.Fourier: dict(kwargs_list=[
-        dict(n=n) for n in [1, 2, 3, 4, 5, 29, 1000]
-    ], eps=2048 * np.finfo(float).eps),
+    _kernels.Zeta: dict(kwargs_list=[
+        dict(nu=v) for v in [1, 2, 3, 4, 5, 29, 1000]
+    ], eps=2048 * np.finfo(float).eps), # TODO test other nu
     _kernels.Celerite: dict(kwargs_list=[
         dict(), dict(gamma=1, B=1), dict(gamma=0, B=0), dict(gamma=10, B=0)
     ]),
