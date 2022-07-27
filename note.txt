@@ -1643,3 +1643,12 @@ gammaln and not the exp. Open an issue on jax.
 jax.random.poisson seems very slow, open an issue
 
 does scipy's zeta just return 1 above a certain s? It should
+
+Is jax's zeta more accurate than scipy's zeta? Or scipy's hurwitz zeta than
+scipy's zeta? Check
+
+2022-07-27
+==========
+
+In scipy there ought to be a test that checks that zeta(53) == 1 + eps and not
+1 (currently ok).

@@ -133,15 +133,19 @@ def test_gamma():
     np.testing.assert_array_max_ulp(g2, g1, 1500)
 
 @np.vectorize
-def periodic_zeta_real(x, s):
+def periodic_zeta(x, s):
     with mpmath.workdps(32):
         arg = mpmath.exp(2j * mpmath.pi * x)
-        return float(mpmath.polylog(s, arg).real)
+        return complex(mpmath.polylog(s, arg))
         # the doubled working precision serves two purposes:
         # 1) compute accurately arg, for example, with x=1 the result would
         #    have a small imaginary part which changes the result significantly
         # 2) polylog is inaccurate for s near an integer (mpmath issue #634)
 
+@mark.parametrize('i', [
+    pytest.param(False, id='real'),
+    pytest.param(True, id='imag'),
+])
 @mark.parametrize('sgn', [
     pytest.param(1, id='pos'),
     pytest.param(-1, id='neg'),
@@ -156,18 +160,19 @@ def periodic_zeta_real(x, s):
     pytest.param(np.arange(2, 15, 2), id='even'),
     pytest.param(np.arange(3, 15, 2), id='odd'),
 ])
-def test_periodic_zeta(s, d, sgn):
+def test_periodic_zeta(s, d, sgn, i):
     if d == 0 and sgn < 0:
         pytest.skip()
 
     x = np.linspace(-1, 2, 52)
     s = s[:, None] + sgn * d
     
-    z1 = periodic_zeta_real(x, s)
-    z2 = _patch_jax.periodic_zeta_real(x, s)
+    z1 = periodic_zeta(x, s)
+    z1 = z1.imag if i else z1.real
+    z2 = _patch_jax.periodic_zeta(x, s, i)
     
     eps = np.finfo(float).eps
-    tol = 90 * eps * np.max(np.abs(z1), 1)
+    tol = 100 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
 
@@ -193,7 +198,7 @@ def test_zeta_zero(s):
     pytest.param(1e-14 * np.linspace(0, 1, 51), id='tinyrange'),
 ])
 @mark.parametrize('x', [
-    pytest.param(2, id='nearpole'),
+    pytest.param(2, id='2'),
     pytest.param(np.arange(3, 15), id='farpole'),
 ])
 def test_gamma_incr(x, e, s):
@@ -243,12 +248,13 @@ def test_gammaln1(x, s):
 @mark.parametrize('x', [
     pytest.param(0, id='xzero'),
     pytest.param(np.logspace(-100, -3, 25), id='xnearzero'),
-    pytest.param(0.5, id='xhalf'),
-    pytest.param(np.linspace(0.02, 0.48, 24), id='xother'),
+    pytest.param(np.linspace(0.02, 0.5, 25), id='xother'),
 ])
 @mark.parametrize('q', [
     pytest.param(0, id='qzero'),
-    pytest.param(np.arange(2, 11, 2), id='qeven')
+    pytest.param(1, id='qone'),
+    pytest.param(np.arange(2, 11, 2), id='qeven'),
+    pytest.param(np.arange(3, 11, 2), id='qodd'),
 ])
 def test_power_diff(x, q, a, s):
     if np.any(q == 0) and np.any(s > 0):
@@ -270,14 +276,15 @@ def test_power_diff(x, q, a, s):
             return float(power + term)
     p1 = func(x, q, a)
     p2 = _patch_jax._power_diff(x, q, a)
-    if not np.any(q) and np.any(x):
-        tol = 3 * np.max(np.abs(p1), 0) * np.finfo(float).eps
+    if np.all(q <= 1) and np.any(x):
+        tol = 18 * np.max(np.abs(p1), 0) * np.finfo(float).eps
         assert np.all(np.abs(p1 - p2) < tol)
     else:
         tol = np.finfo(float).eps ** 2 / 2
-        p1 = np.maximum(p1, tol)
-        p2 = np.maximum(p2, tol)
-        np.testing.assert_array_max_ulp(p2, p1, 16)
+        cond = np.abs(p1) < tol
+        cp1 = np.where(cond, tol, p1)
+        cp2 = np.where(cond, tol, p2)
+        np.testing.assert_array_max_ulp(cp2, cp1, 22)
 
 @mark.parametrize('s', [
     pytest.param(-2, id='-2'),
