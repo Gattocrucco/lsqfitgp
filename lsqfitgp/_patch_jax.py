@@ -702,7 +702,8 @@ def hurwitz_zeta(s, a):
     zeta += jnp.where(cond, a ** -s, 0)  # https://dlmf.nist.gov/25.11.E3
     return zeta
 
-# @functools.partial(jax.jit, static_argnums=(2,))
+@functools.partial(jax.custom_jvp, nondiff_argnums=(1, 2))
+@functools.partial(jax.jit, static_argnums=(2,))
 def periodic_zeta(x, s, imag=False):
     """
     compute F(x,s) = Li_s(e^2πix) for real s > 1, real x
@@ -721,6 +722,15 @@ def periodic_zeta(x, s, imag=False):
     z_larges = _periodic_zeta_larges(x, s, nmax, imag)
 
     return jnp.where(s < larges, z_smalls, z_larges)
+
+@periodic_zeta.defjvp
+def _periodic_zeta_jvp(s, imag, p, t):
+    x, = p
+    xt, = t
+    primal = periodic_zeta(x, s, imag)
+    sgn = 1 if imag else -1
+    tangent = 2 * jnp.pi * sgn * periodic_zeta(x, s - 1, not imag) * xt
+    return primal, tangent
 
 def _standard_x(x):
     """ bring x in [1, 1/2] by modulus and reflection """

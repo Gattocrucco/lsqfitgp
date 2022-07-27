@@ -1652,3 +1652,5 @@ scipy's zeta? Check
 
 In scipy there ought to be a test that checks that zeta(53) == 1 + eps and not
 1 (currently ok).
+
+mpmath.polylog(s, 1) != zeta(s), open an issue.

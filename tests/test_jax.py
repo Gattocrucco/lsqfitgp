@@ -132,8 +132,7 @@ def test_gamma():
     g2 = _patch_jax.gamma(x)
     np.testing.assert_array_max_ulp(g2, g1, 1500)
 
-@np.vectorize
-def periodic_zeta(x, s):
+def _periodic_zeta_mpmath(x, s):
     with mpmath.workdps(32):
         arg = mpmath.exp(2j * mpmath.pi * x)
         return complex(mpmath.polylog(s, arg))
@@ -141,6 +140,17 @@ def periodic_zeta(x, s):
         # 1) compute accurately arg, for example, with x=1 the result would
         #    have a small imaginary part which changes the result significantly
         # 2) polylog is inaccurate for s near an integer (mpmath issue #634)
+
+def _zeta_mpmath(s):
+    return complex(mpmath.zeta(s))
+
+@np.vectorize
+def periodic_zeta(x, s):
+    if int(x) == x:
+        return _zeta_mpmath(s)
+        # patch for mpmath.polylog(s, 1) != zeta(s)
+    else:
+        return _periodic_zeta_mpmath(x, s)
 
 @mark.parametrize('i', [
     pytest.param(False, id='real'),
@@ -156,6 +166,7 @@ def periodic_zeta(x, s):
     pytest.param(1e-13, id='veryclose'),
 ])
 @mark.parametrize('s', [
+    pytest.param(1.01, id='near1'),
     pytest.param(0.5 + np.arange(1, 15), id='half'),
     pytest.param(np.arange(2, 15, 2), id='even'),
     pytest.param(np.arange(3, 15, 2), id='odd'),
@@ -165,11 +176,28 @@ def test_periodic_zeta(s, d, sgn, i):
         pytest.skip()
 
     x = np.linspace(-1, 2, 52)
-    s = s[:, None] + sgn * d
+    s = np.atleast_1d(s)[:, None] + sgn * d
     
     z1 = periodic_zeta(x, s)
     z1 = z1.imag if i else z1.real
     z2 = _patch_jax.periodic_zeta(x, s, i)
+    
+    eps = np.finfo(float).eps
+    tol = 100 * eps * np.max(np.abs(z1), 1)
+    maxdiff = np.max(np.abs(z2 - z1), 1)
+    assert np.all(maxdiff < tol)
+
+@mark.parametrize('i', [
+    pytest.param(False, id='real'),
+    pytest.param(True, id='imag'),
+])
+def test_periodic_zeta_deriv(i):
+    x = np.linspace(-1, 2, 52)
+    s = np.linspace(2.01, 16, 20)[:, None]
+
+    z1 = 2j * np.pi * periodic_zeta(x, s - 1)
+    z1 = z1.imag if i else z1.real
+    z2 = _patch_jax.elementwise_grad(_patch_jax.periodic_zeta)(x, s, i)
     
     eps = np.finfo(float).eps
     tol = 100 * eps * np.max(np.abs(z1), 1)
