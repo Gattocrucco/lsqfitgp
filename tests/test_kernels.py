@@ -98,7 +98,9 @@ class KernelTestBase(KernelTestABC):
     
     @property
     def eps(self):
+        """ used only by test_positive_* """
         return 200 * np.finfo(float).eps
+        # TODO reduce this default
     
     def test_public(self):
         assert self.kernel_class in vars(lgp).values()
@@ -252,13 +254,15 @@ class KernelTestBase(KernelTestABC):
             # discontinuos kernels
             if kernel == _kernels.Cauchy and kw.get('alpha', 2) < 1:
                 continue
-            if kernel == _kernels.Matern and kw['nu'] - deriv < 0.5:
-                continue
             if kernel == _kernels.GammaExp and kw.get('gamma', 1) < 1:
+                continue
+            if kernel == _kernels.Matern and kw['nu'] - deriv < 0.5:
                 continue
             if kernel == _kernels.StationaryFracBrownian and kw.get('H', 0.5) < 0.5:
                 continue
             if kernel == _kernels.White:
+                continue
+            if kernel == _kernels.Zeta and kw['nu'] - deriv < 0.5:
                 continue
             
             k = k.diff(deriv, deriv)
@@ -652,6 +656,10 @@ class KernelTestBase(KernelTestABC):
                 kernel.fourier(True, True)
             except NotImplementedError:
                 pytest.skip()
+            
+            if isinstance(kernel, _kernels.Zeta) and kw['nu'] == 0:
+                continue
+            
             x = np.linspace(0, 1, 100)
             gp = lgp.GP(kernel, posepsfac=200)
             gp.addkernelop('fourier', True, 'F')
@@ -745,8 +753,8 @@ test_kwargs = {
     ], random_x_fun=lambda **kw: np.random.randint(10, size=100)),
     _kernels.NNKernel: dict(eps=4 * np.finfo(float).eps),
     _kernels.Zeta: dict(kwargs_list=[
-        dict(nu=v) for v in [1, 2, 3, 4, 5, 29, 1000]
-    ], eps=2048 * np.finfo(float).eps), # TODO test other nu
+        dict(nu=v) for v in [0, 0.1, 1, 1.5, 4.9, 1000]
+    ]),
     _kernels.Celerite: dict(kwargs_list=[
         dict(), dict(gamma=1, B=1), dict(gamma=0, B=0), dict(gamma=10, B=0)
     ]),

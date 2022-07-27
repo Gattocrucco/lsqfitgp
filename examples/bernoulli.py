@@ -13,8 +13,8 @@ eps = np.finfo(float).eps
 x = np.linspace(eps, 1 - eps, 1000)
 
 for n in range(2, 11):
-    y = lgp._kernels._bernoulli_poly(n, x)
-    yrev = (-1) ** n * lgp._kernels._bernoulli_poly(n, 1 - x)
+    y = lgp._patch_jax._periodic_bernoulli(n, x)
+    yrev = (-1) ** n * lgp._patch_jax._periodic_bernoulli(n, 1 - x)
     axs[0].plot(x, y, label=str(n))
     axs[1].plot(x, y - yrev, label=str(n))
 

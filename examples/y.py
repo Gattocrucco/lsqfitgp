@@ -21,7 +21,7 @@
 
                             EXAMPLE Y.
 
-    Where a Fourier kernel forces some random samples to have
+    Where a Zeta kernel forces some random samples to have
     zero mean.
 
 """
@@ -35,7 +35,7 @@ xdata = np.linspace(0, 1, 10)
 xpred = np.linspace(0, 1, 500)
 y = np.ones_like(xdata)
 
-gp = lgp.GP(lgp.Fourier(n=2))
+gp = lgp.GP(lgp.Zeta(nu=1.5))
 gp.addx(xdata, 'pere')
 gp.addx(xpred, 'banane')
 

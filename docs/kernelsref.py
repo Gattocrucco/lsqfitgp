@@ -162,7 +162,6 @@ meta = dict(
     Constant = dict(skip=True),
     Cos = dict(range=[0, 4 * np.pi]),
     Decaying = dict(range=[0, 2], srange=[0, 5]),
-    Fourier = dict(range=[0, 2], kwlist=[dict(n=n) for n in [1, 2, 3, 100]]),
     FracBrownian = dict(kwlist=[dict(H=H, K=K) for H, K in [(0.1, 1), (0.5, 1), (0.9, 1), (0.9, 0.3)]], range=[-5, 5]),
     GammaExp = dict(kwlist=[dict(gamma=g) for g in [0.1, 1, 1.9]]),
     Gibbs = dict(kwlist=[dict(scalefun=Formula('where((0 < x) & (x < 0.1), 0.02, 1)'))], range=[-1, 1]),
@@ -184,6 +183,7 @@ meta = dict(
     Wendland = dict(range=[0, 2], kwlist=[dict(k=k, alpha=alpha) for k in [0, 2] for alpha in [1, 2]]),
     Wiener = dict(range=[0, 2]),
     WienerIntegral = dict(range=[0, 2]),
+    Zeta = dict(x=np.linspace(0, 2, 501), kwlist=[dict(nu=v) for v in [0.1, 1, 1.5, 2.5, 1000]]),
 )
 
 fig = plt.figure(num='kernelsref', clear=True)

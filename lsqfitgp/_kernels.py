@@ -2011,8 +2011,8 @@ class BART(_BARTBase):
         debug : bool
             If True, disable shortcuts in the tree recursion. Default False.
 
-        Return
-        ------
+        Returns
+        -------
         corr : scalar
             The prior correlation.
         """

@@ -31,9 +31,9 @@ import gvar
 class PORCO: pass
 class DUO: pass
 
-gp = lgp.GP(lgp.Fourier(scale=2 * np.pi, n=1))
+gp = lgp.GP(lgp.Zeta(scale=2 * np.pi, nu=0.5))
 # We could do the same with a non-periodic prior, but it would not make as much
-# sense. Moreover we use the Fourier kernel with n=1, i.e., prior on the
+# sense. Moreover we use the Zeta kernel with nu=0.5, i.e., prior on the
 # coefficients going down like 1/k. A smoother kernel would yield a strongly
 # shrinking prior on the DFT coefficients. Try it.
 
