@@ -17,15 +17,22 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 import setuptools
-import lsqfitgp
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+# extract version
+with open('lsqfitgp/__init__.py', 'r') as fi:
+    init = fi.read()
+    match = re.search(r"__version__ = '(.+?)'", init)
+    version = match.group(1)
+
 setuptools.setup(
     name="lsqfitgp",
-    version=lsqfitgp.__version__,
+    version=version,
     author="Giacomo Petrillo",
     author_email="info@giacomopetrillo.com",
     description="Gaussian processes in nonlinear least-squares fits",

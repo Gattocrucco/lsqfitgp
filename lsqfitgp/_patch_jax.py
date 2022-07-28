@@ -646,7 +646,6 @@ def _dds_hzs_onlyevenodd_evenodds(m, a1, even):
     harm = jnp.cumsum((1 / n).at[0].set(0))
     harm_s = harm.at[negs].get(mode='fill')
     shape = jnp.broadcast_shapes(pow_a1_n.shape[:-1], negs.shape[:-1])
-    # TODO instead of broadcast, use expand_dims
     op1 = jnp.broadcast_to(pow_a1_n, shape + pow_a1_n.shape[-1:])
     op2 = jnp.broadcast_to(negs, shape + negs.shape[-1:])
     pow_a1_negs = jnp.take_along_axis(op1, op2, -1)
@@ -727,6 +726,9 @@ def periodic_zeta(x, s, imag=False):
     z_larges = _periodic_zeta_larges(x, s, nmax, imag)
 
     return jnp.where(s < larges, z_smalls, z_larges)
+    
+    # TODO rewrite without vectorization and then use vectorize, use switch
+    # instead of where to avoid evaluating all branches all times
 
 @periodic_zeta.defjvp
 def _periodic_zeta_jvp(s, imag, p, t):
