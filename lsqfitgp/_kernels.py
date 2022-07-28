@@ -1048,7 +1048,18 @@ def Color(delta, n=2):
     # https://dlmf.nist.gov/8.19.E17 continued fraction for E_n(z)
     # https://dlmf.nist.gov/8.20.E6 series of E_n(z) for large n
     # https://dlmf.nist.gov/8.27.i reference to Padé of gammainc for complex z
-    # 683.f impl of E_n(z) for complex z (license?)
+    # 683.f impl of E_n(z) for complex z (license?) (amos1990)
+    # https://specialfunctions.juliamath.org/stable/functions_list/#SpecialFunctions.expint implementation in julia for arbitrary complex arguments
+    # https://github.com/JuliaMath/SpecialFunctions.jl/blob/36c547b4a270b6089b1baf7bec05707e9fb8c7f9/src/expint.jl#L446-L503
+    
+    # E_p(z)
+    # following scipy's implementation, generalized to noninteger arguments:
+    # if p > 50, use https://dlmf.nist.gov/8.20.ii (the dlmf reports it only
+    #                for real z, need to follow the references)
+    # elif |z| < 1 and p integer, use https://dlmf.nist.gov/8.19.E8
+    #                p noninteger, use https://dlmf.nist.gov/8.19.E10 (need to
+    #                                  sum the external term accurately)
+    # else (|z| >= 1), use https://dlmf.nist.gov/8.19.E17
     
     assert int(n) == n and n >= 2, n
     return (n - 1) * _patch_jax.expn_imag(n, delta).real

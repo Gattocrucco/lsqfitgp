@@ -619,7 +619,6 @@ def _dds_hzs_onlyevenodd_evenodds(m, a1, even):
     n = jnp.arange(nmax + 1)
 
     # make arguments broadcastable with n
-    a1, m = jnp.broadcast_arrays(a1, m) # needed for take_along_axis
     m = m[..., None]
     a1 = a1[..., None]
 
@@ -646,7 +645,11 @@ def _dds_hzs_onlyevenodd_evenodds(m, a1, even):
     # term with n = -s
     harm = jnp.cumsum((1 / n).at[0].set(0))
     harm_s = harm.at[negs].get(mode='fill')
-    pow_a1_negs = jnp.take_along_axis(pow_a1_n, negs, -1)
+    shape = jnp.broadcast_shapes(pow_a1_n.shape[:-1], negs.shape[:-1])
+    # TODO instead of broadcast, use expand_dims
+    op1 = jnp.broadcast_to(pow_a1_n, shape + pow_a1_n.shape[-1:])
+    op2 = jnp.broadcast_to(negs, shape + negs.shape[-1:])
+    pow_a1_negs = jnp.take_along_axis(op1, op2, -1)
     dds2 = (1/2 * harm_s + _zeta_deriv_evens(0)) * pow_a1_negs
 
     # terms with n > -s
@@ -701,6 +704,8 @@ def hurwitz_zeta(s, a):
     zeta = _hurwitz_zeta_series(zero, s, a1)  # https://dlmf.nist.gov/25.11.E10
     zeta += jnp.where(cond, a ** -s, 0)  # https://dlmf.nist.gov/25.11.E3
     return zeta
+    
+    # https://specialfunctions.juliamath.org/stable/functions_list/#SpecialFunctions.zeta
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(1, 2))
 # @functools.partial(jax.jit, static_argnums=(2,))
