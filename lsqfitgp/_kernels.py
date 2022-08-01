@@ -178,7 +178,11 @@ def Maternp(r2, p=None):
     # TODO see if I can remove the 1e-30 improving kvmodx2_hi_jvp
 
 def _matern_derivable(nu=None):
-    return max(0, numpy.ceil(nu) - 1)
+    if _patch_jax.isconcrete(nu):
+        nu = _patch_jax.concrete(nu)
+        return max(0, numpy.ceil(nu) - 1)
+    else:
+        return None
 
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
@@ -193,7 +197,7 @@ def Matern(r2, nu=None):
     The process is :math:`\\lceil\\nu\\rceil-1` times derivable: so for
     :math:`0 \\le \\nu \\le 1` it is not derivable, for :math:`1 < \\nu \\le 2`
     it is derivable but has not a second derivative, etc. The highest
-    derivative is continuous iff :math:`\\nu\\bmod 1 \\ge 1/2`.
+    derivative is (Lipschitz) continuous iff :math:`\\nu\\bmod 1 \\ge 1/2`.
 
     Reference: Rasmussen and Williams (2006, p. 84).
     """
@@ -227,7 +231,7 @@ def GammaExp(r2, gamma=1):
         assert 0 < gamma <= 2, gamma
     return jnp.exp(-(r2 ** (gamma / 2)))
     # TODO extend to gamma=0, the correct limit is
-    # e^-1 constant + (1 - e^-1) white noise
+    # e^-1 constant + (1 - e^-1) white noise. Use lax.switch.
 
 @kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):
@@ -557,17 +561,25 @@ def Taylor(x, y):
     independent priors on the coefficients k with mean zero and standard
     deviation 1/k!.
     """
+    
     # TODO reference? Maybe it's called bessel kernel in the literature?
+    # => nope, bessel kernel is the J_v one
         
     # TODO what is the "natural" extension of this to multidim? Is forcekron
     # appropriate?
+    
+    # TODO probably the rescaled version of this (e^-x) makes more sense
     
     mul = x * y
     val = 2 * jnp.sqrt(jnp.abs(mul))
     return jnp.where(mul >= 0, jspecial.i0(val), _patch_jax.j0(val))
 
 def _zeta_derivable(nu=None):
-    return max(0, numpy.ceil(nu) - 1)
+    if _patch_jax.isconcrete(nu):
+        nu = _patch_jax.concrete(nu)
+        return max(0, numpy.ceil(nu) - 1)
+    else:
+        return None
 
 @stationarykernel(maxdim=1, derivable=_zeta_derivable, saveargs=True)
 def _ZetaBase(delta, nu=None):
@@ -608,6 +620,8 @@ def _ZetaBase(delta, nu=None):
     # improve the transformations system.
     
     # TODO ND version. The separable product is not equivalent I think.
+    
+    # TODO the derivative w.r.t. nu is probably broken
     
     if _patch_jax.isconcrete(nu):
         assert 0 <= nu < jnp.inf, nu
