@@ -844,7 +844,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x12ce13640&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x1361a7640&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
@@ -958,7 +958,7 @@ normalizing <span class="math notranslate nohighlight">\(\mathbf w\)</span> to u
 <p>The process is <span class="math notranslate nohighlight">\(\lceil\nu\rceil-1\)</span> times derivable: so for
 <span class="math notranslate nohighlight">\(0 \le \nu \le 1\)</span> it is not derivable, for <span class="math notranslate nohighlight">\(1 &lt; \nu \le 2\)</span>
 it is derivable but has not a second derivative, etc. The highest
-derivative is continuous iff <span class="math notranslate nohighlight">\(\nu\bmod 1 \ge 1/2\)</span>.</p>
+derivative is (Lipschitz) continuous iff <span class="math notranslate nohighlight">\(\nu\bmod 1 \ge 1/2\)</span>.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 84).</p>
 </dd></dl>
 
