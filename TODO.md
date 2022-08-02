@@ -124,6 +124,9 @@ blocks involved in the conditioning, on every conditioning.
 
 Add jit tests to test_GP
 
+gvar #27 is closed with 11.10.1, go through the code to remove the array
+copies, and increase the minimum supported gvar version
+
 ## Implementation details
 
 Chiamare GP -> _GPBase e poi fare una sottoclasse GP e mettere tutti i metodi
@@ -563,6 +566,12 @@ compact poly-harmonic (Gneiting 2002, p. 504).
 The autocorrelation of any distribution is pos def stationary, in particular
 the intersection volume of a solid and a translated copy of it.
 
+Generalized Wendland and its Matérn-limit reparametrization (Bevilaqua 2019).
+
+erfc transformation of a variogram (Stein 2005, eq. 3)
+
+F-covariance on the sphere (Alegria 2021)
+
 ### Transformations
 
 #### Pointwise infinite transformations
@@ -734,6 +743,9 @@ anziché usare evalcov_blocks.
 gvar.make_fake_data seems to be using evalcov instead of evalcov_blocks,
 making it inefficient with many variables with a diagonal covariance matrix,
 which is a common case with data.
+
+Can I use jax pytrees to make a version of gvar which is compatible with jax?
+The difficulty is arrays of gvars, it requires a new array-like.
 
 #### sparse `evalcov`
 

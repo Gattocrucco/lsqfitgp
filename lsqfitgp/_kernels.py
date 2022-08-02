@@ -207,6 +207,12 @@ def Matern(r2, nu=None):
                                         # noise, so I avoid doing r2 * 0
     return _patch_jax.kvmodx2(nu, r2)
     
+    # TODO broken for high nu. However the convergence to ExpQuad is extremely
+    # slow. Tentative temporary patch:
+    # - for large x, when x^v=inf, use https://dlmf.nist.gov/10.25.E3
+    # - for small x, when Kv(x)=inf, return 1
+    # - for very large v, use expquad even if it's not good enough
+    
 def _gammaexp_derivable(gamma=1):
     return gamma == 2
 

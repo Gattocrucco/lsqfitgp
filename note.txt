@@ -1677,3 +1677,7 @@ scipy.zeta:
 - scipy.zeta zeros are inaccurate
 - scipy.zeta inaccurate for large negative s
 - hurwitz zeta for s < 1, 0 <= a <= 1
+
+open zeta issues on scipy:
+#15036
+#14073

@@ -400,6 +400,11 @@ class GP:
         
         """
         
+        # TODO maybe have a default key=DefaultProcess to enable an idiom
+        # where all components are added together and subsequently the total is
+        # the default, see if this can be applied coherently for all methods
+        # defining a new process
+        
         for k, func in ops.items():
             if k not in self._procs:
                 raise KeyError(f'process key {k!r} not in GP object')
