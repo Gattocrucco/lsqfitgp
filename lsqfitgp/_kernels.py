@@ -213,6 +213,9 @@ def Matern(r2, nu=None):
     # - for small x, when Kv(x)=inf, return 1
     # - for very large v, use expquad even if it's not good enough
     
+    # The GSL has log K_nu
+    # https://www.gnu.org/software/gsl/doc/html/specfunc.html#irregular-modified-bessel-functions-fractional-order
+    
 def _gammaexp_derivable(gamma=1):
     return gamma == 2
 
@@ -1080,6 +1083,9 @@ def Color(delta, n=2):
     #                p noninteger, use https://dlmf.nist.gov/8.19.E10 (need to
     #                                  sum the external term accurately)
     # else (|z| >= 1), use https://dlmf.nist.gov/8.19.E17
+    
+    # https://github.com/Radonirinaunimi/cmpx-spfunc incomplete gamma for
+    # complex arguments (not well tested yet)
     
     assert int(n) == n and n >= 2, n
     return (n - 1) * _patch_jax.expn_imag(n, delta).real

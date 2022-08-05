@@ -541,6 +541,9 @@ def expm1x(x):
     coef = jnp.array(1, x.dtype) / f[::-1]
     smallx = x * x * jnp.polyval(coef, x, unroll=n)
     return jnp.where(jnp.abs(x) < 1, smallx, jnp.expm1(x) - x)
+    
+    # see also the GSL
+    # https://www.gnu.org/software/gsl/doc/html/specfunc.html#relative-exponential-functions
 
 @expm1x.defjvp
 def _expm1x_jvp(p, t):
@@ -971,6 +974,10 @@ def zeta(s, n=0):
 
 def _zeta_right(s, n):
     return jspecial.zeta(n + s, 1)
+    
+    # jax's zeta implements a generic hurwitz algorithm, see the GSL
+    # https://www.gnu.org/software/gsl/doc/html/specfunc.html#zeta-functions
+    # to implement only the zeta in a possibly better way
 
 def _zeta_left(s, n):
     # reflection formula https://dlmf.nist.gov/25.4.E1

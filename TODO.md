@@ -572,6 +572,23 @@ erfc transformation of a variogram (Stein 2005, eq. 3)
 
 F-covariance on the sphere (Alegria 2021)
 
+Generalized Gibbs nonstationary transformation (Paciorek 2006).
+
+Bernoulli (my old Fourier) (Guinness 2016).
+
+The covariance functions from Porcu (2018, p. 370).
+
+Kernels on spheres with option to use chordal or great arc distance. New class?
+
+Dagum (Gneiting 2013, p. 1346)
+
+Gneiting class eq. 14
+
+Should I standardize all periodic kernels to period 1 or period 2pi? The
+problem is that machine pi is not accurate, so depending on how the function is
+written, using 2 pi as period can be less accurate than using 1. However, see
+https://www.gnu.org/software/gsl/doc/html/specfunc.html#restriction-functions.
+
 ### Transformations
 
 #### Pointwise infinite transformations
