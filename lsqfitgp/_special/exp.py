@@ -1,4 +1,4 @@
-# lsqfitgp/_special/__init__.py
+# lsqfitgp/_special/exp.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #
@@ -17,11 +17,27 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from .bernoulli import *
-from .bessel import *
-from .exp import *
-from .expint import *
-from .gamma import *
-from .sinc import *
-from .taylor import *
-from .zeta import *
+import jax
+from jax import numpy as jnp
+
+@jax.custom_jvp
+@jax.jit
+def expm1x(x):
+    """
+    Compute accurately exp(x) - 1 - x = x^2/2 1F1(1, 3, x).
+    """
+    n = 10 if x.dtype == jnp.float32 else 17
+    k = jnp.arange(2, n + 1)
+    f = jnp.cumprod(k)
+    coef = jnp.array(1, x.dtype) / f[::-1]
+    smallx = x * x * jnp.polyval(coef, x, unroll=n)
+    return jnp.where(jnp.abs(x) < 1, smallx, jnp.expm1(x) - x)
+    
+    # see also the GSL
+    # https://www.gnu.org/software/gsl/doc/html/specfunc.html#relative-exponential-functions
+
+@expm1x.defjvp
+def _expm1x_jvp(p, t):
+    x, = p
+    xt, = t
+    return expm1x(x), jnp.expm1(x) * xt

@@ -148,3 +148,8 @@ def value_and_ops(f, *ops, has_aux=False, **kw): # pragma: no cover
 def tree_all(predicate, *trees):
     pred = tree_util.tree_map(predicate, *trees)
     return tree_util.tree_reduce(lambda acc, p: acc and p, pred, True)
+
+def float_type(*args):
+    t = jnp.result_type(*args)
+    return t if jnp.issubdtype(t, jnp.inexact) else jnp.float64
+    # TODO in jax somewhere there is _promote_dtypes_inexact, look it up

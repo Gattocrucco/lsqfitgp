@@ -1,4 +1,4 @@
-# lsqfitgp/_special/__init__.py
+# lsqfitgp/_special/sinc.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #
@@ -17,11 +17,16 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from .bernoulli import *
-from .bessel import *
-from .exp import *
-from .expint import *
-from .gamma import *
-from .sinc import *
+from jax import numpy as jnp
+from jax.scipy import special as jspecial
+
 from .taylor import *
-from .zeta import *
+
+def coefgen_sinc(s, e):
+    m = jnp.arange(s, e)
+    return (-1) ** m / jnp.exp(jspecial.gammaln(2 + 2 * m))
+
+def sinc(x):
+    nearzero = taylor(coefgen_sinc, (), 0, 6, jnp.square(jnp.pi * x))
+    normal = jnp.sinc(x)
+    return jnp.where(jnp.abs(x) < 1e-1, nearzero, normal)

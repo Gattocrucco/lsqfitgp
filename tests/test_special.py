@@ -213,7 +213,7 @@ def test_periodic_zeta_deriv(i):
 def test_zeta_zero(s):
     with mpmath.workdps(40):
         z1 = np.array([float(mpmath.zeta(s) - mpmath.zeta(0)) for s in s])
-    z2 = _special._zeta_zero(s)
+    z2 = _special.zeta_zero(s)
     np.testing.assert_array_max_ulp(z1, z2, 2)
 
 @mark.parametrize('s', [
@@ -241,7 +241,7 @@ def test_gamma_incr(x, e, s):
     e = e * s
     e = np.where(x == 1, np.abs(e), e)
     g1 = func(x, e)
-    g2 = _special._gamma_incr(x, e)
+    g2 = _special.gamma_incr(x, e)
     np.testing.assert_array_max_ulp(g2, g1, 7)
 
 @mark.parametrize('s', [
@@ -261,7 +261,7 @@ def test_gammaln1(x, s):
             return float(mpmath.loggamma(1 + x))
     x = x * s
     g1 = func(x)
-    g2 = _special._gammaln1(x)
+    g2 = _special.gammaln1(x)
     np.testing.assert_array_max_ulp(g2, g1, 2)
 
 @mark.parametrize('s', [
@@ -303,7 +303,7 @@ def test_power_diff(x, q, a, s):
             power = x ** (q - a)
             return float(power + term)
     p1 = func(x, q, a)
-    p2 = _special._power_diff(x, q, a)
+    p2 = _special.zeta_series_power_diff(x, q, a)
     if np.all(q <= 1) and np.any(x):
         tol = 20 * np.max(np.abs(p1), 0) * np.finfo(float).eps
         maxdiff = np.max(np.abs(p1 - p2), 0)
@@ -367,7 +367,7 @@ def bernoulli_poly_handwritten(n, x):
 
 def check_bernoulli(n, x):
     r1 = bernoulli_poly_handwritten(n, x)
-    r2 = _special._periodic_bernoulli(n, x)
+    r2 = _special.periodic_bernoulli(n, x)
     np.testing.assert_allclose(r1, r2, equal_nan=False)
 
 def test_bernoulli():
