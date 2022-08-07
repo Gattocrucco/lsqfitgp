@@ -666,6 +666,9 @@ the dot product kernel?
 
 It may be possible to recycle jax.experimental.jet to do these things.
 
+Can I compose efficiently multiple positive-series Taylor functions, given the
+generator of the series?
+
 #### Other infinite transformations
 
 Mellin transform?

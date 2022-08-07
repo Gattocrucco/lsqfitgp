@@ -25,7 +25,7 @@ import pytest
 from pytest import mark
 import mpmath
 
-from lsqfitgp import _patch_jax
+from lsqfitgp import _special, _patch_jax
 import util
 
 gen = np.random.default_rng(202207201419)
@@ -33,7 +33,7 @@ gen = np.random.default_rng(202207201419)
 def test_sinc():
     x = np.linspace(-0.1, 0.1, 1000)
     s1 = np.sinc(x)
-    s2 = _patch_jax.sinc(x)
+    s2 = _special.sinc(x)
     np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-15)
 
 def test_jvmodx2():
@@ -41,10 +41,10 @@ def test_jvmodx2():
     x = np.linspace(1e-15, 0.1, 1000)
     for v in nu:
         s1 = (x / 2) ** -v * special.jv(v, x)
-        s2 = _patch_jax.jvmodx2(v, x ** 2)
+        s2 = _special.jvmodx2(v, x ** 2)
         np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
-        np.testing.assert_allclose(_patch_jax.jvmodx2(v, 0), 1 / special.gamma(v + 1), rtol=1e-14)
-        test_util.check_grads(lambda x: _patch_jax.jvmodx2(v, x ** 2), (x,), 2)
+        np.testing.assert_allclose(_special.jvmodx2(v, 0), 1 / special.gamma(v + 1), rtol=1e-14)
+        test_util.check_grads(lambda x: _special.jvmodx2(v, x ** 2), (x,), 2)
 
 def test_kvmodx2():
     nu = np.linspace(-5, 5, 20)
@@ -52,24 +52,24 @@ def test_kvmodx2():
     xsoft = np.linspace(1, 10, 1000)
     for v in nu:
         s1 = 2 / special.gamma(v) * (x / 2) ** v * special.kv(v, x)
-        s2 = _patch_jax.kvmodx2(v, x ** 2)
+        s2 = _special.kvmodx2(v, x ** 2)
         np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
-        np.testing.assert_allclose(_patch_jax.kvmodx2(v, 0), 1, rtol=1e-14)
-        test_util.check_grads(lambda x: _patch_jax.kvmodx2(v, x ** 2), (xsoft,), 2)
+        np.testing.assert_allclose(_special.kvmodx2(v, 0), 1, rtol=1e-14)
+        test_util.check_grads(lambda x: _special.kvmodx2(v, x ** 2), (xsoft,), 2)
         if v >= 0.5: # negative diverges, and below 0.5 d/dx at 0 is inf
             for no in range(5):
-                np.testing.assert_allclose(_patch_jax.kvmodx2(v, 1e-15, no), _patch_jax.kvmodx2(v, 0, no), equal_nan=False)
+                np.testing.assert_allclose(_special.kvmodx2(v, 1e-15, no), _special.kvmodx2(v, 0, no), equal_nan=False)
         # TODO really need to check at 0 in other cases
     xz = np.linspace(0, 1, 1000)
-    np.testing.assert_equal(_patch_jax.kvmodx2(0, xz), np.where(xz, 0, 1))
+    np.testing.assert_equal(_special.kvmodx2(0, xz), np.where(xz, 0, 1))
 
 def test_kvmodx2_hi():
     x = np.linspace(1e-15, 10, 1000)
     x2 = x ** 2
     for p in range(5):
         v = p + 1/2
-        f1 = lambda x: _patch_jax.kvmodx2_hi(x, p)
-        f2 = lambda x: _patch_jax.kvmodx2(v, x)
+        f1 = lambda x: _special.kvmodx2_hi(x, p)
+        f2 = lambda x: _special.kvmodx2(v, x)
         for _ in range(3):
             s1 = f1(x2)
             s2 = f2(x2)
@@ -89,22 +89,22 @@ def test_exp1_imag_and_ci():
         np.logspace(2, 20, 1000),
     ]
     for x in xs:
-        y1 = _patch_jax.exp1_imag(x)
+        y1 = _special.exp1_imag(x)
         y2 = special.exp1(-1j * x)
         np.testing.assert_allclose(y1, y2, atol=0, rtol=1e-14)
         
-        y1 = _patch_jax.ci(x)
+        y1 = _special.ci(x)
         _, y2 = special.sici(x)
         np.testing.assert_allclose(y1, y2, atol=1e-15, rtol=1e-15)
 
 def test_expm1x():
     x = np.linspace(-2, 2, 10000)
-    y = _patch_jax.expm1x(x)
+    y = _special.expm1x(x)
     y2 = x * x / 2 * special.hyp1f1(1, 3, x)
     np.testing.assert_array_max_ulp(y, y2, 8)
-    y = _patch_jax.expm1x(x.astype('f'))
+    y = _special.expm1x(x.astype('f'))
     np.testing.assert_array_max_ulp(y, y2.astype('f'), 4)
-    test_util.check_grads(_patch_jax.expm1x, (x,), 2)
+    test_util.check_grads(_special.expm1x, (x,), 2)
 
 zeta = np.vectorize(lambda *args: float(mpmath.zeta(*args)))
 
@@ -112,7 +112,7 @@ def test_hurwitz_zeta():
     s = np.linspace(-10, 0, 100)[:, None]
     a = np.linspace(0, 1, 100)
     z1 = zeta(s, a)
-    z2 = _patch_jax.hurwitz_zeta(s, a)
+    z2 = _special.hurwitz_zeta(s, a)
     eps = np.finfo(float).eps
     tol = 350 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
@@ -121,15 +121,15 @@ def test_hurwitz_zeta():
 def test_hurwitz_zeta_vectorized():
     s = np.linspace(-10, 0, 100)
     a = np.linspace(0, 1, 100)
-    z1 = _patch_jax.hurwitz_zeta(s, a)
-    z2 = np.vectorize(_patch_jax.hurwitz_zeta)(s, a)
+    z1 = _special.hurwitz_zeta(s, a)
+    z2 = np.vectorize(_special.hurwitz_zeta)(s, a)
     np.testing.assert_array_max_ulp(z1, z2, 675)
     # TODO what?? 675 ULP?? what??
 
 def test_gamma():
     x = np.linspace(-100, 100, 1000)
     g1 = special.gamma(x)
-    g2 = _patch_jax.gamma(x)
+    g2 = _special.gamma(x)
     np.testing.assert_array_max_ulp(g2, g1, 1500)
 
 def _periodic_zeta_mpmath(x, s):
@@ -180,7 +180,7 @@ def test_periodic_zeta(s, d, sgn, i):
     
     z1 = periodic_zeta(x, s)
     z1 = z1.imag if i else z1.real
-    z2 = _patch_jax.periodic_zeta(x, s, i)
+    z2 = _special.periodic_zeta(x, s, i)
     
     eps = np.finfo(float).eps
     tol = 110 * eps * np.max(np.abs(z1), 1)
@@ -197,7 +197,7 @@ def test_periodic_zeta_deriv(i):
 
     z1 = 2j * np.pi * periodic_zeta(x, s - 1)
     z1 = z1.imag if i else z1.real
-    z2 = _patch_jax.elementwise_grad(_patch_jax.periodic_zeta)(x, s, i)
+    z2 = _patch_jax.elementwise_grad(_special.periodic_zeta)(x, s, i)
     
     eps = np.finfo(float).eps
     tol = 100 * eps * np.max(np.abs(z1), 1)
@@ -213,7 +213,7 @@ def test_periodic_zeta_deriv(i):
 def test_zeta_zero(s):
     with mpmath.workdps(40):
         z1 = np.array([float(mpmath.zeta(s) - mpmath.zeta(0)) for s in s])
-    z2 = _patch_jax._zeta_zero(s)
+    z2 = _special._zeta_zero(s)
     np.testing.assert_array_max_ulp(z1, z2, 2)
 
 @mark.parametrize('s', [
@@ -241,7 +241,7 @@ def test_gamma_incr(x, e, s):
     e = e * s
     e = np.where(x == 1, np.abs(e), e)
     g1 = func(x, e)
-    g2 = _patch_jax._gamma_incr(x, e)
+    g2 = _special._gamma_incr(x, e)
     np.testing.assert_array_max_ulp(g2, g1, 7)
 
 @mark.parametrize('s', [
@@ -261,7 +261,7 @@ def test_gammaln1(x, s):
             return float(mpmath.loggamma(1 + x))
     x = x * s
     g1 = func(x)
-    g2 = _patch_jax._gammaln1(x)
+    g2 = _special._gammaln1(x)
     np.testing.assert_array_max_ulp(g2, g1, 2)
 
 @mark.parametrize('s', [
@@ -303,7 +303,7 @@ def test_power_diff(x, q, a, s):
             power = x ** (q - a)
             return float(power + term)
     p1 = func(x, q, a)
-    p2 = _patch_jax._power_diff(x, q, a)
+    p2 = _special._power_diff(x, q, a)
     if np.all(q <= 1) and np.any(x):
         tol = 20 * np.max(np.abs(p1), 0) * np.finfo(float).eps
         maxdiff = np.max(np.abs(p1 - p2), 0)
@@ -330,15 +330,15 @@ def test_zeta_zeros(s):
         n = np.around(s)
         sgn = np.where(n % 4, -1, 1)
         cos = np.pi / 2 * sgn
-        gamma = _patch_jax.gamma(1 - s)
-        zeta = _patch_jax.zeta(1 - s)
+        gamma = _special.gamma(1 - s)
+        zeta = _special.zeta(1 - s)
         return pi * cos * gamma * zeta
     z0 = handwritten(s)
     z1 = func(s)
     ulp = 24 if np.all(s >= -10) else 1113
     np.testing.assert_array_max_ulp(z0, z1, ulp)
     eps = 1e-30
-    z2 = _patch_jax.zeta(eps, s) / eps
+    z2 = _special.zeta(eps, s) / eps
     np.testing.assert_array_max_ulp(z2, z1, ulp)
 
 def test_zeta():
@@ -351,7 +351,7 @@ def test_zeta():
             s = mpmath.mpmathify(s)
             return float(mpmath.zeta(s + n)) if n + s != 1 else np.inf
     z1 = func(s, n)
-    z2 = _patch_jax.zeta(s, n)
+    z2 = _special.zeta(s, n)
     np.testing.assert_array_max_ulp(z2, z1, 72)
 
 def bernoulli_poly_handwritten(n, x):
@@ -367,7 +367,7 @@ def bernoulli_poly_handwritten(n, x):
 
 def check_bernoulli(n, x):
     r1 = bernoulli_poly_handwritten(n, x)
-    r2 = _patch_jax._periodic_bernoulli(n, x)
+    r2 = _special._periodic_bernoulli(n, x)
     np.testing.assert_allclose(r1, r2, equal_nan=False)
 
 def test_bernoulli():

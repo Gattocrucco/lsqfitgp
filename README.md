@@ -16,6 +16,7 @@ Python module for manipulating Gaussian processes. Features:
   * Use dictionaries to manipulate hyperparameters and hyperpriors. Use
     `gvar.BufferDict` to transparently apply transformations.
   * Get a covariance matrix for the optimized hyperparameters.
+  * Many covariance functions.
 
 ## Installation
 

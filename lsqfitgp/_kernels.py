@@ -33,6 +33,7 @@ from . import _array
 from . import _Kernel
 from . import _linalg
 from . import _patch_jax
+from . import _special
 from ._Kernel import kernel, stationarykernel, isotropickernel
 
 __all__ = [
@@ -174,7 +175,7 @@ def Maternp(r2, p=None):
     if _patch_jax.isconcrete(p):
         assert int(p) == p and p >= 0, p
     r2 = (2 * p + 1) * r2
-    return _patch_jax.kvmodx2_hi(r2 + 1e-30, p)
+    return _special.kvmodx2_hi(r2 + 1e-30, p)
     # TODO see if I can remove the 1e-30 improving kvmodx2_hi_jvp
 
 def _matern_derivable(nu=None):
@@ -205,7 +206,7 @@ def Matern(r2, nu=None):
         assert 0 <= nu < jnp.inf, nu
     r2 = 2 * jnp.where(nu, nu, 1) * r2  # for v = 0 the correct limit is white
                                         # noise, so I avoid doing r2 * 0
-    return _patch_jax.kvmodx2(nu, r2)
+    return _special.kvmodx2(nu, r2)
     
     # TODO broken for high nu. However the convergence to ExpQuad is extremely
     # slow. Tentative temporary patch:
@@ -581,7 +582,7 @@ def Taylor(x, y):
     
     mul = x * y
     val = 2 * jnp.sqrt(jnp.abs(mul))
-    return jnp.where(mul >= 0, jspecial.i0(val), _patch_jax.j0(val))
+    return jnp.where(mul >= 0, jspecial.i0(val), _special.j0(val))
 
 def _zeta_derivable(nu=None):
     if _patch_jax.isconcrete(nu):
@@ -636,11 +637,11 @@ def _ZetaBase(delta, nu=None):
         assert 0 <= nu < jnp.inf, nu
         
     s = 1 + 2 * nu
-    nupos = _patch_jax.periodic_zeta(delta, s) / _patch_jax.zeta(s)
+    nupos = _special.periodic_zeta(delta, s) / _special.zeta(s)
     nuzero = jnp.where(delta % 1, 0, 1)
     return jnp.where(s > 1, nupos, nuzero)
     
-    # return -(-1) ** (s // 2) * _patch_jax.scaled_periodic_bernoulli(s, delta) / jspecial.zeta(s, 1)
+    # return -(-1) ** (s // 2) * _special.scaled_periodic_bernoulli(s, delta) / jspecial.zeta(s, 1)
     
     # TODO use the bernoully version for integer even s, based on the type of
     # the input so that it's static, because it is much more accurate
@@ -677,13 +678,13 @@ class Zeta(_ZetaBase):
         if dox and doy:
             def kernel(k, q):
                 order = jnp.ceil(k / 2)
-                denom = order ** s * _patch_jax.zeta(s)
+                denom = order ** s * _special.zeta(s)
                 return jnp.where((k == q) & (k > 0), 1 / denom, 0)
         
         else:
             def kernel(k, y):
                 order = jnp.ceil(k / 2)
-                denom = order ** s * _patch_jax.zeta(s)
+                denom = order ** s * _special.zeta(s)
                 odd = k % 2
                 arg = 2 * jnp.pi * order * y
                 return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)
@@ -976,7 +977,7 @@ def Bessel(r2, nu=0):
     if _patch_jax.isconcrete(nu):
         assert 0 <= nu < jnp.inf, nu
     r2 = r2 * (2 + nu / 2) ** 2
-    return special.gamma(nu + 1) * _patch_jax.jvmodx2(nu, r2)
+    return special.gamma(nu + 1) * _special.jvmodx2(nu, r2)
 
     # nu >= (D-2)/2
     # 2 nu >= D - 2
@@ -1004,8 +1005,8 @@ def Pink(delta, dw=1):
     """
     # TODO reference?
 
-    l = _patch_jax.ci(delta)
-    r = _patch_jax.ci(delta * (1 + dw))
+    l = _special.ci(delta)
+    r = _special.ci(delta * (1 + dw))
     mean = delta * (1 + dw / 2)
     norm = jnp.log1p(dw)
     tol = jnp.sqrt(jnp.finfo(jnp.empty(0).dtype).eps)
@@ -1088,7 +1089,7 @@ def Color(delta, n=2):
     # complex arguments (not well tested yet)
     
     assert int(n) == n and n >= 2, n
-    return (n - 1) * _patch_jax.expn_imag(n, delta).real
+    return (n - 1) * _special.expn_imag(n, delta).real
     
 @stationarykernel(forcekron=True, derivable=True, input='soft')
 def Sinc(delta):
@@ -1100,7 +1101,7 @@ def Sinc(delta):
     
     Reference: Tobar (2019).
     """
-    return _patch_jax.sinc(delta)
+    return _special.sinc(delta)
     
     # TODO is this isotropic? My current guess is that it works up to some
     # dimension due to a coincidence but is not in general isotropic.
