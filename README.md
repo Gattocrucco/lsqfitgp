@@ -103,3 +103,4 @@ This software contains code adapted from the following sources:
     by John Burkardt (LGPL license)
   * [SuperGauss](https://cran.r-project.org/package=SuperGauss) by
     Yun Ling and Martin Lysy (GPL license)
+  * [gvar](https://github.com/gplepage/gvar) by Peter Lepage (GPL license)

@@ -1681,3 +1681,16 @@ scipy.zeta:
 open zeta issues on scipy:
 #15036
 #14073
+
+2022-08-08
+==========
+
+Observations on pdf9:
+
+- one source of problems can be the noisy fake data with grid points near 1,
+  since there the fit is forced to return a very small number with small
+  uncertainty
+- using chol instead of the default eigcut+ removes most of the noise from the
+  fake data (make chol default? => need an autorange for the eps in this case)
+- increasing the number of datapoints fixes everything and the true
+  hyperparameters are recovered correctly.

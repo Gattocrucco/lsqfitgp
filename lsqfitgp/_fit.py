@@ -19,6 +19,7 @@
 
 import warnings
 import functools
+import time
 
 import gvar
 import jax
@@ -68,9 +69,50 @@ def _unflat(x, original):
     else:
         raise NotImplementedError # pragma: no cover
 
-class empbayes_fit:
+class Logger:
+    
+    def __init__(self, verbosity=0):
+        self._verbosity = verbosity
+    
+    def log(self, message, verbosity=1, level=None):
+        """print a message"""
+        if verbosity > self._verbosity:
+            return
+        if level is None:
+            level = self.loglevel._level
+        indent = 4 * level * ' '
+        print(f'{indent}{message}')
+    
+    class _LogLevel:
+        """shared context manager to indent messages"""
+        
+        _level = 0
+                
+        @classmethod
+        def __enter__(cls):
+            cls._level += 1
+        
+        @classmethod
+        def __exit__(cls, *_):
+            cls._level -= 1
+    
+    loglevel = _LogLevel()
 
-    def __init__(self, hyperprior, gpfactory, data, raises=True, minkw={}, gpfactorykw={}, jit=False, method='gradient'):
+class empbayes_fit(Logger):
+
+    def __init__(
+        self,
+        hyperprior,
+        gpfactory,
+        data,
+        raises=True,
+        minkw={},
+        gpfactorykw={},
+        jit=False,
+        method='gradient',
+        initial='priormean',
+        verbosity=0,
+    ):
         """
     
         Maximum a posteriori fit.
@@ -123,6 +165,28 @@ class empbayes_fit:
                 Use a Newton method with a modified Hessian where the
                 second derivatives of the prior covariance matrix w.r.t. the
                 hyperparameters are assumed to be zero.
+        initial : str, scalar, array, dictionary of scalars/arrays
+            Starting point for the minimization, matching the format of
+            `hyperprior`, or one of the following options:
+            
+            'priormean'
+                Start from the hyperprior mean (default).
+            'priorsample'
+                Take a random sample from the hyperprior.
+        verbosity : int
+            An integer indicating how much information is printed on the
+            terminal:
+    
+            0
+                No logging (default).
+            1
+                Report starting point and result.
+            2
+                More detailed report.
+            3
+                Log each iteration.
+            4
+                More detailed iteration log.
     
         Attributes
         ----------
@@ -131,8 +195,14 @@ class empbayes_fit:
             maximize the marginal likelihood. The covariance matrix is computed
             as the inverse of the hessian of the marginal likelihood. These
             gvars do not track correlations with the hyperprior or the data.
+        pmean : scalar, array or dictionary of scalars/arrays
+            Mean of `p`.
+        pcov : scalar, array or dictionary of scalars/arrays
+            Covariance matrix of `p`.
         minresult : scipy.optimize.OptimizeResult
             The result object returned by `scipy.optimize.minimize`.
+        minargs : dict
+            The arguments passed to `scipy.optimize.minimize`.
 
         Raises
         ------
@@ -140,26 +210,12 @@ class empbayes_fit:
             The minimization failed and `raises` is True.
     
         """
+
+        Logger.__init__(self, verbosity)
+        self.log('**** call lsqfitgp.empbayes_fit ****')
+    
         assert callable(gpfactory)
     
-        # TODO would it be meaningful to add correlation of the fit result with
-        # the data and hyperprior?
-    
-        # TODO add the second order correction. It probably requires more than
-        # the gradient and inv_hess, but maybe by getting a little help from
-        # marginal_likelihood I can use the least-squares optimized second order
-        # correction on the residuals term and invent something for the logdet
-        # term.
-    
-        # TODO it raises very often with "Desired error not necessarily
-        # achieved due to precision loss.". I tried doing a forward grad on
-        # the logdet but does not fix the problem. I still suspect it's the
-        # logdet, maybe the value itself and not the derivative, because as the
-        # matrix changes the regularization can change a lot the value of the
-        # logdet. How do I stabilize it?
-        
-        # TODO compute the logGBF for the whole fit (see the gpbart code)
-        
         # Analyze the hyperprior.
         hyperprior = _asarrayorbufferdict(hyperprior)
         flathp = _flat(hyperprior)
@@ -167,20 +223,24 @@ class empbayes_fit:
         hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks
         hpdec = _linalg.EigCutFullRank(hpcov)
         precision = hpdec.inv()
+        self.log(f'{hpdec.n} hyperparameters', 2)
         
         if isinstance(data, tuple) and len(data) == 1:
             data, = data
         
         if callable(data):
             cachedargs = None
+            self.log('data is callable', 2)
         elif isinstance(data, tuple):
             cachedargs = data
         elif _flat(_asarrayorbufferdict(data)).dtype == object:
+            self.log('data has errors as gvars', 2)
             data = gvar.gvar(data)
             datamean = gvar.mean(data)
             datacov = gvar.evalcov(data)
             cachedargs = (datamean, datacov)
         else:
+            self.log('data has no errors', 2)
             cachedargs = (data,)
         
         def make(p):
@@ -218,6 +278,7 @@ class empbayes_fit:
             @jax.jacfwd
             @jax.jacfwd
             # can't change inner jac to rev due to jax issue #10994
+            # (stop_hessian)
             def fisher(p):
                 gp, args, _ = make(p)
                 decomp, _ = gp._prior_decomp(*args, stop_hessian=True)
@@ -248,17 +309,21 @@ class empbayes_fit:
             def fisherprec(p):
                 (F, J), decomp = fisher_and_jac_and_aux(p)
                 return F + precision + decomp.quad(J)
-                            
-        # TODO instead of recomputing everything many times, I can use nested
-        # has_aux appropriately to compute all the things I need at once. The
-        # problem is that scipy currently does not allow me to provide a
-        # function that computes value, jacobian and hessian at once, only value
-        # and jacobian. => Another problem is that the jacobian and hessian
-        # need not be computed all the times, see scipy issue #9265. Check
-        # if using value_and_jac is more efficient.
         
-        args = (fun,)
-        kwargs = dict(x0=hpmean, jac=jac)
+        kwargs = dict(fun=fun, jac=jac)
+        
+        if not isinstance(initial, str):
+            initial = _asarrayorbufferdict(initial)
+            flatinitial = _flat(initial)
+            kwargs.update(x0=flatinitial)
+        elif initial == 'priormean':
+            kwargs.update(x0=hpmean)
+        elif initial == 'priorsample':
+            iid = np.random.randn(hpdec.n)
+            x0 = hpdec.correlate(iid)
+            kwargs.update(x0=x0)
+        else:
+            raise KeyError(initial)
         
         if method == 'nograd':
             kwargs.pop('jac')
@@ -274,26 +339,93 @@ class empbayes_fit:
             kwargs.update(hess=hess, method='trust-exact')
         else:
             raise KeyError(method)
+        self.log(f'minimization method {method!r}', 2)
+        
+        class Callback:
+            
+            def __init__(self, this):
+                self.it = 0
+                self.stamp = time.time()
+                self.this = this
+        
+            def __call__(self, p):
+                self.it += 1
+                now = time.time()
+                duration = now - self.stamp
+                self.stamp = now
+                nicep = _unflat(p, hyperprior)
+                self.this.log(f'iteration {self.it} ({duration:.2g} s)', 3)
+                self.this.log(f'parameters = {nicep}', 4)
+
+        if verbosity > 2:
+            kwargs.update(callback=Callback(self))
         
         kwargs.update(minkw)
-        result = optimize.minimize(*args, **kwargs)
+        with self.loglevel:
+            start = time.time()
+            result = optimize.minimize(**kwargs)
+            end = time.time()
+            total = end - start
         
         if not result.success:
             msg = 'minimization failed: {}'.format(result.message)
             if raises:
                 raise RuntimeError(msg)
-            else:
+            elif verbosity == 0:
                 warnings.warn(msg)
+            else:
+                self.log(msg)
         
         if hasattr(result, 'hess_inv'):
+            self.log('use minimizer estimate of inverse hessian as covariance', 2)
             cov = result.hess_inv
         elif hasattr(result, 'hess'):
+            self.log('use minimizer hessian as covariance', 2)
             hessdec = _linalg.EigCutFullRank(result.hess)
             cov = hessdec.inv()
         else:
+            self.log('no covariance information', 2)
             cov = jnp.full_like(hpcov, jnp.nan)
+        
+        # TODO allow the user to choose the covariance estimation independently
+        # of the minimization method
         
         uresult = gvar.gvar(result.x, cov)
         
         self.p = _unflat(uresult, hyperprior)
+        self.pmean = gvar.mean(self.p)
+        self.pcov = gvar.evalcov(self.p)
         self.minresult = result
+        self.minargs = kwargs
+
+        self.log(f'posterior = {self.p}')
+        self.log(f'prior = {hyperprior}', 2)
+        self.log(f'total time: {total:.2g} s')
+        self.log('**** exit lsqfitgp.empbayes_fit ****')
+
+        # TODO would it be meaningful to add correlation of the fit result with
+        # the data and hyperprior?
+    
+        # TODO add the second order correction. It probably requires more than
+        # the gradient and inv_hess, but maybe by getting a little help from
+        # marginal_likelihood I can use the least-squares optimized second order
+        # correction on the residuals term and invent something for the logdet
+        # term.
+    
+        # TODO it raises very often with "Desired error not necessarily
+        # achieved due to precision loss.". I tried doing a forward grad on
+        # the logdet but does not fix the problem. I still suspect it's the
+        # logdet, maybe the value itself and not the derivative, because as the
+        # matrix changes the regularization can change a lot the value of the
+        # logdet. How do I stabilize it?
+        
+        # TODO compute the logGBF for the whole fit (see the gpbart code)
+        
+        # TODO instead of recomputing everything many times, I can use nested
+        # has_aux appropriately to compute all the things I need at once. The
+        # problem is that scipy currently does not allow me to provide a
+        # function that computes value, jacobian and hessian at once, only value
+        # and jacobian. => Another problem is that the jacobian and hessian
+        # need not be computed all the times, see scipy issue #9265. Check
+        # if using value_and_jac is more efficient.
+        
