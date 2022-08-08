@@ -490,10 +490,8 @@ def solve_triangular_auto(a, b, lower=False):
     """Works with b both object and non-object array"""
     if b.dtype == object:
         return solve_triangular(a, b, lower=lower)
-    elif isinstance(a, jnp.ndarray) or isinstance(b, jnp.ndarray):
-        return jlinalg.solve_triangular(a, b, lower=lower, check_finite=False)
     else:
-        return linalg.solve_triangular(a, b, lower=lower, check_finite=False)
+        return jlinalg.solve_triangular(a, b, lower=lower)
 
 class CholEps:
     
@@ -793,3 +791,57 @@ class BlockDiagDecomp(DecompPyTree):
     @property
     def n(self):
         return self._A.n + self._B.n
+
+class SandwichQR(DecomPyTree):
+    
+    def __init__(self, A_decomp, B):
+        """
+        Decompose M = B A B^T with the QR decomposition of B.
+        
+        Parameters
+        ----------
+        A_decomp : Decomposition
+            Instantiated decomposition of A.
+        B : array
+            The B matrix.
+        
+        """
+        self._A = A_decomp
+        mode = 'reduced' if len(B) > A.n else 'complete'
+        self._B = B
+        self._q, self._r = jnp.linalg.qr(B, mode)
+    
+    def solve(self, b):
+        A, q, r = self._A, self._q, self._r
+        rqb = jlinalg.solve_triangular(r, q.T @ b, upper=True)
+        arqb = A.solve(rqb)
+        return q @ jlinalg.solve_triangular(r.T, arqb, upper=False)
+    
+    def quad(self, b, c=None):
+        A, q, r = self._A, self._q, self._r
+        rqb = jlinalg.solve_triangular(r, q.T @ b, upper=True)
+        if c is None:
+            return A.quad(rqb)
+        if c.dtype != object:
+            rqc = jlinalg.solve_triangular(r, q.T @ c, upper=True)
+        else:
+            rqc = solve_triangular(r, numpy.matmul(q.T, c), upper=True)
+        return A.quad(rqb, rqc)
+    
+    def logdet(self):
+        A, q, r = self._A, self._q, self._r
+        B_logdet = jnp.sum(jnp.log(jnp.abs(jnp.diag(r))))
+        return A.logdet() + 2 * B_logdet
+    
+    def correlate(self, b):
+        A, B = self._A, self._B
+        return B @ A.correlate(b[:A.n])
+    
+    def decorrelate(self, b):
+        A, q, r = self._A, self._q, self._r
+        rqb = jlinalg.solve_triangular(r, q.T @ b, upper=True)
+        return A.decorrelate(rqb)
+    
+    @property
+    def n(self):
+        return len(self._B)
