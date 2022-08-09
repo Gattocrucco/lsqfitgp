@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from .bernoulli import *
-from .bessel import *
-from .exp import *
-from .expint import *
-from .gamma import *
-from .sinc import *
-from .taylor import *
-from .zeta import *
+from ._bernoulli import *
+from ._bessel import *
+from ._exp import *
+from ._expint import *
+from ._gamma import *
+from ._sinc import *
+from ._taylor import *
+from ._zeta import *

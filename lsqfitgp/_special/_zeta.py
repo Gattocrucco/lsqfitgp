@@ -26,7 +26,7 @@ from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
 from .. import _patch_jax
-from .gamma import *
+from . import _gamma
 
 def _hurwitz_zeta_series(m, x, a1, onlyeven=False, onlyodd=False, skipterm=None):
     """
@@ -246,7 +246,7 @@ def _periodic_zeta_smalls(x, s, imag):
     # now s1 == -q + a with q integer >= 0 and |a| <= 1/2
     
     pi = (2 * jnp.pi) ** -s1
-    gam = gamma(s1)
+    gam = _gamma.gamma(s1)
     func = _sin_pi2 if imag else _cos_pi2
     pha = func(-q, a) # = sin/cos(π/2 s1), numerically accurate for small a
     hzs = 2 * _hurwitz_zeta_series(-q, a, -x, onlyeven=not imag, onlyodd=imag, skipterm=q)
@@ -261,7 +261,7 @@ def _periodic_zeta_smalls(x, s, imag):
     hz = power + hzs # = ζ(s1,x) -/+ ζ(s1,1-x)
     
     # pole canceling
-    gam = jnp.where(s % 1, gam, jnp.where(s % 2, 1, -1) / gamma(s)) # int s1
+    gam = jnp.where(s % 1, gam, jnp.where(s % 2, 1, -1) / _gamma.gamma(s)) # int s1
     pderiv = jnp.where(x, -jnp.log(x) * x ** -s1, 0)
     if imag:
         pha = jnp.where(s1 % 2 == 0, jnp.where(s1 % 4, -1, 1) * jnp.pi / 2, pha)
@@ -291,7 +291,7 @@ def zeta_series_power_diff(x, q, a):
     pint = x ** q
     pz = jnp.where(q, 0, jnp.where(a, -1, 0)) # * 0^q = 0^q-a - 0^q
     pdif = jnp.where(x, jnp.expm1(-a * jnp.log(x)), pz) # * x^q = x^q-a - x^q
-    gamincr = jnp.where(q, gamma_incr(1 + q, -a), 0)
+    gamincr = jnp.where(q, _gamma.gamma_incr(1 + q, -a), 0)
     # gamincr = Γ(1+q-a) / Γ(1+q)Γ(1-a)  -  1
     zz = zeta_zero(a) # = ζ(a) - ζ(0)
     qdif = 2 * (1 + gamincr) * zz - gamincr # = (q-th term) - (q-th term)|_a=0

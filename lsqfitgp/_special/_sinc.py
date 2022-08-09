@@ -20,13 +20,13 @@
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
-from .taylor import *
+from . import _taylor
 
 def coefgen_sinc(s, e):
     m = jnp.arange(s, e)
     return (-1) ** m / jnp.exp(jspecial.gammaln(2 + 2 * m))
 
 def sinc(x):
-    nearzero = taylor(coefgen_sinc, (), 0, 6, jnp.square(jnp.pi * x))
+    nearzero = _taylor.taylor(coefgen_sinc, (), 0, 6, jnp.square(jnp.pi * x))
     normal = jnp.sinc(x)
     return jnp.where(jnp.abs(x) < 1e-1, nearzero, normal)

@@ -25,8 +25,8 @@ import jax
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
-from .gamma import *
-from . import taylor
+from . import _gamma
+from . import _taylor
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def expn_imag(n, x):
@@ -93,7 +93,7 @@ def expn_imag_smallx(n, x):
 
 def expn_asymp_coefgen(s, e, n):
     k = jnp.arange(s, e)
-    return (-1) ** k * poch(n, k)
+    return (-1) ** k * _gamma.poch(n, k)
 
 def expn_asymp(n, z, nt):
     """

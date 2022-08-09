@@ -26,7 +26,7 @@ from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
 from .. import _patch_jax
-from .gamma import *
+from . import _gamma
 
 j0 = _patch_jax.makejaxufunc(special.j0, lambda x: -j1(x))
 j1 = _patch_jax.makejaxufunc(special.j1, lambda x: (j0(x) - jv(2, x)) / 2.0)
@@ -46,7 +46,7 @@ jvp = _patch_jax.makejaxufunc(special.jvp, None, lambda v, z, n: jvp(v, z, n + 1
 def jvmodx2(nu, x2):
     x = jnp.sqrt(x2)
     normal = (x / 2) ** -nu * jv(nu, x)
-    return jnp.where(x2, normal, 1 / gamma(nu + 1))
+    return jnp.where(x2, normal, 1 / _gamma.gamma(nu + 1))
 
 # (1/x d/dx)^m (x^-v J_v(x)) = (-1)^m x^-(v+m) J_v+m(x)
 #                                   (Abramowitz and Stegun, p. 361, 9.1.30)
@@ -69,7 +69,7 @@ def jvmodx2_jvp(nu, primals, tangents):
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 2))
 def kvmodx2(nu, x2, norm_offset=0):
     x = jnp.sqrt(x2)
-    normal = 2 / gamma(nu + norm_offset) * (x / 2) ** nu * special.kv(nu, x)
+    normal = 2 / _gamma.gamma(nu + norm_offset) * (x / 2) ** nu * special.kv(nu, x)
     atzero = 1 / jnp.prod(nu + jnp.arange(norm_offset))
     atzero = jnp.where(nu > 0, atzero, 1) # for nu < 0 the correct limit
                                           # would be inf, but in practice it
