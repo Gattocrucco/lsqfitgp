@@ -1,4 +1,4 @@
-# lsqfitgp/_special/expint.py
+# lsqfitgp/_special/_expint.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #
@@ -104,7 +104,7 @@ def expn_asymp(n, z, nt):
     # DLMF 8.20.2
     
     invz = 1 / z
-    return jnp.exp(-z) * invz * taylor.taylor(expn_asymp_coefgen, (n,), 0, nt, invz)
+    return jnp.exp(-z) * invz * _taylor.taylor(expn_asymp_coefgen, (n,), 0, nt, invz)
 
 _si_num = [
     1,

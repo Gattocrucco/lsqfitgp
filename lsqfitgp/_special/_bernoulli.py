@@ -1,4 +1,4 @@
-# lsqfitgp/_special/bernoulli.py
+# lsqfitgp/_special/_bernoulli.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #

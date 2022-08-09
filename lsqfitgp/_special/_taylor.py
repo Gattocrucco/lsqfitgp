@@ -1,4 +1,4 @@
-# lsqfitgp/_special/taylor.py
+# lsqfitgp/_special/_taylor.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #

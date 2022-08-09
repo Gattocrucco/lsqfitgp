@@ -1,4 +1,4 @@
-# lsqfitgp/_special/exp.py
+# lsqfitgp/_special/_exp.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #

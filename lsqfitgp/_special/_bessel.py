@@ -1,4 +1,4 @@
-# lsqfitgp/_special/bessel.py
+# lsqfitgp/_special/_bessel.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #

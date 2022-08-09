@@ -1,4 +1,4 @@
-# lsqfitgp/_special/gamma.py
+# lsqfitgp/_special/_gamma.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #

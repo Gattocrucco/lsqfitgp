@@ -1,4 +1,4 @@
-# lsqfitgp/_special/zeta.py
+# lsqfitgp/_special/_zeta.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #

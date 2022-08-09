@@ -1,4 +1,4 @@
-# lsqfitgp/_special/sinc.py
+# lsqfitgp/_special/_sinc.py
 #
 # Copyright (c) 2022, Giacomo Petrillo
 #
