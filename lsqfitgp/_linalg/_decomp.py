@@ -792,7 +792,7 @@ class BlockDiagDecomp(DecompPyTree):
     def n(self):
         return self._A.n + self._B.n
 
-class SandwichQR(DecomPyTree):
+class SandwichQR(DecompPyTree):
     
     def __init__(self, A_decomp, B):
         """
@@ -803,29 +803,29 @@ class SandwichQR(DecomPyTree):
         A_decomp : Decomposition
             Instantiated decomposition of A.
         B : array
-            The B matrix.
+            The B matrix, can be rectangular.
         
         """
         self._A = A_decomp
-        mode = 'reduced' if len(B) > A.n else 'complete'
+        mode = 'reduced' if len(B) > A_decomp.n else 'complete'
         self._B = B
         self._q, self._r = jnp.linalg.qr(B, mode)
     
     def solve(self, b):
         A, q, r = self._A, self._q, self._r
-        rqb = jlinalg.solve_triangular(r, q.T @ b, upper=True)
+        rqb = jlinalg.solve_triangular(r, q.T @ b, lower=False)
         arqb = A.solve(rqb)
-        return q @ jlinalg.solve_triangular(r.T, arqb, upper=False)
+        return q @ jlinalg.solve_triangular(r.T, arqb, lower=True)
     
     def quad(self, b, c=None):
         A, q, r = self._A, self._q, self._r
-        rqb = jlinalg.solve_triangular(r, q.T @ b, upper=True)
+        rqb = jlinalg.solve_triangular(r, q.T @ b, lower=False)
         if c is None:
             return A.quad(rqb)
         if c.dtype != object:
-            rqc = jlinalg.solve_triangular(r, q.T @ c, upper=True)
+            rqc = jlinalg.solve_triangular(r, q.T @ c, lower=False)
         else:
-            rqc = solve_triangular(r, numpy.matmul(q.T, c), upper=True)
+            rqc = solve_triangular(r, numpy.matmul(q.T, c), lower=False)
         return A.quad(rqb, rqc)
     
     def logdet(self):
@@ -839,7 +839,7 @@ class SandwichQR(DecomPyTree):
     
     def decorrelate(self, b):
         A, q, r = self._A, self._q, self._r
-        rqb = jlinalg.solve_triangular(r, q.T @ b, upper=True)
+        rqb = jlinalg.solve_triangular(r, q.T @ b, lower=False)
         return A.decorrelate(rqb)
     
     @property

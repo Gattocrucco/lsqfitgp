@@ -33,6 +33,12 @@ import util
 sys.path = ['.'] + sys.path
 from lsqfitgp import _linalg, _kernels
 
+# TODO rewrite most comparisons to check for closeness of inputs with inverse
+# operation applied to solution in 2-norm instead of comparing solutions
+# computed in different ways
+
+rng = np.random.default_rng(202208091144)
+
 class DecompTestABC(metaclass=abc.ABCMeta):
 
     @property
@@ -53,15 +59,25 @@ class DecompTestABC(metaclass=abc.ABCMeta):
                 setattr(cls, name, util.tryagain(meth, method=True))
         
 class DecompTestBase(DecompTestABC):
+    """
+    
+    Restrictions:
+    
+    - self.decompclass can be applied only on a matrix generated either with
+      self.mat or self.randsymmat
+    
+    - in each method, use only one of self.mat or self.randsymmat
+    
+    """
     
     sizes = [1, 2, 3, 10]
     
     def randsize(self):
-        return np.random.randint(1, 11)
+        return rng.integers(1, 11)
         
     def randsymmat(self, n):
         O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
-        eigvals = np.random.uniform(1e-2, 1e2, size=n)
+        eigvals = rng.uniform(1e-2, 1e2, size=n)
         K = (O * eigvals) @ O.T
         np.testing.assert_allclose(K, K.T)
         return K
@@ -71,12 +87,12 @@ class DecompTestBase(DecompTestABC):
         return np.pi * jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
     
     def randvec(self, n):
-        return np.random.randn(n)
+        return rng.standard_normal(n)
     
     def randmat(self, m, n=None):
         if not n:
             n = self.randsize()
-        return np.random.randn(m, n)
+        return rng.standard_normal((m, n))
     
     def solve(self, K, b):
         return linalg.solve(K, b)
@@ -104,7 +120,7 @@ class DecompTestBase(DecompTestABC):
         funjac = jacfun(fun)
         funjacjit = jax.jit(funjac, static_argnums=1)
         for n in self.sizes:
-            s = np.exp(np.random.uniform(-1, 1))
+            s = np.exp(rng.uniform(-1, 1))
             b = bgen(n)
             result = funjac(s, n, b)
             if jit:
@@ -181,7 +197,7 @@ class DecompTestBase(DecompTestABC):
             return A @ self.decompclass(K).solve(b)
         funjac = jacfun(fun)
         for n in self.sizes:
-            s = np.exp(np.random.uniform(-1, 1))
+            s = np.exp(rng.uniform(-1, 1))
             K = self.mat(s, n)
             dK = self.matjac(s, n)
             b = self.randmat(n)
@@ -267,7 +283,7 @@ class DecompTestBase(DecompTestABC):
         fungrad = jacfun(fun)
         fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in self.sizes:
-            s = np.exp(np.random.uniform(-1, 1))
+            s = np.exp(rng.uniform(-1, 1))
             b = bgen(n)
             c = cgen(n)
             result = fungrad(s, n, b, c)
@@ -388,7 +404,7 @@ class DecompTestBase(DecompTestABC):
         fungrad = jacfun(fun)
         fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in self.sizes:
-            s = np.exp(np.random.uniform(-1, 1))
+            s = np.exp(rng.uniform(-1, 1))
             if num:
                 order = 2 if hess else 1
                 test_util.check_grads(lambda s: fun(s, n), (s,), order=order)
@@ -490,11 +506,6 @@ class DecompTestBase(DecompTestABC):
     # derivatives of quad w.r.t. b and c won't work due to the quad_autodiff
     # in the custom jvp
 
-class DecompTestCorr(DecompTestBase):
-    """Tests for `correlate` and `decorrelate` are defined in this
-    separate class because BlockDecomp once did not have them, now it has
-    but I've left the code around"""
-    
     def test_correlate_eye(self):
         for n in self.sizes:
             K = self.randsymmat(n)
@@ -511,54 +522,54 @@ class DecompTestCorr(DecompTestBase):
             sol = self.decompclass(K).quad(b)
             np.testing.assert_allclose(sol, result)
 
-class TestDiag(DecompTestCorr):
+class TestDiag(DecompTestBase):
     
     @property
     def decompclass(self):
         return _linalg.Diag
 
-class TestEigCutFullRank(DecompTestCorr):
+class TestEigCutFullRank(DecompTestBase):
     
     @property
     def decompclass(self):
         return _linalg.EigCutFullRank
 
-class TestEigCutLowRank(DecompTestCorr):
+class TestEigCutLowRank(DecompTestBase):
     
     @property
     def decompclass(self):
         return _linalg.EigCutLowRank
 
-class TestSVDCutFullRank(DecompTestCorr):
+class TestSVDCutFullRank(DecompTestBase):
     
     @property
     def decompclass(self):
         return _linalg.SVDCutFullRank
 
-class TestSVDCutLowRank(DecompTestCorr):
+class TestSVDCutLowRank(DecompTestBase):
     
     @property
     def decompclass(self):
         return _linalg.SVDCutLowRank
 
-class TestChol(DecompTestCorr):
+class TestChol(DecompTestBase):
     
     @property
     def decompclass(self):
         return _linalg.Chol
 
-class TestCholGersh(DecompTestCorr):
+class TestCholGersh(DecompTestBase):
     
     @property
     def decompclass(self):
         return _linalg.CholGersh
 
-class ToeplitzBase(DecompTestCorr):
+class ToeplitzBase(DecompTestBase):
 
     def randsymmat(self, n):
         x = np.arange(n)
-        beta = 2 * np.exp(1/3 * np.random.randn())
-        scale = np.exp(1/3 * np.random.randn())
+        beta = 2 * np.exp(1/3 * rng.standard_normal())
+        scale = np.exp(1/3 * rng.standard_normal())
         kernel = _kernels.Cauchy(scale=scale, beta=beta)
         return np.pi * kernel(x[None, :], x[:, None])
     
@@ -578,13 +589,13 @@ class TestCholToeplitzML(ToeplitzBase):
     def decompclass(self):
         return _linalg.CholToeplitzML    
         
-class TestReduceRank(DecompTestCorr):
+class TestReduceRank(DecompTestBase):
     
     def rank(self, n):
         if not hasattr(self, 'ranks'):
             self.ranks = dict()
             # do not use __init__ or __new__ because they shoo away pytest
-        return self.ranks.setdefault(n, np.random.randint(1, n + 1))
+        return self.ranks.setdefault(n, rng.integers(1, n + 1))
     
     @property
     def decompclass(self):
@@ -595,20 +606,16 @@ class TestReduceRank(DecompTestCorr):
         assert rank == self.rank(len(K))
         return invK @ b
     
-    def randsymmat(self, n=None):
-        if not n:
-            n = self.randsize()
+    def randsymmat(self, n):
         rank = self.rank(n)
         O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
-        eigvals = np.random.uniform(1e-2, 1e2, size=rank)
+        eigvals = rng.uniform(1e-2, 1e2, size=rank)
         O = O[:, :rank]
         K = (O * eigvals) @ O.T
         np.testing.assert_allclose(K, K.T)
         return K
     
-    def mat(self, s, n=None):
-        if not n:
-            n = self.randsize()
+    def mat(self, s, n):
         rank = self.rank(n)
         x = np.arange(n)
         x[:n - rank + 1] = x[0]
@@ -617,7 +624,7 @@ class TestReduceRank(DecompTestCorr):
     def logdet(self, K):
         return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
         
-class BlockDecompTestBase(DecompTestCorr):
+class BlockDecompTestBase(DecompTestBase):
     """
     Abstract class for testing BlockDecomp. Concrete subclasses must
     overwrite `subdecompclass`.
@@ -633,7 +640,7 @@ class BlockDecompTestBase(DecompTestCorr):
         def decomp(K, **kw):
             if len(K) == 1:
                 return self.subdecompclass(K, **kw)
-            p = np.random.randint(1, len(K))
+            p = rng.integers(1, len(K))
             P = K[:p, :p]
             Q = K[:p, p:]
             S = K[p:, p:]
@@ -654,7 +661,7 @@ class TestBlockDiag(BlockDecompTestBase):
     def subdecompclass(self):
         return _linalg.Diag
 
-class BlockDiagDecompTestBase(DecompTestCorr):
+class BlockDiagDecompTestBase(DecompTestBase):
     """
     Abstract class for testing BlockDiagDecomp. Concrete subclasses must
     overwrite `subdecompclass`.
@@ -666,7 +673,7 @@ class BlockDiagDecompTestBase(DecompTestCorr):
         pass
     
     def randsymmat(self, n):
-        p = np.random.randint(1, n) if n > 1 else 0
+        p = rng.integers(1, n) if n > 1 else 0
         K = np.zeros((n, n))
         if p > 0:
             K[:p, :p] = super().randsymmat(p)
@@ -709,23 +716,109 @@ class TestBlockDiagDiag(BlockDiagDecompTestBase):
     def subdecompclass(self):
         return _linalg.Diag
 
+class SandwichTestBase(DecompTestBase):
+    """
+    Abstract base class to test Sandwich* decompositions
+    """
+    
+    @property
+    @abc.abstractmethod
+    def subdecompclass(self):
+        """ class to decompose the inner matrix """
+        pass
+    
+    @property
+    @abc.abstractmethod
+    def sandwichclass(self):
+        """ main decomposition class """
+        pass
+    
+    def _init(self):
+        # do not use __init__ or __new__ because they shoo away pytest, even
+        # if defined in a superclass
+        if not hasattr(self, 'ranks'):
+            self.ranks = {}
+            self.As = {}
+            self.Bs = {}
+    
+    def rank(self, n):
+        self._init()
+        return self.ranks.setdefault(n, rng.integers(1, n + 1))
+    
+    def B(self, n):
+        self._init()
+        return self.Bs.setdefault(n, rng.standard_normal((n, self.rank(n))))
+    
+    def randA(self, n):
+        self._init()
+        return self.As.setdefault(n, super().randsymmat(self.rank(n)))
+    
+    def matA(self, s, n):
+        return super().mat(s, self.rank(n))
+        
+    @property
+    def decompclass(self):
+        def decomposition(K, **kw):
+            if self._afrom == 'randsymmat':
+                A = self.As[len(K)]
+            elif self._afrom == 'mat':
+                A = self.matA(self._sparam, len(K))
+            B = self.Bs[len(K)]
+            A_decomp = self.subdecompclass(A, **kw)
+            return self.sandwichclass(A_decomp, B)
+        return decomposition
+            
+    def randsymmat(self, n):
+        A = self.randA(n)
+        B = self.B(n)
+        K = B @ A @ B.T
+        np.testing.assert_allclose(K, K.T)
+        self._afrom = 'randsymmat'
+        return K
+    
+    def mat(self, s, n):
+        A = self.matA(s, n)
+        B = self.B(n)
+        K = B @ A @ B.T
+        self._afrom = 'mat'
+        self._sparam = s
+        return K
+        
+    def solve(self, K, b):
+        invK, rank = linalg.pinv(K, return_rank=True)
+        assert rank == self.rank(len(K))
+        return invK @ b
+    
+    def logdet(self, K):
+        return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
+
+class TestSandwichQRDiag(SandwichTestBase):
+    
+    @property
+    def subdecompclass(self):
+        return _linalg.Diag
+    
+    @property
+    def sandwichclass(self):
+        return _linalg.SandwichQR
+
 @util.tryagain
 def test_solve_triangular():
     for n in DecompTestBase.sizes:
         for ndim in range(4):
             for lower in [True, False]:
                 tri = np.tril if lower else np.triu
-                A = tri(np.random.randn(n, n))
-                diag = np.sqrt(np.sum(np.random.randn(n, 2) ** 2, axis=-1) / 2)
+                A = tri(rng.standard_normal((n, n)))
+                diag = np.sqrt(np.sum(rng.standard_normal((n, 2)) ** 2, axis=-1) / 2)
                 A[np.diag_indices(n)] = diag
-                shape = np.random.randint(1, 4, size=ndim)
-                B = np.random.randn(*shape[:-1], n, *shape[-1:])
+                shape = rng.integers(1, 4, size=ndim)
+                B = rng.standard_normal((*shape[:-1], n, *shape[-1:]))
                 x = _linalg.solve_triangular(A, B, lower=lower)
                 np.testing.assert_allclose(A @ x, B, rtol=1e-10)
 
 @util.tryagain
 def test_toeplitz_gershgorin():
-    t = np.random.randn(100)
+    t = rng.standard_normal(100)
     m = linalg.toeplitz(t)
     b1 = _linalg._decomp._gershgorin_eigval_bound(m)
     b2 = _linalg._toeplitz.eigv_bound(t)
@@ -742,7 +835,7 @@ def check_toeplitz():
         l2 = linalg.cholesky(m, lower=True)
         np.testing.assert_allclose(l1, l2, rtol=1e-8)
     
-        b = np.random.randn(len(t), 30)
+        b = rng.standard_normal((len(t), 30))
         lb1 = mod.chol_matmul(t, b)
         lb2 = l2 @ b
         np.testing.assert_allclose(lb1, lb2, rtol=1e-7)
@@ -780,7 +873,7 @@ def test_toeplitz_chol_solve_numpy():
     for tshape, bshape in shapes:
         for n in [1, 2, 10]:
             x = np.linspace(0, 3, n)
-            gamma = np.random.uniform(0, 2, tshape + (1,))
+            gamma = rng.uniform(0, 2, tshape + (1,))
             t = np.pi * np.exp(-1/2 * x ** gamma)
             m = np.empty(tshape + (n, n))
             for i in np.ndindex(*tshape):
@@ -789,7 +882,7 @@ def test_toeplitz_chol_solve_numpy():
             for shape in [(), (1,), (2,), (10,)]:
                 if bshape and not shape:
                     continue
-                b = np.random.randn(*bshape, n, *shape)
+                b = rng.standard_normal((*bshape, n, *shape))
                 ilb = _linalg._toeplitz.chol_solve_numpy(t, b, diageps=1e-12)
                 np.testing.assert_allclose(*np.broadcast_arrays(l @ ilb, b), rtol=1e-6)
 
