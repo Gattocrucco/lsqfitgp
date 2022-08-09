@@ -649,12 +649,6 @@ class BlockDecompTestBase(DecompTestBase):
             return _linalg.BlockDecomp(Pdec, S, Q, subdec, **kw)
         return decomp
     
-class TestBlockChol(BlockDecompTestBase):
-    
-    @property
-    def subdecompclass(self):
-        return _linalg.Chol
-
 class TestBlockDiag(BlockDecompTestBase):
     
     @property
@@ -703,12 +697,6 @@ class BlockDiagDecompTestBase(DecompTestBase):
             args = (self.subdecompclass(A, **kw), self.subdecompclass(B, **kw))
             return _linalg.BlockDiagDecomp(*args)
         return decomp
-
-class TestBlockDiagChol(BlockDiagDecompTestBase):
-    
-    @property
-    def subdecompclass(self):
-        return _linalg.Chol
 
 class TestBlockDiagDiag(BlockDiagDecompTestBase):
     
@@ -812,6 +800,74 @@ class TestSandwichSVDDiag(SandwichTestBase):
     def sandwichclass(self):
         return _linalg.SandwichSVD
 
+class WoodburyTestBase(DecompTestBase):
+    """
+    Abstract base class to test Woodbury
+    """
+    
+    @property
+    @abc.abstractmethod
+    def subdecompclass(self):
+        """ class to decompose A, C, and C^-1 - B^T A^-1 B """
+        pass
+    
+    def _init(self):
+        # do not use __init__ or __new__ because they shoo away pytest, even
+        # if defined in a superclass
+        if not hasattr(self, 'ranks'):
+            self.ranks = {}
+            self.Ms = {}
+    
+    def rank(self, n):
+        self._init()
+        return self.ranks.setdefault(n, rng.integers(1, n + 1))
+    
+    def randM(self, n):
+        self._init()
+        return self.Ms.setdefault(n, super().randsymmat(n + self.rank(n)))
+    
+    def matM(self, s, n):
+        return super().mat(s, n + self.rank(n))
+    
+    def ABC(self, n, M):
+        A = M[:n, :n]
+        B = M[:n, n:]
+        C = M[n:, n:]
+        return A, B, C
+        
+    def randsymmat(self, n):
+        A, B, C = self.ABC(n, self.randM(n))
+        K = A - B @ C @ B.T
+        np.testing.assert_allclose(K, K.T)
+        self._mfrom = 'randsymmat'
+        return K
+    
+    def mat(self, s, n):
+        A, B, C = self.ABC(n, self.matM(s, n))
+        K = A - B @ C @ B.T
+        self._mfrom = 'mat'
+        self._sparam = s
+        return K
+        
+    @property
+    def decompclass(self):
+        def decomposition(K, **kw):
+            if self._mfrom == 'randsymmat':
+                M = self.randM(len(K))
+            elif self._mfrom == 'mat':
+                M = self.matM(self._sparam, len(K))
+            A, B, C = self.ABC(len(K), M)
+            A_decomp = self.subdecompclass(A, **kw)
+            C_decomp = self.subdecompclass(C, **kw)
+            return _linalg.Woodbury(A_decomp, B, C_decomp, self.subdecompclass, **kw)
+        return decomposition
+
+class TestWoodburyDiag(WoodburyTestBase):
+    
+    @property
+    def subdecompclass(self):
+        return _linalg.Diag
+            
 @util.tryagain
 def test_solve_triangular():
     for n in DecompTestBase.sizes:
@@ -904,6 +960,8 @@ util.xfail(DecompTestBase, 'test_solve_matrix_hess_fwd_rev')
 util.xfail(DecompTestBase, 'test_logdet_hess_fwd_rev')
 util.xfail(BlockDecompTestBase, 'test_logdet_hess_fwd_fwd_stopg')
 util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
+util.xfail(WoodburyTestBase, 'test_logdet_hess_fwd_fwd_stopg')
+util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
 
 # TODO linalg.sparse.eigsh does not have a jax counterpart, but apparently
 # they are now making an effort to add sparse support to jax, let's wait
@@ -916,22 +974,27 @@ for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
 # tildeS is too much. The error is two undefined primals in a matrix
 # multiplication jvp transpose. => it's probably derivatives w.r.t. the outer
 # sides of quad
-util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev')
-util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev')
-util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev_jit')
-util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_jit')
-util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev_matrix')
-util.xfail(BlockDecompTestBase, 'test_quad_vec_jac_rev')
-util.xfail(BlockDecompTestBase, 'test_quad_matrix_jac_rev')
-util.xfail(BlockDecompTestBase, 'test_quad_vec_jac_rev_jit')
-util.xfail(BlockDecompTestBase, 'test_quad_matrix_jac_rev_jit')
-util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev')
-util.xfail(BlockDecompTestBase, 'test_logdet_jac_rev_jit')
-util.xfail(BlockDecompTestBase, 'test_solve_matrix_hess_da')
-util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_fwd_rev')
+for cls in [BlockDecompTestBase, WoodburyTestBase]:
+    util.xfail(cls, 'test_solve_vec_jac_rev')
+    util.xfail(cls, 'test_solve_matrix_jac_rev')
+    util.xfail(cls, 'test_solve_vec_jac_rev_jit')
+    util.xfail(cls, 'test_solve_matrix_jac_rev_jit')
+    util.xfail(cls, 'test_solve_matrix_jac_rev_matrix')
+    util.xfail(cls, 'test_quad_vec_jac_rev')
+    util.xfail(cls, 'test_quad_matrix_jac_rev')
+    util.xfail(cls, 'test_quad_vec_jac_rev_jit')
+    util.xfail(cls, 'test_quad_matrix_jac_rev_jit')
+    util.xfail(cls, 'test_logdet_jac_rev')
+    util.xfail(cls, 'test_logdet_jac_rev_jit')
+    util.xfail(cls, 'test_quad_matrix_matrix_hess_fwd_rev')
 
-# TODO basically works but is very inaccurate.
-util.xfail(BlockDecompTestBase, 'test_logdet_hess_da')
+# TODO I don't know how to implement correlate and decorrelate for Woodbury
+util.xfail(WoodburyTestBase, 'test_correlate_eye')
+util.xfail(WoodburyTestBase, 'test_decorrelate_mat')
+
+# TODO these work but are quite inaccurate so they can fail
+# util.xfail(BlockDecompTestBase, 'test_logdet_hess_da')
+# util.xfail(BlockDecompTestBase, 'test_solve_matrix_hess_da')
 
 # TODO why?
 # util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')

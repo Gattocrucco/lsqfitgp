@@ -1,6 +1,5 @@
 import functools
 
-import jax
 import numpy
 from jax import numpy as jnp
 from jax import tree_util
