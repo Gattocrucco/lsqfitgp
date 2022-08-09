@@ -803,13 +803,13 @@ class SandwichQR(DecompPyTree):
         A_decomp : Decomposition
             Instantiated decomposition of A.
         B : array
-            The B matrix, can be rectangular.
+            The B matrix. Must be tall or square.
         
         """
         self._A = A_decomp
-        mode = 'reduced' if len(B) > A_decomp.n else 'complete'
+        assert B.shape[0] >= B.shape[1]
         self._B = B
-        self._q, self._r = jnp.linalg.qr(B, mode)
+        self._q, self._r = jnp.linalg.qr(B, mode='reduced')
     
     def solve(self, b):
         A, q, r = self._A, self._q, self._r
@@ -829,7 +829,7 @@ class SandwichQR(DecompPyTree):
         return A.quad(rqb, rqc)
     
     def logdet(self):
-        A, q, r = self._A, self._q, self._r
+        A, r = self._A, self._r
         B_logdet = jnp.sum(jnp.log(jnp.abs(jnp.diag(r))))
         return A.logdet() + 2 * B_logdet
     
@@ -841,6 +841,59 @@ class SandwichQR(DecompPyTree):
         A, q, r = self._A, self._q, self._r
         rqb = jlinalg.solve_triangular(r, q.T @ b, lower=False)
         return A.decorrelate(rqb)
+    
+    @property
+    def n(self):
+        return len(self._B)
+
+class SandwichSVD(DecompPyTree):
+    
+    def __init__(self, A_decomp, B):
+        """
+        Decompose M = B A B^T with the SVD decomposition of B.
+        
+        Parameters
+        ----------
+        A_decomp : Decomposition
+            Instantiated decomposition of A.
+        B : array
+            The B matrix, can be rectangular.
+        
+        """
+        self._A = A_decomp
+        self._B = B
+        self._u, self._s, self._vh = jnp.linalg.svd(B, full_matrices=False)
+    
+    def solve(self, b):
+        A, u, s, vh = self._A, self._u, self._s, self._vh
+        vsub = jnp.linalg.multi_dot([vh.T / s, u.T, b])
+        vsu = (vh.T / s) @ u.T
+        return A.quad(vsu, vsub)
+    
+    def quad(self, b, c=None):
+        A, u, s, vh = self._A, self._u, self._s, self._vh
+        vsub = jnp.linalg.multi_dot([vh.T / s, u.T, b])
+        if c is None:
+            return A.quad(vsub)
+        if c.dtype != object:
+            vsuc = jnp.linalg.multi_dot([vh.T / s, u.T, c])
+        else:
+            vsuc = numpy.linalg.multi_dot([vh.T / s, u.T, c])
+        return A.quad(vsub, vsuc)
+    
+    def logdet(self):
+        A, s = self._A, self._s
+        B_logdet = jnp.sum(jnp.log(s))
+        return A.logdet() + 2 * B_logdet
+    
+    def correlate(self, b):
+        A, B = self._A, self._B
+        return B @ A.correlate(b[:A.n])
+    
+    def decorrelate(self, b):
+        A, u, s, vh = self._A, self._u, self._s, self._vh
+        vsub = jnp.linalg.multi_dot([vh.T / s, u.T, b])
+        return A.decorrelate(vsub)
     
     @property
     def n(self):

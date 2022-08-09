@@ -1694,3 +1694,12 @@ Observations on pdf9:
   fake data (make chol default? => need an autorange for the eps in this case)
 - increasing the number of datapoints fixes everything and the true
   hyperparameters are recovered correctly.
+
+2022-08-09
+==========
+
+To scale the linear PDF fit I need to use Woodsbury's formula because the data
+has errors. The true data has a nondiagonal error covariance matrix, so to be
+efficient I have to invert the matrix once for the whole optimization. The most
+general way to add this feature is passing a decomposition to GP.addcov. To
+expose the decompositions, I can add a class method to GP.

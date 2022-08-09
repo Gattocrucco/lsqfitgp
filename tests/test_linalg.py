@@ -802,6 +802,16 @@ class TestSandwichQRDiag(SandwichTestBase):
     def sandwichclass(self):
         return _linalg.SandwichQR
 
+class TestSandwichSVDDiag(SandwichTestBase):
+    
+    @property
+    def subdecompclass(self):
+        return _linalg.Diag
+    
+    @property
+    def sandwichclass(self):
+        return _linalg.SandwichSVD
+
 @util.tryagain
 def test_solve_triangular():
     for n in DecompTestBase.sizes:
@@ -904,7 +914,8 @@ for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
 # TODO reverse diff broken because they use quads within other stuff probably.
 # Subclassing DecompAutoDiff does not work. Maybe just using quad to compute
 # tildeS is too much. The error is two undefined primals in a matrix
-# multiplication jvp transpose.
+# multiplication jvp transpose. => it's probably derivatives w.r.t. the outer
+# sides of quad
 util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev')
 util.xfail(BlockDecompTestBase, 'test_solve_matrix_jac_rev')
 util.xfail(BlockDecompTestBase, 'test_solve_vec_jac_rev_jit')
