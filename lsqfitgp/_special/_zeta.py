@@ -82,88 +82,6 @@ def _hze_nmax(t):
     minz = 0.0037 # = min(2 gamma(s) / (2 pi)^s) for s <= 0
     return int(math.ceil(-math.log2(jnp.finfo(t).eps * minz)))
 
-def _dds_hzs_onlyevenodd_evenodds(m, a1, even):
-    """
-    Derivative w.r.t. x of _hurwitz_zeta_series(m, x, a1, onlyeven/odd=True)
-    with negative even/odd integer m at x = 0.
-    """
-
-    # decide number of terms to sum
-    t = _patch_jax.float_type(m, a1)
-    nmax = _hze_nmax(t)
-    n = jnp.arange(nmax + 1)
-
-    # make arguments broadcastable with n
-    m = m[..., None]
-    a1 = a1[..., None]
-
-    # common calculations
-    ns = n + m
-    ns1 = ns - 1
-    negs = -m
-    pfa = jnp.cumprod((ns1 * a1 / n).at[..., 0].set(1), -1, t)
-    n_fact = jnp.cumprod(n.at[0].set(1), -1, t)
-    s_fact = n_fact.at[negs].get(mode='fill')
-    base = jnp.repeat(a1, n.size, -1).at[..., 0].set(1)
-    pow_a1_n = jnp.cumprod(base, -1, t)
-
-    # take even/odd terms
-    start = 0 if even else 1
-    sl = slice(start, None, 2)
-    ns = ns[..., sl]
-    pfa = pfa[..., sl]
-    ns1 = ns1[..., sl]
-
-    # terms with n < -s
-    dds1 = pfa * _zeta_deriv_evens(ns)
-
-    # term with n = -s
-    harm = jnp.cumsum((1 / n).at[0].set(0))
-    harm_s = harm.at[negs].get(mode='fill')
-    shape = jnp.broadcast_shapes(pow_a1_n.shape[:-1], negs.shape[:-1])
-    op1 = jnp.broadcast_to(pow_a1_n, shape + pow_a1_n.shape[-1:])
-    op2 = jnp.broadcast_to(negs, shape + negs.shape[-1:])
-    pow_a1_negs = jnp.take_along_axis(op1, op2, -1)
-    dds2 = (1/2 * harm_s + _zeta_deriv_evens(0)) * pow_a1_negs
-
-    # terms with n > -s
-    gamma_ns = n_fact.at[ns1].get(mode='fill')
-    dds3 = gamma_ns / n_fact[sl] * s_fact * zeta(0, ns) * pow_a1_n[..., sl]
-    
-    if not even:
-        dds2 = -dds2
-        dds3 = -dds3
-
-    # sum series
-    n = n[sl]
-    terms = jnp.where(n < negs, dds1, jnp.where(n > negs, dds3, dds2))
-    return jnp.sum(terms, -1)
-
-def _zeta_deriv_evens(s):
-    t = _patch_jax.float_type(s)
-    lut = jnp.array(_zeta_deriv_evens_lut, t)
-    lut = jnp.pad(lut, (1, 1), constant_values=jnp.nan)
-    index = (s - _zde_lut_start) // 2
-    index = jnp.clip(index + 1, 0, lut.size - 1)
-    return lut.at[index].get(mode='clip')
-
-_zde_lut_start = -12
-
-_zeta_deriv_evens_lut = [   # = _gen_zeta_deriv_evens_lut(-12, 1)
-    0.063270583341463,
-    -0.018929926338140373,
-    0.008316161985602248,
-    -0.005899759143515937,
-    0.007983811450268625,
-    -0.03044845705839327,
-    -0.9189385332046728,
-]
-
-def _gen_zeta_deriv_evens_lut(start, stop):
-    import mpmath as mp
-    with mp.workdps(32):
-        return [float(mp.diff(mp.zeta, s)) for s in range(start, stop, 2)]
-    
 # @jax.jit
 def hurwitz_zeta(s, a):
     """
@@ -239,6 +157,9 @@ def _periodic_zeta_smalls(x, s, imag):
     into https://dlmf.nist.gov/25.13.E2
     """
     neg, x = _standard_x(x) # x in [0, 1/2]
+    
+    eps = jnp.finfo(_patch_jax.float_type(x, s)).eps
+    s = jnp.where(s % 1, s, s * (1 + eps)) # avoid integer s
 
     s1 = 1 - s  # < 0
     q = -jnp.around(s1).astype(int)
@@ -248,7 +169,7 @@ def _periodic_zeta_smalls(x, s, imag):
     pi = (2 * jnp.pi) ** -s1
     gam = _gamma.gamma(s1)
     func = _sin_pi2 if imag else _cos_pi2
-    pha = func(-q, a) # = sin/cos(π/2 s1), numerically accurate for small a
+    pha = func(-q, a) # = sin or cos(π/2 s1), numerically accurate for small a
     hzs = 2 * _hurwitz_zeta_series(-q, a, -x, onlyeven=not imag, onlyodd=imag, skipterm=q)
     # hzs = ζ(s1,1+x) -/+ ζ(s1,1-x) but without the x^q term in the series
     pdiff = zeta_series_power_diff(x, q, a)
@@ -260,16 +181,6 @@ def _periodic_zeta_smalls(x, s, imag):
     power = jnp.where(cancelcond, pdiff, x ** -s1)
     hz = power + hzs # = ζ(s1,x) -/+ ζ(s1,1-x)
     
-    # pole canceling
-    gam = jnp.where(s % 1, gam, jnp.where(s % 2, 1, -1) / _gamma.gamma(s)) # int s1
-    pderiv = jnp.where(x, -jnp.log(x) * x ** -s1, 0)
-    if imag:
-        pha = jnp.where(s1 % 2 == 0, jnp.where(s1 % 4, -1, 1) * jnp.pi / 2, pha)
-        hz = jnp.where(s1 % 2 == 1, pderiv + 2 * _dds_hzs_onlyevenodd_evenodds(-q, -x, False), hz)
-    else:
-        pha = jnp.where(s1 % 2 == 1, jnp.where(s % 4, 1, -1) * jnp.pi / 2, pha)
-        hz = jnp.where(s1 % 2 == 0, pderiv + 2 * _dds_hzs_onlyevenodd_evenodds(-q, -x, True), hz)
-        
     out = (pi * gam * pha) * hz
     if imag:
         out *= jnp.where(neg, -1, 1)
