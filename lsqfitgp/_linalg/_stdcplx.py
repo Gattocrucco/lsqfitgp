@@ -69,6 +69,10 @@ ops = {
         lambda x, y: jlinalg.solve_triangular(x, y),
         lambda s, t: s[0] ** 2 * t[1],
     ],
+    'matmul': [
+        lambda x, y: jnp.matmul(x, y),
+        lambda s, t: s[0] * s[1] * t[1],
+    ]
 }
 
 def gen_ops_factors(n):
@@ -79,27 +83,29 @@ def gen_ops_factors(n):
         nparams = len(inspect.signature(job).parameters)
         key, subkey = random.split(key)
         m = random.normal(subkey, (nparams, n, n), jnp.float32)
-        args = m @ m
+        args = m @ jnp.swapaxes(m, -2, -1)
         time = benchmark(job, *args)
         print(f'{time:.2g} s')
         factors[op] = time / est(*(a.shape for a in args))
     return factors
 
-ops_factors = {'chol': 8.984154160134494e-13,
- 'eigh': 1.7393400007858872e-10,
- 'qr-red': 1.1879412503913046e-10,
- 'qr-full': 1.2299797893501818e-10,
- 'svd-red': 4.287901660427451e-10,
- 'svd-full': 4.346819589845836e-10,
- 'solve_triangular': 4.7264866810292004e-12} # = gen_ops_factors(1000)
+ops_factors = {'chol': 6.03470915928483e-12,
+ 'eigh': 1.824986875290051e-10,
+ 'qr-red': 1.1241237493231893e-10,
+ 'qr-full': 1.2058762495871633e-10,
+ 'svd-red': 4.468000000342727e-10,
+ 'svd-full': 4.2561762500554324e-10,
+ 'solve_triangular': 4.1634716559201486e-12,
+ 'matmul': 5.6301691802218555e-12} # = gen_ops_factors(1000)
 
-ops_consts = {'chol': 1.8038220843300223e-06,
- 'eigh': 2.4166233302094043e-06,
- 'qr-red': 2.6811220799572766e-06,
- 'qr-full': 2.7157124993391336e-06,
- 'svd-red': 3.675635000690818e-06,
- 'svd-full': 3.6995087494142353e-06,
- 'solve_triangular': 2.2041862504556774e-06} # = gen_ops_factors(1)
+ops_consts = {'chol': 1.810961455339566e-06,
+ 'eigh': 2.390482500195503e-06,
+ 'qr-red': 2.6676162518560884e-06,
+ 'qr-full': 2.6932845800183714e-06,
+ 'svd-red': 3.7152979196980598e-06,
+ 'svd-full': 3.663789590355009e-06,
+ 'solve_triangular': 2.170706249307841e-06,
+ 'matmul': 1.718031665077433e-06} # = gen_ops_factors(1)
 
 def predtime(op, shapes, types):
     """

@@ -231,9 +231,6 @@ class DecompAutoDiff(DecompPyTree):
                     K = _patch_jax.stop_hessian(K)
             self._K = K
         
-        # TODO remove the option stop_hessian and let mesa-users apply it,
-        # it does not make sense anymore as something managed by the class.
-        
         cls.__init__ = __init__
         
         for name in 'solve', 'quad', 'logdet':
@@ -269,7 +266,7 @@ class DecompAutoDiff(DecompPyTree):
             else:
                 return solve_autodiff(self, self._K, b)
         
-        # solve_autodiff is used by logdet_jvp
+        # solve_autodiff is used by logdet_jvp and quad_jvp.
         solve._autodiff = solve_autodiff
         
         return solve

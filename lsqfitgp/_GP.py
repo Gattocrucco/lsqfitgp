@@ -243,6 +243,8 @@ class GP:
     marginal_likelihood
         Compute the marginal likelihood, i.e., the unconditional probability of
         data.
+    decompose
+        Decompose a pos. def. matrix.
     
     Parameters
     ----------
@@ -250,27 +252,8 @@ class GP:
         An instance of `Kernel` representing the covariance kernel of the
         default process of the GP object. It can be left unspecified.
     solver : str
-        The algorithm used to decompose the prior covariance matrix. See list
-        below for the available solvers. Default is `eigcut+` which is slow but
-        robust.
-        
-        'eigcut+'
-            Promote small (or negative) eigenvalues to a minimum value.
-        'eigcut-'
-            Remove small (or negative) eigenvalues.
-        'svdcut+'
-            Promote small eigenvalues to a minimum value, keeping their sign.
-        'svdcut-'
-            Remove small eigenvalues.
-        'lowrank'
-            Reduce the rank of the matrix. The complexity is O(n^2 r) where
-            `n` is the matrix size and `r` the required rank, while the other
-            algorithms are O(n^3). Slow for small sizes.
-        'chol'
-            Cholesky decomposition after regularizing the matrix with a
-            Gershgorin estimate of the maximum eigenvalue. The fastest of the
-            O(n^3) algorithms.
-    
+        The algorithm used to decompose the prior covariance matrix. See
+        :meth:`~GP.decompose` for the available solvers. Default is `eigcut+`.
     checkpos : bool
         If True (default), raise a `LinAlgError` if the prior covariance matrix
         turns out non positive within numerical error.
@@ -287,16 +270,8 @@ class GP:
         The threshold used to check if the prior covariance matrix is positive
         definite is multiplied by this factor (default 1).
     **kw
-        Additional keyword arguments are passed to the solver.
-        
-        eps : positive float
-            For solvers 'eigcut+', 'eigcut-', 'svdcut+', 'svdcut-', 'chol'.
-            Specifies the threshold for considering small the eigenvalues,
-            relative to the maximum eigenvalue. The default is matrix size *
-            float epsilon.
-        rank : positive integer
-            For the 'lowrank' solver, the target rank. It should be much
-            smaller than the matrix size for the method to be convenient.
+        Additional keyword arguments are passed to the solver, see
+        :meth:`~GP.decompose`.
 
     """
     
@@ -317,7 +292,10 @@ class GP:
     # TODO maybe the default should be solver='eigcut-' (or 'svdcut-'?) because
     # it adds less noise. It is moot anyway if the plot is done sampling with
     # gvar.raniter or lgp.raninter because they do add their own noise. But this
-    # will be solved when I add GP sampling methods.
+    # will be solved when I add GP sampling methods. A more sensible choice
+    # could be LDLT since it's not bothered by non posdef but it's the fastest
+    # apart from cholesky, however it's not implemented in JAX. Maybe I should
+    # use cholesky+autorange eps, up to 5 tries it's faster than ldlt.
     
     def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, checklin=True, posepsfac=1, **kw):
         self._elements = dict() # key -> _Element
@@ -330,14 +308,7 @@ class GP:
             if not isinstance(covfun, _Kernel.Kernel):
                 raise TypeError('covariance function must be of class Kernel')
             self._procs[DefaultProcess] = _ProcKernel(covfun)
-        decomp = {
-            'eigcut+': _linalg.EigCutFullRank,
-            'eigcut-': _linalg.EigCutLowRank,
-            'svdcut+': _linalg.SVDCutFullRank,
-            'svdcut-': _linalg.SVDCutLowRank,
-            'lowrank': _linalg.ReduceRank,
-            'chol'   : _linalg.CholGersh,
-        }[solver]
+        decomp = self._getdecomp(solver)
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **kw)
         self._checkpositive = bool(checkpos)
         self._checkpositive_todo = True
@@ -866,8 +837,8 @@ class GP:
         rkey = jax.random.PRNGKey(202206091600)
         inp = []
         for shape in inshapes:
-            inp.append(jax.random.normal(rkey, shape))
-            _, rkey = jax.random.split(rkey)
+            rkey, subkey = jax.random.split(rkey)
+            inp.append(jax.random.normal(subkey, shape))
         
         # Put zeros into the arrays to check they are preserved.
         if elementwise:
@@ -1739,3 +1710,100 @@ class GP:
             return logdet, residuals
         else:
             return -1/2 * (decomp.quad(ymean) + logdet)
+    
+    @staticmethod
+    def _getdecomp(solver):
+        return {
+            'eigcut+': _linalg.EigCutFullRank,
+            'eigcut-': _linalg.EigCutLowRank,
+            'svdcut+': _linalg.SVDCutFullRank,
+            'svdcut-': _linalg.SVDCutLowRank,
+            'lowrank': _linalg.ReduceRank,
+            'chol'   : _linalg.CholGersh,
+        }[solver]
+    
+    @classmethod
+    def decompose(cls, posdefmatrix, solver='eigcut+', **kw):
+        """
+        Decompose a positive definite matrix.
+        
+        The decomposition can be used to calculate linear algebra expressions
+        where the inverse of the matrix appears.
+        
+        Parameters
+        ----------
+        posdefmatrix : array
+            A positive semidefinite nonempty symmetric square matrix.
+        solver : str
+            Algorithm used to decompose the matrix.
+
+            'eigcut+' (default)
+                Promote small (or negative) eigenvalues to a minimum value.
+            'eigcut-'
+                Remove small (or negative) eigenvalues.
+            'svdcut+'
+                Promote small eigenvalues to a minimum value, keeping their
+                sign.
+            'svdcut-'
+                Remove small eigenvalues.
+            'lowrank'
+                Reduce the rank of the matrix. The complexity is O(n^2 r) where
+                `n` is the matrix size and `r` the required rank, while the
+                other algorithms are O(n^3). Slow for small sizes.
+            'chol'
+                Cholesky decomposition after regularizing the matrix with a
+                Gershgorin estimate of the maximum eigenvalue. The fastest of
+                the O(n^3) algorithms.
+        **kw :
+            Additional options.
+
+            eps : positive float
+                For solvers 'eigcut+', 'eigcut-', 'svdcut+', 'svdcut-', 'chol'.
+                Specifies the threshold for considering small the eigenvalues,
+                relative to the maximum eigenvalue. The default is matrix size
+                * float epsilon.
+            rank : positive integer
+                For the 'lowrank' solver, the target rank. It should be much
+                smaller than the matrix size for the method to be convenient.
+            direct_autodiff : bool
+                If True, let JAX compute derivatives tracing through the code
+                instead of using custom derivatives for the various operations.
+                Default False.
+            stop_hessian : bool
+                If True, when computing second derivatives, pretend that the
+                matrix has zero second derivatives w.r.t. the inputs. Does not
+                work in reverse mode. Default False.
+        
+        Returns
+        -------
+        decomp : Decomposition
+            An object representing the decomposition of the matrix. The
+            available methods are (A being the matrix):
+        
+            inv
+                Compute A^-1.
+            solve
+                Compute A^-1 B.
+            quad
+                Compute B^T A^-1 C.
+            logdet
+                Compute log(det(A)).
+            decorrelate
+                Compute L^-1 B such that A = LL^T.
+            correlate
+                Compute LB with L as above.
+        
+        Notes
+        -----
+        The decomposition operations are JAX-traceable and differentiable (with
+        some exceptions). Since intermediate values are stored in the
+        decomposition object, it is necessary to trace a function that includes
+        both the call to `decompose` and to one of the methods listed above.
+        The decomposition object can be passed as input/output in jax-traceable
+        functions.
+        
+        """
+        m = jnp.asarray(posdefmatrix)
+        assert m.ndim == 2 and m.shape[0] == m.shape[1] and m.size > 0
+        decompcls = cls._getdecomp(solver)
+        return decompcls(posdefmatrix, **kw)

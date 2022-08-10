@@ -127,6 +127,11 @@ Add jit tests to test_GP
 gvar #27 is closed with 11.10.1, go through the code to remove the array
 copies, and increase the minimum supported gvar version
 
+Probably many non-abstract array checks in `GP` can be made to work under jit
+for the first evaluation using `jax.ensure_compile_time_eval` (unless tracers
+arriving from pre-barrier code can not be concretized, which could well be the
+case).
+
 ## Implementation details
 
 Chiamare GP -> _GPBase e poi fare una sottoclasse GP e mettere tutti i metodi
@@ -844,7 +849,7 @@ with QR) => Useful with Woodsbury, would be used in combined gp-regression.
 Can I use the LDL decomposition? On 1000x1000 with scipy.linalg on my laptop,
 it is 5x slower than cholesky and 5x faster than diagonalization. It would
 avoid positivity problems compared to cholesky. Is it less numerically stable?
-Why is it slower?
+Why is it slower? => Pivoting.
 
 Tentative interface for optimizations: addx and addtransf have a flags: str
 parameter that accepts options either in short form (single uppercase letters)
