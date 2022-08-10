@@ -901,9 +901,9 @@ class SandwichSVD(DecompPyTree):
 
 class Woodbury(DecompPyTree):
     
-    def __init__(self, A_decomp, B, C_decomp, decompcls, **kw):
+    def __init__(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
         """
-        Decompose M = A - B C B^T with Woodbury's formula.
+        Decompose M = A ± B C B^T with Woodbury's formula.
         
         Parameters
         ----------
@@ -914,38 +914,41 @@ class Woodbury(DecompPyTree):
         C_decomp : Decomposition
             Instantiated decomposition of C.
         decompcls : type
-            Decomposition class used to decompose C^-1 - B^T A^-1 B.
+            Decomposition class used to decompose C^-1 ± B^T A^-1 B.
+        sign : {-1, 1}
+            The sign in the expression above, default 1.
         **kw :
-            Keyword arguments are passed to decompcls's initialization.
+            Keyword arguments are passed to `decompcls`'s initialization.
         
         """
         self._A = A_decomp
         self._B = B
         self._C = C_decomp
-        X = C_decomp.inv() - A_decomp.quad(B)
+        X = C_decomp.inv() + sign * A_decomp.quad(B)
         self._X = decompcls(X, **kw)
+        self._sign = sign
     
     def solve(self, b):
-        A, B, X = self._A, self._B, self._X
+        A, B, X, s = self._A, self._B, self._X, self._sign
         ab = A.solve(b)
         AB = A.solve(B)
         bab = A.quad(B, b)
         xb = X.quad(AB.T, bab)
-        return ab + xb
+        return ab - s * xb
     
     def quad(self, b, c=None):
-        A, B, X = self._A, self._B, self._X
+        A, B, X, s = self._A, self._B, self._X, self._sign
         if c is None:
             bab = A.quad(b)
             BAB = A.quad(B, b)
             bxb = X.quad(BAB)
-            return bab + bxb
+            return bab - s * bxb
         else:
             bac = A.quad(b, c)
             BAB = A.quad(B, b)
             BAC = A.quad(B, c)
             bxc = X.quad(BAB, BAC)
-            return bac + bxc
+            return bac - s * bxc
     
     def logdet(self):
         A, C, X = self._A, self._C, self._X

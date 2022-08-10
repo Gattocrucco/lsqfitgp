@@ -817,10 +817,15 @@ class WoodburyTestBase(DecompTestBase):
         if not hasattr(self, 'ranks'):
             self.ranks = {}
             self.Ms = {}
+            self.signs = {}
     
     def rank(self, n):
         self._init()
         return self.ranks.setdefault(n, rng.integers(1, n + 1))
+    
+    def sign(self, n):
+        self._init()
+        return self.signs.setdefault(n, -1 + 2 * rng.integers(2))
     
     def randM(self, n):
         self._init()
@@ -837,14 +842,14 @@ class WoodburyTestBase(DecompTestBase):
         
     def randsymmat(self, n):
         A, B, C = self.ABC(n, self.randM(n))
-        K = A - B @ C @ B.T
+        K = A + self.sign(n) * B @ C @ B.T
         np.testing.assert_allclose(K, K.T)
         self._mfrom = 'randsymmat'
         return K
     
     def mat(self, s, n):
         A, B, C = self.ABC(n, self.matM(s, n))
-        K = A - B @ C @ B.T
+        K = A + self.sign(n) * B @ C @ B.T
         self._mfrom = 'mat'
         self._sparam = s
         return K
@@ -852,14 +857,15 @@ class WoodburyTestBase(DecompTestBase):
     @property
     def decompclass(self):
         def decomposition(K, **kw):
+            n = len(K)
             if self._mfrom == 'randsymmat':
-                M = self.randM(len(K))
+                M = self.randM(n)
             elif self._mfrom == 'mat':
-                M = self.matM(self._sparam, len(K))
-            A, B, C = self.ABC(len(K), M)
+                M = self.matM(self._sparam, n)
+            A, B, C = self.ABC(n, M)
             A_decomp = self.subdecompclass(A, **kw)
             C_decomp = self.subdecompclass(C, **kw)
-            return _linalg.Woodbury(A_decomp, B, C_decomp, self.subdecompclass, **kw)
+            return _linalg.Woodbury(A_decomp, B, C_decomp, self.subdecompclass, sign=self.sign(n), **kw)
         return decomposition
 
 class TestWoodburyDiag(WoodburyTestBase):
