@@ -55,8 +55,8 @@
             </div>
         </aside>
         <h2>
-            <span class="text">67 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">65<span class="text"> run</span></button>
+            <span class="text">70 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">68<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">2<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">26<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="d_1ec909e9d92d0fb9___init___py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io">coverage.py v6.4.3</a>,
-            created at 2022-08-07 20:54 +0000
+            created at 2022-08-10 17:26 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"/>
@@ -232,6 +232,10 @@
     <p class="run"><span class="n"><a id="t148" href="#t148">148</a></span><span class="t"><span class="key">def</span> <span class="nam">tree_all</span><span class="op">(</span><span class="nam">predicate</span><span class="op">,</span> <span class="op">*</span><span class="nam">trees</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs148" /><span class="r"><label for="ctxs148" class="ctx">6 ctx</label></span><span class="ctxs"><span>docs-macos-latest-py3.10</span><span>examples-macos-latest-py3.10</span><span>tests-macos-11-py3.8</span><span>tests-macos-latest-py3.10</span><span>tests-ubuntu-18.04-py3.8</span><span>tests-ubuntu-latest-py3.10</span></span></p>
     <p class="mis show_mis"><span class="n"><a id="t149" href="#t149">149</a></span><span class="t">    <span class="nam">pred</span> <span class="op">=</span> <span class="nam">tree_util</span><span class="op">.</span><span class="nam">tree_map</span><span class="op">(</span><span class="nam">predicate</span><span class="op">,</span> <span class="op">*</span><span class="nam">trees</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t150" href="#t150">150</a></span><span class="t">    <span class="key">return</span> <span class="nam">tree_util</span><span class="op">.</span><span class="nam">tree_reduce</span><span class="op">(</span><span class="key">lambda</span> <span class="nam">acc</span><span class="op">,</span> <span class="nam">p</span><span class="op">:</span> <span class="nam">acc</span> <span class="key">and</span> <span class="nam">p</span><span class="op">,</span> <span class="nam">pred</span><span class="op">,</span> <span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t151" href="#t151">151</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t152" href="#t152">152</a></span><span class="t"><span class="key">def</span> <span class="nam">float_type</span><span class="op">(</span><span class="op">*</span><span class="nam">args</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs152" /><span class="r"><label for="ctxs152" class="ctx">6 ctx</label></span><span class="ctxs"><span>docs-macos-latest-py3.10</span><span>examples-macos-latest-py3.10</span><span>tests-macos-11-py3.8</span><span>tests-macos-latest-py3.10</span><span>tests-ubuntu-18.04-py3.8</span><span>tests-ubuntu-latest-py3.10</span></span></p>
+    <p class="run"><span class="n"><a id="t153" href="#t153">153</a></span><span class="t">    <span class="nam">t</span> <span class="op">=</span> <span class="nam">jnp</span><span class="op">.</span><span class="nam">result_type</span><span class="op">(</span><span class="op">*</span><span class="nam">args</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs153" /><span class="r"><label for="ctxs153" class="ctx">4 ctx</label></span><span class="ctxs"><span>tests-macos-11-py3.8</span><span>tests-macos-latest-py3.10</span><span>tests-ubuntu-18.04-py3.8</span><span>tests-ubuntu-latest-py3.10</span></span></p>
+    <p class="run"><span class="n"><a id="t154" href="#t154">154</a></span><span class="t">    <span class="key">return</span> <span class="nam">jnp</span><span class="op">.</span><span class="nam">sin</span><span class="op">(</span><span class="nam">jnp</span><span class="op">.</span><span class="nam">empty</span><span class="op">(</span><span class="num">0</span><span class="op">,</span> <span class="nam">t</span><span class="op">)</span><span class="op">)</span><span class="op">.</span><span class="nam">dtype</span>&nbsp;</span><input type="checkbox" id="ctxs154" /><span class="r"><label for="ctxs154" class="ctx">4 ctx</label></span><span class="ctxs"><span>tests-macos-11-py3.8</span><span>tests-macos-latest-py3.10</span><span>tests-ubuntu-18.04-py3.8</span><span>tests-ubuntu-latest-py3.10</span></span></p>
 </main>
 <footer>
     <div class="content">
@@ -241,7 +245,7 @@
             <a id="nextFileLink" class="nav" href="d_1ec909e9d92d0fb9___init___py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io">coverage.py v6.4.3</a>,
-            created at 2022-08-07 20:54 +0000
+            created at 2022-08-10 17:26 +0000
         </p>
     </div>
 </footer>
