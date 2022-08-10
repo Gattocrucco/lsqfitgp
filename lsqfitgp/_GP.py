@@ -138,10 +138,14 @@ class _Cov(_Element):
     
     shape = None
     
-    def __init__(self, blocks, shape):
-        """blocks = dict (key, key) -> matrices"""
+    def __init__(self, blocks, shape, decomp):
+        """
+        blocks = dict (key, key) -> matrix
+        decomp = Decomposition
+        """
         self.blocks = blocks
         self.shape = shape
+        self.decomp = decomp
 
 class _Proc(metaclass=abc.ABCMeta):
     """
@@ -863,7 +867,7 @@ class GP:
                 if out0.shape != shape or not (numpy.allclose(out0[zeros], 0) and numpy.allclose(out1[zeros], 0)):
                     raise RuntimeError('the transformation is not elementwise')
     
-    def addcov(self, covblocks, key=None):
+    def addcov(self, covblocks, key=None, decomps=None):
         """
         
         Add user-defined prior covariance matrix blocks.
@@ -884,13 +888,20 @@ class GP:
             If `covblocks` is an array, the dictionary key under which
             `covblocks` is added. Can not be specified if `covblocks` is a
             dictionary.
+        decomps : Decomposition or dict of Decompositions
+            Pre-computed decompositions of (not necessarily all) diagonal
+            blocks, as produced by :meth:`~GP.decompose`. The keys are single
+            GP keys and not pairs like in `covblocks`.
         
         Raises
         ------
         KeyError :
             A key is already used in the GP.
         ValueError :
-            `covblocks` and/or `key` are malformed or inconsistent.
+            `covblocks` and/or `key` and `decomps` are malformed or
+            inconsistent.
+        TypeError :
+            Wrong type of `covblocks` or `decomps`.
         
         """
         
@@ -902,15 +913,23 @@ class GP:
             if key is None:
                 raise ValueError('covblocks is array but key is None')
             covblocks = {(key, key): covblocks}
+            if decomps is not None:
+                decomps = {key: decomps}
         elif _isdictlike(covblocks):
             if key is not None:
                 raise ValueError('can not specify key if covblocks is a dictionary')
             if None in covblocks:
                 raise ValueError('None key in covblocks not allowed')
+            if decomps is not None and not _isdictlike(decomps):
+                raise TypeError('covblocks is dictionary but decomps is not')
         else:
             raise TypeError('covblocks must be array or dict')
         
-        # Convert blocks to numpy arrays and determine shapes from diagonal
+        if decomps is None:
+            decomps = {}
+        decomps = dict(decomps) # avoid a reference
+        
+        # Convert blocks to jax arrays and determine shapes from diagonal
         # blocks.
         shapes = {}
         preblocks = {}
@@ -921,20 +940,35 @@ class GP:
                     raise KeyError(f'key {key!r} already in GP')
             xkey, ykey = keys
             block = jnp.asarray(block)
+            
             if xkey == ykey:
+                
                 if block.ndim % 2 == 1:
                     raise ValueError(f'diagonal block {key!r} has odd number of axes')
+                
                 half = block.ndim // 2
                 head = block.shape[:half]
                 tail = block.shape[half:]
                 if head != tail:
                     raise ValueError(f'shape {block.shape!r} of diagonal block {key!r} is not symmetric')
+                shapes[xkey] = head
+                
                 if self._checksym and _patch_jax.isconcrete(block):
                     B = _patch_jax.concrete(block)
                     if not numpy.allclose(B, B.T):
                         raise ValueError(f'diagonal block {key!r} is not symmetric')
-                shapes[xkey] = head
+                
             preblocks[keys] = block
+        
+        # Check decomps is consistent with covblocks.
+        for key, dec in decomps.items():
+            if key not in shapes:
+                raise KeyError(f'key {key!r} in decomps not found in diagonal blocks')
+            if not isinstance(dec, _linalg.Decomposition):
+                raise TypeError(f'decomps[{key!r}] = {dec!r} is not a decomposition')
+            n = numpy.prod(shapes[key], dtype=int)
+            if dec.n != n:
+                raise ValueError(f'decomposition matrix size {dec.n} != diagonal block size {n} for key {key!r}')
         
         # Reshape blocks to square matrices and check that the shapes of out of
         # diagonal blocks match those of diagonal ones.
@@ -977,7 +1011,8 @@ class GP:
         
         # Create _Cov objects.
         for key, shape in shapes.items():
-            self._elements[key] = _Cov(blocks, shape)
+            decomp = decomps.get(key)
+            self._elements[key] = _Cov(blocks, shape, decomp)
 
     def _crosskernel(self, xpkey, ypkey):
         
@@ -1229,7 +1264,7 @@ class GP:
         # 2) ldlt, check each 2x2 block     <--- probably best? is it stable?
         # 3) QR, check diagonal of R
         # For QR, can I use directly the tau coefficients? (halves the
-        # computation time, going to 1/4 diagonalization)
+        # computation time, going to 1/4 diagonalization ~ ldlt)
         if not _patch_jax.isconcrete(cov):
             return
         eigv = linalg.eigvalsh(_patch_jax.concrete(cov))
@@ -1733,7 +1768,10 @@ class GP:
         Parameters
         ----------
         posdefmatrix : array
-            A positive semidefinite nonempty symmetric square matrix.
+            A positive semidefinite nonempty symmetric square matrix. If the
+            array is not square, it must have a shape of the kind (k, n, m,
+            ..., k, n, m, ...) and is reshaped to (k * n * m * ..., k * n * m *
+            ...).
         solver : str
             Algorithm used to decompose the matrix.
 
@@ -1804,6 +1842,13 @@ class GP:
         
         """
         m = jnp.asarray(posdefmatrix)
-        assert m.ndim == 2 and m.shape[0] == m.shape[1] and m.size > 0
+        assert m.size > 0
+        assert m.ndim % 2 == 0
+        half = m.ndim // 2
+        head = m.shape[:half]
+        tail = m.shape[half:]
+        assert head == tail
+        n = numpy.prod(head, dtype=int)
+        m = m.reshape(n, n)
         decompcls = cls._getdecomp(solver)
         return decompcls(posdefmatrix, **kw)

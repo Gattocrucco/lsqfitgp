@@ -1703,3 +1703,15 @@ has errors. The true data has a nondiagonal error covariance matrix, so to be
 efficient I have to invert the matrix once for the whole optimization. The most
 general way to add this feature is passing a decomposition to GP.addcov. To
 expose the decompositions, I can add a class method to GP.
+
+2022-08-10
+==========
+
+How do I add a user-provided decomposition in GP? Should it be generic, or
+only for addcov?
+
+Only in addcov would make the code cleaner probably. There's a single point in
+which it is visible that the decomposition is passed along with the original
+matrix.
+
+Interface: another single-key dictionary argument with the decompositions.
