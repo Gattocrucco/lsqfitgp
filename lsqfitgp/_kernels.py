@@ -1830,7 +1830,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     
     Notes
     -----
-    This is the covariance function of the latent mean prior of BART (Bayes
+    This is the covariance function of the latent mean prior of BART (Bayesian
     Additive Regression Trees) [1]_ in the limit of an infinite number of
     trees, and with an upper bound :math:`D` on the depth of the trees. This
     prior is the distribution of the function
