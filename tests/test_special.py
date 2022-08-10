@@ -166,7 +166,7 @@ def periodic_zeta(x, s):
     pytest.param(1e-13, id='veryclose'),
 ])
 @mark.parametrize('s', [
-    pytest.param(1.01, id='near1'),
+    pytest.param(1 + 1e-15, id='near1'),
     pytest.param(0.5 + np.arange(1, 15), id='half'),
     pytest.param(np.arange(2, 15, 2), id='even'),
     pytest.param(np.arange(3, 15, 2), id='odd'),
@@ -177,6 +177,9 @@ def test_periodic_zeta(s, d, sgn, i):
 
     x = np.linspace(-1, 2, 52)
     s = np.atleast_1d(s)[:, None] + sgn * d
+    
+    if np.any(s <= 1):
+        pytest.skip()
     
     z1 = periodic_zeta(x, s)
     z1 = z1.imag if i else z1.real
