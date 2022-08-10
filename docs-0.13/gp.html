@@ -125,33 +125,14 @@
 <dt class="sig sig-object py" id="lsqfitgp.GP">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkfinite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posepsfac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Object that represents a Gaussian process over arbitrary input.</p>
-<dl class="field-list">
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl>
+<dd class="field-odd"><dl class="simple">
 <dt><strong>covfun</strong><span class="classifier">Kernel or None</span></dt><dd><p>An instance of <cite>Kernel</cite> representing the covariance kernel of the
 default process of the GP object. It can be left unspecified.</p>
 </dd>
-<dt><strong>solver</strong><span class="classifier">str</span></dt><dd><p>The algorithm used to decompose the prior covariance matrix. See list
-below for the available solvers. Default is <cite>eigcut+</cite> which is slow but
-robust.</p>
-<dl class="simple">
-<dt>‘eigcut+’</dt><dd><p>Promote small (or negative) eigenvalues to a minimum value.</p>
-</dd>
-<dt>‘eigcut-’</dt><dd><p>Remove small (or negative) eigenvalues.</p>
-</dd>
-<dt>‘svdcut+’</dt><dd><p>Promote small eigenvalues to a minimum value, keeping their sign.</p>
-</dd>
-<dt>‘svdcut-’</dt><dd><p>Remove small eigenvalues.</p>
-</dd>
-<dt>‘lowrank’</dt><dd><p>Reduce the rank of the matrix. The complexity is O(n^2 r) where
-<cite>n</cite> is the matrix size and <cite>r</cite> the required rank, while the other
-algorithms are O(n^3). Slow for small sizes.</p>
-</dd>
-<dt>‘chol’</dt><dd><p>Cholesky decomposition after regularizing the matrix with a
-Gershgorin estimate of the maximum eigenvalue. The fastest of the
-O(n^3) algorithms.</p>
-</dd>
-</dl>
+<dt><strong>solver</strong><span class="classifier">str</span></dt><dd><p>The algorithm used to decompose the prior covariance matrix. See
+<a class="reference internal" href="#lsqfitgp.GP.decompose" title="lsqfitgp.GP.decompose"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decompose()</span></code></a> for the available solvers. Default is <cite>eigcut+</cite>.</p>
 </dd>
 <dt><strong>checkpos</strong><span class="classifier">bool</span></dt><dd><p>If True (default), raise a <cite>LinAlgError</cite> if the prior covariance matrix
 turns out non positive within numerical error.</p>
@@ -168,17 +149,8 @@ given transformation is linear on a random input tensor.</p>
 <dt><strong>posepsfac</strong><span class="classifier">number</span></dt><dd><p>The threshold used to check if the prior covariance matrix is positive
 definite is multiplied by this factor (default 1).</p>
 </dd>
-<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the solver.</p>
-<dl class="simple">
-<dt>eps<span class="classifier">positive float</span></dt><dd><p>For solvers ‘eigcut+’, ‘eigcut-’, ‘svdcut+’, ‘svdcut-’, ‘chol’.
-Specifies the threshold for considering small the eigenvalues,
-relative to the maximum eigenvalue. The default is matrix size *
-float epsilon.</p>
-</dd>
-<dt>rank<span class="classifier">positive integer</span></dt><dd><p>For the ‘lowrank’ solver, the target rank. It should be much
-smaller than the matrix size for the method to be convenient.</p>
-</dd>
-</dl>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the solver, see
+<a class="reference internal" href="#lsqfitgp.GP.decompose" title="lsqfitgp.GP.decompose"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decompose()</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
@@ -195,7 +167,7 @@ smaller than the matrix size for the method to be convenient.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addtransf</span></code></a>(tensors, key[, axes])</p></td>
 <td><p>Apply a linear transformation to already specified process points.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addcov" title="lsqfitgp.GP.addcov"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addcov</span></code></a>(covblocks[, key])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addcov" title="lsqfitgp.GP.addcov"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addcov</span></code></a>(covblocks[, key, decomps])</p></td>
 <td><p>Add user-defined prior covariance matrix blocks.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproc" title="lsqfitgp.GP.addproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproc</span></code></a>([kernel, key, deriv])</p></td>
@@ -234,11 +206,14 @@ smaller than the matrix size for the method to be convenient.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">marginal_likelihood</span></code></a>(given[, givencov, separate])</p></td>
 <td><p>Compute the logarithm of the probability of the data.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.decompose" title="lsqfitgp.GP.decompose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decompose</span></code></a>(posdefmatrix[, solver])</p></td>
+<td><p>Decompose a positive definite matrix.</p></td>
+</tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addcov">
-<span class="sig-name descname"><span class="pre">addcov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covblocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addcov" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addcov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covblocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addcov" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add user-defined prior covariance matrix blocks.</p>
 <p>Covariance matrices defined with <cite>addcov</cite> represent arbitrary
 finite-dimensional zero-mean Gaussian variables, assumed independent
@@ -256,13 +231,20 @@ unless the corresponding transposed block is specified.</p>
 <cite>covblocks</cite> is added. Can not be specified if <cite>covblocks</cite> is a
 dictionary.</p>
 </dd>
+<dt><strong>decomps</strong><span class="classifier">Decomposition or dict of Decompositions</span></dt><dd><p>Pre-computed decompositions of (not necessarily all) diagonal
+blocks, as produced by <a class="reference internal" href="#lsqfitgp.GP.decompose" title="lsqfitgp.GP.decompose"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decompose()</span></code></a>. The keys are single
+GP keys and not pairs like in <cite>covblocks</cite>.</p>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
 <dt><strong>KeyError</strong><span class="classifier"></span></dt><dd><p>A key is already used in the GP.</p>
 </dd>
-<dt><strong>ValueError</strong><span class="classifier"></span></dt><dd><p><cite>covblocks</cite> and/or <cite>key</cite> are malformed or inconsistent.</p>
+<dt><strong>ValueError</strong><span class="classifier"></span></dt><dd><p><cite>covblocks</cite> and/or <cite>key</cite> and <cite>decomps</cite> are malformed or
+inconsistent.</p>
+</dd>
+<dt><strong>TypeError</strong><span class="classifier"></span></dt><dd><p>Wrong type of <cite>covblocks</cite> or <cite>decomps</cite>.</p>
 </dd>
 </dl>
 </dd>
@@ -525,6 +507,94 @@ the default process.</p>
 </dl>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.GP.decompose">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decompose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">posdefmatrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.decompose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decompose a positive definite matrix.</p>
+<p>The decomposition can be used to calculate linear algebra expressions
+where the inverse of the matrix appears.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>posdefmatrix</strong><span class="classifier">array</span></dt><dd><p>A positive semidefinite nonempty symmetric square matrix. If the
+array is not square, it must have a shape of the kind (k, n, m,
+…, k, n, m, …) and is reshaped to (k * n * m * …, k * n * m *
+…).</p>
+</dd>
+<dt><strong>solver</strong><span class="classifier">str</span></dt><dd><p>Algorithm used to decompose the matrix.</p>
+<dl class="simple">
+<dt>‘eigcut+’ (default)</dt><dd><p>Promote small (or negative) eigenvalues to a minimum value.</p>
+</dd>
+<dt>‘eigcut-’</dt><dd><p>Remove small (or negative) eigenvalues.</p>
+</dd>
+<dt>‘svdcut+’</dt><dd><p>Promote small eigenvalues to a minimum value, keeping their
+sign.</p>
+</dd>
+<dt>‘svdcut-’</dt><dd><p>Remove small eigenvalues.</p>
+</dd>
+<dt>‘lowrank’</dt><dd><p>Reduce the rank of the matrix. The complexity is O(n^2 r) where
+<cite>n</cite> is the matrix size and <cite>r</cite> the required rank, while the
+other algorithms are O(n^3). Slow for small sizes.</p>
+</dd>
+<dt>‘chol’</dt><dd><p>Cholesky decomposition after regularizing the matrix with a
+Gershgorin estimate of the maximum eigenvalue. The fastest of
+the O(n^3) algorithms.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional options.</p>
+<dl class="simple">
+<dt>eps<span class="classifier">positive float</span></dt><dd><p>For solvers ‘eigcut+’, ‘eigcut-’, ‘svdcut+’, ‘svdcut-’, ‘chol’.
+Specifies the threshold for considering small the eigenvalues,
+relative to the maximum eigenvalue. The default is matrix size
+* float epsilon.</p>
+</dd>
+<dt>rank<span class="classifier">positive integer</span></dt><dd><p>For the ‘lowrank’ solver, the target rank. It should be much
+smaller than the matrix size for the method to be convenient.</p>
+</dd>
+<dt>direct_autodiff<span class="classifier">bool</span></dt><dd><p>If True, let JAX compute derivatives tracing through the code
+instead of using custom derivatives for the various operations.
+Default False.</p>
+</dd>
+<dt>stop_hessian<span class="classifier">bool</span></dt><dd><p>If True, when computing second derivatives, pretend that the
+matrix has zero second derivatives w.r.t. the inputs. Does not
+work in reverse mode. Default False.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl>
+<dt><strong>decomp</strong><span class="classifier">Decomposition</span></dt><dd><p>An object representing the decomposition of the matrix. The
+available methods are (A being the matrix):</p>
+<dl class="simple">
+<dt>inv</dt><dd><p>Compute A^-1.</p>
+</dd>
+<dt>solve</dt><dd><p>Compute A^-1 B.</p>
+</dd>
+<dt>quad</dt><dd><p>Compute B^T A^-1 C.</p>
+</dd>
+<dt>logdet</dt><dd><p>Compute log(det(A)).</p>
+</dd>
+<dt>decorrelate</dt><dd><p>Compute L^-1 B such that A = LL^T.</p>
+</dd>
+<dt>correlate</dt><dd><p>Compute LB with L as above.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The decomposition operations are JAX-traceable and differentiable (with
+some exceptions). Since intermediate values are stored in the
+decomposition object, it is necessary to trace a function that includes
+both the call to <cite>decompose</cite> and to one of the methods listed above.
+The decomposition object can be passed as input/output in jax-traceable
+functions.</p>
 </dd></dl>
 
 <dl class="py method">
