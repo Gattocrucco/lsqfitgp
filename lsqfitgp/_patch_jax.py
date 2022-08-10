@@ -151,5 +151,4 @@ def tree_all(predicate, *trees):
 
 def float_type(*args):
     t = jnp.result_type(*args)
-    return t if jnp.issubdtype(t, jnp.inexact) else jnp.float64
-    # TODO in jax somewhere there is _promote_dtypes_inexact, look it up
+    return jnp.sin(jnp.empty(0, t)).dtype
