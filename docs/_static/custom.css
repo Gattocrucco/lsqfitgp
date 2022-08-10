@@ -18,7 +18,16 @@
  * along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-dl.py.method, dl.py.function {
+dl.py.method, dl.py.function, dl.py.class {
     margin-top: 1em;
     margin-bottom: 1em;
+}
+
+dl.field-list .field-even {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+dl.field-list .field-even:last-child {
+    margin-bottom: 0em;
 }

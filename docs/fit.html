@@ -122,7 +122,7 @@
 <span id="fit"></span><h1><span class="section-number">8. </span>Fitting<a class="headerlink" href="#fitting" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.empbayes_fit">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gradient'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gradient'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'priormean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Maximum a posteriori fit.</p>
 <p>Maximizes the marginal likelihood of the data with a Gaussian process
 model that depends on hyperparameters, multiplied by a prior on the
@@ -173,6 +173,30 @@ hyperparameters are assumed to be zero.</p>
 </dd>
 </dl>
 </dd>
+<dt><strong>initial</strong><span class="classifier">str, scalar, array, dictionary of scalars/arrays</span></dt><dd><p>Starting point for the minimization, matching the format of
+<cite>hyperprior</cite>, or one of the following options:</p>
+<dl class="simple">
+<dt>‘priormean’</dt><dd><p>Start from the hyperprior mean (default).</p>
+</dd>
+<dt>‘priorsample’</dt><dd><p>Take a random sample from the hyperprior.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>verbosity</strong><span class="classifier">int</span></dt><dd><p>An integer indicating how much information is printed on the
+terminal:</p>
+<dl class="simple">
+<dt>0</dt><dd><p>No logging (default).</p>
+</dd>
+<dt>1</dt><dd><p>Report starting point and result.</p>
+</dd>
+<dt>2</dt><dd><p>More detailed report.</p>
+</dd>
+<dt>3</dt><dd><p>Log each iteration.</p>
+</dd>
+<dt>4</dt><dd><p>More detailed iteration log.</p>
+</dd>
+</dl>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
@@ -188,7 +212,13 @@ maximize the marginal likelihood. The covariance matrix is computed
 as the inverse of the hessian of the marginal likelihood. These
 gvars do not track correlations with the hyperprior or the data.</p>
 </dd>
+<dt><strong>pmean</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>Mean of <cite>p</cite>.</p>
+</dd>
+<dt><strong>pcov</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>Covariance matrix of <cite>p</cite>.</p>
+</dd>
 <dt><strong>minresult</strong><span class="classifier">scipy.optimize.OptimizeResult</span></dt><dd><p>The result object returned by <cite>scipy.optimize.minimize</cite>.</p>
+</dd>
+<dt><strong>minargs</strong><span class="classifier">dict</span></dt><dd><p>The arguments passed to <cite>scipy.optimize.minimize</cite>.</p>
 </dd>
 </dl>
 </dd>
