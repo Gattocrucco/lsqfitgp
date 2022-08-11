@@ -1715,3 +1715,14 @@ which it is visible that the decomposition is passed along with the original
 matrix.
 
 Interface: another single-key dictionary argument with the decompositions.
+
+--------
+
+Instead of saving the decomposition in the _Cov object, save it directly to the
+solver cache.
+
+2022-08-11
+==========
+
+Write a decomposition class that starts from a whole decomposition and provides
+the one for a block.

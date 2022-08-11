@@ -17,17 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import copy
 
 import pytest
 import numpy as np
 from jax import numpy as jnp
 import gvar
+import jax
 
-sys.path.insert(0, '.')
 import lsqfitgp as lgp
-
 import util
 
 def test_prior_raw_shape():
@@ -141,9 +139,12 @@ def test_lintransf_checks():
         gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 4, checklin=True)
 
 def test_proclintransf_checks():
-    gp = lgp.GP()
-    gp.addproc(lgp.ExpQuad(), 0)
-    gp.addproc(lgp.ExpQuad(), 1)
+    def makegp(**kw):
+        gp = lgp.GP(**kw)
+        gp.addproc(lgp.ExpQuad(), 0)
+        gp.addproc(lgp.ExpQuad(), 1)
+        return gp
+    gp = makegp()
     with pytest.raises(KeyError):
         gp.addproclintransf(lambda f, g: lambda x: f(x) + g(x), [0, 1], 0)
     with pytest.raises(KeyError):
@@ -152,7 +153,24 @@ def test_proclintransf_checks():
         gp.addproclintransf(lambda f, g: lambda x: 1, [0, 1], 2, checklin=True)
     with pytest.raises(RuntimeError):
         gp.addproclintransf(lambda f, g: lambda x: 1 + f(x) + g(x), [0, 1], 2, checklin=True)
+    with pytest.raises(RuntimeError):
+        gp.addproclintransf(lambda f, g: lambda x: f(x) + g(x)[None, :], [0, 1], 2, checklin=True)
     gp.addproclintransf(lambda f, g: lambda x: 1 + f(x) + g(x), [0, 1], 2)
+    gp.addproclintransf(lambda f, g: lambda x: f(x) + g(x), [0, 1], 3, checklin=True)
+    gp = makegp(checklin=True)
+    with pytest.raises(RuntimeError):
+        gp.addproclintransf(lambda f, g: lambda x: 1, [0, 1], 2, checklin=None)
+
+def test_proclintransf_mockup():
+    def makegp(**kw):
+        gp = lgp.GP(**kw)
+        gp.addproc(lgp.ExpQuad(), 0)
+        gp.addproc(lgp.ExpQuad(), 1)
+        return gp
+    gp = makegp()
+    with pytest.raises(RuntimeError):
+        gp.addproclintransf(lambda f, g: lambda x: 1 + f(x['dim1']) + g(x['dim2']), [0, 1], 2, checklin=True)
+    gp.addproclintransf(lambda f, g: lambda x: f(x['dim1']) + g(x['dim2']), [0, 1], 2, checklin=True)
 
 def test_lintransf_matmul():
     gp = lgp.GP(lgp.ExpQuad())
@@ -491,11 +509,12 @@ def test_zero_covblock():
     util.assert_equal(prior[0, 1], np.zeros_like(m))
 
 def test_addcov_checks():
-    gp = lgp.GP()
     a = np.random.randn(10, 10)
     b = np.copy(a)
     b[0, 0] = np.inf
     m = b.T @ b
+
+    gp = lgp.GP()
     with pytest.raises(ValueError):
         gp.addcov(a, 0)
     with pytest.raises(ValueError):
@@ -506,6 +525,21 @@ def test_addcov_checks():
     
     gp = lgp.GP(checkfinite=False)
     gp.addcov(m, 0)
+    
+    a = a @ a.T
+    gp = lgp.GP()
+    dec = lgp.GP.decompose(a)
+    with pytest.raises(TypeError):
+        gp.addcov({(0, 0): a}, decomps=dec)
+    with pytest.raises(KeyError):
+        gp.addcov({(0, 0): a}, decomps={1: dec})
+    with pytest.raises(TypeError):
+        gp.addcov({(0, 0): a}, decomps={0: a})
+    b = np.random.randn(20, 20)
+    b = b @ b.T
+    bd = lgp.GP.decompose(b)
+    with pytest.raises(ValueError):
+        gp.addcov({(0, 0): a}, decomps={0: bd})
 
 def test_makecovblock_checks():
     a = np.random.randn(10, 10)
@@ -701,3 +735,96 @@ def test_singleton():
     assert repr(dp) == 'DefaultProcess'
     with pytest.raises(NotImplementedError):
         dp()
+
+def test_addtransf_abstract():
+    def func():
+        gp = lgp.GP(lgp.ExpQuad())
+        gp.addx(0, 0)
+        gp.addtransf({0: np.inf}, 1)
+        return gp.prior(1, raw=True)
+    with pytest.raises(ValueError):
+        func()
+    assert jax.jit(func)().item() == np.inf
+
+def test_addlintransf_abstract():
+    def func():
+        gp = lgp.GP(lgp.ExpQuad())
+        gp.addx(0, 0)
+        gp.addlintransf(lambda x: x + 1, [0], 1)
+        return gp.prior(1, raw=True)
+    with pytest.raises(RuntimeError):
+        func()
+    assert jax.jit(func)().item() == 3
+
+def test_addcov_abstract():
+    def func():
+        gp = lgp.GP(lgp.ExpQuad())
+        gp.addcov({
+            (0, 0): 1,
+            (1, 1): 1,
+            (0, 1): 1,
+            (1, 0): 0,
+        })
+        return gp.prior([0, 1], raw=True)
+    with pytest.raises(ValueError):
+        func()
+    cov = jax.jit(func)()
+    assert cov[0, 1] == 1 or cov[0, 1] == 0
+
+def test_marginal_likelihood_abstract():
+    def func():
+        gp = lgp.GP(lgp.ExpQuad())
+        gp.addx(np.random.randn(10), 0)
+        return gp.marginal_likelihood({0: np.full(10, np.nan)})
+    
+    with pytest.raises(ValueError):
+        func()
+    assert np.isnan(jax.jit(func)())
+    
+    def func(cov):
+        gp = lgp.GP(lgp.ExpQuad())
+        gp.addx(np.random.randn(10), 0)
+        return gp.marginal_likelihood({0: np.random.randn(10)}, {(0, 0): cov})
+    
+    covnan = np.full((10, 10), np.nan)
+    with pytest.raises(ValueError):
+        func(covnan)
+    assert np.isnan(jax.jit(func)(covnan))
+    
+    covasym = np.random.randn(10, 10)
+    with pytest.raises(ValueError):
+        func(covasym)
+    jax.jit(func)(covasym)
+
+def test_addcov_decomps():
+    a = np.random.randn(10, 10)
+    a = a @ a.T
+    blocks = {
+        (0, 0): a[:5, :5],
+        (0, 1): a[:5, 5:],
+        (1, 0): a[5:, :5],
+        (1, 1): a[5:, 5:],
+    }
+    dec = lgp.GP.decompose(blocks[0, 0])
+    b = jnp.asarray(np.random.randn(5))
+    
+    def makez(**kw):
+        gp = lgp.GP()
+        gp.addcov(blocks, **kw)
+        return gp.predfromdata({0: b}, 1)
+    
+    z1 = makez()
+    z2 = makez(decomps={0: dec})
+    
+    util.assert_similar_gvars(z1, z2)
+    
+    def makez(**kw):
+        gp = lgp.GP()
+        gp.addcov(blocks[0, 0], 0, **kw)
+        gp.addcov(blocks[1, 1], 1)
+        return gp.predfromdata({0: b}, 1)
+    
+    z1 = makez()
+    z2 = makez(decomps=dec)
+    
+    util.assert_similar_gvars(z1, z2)

@@ -138,14 +138,10 @@ class _Cov(_Element):
     
     shape = None
     
-    def __init__(self, blocks, shape, decomp):
-        """
-        blocks = dict (key, key) -> matrix
-        decomp = Decomposition
-        """
+    def __init__(self, blocks, shape):
+        """ blocks = dict (key, key) -> matrix """
         self.blocks = blocks
         self.shape = shape
-        self.decomp = decomp
 
 class _Proc(metaclass=abc.ABCMeta):
     """
@@ -847,7 +843,8 @@ class GP:
         # Put zeros into the arrays to check they are preserved.
         if elementwise:
             shape = jnp.broadcast_shapes(*inshapes)
-            zeros = jax.random.bernoulli(rkey, 0.5, shape)
+            rkey, subkey = jax.random.split(rkey)
+            zeros = jax.random.bernoulli(subkey, 0.5, shape)
             for i, a in enumerate(inp):
                 inp[i] = a.at[zeros].set(0)
             
@@ -927,7 +924,6 @@ class GP:
         
         if decomps is None:
             decomps = {}
-        decomps = dict(decomps) # avoid a reference
         
         # Convert blocks to jax arrays and determine shapes from diagonal
         # blocks.
@@ -1011,8 +1007,10 @@ class GP:
         
         # Create _Cov objects.
         for key, shape in shapes.items():
+            self._elements[key] = _Cov(blocks, shape)
             decomp = decomps.get(key)
-            self._elements[key] = _Cov(blocks, shape, decomp)
+            if decomp is not None:
+                self._decompcache[key,] = decomp
 
     def _crosskernel(self, xpkey, ypkey):
         
@@ -1234,6 +1232,9 @@ class GP:
         # zero, which may be useful with multi-output or split components.
         
         # TODO cache ignores **kw.
+        
+        # TODO I can have a reserved unique key to add temporarily ycov and
+        # reuse all the rest of the machinery.
         
         keys = tuple(keys)
         
