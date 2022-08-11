@@ -806,6 +806,7 @@ def test_addcov_decomps():
         (1, 1): a[5:, 5:],
     }
     dec = lgp.GP.decompose(blocks[0, 0])
+    dec1 = lgp.GP.decompose(blocks[1, 1])
     b = jnp.asarray(np.random.randn(5))
     
     def makez(**kw):
@@ -815,8 +816,11 @@ def test_addcov_decomps():
     
     z1 = makez()
     z2 = makez(decomps={0: dec})
+    z3 = makez(decomps={0: dec1})
     
     util.assert_similar_gvars(z1, z2)
+    with pytest.raises(AssertionError):
+        util.assert_similar_gvars(z1, z3)
     
     def makez(**kw):
         gp = lgp.GP()
