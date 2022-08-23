@@ -843,6 +843,71 @@ class SandwichQR(DecompPyTree):
     def n(self):
         return len(self._B)
 
+def _rq(a, **kw):
+    """
+    Decompose a as r q, with r lower-triangular and q orthogonal
+    Return: r, q
+    """
+    qt, rt = jnp.linalg.qr(_transpose(a), **kw)
+    return _transpose(rt), _transpose(qt)
+
+# TODO I am not able to define an efficient pinv of B A B^T with short B.
+#
+# class SandwichRQ(DecompPyTree):
+#
+#     def __init__(self, A_decomp, B):
+#         """
+#         Decompose M = B A B^T with the RQ decomposition of B.
+#
+#         Parameters
+#         ----------
+#         A_decomp : Decomposition
+#             Instantiated decomposition of A.
+#         B : array
+#             The B matrix. Must be short or square.
+#
+#         """
+#         self._A = A_decomp
+#         assert B.shape[0] <= B.shape[1]
+#         self._B = B
+#         self._r, self._q = _rq(B, mode='reduced')
+#
+#     def solve(self, b):
+#         A, q, r = self._A, self._q, self._r
+#         qrb = q.T @ jlinalg.solve_triangular(r, b, lower=True)
+#         aqrb = A.solve(qrb)
+#         return jlinalg.solve_triangular(r.T, q @ aqrb, lower=False)
+#
+#     def quad(self, b, c=None):
+#         A, q, r = self._A, self._q, self._r
+#         qrb = q.T @ jlinalg.solve_triangular(r, b, lower=True)
+#         if c is None:
+#             return A.quad(qrb)
+#         if c.dtype != object:
+#             qrc = q.T @ jlinalg.solve_triangular(r, c, lower=True)
+#         else:
+#             qrc = numpy.matmul(q.T, solve_triangular(r, c, lower=True))
+#         return A.quad(qrb, qrc)
+#
+#     def logdet(self):
+#         A, r = self._A, self._r
+#         B_logdet = jnp.sum(jnp.log(jnp.abs(jnp.diag(r))))
+#         return A.logdet() + 2 * B_logdet
+#         # I don't know if this really makes sense
+#
+#     def correlate(self, b):
+#         A, B = self._A, self._B
+#         return B @ A.correlate(b[:A.n])
+#
+#     def decorrelate(self, b):
+#         A, q, r = self._A, self._q, self._r
+#         qrb = q.T @ jlinalg.solve_triangular(r, b, lower=True)
+#         return A.decorrelate(qrb)
+#
+#     @property
+#     def n(self):
+#         return len(self._B)
+
 class SandwichSVD(DecompPyTree):
     
     def __init__(self, A_decomp, B):
@@ -854,7 +919,7 @@ class SandwichSVD(DecompPyTree):
         A_decomp : Decomposition
             Instantiated decomposition of A.
         B : array
-            The B matrix, can be rectangular.
+            The B matrix, must be tall or square.
         
         """
         self._A = A_decomp
@@ -900,7 +965,8 @@ class Woodbury(DecompPyTree):
     
     def __init__(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
         """
-        Decompose M = A ± B C B^T with Woodbury's formula.
+        Decompose M = A ± B C B^T using Woodbury's formula, with M, A, and C
+        positive definite.
         
         Parameters
         ----------

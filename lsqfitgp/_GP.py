@@ -316,6 +316,7 @@ class GP:
         self._checksym = bool(checksym)
         self._checkfinite = bool(checkfinite)
         self._checklin = bool(checklin)
+        self._decompname = str(solver)
     
     def addproc(self, kernel=None, key=DefaultProcess, deriv=0):
         """
@@ -905,6 +906,9 @@ class GP:
         # TODO maybe allow passing only the lower/upper triangular part for
         # the diagonal blocks, like I meta-allow for out of diagonal blocks?
         
+        # TODO with multiple blocks and a single decomp, the decomp could be
+        # interpreted as the decomposition of the whole block matrix.
+        
         # Check type of `covblocks` and standardize it to dictionary.
         if _isarraylike(covblocks):
             if key is None:
@@ -1216,6 +1220,115 @@ class GP:
             for row in rowkeys
         ]
         return jnp.block(blocks)
+        
+    class _Strategy(metaclass=abc.ABCMeta):
+        """covariance matrix decomposition strategy"""
+        
+        def __init__(self, gp, keys, vcache=None):
+            """
+            gp = GP object
+            keys = tuple of covblock keys
+            vcache = virtual cache
+            """
+            self.gp = gp
+            self.keys = keys
+            self.vache = vcache
+        
+        @abc.abstractmethod
+        def cost(self, mincost): # pragma: no cover
+            """
+            mincost = minimum cost amongst already measured strategies
+            return: cost, or inf if surely greater than mincost
+            """
+            pass
+    
+        @abc.abstractmethod
+        def execute(self, **kw): # pragma: no cover
+            """
+            actually decompose the matrix
+            **kw are passed to the Decomposition
+            return: Decomposition object
+            """
+            pass
+        
+    class _CacheLookup(_Strategy):
+        
+        def cost(self, mincost): # pragma: no cover
+            raise NotImplementedError
+    
+        def execute(self, **kw):
+            return self.gp._decompcache[self.keys]
+        
+    class _DirectDense(_Strategy):
+        
+        def cost(self, mincost):
+            size = sum(self.gp._elements[k].size for k in keys)
+            op = 'chol' if self.gp._decompname == 'chol' else 'eigh'
+            self.vcache[self.keys] = None
+            return _linalg.predtime(op, [(size, size)], ['d'])
+    
+        def execute(self, **kw):
+            cov = self.gp._assemblecovblocks(self.keys)
+            decomp = self.gp._decompclass(cov, **kw)
+            self.gp._decompcache[self.keys] = decomp
+            return decomp
+    
+    class _Woodbury(_Strategy):
+        
+        def cost(self, mincost):
+            if len(self.keys) != 1:
+                return jnp.inf
+            
+            key, = keys
+            elem = self.gp._elements[key]
+            if not isinstance(elem, _LinTransf):
+                return jnp.inf
+            if len(elem.keys) != 2:
+                return jnp.inf
+            
+            size = elem.size
+            
+            for key1, key2 in [elem.keys, reversed(elem.keys)]:
+                size2 = self.gp._elements[key2].size
+                cost = 2 * _linalg.predtime('matmul', [(size, size2), (size2, size2)], ['d', 'd'])
+                # TODO this cost overestimates linops faster than matmul
+                if cost > mincost:
+                    continue
+                op = 'chol' if self.gp._decompname == 'chol' else 'eigh'
+                cost += _linalg.predtime(op, [(size, size)], ['d'])
+                vcache = dict(self.vcache)
+                cost += self.gp._recursive_virtual_solver((key2,), dict(self.vcache)
+                
+            
+        def execute(self, **kw):
+            pass
+        
+    def _recursive_virtual_solver(self, keys, vcache=None):
+        
+        # Virtual cache contains both the actual cache and things that would be
+        # in cache if the strategy currently under evaluation is adopted.
+        if vcache is None:
+            vcache = dict(self._decompcache)
+    
+        costs = {} # dict strategy -> computational time
+    
+        if keys in vcache:
+            return self._CacheLookup(self, keys), 0
+        
+        strategies = [
+            self._DirectDense,
+            self._Woodbury,
+        ]
+        mincost = jnp.inf
+        minstrat = None
+        for scls in strategies:
+            strategy = scls(self, keys, vcache)
+            cost = strategy.cost(mincost)
+            if cost < mincost:
+                mincost = cost
+                minstrat = strategy
+        
+        return minstrat, mincost
     
     def _solver(self, keys, ycov=None, **kw):
         """
@@ -1223,18 +1336,12 @@ class GP:
         plus the matrix ycov.
         """
         
-        # TODO Block matrix solving. Example: solve a subproblem with kronecker,
-        # another plain.
-        
-        # TODO Check if the matrix is block diagonal. It's O(n^2). It is often
-        # not needed but when it is it makes a difference. A faster and less
-        # thorough check can be done only on off-diagonal key-key blocks being
-        # zero, which may be useful with multi-output or split components.
-        
         # TODO cache ignores **kw.
         
         # TODO I can have a reserved unique key to add temporarily ycov and
-        # reuse all the rest of the machinery.
+        # reuse all the rest of the machinery. Use a context manager to clean
+        # it up afterwards. => to work needs to represent concatenation as
+        # explicit transformation
         
         keys = tuple(keys)
         
@@ -1245,7 +1352,9 @@ class GP:
                 return cache
             # TODO use frozenset(keys) instead of tuple(keys) to make cache
             # work when order changes, but I have to permute the decomposition
-            # to make that work. Needs an ad-hoc class in _linalg.
+            # to make that work. Needs an ad-hoc class in _linalg. Make the
+            # decompcache a dict subclass that accepts tuples of keys but uses
+            # internally frozenset.
         
         # Compute decomposition.
         Kxx = self._assemblecovblocks(keys)
@@ -1819,17 +1928,17 @@ class GP:
             An object representing the decomposition of the matrix. The
             available methods are (A being the matrix):
         
-            inv
+            inv()
                 Compute A^-1.
-            solve
+            solve(b)
                 Compute A^-1 B.
-            quad
-                Compute B^T A^-1 C.
-            logdet
+            quad(b[, c])
+                Compute B^T A^-1 B or B^T A^-1 C.
+            logdet()
                 Compute log(det(A)).
-            decorrelate
+            decorrelate(b)
                 Compute L^-1 B such that A = LL^T.
-            correlate
+            correlate(b)
                 Compute LB with L as above.
         
         Notes

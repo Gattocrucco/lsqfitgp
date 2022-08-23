@@ -1725,4 +1725,102 @@ solver cache.
 ==========
 
 Write a decomposition class that starts from a whole decomposition and provides
-the one for a block.
+the one for a block. => This is wasteful because the calculations involve the
+full matrix. I think that all the decompositions would let me chop off a
+submatrix easily. => A method that produces a new decomposition for a submatrix.
+
+--------
+
+gvar bug:
+
+    In [11]: gvar.var(np.ones(1000))
+    ---------------------------------------------------------------------------
+    ZeroDivisionError                         Traceback (most recent call last)
+    Input In [11], in <cell line: 1>()
+    ----> 1 gvar.var(np.ones(1000))
+
+    File _utilities.pyx:900, in gvar._utilities.var()
+
+    ZeroDivisionError: float division
+
+2022-08-14
+==========
+
+Notes on implementing automatic solving strategy:
+
+a method _recursive_virtual_solver
+
+has an argument virtual_cache, if it is None (def value for root call) it calls
+itself with an empty cache
+
+tries various strategies in hardcoded order, first is naive. Accumulates
+computational cost top->down. The non-naive cases stop as soon as the minimum
+so far is exceeded. So the first thing that happens is that the completely
+naive case is traversed to the end and its cost is determined and works as
+first minimum.
+
+no wait, the very first is cache lookup. The cache uses keys in order,
+frozenset and reordering to be added later. If successful, cache lookup has
+cost zero, else +inf. whenever something is virtually decomposed, it's added to
+a copy of the virtual cache for children calls.
+
+the strategy must be traced in a tree that can be executed with actual
+operations. the method that does this is _recursive_solver.
+
+2022-08-15
+==========
+
+Leave out for now the multiple keys case, since it's combinatorial and thus
+more difficult to do efficiently. Just cache it.
+
+Instead of having a _recursive_solve method, I can use a class hierarchy.
+Each class has methods to apply virtually or concretely the transformation.
+
+Maybe to start I should just hack woodbury in to make pdf9 work.
+
+2022-08-22
+==========
+
+M = B A B^T
+B = Q R
+M = Q R A R^T Q^T
+
+If B is short, then R is not square, and thus can not be inverted with
+solve_triangular.
+
+B = R Q
+M = R Q A Q^T R^T
+
+In this case R is square and Q rectangular. Q^T is a pseudoinverse of Q.
+
+M^-1 = R^-T Q A^-1 Q^T R^-1
+
+To obtain the RQ decomposition, use
+
+B^T = Q R
+B = (Q R)^T = R^T Q^T
+
+2022-08-23
+==========
+
+M^-1 is not a valid pseudoinverse! MM^-1 b != b. M is short so I want MM^-1 = I
+even though it's a pseudoinverse.
+
+The culprit is Q. QQ^T = I, but Q^TQ not.
+
+--------
+
+I'm having problems implementing even just woodbury into the automatic
+decomposition optimizer.
+
+  - I need to notice, in a generic linear transformation, that one of the
+    operands is just summed without changes. If I don't do it, the explicit
+    square matrix coefficient, which is the identity, must be fully decomposed
+    with QR, making the optimization moot.
+
+  - In general I need to decompose things which are not indexed as covariance
+    matrices in the GP. I need something more generic, like an optimizer over
+    expressions on p.d. matrices.
+
+I can't afford this much time now. Reasonably quick alternative: allow ycov to
+be a decomposition, in which case woodbury is used.

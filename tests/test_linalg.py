@@ -958,6 +958,17 @@ def test_toeplitz_chol_solve_numpy():
                 ilb = _linalg._toeplitz.chol_solve_numpy(t, b, diageps=1e-12)
                 np.testing.assert_allclose(*np.broadcast_arrays(l @ ilb, b), rtol=1e-6)
 
+def test_rq():
+    for n in DecompTestBase.sizes:
+        a = rng.standard_normal((n, 5))
+        r, q = _linalg._decomp._rq(a, mode='reduced')
+        util.assert_close_matrices(r @ q, a, atol=0, rtol=1e-15)
+        util.assert_equal(np.tril(r), r)
+        if n < 5:
+            util.assert_close_matrices(q @ q.T, np.eye(n), atol=0, rtol=1e-15)
+        else:
+            util.assert_close_matrices(q.T @ q, np.eye(5), atol=0, rtol=1e-15)
+
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings
 

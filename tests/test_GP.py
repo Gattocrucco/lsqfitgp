@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import copy
+import sys
 
 import pytest
 import numpy as np
@@ -25,6 +26,7 @@ from jax import numpy as jnp
 import gvar
 import jax
 
+sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
 import util
 

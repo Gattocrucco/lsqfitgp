@@ -130,7 +130,8 @@ copies, and increase the minimum supported gvar version
 Probably many non-abstract array checks in `GP` can be made to work under jit
 for the first evaluation using `jax.ensure_compile_time_eval` (unless tracers
 arriving from pre-barrier code can not be concretized, which could well be the
-case).
+case). => See also https://jax.readthedocs.io/en/latest/debugging/index.html,
+in particular `jax.experimental.checkify`.
 
 ## Implementation details
 
@@ -558,7 +559,9 @@ doesn't give n=4? Is it a special case of PPKernel? => I think not. Cubic (p.
 
 Multi-fractional brownian motion, see Lim and Teo (2009) => imperscrutable math
 
-Can I do a kernel with the Dirichlet function? (scipy.special.diric)
+Can I do a kernel with the Dirichlet function? (scipy.special.diric) =>
+https://en.wikipedia.org/wiki/Dirichlet_kernel,
+https://francisbach.com/information-theory-with-kernel-methods/
 
 ARIMA, and something to flatten a VARIMA and back, and continuous equivalent.
 
@@ -593,6 +596,8 @@ Should I standardize all periodic kernels to period 1 or period 2pi? The
 problem is that machine pi is not accurate, so depending on how the function is
 written, using 2 pi as period can be less accurate than using 1. However, see
 https://www.gnu.org/software/gsl/doc/html/specfunc.html#restriction-functions.
+
+https://juliagaussianprocesses.github.io/KernelFunctions.jl/stable/kernels/#KernelFunctions.RationalKernel
 
 ### Transformations
 
@@ -985,6 +990,9 @@ base InputPoints. Le classi concrete sono `AnyPoints`, `EvenlySpaced`, `Grid`.
 Queste opzioni vanno messe nell'oggetto `InputPoints` anziché nel `GP` perché
 ad esempio devo poter applicare le opzioni solo a un asse in una griglia.
 
+Yet another interface: add directly the kronecker product as transformation,
+something like `addtransf`.
+
 #### Sparse
 
 Sparse algorithms. Make a custom minimal CSR class that allows an autograd
@@ -1008,6 +1016,11 @@ precedentemente definita con addx/addtransf.
 è uscito sull'arxiv un articolo sull'inferenza esatta 1D con matern
 half-integer ("kernel packet"), l'ho scaricato
 
+#### Block diagonal
+
+Use the information on zero blocks. Happens with split components. I could also
+search for diagonal blocks in a dense matrix since it's O(n^2).
+
 #### Using multiple solvers
 
 I have already implemented block matrix solving. This requires a solver for
@@ -1029,6 +1042,19 @@ supermatrice. Poi boh. Sarebbe carino farlo fare a un tesista di informatica,
 perché c'è la questione di ottimizzare una specie di roba ad albero con i pesi
 dati da polinomi convessi vari.
 
+To be more general I could write a "positive definite programming" optimizer,
+such that it treats not just inversion but also conditioning. The
+positive-preserving operations are
+
+- sum
+- sandwich
+- hadamard product
+- kronecker product
+- submatrix
+- schur complement
+- block diagonal
+
 ### Hyperparameters
 
-Try to use empbayes_fit without recreating the GP object each time.
+Try to use empbayes_fit without recreating the GP object each time => doomed to
+fail.

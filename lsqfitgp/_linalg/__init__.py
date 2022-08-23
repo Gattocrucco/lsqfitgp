@@ -18,3 +18,4 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 from ._decomp import *
+from ._stdcplx import predtime

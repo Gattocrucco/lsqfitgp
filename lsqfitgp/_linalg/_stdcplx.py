@@ -21,17 +21,13 @@
 Module to estimate the time taken by standard linear algebra operations.
 """
 
-__all__ = [
-    'predtime',
-    'listops',
-]
-
 import timeit
 import inspect
 
 from jax import random
 from jax import numpy as jnp
 from jax.scipy import linalg as jlinalg
+from scipy import sparse
 
 def benchmark(func, *args, **kwargs):
     timer = timeit.Timer('func(*args, **kwargs)', globals=locals())
@@ -148,3 +144,6 @@ def listops():
         op: len(inspect.signature(job).parameters)
         for op, (job, _) in ops.items()
     }
+
+# TODO I should estimate the cost under jit, and subtract the overheaded
+# estimated with a jitted no-op.
