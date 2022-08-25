@@ -6,6 +6,7 @@ import numpy as np
 from jax import numpy as jnp
 import gvar
 import pytest
+from scipy import linalg
 
 def jaxtonumpy(x):
     """
@@ -98,8 +99,8 @@ def tryagain(fun, rep=2, method=False):
 def assert_close_matrices(actual, desired, rtol=1e-5, atol=1e-8):
     if actual.shape == desired.shape and actual.size == 0:
         return
-    dnorm = np.linalg.norm(desired, 2)
-    adnorm = np.linalg.norm(actual - desired, 2)
+    dnorm = linalg.norm(desired, 2)
+    adnorm = linalg.norm(actual - desired, 2)
     msg = f"""\
 matrices actual and desired are not close in 2-norm
 norm(desired) = {dnorm:.2g}

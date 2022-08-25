@@ -1824,3 +1824,44 @@ decomposition optimizer.
 
 I can't afford this much time now. Reasonably quick alternative: allow ycov to
 be a decomposition, in which case woodbury is used.
+
+2022-08-24
+==========
+
+For pdf9, I can't do woodbury only for single-key data because there are also
+the constraints.
+
+2022-08-25
+==========
+
+pdf9 with data covariance matrix:
+
+    hyperparameters (true, fitted, prior):
+    log(scale)           0.94       0.96(16)      -0.7(1.0)
+    scale                 2.6       2.62(43)       0.50(50)
+    U(alpha_Sigma)       -1.8       0.09(96)       0.0(1.0)
+    alpha_Sigma         -0.46       0.04(38)       0.00(40)
+    U(alpha_g)          -0.47      -0.91(25)       0.0(1.0)
+    alpha_g             -0.18     -0.319(65)       0.00(40)
+    
+... and with decomposition of the matrix + woodbury:
+
+    hyperparameters (true, fitted, prior):
+    log(scale)           0.94       0.94(16)      -0.7(1.0)
+    scale                 2.6       2.55(40)       0.50(50)
+    U(alpha_Sigma)       -1.8      -0.16(90)       0.0(1.0)
+    alpha_Sigma         -0.46      -0.06(35)       0.00(40)
+    U(alpha_g)          -0.47      -0.93(24)       0.0(1.0)
+    alpha_g             -0.18     -0.324(63)       0.00(40)
+
+It works, but they are too different. In the first case, minimize complained
+that "minimization failed: A bad approximation caused failure to predict
+improvement."
+
+Also, it worked only with method='hessian'; 'fisher' fails completely, while
+'gradient' botches the covariance (while tipically the bfgs inverse hessian
+is decent).
+
+What could be the culprit(s)? Maybe the sandwiched covariance being not
+exactly but quite degenerate is a problem for Woodbury? Or derivatives
+through Woodbury are broken? (If so, why would the linalg tests not notice?)

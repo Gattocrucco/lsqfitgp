@@ -1023,38 +1023,27 @@ search for diagonal blocks in a dense matrix since it's O(n^2).
 
 #### Using multiple solvers
 
-I have already implemented block matrix solving. This requires a solver for
-each key, so I will add a solver parameter to addx and addtransf.
+To be more general I could write a "positive definite optimizer", such that it
+treats not just inversion but also conditioning. The positive-preserving
+operations, starting from a p.d. matrix divided in blocks, are
 
-However there's the need for more fine-grained settings. Say I have a kronecker
-product of a normal matrix and a toeplitz matrix. The toeplitz matrix needs its
-specialized algorithm. Since each special matrix will have its specialized
-algorithm(s), the thing can be done this way: solver can be a tuple of str.
-Solvers are tried from the left until one succedes. If specialized solvers
-appear first in the list, they will be applied on specialized matrices, while
-they will fail on normal matrices which will fall back to another solver. Raise
-warnings if a generic algorithm is applied on a special matrix.
-
-L'algoritmo che decide in che ordine risolvere i sistemi lineari a blocchi
-metterlo in una funzione a parte visto che è di applicabilità generale. Prima
-cerco le componenti connesse, cioè decompongo in diagonale a blocchi la
-supermatrice. Poi boh. Sarebbe carino farlo fare a un tesista di informatica,
-perché c'è la questione di ottimizzare una specie di roba ad albero con i pesi
-dati da polinomi convessi vari.
-
-To be more general I could write a "positive definite programming" optimizer,
-such that it treats not just inversion but also conditioning. The
-positive-preserving operations are
-
+- submatrix
+- schur complement
 - sum
 - sandwich
 - hadamard product
 - kronecker product
-- submatrix
-- schur complement
-- block diagonal
+- inversion
 
-### Hyperparameters
+Assumptions on diagonal blocks:
 
-Try to use empbayes_fit without recreating the GP object each time => doomed to
-fail.
+- diagonal
+- circulant
+- (nested block) toeplitz
+- banded
+- sparse
+- sparse inverse
+
+Assumptions on off-diagonal blocks:
+
+- zero

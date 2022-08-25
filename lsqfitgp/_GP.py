@@ -26,6 +26,7 @@ import gvar
 import numpy
 import jax
 from jax import numpy as jnp
+from jax.scipy import linalg as jlinalg
 from scipy import linalg
 
 from . import _Kernel
@@ -132,6 +133,25 @@ class _LinTransf(_Element):
         self.transf = transf
         self.keys = keys
         self.shape = shape
+    
+    def matrices(self, gp):
+        """
+        Matrix coefficients of the transformation (with flattened inputs and
+        output)
+        """
+        elems = [gp._elements[key] for key in self.keys]
+        matrices = []
+        transf = jax.vmap(self.transf, 0, 0)
+        for i, elem in enumerate(elems):
+            inputs = [
+                jnp.eye(elem.size).reshape((elem.size,) + elem.shape)
+                if j == i else
+                jnp.zeros((elem.size,) + ej.shape)
+                for j, ej in enumerate(elems)
+            ]
+            output = transf(*inputs).reshape(elem.size, self.size).T
+            matrices.append(output)
+        return matrices
 
 class _Cov(_Element):
     """User-provided covariance matrix block(s)"""
@@ -1229,11 +1249,6 @@ class GP:
         
         # TODO cache ignores **kw.
         
-        # TODO I can have a reserved unique key to add temporarily ycov and
-        # reuse all the rest of the machinery. Use a context manager to clean
-        # it up afterwards. => to work needs to represent concatenation as
-        # explicit transformation
-        
         keys = tuple(keys)
         
         # Check if decomposition is in cache.
@@ -1248,10 +1263,30 @@ class GP:
             # internally frozenset.
         
         # Compute decomposition.
-        Kxx = self._assemblecovblocks(keys)
-        if ycov is not None:
-            Kxx = Kxx + ycov
-        decomp = self._decompclass(Kxx, **kw)
+        if isinstance(ycov, _linalg.Decomposition):
+            ancestors = []
+            transfs = []
+            for key in keys:
+                elem = self._elements[key]
+                nest = False
+                if isinstance(elem, _LinTransf):
+                    size = sum(self._elements[k].size for k in elem.keys)
+                    if size < elem.size:
+                        nest = True
+                        ancestors += list(elem.keys)
+                        transfs.append(jnp.concatenate(elem.matrices(self), 1))
+                if not nest:
+                    ancestors.append(key)
+                    transfs.append(jnp.eye(elem.size))
+            transf = jlinalg.block_diag(*transfs)
+            cov = self._assemblecovblocks(ancestors)
+            covdec = self._decompclass(cov, **kw)
+            decomp = _linalg.Woodbury(ycov, transf, covdec, self._decompclass, sign=1, **kw)
+        else:
+            Kxx = self._assemblecovblocks(keys)
+            if ycov is not None:
+                Kxx = Kxx + ycov
+            decomp = self._decompclass(Kxx, **kw)
         
         # Cache decomposition.
         if ycov is None:
@@ -1419,8 +1454,9 @@ class GP:
         
         if not hasattr(given, 'keys'):
             raise TypeError('`given` must be dict')
-        if givencov is not None and not hasattr(givencov, 'keys'):
-            raise TypeError('`givenconv` must be None or dict')
+        gcblack = givencov is None or isinstance(givencov, _linalg.Decomposition)
+        if not gcblack and not hasattr(givencov, 'keys'):
+            raise TypeError('`givenconv` must be None, dict or Decomposition')
         
         ylist = []
         keylist = []
@@ -1444,8 +1480,8 @@ class GP:
         
         # TODO error checking on the unpacking of givencov
         
-        if givencov is None:
-            covblocks = None
+        if gcblack:
+            covblocks = givencov
         else:
             covblocks = [
                 [
@@ -1551,7 +1587,9 @@ class GP:
         
         Kxxs = self._assemblecovblocks(inkeys, outkeys)
         
-        if ycovblocks is not None:
+        if isinstance(ycovblocks, _linalg.Decomposition):
+            ycov = ycovblocks
+        elif ycovblocks is not None:
             ycov = jnp.block(ycovblocks)
         elif (fromdata or raw or not keepcorr) and y.dtype == object:
             ycov = gvar.evalcov(gvar.gvar(y))
@@ -1561,10 +1599,10 @@ class GP:
         self._check_ycov(ycov)
         
         if raw or not keepcorr or self._checkfinite:
-            if isinstance(y, jnp.ndarray):
-                ymean = y
-            else:
+            if y.dtype == object:
                 ymean = gvar.mean(y)
+            else:
+                ymean = y
             self._check_ymean(ymean)
         
         if raw or not keepcorr:
@@ -1585,6 +1623,8 @@ class GP:
                 # cov = Kxsxs - A.T @ (Kxx - ycov) @ A
                 if ycov is None:
                     pass
+                elif isinstance(ycov, _linalg.Decomposition):
+                    raise TypeError('givencov is a Decomposition, need the original matrix if fromdata=False')
                 else:
                     A = solver.solve(Kxxs)
                     cov = cov + A.T @ ycov @ A
@@ -1631,7 +1671,6 @@ class GP:
                 key: flatout[slic].reshape(self._elements[key].shape)
                 for key, slic in zip(outkeys, outslices)
             })
-            # TODO A Bufferdict can be initialized directly with the 1D buffer
         else:
             assert len(outkeys) == 1
             return flatout.reshape(self._elements[outkeys[0]].shape)
@@ -1660,7 +1699,9 @@ class GP:
         self._check_ymean(ymean)
         
         # Get covariance matrix.
-        if ycovblocks is not None:
+        if isinstance(ycovblocks, _linalg.Decomposition):
+            ycov = ycovblocks
+        elif ycovblocks is not None:
             ycov = jnp.block(ycovblocks)
             if y.dtype == object:
                 warnings.warn(f'covariance matrix may have been specified both explicitly and with gvars; the explicit one will be used')
@@ -1680,7 +1721,7 @@ class GP:
                 raise ValueError('mean of `given` is not finite')
     
     def _check_ycov(self, ycov):
-        if ycov is not None and _patch_jax.isconcrete(ycov):
+        if ycov is not None and not isinstance(ycov, _linalg.Decomposition) and _patch_jax.isconcrete(ycov):
             C = _patch_jax.concrete(ycov)
             if self._checkfinite and not numpy.all(numpy.isfinite(C)):
                 raise ValueError('covariance matrix of `given` is not finite')

@@ -358,7 +358,7 @@ class Diag(DecompAutoDiff):
     """
     
     def __init__(self, K):
-        self._w, self._V = jlinalg.eigh(K, check_finite=False)
+        self._w, self._V = jlinalg.eigh(K)
     
     def solve(self, b):
         return (self._V / self._w) @ (self._V.T @ b)
@@ -390,6 +390,7 @@ class Diag(DecompAutoDiff):
             eps = len(w) * jnp.finfo(asinexact(w.dtype)).eps
         assert 0 <= eps < 1
         return eps * jnp.max(w)
+        # TODO or max(abs(w))?
 
 class EigCutFullRank(Diag):
     """
@@ -412,7 +413,7 @@ class EigCutLowRank(Diag):
         super().__init__(K)
         eps = self._eps(eps)
         cond = self._w < eps
-        self._w = jnp.where(cond, 0, self._w)
+        self._w = jnp.where(cond, 1, self._w)
         self._V = jnp.where(cond, 0, self._V)
         
 class SVDCutFullRank(Diag):
@@ -437,7 +438,7 @@ class SVDCutLowRank(Diag):
         super().__init__(K)
         eps = self._eps(eps)
         cond = jnp.abs(self._w) < eps
-        self._w = jnp.where(cond, 0, self._w)
+        self._w = jnp.where(cond, 1, self._w)
         self._V = jnp.where(cond, 0, self._V)
 
 class ReduceRank(Diag):
@@ -535,7 +536,8 @@ def _scale(a):
     """
     Compute a vector s of powers of 2 such that diag(a / outer(s, s)) ~ 1.
     """
-    return jnp.exp2(jnp.rint(0.5 * jnp.log2(jnp.diag(a))))
+    d = jnp.diag(a)
+    return jnp.where(d, jnp.exp2(jnp.rint(0.5 * jnp.log2(d))), 1)
 
 class CholReg(Chol):
     """
@@ -984,6 +986,7 @@ class Woodbury(DecompPyTree):
             Keyword arguments are passed to `decompcls`'s initialization.
         
         """
+        assert B.shape == (A_decomp.n, C_decomp.n)
         self._A = A_decomp
         self._B = B
         self._C = C_decomp
