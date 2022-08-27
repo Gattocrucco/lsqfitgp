@@ -23,3 +23,4 @@ Random sampling
 ===============
 
 .. autofunction:: raniter
+.. autofunction:: sample

@@ -107,4 +107,7 @@ def raniter(mean, cov, n=None, eps=None):
         yield samp
 
 def sample(*args, **kw):
+    """
+    Shortcut for next(raniter(*args, **kw)).
+    """
     return next(raniter(*args, n=1, **kw))
