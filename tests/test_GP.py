@@ -917,7 +917,7 @@ def test_givencov_decomp():
     b = gen.standard_normal((len(a) // 2, len(a)))
     gp.addtransf({0: b}, 1)
     dec1, dec2 = decs(gp, [1])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-14)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-13)
     assert dec2._C.n == len(b)
     
     # tall sandwich
