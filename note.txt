@@ -1731,7 +1731,7 @@ submatrix easily. => A method that produces a new decomposition for a submatrix.
 
 --------
 
-gvar bug:
+gvar bug (ISSUE OPENED):
 
     In [11]: gvar.var(np.ones(1000))
     ---------------------------------------------------------------------------
@@ -1854,7 +1854,7 @@ pdf9 with data covariance matrix:
     U(alpha_g)          -0.47      -0.93(24)       0.0(1.0)
     alpha_g             -0.18     -0.324(63)       0.00(40)
 
-It works, but they are too different. In the first case, minimize complained
+It works, but they are too different. In the woodbury case, minimize complained
 that "minimization failed: A bad approximation caused failure to predict
 improvement."
 
@@ -1865,3 +1865,53 @@ is decent).
 What could be the culprit(s)? Maybe the sandwiched covariance being not
 exactly but quite degenerate is a problem for Woodbury? Or derivatives
 through Woodbury are broken? (If so, why would the linalg tests not notice?)
+
+w/o woodbury and all decomps are eigcut-:
+
+    hyperparameters (true, fitted, prior):
+    log(scale)           0.94       0.95(13)      -0.7(1.0)
+    scale                 2.6       2.57(33)       0.50(50)
+    U(alpha_Sigma)       -1.8      -0.15(81)       0.0(1.0)
+    alpha_Sigma         -0.46      -0.06(32)       0.00(40)
+    U(alpha_g)          -0.47      -0.74(17)       0.0(1.0)
+    alpha_g             -0.18     -0.271(51)       0.00(40)
+
+w/ woodbury and all decomps are eigcut-:
+
+    hyperparameters (true, fitted, prior):
+    log(scale)           0.94       0.97(13)      -0.7(1.0)
+    scale                 2.6       2.63(35)       0.50(50)
+    U(alpha_Sigma)       -1.8      -0.17(99)       0.0(1.0)
+    alpha_Sigma         -0.46      -0.07(39)       0.00(40)
+    U(alpha_g)          -0.47      -0.95(22)       0.0(1.0)
+    alpha_g             -0.18     -0.330(54)       0.00(40)
+
+and the minimizer complains as above.
+
+Conclusion: it was not stable even without woodbury, the solver changes the
+result. Maybe I should increase the eps?
+
+w/o woodbury and all decomps are eigcut- and eps=1e-10:
+
+    hyperparameters (true, fitted, prior):
+    log(scale)           0.94       0.95(13)      -0.7(1.0)
+    scale                 2.6       2.57(33)       0.50(50)
+    U(alpha_Sigma)       -1.8      -0.15(81)       0.0(1.0)
+    alpha_Sigma         -0.46      -0.06(32)       0.00(40)
+    U(alpha_g)          -0.47      -0.74(17)       0.0(1.0)
+    alpha_g             -0.18     -0.271(51)       0.00(40)
+
+w/ woodbury and all decomps are eigcut- and eps=1e-10:
+
+    hyperparameters (true, fitted, prior):
+    log(scale)           0.94   1 +- 8.1e+04      -0.7(1.0)
+    scale                 2.6   3 +- 2.1e+05       0.50(50)
+    U(alpha_Sigma)       -1.8  -0.2 +- 3e+03       0.0(1.0)
+    alpha_Sigma         -0.46-0.07 +- 1.2e+03       0.00(40)
+    U(alpha_g)          -0.47  -2 +- 5.2e+06       0.0(1.0)
+    alpha_g             -0.18-0.5 +- 3.4e+05       0.00(40)
+
+Broken!
+
+Next step: test woodbury with unit tests to check at least it works without
+degeneracies. Test all possible relevant structures of transformations.

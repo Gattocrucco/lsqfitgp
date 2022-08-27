@@ -721,8 +721,7 @@ class GP:
         # not enough axes. How many axes do you sum over on the other?
         
         # Check axes.
-        assert isinstance(axes, int), axes
-        assert axes >= 1, axes
+        assert isinstance(axes, int) and axes >= 0, axes
         
         # Check key.
         if key is None:
@@ -736,6 +735,8 @@ class GP:
                 raise KeyError(k)
         
         # Check tensors and convert them to jax arrays.
+        if len(tensors) == 0:
+            raise ValueError('empty tensors, undetermined output shape')
         tens = {}
         for k, t in tensors.items():
             t = jnp.asarray(t)
@@ -745,15 +746,15 @@ class GP:
                 if not numpy.all(numpy.isfinite(T)):
                     raise ValueError(f'tensors[{k!r}] contains infs/nans')
             rshape = self._elements[k].shape
-            if t.shape and t.shape[-axes:] != rshape[:axes]:
+            if t.shape and t.shape[t.ndim - axes:] != rshape[:axes]:
                 raise ValueError(f'tensors[{k!r}].shape = {t.shape!r} can not be multiplied with shape {rshape!r} with {axes}-axes contraction')
             tens[k] = t
         
-        # Compute shape.
+        # Check shapes broadcast correctly.
         arrays = tens.values()
         elements = (self._elements[k] for k in tens)
         shapes = (
-            t.shape[:-axes] + e.shape[axes:] if t.shape else e.shape
+            t.shape[:t.ndim - axes] + e.shape[axes:] if t.shape else e.shape
             for t, e in zip(arrays, elements)
         )
         try:
@@ -764,11 +765,6 @@ class GP:
             msg += '] contracted with arrays with shapes ['
             msg += ', '.join(repr(e.shape) for e in elements) + ']'
             raise ValueError(msg)
-        
-        # TODO fail gracefully with empty input, but we still need to raise
-        # since the shape is undetermined. Or we could create an exact scalar 0?
-        # the latter would still break operations defined on tensors, so nope,
-        # just fail.
         
         # Define linear transformation.
         def equiv_lintransf(*args):
@@ -1281,6 +1277,7 @@ class GP:
             transf = jlinalg.block_diag(*transfs)
             cov = self._assemblecovblocks(ancestors)
             covdec = self._decompclass(cov, **kw)
+            # TODO obtain covdec from _solver recursively, to use cache?
             decomp = _linalg.Woodbury(ycov, transf, covdec, self._decompclass, sign=1, **kw)
         else:
             Kxx = self._assemblecovblocks(keys)

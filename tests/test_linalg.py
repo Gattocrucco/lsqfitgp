@@ -966,8 +966,8 @@ def test_rq(mode):
         r, q = _linalg._decomp._rq(a, mode=mode)
         util.assert_close_matrices(r @ q, a, atol=0, rtol=1e-15)
         util.assert_equal(np.tril(r), r)
-        util.assert_close_matrices(  q @ q.T @   q,   q, atol=0, rtol=1e-15)
-        util.assert_close_matrices(q.T @   q @ q.T, q.T, atol=0, rtol=1e-15)
+        util.assert_close_matrices(  q @ q.T @   q,   q, atol=0, rtol=1e-14)
+        util.assert_close_matrices(q.T @   q @ q.T, q.T, atol=0, rtol=1e-14)
 
 @mark.parametrize('decomp', [
     _linalg.CholGersh,

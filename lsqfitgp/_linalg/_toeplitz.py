@@ -73,7 +73,7 @@ class SymSchur(_seqalg.Producer):
     # the increase factor to 1 + 1/n. The compilation time and code size would
     # be proportional to n. Aligning block size to powers of 2 would help
     # caching the compilation, bringing the compilation time to the normal one
-    # after warmup.
+    # after warmup (does jax compilation reuse functions or inline them?)
     #
     # Anyway, this 2 factor is not currently relevant.
 

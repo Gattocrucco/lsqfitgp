@@ -58,6 +58,10 @@ BlockDecomp
     Decompose a 2x2 block matrix.
 BlockDiagDecomp
     Decompose a 2x2 block diagonal matrix.
+SandwichQR, SandwichSVD
+    Decompose B A B^T.
+Woodbury
+    Decompose A ± B C B^T.
 
 """
 

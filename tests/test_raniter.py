@@ -32,6 +32,25 @@ def make_mean_cov(n):
     cov = a.T @ a
     return mean, cov
 
+def make_mean_cov_dict(*shapes):
+    sizes = [np.prod(tuple(s), dtype=int) for s in shapes]
+    totsize = sum(sizes)
+    mean, cov = make_mean_cov(totsize)
+    cumsize = np.cumsum(np.pad(sizes, (1, 0)))
+    mean = {
+        i: mean[cumsize[i]:cumsize[i + 1]].reshape(shapes[i])
+        for i in range(len(shapes))
+    }
+    cov = {
+        (i, j): cov[
+            cumsize[i]:cumsize[i + 1],
+            cumsize[j]:cumsize[j + 1],
+        ].reshape(shapes[i] + shapes[j])
+        for i in range(len(shapes))
+        for j in range(len(shapes))
+    }
+    return mean, cov
+
 def test_raniter_randomness():
     n = 40
     mean, cov = make_mean_cov(n)
@@ -67,3 +86,23 @@ def test_raniter_warning():
     with pytest.warns(None) as record:
         next(lgp.raniter(np.zeros(len(cov)), cov, eps=0.1))
     assert len(record) == 0
+
+def test_raniter_shape():
+    shape = (2, 5)
+    size = np.prod(shape)
+    mean, cov = make_mean_cov(size)
+    mean = mean.reshape(shape)
+    cov = cov.reshape(2 * shape)
+    sample = lgp.sample(mean, cov)
+    assert sample.shape == shape
+
+def assert_equal_dict_shapes(a, b):
+    for k in a:
+        assert a[k].shape == b[k].shape
+    for k in b:
+        assert k in a
+
+def test_raniter_shape_dict():
+    mean, cov = make_mean_cov_dict((2, 5), (13,))
+    sample = lgp.sample(mean, cov)
+    assert_equal_dict_shapes(sample, mean)

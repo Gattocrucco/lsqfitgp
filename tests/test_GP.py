@@ -19,6 +19,7 @@
 
 import copy
 import sys
+import itertools
 
 import pytest
 import numpy as np
@@ -29,6 +30,8 @@ import jax
 sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
 import util
+
+gen = np.random.default_rng(202208251700)
 
 def test_prior_raw_shape():
     gp = lgp.GP(lgp.ExpQuad())
@@ -74,7 +77,7 @@ def test_transf_vector():
     util.assert_same_gvars(y1, y2, atol=1e-12)
 
 def test_cov():
-    A = np.random.randn(20, 20)
+    A = gen.standard_normal((20, 20))
     M1 = A.T @ A
     gp = lgp.GP()
     gp.addcov(M1, 'M')
@@ -178,7 +181,7 @@ def test_lintransf_matmul():
     gp = lgp.GP(lgp.ExpQuad())
     x = np.arange(20)
     gp.addx(x, 0)
-    m = np.random.randn(30, len(x))
+    m = gen.standard_normal((30, len(x)))
     gp.addlintransf(lambda x: m @ x, [0], 1)
     prior = gp.prior([0, 1], raw=True)
     np.testing.assert_allclose(m @ prior[0, 0] @ m.T, prior[1, 1])
@@ -187,13 +190,13 @@ def test_lintransf_matmul():
 
 def test_prior_gvar():
     gp = lgp.GP(lgp.ExpQuad())
-    gp.addx(np.random.randn(20), 0)
-    gp.addx(np.random.randn(15), 1)
-    gp.addtransf({0: np.random.randn(15, 20)}, 2)
+    gp.addx(gen.standard_normal(20), 0)
+    gp.addx(gen.standard_normal(15), 1)
+    gp.addtransf({0: gen.standard_normal((15, 20))}, 2)
     gp.addlintransf(lambda x, y: jnp.real(jnp.fft.rfft(x + y)), [1, 2], 3)
-    m = np.random.randn(40, 40)
+    m = gen.standard_normal((40, 40))
     gp.addcov(m @ m.T, 4)
-    gp.addtransf({4: np.random.randn(8, 40), 3: np.pi}, 5)
+    gp.addtransf({4: gen.standard_normal((8, 40)), 3: np.pi}, 5)
     covs = gp.prior(raw=True)
     prior = gp.prior()
     gmeans = gvar.mean(prior)
@@ -441,7 +444,7 @@ def test_addcov_wrong_blocks():
     with pytest.raises(ValueError):
         gp.addcov(np.zeros((1, 2, 2, 1)), 0)
     with pytest.raises(ValueError):
-        gp.addcov(np.random.randn(10, 10), 0)
+        gp.addcov(gen.standard_normal((10, 10)), 0)
     with pytest.raises(KeyError):
         gp.addcov({
             (0, 0): 1,
@@ -503,7 +506,7 @@ def test_partial_derivative():
 
 def test_zero_covblock():
     gp = lgp.GP()
-    a = np.random.randn(10, 10)
+    a = gen.standard_normal((10, 10))
     m = a.T @ a
     gp.addcov(m, 0)
     gp.addcov(m, 1)
@@ -511,7 +514,7 @@ def test_zero_covblock():
     util.assert_equal(prior[0, 1], np.zeros_like(m))
 
 def test_addcov_checks():
-    a = np.random.randn(10, 10)
+    a = gen.standard_normal((10, 10))
     b = np.copy(a)
     b[0, 0] = np.inf
     m = b.T @ b
@@ -537,14 +540,14 @@ def test_addcov_checks():
         gp.addcov({(0, 0): a}, decomps={1: dec})
     with pytest.raises(TypeError):
         gp.addcov({(0, 0): a}, decomps={0: a})
-    b = np.random.randn(20, 20)
+    b = gen.standard_normal((20, 20))
     b = b @ b.T
     bd = lgp.GP.decompose(b)
     with pytest.raises(ValueError):
         gp.addcov({(0, 0): a}, decomps={0: bd})
 
 def test_makecovblock_checks():
-    a = np.random.randn(10, 10)
+    a = gen.standard_normal((10, 10))
     b = np.copy(a)
     b[0, 0] = np.inf
     m = b.T @ b
@@ -570,7 +573,7 @@ def test_makecovblock_checks():
     gp.prior(raw=True)
 
 def test_covblock_checks():
-    a, b, c, d = np.random.randn(4, 10, 10)
+    a, b, c, d = gen.standard_normal((4, 10, 10))
     m = a.T @ a
     n = b.T @ b
     gp = lgp.GP(checksym=False, checkpos=False)
@@ -599,7 +602,7 @@ def test_solver_cache():
     util.assert_equal(c1, c2)
 
 def test_checkpos():
-    a = np.random.randn(20, 20)
+    a = gen.standard_normal((20, 20))
     m = a.T @ a
     w, v = np.linalg.eigh(m)
     w[np.arange(len(w)) % 2] *= -1
@@ -642,7 +645,7 @@ def test_new_element():
 
 def test_given_checks():
     gp = lgp.GP(lgp.ExpQuad())
-    x, y, z = np.random.randn(3, 20)
+    x, y, z = gen.standard_normal((3, 20))
     gp.addx(x, 0)
     gp.addx(y, 1)
     with pytest.raises(TypeError):
@@ -658,7 +661,7 @@ def test_given_checks():
 
 def test_zero_givencov():
     gp = lgp.GP(lgp.ExpQuad())
-    x, y, z = np.random.randn(3, 20)
+    x, y, z = gen.standard_normal((3, 20))
     gp.addx(x, 0)
     gp.addx(y, 1)
     cov = np.zeros(2 * x.shape)
@@ -669,7 +672,7 @@ def test_zero_givencov():
 
 def test_pred_checks():
     gp = lgp.GP(lgp.ExpQuad())
-    x, y, z = np.random.randn(3, 20)
+    x, y, z = gen.standard_normal((3, 20))
     gp.addx(x, 0)
     gp.addx(y, 1)
     with pytest.raises(ValueError):
@@ -680,7 +683,7 @@ def test_pred_checks():
         gp.predfromdata({0: np.full_like(z, np.nan)}, 1)
     with pytest.raises(ValueError):
         gp.predfromdata({0: z}, 1, {(0, 0): np.full(2 * x.shape, np.nan)})
-    a = np.random.randn(20, 20)
+    a = gen.standard_normal((20, 20))
     with pytest.raises(ValueError):
         gp.predfromdata({0: z}, 1, {(0, 0): a})
     gp._checkfinite = False
@@ -688,7 +691,7 @@ def test_pred_checks():
 
 def test_pred_all():
     gp = lgp.GP(lgp.ExpQuad())
-    x, y, z = np.random.randn(3, 20)
+    x, y, z = gen.standard_normal((3, 20))
     gp.addx(x, 0)
     gp.addx(y, 1)
     m1, c1 = gp.predfromdata({0: z}, raw=True)
@@ -698,7 +701,7 @@ def test_pred_all():
 
 def test_marginal_likelihood_separate():
     gp = lgp.GP(lgp.ExpQuad())
-    x, y = np.random.randn(2, 20)
+    x, y = gen.standard_normal((2, 20))
     gp.addx(x, 0)
     ml1 = gp.marginal_likelihood({0: y})
     l, r = gp.marginal_likelihood({0: y}, separate=True)
@@ -707,7 +710,7 @@ def test_marginal_likelihood_separate():
 
 def test_marginal_likelihood_checks():
     gp = lgp.GP(lgp.ExpQuad())
-    x, y = np.random.randn(2, 20)
+    x, y = gen.standard_normal((2, 20))
     gp.addx(x, 0)
     z = np.full_like(x, np.nan)
     with pytest.raises(ValueError):
@@ -715,7 +718,7 @@ def test_marginal_likelihood_checks():
     m = np.full(2 * x.shape, np.nan)
     with pytest.raises(ValueError):
         gp.marginal_likelihood({0: y}, {(0, 0): m})
-    a = np.random.randn(*2 * x.shape)
+    a = gen.standard_normal(2 * x.shape)
     with pytest.raises(ValueError):
         gp.marginal_likelihood({0: y}, {(0, 0): a})
     c = a.T @ a
@@ -724,9 +727,9 @@ def test_marginal_likelihood_checks():
 
 def test_marginal_likelihood_gvar():
     gp = lgp.GP(lgp.ExpQuad())
-    x, y = np.random.randn(2, 20)
+    x, y = gen.standard_normal((2, 20))
     gp.addx(x, 0)
-    a = np.random.randn(20, 20)
+    a = gen.standard_normal((20, 20))
     m = a.T @ a
     ml1 = gp.marginal_likelihood({0: gvar.gvar(y, m)})
     ml2 = gp.marginal_likelihood({0: y}, {(0, 0): m})
@@ -776,7 +779,7 @@ def test_addcov_abstract():
 def test_marginal_likelihood_abstract():
     def func():
         gp = lgp.GP(lgp.ExpQuad())
-        gp.addx(np.random.randn(10), 0)
+        gp.addx(gen.standard_normal(10), 0)
         return gp.marginal_likelihood({0: np.full(10, np.nan)})
     
     with pytest.raises(ValueError):
@@ -785,21 +788,21 @@ def test_marginal_likelihood_abstract():
     
     def func(cov):
         gp = lgp.GP(lgp.ExpQuad())
-        gp.addx(np.random.randn(10), 0)
-        return gp.marginal_likelihood({0: np.random.randn(10)}, {(0, 0): cov})
+        gp.addx(gen.standard_normal(10), 0)
+        return gp.marginal_likelihood({0: gen.standard_normal(10)}, {(0, 0): cov})
     
     covnan = np.full((10, 10), np.nan)
     with pytest.raises(ValueError):
         func(covnan)
     assert np.isnan(jax.jit(func)(covnan))
     
-    covasym = np.random.randn(10, 10)
+    covasym = gen.standard_normal((10, 10))
     with pytest.raises(ValueError):
         func(covasym)
     jax.jit(func)(covasym)
 
 def test_addcov_decomps():
-    a = np.random.randn(10, 10)
+    a = gen.standard_normal((10, 10))
     a = a @ a.T
     blocks = {
         (0, 0): a[:5, :5],
@@ -809,7 +812,7 @@ def test_addcov_decomps():
     }
     dec = lgp.GP.decompose(blocks[0, 0])
     dec1 = lgp.GP.decompose(blocks[1, 1])
-    b = jnp.asarray(np.random.randn(5))
+    b = jnp.asarray(gen.standard_normal(5))
     
     def makez(**kw):
         gp = lgp.GP()
@@ -834,3 +837,108 @@ def test_addcov_decomps():
     z2 = makez(decomps=dec)
     
     util.assert_similar_gvars(z1, z2)
+
+def test_matrices():
+    shapes = [
+        (),
+        (10,),
+        (3, 7),
+    ]
+    for sout in shapes:
+        tensors = []
+        gp = lgp.GP(lgp.ExpQuad())
+        for i, sin in enumerate(shapes):
+            tensor = gen.standard_normal(sout + sin)
+            x = gen.standard_normal(sin)
+            gp.addx(x, i)
+            tensors.append(tensor)
+            def transf(*args):
+                out = 0
+                for x, t, s in zip(args, tensors, shapes):
+                    out += jnp.tensordot(t, x, axes=len(s))
+                return out
+            gp.addlintransf(transf, list(range(len(tensors))), 100 + i)
+            
+            matrices = gp._elements[100 + i].matrices(gp)
+            tensors2 = [m.reshape(t.shape) for m, t in zip(matrices, tensors)]
+            for t, t2 in zip(tensors, tensors2):
+                util.assert_equal(t2, t)
+
+def test_transf_outer():
+    gp = lgp.GP(lgp.ExpQuad())
+    gp.addx(np.arange(5), 0)
+    t = np.arange(5)
+    gp.addtransf({0: t}, 1, axes=0)
+    cov = gp.prior(raw=True)
+    c0 = cov[0, 0]
+    c1 = np.einsum('i,jl,k', t, c0, t)
+    util.assert_equal(c1, cov[1, 1])
+
+def test_transf_checks():
+    gp = lgp.GP(lgp.ExpQuad())
+    with pytest.raises(ValueError):
+        gp.addtransf({}, 2)
+
+def test_givencov_decomp():
+
+    def genpd(n, size=()):
+        if not isinstance(size, tuple):
+            size = (size,)
+        m = gen.standard_normal(size + (n, n))
+        return m @ np.swapaxes(m, -2, -1)
+    
+    def decs(gp, keys):
+        elems = gp._elements
+        shapes = [elems[key].shape for key in keys]
+        given = {k: np.zeros(s) for k, s in zip(keys, shapes)}
+        size = sum(elems[key].size for key in keys)
+        cov = genpd(size)
+        slices = gp._slices(keys)
+        givencov1 = {
+            (ka, kb): cov[sla, slb].reshape(sa + sb)
+            for (ka, sla, sa), (kb, slb, sb)
+            in itertools.product(zip(keys, slices, shapes), repeat=2)
+        }
+        givencov2 = gp.decompose(cov)
+        dec1, _ = gp._prior_decomp(given, givencov1)
+        dec2, _ = gp._prior_decomp(given, givencov2)
+        assert not isinstance(dec1, lgp._linalg.Woodbury)
+        assert isinstance(dec2, lgp._linalg.Woodbury)
+        return dec1, dec2
+    
+    # generic matrix
+    a = genpd(10)
+    gp = lgp.GP()
+    gp.addcov(a, 0)
+    dec1, dec2 = decs(gp, [0])
+    util.assert_close_decomps(dec2, dec1, rtol=1e-12)
+    
+    # short sandwich
+    b = gen.standard_normal((len(a) // 2, len(a)))
+    gp.addtransf({0: b}, 1)
+    dec1, dec2 = decs(gp, [1])
+    util.assert_close_decomps(dec2, dec1, rtol=1e-14)
+    assert dec2._C.n == len(b)
+    
+    # tall sandwich
+    c = gen.standard_normal((len(a) * 2, len(a)))
+    gp.addtransf({0: c}, 2)
+    dec1, dec2 = decs(gp, [2])
+    util.assert_close_decomps(dec2, dec1, rtol=1e-13)
+    assert dec2._C.n == len(a)
+    
+    # short and tall sandwich
+    dec1, dec2 = decs(gp, [1, 2])
+    util.assert_close_decomps(dec2, dec1, rtol=1e-3) # TODO wildly inaccurate!
+    assert dec2._C.n == len(b) + len(a)
+
+    # two generic matrices
+    d = genpd(20)
+    gp.addcov(d, 3)
+    dec1, dec2 = decs(gp, [0, 3])
+    util.assert_close_decomps(dec2, dec1, rtol=1e-12)
+    
+    # cases to compare:
+    # - the first three
+    # - sum two covs
+    

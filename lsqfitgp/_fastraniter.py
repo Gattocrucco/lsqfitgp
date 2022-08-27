@@ -27,6 +27,7 @@ from . import _linalg
 
 __all__ = [
     'raniter',
+    'sample',
 ]
 
 def raniter(mean, cov, n=None, eps=None):
@@ -76,7 +77,8 @@ def raniter(mean, cov, n=None, eps=None):
             slic1 = mean.slice(k1)
             for k2 in mean:
                 slic2 = mean.slice(k2)
-                squarecov[slic1, slic2] = cov[k1, k2]
+                sqshape = (slic1.stop - slic1.start, slic2.stop - slic2.start)
+                squarecov[slic1, slic2] = cov[k1, k2].reshape(sqshape)
     else: # an array or scalar
         mean = np.array(mean, copy=False)
         cov = np.array(cov, copy=False)
@@ -103,3 +105,6 @@ def raniter(mean, cov, n=None, eps=None):
             samp = samp.reshape(mean.shape) if mean.shape else samp.item
 
         yield samp
+
+def sample(*args, **kw):
+    return next(raniter(*args, n=1, **kw))

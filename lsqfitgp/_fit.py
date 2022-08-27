@@ -229,9 +229,11 @@ class empbayes_fit(Logger):
             data, = data
         
         if callable(data):
-            cachedargs = None
             self.log('data is callable', 2)
+            cachedargs = None
         elif isinstance(data, tuple):
+            self.log('data errors provided separately', 2)
+            assert len(data) == 2
             cachedargs = data
         elif _flat(_asarrayorbufferdict(data)).dtype == object:
             self.log('data has errors as gvars', 2)
@@ -313,12 +315,15 @@ class empbayes_fit(Logger):
         kwargs = dict(fun=fun, jac=jac)
         
         if not isinstance(initial, str):
+            self.log('start from provided point', 2)
             initial = _asarrayorbufferdict(initial)
             flatinitial = _flat(initial)
             kwargs.update(x0=flatinitial)
         elif initial == 'priormean':
+            self.log('start from prior mean', 2)
             kwargs.update(x0=hpmean)
         elif initial == 'priorsample':
+            self.log('start from a random sample from the prior', 2)
             iid = np.random.randn(hpdec.n)
             x0 = hpdec.correlate(iid)
             kwargs.update(x0=x0)

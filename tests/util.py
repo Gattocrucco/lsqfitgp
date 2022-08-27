@@ -104,9 +104,8 @@ def assert_close_matrices(actual, desired, rtol=1e-5, atol=1e-8):
     msg = f"""\
 matrices actual and desired are not close in 2-norm
 norm(desired) = {dnorm:.2g}
-norm(actual - desired) = {adnorm:.2g}
-rtol = {rtol:.2g}
-atol = {atol:.2g}"""
+norm(actual - desired) = {adnorm:.2g}  (atol = {atol:.2g})
+ratio = {adnorm / dnorm:.2g}  (rtol = {rtol:.2g})"""
     assert adnorm < atol + rtol * dnorm, msg
 
 def _assert_similar_gvars(g, h, rtol, atol):
@@ -125,3 +124,10 @@ def assert_same_gvars(g, h, atol=1e-8):
     z = np.reshape(z, -1)
     np.testing.assert_allclose(gvar.mean(z), np.zeros(z.shape), rtol=0, atol=atol)
     assert_close_matrices(gvar.evalcov(z), np.zeros(2 * z.shape), rtol=0, atol=atol)
+
+def assert_close_decomps(actual, desired, rtol=0, atol=0):
+    assert actual.n == desired.n
+    assert_close_matrices(actual.inv(), desired.inv(), rtol, atol)
+
+# TODO use rtol = atol = 0 as default everywhere, to force users to specify the
+# degree of accuracy expected

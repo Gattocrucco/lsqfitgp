@@ -153,6 +153,8 @@ such that there is not need to add # pragma: no cover (I hope, try it)
 
 Add mean functions.
 
+A function to extract the sdev/var from a covariance dict/tensor.
+
 ### More generic conditioning interface
 
 Other newer projects similar to mine (JuliaGaussianProcesses, tinygp) have a
