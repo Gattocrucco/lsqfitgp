@@ -133,7 +133,7 @@ def _periodic_zeta_jvp(s, imag, p, t):
     return primal, tangent
 
 def _standard_x(x):
-    """ bring x in [1, 1/2] by modulus and reflection """
+    """ bring x in [0, 1/2] by modulus and reflection """
     x %= 1
     neg = x > 1/2
     return neg, jnp.where(neg, 1 - x, x)

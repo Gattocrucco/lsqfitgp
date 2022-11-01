@@ -618,7 +618,7 @@ def _ZetaBase(delta, nu=None):
     mean of the process over one period is forced to be zero.
     
     Reference: https://dlmf.nist.gov/25.13.E1, https://dlmf.nist.gov/25.11.E9,
-    https://dlmf.nist.gov/25.11.E14.
+    https://dlmf.nist.gov/25.11.E14, Petrillo (2022).
     
     """
     
@@ -1087,6 +1087,8 @@ def Color(delta, n=2):
     
     # https://github.com/Radonirinaunimi/cmpx-spfunc incomplete gamma for
     # complex arguments (not well tested yet)
+    
+    # Parametrize with n = 1 + 2 nu like Matérn.
     
     assert int(n) == n and n >= 2, n
     return (n - 1) * _special.expn_imag(n, delta).real
@@ -1914,6 +1916,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
         assert beta >= 0, beta
     assert maxd == int(maxd) and maxd >= 0, maxd
     splits = _check_splits(splits)
+    # TODO check they are sorted if concrete
     if not x.dtype.names:
         x = x[..., None]
     if not y.dtype.names:
@@ -1949,7 +1952,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     # resulting matrix is not a composition of Toeplitz matrices.
     
     # Is there a way to contract 2 levels of recursion even if they are not at
-    # the bottom?
+    # the bottom? Or 3 at the bottom?
 
 class BART(_BARTBase):
     

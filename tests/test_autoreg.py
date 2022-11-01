@@ -143,14 +143,14 @@ def test_ar1():
                 den = acf[0] if norm else 1
                 np.testing.assert_allclose(c, acf / den, atol=1e-300, rtol=1e-12)
 
-def test_ar2():
-    p = 2
-    vertices = np.stack([
-        lgp.AR.phi_from_roots(l * [-0.] + (p - l) * [0], [])
-        for l in range(p + 1)
-    ])
-    a = np.abs(gen.standard_normal(p + 1))
-    phi = np.sum(a[:, None] * vertices, 0) / np.sum(a)
+# def test_ar2():
+#     p = 2
+#     vertices = np.stack([
+#         lgp.AR.phi_from_roots(l * [-0.] + (p - l) * [0], [])
+#         for l in range(p + 1)
+#     ])
+#     a = np.abs(gen.standard_normal(p + 1))
+#     phi = np.sum(a[:, None] * vertices, 0) / np.sum(a)
     # TODO formula for the correlation?
 
 def test_zero_slnr():

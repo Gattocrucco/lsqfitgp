@@ -1915,3 +1915,509 @@ Broken!
 
 Next step: test woodbury with unit tests to check at least it works without
 degeneracies. Test all possible relevant structures of transformations.
+
+2022-08-30
+==========
+
+Next things that I could do:
+ - understand the inaccuracy of woodbury
+ - add variance hp to pdf9
+
+--------
+
+Summary of observations on woodbury's inaccuracy from the unit test:
+
+  - happens with either degenerate A or C (in A + B C B^T)
+  - tall B (i.e., degerate B C B^T) is not a problem
+  - gets worse with chol and even more with eigcut-
+
+Here I'm measuring "inaccuracy" with the matrix relative 2-norm between the
+inverse computed on the dense matrix and with woodbury, where the reference
+matrix for the norm is the first. Is this a relevant measure of inaccuracy? Is
+the problem that woodbury does not constitute a moore-penrose pseudo-inverse,
+while the dense decompositions do?
+
+Can't be exactly this, because with nonsingular A and degenerate C, the whole
+matrix is nonsingular, so I'm computing a true inverse.
+
+Woodbury identity:
+
+    (A + BCB^T)^-1 = A^-1 - A^-1 B (C^-1 + B^T A^-1 B)^-1 B^T A^-1
+
+Wikipedia gives a version for singular C:
+
+    = A^-1 - A^-1 B (I + C B^T A^-1 B)^-1 C B^T A^-1
+
+I can write a new woodbury and test if this solves at least the problems with
+singular C. A will be more difficult I fear.
+
+Also, this formula does not require to decompose C. It seems strictly better
+than normal woodbury even if C was invertible. What's the catch? Why isn't it
+the standard one then? => See 2022-09-06.
+
+--------
+
+The formula for the derivative of A^-1 does not generalize to A^+
+https://en.wikipedia.org/wiki/Moore–Penrose_inverse#Derivative
+
+2022-08-31
+==========
+
+For nonsingular C and singular A, see Bernstein 2018, Fact 8.4.13 p. 635. But
+it works only if the range of B is contained in the range of A. Does it work
+for singular C by moving it like in the formula above?
+
+--------
+
+List of useful things from Bernstein 2018:
+    
+    Fact 8.4.13 p. 635: (A + BCB^t)^+ with singular A, nonsingular C, rB in rA
+    Fact 8.4.33 p. 638: (AA^t + BB^t)^+
+        Consider Israel and Greville 2003, eq. 1.17 p. 262, for (CC^t)^+
+    Fact 8.9.30-31 p. 667: [A B; B^t 0]^+
+    Fact 8.12.4 p. 678: [A B; C D]^D
+    Proposition 10.2.1: LDLT of pos sdef [A B; B^t C] with singular A and/or C
+    Fact 10.9.4 p. 725: det and quad of Wiener covariance matrix
+    Fact 10.9.5 p. 725: list of 10 covariance functions
+    Fact 10.9.6 p. 726: det and inverse of Wiener on regular grid
+    Fact 10.9.7 p. 726: list of 18 complex covariance functions
+    Fact 10.9.8 p. 727: list of 6 covariance functions on integers
+    Fact 10.9.10-10.9.15 p. 727-728: other covariance functions
+    Fact 10.9.18 p. 729: a pd-preserving matrix transformation
+    Fact 10.24.2 p. 815: A^+ = A^# = A^D for psd A
+
+Question: for pos sdef A, is it true that A^+ = lim x->0 (A + Ix)^-1?
+
+=> Nope, it's false. The correct limit (for sym A) is
+
+    A^+ = lim x->0 A (A^2 + xI)^-1
+
+So maybe when I do cholesky I should compute A^2, regularize, decompose.
+Problem: this formula is not symmetric (=> no (de)correlate), and A^2 is worse
+conditioned than A. Can I write the limit as L^T (A^2 + xI)^-1 L with A = LL^T?
+=> still bad because I need to decompose A before reg, so not useful. Maybe A
+(A^3 + xI)^-1 A works? But no decorrelate still.
+
+And the logdet?
+
+See https://en.wikipedia.org/wiki/Pseudo-determinant
+
+Probably I should not sum all eigenvalues in eigcut+ and svdcut+, but just
+the unregulated ones.
+
+2022-09-04
+==========
+
+jax 0.3.16 introduces pure_callback, to use python functions within
+jit-compiled ones. Coupled with custom_jvp, I think I can use it to quickly add
+jit support for some kernels until I implement them in JAX, Matérn in
+particular
+
+2022-09-06
+==========
+
+The formula
+
+    (A + BCB^T)^-1 = A^-1 - A^-1 B (I + C B^T A^-1 B)^-1 C B^T A^-1
+
+is not directly usable because C B^T A^-1 B is not symmetric in general.
+Perhaps I can do something with the outer product decomposition of C:
+
+    C = LL^T (not necessarily cholesky)
+    
+    (A + BCB^T)^-1
+    = A^-1 - A^-1 B (C^-1 + B^T A^-1 B)^-1 B^T A^-1
+    = A^-1 - A^-1 B I (C^-1 + B^T A^-1 B)^-1 I B^T A^-1
+    = A^-1 - A^-1 B L L^-1 (C^-1 + B^T A^-1 B)^-1 L^-T L^T B^T A^-1
+    
+        X^-1 Y^-1 Z^-1 = (ZYX)^-1
+        
+    = A^-1 - A^-1 B L (L^T C^-1 L + L^T B^T A^-1 B L)^-1 L^T B^T A^-1
+    
+        C^-1 = L^-T L^-1
+
+    = A^-1 - A^-1 B L (L^T L^-T L^-1 L + L^T B^T A^-1 B L)^-1 L^T B^T A^-1
+    = A^-1 - A^-1 B L (I + L^T B^T A^-1 B L)^-1 L^T B^T A^-1
+
+Problem: if C is not full-rank, then L is tall, L L^+ != I, and the above proof
+does not work replacing L^-1 with L^+. However, since the final expression
+does not involve L^+, it could be that it still works. Let's check:
+
+    (A + BCB^T) (A^-1 - A^-1 B L (I + L^T B^T A^-1 B L)^-1 L^T B^T A^-1) =
+    
+    = A A^-1 +
+    - A A^-1 B L (I + L^T B^T A^-1 B L)^-1 L^T B^T A^-1 +
+    + B C B^T A^-1 +
+    - B C B^T A^-1 B L (I + L^T B^T A^-1 B L)^-1 L^T B^T A^-1
+    
+    = I +
+    - B L (I + L^T B^T A^-1 B L)^-1 L^T B^T A^-1 +
+    + B C B^T A^-1 +
+    - B C B^T A^-1 B L (I + L^T B^T A^-1 B L)^-1 L^T B^T A^-1
+    
+    = I +
+    - B L I (I + L^T B^T A^-1 B L)^-1 L^T B^T A^-1 +
+    + B C B^T A^-1 +
+    - B L L^T B^T A^-1 B L (I + L^T B^T A^-1 B L)^-1 L^T B^T A^-1
+    
+    = I +
+    - B L (I + L^T B^T A^-1 B L) (I + L^T B^T A^-1 B L)^-1 L^T B^T A^-1 +
+    + B C B^T A^-1
+
+    = I +
+    - B L L^T B^T A^-1 +
+    + B C B^T A^-1
+
+    = I +
+    - B C B^T A^-1 +
+    + B C B^T A^-1
+
+    = I
+    
+It works!
+
+2022-09-07
+==========
+
+However to use it I need the operation X -> X L or X -> L^T X. Currently I only
+have X -> L X and X -> L^-1 X.
+
+2022-09-10
+==========
+
+Other problem: I can't have custom derivatives for X -> L^T X, and thus
+derivatives for the whole decomposition.
+
+Idea: in decompautodiff, instead of assuming that K is the first positional
+argument, call a method that takes all the arguments and produces K. The
+default implementation returns the first argument, however subclasses can
+customize it. Woodbury would return A ± BCB^T.
+
+This means I need a method `matrix()` that returns the decomposed matrix.
+decompautodiff provides its implementation, like it does for n().
+
+--------
+
+For Woodbury with singular A, nonsingular C, singular M: see Riedel 1992:
+
+    M = A + BCB^T, with C smaller than A
+    
+    B = X + Y, where
+        im X is in im A
+        im Y is orthogonal to im A
+        Y is full rank
+    
+    Z = Y^+ = (Y^T Y)^-1 Y^T
+    
+    M^+ = A^+ - Z^T X^T A^+ - A^+ X Z + Z^T (C^-1 + X^T A^+ X) Z
+
+How do I split B into X + Y? QR of B?
+
+    B = QR
+
+(B is tall, so Q is tall and R is square)
+
+No wait I need the space of A, not B. Let P_A be the orthogonal projector into
+im A, then
+
+    X = P_A B
+    Y = (I - P_A) B
+    
+    X + Y = P_A B + (I - P_A) B = B => ok
+    P_A B in im A => ok
+    P_A (I - P_A) B = P_A B - P_A B = 0 => ok
+    
+To compute P_A, I need to diagonalize A.
+
+Add methods improj and nullproj to Decomposition. The cholesky decompositions
+work by assuming pos def matrix so they will implement identity and zero, while
+diagonalizations work. There shouldn't be undefined cases. Composite
+decompositions may have problems as usual.
+
+Note: since Y must be full rank and be orthogonal to im A, it must be
+rank A <= size A - size C. This is very limiting. <======== *******
+
+--------
+
+things to do:
+
+    - add composite decomposition support to decompautodiff
+    - apply it to all existing CDs and rerun tests
+    - add option "transpose" to correlate, test it
+    - write Woodbury2 for singular C and test it
+    - write Woodbury3 using Bernstein 8.4.33 for singular A and C
+
+--------
+
+Bernstein 8.4.33:
+
+    (AAt + BBt)+ = [A+ (I - BC+)]t E A+ (I - BC+) + (CCt)+
+    
+    C = (I - AA+) B
+    
+    E = I - A+B (I - C+C) [I + (I - C+C) Bt (AAt)+ B (I - C+C)]-1 (A+B)t
+
+The BBt term corresponds to the first term in woodbury, since
+    
+    CCt = (I - AA+) BBt (I - AA+)
+
+Many terms are projectors. I suspect BC+ is a projector too. I need to
+check if projectors are respected by the pseudoinverse.
+
+Hypothesis: A = PX, A+ = X+P
+
+Properties to check:
+
+    1   AA+A = A
+    2   A+AA+ = A+
+    3   (AA+)t = AA+
+    4   (A+A)t = A+A
+
+ 1) PX X+P PX = PXX+PX = ?
+
+Nope I can't get PX out of it, I would need to get XX+X without the P in
+between.
+
+What I can say with projectors is that (PX)+P = (PX)+.
+
+What about PXP? Is it (PXP)+ = PX+P?
+
+ 1) PXP PX+P PXP = PXPX+PXP
+ 
+=> nope
+
+Problem: E does not seem to be hermitian. What's up? => It's an error,
+backfixed now. Correct reference: Schott 2017, th. 5.15.
+
+Other problem: even though I think BBt aesthetically corresponds to the first
+term in woodbury, actually in practice it's AAt, because it's the one whose
+inverse I can precompute. Check of feasibility: assume that B is tall. C has
+the same shape as B, so CCt is large. The term [I + ...] is small because
+the sandwich contains C+C. I have to invert CC+ every time and it's large.
+However, since C is tall, maybe it's efficient.
+
+I try with the SVD of C:
+
+    C = UDVt
+    Ct = VDUt
+    CCt = UDVt VDUt = U D^2 Ut
+    (CCt)+ = U D^2+ Ut
+
+It works.
+
+Question: is (AAt)+ = A+tA+?
+
+ 1) AAt A+t A+ AAt =
+    A (A+A)t A+A At =   (A+A is hermitian)
+    A (A+A)^2 At =      (A+A is idempotent)
+    A A+A At =          (property 1 of A+)
+    A At
+
+Ok it's on wikipedia, I skip the whole check.
+
+Question: can I replace all separate occurrences of A with AAt and (AAt)+,
+such that I can use the decomposition of AAt without correlate/decorrelate?
+
+    (AAt + BBt)+ = [A+ (I - BC+)]t E A+ (I - BC+) + (CCt)+
+    C = (I - AA+) B
+    E = I - A+B (I - C+C) [I + (I - C+C) Bt (AAt)+ B (I - C+C)]-1 (A+B)t
+
+First I address the projector AA+. Does this project on the image of
+X = AAt?
+
+    AA+ X = AA+A At = AAt = X
+
+This means that AA+ projects on something containing the image of X. I need to
+check that the intersection with the kernel is 0.
+
+    X AA+ = AAt AA+
+
+No wait not the kernel of X, the orthogonal complement of the image of X:
+
+    X+ = (AAt)+ = A+t A+
+    X+ AA+ = A+t A+AA+ = A+t A+ = X+
+    XX+ = AAt A+t A+ = A (A+A)t A+ = A A+A A+ = AA+
+
+    (I - XX+) AA+ = AA+ - X X+AA+ = AA+ - XX+ = 0  => ok
+
+So I can use the projector of X instead of the one of A. Wait it was way
+easier: XX+ = AA+. Whatever.
+
+    C = (I - XX+) B
+    
+    (X + BBt)+ = (CCt)+ + (I - BC+)t A+t E A+ (I - BC+) =
+        = (CCt)+ + (I - BC+)t A+t [I - A+B (I - C+C) [I + (I - C+C) Bt (AAt)+ B (I - C+C)]-1 (A+B)t] A+ (I - BC+) =
+    
+            M := (I - C+C) [I + (I - C+C) Bt (AAt)+ B (I - C+C)]-1
+               = (I - C+C) [I + (I - C+C) Bt X+ B (I - C+C)]-1
+               = (I - C+C) [I + (I - C+C) Bt X+ B (I - C+C)]-1 (I - C+C)
+
+        = (CCt)+ + (I - BC+)t A+t [I - A+B M (A+B)t] A+ (I - BC+) =
+        = (CCt)+ + (I - BC+)t A+t A+ (I - BC+) - (I - BC+)t A+t A+B M (A+B)t A+ (I - BC+) =
+        = (CCt)+ + (I - BC+)t (AAt)+ (I - BC+) - (I - BC+)t A+t A+ B M Bt A+t A+ (I - BC+) =
+        = (CCt)+ + (I - BC+)t (AAt)+ (I - BC+) - (I - BC+)t (AAt)+ B M Bt (AAt)+ (I - BC+) =
+        = (CCt)+ + (I - BC+)t X+ (I - BC+) - (I - BC+)t X+ B M Bt X+ (I - BC+)
+
+Now I have to replace BBt with VYVt.
+    
+    BBt = VYVt
+    Y = LLt (not necessarily cholesky)
+    B = VL
+    CCt = (I - XX+) BBt (I - XX+) = (I - XX+)V Y Vt(I - XX+)
+
+2022-09-17
+==========
+
+The projectors of the kind I - UU+ are tipically very low-rank. For
+decompositions which assume the matrix is pd (like cholesky), the projector
+is zero i.e. a product of empty vectors.
+
+How should I implement them? Alternatives:
+
+  - Produce them manually
+  - Introduce new methods in Decomposition
+
+In the second case:
+
+  - Return a decomposition of the projector
+  - Provide a quad/solve operation
+
+The projectors appearing in the formula are:
+
+  * I - XX+
+  * I - C+C
+  * I - BC+
+
+Since C is rectangular, only the first can be obtained from a Decomposition.
+For the other two I have to use the svd manually.
+
+    (CCt)+(CCt) = Ct+ C+ C Ct =
+                = Ct+ (C+C) Ct =
+                = Ct+ (C+C)t Ct =
+                = Ct+ Ct Ct+ Ct =
+                = (CC+CC+)t =
+                = (CC+)t =
+                = CC+
+
+I can't obtain C+C from CCt. It's a smaller matrix.
+
+    C = (I - XX+) B =
+      = B - XX+B ->
+      
+      -> B = C + XX+B
+    
+    I - BC+ = I - (C + XX+B)C+ =
+            = I - CC+ - XX+BC+
+
+2022-09-18
+==========
+
+Other thoughts on pinv with cholesky: The limit form of the pseudoinverse is
+
+    A+ = lim x->0 A (A^2 + xI)^-1
+
+(for symmetric A). Maybe this works in practice because: A^2 is more
+ill-conditioned, so the low eigenvalues are more "buried" beneath x. But I
+still multiply by A so the approximate kernel is respected, without being
+counterbalanced with a multiplication by a large number.
+
+Defect: I want a symmetric formula for correlate & decorrelate.
+
+    A = LLt
+    
+    A2 = LLt LLt
+    
+    A+ =? lim x->0 Lt (A2 + xI)^-1 L
+
+    A+(x) A A+(x) = Lt (A2 + xI)-1 L LLt Lt (A2 + xI)-1 L
+
+Dunno, let's first check with the inverse:
+
+    A-1 = Lt-1 L-1
+    
+    L-1 A-1 L = L-1 Lt-1 L-1 L = L-1 Lt-1 => nope
+    
+    X A-1 Y = A-1
+    (X Lt-1) (L-1 Y) = Lt-1 L-1
+
+It's impossible. The other idea was
+
+    A+(x) = A (A3 + xI)-1 A
+    
+    A+(x) A A+(x) = A (A3 + xI)-1 A3 (A3 + xI)-1 A
+    
+    A A+(x) A = A2 (A3 + xI)-1 A2 = A3 (A3 + xI)-1 A
+
+In the limit xI (A3 + xI)-1 produces something living in the kernel/cokernel
+of A so it's zero as long as it's multiplied by A. A commutes with A3 + xI and
+so also with (A3 + xI)-1.
+
+    (AA+(x))t = (A2 (A3 + xI)-1 A)t =
+              = (A3 (A3 + xI)-1)t =
+              = (A3 + xI)-1 A3 =
+              = A2 (A3 + xI)-1 A =
+              = AA+(x)
+
+    Operation       Cost [matmul]
+    A3              3
+    chol(A3 + xI)   1
+    L-1 A           1
+
+Usage:
+
+    A3 + xI = LLt
+    
+    A+ = A (A3 + xI)-1 A =
+       = A Lt-1 L-1 A =         (solve)
+       = (L-1 A)t (L-1 A)       (quad, decorrelate)
+      
+    A = A A+ A =
+      = A (L-1 A)t (L-1 A) A =
+      = (L-1 A2)t (L-1 A2)      (correlate)
+    
+    det(A3) = det(A)^3
+    logdet(A) = 6 logdet L      (logdet)
+
+Question: should I premultiply L-1 by A? Or do it after applying A? If the
+operand is a vector/tall matrix, applying L-1 only at the end is more
+convenient.
+
+On the other hand I should also care about numerical accuracy. Maybe
+keeping L-1 last means that the irregularity prevails because A cannot enforce
+its kernel beyond floating point accuracy.
+
+--------
+
+On the logdet of eigcut+/-: maybe I should compute the logdet of eigcut-
+by considering all the missing dimensions at the threshold instead of removing
+them, for continuity.
+
+Choices:
+
+    - pdet: the marginal likelihood is in some sense more correct
+    - det: the marginal likelihood is continuous w.r.t. hyperparameters
+
+Probably the second is more important. => If needed I can make a separate
+method logpdet.
+
+--------
+
+How do I compute the logdet with the pinv version of woodbury?
+
+2022-10-31
+==========
+
+New things since v0.12:
+
+- Fourier -> Zeta
+- GP.decompose
+- GP.addcov(decomps=...)
+- GP.pred and GP.marginal_likelihood accept a decomposition as y error
+  covariance, and use it with woodbury
+- lsqfitgp.sample
+- empbayes_fit(initial=...)
+- empbayes_fit(verbosity=...)
+- empbayes_fit.pmean, .pcov, .minargs
+- MA(norm=...)
+- BART.correlation
+- BART optimization for last two levels

@@ -1731,8 +1731,8 @@ class GP:
         Compute the logarithm of the probability of the data.
         
         The probability is computed under the Gaussian prior and Gaussian error
-        model. It is also called marginal likelihood or bayes factor. If `y` is
-        the data and `g` is the Gaussian process, this is
+        model. It is also called marginal likelihood. If `y` is the data and
+        `g` is the Gaussian process, this is
         
         .. math::
             \\log \\int p(y|g) p(g) \\mathrm{d} g.

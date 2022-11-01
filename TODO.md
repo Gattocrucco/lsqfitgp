@@ -60,7 +60,8 @@ a timeit of lgp.raniter, so nope.
 Add an "Andvanced guide" after the User guide, the first chapters would be
 -kernel operations -fourier series -taylor series (taylor afterward because
 it has a richer set of kernels implementing but they must be obtained with
-transformations) -user defined kernels
+transformations) -user defined kernels => Also something on pseudoinverses
+and projectors, for when the data is incompatible with the model.
 
 In the kernel reference add automatically flags for all the supported
 transformations. For loc, scale and other standard stuff striket' them if not
@@ -148,6 +149,11 @@ In defining abstract methods, use the single line syntax:
     def cippa(*_): pass
 
 such that there is not need to add # pragma: no cover (I hope, try it)
+
+jax 0.3.16 introduces pure_callback, to use python functions within
+jit-compiled ones. Coupled with custom_jvp, I think I can use it to quickly add
+jit support for some kernels until I implement them in JAX, Matérn in
+particular. Also the sparse solver.
 
 ## New functionality
 
@@ -920,6 +926,9 @@ not toeplitz but is nested block toeplitz with n levels, can still be solved
 fast probably by adapting toeplitz algorithms to a matrix field. See Graham et
 al. 2018.
 
+Since toeplitz-by-vector is O(n log n), I should write a low-rank toeplitz
+solver.
+
 ##### Periodic stationary processes (circulant)
 
 If furthermore the process is periodic and the grid of points is aligned with
@@ -1049,3 +1058,5 @@ Assumptions on diagonal blocks:
 Assumptions on off-diagonal blocks:
 
 - zero
+
+Can I do this using kanren? https://github.com/pythological/kanren

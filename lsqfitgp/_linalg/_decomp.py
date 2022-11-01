@@ -19,8 +19,17 @@
 
 """
 
-Decompositions of positive definite matrices. A decomposition object is
-initialized with a matrix and then can solve linear systems for that matrix.
+Decompositions of positive definite matrices.
+
+A decomposition object is initialized with a square symmetric matrix and then
+can solve linear systems and do other stuff with that matrix. The matrix is
+assumed to be positive semidefinite in principle but not numerically,
+decompositions differ on how the eventual numerical degeneracy is handled.
+
+It is intended that the matrix inverse is a Moore-Penrose pseudoinverse in case
+of (numerically) singular matrices. A different pseudoinverse or lack of
+support for singular matrices is considered a bug.
+
 These classes never check for infs/nans in the matrices.
 
 Classes
@@ -88,6 +97,8 @@ from . import _pytree
 # it may require cython to be fast since it's not vectorized
 
 def _transpose(x):
+    """ swap the last two axes of array x, corresponds to matrix tranposition
+    with the broadcasting convention of matmul """
     if x.ndim < 2:
         return x
     elif isinstance(x, jnp.ndarray):
@@ -95,15 +106,6 @@ def _transpose(x):
     else:
         # need to support numpy because this function is used with gvars
         return numpy.swapaxes(x, -2, -1)
-
-def asinexact(dtype):
-    """
-    Return dtype if it is inexact, else float64.
-    """
-    if jnp.issubdtype(dtype, jnp.inexact):
-        return dtype
-    else:
-        return jnp.float64
 
 class Decomposition(metaclass=abc.ABCMeta):
     """
@@ -391,7 +393,7 @@ class Diag(DecompAutoDiff):
     def _eps(self, eps):
         w = self._w
         if eps is None:
-            eps = len(w) * jnp.finfo(asinexact(w.dtype)).eps
+            eps = len(w) * jnp.finfo(w.dtype).eps
         assert 0 <= eps < 1
         return eps * jnp.max(w)
         # TODO or max(abs(w))?
@@ -419,8 +421,20 @@ class EigCutLowRank(Diag):
         cond = self._w < eps
         self._w = jnp.where(cond, 1, self._w)
         self._V = jnp.where(cond, 0, self._V)
+
+class _SVD(Diag):
+    """ Like Diag but supports negative values in w """
+    
+    def logdet(self):
+        return jnp.sum(jnp.log(jnp.abs(self._w)))
+    
+    def correlate(self, b):
+        return (self._V * jnp.sqrt(jnp.abs(self._w))) @ b
+    
+    def decorrelate(self, b):
+        return (self._V / jnp.sqrt(jnp.abs(self._w))).T @ b
         
-class SVDCutFullRank(Diag):
+class SVDCutFullRank(_SVD):
     """
     Diagonalization. Eigenvalues below `eps` in absolute value are set to
     `eps` with their sign, where `eps` is relative to the largest eigenvalue.
@@ -432,7 +446,7 @@ class SVDCutFullRank(Diag):
         cond = jnp.abs(self._w) < eps
         self._w = jnp.where(cond, eps * jnp.sign(self._w), self._w)
         
-class SVDCutLowRank(Diag):
+class SVDCutLowRank(_SVD):
     """
     Diagonalization. Eigenvalues below `eps` in absolute value are removed,
     where `eps` is relative to the largest eigenvalue.
@@ -499,7 +513,7 @@ class CholEps:
     
     def _eps(self, eps, mat, maxeigv):
         if eps is None:
-            eps = len(mat) * jnp.finfo(asinexact(mat.dtype)).eps
+            eps = len(mat) * jnp.finfo(_patch_jax.float_type(mat)).eps
         assert 0 <= eps < 1
         return eps * maxeigv    
 
@@ -972,7 +986,7 @@ class Woodbury(DecompPyTree):
     def __init__(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
         """
         Decompose M = A ± B C B^T using Woodbury's formula, with M, A, and C
-        positive definite.
+        positive definite. Very inaccurate if A and/or C are ill-conditioned.
         
         Parameters
         ----------

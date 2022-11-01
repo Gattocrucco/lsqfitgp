@@ -1,9 +1,28 @@
+# lsqfitgp/examples/fourier.py
+#
+# Copyright (c) 2022, Giacomo Petrillo
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 import numpy as np
 import gvar
 
-"""Constraint the values of Fourier series coefficients"""
+"""Constrain the values of Fourier series coefficients"""
 
 gp = lgp.GP(lgp.Zeta(nu=2.5), checkpos=False) # TODO is this checkpos necessary
 gp.addkernelop('fourier', True, 'F')

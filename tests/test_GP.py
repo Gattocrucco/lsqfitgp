@@ -881,18 +881,20 @@ def test_transf_checks():
 
 def test_givencov_decomp():
 
-    def genpd(n, size=()):
+    def genpd(n, rank=None, size=()):
         if not isinstance(size, tuple):
             size = (size,)
-        m = gen.standard_normal(size + (n, n))
+        if rank is None:
+            rank = n
+        m = gen.standard_normal(size + (n, rank))
         return m @ np.swapaxes(m, -2, -1)
     
-    def decs(gp, keys):
+    def decs(gp, keys, covrank=None):
         elems = gp._elements
         shapes = [elems[key].shape for key in keys]
         given = {k: np.zeros(s) for k, s in zip(keys, shapes)}
         size = sum(elems[key].size for key in keys)
-        cov = genpd(size)
+        cov = genpd(size, covrank)
         slices = gp._slices(keys)
         givencov1 = {
             (ka, kb): cov[sla, slb].reshape(sa + sb)
@@ -936,9 +938,34 @@ def test_givencov_decomp():
     d = genpd(20)
     gp.addcov(d, 3)
     dec1, dec2 = decs(gp, [0, 3])
+    util.assert_close_decomps(dec2, dec1, rtol=1e-9)
+    
+    # matrix, short and tall sandwich
+    dec1, dec2 = decs(gp, [0, 1, 2])
+    util.assert_close_decomps(dec2, dec1, rtol=1e-3) # TODO wildly inaccurate
+    assert dec2._C.n == len(b) + 2 * len(a)
+    
+    # short and tall sandwich, starting from different matrices
+    e = gen.standard_normal((2 * len(d), len(d)))
+    gp.addtransf({3: e}, 4)
+    dec1, dec2 = decs(gp, [1, 4])
+    util.assert_close_decomps(dec2, dec1, rtol=1e-11)
+    assert dec2._C.n == len(b) + len(d)    
+    
+    # sum of two matrices
+    f = genpd(len(a))
+    gp.addcov(f, 5)
+    gp.addtransf({0: 1, 5: 1}, 6)
+    dec1, dec2 = decs(gp, [6])
     util.assert_close_decomps(dec2, dec1, rtol=1e-12)
+    assert dec2._C.n == len(a)
     
-    # cases to compare:
-    # - the first three
-    # - sum two covs
+    # the same matrix, twice
+    gp.addcov({(k, q): a for k in [7, 8] for q in [7, 8]})
+    dec1, dec2 = decs(gp, [7, 8])
+    util.assert_close_decomps(dec2, dec1, rtol=1e-2) # TODO wildly inaccurate
+    assert dec2._C.n == 2 * len(a)
     
+    # low rank givencov
+    dec1, dec2 = decs(gp, [0], len(a) // 2)
+    util.assert_close_decomps(dec2, dec1, rtol=0.1) # TODO wildly inaccurate
