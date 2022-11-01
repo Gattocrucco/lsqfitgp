@@ -328,6 +328,12 @@ class DecompAutoDiff(DecompPyTree):
                 return oldquad(self, b, c)
             elif c is None:
                 return quad_autodiff_cnone(self, self._K, b)
+            elif c.dtype == object:
+                return oldquad(self, b, c)
+                # if c contains gvars, the output is an array of gvars, and
+                # quad_autodiff would hang because custom_jvp functions are
+                # checked not to return object dtypes, so I have to call
+                # oldquad
             else:
                 return quad_autodiff(self, self._K, b, c)
         

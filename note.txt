@@ -2421,3 +2421,18 @@ New things since v0.12:
 - MA(norm=...)
 - BART.correlation
 - BART optimization for last two levels
+- fixed bugs with new jax versions
+
+2022-11-01
+==========
+
+There are many serious bugs due to jax updates.
+
+GP prediction with gvars does not work anymore. The cause is that custom_jvp
+functions now can not return object dtypes. I think the only case where this is
+a problem is in quad_autodiff, so I can just call oldquad if c's dtype is
+object. => seems solved.
+
+GammaExp(gamma=2) is not differentiable at distance 0. I guess that now
+differentiating x ** 1 at x = 0 gives nan. => the second derivative, not the
+first.

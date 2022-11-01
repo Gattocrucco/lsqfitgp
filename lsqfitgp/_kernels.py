@@ -239,10 +239,19 @@ def GammaExp(r2, gamma=1):
     """
     if _patch_jax.isconcrete(gamma):
         assert 0 < gamma <= 2, gamma
-    return jnp.exp(-(r2 ** (gamma / 2)))
+    nondiff = jnp.exp(-(r2 ** (gamma / 2)))
+    diff = jnp.exp(-r2)
+    return jnp.where(gamma == 2, diff, nondiff)
+    # I need to keep separate the case where derivatives w.r.t. r2 could be
+    # computed because the second derivative at x=0 of x^p with floating
+    # point p is nan.
+    
     # TODO extend to gamma=0, the correct limit is
     # e^-1 constant + (1 - e^-1) white noise. Use lax.switch.
 
+    # TODO derivatives w.r.t. gamma at gamma==2 are probably broken, although
+    # I guess they are not needed since it's on the boundary of the domain
+    
 @kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):
     """
@@ -1159,7 +1168,14 @@ def Cauchy(r2, alpha=2, beta=2):
     if _patch_jax.isconcrete(alpha, beta):
         assert 0 < alpha <= 2, alpha
         assert 0 < beta, beta
-    return (1 + r2 ** (alpha / 2) / beta) ** (-beta / alpha)
+    power = jnp.where(alpha == 2, r2, r2 ** (alpha / 2))
+    # I need to keep separate the case where derivatives w.r.t. r2 could be
+    # computed because the second derivative at x=0 of x^p with floating
+    # point p is nan.
+    return (1 + power / beta) ** (-beta / alpha)
+    
+    # TODO derivatives w.r.t. alpha at alpha==2 are probably broken, although
+    # I guess they are not needed since it's on the boundary of the domain
     
 def _causalexpquad_derivable(alpha=1):
     return alpha == 0
