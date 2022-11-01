@@ -36,7 +36,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.10"]
         include:
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             python-version: "3.8"
           - os: macos-11
             python-version: "3.8"
@@ -93,15 +93,14 @@ jobs:
           folder: docs/_build/html
           target-folder: docs
       - name: Get version number
-        run: echo '::set-output name=VERSION::'`python -c 'import lsqfitgp;print(lsqfitgp.__version__)'`
-        id: version-number
+        run: echo lsqfitgp_version=`python -c 'import lsqfitgp;print(lsqfitgp.__version__)'` >> $GITHUB_ENV
       - name: Copy documentation to github pages (versioned directory)
         if: github.event_name == 'push'
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
           branch: gh-pages
           folder: docs/_build/html
-          target-folder: docs-${{ steps.version-number.outputs.VERSION }}
+          target-folder: docs-${{ env.lsqfitgp_version }}
       - name: Save coverage from examples
         uses: actions/upload-artifact@v3
         with:
