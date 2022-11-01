@@ -14,6 +14,7 @@
     <script src="_static/underscore.js"></script>
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -239,12 +240,12 @@ GP keys and not pairs like in <cite>covblocks</cite>.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>KeyError</strong><span class="classifier"></span></dt><dd><p>A key is already used in the GP.</p>
+<dt>KeyError</dt><dd><p>A key is already used in the GP.</p>
 </dd>
-<dt><strong>ValueError</strong><span class="classifier"></span></dt><dd><p><cite>covblocks</cite> and/or <cite>key</cite> and <cite>decomps</cite> are malformed or
+<dt>ValueError</dt><dd><p><cite>covblocks</cite> and/or <cite>key</cite> and <cite>decomps</cite> are malformed or
 inconsistent.</p>
 </dd>
-<dt><strong>TypeError</strong><span class="classifier"></span></dt><dd><p>Wrong type of <cite>covblocks</cite> or <cite>decomps</cite>.</p>
+<dt>TypeError</dt><dd><p>Wrong type of <cite>covblocks</cite> or <cite>decomps</cite>.</p>
 </dd>
 </dl>
 </dd>
@@ -297,7 +298,7 @@ object. Note that an affine function (x -&gt; a + bx) is not linear.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>RuntimeError</strong><span class="classifier"></span></dt><dd><p>The transformation seems not to be linear. To disable the linearity
+<dt>RuntimeError</dt><dd><p>The transformation seems not to be linear. To disable the linearity
 check, initialize the GP with <cite>checklin=False</cite>.</p>
 </dd>
 </dl>
@@ -571,17 +572,17 @@ work in reverse mode. Default False.</p>
 <dt><strong>decomp</strong><span class="classifier">Decomposition</span></dt><dd><p>An object representing the decomposition of the matrix. The
 available methods are (A being the matrix):</p>
 <dl class="simple">
-<dt>inv</dt><dd><p>Compute A^-1.</p>
+<dt>inv()</dt><dd><p>Compute A^-1.</p>
 </dd>
-<dt>solve</dt><dd><p>Compute A^-1 B.</p>
+<dt>solve(b)</dt><dd><p>Compute A^-1 B.</p>
 </dd>
-<dt>quad</dt><dd><p>Compute B^T A^-1 C.</p>
+<dt>quad(b[, c])</dt><dd><p>Compute B^T A^-1 B or B^T A^-1 C.</p>
 </dd>
-<dt>logdet</dt><dd><p>Compute log(det(A)).</p>
+<dt>logdet()</dt><dd><p>Compute log(det(A)).</p>
 </dd>
-<dt>decorrelate</dt><dd><p>Compute L^-1 B such that A = LL^T.</p>
+<dt>decorrelate(b)</dt><dd><p>Compute L^-1 B such that A = LL^T.</p>
 </dd>
-<dt>correlate</dt><dd><p>Compute LB with L as above.</p>
+<dt>correlate(b)</dt><dd><p>Compute LB with L as above.</p>
 </dd>
 </dl>
 </dd>
@@ -602,8 +603,8 @@ functions.</p>
 <span class="sig-name descname"><span class="pre">marginal_likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">given</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">givencov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.marginal_likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the logarithm of the probability of the data.</p>
 <p>The probability is computed under the Gaussian prior and Gaussian error
-model. It is also called marginal likelihood or bayes factor. If <cite>y</cite> is
-the data and <cite>g</cite> is the Gaussian process, this is</p>
+model. It is also called marginal likelihood. If <cite>y</cite> is the data and
+<cite>g</cite> is the Gaussian process, this is</p>
 <div class="math notranslate nohighlight">
 \[\log \int p(y|g) p(g) \mathrm{d} g.\]</div>
 <p>Unlike <cite>pred()</cite>, you can’t compute this with a fit result instead of
@@ -781,7 +782,7 @@ Default False.</p>
       &copy;2020-2022, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

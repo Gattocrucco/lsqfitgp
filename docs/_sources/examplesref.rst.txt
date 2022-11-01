@@ -87,7 +87,7 @@ Long index
 
 .. _fourier:
 
-  * `fourier.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/fourier.py>`_: Constraint the values of Fourier series coefficients
+  * `fourier.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/fourier.py>`_: Constrain the values of Fourier series coefficients
     
     .. image:: ../examples/plot/fourier.png
 
