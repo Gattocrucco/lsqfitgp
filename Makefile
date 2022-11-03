@@ -34,7 +34,8 @@ upload:
 	twine upload dist/*
 
 release: $(RELEASE_TARGETS)
-	rm -r dist
+	test -d build && rm -r build || test -
+	test -d dist && rm -r dist || test -
 	python setup.py sdist bdist_wheel
 
 PY = MPLBACKEND=agg coverage run

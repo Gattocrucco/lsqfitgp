@@ -2436,3 +2436,9 @@ object. => seems solved.
 GammaExp(gamma=2) is not differentiable at distance 0. I guess that now
 differentiating x ** 1 at x = 0 gives nan. => the second derivative, not the
 first.
+
+--------
+
+Github actions is still emitting warnings. They are due to
+JamesIves/github-pages-deploy-action@v4.3.3 and actions/setup-python@v3, I have
+to try changing the version.
