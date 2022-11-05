@@ -1947,28 +1947,22 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     return BART.correlation(before, between, after, alpha, beta, maxd, True)
     
     # TODO
-    # - use lower/upper bound (is lower pos def?)
-    # - convex combination of upper/lower bound (what is the best lambda?)
+    # - option to remove 1 - alpha intercept and divide by alpha to have the
+    #   correlation in [0, 1] instead of [1 - alpha, 1]
+    # - option to remove ~1/p nugget
+    # - convex combination of upper/lower bound (what is the best coefficient?)
+    #   => 0.55 should be a decent overall default
     # - interpolate (is linear interp pos def? => I think it can be seen as
     #   the covariance of the interpolation)
     # - approximate as stationary w.r.t. indices (is it pos def?)
     # - allow index input
-    # - staticmethod to prune splits to target number
-
-    # The lower bound is good when the trees are deep, the upper bound when they
-    # are shallow. There may be a lambda(alpha, beta) to combine the bounds that
-    # gives a very accurate approximation. => Or maybe the lambda should be
-    # used at the bottom of the recursion.
-
-    # Stationarity would be useful to accelerate inference a lot. Maybe it is
-    # sufficient to set the toeplitz flag in GP instead of doing something here
-    # (=> no, could be confusing, make it really stationary), I have to check
-    # that the covariance from an edge to a point is a valid stationary
-    # autocorrelation. => Nope, it does not accelerate because in ND the
-    # resulting matrix is not a composition of Toeplitz matrices.
-    
-    # Is there a way to contract 2 levels of recursion even if they are not at
-    # the bottom? Or 3 at the bottom?
+    # - weights for the splitting probabilities along covariate axes
+    # - replace upper with a continuous coefficient gamma in [0, 1] to
+    #   interpolate in the leaves, this halves the computation time when
+    #   interpolating
+    # - instead of alpha, beta, d, and maxd, the internal function should take
+    #   a vector of nontermination probabilities. The initial length of the
+    #   vector is 1 + maxd, the running one is 1 + d.
 
 class BART(_BARTBase):
     
@@ -2004,6 +1998,10 @@ class BART(_BARTBase):
         x = jnp.sort(x, axis=0)
         midpoints = (x[:-1, :] + x[1:, :]) / 2
         return _unique_vectorized(midpoints)
+        
+        # TODO options like BayesTree, i.e., use an evenly spaced range
+        # instead of quantilizing, and set a maximum number of splits. Use the
+        # same parameter names as BayesTree::bart, but change the defaults.
     
     @staticmethod
     def indices_from_coord(x, splits):

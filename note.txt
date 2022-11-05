@@ -2442,3 +2442,39 @@ first.
 Github actions is still emitting warnings. They are due to
 JamesIves/github-pages-deploy-action@v4.3.3 and actions/setup-python@v3, I have
 to try changing the version.
+
+2022-11-05
+==========
+
+After the last update to jax (0.3.24), I've noticed the following xpasses in
+linalg tests:
+
+tests/test_linalg.py::TestBlockDiag::test_solve_vec_jac_rev PASSED                                                                 [ 57%]
+tests/test_linalg.py::TestBlockDiag::test_solve_matrix_jac_rev PASSED                                                              [ 59%]
+tests/test_linalg.py::TestBlockDiag::test_solve_vec_jac_rev_jit PASSED                                                             [ 60%]
+tests/test_linalg.py::TestBlockDiag::test_solve_matrix_jac_rev_jit PASSED                                                          [ 61%]
+tests/test_linalg.py::TestBlockDiag::test_solve_matrix_jac_rev_matrix PASSED                                                       [ 62%]
+tests/test_linalg.py::TestBlockDiag::test_quad_vec_jac_rev PASSED                                                                  [ 63%]
+tests/test_linalg.py::TestBlockDiag::test_quad_matrix_jac_rev PASSED                                                               [ 65%]
+tests/test_linalg.py::TestBlockDiag::test_quad_vec_jac_rev_jit PASSED                                                              [ 66%]
+tests/test_linalg.py::TestBlockDiag::test_quad_matrix_jac_rev_jit PASSED                                                           [ 67%]
+tests/test_linalg.py::TestBlockDiag::test_logdet_jac_rev PASSED                                                                    [ 68%]
+tests/test_linalg.py::TestBlockDiag::test_logdet_jac_rev_jit PASSED                                                                [ 69%]
+
+tests/test_linalg.py::TestSandwichSVDDiag::test_solve_matrix_hess_fwd_rev PASSED                                                   [ 77%]
+
+tests/test_linalg.py::TestWoodburyDiag::test_solve_vec_jac_rev PASSED                                                              [ 84%]
+tests/test_linalg.py::TestWoodburyDiag::test_solve_matrix_jac_rev PASSED                                                           [ 85%]
+tests/test_linalg.py::TestWoodburyDiag::test_solve_vec_jac_rev_jit PASSED                                                          [ 86%]
+tests/test_linalg.py::TestWoodburyDiag::test_solve_matrix_jac_rev_jit PASSED                                                       [ 87%]
+tests/test_linalg.py::TestWoodburyDiag::test_solve_matrix_jac_rev_matrix PASSED                                                    [ 89%]
+tests/test_linalg.py::TestWoodburyDiag::test_quad_vec_jac_rev PASSED                                                               [ 90%]
+tests/test_linalg.py::TestWoodburyDiag::test_quad_matrix_jac_rev PASSED                                                            [ 91%]
+tests/test_linalg.py::TestWoodburyDiag::test_quad_vec_jac_rev_jit PASSED                                                           [ 92%]
+tests/test_linalg.py::TestWoodburyDiag::test_quad_matrix_jac_rev_jit PASSED                                                        [ 93%]
+tests/test_linalg.py::TestWoodburyDiag::test_logdet_jac_rev PASSED                                                                 [ 95%]
+tests/test_linalg.py::TestWoodburyDiag::test_logdet_jac_rev_jit PASSED                                                             [ 96%]
+
+Are they new? Do they still fail in old jax versions? In which version did they
+stop failing? Should I unmark them and require jax >= 0.3.24? Or wait to see
+if they remain xpasses with further updates or regress back?
