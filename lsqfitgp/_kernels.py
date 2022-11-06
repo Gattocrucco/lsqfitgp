@@ -2070,33 +2070,11 @@ class BART(_BARTBase):
         corr : scalar
             The prior correlation.
         """
-        ft, it = {
-            True : (jnp.float64, jnp.int64),
-            False: (jnp.float32, jnp.int32),
-        }[jax.config.read('jax_enable_x64')]
-        # a jax function applied to an int32 gives a float32 even with x64
-        # enabled, so I have to sync the types to avoid losing precision in the
-        # digamma
-        args  = [splitsbefore, splitsbetween, splitsafter, alpha, beta,     upper]
-        ndims = [           1,             1,           1,     0,    0,         0]
-        types = [          it,            it,          it,    ft,   ft, jnp.bool_]
-        args = [jnp.asarray(a, t) for a, t in zip(args, types)]
-        for a, n in zip(args, ndims):
-            assert a.ndim >= n
-        p = args[0].shape[-1]
-        assert p >= 1
-        for a, n in zip(args, ndims):
-            assert n == 0 or a.shape[-1] == p
-        shapes = [a.shape[:a.ndim - n] for a, n in zip(args, ndims)]
-        shape = jnp.broadcast_shapes(*shapes)
-        args = [
-            jnp.broadcast_to(a, shape + a.shape[a.ndim - n:]).reshape((-1,) + a.shape[a.ndim - n:])
-            for a, n in zip(args, ndims)
-        ]
-        out = _bart_correlation_maxd_vectorized(*args, int(maxd), 0, bool(debug))
-        return out.reshape(shape)
-        
-        # TODO use jnp.vectorize
+        return _bart_correlation_maxd_vectorized(
+            splitsbefore, splitsbetween, splitsafter,
+            alpha, beta, upper,
+            int(maxd), 0, bool(debug),
+        )
 
 def _check_x(x):
     x = _array.asarray(x)
@@ -2229,4 +2207,19 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
 
     return jnp.where(n0nz, 1 - pnt * (1 - sump / pn), 1)
 
-_bart_correlation_maxd_vectorized = jax.vmap(_bart_correlation_maxd, 6 * [0] + 3 * [None])
+@functools.partial(jnp.vectorize, excluded=(6, 7, 8), signature='(p),(p),(p),(),(),()->()')
+def _bart_correlation_maxd_vectorized(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug):
+    ft = _patch_jax.float_type(alpha, beta)
+    match ft:
+        case jnp.float32:
+            it = jnp.int32
+        case jnp.float64:
+            it = jnp.int64
+    # a jax function applied to an int32 gives a float32 even with x64 enabled,
+    # so I have to sync the types to avoid losing precision in the digamma
+    return _bart_correlation_maxd(
+        nminus.astype(it), n0.astype(it), nplus.astype(it),
+        alpha.astype(ft), beta.astype(ft),
+        upper.astype(bool),
+        maxd, d, debug,
+    )
