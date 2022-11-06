@@ -1893,7 +1893,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
         k_D(\\nvecs) &= 1, \\\\
         k_d(\\mathbf 0, \\mathbf 0, \\mathbf 0) &= 1, \\\\
         k_d(\\nvecs) &= 1 - P_d \\Bigg(1 - \\frac1{p(\\mathbf n)}
-            \\sum_{\substack{i=1 \\\\ n_i\\ne 0}}^p
+            \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p
                 \\frac1{n_i} \\Bigg( \\\\
                 &\\qquad \\sum_{k=0}^{n^-_i - 1}
                 k_{d+1}(\\mathbf n^-_{n^-_i=k}, \\mathbf n^0, \\mathbf n^+)
@@ -1902,7 +1902,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
                 k_{d+1}(\\mathbf n^-, \\mathbf n^0, \\mathbf n^+_{n^+_i=k})
             \\Bigg)
         \\Bigg), \\quad d < D, \\\\
-        p(\\mathbf n) &= \\sum_{\substack{i=1 \\\\ n_i\\ne 0}}^p 1.
+        p(\\mathbf n) &= \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p 1.
         
     The introduction of a maximum depth :math:`D` is necessary for
     computational feasibility. As :math:`D` increases, the result converges to
@@ -1944,7 +1944,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     before = l
     between = r - l
     after = splits[0] - r
-    return BART.correlation(before, between, after, alpha, beta, maxd, True)
+    return BART.correlation(before, between, after, alpha, beta, 1, maxd)
     
     # TODO
     # - option to remove 1 - alpha intercept and divide by alpha to have the
@@ -1957,9 +1957,6 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     # - approximate as stationary w.r.t. indices (is it pos def?)
     # - allow index input
     # - weights for the splitting probabilities along covariate axes
-    # - replace upper with a continuous coefficient gamma in [0, 1] to
-    #   interpolate in the leaves, this halves the computation time when
-    #   interpolating
     # - instead of alpha, beta, d, and maxd, the internal function should take
     #   a vector of nontermination probabilities. The initial length of the
     #   vector is 1 + maxd, the running one is 1 + d.
@@ -2038,7 +2035,7 @@ class BART(_BARTBase):
         return _searchsorted_vectorized(splits[1], x)
     
     @staticmethod
-    def correlation(splitsbefore, splitsbetween, splitsafter, alpha, beta, upper, maxd, debug=False):
+    def correlation(splitsbefore, splitsbetween, splitsafter, alpha, beta, gamma, maxd, debug=False):
         """
         Compute the BART prior correlation between two points.
 
@@ -2058,9 +2055,9 @@ class BART(_BARTBase):
             separately along each coordinate.
         alpha, beta : scalar
             The hyperparameters of the branching probability.
-        upper : bool
-            If True, the result is an upper bound on the limit of infinite
-            maxd. If False, it is a lower bound.
+        gamma : scalar
+            Interpolation coefficient in [0, 1] between a lower and a upper
+            bound on the infinite maxd limit.
         maxd : int
             The maximum depth of the trees. The root has depth zero.
         debug : bool
@@ -2073,8 +2070,8 @@ class BART(_BARTBase):
         """
         return _bart_correlation_maxd_vectorized(
             splitsbefore, splitsbetween, splitsafter,
-            alpha, beta, upper,
-            int(maxd), 0, bool(debug),
+            alpha, beta, gamma,
+            maxd, 0, debug,
         )
 
 def _check_x(x):
@@ -2125,12 +2122,12 @@ def _searchsorted_vectorized(A, V, **kw):
     return out.T
 
 @functools.partial(jax.jit, static_argnums=(6, 7, 8))
-def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug):
+def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, gamma, maxd, d, debug):
     
     pnt = alpha / (1 + d) ** beta
     
     if d >= maxd:
-        return jnp.where(upper, 1, 1 - pnt)
+        return 1 - (1 - gamma) * pnt
     
     n0nz = jnp.count_nonzero(n0)
     nout = nminus + nplus
@@ -2139,7 +2136,7 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
 
     if d + 1 >= maxd and not debug:
         pnt1 = alpha / (2 + d) ** beta
-        Q = jnp.where(upper, 1, 1 - pnt1)
+        Q = 1 - (1 - gamma) * pnt1
         # meanp = Q * jnp.mean(nout / n, where=n) # <--- does not work (?)
         sump = Q * jnp.sum(jnp.where(n, nout / n, 0))
         return jnp.where(n0nz, 1 - pnt * (1 - sump / pn), 1)
@@ -2147,7 +2144,7 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
     if d + 2 >= maxd and not debug:
         pnt1 = alpha / (2 + d) ** beta
         pnt2 = alpha / (3 + d) ** beta
-        Q = jnp.where(upper, 1, 1 - pnt2)
+        Q = 1 - (1 - gamma) * pnt2
         s = nout / n
         t = n0 / n
         S = jnp.sum(jnp.where(n, s, 0))
@@ -2186,7 +2183,7 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
             nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
             nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
             
-            sumn += _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d + 1, debug)
+            sumn += _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, gamma, maxd, d + 1, debug)
             
             nminus = nminus.at[i].set(nminusi)
             nplus = nplus.at[i].set(nplusi)
@@ -2209,8 +2206,8 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
     return jnp.where(n0nz, 1 - pnt * (1 - sump / pn), 1)
 
 @functools.partial(jnp.vectorize, excluded=(6, 7, 8), signature='(p),(p),(p),(),(),()->()')
-def _bart_correlation_maxd_vectorized(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug):
-    ft = _patch_jax.float_type(alpha, beta)
+def _bart_correlation_maxd_vectorized(nminus, n0, nplus, alpha, beta, gamma, maxd, d, debug):
+    ft = _patch_jax.float_type(alpha, beta, gamma)
     match ft:
         case jnp.float32:
             it = jnp.int32
@@ -2220,7 +2217,6 @@ def _bart_correlation_maxd_vectorized(nminus, n0, nplus, alpha, beta, upper, max
     # so I have to sync the types to avoid losing precision in the digamma
     return _bart_correlation_maxd(
         nminus.astype(it), n0.astype(it), nplus.astype(it),
-        alpha.astype(ft), beta.astype(ft),
-        upper.astype(bool),
-        maxd, d, debug,
+        alpha.astype(ft), beta.astype(ft), gamma.astype(ft),
+        int(maxd), int(d), bool(debug), # fix types to avoid recompilation
     )
