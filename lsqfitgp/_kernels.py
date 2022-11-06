@@ -2155,17 +2155,18 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
         return jnp.where(upper, 1, 1 - pnt)
     
     p = len(nminus)
+    n0nz = jnp.count_nonzero(n0)
 
     if d + 1 >= maxd and not debug:
-        nout = nminus + nplus
-        terms = nout / (nout + n0)
         pnt1 = alpha / (2 + d) ** beta
-        terms = jnp.where(upper, terms, terms * (1 - pnt1))
-        terms = jnp.where(n0, terms, 1)
-        sump = jnp.sum(terms)
-        return 1 - pnt * (1 - sump / p)
+        Q = jnp.where(upper, 1, 1 - pnt1)
+        nout = nminus + nplus
+        n = nout + n0
+        # meanp = Q * jnp.mean(nout / n, where=n) # <--- does not work (?)
+        meanp = Q * jnp.sum(jnp.where(n, nout / n, 0)) / jnp.count_nonzero(n)
+        return jnp.where(n0nz, 1 - pnt * (1 - meanp), 1)
     
-    if d + 2 >= maxd and not debug:
+    if d + 2 >= maxd and not debug and False:
         pnt1 = alpha / (2 + d) ** beta
         pt2 = jnp.where(upper, 1, 1 - alpha / (3 + d) ** beta)
         nout = nminus + nplus
@@ -2194,11 +2195,14 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
         nminusi = nminus[i]
         n0i = n0[i]
         nplusi = nplus[i]
+        ni = nminusi + n0i + nplusi
         
         val = (0., nminus, n0, nplus, i, nminusi)
         def loop(k, val):
             sumn, nminus, n0, nplus, i, nminusi = val
             
+            # here I use the fact that .at[].set won't set the value if the
+            # index is out of bounds
             nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
             nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
             
@@ -2209,16 +2213,21 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
             
             return sumn, nminus, n0, nplus, i, nminusi
         
-        # if needed I can stop recursion by passing 0 as iteration end
-        zero = jnp.array(0, nminusi.dtype)
-        sumn, nminus, n0, nplus, _, _ = lax.fori_loop(zero, nminusi + nplusi, loop, val)
+        # if ni == 0 I skip recursion by passing 0 as iteration end
+        end = jnp.where(ni, nminusi + nplusi, 0)
+        start = jnp.zeros_like(end)
+        sumn, nminus, n0, nplus, _, _ = lax.fori_loop(start, end, loop, val)
 
-        sump += jnp.where(n0i, sumn / (nminusi + n0i + nplusi), 1)
+        sump += jnp.where(ni, sumn / ni, 0)
 
         return sump, nminus, n0, nplus
 
-    sump, _, _, _ = lax.fori_loop(0, p, loop, val)
+    # skip summation if all(n0 == 0)
+    end = jnp.where(n0nz, p, 0)
+    sump, _, _, _ = lax.fori_loop(0, end, loop, val)
+    n = nminus + n0 + nplus
+    pn = jnp.count_nonzero(n)
 
-    return 1 - pnt * (1 - sump / p)
+    return jnp.where(n0nz, 1 - pnt * (1 - sump / pn), 1)
 
 _bart_correlation_maxd_vectorized = jax.vmap(_bart_correlation_maxd, 6 * [0] + 3 * [None])

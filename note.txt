@@ -2478,3 +2478,9 @@ tests/test_linalg.py::TestWoodburyDiag::test_logdet_jac_rev_jit PASSED          
 Are they new? Do they still fail in old jax versions? In which version did they
 stop failing? Should I unmark them and require jax >= 0.3.24? Or wait to see
 if they remain xpasses with further updates or regress back?
+
+2022-11-06
+==========
+
+I think I have found a jax bug: jnp.mean(..., where=...) return wrong result
+under jit, should be reproducible with 1-length arrays and all go mask.

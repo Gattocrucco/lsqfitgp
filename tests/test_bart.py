@@ -132,7 +132,7 @@ def test_perm_dims(sb, sbw, sa, a, b, u, md):
     perm = gen.permutation(sb.size)
     c = lgp.BART.correlation(sb, sbw, sa, a, b, u, md)
     cp = lgp.BART.correlation(sb[perm], sbw[perm], sa[perm], a, b, u, md)
-    np.testing.assert_array_max_ulp(c, cp, 3)
+    np.testing.assert_array_max_ulp(c, cp, 4)
 
 @mdmark
 @umark
