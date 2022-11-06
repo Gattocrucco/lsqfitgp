@@ -120,7 +120,7 @@ def test_swap_ab(sb, sbw, sa, a, b, u, md):
     s2 = np.where(swap, sb, sa)
     c = lgp.BART.correlation(sb, sbw, sa, a, b, u, md)
     cs = lgp.BART.correlation(s1, sbw, s2, a, b, u, md)
-    np.testing.assert_array_max_ulp(c, cs, 3)
+    np.testing.assert_array_max_ulp(c, cs, 16)
 
 @mdmark
 @umark

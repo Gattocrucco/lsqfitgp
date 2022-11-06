@@ -626,8 +626,7 @@ def _ZetaBase(delta, nu=None):
     Note that the :math:`k = 0` term is not included in the summation, so the
     mean of the process over one period is forced to be zero.
     
-    Reference: https://dlmf.nist.gov/25.13.E1, https://dlmf.nist.gov/25.11.E9,
-    https://dlmf.nist.gov/25.11.E14, Petrillo (2022).
+    Reference: Petrillo (2022).
     
     """
     
@@ -2154,40 +2153,42 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
     if d >= maxd:
         return jnp.where(upper, 1, 1 - pnt)
     
-    p = len(nminus)
     n0nz = jnp.count_nonzero(n0)
+    nout = nminus + nplus
+    n = nout + n0
+    pn = jnp.count_nonzero(n)
 
     if d + 1 >= maxd and not debug:
         pnt1 = alpha / (2 + d) ** beta
         Q = jnp.where(upper, 1, 1 - pnt1)
-        nout = nminus + nplus
-        n = nout + n0
         # meanp = Q * jnp.mean(nout / n, where=n) # <--- does not work (?)
-        meanp = Q * jnp.sum(jnp.where(n, nout / n, 0)) / jnp.count_nonzero(n)
-        return jnp.where(n0nz, 1 - pnt * (1 - meanp), 1)
+        sump = Q * jnp.sum(jnp.where(n, nout / n, 0))
+        return jnp.where(n0nz, 1 - pnt * (1 - sump / pn), 1)
     
-    if d + 2 >= maxd and not debug and False:
+    if d + 2 >= maxd and not debug:
         pnt1 = alpha / (2 + d) ** beta
-        pt2 = jnp.where(upper, 1, 1 - alpha / (3 + d) ** beta)
-        nout = nminus + nplus
-        ntot = nout + n0
-        mis = p - jnp.count_nonzero(n0)
-        
-        ta = jnp.where(n0, nout / ntot, 0)
-        sa = jnp.sum(ta)
-        sump = (1 - pnt1) * sa
-        tb = jnp.where(n0, nout / ntot * pt2, 1)
-        sb = jnp.sum(tb)
-        sab = jnp.sum(ta * tb)
-        harm = 2 * jspecial.digamma(ntot) - jspecial.digamma(n0 + nplus) - jspecial.digamma(n0 + nminus)
-        # https://dlmf.nist.gov/5.4.E14 digamma gives the harmonic numbers
-        tc = jnp.where(n0, n0 * harm / ntot, 0)
-        sc = jnp.sum(tc)
-        sump += pnt1 / p * (sa * sb - sab + pt2 * (sa - sc))
-        sump += mis
-        
-        return 1 - pnt * (1 - sump / p)
+        pnt2 = alpha / (3 + d) ** beta
+        Q = jnp.where(upper, 1, 1 - pnt2)
+        s = nout / n
+        t = n0 / n
+        S = jnp.sum(jnp.where(n, s, 0))
+        psin = jspecial.digamma(n)
+        def terms(nminus, nplus):
+            nminus0 = nminus + n0
+            pnmod = pn - jnp.where(nminus0, 0, 1)
+            frac = jnp.where(nminus0, nminus / nminus0, 0)
+            terms1 = (S - s + frac) / pnmod
+            psi1nminus0 = jspecial.digamma(1 + nminus0)
+            terms2 = ((nplus - 1) * (S + t) - n0 * (psin - psi1nminus0)) / pn
+            return jnp.where(nplus, terms1 + terms2, 0)
+        tplus = terms(nminus, nplus)
+        tminus = terms(nplus, nminus)
+        tall = jnp.where(n, (tplus + tminus) / n, 0)
+        sump = (1 - pnt1) * S + pnt1 * Q * jnp.sum(tall)
+        return jnp.where(n0nz, 1 - pnt * (1 - sump / pn), 1)
     
+    p = len(nminus)
+
     val = (0., nminus, n0, nplus)
     def loop(i, val):
         sump, nminus, n0, nplus = val
@@ -2225,8 +2226,6 @@ def _bart_correlation_maxd(nminus, n0, nplus, alpha, beta, upper, maxd, d, debug
     # skip summation if all(n0 == 0)
     end = jnp.where(n0nz, p, 0)
     sump, _, _, _ = lax.fori_loop(0, end, loop, val)
-    n = nminus + n0 + nplus
-    pn = jnp.count_nonzero(n)
 
     return jnp.where(n0nz, 1 - pnt * (1 - sump / pn), 1)
 
