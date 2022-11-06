@@ -1883,26 +1883,27 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     number of splitting points respectively before :math:`x`, between
     :math:`x`, :math:`y` and after :math:`y`. Next, define :math:`\\mathbf
     n^-`, :math:`\\mathbf n^0` and :math:`\\mathbf n^+` as the vectors of such
-    quantities for each dimension, with a total of :math:`p` dimensions. Then
-    the covariance function can be written recursively as
+    quantities for each dimension, with a total of :math:`p` dimensions, and
+    :math:`\\mathbf n = \\mathbf n^- + \\mathbf n^0 + \\mathbf n^+`. Then the
+    covariance function can be written recursively as
     
     .. math::
         \\newcommand{\\nvecs}{\\mathbf n^-, \\mathbf n^0, \\mathbf n^+}
         k(\\mathbf x, \\mathbf y) &= k_0(\\nvecs), \\\\
         k_D(\\nvecs) &= 1, \\\\
-        k_d(\\nvecs) &= 1 - P_d \\Bigg(1 - \\frac1p
-            \\sum_{i=1}^p \\frac1{n^-_i + n^0_i + n^+_i} \\Bigg( \\\\
+        k_d(\\mathbf 0, \\mathbf 0, \\mathbf 0) &= 1, \\\\
+        k_d(\\nvecs) &= 1 - P_d \\Bigg(1 - \\frac1{p(\\mathbf n)}
+            \\sum_{\substack{i=1 \\\\ n_i\\ne 0}}^p
+                \\frac1{n_i} \\Bigg( \\\\
                 &\\qquad \\sum_{k=0}^{n^-_i - 1}
                 k_{d+1}(\\mathbf n^-_{n^-_i=k}, \\mathbf n^0, \\mathbf n^+)
                 + {} \\\\
                 &\\qquad \\sum_{k=0}^{n^+_i - 1}
                 k_{d+1}(\\mathbf n^-, \\mathbf n^0, \\mathbf n^+_{n^+_i=k})
             \\Bigg)
-        \\Bigg), \\quad d < D,
-    
-    where it is intended that when :math:`n^0_i = 0`, the term of the outer
-    summation yields 1 irrespectively of other values.
-    
+        \\Bigg), \\quad d < D, \\\\
+        p(\\mathbf n) &= \\sum_{\substack{i=1 \\\\ n_i\\ne 0}}^p 1.
+        
     The introduction of a maximum depth :math:`D` is necessary for
     computational feasibility. As :math:`D` increases, the result converges to
     the one without depth limit. For :math:`D \\le 2` (the default value), the
