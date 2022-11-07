@@ -1823,7 +1823,7 @@ def _bart_maxdim(splits=None, **_):
     return splits[0].size
 
 @kernel(maxdim=_bart_maxdim, derivable=False)
-def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
+def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, intercept=True):
     """
     BART kernel.
     
@@ -1838,6 +1838,15 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
         points along each dimension, the second has shape (n, p) and contains
         the sorted splitting points in each column, filled with high values
         after the length.
+    gamma : scalar
+        Interpolation coefficient in [0, 1] between a lower and a upper
+        bound on the infinite maxd limit, default 1 (upper bound).
+    pnt : (maxd + 1,) array, optional
+        Nontermination probabilities at depths 0...maxd. If specified,
+        `alpha`, `beta` and `maxd` are ignored.
+    intercept : bool
+        The correlation is in [1 - alpha, 1] (or [1 - pnt[0], 1] when using
+        pnt). If intercept=False, it is rescaled to [0, 1]. Default True.
     
     Methods
     -------
@@ -1927,12 +1936,15 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
         Bayesian additive regression trees," The Annals of Applied Statistics,
         Ann. Appl. Stat. 4(1), 266-298, (March 2010).
     """
-    if _patch_jax.isconcrete(alpha, beta):
+    if pnt is None and _patch_jax.isconcrete(alpha, beta, gamma):
         assert 0 <= alpha <= 1, alpha
         assert beta >= 0, beta
+        assert 0 <= gamma <= 1, gamma
+    if pnt is not None and _patch_jax.isconcrete(pnt):
+        with jax.ensure_compile_time_eval():
+            assert jnp.all((0 <= pnt) & (pnt <= 1))
     assert maxd == int(maxd) and maxd >= 0, maxd
-    splits = _check_splits(splits)
-    # TODO check they are sorted if concrete
+    splits = BART._check_splits(splits)
     if not x.dtype.names:
         x = x[..., None]
     if not y.dtype.names:
@@ -1944,14 +1956,11 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, splits=None):
     before = l
     between = r - l
     after = splits[0] - r
-    return BART.correlation(before, between, after, alpha, beta, 1, maxd)
+    return BART.correlation(before, between, after, pnt=pnt, alpha=alpha, beta=beta, gamma=gamma, maxd=maxd, intercept=intercept)
     
     # TODO
-    # - option to remove 1 - alpha intercept and divide by alpha to have the
-    #   correlation in [0, 1] instead of [1 - alpha, 1]
     # - option to remove ~1/p nugget
-    # - convex combination of upper/lower bound (what is the best coefficient?)
-    #   => 0.55 should be a decent overall default
+    # - new default for gamma (0.55?)
     # - interpolate (is linear interp pos def? => I think it can be seen as
     #   the covariance of the interpolation)
     # - approximate as stationary w.r.t. indices (is it pos def?)
@@ -1962,8 +1971,8 @@ class BART(_BARTBase):
     
     __doc__ = _BARTBase.__doc__
     
-    @staticmethod
-    def splits_from_coord(x):
+    @classmethod
+    def splits_from_coord(cls, x):
         """
         Generate splitting points from data.
         
@@ -1987,7 +1996,7 @@ class BART(_BARTBase):
             while afterward it is filled with a very large value.
         
         """
-        x = _check_x(x)
+        x = cls._check_x(x)
         x = x.reshape(-1, x.shape[-1]) if x.size else x.reshape(1, x.shape[-1])
         x = jnp.sort(x, axis=0)
         midpoints = (x[:-1, :] + x[1:, :]) / 2
@@ -1997,8 +2006,8 @@ class BART(_BARTBase):
         # instead of quantilizing, and set a maximum number of splits. Use the
         # same parameter names as BayesTree::bart, but change the defaults.
     
-    @staticmethod
-    def indices_from_coord(x, splits):
+    @classmethod
+    def indices_from_coord(cls, x, splits):
         """
         Convert coordinates to indices w.r.t. splitting points.
         
@@ -2026,13 +2035,13 @@ class BART(_BARTBase):
             i > 0 means between split i - 1 and split i.
         
         """
-        x = _check_x(x)
-        splits = _check_splits(splits)
+        x = cls._check_x(x)
+        splits = cls._check_splits(splits)
         assert x.shape[-1] == splits[0].size
         return _searchsorted_vectorized(splits[1], x)
     
     @staticmethod
-    def correlation(splitsbefore, splitsbetween, splitsafter, alpha, beta, gamma, maxd, debug=False):
+    def correlation(splitsbefore, splitsbetween, splitsafter, *, alpha=0.95, beta=2, gamma=1, maxd=2, debug=False, pnt=None, intercept=True):
         """
         Compute the BART prior correlation between two points.
 
@@ -2050,46 +2059,45 @@ class BART(_BARTBase):
         splitsafter : int (p,) array
             The number of splitting points greater than the two points,
             separately along each coordinate.
-        alpha, beta : scalar
-            The hyperparameters of the branching probability.
-        gamma : scalar
-            Interpolation coefficient in [0, 1] between a lower and a upper
-            bound on the infinite maxd limit.
-        maxd : int
-            The maximum depth of the trees. The root has depth zero.
         debug : bool
             If True, disable shortcuts in the tree recursion. Default False.
+        
+        For the other parameters, see :class:`BART`.
 
         Returns
         -------
         corr : scalar
             The prior correlation.
         """
-        d = jnp.arange(maxd + 1)
-        alpha = jnp.asarray(alpha)[..., None]
-        beta = jnp.asarray(beta)[..., None]
-        pnt = alpha / (1 + d) ** beta
+        if pnt is None:
+            d = jnp.arange(maxd + 1)
+            alpha = jnp.asarray(alpha)[..., None]
+            beta = jnp.asarray(beta)[..., None]
+            pnt = alpha / (1 + d) ** beta
+        if not intercept:
+            pnt = pnt.at[..., 0].set(1)
         return _bart_correlation_maxd_vectorized(
             splitsbefore, splitsbetween, splitsafter, pnt, gamma, debug
         )
-        
-        # TODO expose the pnt parameter
 
-def _check_x(x):
-    x = _array.asarray(x)
-    if x.dtype.names:
-        x = numpy.structured_to_unstructured(x)
-    return x
+    @staticmethod
+    def _check_x(x):
+        x = _array.asarray(x)
+        if x.dtype.names:
+            x = numpy.structured_to_unstructured(x)
+        return x
 
-def _check_splits(splits):
-    l, s = splits
-    l = jnp.asarray(l)
-    s = jnp.asarray(s)
-    assert l.ndim == 1 and 1 <= s.ndim <= 2
-    if s.ndim == 1:
-        s = s[:, None]
-    assert l.size == s.shape[1]
-    return l, s
+    @staticmethod
+    def _check_splits(splits):
+        l, s = splits
+        l = jnp.asarray(l)
+        s = jnp.asarray(s)
+        assert l.ndim == 1 and 1 <= s.ndim <= 2
+        if s.ndim == 1:
+            s = s[:, None]
+        assert l.size == s.shape[1]
+        return l, s
+        # TODO check they are sorted if concrete
 
 @jax.jit
 def _unique_vectorized(X):
