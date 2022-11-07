@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>1. Kernels reference &#8212; lsqfitgp 0.13 documentation</title>
+    <title>1. Kernels reference &#8212; lsqfitgp 0.14 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">lsqfitgp 0.13</a></h1>
+<h1 class="logo"><a href="index.html">lsqfitgp 0.14</a></h1>
 
 
 
@@ -406,7 +406,7 @@ also stands for its paired conjugate.</p>
 <img alt="_images/kernelsref-AR-samples.png" src="_images/kernelsref-AR-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.BART">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">BART</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">BART</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intercept</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART" title="Permalink to this definition">¶</a></dt>
 <dd><p>BART kernel.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -419,6 +419,19 @@ also stands for its paired conjugate.</p>
 points along each dimension, the second has shape (n, p) and contains
 the sorted splitting points in each column, filled with high values
 after the length.</p>
+</dd>
+<dt><strong>gamma</strong><span class="classifier">scalar</span></dt><dd><p>Interpolation coefficient in [0, 1] between a lower and a upper
+bound on the infinite maxd limit, default 1 (upper bound).</p>
+</dd>
+<dt><strong>pnt</strong><span class="classifier">(maxd + 1,) array, optional</span></dt><dd><p>Nontermination probabilities at depths 0…maxd. If specified,
+<cite>alpha</cite>, <cite>beta</cite> and <cite>maxd</cite> are ignored.</p>
+</dd>
+<dt><strong>intercept</strong><span class="classifier">bool</span></dt><dd><p>The correlation is in [1 - alpha, 1] (or [1 - pnt[0], 1] when using
+pnt). If intercept=False, it is rescaled to [0, 1]. Default True.</p>
+</dd>
+<dt><strong>weights</strong><span class="classifier">(p,) array</span></dt><dd><p>Unnormalized selection probabilities for the covariate axes. If not
+specified, all axes have the same probability to be selected for
+splitting.</p>
 </dd>
 </dl>
 </dd>
@@ -454,36 +467,44 @@ for a single tree. Consider two coordinates <span class="math notranslate nohigh
 number of splitting points respectively before <span class="math notranslate nohighlight">\(x\)</span>, between
 <span class="math notranslate nohighlight">\(x\)</span>, <span class="math notranslate nohighlight">\(y\)</span> and after <span class="math notranslate nohighlight">\(y\)</span>. Next, define <span class="math notranslate nohighlight">\(\mathbf
 n^-\)</span>, <span class="math notranslate nohighlight">\(\mathbf n^0\)</span> and <span class="math notranslate nohighlight">\(\mathbf n^+\)</span> as the vectors of such
-quantities for each dimension, with a total of <span class="math notranslate nohighlight">\(p\)</span> dimensions. Then
-the covariance function can be written recursively as</p>
+quantities for each dimension, with a total of <span class="math notranslate nohighlight">\(p\)</span> dimensions, and
+<span class="math notranslate nohighlight">\(\mathbf n = \mathbf n^- + \mathbf n^0 + \mathbf n^+\)</span>. Then the
+covariance function can be written recursively as</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\newcommand{\nvecs}{\mathbf n^-, \mathbf n^0, \mathbf n^+}
 k(\mathbf x, \mathbf y) &amp;= k_0(\nvecs), \\
-k_D(\nvecs) &amp;= 1, \\
-k_d(\nvecs) &amp;= 1 - P_d \Bigg(1 - \frac1p
-    \sum_{i=1}^p \frac1{n^-_i + n^0_i + n^+_i} \Bigg( \\
+k_D(\nvecs) &amp;= 1 - (1 - \gamma) P_D, \quad \mathbf n^0 \ne \mathbf 0, \\
+k_d(\mathbf 0, \mathbf 0, \mathbf 0) &amp;= 1, \\
+k_d(\nvecs) &amp;= 1 - P_d \Bigg(1 - \frac1{p(\mathbf n)}
+    \sum_{\substack{i=1 \\ n_i\ne 0}}^p
+        \frac1{n_i} \Bigg( \\
         &amp;\qquad \sum_{k=0}^{n^-_i - 1}
         k_{d+1}(\mathbf n^-_{n^-_i=k}, \mathbf n^0, \mathbf n^+)
         + {} \\
         &amp;\qquad \sum_{k=0}^{n^+_i - 1}
         k_{d+1}(\mathbf n^-, \mathbf n^0, \mathbf n^+_{n^+_i=k})
     \Bigg)
-\Bigg), \quad d &lt; D,\end{split}\]</div>
-<p>where it is intended that when <span class="math notranslate nohighlight">\(n^0_i = 0\)</span>, the term of the outer
-summation yields 1 irrespectively of other values.</p>
+\Bigg), \quad d &lt; D, \\
+p(\mathbf n) &amp;= \sum_{\substack{i=1 \\ n_i\ne 0}}^p 1.\end{split}\]</div>
 <p>The introduction of a maximum depth <span class="math notranslate nohighlight">\(D\)</span> is necessary for
 computational feasibility. As <span class="math notranslate nohighlight">\(D\)</span> increases, the result converges to
 the one without depth limit. For <span class="math notranslate nohighlight">\(D \le 2\)</span> (the default value), the
 covariance is implemented in closed form and takes <span class="math notranslate nohighlight">\(O(p)\)</span> to compute.
 For <span class="math notranslate nohighlight">\(D &gt; 2\)</span>, the computational complexity grows exponentially as
-<span class="math notranslate nohighlight">\(O(p(np)^{D-2})\)</span>, where <span class="math notranslate nohighlight">\(n\)</span> is the average number of splitting
+<span class="math notranslate nohighlight">\(O(p(\bar np)^{D-2})\)</span>, where <span class="math notranslate nohighlight">\(\bar n\)</span> is the average number of splitting
 points along a dimension.</p>
 <p>In the maximum allowed depth is 1, i.e., either <span class="math notranslate nohighlight">\(D = 1\)</span> or
 <span class="math notranslate nohighlight">\(\beta\to\infty\)</span>, the kernel assumes the simple form</p>
 <div class="math notranslate nohighlight">
-\[k(\mathbf x, \mathbf y) = 1 - \frac\alpha p \sum_{i=1}^p
-\frac{n^0_i}{n^-_i + n^0_i + n^+_i},\]</div>
-<p>which is separable along dimensions.</p>
+\[\begin{split}k(\mathbf x, \mathbf y) &amp;= 1 - P_0 \left(
+    1 - Q + \frac Q{p(\mathbf n)}
+    \sum_{\substack{i=1 \\ n_i\ne 0}}^p
+    \frac{n^0_i}{n_i} \right), \\
+Q &amp;= \begin{cases}
+    1 - (1 - \gamma) P_1 &amp; \mathbf n^0 \ne \mathbf 0, \\
+    1 &amp; \mathbf n^0 = \mathbf 0,
+\end{cases}\end{split}\]</div>
+<p>which is separable along dimensions, i.e., it has no interactions.</p>
 <p class="rubric">References</p>
 <div role="list" class="citation-list">
 <div class="citation" id="r0b7d3b51c950-1" role="doc-biblioentry">
@@ -509,7 +530,7 @@ Ann. Appl. Stat. 4(1), 266-298, (March 2010).</p>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.BART.correlation">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">correlation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">splitsbefore</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsbetween</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsafter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART.correlation" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">correlation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">splitsbefore</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsbetween</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsafter</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intercept</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART.correlation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the BART prior correlation between two points.</p>
 <p>Apart from arguments <cite>maxd</cite> and <cite>debug</cite>, this method is fully
 vectorized.</p>
@@ -525,14 +546,9 @@ along each coordinate.</p>
 <dt><strong>splitsafter</strong><span class="classifier">int (p,) array</span></dt><dd><p>The number of splitting points greater than the two points,
 separately along each coordinate.</p>
 </dd>
-<dt><strong>alpha, beta</strong><span class="classifier">scalar</span></dt><dd><p>The hyperparameters of the branching probability.</p>
-</dd>
-<dt><strong>upper</strong><span class="classifier">bool</span></dt><dd><p>If True, the result is an upper bound on the limit of infinite
-maxd. If False, it is a lower bound.</p>
-</dd>
-<dt><strong>maxd</strong><span class="classifier">int</span></dt><dd><p>The maximum depth of the trees. The root has depth zero.</p>
-</dd>
 <dt><strong>debug</strong><span class="classifier">bool</span></dt><dd><p>If True, disable shortcuts in the tree recursion. Default False.</p>
+</dd>
+<dt><strong>Other parameters</strong></dt><dd><p>See <a class="reference internal" href="#lsqfitgp.BART" title="lsqfitgp.BART"><code class="xref py py-class docutils literal notranslate"><span class="pre">BART</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
@@ -547,7 +563,7 @@ maxd. If False, it is a lower bound.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.BART.indices_from_coord">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">indices_from_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splits</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART.indices_from_coord" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">indices_from_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splits</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART.indices_from_coord" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert coordinates to indices w.r.t. splitting points.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -580,7 +596,7 @@ i &gt; 0 means between split i - 1 and split i.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.BART.splits_from_coord">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">splits_from_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART.splits_from_coord" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">splits_from_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.BART.splits_from_coord" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate splitting points from data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -845,7 +861,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x128393e20&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x1229523b0&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
@@ -1190,8 +1206,7 @@ derivable, and the highest derivative is continuous iff <span class="math notran
 \ge 1/2\)</span>.</p>
 <p>Note that the <span class="math notranslate nohighlight">\(k = 0\)</span> term is not included in the summation, so the
 mean of the process over one period is forced to be zero.</p>
-<p>Reference: <a class="reference external" href="https://dlmf.nist.gov/25.13.E1">https://dlmf.nist.gov/25.13.E1</a>, <a class="reference external" href="https://dlmf.nist.gov/25.11.E9">https://dlmf.nist.gov/25.11.E9</a>,
-<a class="reference external" href="https://dlmf.nist.gov/25.11.E14">https://dlmf.nist.gov/25.11.E14</a>, Petrillo (2022).</p>
+<p>Reference: Petrillo (2022).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.Zeta.fourier">
 <span class="sig-name descname"><span class="pre">fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doy</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Zeta.fourier" title="Permalink to this definition">¶</a></dt>
