@@ -52,6 +52,6 @@ setuptools.setup(
         'scipy>=1.4.1', # first supporting special.zeta(negative number)
         'jax>=0.3.13', # release at adoption
         'jaxlib>=0.3.10', # release at adoption
-        'gvar>=1.10', # first version with new gvars correlated with old ones
+        'gvar>=11.10', # first version with new gvars correlated with old ones
     ]
 )
