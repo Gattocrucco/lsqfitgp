@@ -1823,7 +1823,7 @@ def _bart_maxdim(splits=None, **_):
     return splits[0].size
 
 @kernel(maxdim=_bart_maxdim, derivable=False)
-def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, intercept=True):
+def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, intercept=True, weights=None):
     """
     BART kernel.
     
@@ -1847,6 +1847,10 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     intercept : bool
         The correlation is in [1 - alpha, 1] (or [1 - pnt[0], 1] when using
         pnt). If intercept=False, it is rescaled to [0, 1]. Default True.
+    weights : (p,) array
+        Unnormalized selection probabilities for the covariate axes. If not
+        specified, all axes have the same probability to be selected for
+        splitting.
     
     Methods
     -------
@@ -1937,14 +1941,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
         Bayesian additive regression trees," The Annals of Applied Statistics,
         Ann. Appl. Stat. 4(1), 266-298, (March 2010).
     """
-    if pnt is None and _patch_jax.isconcrete(alpha, beta, gamma):
-        assert 0 <= alpha <= 1, alpha
-        assert beta >= 0, beta
-        assert 0 <= gamma <= 1, gamma
-    if pnt is not None and _patch_jax.isconcrete(pnt):
-        with jax.ensure_compile_time_eval():
-            assert jnp.all((0 <= pnt) & (pnt <= 1))
-    assert maxd == int(maxd) and maxd >= 0, maxd
+
     splits = BART._check_splits(splits)
     if not x.dtype.names:
         x = x[..., None]
@@ -1957,7 +1954,11 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     before = l
     between = r - l
     after = splits[0] - r
-    return BART.correlation(before, between, after, pnt=pnt, alpha=alpha, beta=beta, gamma=gamma, maxd=maxd, intercept=intercept)
+    return BART.correlation(
+        before, between, after,
+        pnt=pnt, alpha=alpha, beta=beta, gamma=gamma, maxd=maxd,
+        intercept=intercept, weights=weights,
+    )
     
     # TODO
     # - option to remove ~1/p nugget
@@ -1966,7 +1967,6 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     #   the covariance of the interpolation)
     # - approximate as stationary w.r.t. indices (is it pos def?)
     # - allow index input
-    # - weights for the splitting probabilities along covariate axes
 
 class BART(_BARTBase):
     
@@ -2070,16 +2070,32 @@ class BART(_BARTBase):
         corr : scalar
             The prior correlation.
         """
+        
+        # fill missing arguments
         if pnt is None:
+            assert maxd == int(maxd) and maxd >= 0, maxd
+            if _patch_jax.isconcrete(alpha, beta):
+                with jax.ensure_compile_time_eval():
+                    assert jnp.all((0 <= alpha) & (alpha <= 1))
+                    assert jnp.all(beta >= 0)
             d = jnp.arange(maxd + 1)
             alpha = jnp.asarray(alpha)[..., None]
             beta = jnp.asarray(beta)[..., None]
             pnt = alpha / (1 + d) ** beta
-        if not intercept:
-            pnt = jnp.asarray(pnt).at[..., 0].set(1)
         if weights is None:
             splitsbefore = jnp.asarray(splitsbefore)
             weights = jnp.ones(splitsbefore.shape[-1])
+        
+        if not intercept:
+            pnt = jnp.asarray(pnt).at[..., 0].set(1)
+        
+        # check values are in range
+        if _patch_jax.isconcrete(gamma, pnt, weights):
+            with jax.ensure_compile_time_eval():
+                assert jnp.all((0 <= gamma) & (gamma <= 1))
+                assert jnp.all((0 <= pnt) & (pnt <= 1))
+                assert jnp.all(weights >= 0)
+
         return cls._bart_correlation_maxd_vectorized(
             splitsbefore, splitsbetween, splitsafter, pnt, gamma, weights, debug
         )
