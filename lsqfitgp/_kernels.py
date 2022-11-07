@@ -2001,7 +2001,7 @@ class BART(_BARTBase):
         x = x.reshape(-1, x.shape[-1]) if x.size else x.reshape(1, x.shape[-1])
         x = jnp.sort(x, axis=0)
         midpoints = (x[:-1, :] + x[1:, :]) / 2
-        return _unique_vectorized(midpoints)
+        return cls._unique_vectorized(midpoints)
         
         # TODO options like BayesTree, i.e., use an evenly spaced range
         # instead of quantilizing, and set a maximum number of splits. Use the
@@ -2039,10 +2039,10 @@ class BART(_BARTBase):
         x = cls._check_x(x)
         splits = cls._check_splits(splits)
         assert x.shape[-1] == splits[0].size
-        return _searchsorted_vectorized(splits[1], x)
+        return cls._searchsorted_vectorized(splits[1], x)
     
-    @staticmethod
-    def correlation(splitsbefore, splitsbetween, splitsafter, *, alpha=0.95, beta=2, gamma=1, maxd=2, debug=False, pnt=None, intercept=True):
+    @classmethod
+    def correlation(cls, splitsbefore, splitsbetween, splitsafter, *, alpha=0.95, beta=2, gamma=1, maxd=2, debug=False, pnt=None, intercept=True):
         """
         Compute the BART prior correlation between two points.
 
@@ -2077,7 +2077,7 @@ class BART(_BARTBase):
             pnt = alpha / (1 + d) ** beta
         if not intercept:
             pnt = pnt.at[..., 0].set(1)
-        return _bart_correlation_maxd_vectorized(
+        return cls._bart_correlation_maxd_vectorized(
             splitsbefore, splitsbetween, splitsafter, pnt, gamma, debug
         )
 
@@ -2099,136 +2099,141 @@ class BART(_BARTBase):
         assert l.size == s.shape[1]
         return l, s
         # TODO check they are sorted if concrete
-
-@jax.jit
-def _unique_vectorized(X):
-    """
-    X : (..., p)
-    length : int (p,)
-    unique : (n, p)
-    """
-    if jnp.issubdtype(X.dtype, jnp.inexact):
-        info = jnp.finfo
-    else:
-        info = jnp.iinfo
-    fill = info(X.dtype).max
-    def loop(_, x):
-        u = jnp.unique(x, size=x.size, fill_value=fill)
-        l = jnp.searchsorted(u, fill)
-        return _, (l, u)
-    _, (length, unique) = lax.scan(loop, None, X.T)
-    return length, unique.T
-
-@functools.partial(jax.jit, static_argnames=('side',))
-def _searchsorted_vectorized(A, V, **kw):
-    """
-    A : (n, p)
-    V : (..., p)
-    out : (..., p)
-    """
-    def loop(_, av):
-        return _, jnp.searchsorted(*av, **kw)
-    _, out = lax.scan(loop, None, (A.T, V.T))
-    return out.T
-
-@functools.partial(jax.jit, static_argnums=(5,))
-def _bart_correlation_maxd(nminus, n0, nplus, pnt, gamma, debug):
     
-    assert nminus.shape == n0.shape == nplus.shape
-    assert nminus.ndim == 1 and nminus.size > 0
-    assert pnt.ndim == 1 and pnt.size > 0
+    @staticmethod
+    @jax.jit
+    def _unique_vectorized(X):
+        """
+        X : (..., p)
+        length : int (p,)
+        unique : (n, p)
+        """
+        if jnp.issubdtype(X.dtype, jnp.inexact):
+            info = jnp.finfo
+        else:
+            info = jnp.iinfo
+        fill = info(X.dtype).max
+        def loop(_, x):
+            u = jnp.unique(x, size=x.size, fill_value=fill)
+            l = jnp.searchsorted(u, fill)
+            return _, (l, u)
+        _, (length, unique) = lax.scan(loop, None, X.T)
+        return length, unique.T
+    
+    @staticmethod
+    @functools.partial(jax.jit, static_argnames=('side',))
+    def _searchsorted_vectorized(A, V, **kw):
+        """
+        A : (n, p)
+        V : (..., p)
+        out : (..., p)
+        """
+        def loop(_, av):
+            return _, jnp.searchsorted(*av, **kw)
+        _, out = lax.scan(loop, None, (A.T, V.T))
+        return out.T
+
+    @classmethod
+    @functools.partial(jax.jit, static_argnums=(0, 6))
+    def _bart_correlation_maxd(cls, nminus, n0, nplus, pnt, gamma, debug):
+    
+        assert nminus.shape == n0.shape == nplus.shape
+        assert nminus.ndim == 1 and nminus.size > 0
+        assert pnt.ndim == 1 and pnt.size > 0
         
-    if pnt.size == 1:
-        return 1 - (1 - gamma) * pnt[0]
+        if pnt.size == 1:
+            return 1 - (1 - gamma) * pnt[0]
     
-    n0nz = jnp.count_nonzero(n0)
-    nout = nminus + nplus
-    n = nout + n0
-    pn = jnp.count_nonzero(n)
+        n0nz = jnp.count_nonzero(n0)
+        nout = nminus + nplus
+        n = nout + n0
+        pn = jnp.count_nonzero(n)
 
-    if pnt.size == 2 and not debug:
-        Q = 1 - (1 - gamma) * pnt[1]
-        # meanp = Q * jnp.mean(nout / n, where=n) # <--- does not work (?)
-        sump = Q * jnp.sum(jnp.where(n, nout / n, 0))
+        if pnt.size == 2 and not debug:
+            Q = 1 - (1 - gamma) * pnt[1]
+            # meanp = Q * jnp.mean(nout / n, where=n) # <--- does not work (?)
+            sump = Q * jnp.sum(jnp.where(n, nout / n, 0))
+            return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / pn), 1)
+    
+        if pnt.size == 3 and not debug:
+            Q = 1 - (1 - gamma) * pnt[2]
+            s = nout / n
+            S = jnp.sum(jnp.where(n, s, 0))
+            t = n0 / n
+            psin = jspecial.digamma(n)
+            def terms(nminus, nplus):
+                nminus0 = nminus + n0
+                pnmod = pn - jnp.where(nminus0, 0, 1)
+                frac = jnp.where(nminus0, nminus / nminus0, 0)
+                terms1 = (S - s + frac) / pnmod
+                psi1nminus0 = jspecial.digamma(1 + nminus0)
+                terms2 = ((nplus - 1) * (S + t) - n0 * (psin - psi1nminus0)) / pn
+                return jnp.where(nplus, terms1 + terms2, 0)
+            tplus = terms(nminus, nplus)
+            tminus = terms(nplus, nminus)
+            tall = jnp.where(n, (tplus + tminus) / n, 0)
+            sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall)
+            return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / pn), 1)
+        
+            # TODO the pnt.size == 3 calculation is probably less accurate than
+            # the recursive one, see comparison limits > 30 ULP in test_bart.py
+    
+        p = len(nminus)
+
+        val = (0., nminus, n0, nplus)
+        def loop(i, val):
+            sump, nminus, n0, nplus = val
+
+            nminusi = nminus[i]
+            n0i = n0[i]
+            nplusi = nplus[i]
+            ni = nminusi + n0i + nplusi
+        
+            val = (0., nminus, n0, nplus, i, nminusi)
+            def loop(k, val):
+                sumn, nminus, n0, nplus, i, nminusi = val
+            
+                # here I use the fact that .at[].set won't set the value if the
+                # index is out of bounds
+                nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
+                nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
+            
+                sumn += cls._bart_correlation_maxd(nminus, n0, nplus, pnt[1:], gamma, debug)
+            
+                nminus = nminus.at[i].set(nminusi)
+                nplus = nplus.at[i].set(nplusi)
+            
+                return sumn, nminus, n0, nplus, i, nminusi
+        
+            # if ni == 0 I skip recursion by passing 0 as iteration end
+            end = jnp.where(ni, nminusi + nplusi, 0)
+            start = jnp.zeros_like(end)
+            sumn, nminus, n0, nplus, _, _ = lax.fori_loop(start, end, loop, val)
+
+            sump += jnp.where(ni, sumn / ni, 0)
+
+            return sump, nminus, n0, nplus
+
+        # skip summation if all(n0 == 0)
+        end = jnp.where(n0nz, p, 0)
+        sump, _, _, _ = lax.fori_loop(0, end, loop, val)
+
         return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / pn), 1)
-    
-    if pnt.size == 3 and not debug:
-        Q = 1 - (1 - gamma) * pnt[2]
-        s = nout / n
-        S = jnp.sum(jnp.where(n, s, 0))
-        t = n0 / n
-        psin = jspecial.digamma(n)
-        def terms(nminus, nplus):
-            nminus0 = nminus + n0
-            pnmod = pn - jnp.where(nminus0, 0, 1)
-            frac = jnp.where(nminus0, nminus / nminus0, 0)
-            terms1 = (S - s + frac) / pnmod
-            psi1nminus0 = jspecial.digamma(1 + nminus0)
-            terms2 = ((nplus - 1) * (S + t) - n0 * (psin - psi1nminus0)) / pn
-            return jnp.where(nplus, terms1 + terms2, 0)
-        tplus = terms(nminus, nplus)
-        tminus = terms(nplus, nminus)
-        tall = jnp.where(n, (tplus + tminus) / n, 0)
-        sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall)
-        return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / pn), 1)
-        
-        # TODO the pnt.size == 3 calculation is probably less accurate than
-        # the recursive one, see comparison limits > 30 ULP in test_bart.py
-    
-    p = len(nminus)
 
-    val = (0., nminus, n0, nplus)
-    def loop(i, val):
-        sump, nminus, n0, nplus = val
-
-        nminusi = nminus[i]
-        n0i = n0[i]
-        nplusi = nplus[i]
-        ni = nminusi + n0i + nplusi
-        
-        val = (0., nminus, n0, nplus, i, nminusi)
-        def loop(k, val):
-            sumn, nminus, n0, nplus, i, nminusi = val
-            
-            # here I use the fact that .at[].set won't set the value if the
-            # index is out of bounds
-            nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
-            nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
-            
-            sumn += _bart_correlation_maxd(nminus, n0, nplus, pnt[1:], gamma, debug)
-            
-            nminus = nminus.at[i].set(nminusi)
-            nplus = nplus.at[i].set(nplusi)
-            
-            return sumn, nminus, n0, nplus, i, nminusi
-        
-        # if ni == 0 I skip recursion by passing 0 as iteration end
-        end = jnp.where(ni, nminusi + nplusi, 0)
-        start = jnp.zeros_like(end)
-        sumn, nminus, n0, nplus, _, _ = lax.fori_loop(start, end, loop, val)
-
-        sump += jnp.where(ni, sumn / ni, 0)
-
-        return sump, nminus, n0, nplus
-
-    # skip summation if all(n0 == 0)
-    end = jnp.where(n0nz, p, 0)
-    sump, _, _, _ = lax.fori_loop(0, end, loop, val)
-
-    return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / pn), 1)
-
-@functools.partial(jnp.vectorize, excluded=(5,), signature='(p),(p),(p),(d),()->()')
-def _bart_correlation_maxd_vectorized(nminus, n0, nplus, pnt, gamma, debug):
-    ft = _patch_jax.float_type(pnt, gamma)
-    match ft:
-        case jnp.float32:
-            it = jnp.int32
-        case jnp.float64:
-            it = jnp.int64
-    # a jax function applied to an int32 gives a float32 even with x64 enabled,
-    # so I have to sync the types to avoid losing precision in the digamma
-    return _bart_correlation_maxd(
-        nminus.astype(it), n0.astype(it), nplus.astype(it),
-        pnt.astype(ft), gamma.astype(ft),
-        bool(debug), # fix types to avoid recompilation
-    )
+    @classmethod
+    @functools.partial(jnp.vectorize, excluded=(0, 6), signature='(p),(p),(p),(d),()->()')
+    def _bart_correlation_maxd_vectorized(cls, nminus, n0, nplus, pnt, gamma, debug):
+        ft = _patch_jax.float_type(pnt, gamma)
+        match ft:
+            case jnp.float32:
+                it = jnp.int32
+            case jnp.float64:
+                it = jnp.int64
+        # a jax function applied to an int32 gives a float32 even with x64
+        # enabled, so I have to sync the types to avoid losing precision in the
+        # digamma
+        return cls._bart_correlation_maxd(
+            nminus.astype(it), n0.astype(it), nplus.astype(it),
+            pnt.astype(ft), gamma.astype(ft),
+            bool(debug), # fix types to avoid recompilation
+        )
