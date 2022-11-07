@@ -1903,7 +1903,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     .. math::
         \\newcommand{\\nvecs}{\\mathbf n^-, \\mathbf n^0, \\mathbf n^+}
         k(\\mathbf x, \\mathbf y) &= k_0(\\nvecs), \\\\
-        k_D(\\nvecs) &= 1, \\\\
+        k_D(\\nvecs) &= 1 - (1 - \\gamma) P_D, \\quad \\mathbf n^0 \\ne \\mathbf 0, \\\\
         k_d(\\mathbf 0, \\mathbf 0, \\mathbf 0) &= 1, \\\\
         k_d(\\nvecs) &= 1 - P_d \\Bigg(1 - \\frac1{p(\\mathbf n)}
             \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p
@@ -1929,9 +1929,14 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     :math:`\\beta\\to\\infty`, the kernel assumes the simple form
     
     .. math::
-        k(\\mathbf x, \\mathbf y) = 1 - \\frac\\alpha{p(\\mathbf n)}
-        \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p
-        \\frac{n^0_i}{n_i},
+        k(\\mathbf x, \\mathbf y) &= 1 - P_0 \\left(
+            1 - Q + \\frac Q{p(\\mathbf n)}
+            \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p
+            \\frac{n^0_i}{n_i} \\right), \\\\
+        Q &= \\begin{cases}
+            1 - (1 - \\gamma) P_1 & \\mathbf n^0 \\ne \\mathbf 0, \\\\
+            1 & \\mathbf n^0 = \\mathbf 0,
+        \\end{cases}
     
     which is separable along dimensions, i.e., it has no interactions.
     
@@ -2162,6 +2167,7 @@ class BART(_BARTBase):
         
         if pnt.size == 1:
             return 1 - (1 - gamma) * pnt[0]
+            # TODO maybe I should use n0nz in this case too
     
         n0nz = jnp.count_nonzero(n0)
         nout = nminus + nplus
@@ -2242,11 +2248,10 @@ class BART(_BARTBase):
     @functools.partial(jnp.vectorize, excluded=(0, 7), signature='(p),(p),(p),(d),(),(p)->()')
     def _bart_correlation_maxd_vectorized(cls, nminus, n0, nplus, pnt, gamma, w, debug):
         ft = _patch_jax.float_type(pnt, gamma, w)
-        match ft:
-            case jnp.float32:
-                it = jnp.int32
-            case jnp.float64:
-                it = jnp.int64
+        if ft == jnp.float32:
+            it = jnp.int32
+        elif ft == jnp.float64:
+            it = jnp.int64
         # a jax function applied to an int32 gives a float32 even with x64
         # enabled, so I have to sync the types to avoid losing precision in the
         # digamma
