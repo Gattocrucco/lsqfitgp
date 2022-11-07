@@ -29,7 +29,7 @@ plist = [1, 2, 10]
 smark = mark.parametrize('sb,sbw,sa', sum([[
     gen.integers(0, 10, (3, p)),
     np.zeros((3, p), int),
-    (gen.integers(0, 10, p), np.zeros(p), gen.integers(0, 10, p)),
+    (gen.integers(0, 10, p), np.arange(p) == gen.integers(p), gen.integers(0, 10, p)),
 ] for p in plist], []))
 amark = mark.parametrize('a', [
     pytest.param(0, id='a0'),
@@ -132,7 +132,7 @@ def test_perm_dims(sb, sbw, sa, a, b, u, md):
     perm = gen.permutation(sb.size)
     c = lgp.BART.correlation(sb, sbw, sa, a, b, u, md)
     cp = lgp.BART.correlation(sb[perm], sbw[perm], sa[perm], a, b, u, md)
-    np.testing.assert_array_max_ulp(c, cp, 4)
+    np.testing.assert_array_max_ulp(c, cp, 31)
 
 @mdmark
 @umark
@@ -220,7 +220,7 @@ def test_no_shortcuts(sb, sbw, sa, a, b, u, md):
     """check the result is the same if no recursions are avoided"""
     c = lgp.BART.correlation(sb, sbw, sa, a, b, u, md)
     cd = lgp.BART.correlation(sb, sbw, sa, a, b, u, md, debug=True)
-    np.testing.assert_array_max_ulp(c, cd, 4)
+    np.testing.assert_array_max_ulp(c, cd, 32)
 
 # TODO
 # - test maxd = 0, 1 with handwritten solution

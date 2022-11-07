@@ -2124,6 +2124,10 @@ def _searchsorted_vectorized(A, V, **kw):
 
 @functools.partial(jax.jit, static_argnums=(5,))
 def _bart_correlation_maxd(nminus, n0, nplus, pnt, gamma, debug):
+    
+    assert nminus.shape == n0.shape == nplus.shape
+    assert nminus.ndim == 1 and nminus.size > 0
+    assert pnt.ndim == 1 and pnt.size > 0
         
     if pnt.size == 1:
         return 1 - (1 - gamma) * pnt[0]
@@ -2158,6 +2162,9 @@ def _bart_correlation_maxd(nminus, n0, nplus, pnt, gamma, debug):
         tall = jnp.where(n, (tplus + tminus) / n, 0)
         sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall)
         return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / pn), 1)
+        
+        # TODO the pnt.size == 3 calculation is probably less accurate than
+        # the recursive one, see comparison limits > 30 ULP in test_bart.py
     
     p = len(nminus)
 
