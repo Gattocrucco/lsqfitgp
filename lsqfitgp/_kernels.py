@@ -1819,7 +1819,7 @@ class AR(_ARBase):
         return lag.astype(int)
 
 def _bart_maxdim(splits=None, **_):
-    splits = _check_splits(splits)
+    splits = BART._check_splits(splits)
     return splits[0].size
 
 @kernel(maxdim=_bart_maxdim, derivable=False)
@@ -1918,17 +1918,18 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     the one without depth limit. For :math:`D \\le 2` (the default value), the
     covariance is implemented in closed form and takes :math:`O(p)` to compute.
     For :math:`D > 2`, the computational complexity grows exponentially as
-    :math:`O(p(np)^{D-2})`, where :math:`n` is the average number of splitting
+    :math:`O(p(\\bar np)^{D-2})`, where :math:`\\bar n` is the average number of splitting
     points along a dimension.
     
     In the maximum allowed depth is 1, i.e., either :math:`D = 1` or
     :math:`\\beta\\to\\infty`, the kernel assumes the simple form
     
     .. math::
-        k(\\mathbf x, \\mathbf y) = 1 - \\frac\\alpha p \\sum_{i=1}^p
-        \\frac{n^0_i}{n^-_i + n^0_i + n^+_i},
+        k(\\mathbf x, \\mathbf y) = 1 - \\frac\\alpha{p(\\mathbf n)}
+        \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p
+        \\frac{n^0_i}{n_i},
     
-    which is separable along dimensions.
+    which is separable along dimensions, i.e., it has no interactions.
     
     References
     ----------
@@ -2061,8 +2062,8 @@ class BART(_BARTBase):
             separately along each coordinate.
         debug : bool
             If True, disable shortcuts in the tree recursion. Default False.
-        
-        For the other parameters, see :class:`BART`.
+        Other parameters :
+            See :class:`BART`.
 
         Returns
         -------
