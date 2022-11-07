@@ -2042,7 +2042,7 @@ class BART(_BARTBase):
         return cls._searchsorted_vectorized(splits[1], x)
     
     @classmethod
-    def correlation(cls, splitsbefore, splitsbetween, splitsafter, *, alpha=0.95, beta=2, gamma=1, maxd=2, debug=False, pnt=None, intercept=True):
+    def correlation(cls, splitsbefore, splitsbetween, splitsafter, *, alpha=0.95, beta=2, gamma=1, maxd=2, debug=False, pnt=None, intercept=True, weights=None):
         """
         Compute the BART prior correlation between two points.
 
@@ -2076,9 +2076,12 @@ class BART(_BARTBase):
             beta = jnp.asarray(beta)[..., None]
             pnt = alpha / (1 + d) ** beta
         if not intercept:
-            pnt = pnt.at[..., 0].set(1)
+            pnt = jnp.asarray(pnt).at[..., 0].set(1)
+        if weights is None:
+            splitsbefore = jnp.asarray(splitsbefore)
+            weights = jnp.ones(splitsbefore.shape[-1])
         return cls._bart_correlation_maxd_vectorized(
-            splitsbefore, splitsbetween, splitsafter, pnt, gamma, debug
+            splitsbefore, splitsbetween, splitsafter, pnt, gamma, weights, debug
         )
 
     @staticmethod
@@ -2134,10 +2137,10 @@ class BART(_BARTBase):
         return out.T
 
     @classmethod
-    @functools.partial(jax.jit, static_argnums=(0, 6))
-    def _bart_correlation_maxd(cls, nminus, n0, nplus, pnt, gamma, debug):
+    @functools.partial(jax.jit, static_argnums=(0, 7))
+    def _bart_correlation_maxd(cls, nminus, n0, nplus, pnt, gamma, w, debug):
     
-        assert nminus.shape == n0.shape == nplus.shape
+        assert nminus.shape == n0.shape == nplus.shape == w.shape
         assert nminus.ndim == 1 and nminus.size > 0
         assert pnt.ndim == 1 and pnt.size > 0
         
@@ -2147,33 +2150,32 @@ class BART(_BARTBase):
         n0nz = jnp.count_nonzero(n0)
         nout = nminus + nplus
         n = nout + n0
-        pn = jnp.count_nonzero(n)
+        Wn = jnp.sum(jnp.where(n, w, 0))
 
         if pnt.size == 2 and not debug:
             Q = 1 - (1 - gamma) * pnt[1]
-            # meanp = Q * jnp.mean(nout / n, where=n) # <--- does not work (?)
-            sump = Q * jnp.sum(jnp.where(n, nout / n, 0))
-            return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / pn), 1)
+            sump = Q * jnp.sum(jnp.where(n, w * nout / n, 0))
+            return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / Wn), 1)
     
         if pnt.size == 3 and not debug:
             Q = 1 - (1 - gamma) * pnt[2]
-            s = nout / n
+            s = w * nout / n
             S = jnp.sum(jnp.where(n, s, 0))
-            t = n0 / n
+            t = w * n0 / n
             psin = jspecial.digamma(n)
             def terms(nminus, nplus):
                 nminus0 = nminus + n0
-                pnmod = pn - jnp.where(nminus0, 0, 1)
-                frac = jnp.where(nminus0, nminus / nminus0, 0)
-                terms1 = (S - s + frac) / pnmod
+                Wnmod = Wn - jnp.where(nminus0, 0, w)
+                frac = jnp.where(nminus0, w * nminus / nminus0, 0)
+                terms1 = (S - s + frac) / Wnmod
                 psi1nminus0 = jspecial.digamma(1 + nminus0)
-                terms2 = ((nplus - 1) * (S + t) - n0 * (psin - psi1nminus0)) / pn
+                terms2 = ((nplus - 1) * (S + t) - w * n0 * (psin - psi1nminus0)) / Wn
                 return jnp.where(nplus, terms1 + terms2, 0)
             tplus = terms(nminus, nplus)
             tminus = terms(nplus, nminus)
-            tall = jnp.where(n, (tplus + tminus) / n, 0)
+            tall = jnp.where(n, w * (tplus + tminus) / n, 0)
             sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall)
-            return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / pn), 1)
+            return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / Wn), 1)
         
             # TODO the pnt.size == 3 calculation is probably less accurate than
             # the recursive one, see comparison limits > 30 ULP in test_bart.py
@@ -2198,7 +2200,7 @@ class BART(_BARTBase):
                 nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
                 nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
             
-                sumn += cls._bart_correlation_maxd(nminus, n0, nplus, pnt[1:], gamma, debug)
+                sumn += cls._bart_correlation_maxd(nminus, n0, nplus, pnt[1:], gamma, w, debug)
             
                 nminus = nminus.at[i].set(nminusi)
                 nplus = nplus.at[i].set(nplusi)
@@ -2210,7 +2212,7 @@ class BART(_BARTBase):
             start = jnp.zeros_like(end)
             sumn, nminus, n0, nplus, _, _ = lax.fori_loop(start, end, loop, val)
 
-            sump += jnp.where(ni, sumn / ni, 0)
+            sump += jnp.where(ni, w[i] * sumn / ni, 0)
 
             return sump, nminus, n0, nplus
 
@@ -2218,12 +2220,12 @@ class BART(_BARTBase):
         end = jnp.where(n0nz, p, 0)
         sump, _, _, _ = lax.fori_loop(0, end, loop, val)
 
-        return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / pn), 1)
+        return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / Wn), 1)
 
     @classmethod
-    @functools.partial(jnp.vectorize, excluded=(0, 6), signature='(p),(p),(p),(d),()->()')
-    def _bart_correlation_maxd_vectorized(cls, nminus, n0, nplus, pnt, gamma, debug):
-        ft = _patch_jax.float_type(pnt, gamma)
+    @functools.partial(jnp.vectorize, excluded=(0, 7), signature='(p),(p),(p),(d),(),(p)->()')
+    def _bart_correlation_maxd_vectorized(cls, nminus, n0, nplus, pnt, gamma, w, debug):
+        ft = _patch_jax.float_type(pnt, gamma, w)
         match ft:
             case jnp.float32:
                 it = jnp.int32
@@ -2234,6 +2236,6 @@ class BART(_BARTBase):
         # digamma
         return cls._bart_correlation_maxd(
             nminus.astype(it), n0.astype(it), nplus.astype(it),
-            pnt.astype(ft), gamma.astype(ft),
+            pnt.astype(ft), gamma.astype(ft), w.astype(ft),
             bool(debug), # fix types to avoid recompilation
         )
