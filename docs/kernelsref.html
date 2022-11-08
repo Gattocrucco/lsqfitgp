@@ -473,11 +473,12 @@ covariance function can be written recursively as</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\newcommand{\nvecs}{\mathbf n^-, \mathbf n^0, \mathbf n^+}
 k(\mathbf x, \mathbf y) &amp;= k_0(\nvecs), \\
-k_D(\nvecs) &amp;= 1 - (1 - \gamma) P_D, \quad \mathbf n^0 \ne \mathbf 0, \\
+k_D(\nvecs) &amp;= 1 - (1 - \gamma) P_D,
+    \quad \mathbf n^0 \ne \mathbf 0, \\
 k_d(\mathbf 0, \mathbf 0, \mathbf 0) &amp;= 1, \\
-k_d(\nvecs) &amp;= 1 - P_d \Bigg(1 - \frac1{p(\mathbf n)}
+k_d(\nvecs) &amp;= 1 - P_d \Bigg(1 - \frac1{W(\mathbf n)}
     \sum_{\substack{i=1 \\ n_i\ne 0}}^p
-        \frac1{n_i} \Bigg( \\
+        \frac{w_i}{n_i} \Bigg( \\
         &amp;\qquad \sum_{k=0}^{n^-_i - 1}
         k_{d+1}(\mathbf n^-_{n^-_i=k}, \mathbf n^0, \mathbf n^+)
         + {} \\
@@ -485,7 +486,7 @@ k_d(\nvecs) &amp;= 1 - P_d \Bigg(1 - \frac1{p(\mathbf n)}
         k_{d+1}(\mathbf n^-, \mathbf n^0, \mathbf n^+_{n^+_i=k})
     \Bigg)
 \Bigg), \quad d &lt; D, \\
-p(\mathbf n) &amp;= \sum_{\substack{i=1 \\ n_i\ne 0}}^p 1.\end{split}\]</div>
+W(\mathbf n) &amp;= \sum_{\substack{i=1 \\ n_i\ne 0}}^p w_i.\end{split}\]</div>
 <p>The introduction of a maximum depth <span class="math notranslate nohighlight">\(D\)</span> is necessary for
 computational feasibility. As <span class="math notranslate nohighlight">\(D\)</span> increases, the result converges to
 the one without depth limit. For <span class="math notranslate nohighlight">\(D \le 2\)</span> (the default value), the
@@ -497,8 +498,8 @@ points along a dimension.</p>
 <span class="math notranslate nohighlight">\(\beta\to\infty\)</span>, the kernel assumes the simple form</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}k(\mathbf x, \mathbf y) &amp;= 1 - P_0 \left(
-    1 - Q + \frac Q{p(\mathbf n)}
-    \sum_{\substack{i=1 \\ n_i\ne 0}}^p
+    1 - Q + \frac Q{W(\mathbf n)}
+    \sum_{\substack{i=1 \\ n_i\ne 0}}^p w_i
     \frac{n^0_i}{n_i} \right), \\
 Q &amp;= \begin{cases}
     1 - (1 - \gamma) P_1 &amp; \mathbf n^0 \ne \mathbf 0, \\
@@ -861,7 +862,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x1229523b0&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x11d48a3b0&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
