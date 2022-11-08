@@ -27,7 +27,7 @@ gen = np.random.default_rng(202207191826)
 
 plist = [1, 2, 10]
 smark = mark.parametrize('sb,sbw,sa,w', sum([[
-    (*gen.integers(0, 10, (3, p)), gen.integers(1, 10, p)),
+    (*gen.integers(0, 4, (3, p)), gen.integers(1, 10, p)),
     (*np.zeros((3, p), int), gen.integers(1, 10, p)),
     (gen.integers(0, 10, p), np.arange(p) == gen.integers(p), gen.integers(0, 10, p), gen.integers(1, 10, p)),
 ] for p in plist], []))
