@@ -1903,11 +1903,12 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     .. math::
         \\newcommand{\\nvecs}{\\mathbf n^-, \\mathbf n^0, \\mathbf n^+}
         k(\\mathbf x, \\mathbf y) &= k_0(\\nvecs), \\\\
-        k_D(\\nvecs) &= 1 - (1 - \\gamma) P_D, \\quad \\mathbf n^0 \\ne \\mathbf 0, \\\\
+        k_D(\\nvecs) &= 1 - (1 - \\gamma) P_D,
+            \\quad \\mathbf n^0 \\ne \\mathbf 0, \\\\
         k_d(\\mathbf 0, \\mathbf 0, \\mathbf 0) &= 1, \\\\
-        k_d(\\nvecs) &= 1 - P_d \\Bigg(1 - \\frac1{p(\\mathbf n)}
+        k_d(\\nvecs) &= 1 - P_d \\Bigg(1 - \\frac1{W(\\mathbf n)}
             \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p
-                \\frac1{n_i} \\Bigg( \\\\
+                \\frac{w_i}{n_i} \\Bigg( \\\\
                 &\\qquad \\sum_{k=0}^{n^-_i - 1}
                 k_{d+1}(\\mathbf n^-_{n^-_i=k}, \\mathbf n^0, \\mathbf n^+)
                 + {} \\\\
@@ -1915,7 +1916,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
                 k_{d+1}(\\mathbf n^-, \\mathbf n^0, \\mathbf n^+_{n^+_i=k})
             \\Bigg)
         \\Bigg), \\quad d < D, \\\\
-        p(\\mathbf n) &= \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p 1.
+        W(\\mathbf n) &= \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p w_i.
         
     The introduction of a maximum depth :math:`D` is necessary for
     computational feasibility. As :math:`D` increases, the result converges to
@@ -1930,8 +1931,8 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     
     .. math::
         k(\\mathbf x, \\mathbf y) &= 1 - P_0 \\left(
-            1 - Q + \\frac Q{p(\\mathbf n)}
-            \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p
+            1 - Q + \\frac Q{W(\\mathbf n)}
+            \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p w_i
             \\frac{n^0_i}{n_i} \\right), \\\\
         Q &= \\begin{cases}
             1 - (1 - \\gamma) P_1 & \\mathbf n^0 \\ne \\mathbf 0, \\\\
