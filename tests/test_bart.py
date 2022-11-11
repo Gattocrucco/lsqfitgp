@@ -222,6 +222,19 @@ def test_no_shortcuts(sb, sbw, sa, w, a, b, u, md):
     cd = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, debug=True, weights=w)
     np.testing.assert_array_max_ulp(c, cd, 32)
 
+@mdmark
+@umark
+@bmark
+@amark
+@smark
+def test_nzero(sb, sbw, sa, w, a, b, u, md):
+    """adding zeros in sb, sbw, sa does not change the result"""
+    kw = dict(alpha=a, beta=b, gamma=u, maxd=md)
+    c = lgp.BART.correlation(sb, sbw, sa, weights=w, **kw)
+    z = lambda x, f=0, p=4: np.concatenate([x, np.full(p, f)])
+    c0 = lgp.BART.correlation(z(sb), z(sbw), z(sa), weights=z(w, 1), **kw)
+    np.testing.assert_array_max_ulp(c, c0, 0)
+
 # TODO
 # - test maxd = 0, 1 with handwritten solution
 # - increases at fixed n0 and ntot if the difference between nminus and nplus
