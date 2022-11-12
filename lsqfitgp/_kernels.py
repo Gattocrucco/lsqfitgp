@@ -2076,26 +2076,34 @@ class BART(_BARTBase):
         corr : scalar
             The prior correlation.
         """
-        
+                
         # fill missing arguments
         if pnt is None:
             assert maxd == int(maxd) and maxd >= 0, maxd
+            alpha = jnp.asarray(alpha)
+            beta = jnp.asarray(beta)
             if _patch_jax.isconcrete(alpha, beta):
                 with jax.ensure_compile_time_eval():
                     assert jnp.all((0 <= alpha) & (alpha <= 1))
                     assert jnp.all(beta >= 0)
             d = jnp.arange(maxd + 1)
-            alpha = jnp.asarray(alpha)[..., None]
-            beta = jnp.asarray(beta)[..., None]
+            alpha = alpha[..., None]
+            beta = beta[..., None]
             pnt = alpha / (1 + d) ** beta
+        else:
+            pnt = jnp.asarray(pnt)
+        
         if weights is None:
             splitsbefore = jnp.asarray(splitsbefore)
             weights = jnp.ones(splitsbefore.shape[-1])
+        else:
+            weights = jnp.asarray(weights)
         
         if not intercept:
-            pnt = jnp.asarray(pnt).at[..., 0].set(1)
+            pnt = pnt.at[..., 0].set(1)
         
         # check values are in range
+        gamma = jnp.asarray(gamma)
         if _patch_jax.isconcrete(gamma, pnt, weights):
             with jax.ensure_compile_time_eval():
                 assert jnp.all((0 <= gamma) & (gamma <= 1))
@@ -2166,11 +2174,11 @@ class BART(_BARTBase):
         assert nminus.ndim == 1 and nminus.size > 0
         assert pnt.ndim == 1 and pnt.size > 0
         
+        anyn0 = jnp.any(n0)
+
         if pnt.size == 1:
-            return 1 - (1 - gamma) * pnt[0]
-            # TODO maybe I should use n0nz in this case too
+            return jnp.where(anyn0, 1 - (1 - gamma) * pnt[0], 1)
     
-        n0nz = jnp.count_nonzero(n0)
         nout = nminus + nplus
         n = nout + n0
         Wn = jnp.sum(jnp.where(n, w, 0))
@@ -2178,7 +2186,7 @@ class BART(_BARTBase):
         if pnt.size == 2 and not debug:
             Q = 1 - (1 - gamma) * pnt[1]
             sump = Q * jnp.sum(jnp.where(n, w * nout / n, 0))
-            return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / Wn), 1)
+            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
     
         if pnt.size == 3 and not debug:
             Q = 1 - (1 - gamma) * pnt[2]
@@ -2198,7 +2206,7 @@ class BART(_BARTBase):
             tminus = terms(nplus, nminus)
             tall = jnp.where(n, w * (tplus + tminus) / n, 0)
             sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall)
-            return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / Wn), 1)
+            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
         
             # TODO the pnt.size == 3 calculation is probably less accurate than
             # the recursive one, see comparison limits > 30 ULP in test_bart.py
@@ -2240,10 +2248,10 @@ class BART(_BARTBase):
             return sump, nminus, n0, nplus
 
         # skip summation if all(n0 == 0)
-        end = jnp.where(n0nz, p, 0)
+        end = jnp.where(anyn0, p, 0)
         sump, _, _, _ = lax.fori_loop(0, end, loop, val)
 
-        return jnp.where(n0nz, 1 - pnt[0] * (1 - sump / Wn), 1)
+        return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
 
     @classmethod
     @functools.partial(jnp.vectorize, excluded=(0, 7), signature='(p),(p),(p),(d),(),(p)->()')

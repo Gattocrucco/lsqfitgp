@@ -104,9 +104,8 @@ def test_incr_alpha(sb, sbw, sa, w, a, b, u, md):
 ] for p in plist], []))
 def test_corr_1(sb, sbw, sa, w, a, b, u, md):
     """correlation = 1 if n^0 = 0"""
-    if u or md:
-        c = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
-        np.testing.assert_array_max_ulp(c, np.broadcast_to(1, c.shape))
+    c = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
+    np.testing.assert_array_max_ulp(c, np.broadcast_to(1, c.shape))
 
 @mdmark
 @umark
