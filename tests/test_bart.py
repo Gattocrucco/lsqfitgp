@@ -29,7 +29,7 @@ plist = [1, 2, 10]
 smark = mark.parametrize('sb,sbw,sa,w', sum([[
     (*gen.integers(0, 4, (3, p)), gen.integers(1, 10, p)),
     (*np.zeros((3, p), int), gen.integers(1, 10, p)),
-    (gen.integers(0, 10, p), np.arange(p) == gen.integers(p), gen.integers(0, 10, p), gen.integers(1, 10, p)),
+    (gen.integers(0, 10, p), (np.arange(p) == gen.integers(p)).astype(int), gen.integers(0, 10, p), gen.integers(1, 10, p)),
 ] for p in plist], []))
 amark = mark.parametrize('a', [
     pytest.param(0, id='a0'),
@@ -169,7 +169,7 @@ def values(mark):
 
 @mark.parametrize('sb,sbw,sa,w,a,b,md', [
     # n^0 = 0
-    (gen.integers(0, 10, p), np.zeros(p), gen.integers(0, 10, p), gen.integers(1, 10, p), a, b, d)
+    (gen.integers(0, 10, p), np.zeros(p, int), gen.integers(0, 10, p), gen.integers(1, 10, p), a, b, d)
     for p in plist
     for a in values(amark)
     for b in values(bmark)
@@ -238,3 +238,5 @@ def test_nzero(sb, sbw, sa, w, a, b, u, md):
 # - test maxd = 0, 1 with handwritten solution
 # - increases at fixed n0 and ntot if the difference between nminus and nplus
 #   decreases (not completely sure)
+# - test gamma='auto' within lower and upper
+# - test gamma='auto' gives 0 for beta=0, alpha=1

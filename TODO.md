@@ -388,7 +388,8 @@ Hensman, I think this thing should be standard anyway, although I don't
 remember reading it in Rasmussen's book.)
 
 I can do (positive scalar) ** kernel (=> implement Kernel.__rpow__). Also
-(positive kernel) ** kernel I think.
+(positive kernel) ** kernel I think. => If (positive kernel) ** kernel was
+correct, it would mean that all positive kernels are infinitely divisible.
 
 Standard functions with positive Taylor coefficients: tan, 1/sin, 1/cos, asin,
 acos, 1/(1-x), exp, -log(1-x), sinh, cosh, atanh, I_a (real a > -1).
@@ -516,11 +517,6 @@ Graph kernels from pyGPs:
 https://www.cse.wustl.edu/~m.neumann/pyGPs_doc/Graph.html. I also collected
 some articles somewhere.
 
-Are there interesting discontinuous processes apart from the white noise? =>
-I guess they would be something + white noise, so not interesting => nope,
-it's sufficient that there is a cusp for r->0, the gammaexp does this for
-gamma < 1, matern too for nu < 1/2
-
 il kernel Taylor posso ricavarlo analiticamente anche per funzioni
 che vanno giù più velocemente? Tipo (1/k!)^2n si riesce a fare? Scommetterei di
 sì visto che (1/k!)^2 si può
@@ -528,18 +524,7 @@ sì visto che (1/k!)^2 si può
     `sum_k=0^oo x^k/(k!)^n = 0_F_(n-1)([], [1]*(n-1), x)`
 But scipy.special does not implement the generalized hypergeometric function.
 
-aggiungere kernel BART con maxdepth, default beta=inf, maxdepth=1. Come input
-prende gli splitting points, e deve avere un class method per ricavare gli
-spitting points dalle X. Per aggiungere il class method usando comunque il
-decoratore, definire _BART con il decoratore e poi sottoclassarlo a BART
-esplicitamente.
-
-fare anche il BART con la formula esplicita per maxdepth = 2 (quaderno 2022 MAR
-12) perché se no è troppo inefficiente. In generale quello con maxdepth
-andrebbe calcolato su pochi punti e poi interpolato, l'interpolazione va fatta
-con attenzione quando beta è piccolo.
-
-Fare la versione del kernel Fourier con solo il seno. Nel caso n=1 viene il
+Fare la versione del kernel Zeta con solo il seno. Nel caso n=1 viene il
 Brownian bridge. => no, dovrebbe funzionare prendendo la parte dispari
 con addproclintransf, fare un esempio di prova
 
@@ -562,18 +547,18 @@ stazionario, lo aggiungo con ereditarietà multipla solo come flag)
 Look in the kernels reference I highlighted in the GPML bibliography
 (Abrahamsen 1997). => Spherical (p. 40) Gives formulas in dimensions 1, 2, 3,
 5. Appears generalizable for odd n, but maybe not for even n, is that why it
-doesn't give n=4? Is it a special case of PPKernel? => I think not. Cubic (p.
+doesn't give n=4? Is it a special case of Wendland? => I think not. Cubic (p.
 41) is similarly a polynomial, but works in all dimensions I think.
 
 Multi-fractional brownian motion, see Lim and Teo (2009) => imperscrutable math
 
-Can I do a kernel with the Dirichlet function? (scipy.special.diric) =>
+Kernel with the Dirichlet function (scipy.special.diric) =>
 https://en.wikipedia.org/wiki/Dirichlet_kernel,
 https://francisbach.com/information-theory-with-kernel-methods/
 
 ARIMA, and something to flatten a VARIMA and back, and continuous equivalent.
 
-splines
+splines (somewhere on Rasmussen's)
 
 truncated power (Gneiting 2002, p. 501).
 

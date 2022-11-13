@@ -1838,9 +1838,12 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
         points along each dimension, the second has shape (n, p) and contains
         the sorted splitting points in each column, filled with high values
         after the length.
-    gamma : scalar
+    gamma : scalar or str
         Interpolation coefficient in [0, 1] between a lower and a upper
-        bound on the infinite maxd limit, default 1 (upper bound).
+        bound on the infinite maxd limit, or a string 'auto' indicating to
+        use a formula which depends on alpha, beta, maxd and the number of
+        covariates, empirically calibrated on maxd from 1 to 3. Default 1
+        (upper bound).
     pnt : (maxd + 1,) array, optional
         Nontermination probabilities at depths 0...maxd. If specified,
         `alpha`, `beta` and `maxd` are ignored.
@@ -1967,12 +1970,11 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     )
     
     # TODO
-    # - option to remove ~1/p nugget
-    # - new default for gamma (0.55?)
     # - interpolate (is linear interp pos def? => I think it can be seen as
     #   the covariance of the interpolation)
     # - approximate as stationary w.r.t. indices (is it pos def?)
     # - allow index input
+    # - default gamma='auto'?
 
 class BART(_BARTBase):
     
@@ -2076,8 +2078,23 @@ class BART(_BARTBase):
         corr : scalar
             The prior correlation.
         """
-                
-        # fill missing arguments
+        
+        # check splitting points are integers
+        splitsbefore = jnp.asarray(splitsbefore)
+        splitsbetween = jnp.asarray(splitsbetween)
+        splitsafter = jnp.asarray(splitsafter)
+        assert jnp.issubdtype(splitsbefore.dtype, jnp.integer)
+        assert jnp.issubdtype(splitsbetween.dtype, jnp.integer)
+        assert jnp.issubdtype(splitsafter.dtype, jnp.integer)
+        
+        # check splitting points are nonnegative
+        if _patch_jax.isconcrete(splitsbefore, splitsbetween, splitsafter):
+            with jax.ensure_compile_time_eval():
+                assert jnp.all(splitsbefore >= 0)
+                assert jnp.all(splitsbetween >= 0)
+                assert jnp.all(splitsafter >= 0)
+        
+        # get splitting probabilities
         if pnt is None:
             assert maxd == int(maxd) and maxd >= 0, maxd
             alpha = jnp.asarray(alpha)
@@ -2093,26 +2110,53 @@ class BART(_BARTBase):
         else:
             pnt = jnp.asarray(pnt)
         
+        # get covariate weights
         if weights is None:
-            splitsbefore = jnp.asarray(splitsbefore)
             weights = jnp.ones(splitsbefore.shape[-1])
         else:
             weights = jnp.asarray(weights)
         
-        if not intercept:
-            pnt = pnt.at[..., 0].set(1)
+        # get interpolation coefficients
+        if isinstance(gamma, str):
+            if gamma == 'auto':
+                p = weights.shape[-1]
+                gamma = self._gamma(p, pnt)
+            else:
+                raise KeyError(gamma)
+        else:
+            gamma = jnp.asarray(gamma)
         
         # check values are in range
-        gamma = jnp.asarray(gamma)
         if _patch_jax.isconcrete(gamma, pnt, weights):
             with jax.ensure_compile_time_eval():
                 assert jnp.all((0 <= gamma) & (gamma <= 1))
                 assert jnp.all((0 <= pnt) & (pnt <= 1))
                 assert jnp.all(weights >= 0)
 
+        # set first splitting probability to 1 to remove flat baseline (keep
+        # last!)
+        if not intercept:
+            pnt = pnt.at[..., 0].set(1)
+        
         return cls._bart_correlation_maxd_vectorized(
             splitsbefore, splitsbetween, splitsafter, pnt, gamma, weights, debug
         )
+    
+    @staticmethod
+    def _gamma(p, pnt):
+        # gamma(alpha, beta, maxd) =
+        #   = (gamma_0 - gamma_d maxd) (1 - alpha^s 2^(-t beta)) =
+        #   = (gamma_0 - gamma_d maxd) (1 - P0^s-t P1^-t)
+        gamma_0 = 0.598 + 0.024 * jnp.exp(-1.2 * (p - 1))
+        gamma_d = -0.011 + 0.083 * jnp.exp(-2.3 * (p - 1))
+        s = 2.32 - 0.95 * jnp.exp(-0.7 * (p - 1))
+        t = 4.13 - 1.6 * jnp.exp(-0.7 * (p - 1))
+        maxd = pnt.shape[-1] - 1
+        floor = gamma_0 - gamma_d * maxd
+        corner = 1 - pnt[0] ** (s - t)  *  pnt[1] ** -t
+        return jnp.clip(floor * corner, 0, 1)
+        
+        # TODO make this public?
 
     @staticmethod
     def _check_x(x):

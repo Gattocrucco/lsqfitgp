@@ -92,6 +92,7 @@ def _concrete(x):
     # because during jit tracing all jax functions produce abstract arrays.
     return x.aval.val if isinstance(x, core.Tracer) else x
     # TODO maybe use jax.core.concrete_aval? But I'm not sure of what it does
+    # TODO this should be replaced with jax.ensure_compile_time_eval()
 
 def concrete(*args):
     result = tree_util.tree_map(_concrete, args)
