@@ -420,8 +420,11 @@ points along each dimension, the second has shape (n, p) and contains
 the sorted splitting points in each column, filled with high values
 after the length.</p>
 </dd>
-<dt><strong>gamma</strong><span class="classifier">scalar</span></dt><dd><p>Interpolation coefficient in [0, 1] between a lower and a upper
-bound on the infinite maxd limit, default 1 (upper bound).</p>
+<dt><strong>gamma</strong><span class="classifier">scalar or str</span></dt><dd><p>Interpolation coefficient in [0, 1] between a lower and a upper
+bound on the infinite maxd limit, or a string ‘auto’ indicating to
+use a formula which depends on alpha, beta, maxd and the number of
+covariates, empirically calibrated on maxd from 1 to 3. Default 1
+(upper bound).</p>
 </dd>
 <dt><strong>pnt</strong><span class="classifier">(maxd + 1,) array, optional</span></dt><dd><p>Nontermination probabilities at depths 0…maxd. If specified,
 <cite>alpha</cite>, <cite>beta</cite> and <cite>maxd</cite> are ignored.</p>
@@ -862,7 +865,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x11d48a3b0&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x116fa2320&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
