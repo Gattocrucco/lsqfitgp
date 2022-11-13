@@ -2120,7 +2120,7 @@ class BART(_BARTBase):
         if isinstance(gamma, str):
             if gamma == 'auto':
                 p = weights.shape[-1]
-                gamma = self._gamma(p, pnt)
+                gamma = cls._gamma(p, pnt)
             else:
                 raise KeyError(gamma)
         else:
@@ -2146,15 +2146,20 @@ class BART(_BARTBase):
     def _gamma(p, pnt):
         # gamma(alpha, beta, maxd) =
         #   = (gamma_0 - gamma_d maxd) (1 - alpha^s 2^(-t beta)) =
-        #   = (gamma_0 - gamma_d maxd) (1 - P0^s-t P1^-t)
+        #   = (gamma_0 - gamma_d maxd) (1 - P0^s-t P1^t)
+
         gamma_0 = 0.598 + 0.024 * jnp.exp(-1.2 * (p - 1))
         gamma_d = -0.011 + 0.083 * jnp.exp(-2.3 * (p - 1))
+        maxd = pnt.shape[-1] - 1
+        floor = jnp.clip(gamma_0 - gamma_d * maxd, 0, 1)
+
         s = 2.32 - 0.95 * jnp.exp(-0.7 * (p - 1))
         t = 4.13 - 1.6 * jnp.exp(-0.7 * (p - 1))
-        maxd = pnt.shape[-1] - 1
-        floor = gamma_0 - gamma_d * maxd
-        corner = 1 - pnt[0] ** (s - t)  *  pnt[1] ** -t
-        return jnp.clip(floor * corner, 0, 1)
+        P0 = pnt[..., 0]
+        P1 = jnp.minimum(P0, pnt[..., 1])
+        corner = jnp.where(P0, 1 - P0 ** (s - t) * P1 ** t, 1)
+        
+        return floor * corner
         
         # TODO make this public?
 
@@ -2217,6 +2222,9 @@ class BART(_BARTBase):
         assert nminus.shape == n0.shape == nplus.shape == w.shape
         assert nminus.ndim == 1 and nminus.size > 0
         assert pnt.ndim == 1 and pnt.size > 0
+        
+        # TODO move this shape checks in BART.correlation such that the
+        # error messages are user-legible
         
         anyn0 = jnp.any(n0)
 

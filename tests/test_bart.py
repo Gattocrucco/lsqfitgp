@@ -51,8 +51,10 @@ mdmark = mark.parametrize('md', range(5))
 def test_lower_lt_upper(sb, sbw, sa, w, a, b, md):
     """lower <= upper"""
     lw = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=0, maxd=md, weights=w)
+    au = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma='auto', maxd=md, weights=w)
     up = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=1, maxd=md, weights=w)
-    np.testing.assert_array_max_ulp(lw, np.minimum(lw, up))
+    np.testing.assert_array_max_ulp(lw, np.minimum(lw, au))
+    np.testing.assert_array_max_ulp(au, np.minimum(au, up))
 
 @bmark
 @amark
@@ -235,8 +237,6 @@ def test_nzero(sb, sbw, sa, w, a, b, u, md):
     np.testing.assert_array_max_ulp(c, c0, 0)
 
 # TODO
-# - test maxd = 0, 1 with handwritten solution
 # - increases at fixed n0 and ntot if the difference between nminus and nplus
 #   decreases (not completely sure)
-# - test gamma='auto' within lower and upper
 # - test gamma='auto' gives 0 for beta=0, alpha=1
