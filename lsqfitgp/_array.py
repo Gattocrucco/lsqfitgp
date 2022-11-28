@@ -107,6 +107,14 @@ class StructuredArray:
             for name in array.dtype.names
         }
         return cls._array(array.shape, array.dtype, d)
+        
+        # TODO accept a DataFrame. Use 'iloc' for duck typing. Unpack the
+        # dataframe columns one by one and keep a reference.
+        
+        # TODO accept a non-structured array by using the last axis as
+        # field dimension, with default field names as in
+        # numpy.lib.recfunctions.unstructured_to_structured. => Only if really
+        # necessary, because silent hidden conversions can be confusing.
     
     def __getitem__(self, key):
         if isinstance(key, str):

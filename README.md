@@ -17,6 +17,9 @@ Python module for manipulating Gaussian processes. Features:
     `gvar.BufferDict` to transparently apply transformations.
   * Get a covariance matrix for the optimized hyperparameters.
   * Many covariance functions.
+  
+See [this report](https://www.giacomopetrillo.com/scuola/gppdf.pdf) for the
+theory behind lsqfitgp.
 
 ## Installation
 

@@ -1098,6 +1098,8 @@ def Color(delta, n=2):
     
     # Parametrize with n = 1 + 2 nu like Matérn.
     
+    # Bartosch, L. (2001). "Generation of colored noise". International Journal of Modern Physics C. 12 (6): 851–855. Bibcode:2001IJMPC..12..851B. doi:10.1142/S0129183101002012. S2CID 54500670.
+    
     assert int(n) == n and n >= 2, n
     return (n - 1) * _special.expn_imag(n, delta).real
     
@@ -2141,6 +2143,9 @@ class BART(_BARTBase):
         return cls._bart_correlation_maxd_vectorized(
             splitsbefore, splitsbetween, splitsafter, pnt, gamma, weights, debug
         )
+        
+        # TODO when creating an argument automatically, use the float
+        # type of user-provided arguments
     
     @staticmethod
     def _gamma(p, pnt):
@@ -2168,6 +2173,7 @@ class BART(_BARTBase):
         x = _array.asarray(x)
         if x.dtype.names:
             x = numpy.structured_to_unstructured(x)
+            # TODO wrong! the function is in numpy.lib.recfunctions!
         return x
 
     @staticmethod

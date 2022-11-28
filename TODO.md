@@ -704,7 +704,7 @@ I'd like to avoid introducing a different likelihood and Laplace and EP. In the
 user guide I did text classification in my own crappy but quick and still
 statistically well-defined way, well it turns out that technique has been
 studied and it works almost as well, it's in GPML section 6.5 "Least-squares
-Classification". (A blog post on this would be interesting.)
+Classification".
 
 I can improve it in the following way that won't require significant new code
 but only explanations to the user: for each datapoint give the probability for
@@ -866,6 +866,11 @@ automatically, I'm not sure.
 When a covariance block flag or a DAG assumption is not used, emit a warning.
 Can be implemented by flagging the individual objects with "done", false by
 default, and then checking if something was not used in the blocks involved.
+
+In GP, allow an option "rank" to fix the rank of eigenvalue truncation instead
+of thresholding. It would be useful that the decomposition has a property
+"rank" such that the user can get it for a case where it should be the lowest
+possible by using GP.decomp.
 
 #### Stationary processes (toeplitz)
 

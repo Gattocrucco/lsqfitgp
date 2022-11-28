@@ -379,3 +379,6 @@ def test_bernoulli():
         check_bernoulli(n, x)
 
 # TODO test expn
+
+# TODO these tests currently take 4 min out of 17 total. I guess the bottleneck
+# is mpmath. I should produce and commit a cache of values.

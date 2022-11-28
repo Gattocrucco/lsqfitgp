@@ -2076,6 +2076,8 @@ does not involve L^+, it could be that it still works. Let's check:
     
 It works!
 
+=> 2022-11-19 I'm dumb: this is just a particular case of normal Woodbury.
+
 2022-09-07
 ==========
 
@@ -2477,10 +2479,17 @@ tests/test_linalg.py::TestWoodburyDiag::test_logdet_jac_rev_jit PASSED          
 
 Are they new? Do they still fail in old jax versions? In which version did they
 stop failing? Should I unmark them and require jax >= 0.3.24? Or wait to see
-if they remain xpasses with further updates or regress back?
+if they remain xpasses with further updates or regress back? => They are still
+ok in jax 0.3.25, but let's wait until 0.4 which should be coming soon.
 
 2022-11-06
 ==========
 
 I think I have found a jax bug: jnp.mean(..., where=...) return wrong result
 under jit, should be reproducible with 1-length arrays and all go mask.
+
+2022-11-20
+==========
+
+In the eigenvalue truncating decompositions, add the missing epsilons to the
+determinant to make it smooth.

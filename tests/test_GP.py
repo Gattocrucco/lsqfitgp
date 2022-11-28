@@ -969,3 +969,7 @@ def test_givencov_decomp():
     # low rank givencov
     dec1, dec2 = decs(gp, [0], len(a) // 2)
     util.assert_close_decomps(dec2, dec1, rtol=0.1) # TODO wildly inaccurate
+
+# TODO use a structured array with checksym=False, it fails right now when
+# the array passes through jnp.broadcast_to. => Maybe after writing the test
+# I should wrap all structured arrays with StructuredArray in GP.addx.
