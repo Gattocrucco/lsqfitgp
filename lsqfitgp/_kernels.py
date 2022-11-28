@@ -22,12 +22,13 @@ import collections
 import functools
 import sys
 
-import jax
 import numpy
 from jax import numpy as jnp
+import jax
 from jax.scipy import special as jspecial
 from jax import tree_util, lax
 from scipy import special
+from numpy.lib import recfunctions
 
 from . import _array
 from . import _Kernel
@@ -2172,8 +2173,7 @@ class BART(_BARTBase):
     def _check_x(x):
         x = _array.asarray(x)
         if x.dtype.names:
-            x = numpy.structured_to_unstructured(x)
-            # TODO wrong! the function is in numpy.lib.recfunctions!
+            x = recfunctions.structured_to_unstructured(x)
         return x
 
     @staticmethod

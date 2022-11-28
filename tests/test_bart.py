@@ -236,6 +236,11 @@ def test_nzero(sb, sbw, sa, w, a, b, u, md):
     c0 = lgp.BART.correlation(z(sb), z(sbw), z(sa), weights=z(w, 1), **kw)
     np.testing.assert_array_max_ulp(c, c0, 0)
 
+def test_structured():
+    X = np.arange(10 * 2.).reshape(1, -1, 2).view('d,d')
+    splits = lgp.BART.splits_from_coord(X)
+    cov = lgp.BART(splits=splits)(X, X.T)
+
 # TODO
 # - increases at fixed n0 and ntot if the difference between nminus and nplus
 #   decreases (not completely sure)
