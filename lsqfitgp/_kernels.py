@@ -1826,7 +1826,7 @@ def _bart_maxdim(splits=None, **_):
     return splits[0].size
 
 @kernel(maxdim=_bart_maxdim, derivable=False)
-def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, intercept=True, weights=None):
+def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, intercept=True, weights=None, reset=None):
     """
     BART kernel.
     
@@ -1857,6 +1857,11 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
         Unnormalized selection probabilities for the covariate axes. If not
         specified, all axes have the same probability to be selected for
         splitting.
+    reset : int or sequence of int, optional
+        List of depths at which the recursion is reset, in the sense that the
+        function value at a reset depth is evaluated on the initial inputs for
+        all recursion paths, instead of the modified input handed down by the
+        recursion. Default none.
     
     Methods
     -------
@@ -1969,15 +1974,15 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     return BART.correlation(
         before, between, after,
         pnt=pnt, alpha=alpha, beta=beta, gamma=gamma, maxd=maxd,
-        intercept=intercept, weights=weights,
+        intercept=intercept, weights=weights, reset=reset,
     )
     
     # TODO
     # - interpolate (is linear interp pos def? => I think it can be seen as
-    #   the covariance of the interpolation)
+    #   the covariance of the interpolation) => it is slow for high p
     # - approximate as stationary w.r.t. indices (is it pos def?)
     # - allow index input
-    # - default gamma='auto'?
+    # - default gamma='auto'? => wait for better gamma
 
 class BART(_BARTBase):
     
@@ -2053,11 +2058,11 @@ class BART(_BARTBase):
         return cls._searchsorted_vectorized(splits[1], x)
     
     @classmethod
-    def correlation(cls, splitsbefore, splitsbetween, splitsafter, *, alpha=0.95, beta=2, gamma=1, maxd=2, debug=False, pnt=None, intercept=True, weights=None):
+    def correlation(cls, splitsbefore, splitsbetween, splitsafter, *, alpha=0.95, beta=2, gamma=1, maxd=2, debug=False, pnt=None, intercept=True, weights=None, reset=None):
         """
         Compute the BART prior correlation between two points.
 
-        Apart from arguments `maxd` and `debug`, this method is fully
+        Apart from arguments `maxd`, `debug` and `reset`, this method is fully
         vectorized.
     
         Parameters
@@ -2141,9 +2146,28 @@ class BART(_BARTBase):
         if not intercept:
             pnt = pnt.at[..., 0].set(1)
         
-        return cls._bart_correlation_maxd_vectorized(
-            splitsbefore, splitsbetween, splitsafter, pnt, gamma, weights, debug
-        )
+        # expand and check recursion reset depths
+        if reset is None:
+            reset = []
+        if not hasattr(reset, '__len__'):
+            reset = [reset]
+        reset = [0] + list(reset) + [len(pnt) - 1]
+        for i, j in zip(reset, reset[1:]):
+            assert int(j) == j and i <= j, (i, j)
+        
+        # call recursive function for each recursion slice
+        corr = gamma
+        for t, b in zip(reversed(reset[:-1]), reversed(reset)):
+            probs = pnt[..., t:b + 1]
+            if t > 0:
+                probs = probs.at[..., 0].set(1)
+            corr = cls._bart_correlation_maxd_vectorized(
+                splitsbefore, splitsbetween, splitsafter,
+                probs, corr, weights, debug,
+            )
+        return corr
+    
+    # TODO public method to compute pnt
         
     @staticmethod
     def _gamma(p, pnt):

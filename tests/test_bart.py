@@ -49,13 +49,16 @@ mdmark = mark.parametrize('md', range(5))
 @amark
 @smark
 def test_lower_lt_upper(sb, sbw, sa, w, a, b, md):
-    """ 0 <= lower <= interp <= upper <= 1 """
+    """ 0 <= lower <= interp/stricter upper <= upper <= 1 """
     lw = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=0, maxd=md, weights=w)
     au = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma='auto', maxd=md, weights=w)
+    vg = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=1, maxd=md * 2, reset=[md], weights=w)
     up = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=1, maxd=md, weights=w)
     np.testing.assert_array_max_ulp(np.zeros_like(lw), np.minimum(0, lw))
     np.testing.assert_array_max_ulp(lw, np.minimum(lw, au))
+    np.testing.assert_array_max_ulp(lw, np.minimum(lw, vg))
     np.testing.assert_array_max_ulp(au, np.minimum(au, up))
+    np.testing.assert_array_max_ulp(vg, np.minimum(vg, up))
     np.testing.assert_array_max_ulp(up, np.minimum(up, 1))
 
 @bmark

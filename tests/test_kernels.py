@@ -805,10 +805,12 @@ test_kwargs = {
             alpha=a,
             beta=b,
             maxd=d,
+            reset=r,
         )
         for a in [0., 1., 0.95]
         for b in [0, 1, 2, 10]
         for d in [0, 1, 2, 3]
+        for r in [None, (d + 1) // 2]
     ]),
     # TODO I need a way to use nd splits only with nd x
 }
