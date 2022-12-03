@@ -25,7 +25,7 @@ import lsqfitgp as lgp
 
 gen = np.random.default_rng(202207191826)
 
-plist = [1, 2, 10]
+plist = [1, 2, 5]
 smark = mark.parametrize('sb,sbw,sa,w', sum([[
     (*gen.integers(0, 4, (3, p)), gen.integers(1, 10, p)),
     (*np.zeros((3, p), int), gen.integers(1, 10, p)),
@@ -41,7 +41,7 @@ bmark = mark.parametrize('b', [
     pytest.param(np.inf, id='binf'),
     pytest.param(np.linspace(1, 10, 10), id='bother'),
 ])
-umark = mark.parametrize('u', [False, True])
+umark = mark.parametrize('u', [np.arange(0, 2)[:, None, None]])
 mdmark = mark.parametrize('md', range(5))
 
 @mdmark
@@ -49,12 +49,14 @@ mdmark = mark.parametrize('md', range(5))
 @amark
 @smark
 def test_lower_lt_upper(sb, sbw, sa, w, a, b, md):
-    """lower <= upper"""
+    """ 0 <= lower <= interp <= upper <= 1 """
     lw = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=0, maxd=md, weights=w)
     au = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma='auto', maxd=md, weights=w)
     up = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=1, maxd=md, weights=w)
+    np.testing.assert_array_max_ulp(np.zeros_like(lw), np.minimum(0, lw))
     np.testing.assert_array_max_ulp(lw, np.minimum(lw, au))
     np.testing.assert_array_max_ulp(au, np.minimum(au, up))
+    np.testing.assert_array_max_ulp(up, np.minimum(up, 1))
 
 @bmark
 @amark
@@ -101,13 +103,30 @@ def test_incr_alpha(sb, sbw, sa, w, a, b, u, md):
 @bmark
 @amark
 @mark.parametrize('sb,sbw,sa,w', sum([[
+    # n^0 = 0
     (gen.integers(0, 10, p), np.zeros(p, int), gen.integers(0, 10, p), gen.integers(1, 10, p)),
     (*np.zeros((3, p), int), gen.integers(1, 10, p)),
-] for p in plist], []))
+] for p in plist], []) + sum([[ 
+    # w = 0
+    (*gen.integers(0, 4, (3, p)), np.zeros(p)),
+] for p in plist], []) + sum([[
+    # wi = 0 or ni = 0
+    np.concatenate([gen.integers(0, 4, (3, p)), gen.integers(1, 10, (1, p))]) *
+    (gen.integers(0, 2, p).astype(bool) ^ np.array([0, 0, 0, 1], bool)[:, None]),
+] for p in plist], []) + [
+    # p = 0
+    (*np.empty((3, 0), int), np.empty(0)),
+])
 def test_corr_1(sb, sbw, sa, w, a, b, u, md):
-    """correlation = 1 if n^0 = 0"""
+    """
+    correlation = 1 if:
+        - n^0 = 0
+        - w = 0
+        - wi = 0 or ni = 0
+        - p = 0
+    """
     c = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
-    np.testing.assert_array_max_ulp(c, np.broadcast_to(1, c.shape))
+    np.testing.assert_array_max_ulp(c, np.ones_like(c))
 
 @mdmark
 @umark
@@ -201,17 +220,6 @@ def test_lower_eq_upper(sb, sbw, sa, w, a, b, md):
     up = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=1, maxd=md, weights=w)
     np.testing.assert_array_max_ulp(lw, up)
 
-@mdmark
-@umark
-@bmark
-@amark
-@smark
-def test_0_1(sb, sbw, sa, w, a, b, u, md):
-    """0 <= correlation <= 1"""
-    c = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
-    np.testing.assert_array_max_ulp(np.broadcast_to(0, c.shape), np.minimum(0, c))
-    np.testing.assert_array_max_ulp(np.broadcast_to(1, c.shape), np.maximum(1, c))
-
 @mark.parametrize('md', range(4))
 @umark
 @bmark
@@ -236,6 +244,19 @@ def test_nzero(sb, sbw, sa, w, a, b, u, md):
     c0 = lgp.BART.correlation(z(sb), z(sbw), z(sa), weights=z(w, 1), **kw)
     np.testing.assert_array_max_ulp(c, c0, 0)
 
+@mdmark
+@umark
+@bmark
+@amark
+@smark
+def test_wzero(sb, sbw, sa, w, a, b, u, md):
+    """adding zeros to weights with random n does not change the result"""
+    kw = dict(alpha=a, beta=b, gamma=u, maxd=md)
+    c = lgp.BART.correlation(sb, sbw, sa, weights=w, **kw)
+    z = lambda x, f=5, p=4: np.concatenate([x, gen.integers(f + 1, size=p)])
+    c0 = lgp.BART.correlation(z(sb), z(sbw), z(sa), weights=z(w, 0), **kw)
+    np.testing.assert_array_max_ulp(c, c0, 0)
+
 def test_structured():
     X = np.arange(10 * 2.).reshape(1, -1, 2).view('d,d')
     splits = lgp.BART.splits_from_coord(X)
@@ -245,3 +266,4 @@ def test_structured():
 # - increases at fixed n0 and ntot if the difference between nminus and nplus
 #   decreases (not completely sure)
 # - test gamma='auto' gives 0 for beta=0, alpha=1
+# - test of equality with precomputed values sampled with qmc

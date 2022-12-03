@@ -2115,7 +2115,7 @@ class BART(_BARTBase):
         
         # get covariate weights
         if weights is None:
-            weights = jnp.ones(splitsbefore.shape[-1])
+            weights = jnp.ones(splitsbefore.shape[-1], pnt.dtype)
         else:
             weights = jnp.asarray(weights)
         
@@ -2145,9 +2145,6 @@ class BART(_BARTBase):
             splitsbefore, splitsbetween, splitsafter, pnt, gamma, weights, debug
         )
         
-        # TODO when creating an argument automatically, use the float
-        # type of user-provided arguments
-    
     @staticmethod
     def _gamma(p, pnt):
         # gamma(alpha, beta, maxd) =
@@ -2226,13 +2223,16 @@ class BART(_BARTBase):
     def _bart_correlation_maxd(cls, nminus, n0, nplus, pnt, gamma, w, debug):
     
         assert nminus.shape == n0.shape == nplus.shape == w.shape
-        assert nminus.ndim == 1 and nminus.size > 0
+        assert nminus.ndim == 1 and nminus.size >= 0
         assert pnt.ndim == 1 and pnt.size > 0
         
-        # TODO move this shape checks in BART.correlation such that the
+        # TODO repeat this shape checks in BART.correlation such that the
         # error messages are user-legible
         
-        anyn0 = jnp.any(n0)
+        if nminus.size == 0:
+            return jnp.array(1, pnt.dtype)
+        
+        anyn0 = jnp.any(jnp.logical_and(n0, w))
 
         if pnt.size == 1:
             return jnp.where(anyn0, 1 - (1 - gamma) * pnt[0], 1)
@@ -2314,16 +2314,24 @@ class BART(_BARTBase):
     @classmethod
     @functools.partial(jnp.vectorize, excluded=(0, 7), signature='(p),(p),(p),(d),(),(p)->()')
     def _bart_correlation_maxd_vectorized(cls, nminus, n0, nplus, pnt, gamma, w, debug):
+
+        # a jax function applied to an int32 gives a float32 even with x64
+        # enabled, so I have to sync the types to avoid losing precision in the
+        # digamma
         ft = _patch_jax.float_type(pnt, gamma, w)
         if ft == jnp.float32:
             it = jnp.int32
         elif ft == jnp.float64:
             it = jnp.int64
-        # a jax function applied to an int32 gives a float32 even with x64
-        # enabled, so I have to sync the types to avoid losing precision in the
-        # digamma
+        
+        # optimization to avoid looping over ignored axes
+        nminus = jnp.where(w, nminus, 0)
+        n0 = jnp.where(w, n0, 0)
+        nplus = jnp.where(w, nplus, 0)
+        
+        # fix types to avoid recompilation
         return cls._bart_correlation_maxd(
             nminus.astype(it), n0.astype(it), nplus.astype(it),
             pnt.astype(ft), gamma.astype(ft), w.astype(ft),
-            bool(debug), # fix types to avoid recompilation
+            bool(debug),
         )

@@ -223,7 +223,7 @@ def makegp(hp, quick=False):
     return gp
 
 constraints = {
-    'tf12-diff' : 1,
+    'tf12-diff': 1,
     'f-diff'   : 3,
     'f3-diff'  : 1,
     'f8-diff'  : 3,
@@ -371,7 +371,7 @@ for k in allkeys(fithp):
 
 #### PLOT RESULTS ####
 
-fig, axs = plt.subplots(2, 3, num='pdf8', clear=True, figsize=[13, 8], gridspec_kw=dict(width_ratios=[2, 1, 1]))
+fig, axs = plt.subplots(2, 3, num='pdf8', clear=True, figsize=[10.5, 7], gridspec_kw=dict(width_ratios=[2, 1, 1]))
 axs[0, 0].set_title('PDFs')
 axs[1, 0].set_title('PDFs')
 axs[0, 1].set_title('Data')
@@ -393,7 +393,7 @@ for i in range(nflav):
 
     ax.plot(plotgrid, trueparams['plotgrid'][i], color=f'C{i}')
 
-    ax.set_xscale('log')
+    # ax.set_xscale('log')
 
 for ax in axs[:, 0]:
     ax.legend(fontsize='small')
