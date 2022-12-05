@@ -197,7 +197,7 @@ def values(mark):
     for p in plist
     for a in values(amark)
     for b in values(bmark)
-    for d in range(1, mdmark.args[1].stop)
+    for d in range(0, mdmark.args[1].stop)
 ] + [
     # alpha = 0
     (gen.integers(0, 10, p), gen.integers(1, 10, p), gen.integers(0, 10, p), gen.integers(1, 10, p), 0, b, d)
@@ -214,10 +214,9 @@ def values(mark):
 def test_lower_eq_upper(sb, sbw, sa, w, a, b, md):
     """
     upper = lower in cases where the solution is exact
-     - beta = inf
+     - beta = inf if maxd > 0
      - alpha = 0
      - n^0 = 0
-    unless maxd = 0, in which case n^0 and beta are ignored
     """
     lw = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=0, maxd=md, weights=w)
     up = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=1, maxd=md, weights=w)
