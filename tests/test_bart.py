@@ -244,7 +244,7 @@ def test_nzero(sb, sbw, sa, w, a, b, u, md):
     c = lgp.BART.correlation(sb, sbw, sa, weights=w, **kw)
     z = lambda x, f=0, p=4: np.concatenate([x, np.full(p, f)])
     c0 = lgp.BART.correlation(z(sb), z(sbw), z(sa), weights=z(w, 1), **kw)
-    np.testing.assert_array_max_ulp(c, c0, 0)
+    np.testing.assert_array_max_ulp(c, c0, 2)
 
 @mdmark
 @umark
@@ -257,7 +257,7 @@ def test_wzero(sb, sbw, sa, w, a, b, u, md):
     c = lgp.BART.correlation(sb, sbw, sa, weights=w, **kw)
     z = lambda x, f=5, p=4: np.concatenate([x, gen.integers(f + 1, size=p)])
     c0 = lgp.BART.correlation(z(sb), z(sbw), z(sa), weights=z(w, 0), **kw)
-    np.testing.assert_array_max_ulp(c, c0, 0)
+    np.testing.assert_array_max_ulp(c, c0, 2)
 
 def test_structured():
     X = np.arange(10 * 2.).reshape(1, -1, 2).view('d,d')
