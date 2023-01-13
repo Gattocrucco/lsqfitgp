@@ -269,3 +269,4 @@ def test_structured():
 #   decreases (not completely sure)
 # - test gamma='auto' gives 0 for beta=0, alpha=1
 # - test of equality with precomputed values sampled with qmc
+# - duplicated entries in reset have no effect
