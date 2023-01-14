@@ -264,6 +264,11 @@ def test_structured():
     splits = lgp.BART.splits_from_coord(X)
     cov = lgp.BART(splits=splits)(X, X.T)
 
+def test_duplicates():
+    x = np.repeat(np.arange(10 * 2.).reshape(-1, 2), 2, axis=0).view('d,d').squeeze(axis=-1)
+    length, splits = lgp.BART.splits_from_coord(x)
+    assert np.all(length == 9)
+
 # TODO
 # - increases at fixed n0 and ntot if the difference between nminus and nplus
 #   decreases (not completely sure)
