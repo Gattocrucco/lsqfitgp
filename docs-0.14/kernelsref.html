@@ -619,10 +619,10 @@ index in any shaped field is a different dimension.</p>
 <dt><strong>length</strong><span class="classifier">int (p,) array</span></dt><dd><p>The number of splitting points along each of <cite>p</cite> dimensions.</p>
 </dd>
 <dt><strong>splits</strong><span class="classifier">(n, p) array</span></dt><dd><p>Each column contains the sorted splitting points along a dimension.
-The splitting points are the midpoints between consecutive
-coordinates appearing in <cite>x</cite> for that dimension. Column
-<code class="docutils literal notranslate"><span class="pre">splits[:,</span> <span class="pre">i]</span></code> contains splitting points only up to <code class="docutils literal notranslate"><span class="pre">length[i]</span></code>,
-while afterward it is filled with a very large value.</p>
+The splitting points are the midpoints between consecutive values
+appearing in <cite>x</cite> for that dimension. Column <code class="docutils literal notranslate"><span class="pre">splits[:,</span> <span class="pre">i]</span></code>
+contains splitting points only up to <code class="docutils literal notranslate"><span class="pre">length[i]</span></code>, while afterward
+it is filled with a very large value.</p>
 </dd>
 </dl>
 </dd>
@@ -867,7 +867,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="_images/kernelsref-GammaExp-samples.png" src="_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x11afb8dc0&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x1268bcd30&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Gibbs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
