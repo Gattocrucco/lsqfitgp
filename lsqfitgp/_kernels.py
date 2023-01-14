@@ -2007,17 +2007,26 @@ class BART(_BARTBase):
             The number of splitting points along each of `p` dimensions.
         splits : (n, p) array
             Each column contains the sorted splitting points along a dimension.
-            The splitting points are the midpoints between consecutive
-            coordinates appearing in `x` for that dimension. Column
-            ``splits[:, i]`` contains splitting points only up to ``length[i]``,
-            while afterward it is filled with a very large value.
+            The splitting points are the midpoints between consecutive values
+            appearing in `x` for that dimension. Column ``splits[:, i]``
+            contains splitting points only up to ``length[i]``, while afterward
+            it is filled with a very large value.
         
         """
         x = cls._check_x(x)
         x = x.reshape(-1, x.shape[-1]) if x.size else x.reshape(1, x.shape[-1])
-        x = jnp.sort(x, axis=0)
-        midpoints = (x[:-1, :] + x[1:, :]) / 2
-        return cls._unique_vectorized(midpoints)
+        if jnp.issubdtype(x.dtype, jnp.inexact):
+            info = jnp.finfo
+        else:
+            info = jnp.iinfo
+        fill = info(x.dtype).max
+        def loop(_, xi):
+            u = jnp.unique(xi, size=xi.size, fill_value=fill)
+            m = jnp.where(u[1:] < fill, (u[1:] + u[:-1]) / 2, fill)
+            l = jnp.searchsorted(m, fill)
+            return _, (l, m)
+        _, (length, midpoints) = lax.scan(loop, None, x.T)
+        return length, midpoints.T
         
         # TODO options like BayesTree, i.e., use an evenly spaced range
         # instead of quantilizing, and set a maximum number of splits. Use the
@@ -2208,26 +2217,6 @@ class BART(_BARTBase):
         assert l.size == s.shape[1]
         return l, s
         # TODO check they are sorted if concrete
-    
-    @staticmethod
-    @jax.jit
-    def _unique_vectorized(X):
-        """
-        X : (..., p)
-        length : int (p,)
-        unique : (n, p)
-        """
-        if jnp.issubdtype(X.dtype, jnp.inexact):
-            info = jnp.finfo
-        else:
-            info = jnp.iinfo
-        fill = info(X.dtype).max
-        def loop(_, x):
-            u = jnp.unique(x, size=x.size, fill_value=fill)
-            l = jnp.searchsorted(u, fill)
-            return _, (l, u)
-        _, (length, unique) = lax.scan(loop, None, X.T)
-        return length, unique.T
     
     @staticmethod
     @functools.partial(jax.jit, static_argnames=('side',))
