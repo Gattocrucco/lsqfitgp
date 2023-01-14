@@ -1983,6 +1983,8 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     # - approximate as stationary w.r.t. indices (is it pos def?)
     # - allow index input
     # - default gamma='auto'? => wait for better gamma
+    # - make gamma='auto' depend on maxd and reset with a dictionary, error
+    #   if not specified
 
 class BART(_BARTBase):
     
@@ -2160,7 +2162,7 @@ class BART(_BARTBase):
             reset = []
         if not hasattr(reset, '__len__'):
             reset = [reset]
-        reset = [0] + list(reset) + [len(pnt) - 1]
+        reset = [0] + list(reset) + [pnt.shape[-1] - 1]
         for i, j in zip(reset, reset[1:]):
             assert int(j) == j and i <= j, (i, j)
         
@@ -2184,13 +2186,14 @@ class BART(_BARTBase):
         #   = (gamma_0 - gamma_d maxd) (1 - alpha^s 2^(-t beta)) =
         #   = (gamma_0 - gamma_d maxd) (1 - P0^s-t P1^t)
 
-        gamma_0 = 0.598 + 0.024 * jnp.exp(-1.2 * (p - 1))
-        gamma_d = -0.011 + 0.083 * jnp.exp(-2.3 * (p - 1))
+        gamma_0 = 0.611 + 0.021 * jnp.exp(-1.3 * (p - 1))
+        gamma_d = -0.0034 + 0.084 * jnp.exp(-2.02 * (p - 1))
+        s = 2.03 - 0.69 * jnp.exp(-0.72 * (p - 1))
+        t = 4.01 - 1.49 * jnp.exp(-0.77 * (p - 1))
+
         maxd = pnt.shape[-1] - 1
         floor = jnp.clip(gamma_0 - gamma_d * maxd, 0, 1)
 
-        s = 2.32 - 0.95 * jnp.exp(-0.7 * (p - 1))
-        t = 4.13 - 1.6 * jnp.exp(-0.7 * (p - 1))
         P0 = pnt[..., 0]
         P1 = jnp.minimum(P0, pnt[..., 1])
         corner = jnp.where(P0, 1 - P0 ** (s - t) * P1 ** t, 1)

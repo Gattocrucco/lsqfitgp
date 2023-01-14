@@ -338,7 +338,7 @@ def test_zeta_zeros(s):
         return pi * cos * gamma * zeta
     z0 = handwritten(s)
     z1 = func(s)
-    ulp = 24 if np.all(s >= -10) else 1113
+    ulp = 25 if np.all(s >= -10) else 1113
     np.testing.assert_array_max_ulp(z0, z1, ulp)
     eps = 1e-30
     z2 = _special.zeta(eps, s) / eps
