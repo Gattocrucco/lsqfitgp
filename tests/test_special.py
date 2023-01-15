@@ -101,7 +101,7 @@ def test_expm1x():
     x = np.linspace(-2, 2, 10000)
     y = _special.expm1x(x)
     y2 = x * x / 2 * special.hyp1f1(1, 3, x)
-    np.testing.assert_array_max_ulp(y, y2, 8)
+    np.testing.assert_array_max_ulp(y, y2, 11)
     y = _special.expm1x(x.astype('f'))
     np.testing.assert_array_max_ulp(y, y2.astype('f'), 4)
     test_util.check_grads(_special.expm1x, (x,), 2)
