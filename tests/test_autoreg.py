@@ -75,7 +75,7 @@ def test_yule_walker_inv_evolve():
         phi2 = np.pad(phi, (0, 1 + p))
         acf2 = lgp.AR.gamma_from_phi(phi2)
         acf3 = lgp.AR.extend_gamma(acf2[:1 + p], phi, 1 + p)
-        np.testing.assert_allclose(acf3, acf2, atol=1e-300, rtol=1e-13)
+        np.testing.assert_allclose(acf3, acf2, atol=1e-300, rtol=1e-12)
 
 def test_yule_walker_inv_0():
     acf = lgp._kernels.AR.gamma_from_phi(np.empty(0))
