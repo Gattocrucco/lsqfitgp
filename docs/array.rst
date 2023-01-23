@@ -31,6 +31,7 @@ StructuredArray
 ---------------
 
 .. autoclass:: StructuredArray
+    :members: from_dataframe
 
 Functions
 ---------
