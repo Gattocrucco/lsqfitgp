@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -30,12 +30,12 @@ from jax import tree_util, lax
 from scipy import special
 from numpy.lib import recfunctions
 
-from . import _array
-from . import _Kernel
-from . import _linalg
-from . import _patch_jax
-from . import _special
-from ._Kernel import kernel, stationarykernel, isotropickernel
+from .. import _array
+from .. import _Kernel
+from .. import _linalg
+from .. import _patch_jax
+from .. import _special
+from .._Kernel import kernel, stationarykernel, isotropickernel
 
 __all__ = [
     'AR',
