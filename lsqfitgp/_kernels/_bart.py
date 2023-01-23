@@ -23,6 +23,7 @@ import jax
 from jax import numpy as jnp
 from jax import lax
 from jax.scipy import special as jspecial
+from numpy.lib import recfunctions
 
 from .. import _patch_jax
 from .. import _array
