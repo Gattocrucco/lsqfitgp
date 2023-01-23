@@ -1,6 +1,6 @@
 # lsqfitgp/release.yml
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.10", "3.8"]
+        python-version: ["3.11", "3.8"]
     steps:
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
