@@ -28,6 +28,12 @@ def assert_array_equal(*args):
     if isinstance(a, np.ndarray) and a.size == 0 and a.dtype.names:
         assert all(b.dtype == a.dtype for b in args)
         assert all(b.shape == a.shape for b in args)
+    elif isinstance(a, np.ndarray) and a.dtype.names:
+        # old versions of numpy force structured dtypes to be equal when
+        # comparing, instead of casting
+        assert all(b.dtype.names == a.dtype.names for b in args)
+        for n in a.dtype.names:
+            assert_array_equal(*(x[n] for x in args))
     else:
         np.testing.assert_equal(*args)
 
