@@ -7,3 +7,6 @@ jaxlib
 pytest
 coverage
 mpmath
+pandas
+polars
+pyarrow

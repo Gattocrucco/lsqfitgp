@@ -7,3 +7,6 @@ jaxlib==0.3.10
 pytest
 coverage
 mpmath
+pandas==1.5.3
+polars==0.15.16
+pyarrow==10.0.1

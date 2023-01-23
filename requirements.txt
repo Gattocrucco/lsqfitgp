@@ -8,9 +8,13 @@ jaxlib
 sphinx
 numpydoc
 pytest
+pytest-xdist
 coverage
 twine
 wheel
 ipython
 ipdb
 mpmath
+pandas
+polars
+pyarrow

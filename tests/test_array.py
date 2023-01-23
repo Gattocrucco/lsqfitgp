@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_array.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -24,10 +24,14 @@ import numpy as np
 from numpy.lib import recfunctions
 from jax import tree_util
 import pytest
+import pandas as pd
+import polars as pl
 
 sys.path.insert(0, '.')
 import lsqfitgp as lgp
 import util
+
+rng = np.random.default_rng(202301231524)
 
 def test_ellipsis():
     x = np.empty((2, 3), dtype=[('a', float, 4)])
@@ -36,23 +40,29 @@ def test_ellipsis():
     assert z.shape == y.shape[:1]
     assert z['a'].shape == y.shape[:1] + x.dtype.fields['a'][0].shape
 
-def fill_array_at_random(x):
+def fill_array_at_random(x, rng):
     if x.dtype.names:
         for name in x.dtype.names:
-            fill_array_at_random(x[name])
+            fill_array_at_random(x[name], rng)
     elif x.dtype == bool:
-        x[...] = np.random.randint(0, 2, x.shape)
+        x[...] = rng.integers(0, 2, x.shape)
     elif np.issubdtype(x.dtype, np.number):
-        x[...] = 100 * np.random.randn(*x.shape)
+        x[...] = 100 * rng.standard_normal(x.shape)
     else:
         pass
 
-def random_array(shape, dtype):
+def random_array(shape, dtype, rng=rng):
     x = np.empty(shape, dtype)
-    fill_array_at_random(x)
+    fill_array_at_random(x, rng)
     return x
 
 def crosscheck_operation(op, *arrays, **kw):
+    """
+    arrays = structured numpy arrays
+    applies op both to arrays and to the conversion to StructuredArrays, then
+    converts back to numpy arrays and check the result is the same. Op can be
+    a multivalued function.
+    """
     
     r1 = op(*arrays, **kw)
     r2 = op(*map(lgp.StructuredArray, map(np.copy, arrays)), **kw)
@@ -231,8 +241,8 @@ def test_setfield():
     def op(a):
         name = a.dtype.names[0]
         a0 = a[name]
-        np.random.seed(array_meta_hash(a))
-        a[name] = random_array(a0.shape, a0.dtype)
+        rng = np.random.default_rng(array_meta_hash(a))
+        a[name] = random_array(a0.shape, a0.dtype, rng)
         return a
     dtypes = [
         [('f0', float)],
@@ -435,3 +445,12 @@ def test_s2u():
     for dtype, shape in itertools.product(dtypes, shapes):
         array = random_array(shape, dtype)
         crosscheck_operation(recfunctions.structured_to_unstructured, array)
+
+@pytest.mark.parametrize('cls', [pl.DataFrame, pd.DataFrame])
+def test_dataframe(cls):
+    """ test DataFrame -> StructuredArray, both with Pandas and Polars """
+    a = random_array(10, 'f4,f8,i1,i2,i4,i8,u1,u2,u4,u8,?,U16,S16')
+    df = cls(pd.DataFrame.from_records(a))
+    s = lgp.StructuredArray.from_dataframe(df)
+    a2 = np.array(s)
+    util.assert_equal(a, a2)

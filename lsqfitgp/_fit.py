@@ -34,41 +34,6 @@ __all__ = [
     'empbayes_fit',
 ]
 
-def _asarrayorbufferdict(x):
-    if hasattr(x, 'keys'):
-        return gvar.BufferDict(x)
-    else:
-        return numpy.asarray(x)
-
-def _flat(x):
-    if hasattr(x, 'reshape'):
-        return x.reshape(-1)
-    elif isinstance(x, gvar.BufferDict): # pragma: no branch
-        return x.buf
-    else:
-        raise NotImplementedError # pragma: no cover
-
-def _unflat(x, original):
-    if isinstance(original, numpy.ndarray):
-        out = x.reshape(original.shape)
-        # if not out.shape:
-        #     try:
-        #         out = out.item()
-        #     except jax.errors.ConcretizationTypeError:
-        #         pass
-        return out
-    elif isinstance(original, gvar.BufferDict): # pragma: no branch
-        # normally I would do BufferDict(original, buf=x) but it does not work
-        # with JAX tracers
-        b = gvar.BufferDict(original)
-        b._extension = {}
-        b._buf = x
-        # TODO b.buf = x does not work because BufferDict checks that the
-        # array is a numpy array.
-        return b
-    else:
-        raise NotImplementedError # pragma: no cover
-
 class Logger:
     
     def __init__(self, verbosity=0):
@@ -217,8 +182,8 @@ class empbayes_fit(Logger):
         assert callable(gpfactory)
     
         # Analyze the hyperprior.
-        hyperprior = _asarrayorbufferdict(hyperprior)
-        flathp = _flat(hyperprior)
+        hyperprior = self._asarrayorbufferdict(hyperprior)
+        flathp = self._flat(hyperprior)
         hpmean = gvar.mean(flathp)
         hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks
         hpdec = _linalg.EigCutFullRank(hpcov)
@@ -235,7 +200,7 @@ class empbayes_fit(Logger):
             self.log('data errors provided separately', 2)
             assert len(data) == 2
             cachedargs = data
-        elif _flat(_asarrayorbufferdict(data)).dtype == object:
+        elif self._flat(self._asarrayorbufferdict(data)).dtype == object:
             self.log('data has errors as gvars', 2)
             data = gvar.gvar(data)
             datamean = gvar.mean(data)
@@ -248,7 +213,7 @@ class empbayes_fit(Logger):
         def make(p):
             priorchi2 = hpdec.quad(p - hpmean)
 
-            hp = _unflat(p, hyperprior)
+            hp = self._unflat(p, hyperprior)
             gp = gpfactory(hp, **gpfactorykw)
             assert isinstance(gp, _GP.GP)
             
@@ -273,7 +238,8 @@ class empbayes_fit(Logger):
                 
         jac = dojit(jax.jacfwd(fun)) # can't change to rev due to, I guess, the priorchi2 term quad derivatives w.r.t. b
         hess = dojit(jax.jacfwd(jac))
-        
+        # TODO a reverse mode jac would be very useful with many hyperparameters
+        # and grad-only optimization.
         
         if not callable(data):
             
@@ -316,8 +282,8 @@ class empbayes_fit(Logger):
         
         if not isinstance(initial, str):
             self.log('start from provided point', 2)
-            initial = _asarrayorbufferdict(initial)
-            flatinitial = _flat(initial)
+            initial = self._asarrayorbufferdict(initial)
+            flatinitial = self._flat(initial)
             kwargs.update(x0=flatinitial)
         elif initial == 'priormean':
             self.log('start from prior mean', 2)
@@ -358,9 +324,11 @@ class empbayes_fit(Logger):
                 now = time.time()
                 duration = now - self.stamp
                 self.stamp = now
-                nicep = _unflat(p, hyperprior)
+                nicep = self._unflat(p, hyperprior)
                 self.this.log(f'iteration {self.it} ({duration:.2g} s)', 3)
                 self.this.log(f'parameters = {nicep}', 4)
+                
+            # TODO write a method to format the parameters nicely.
 
         if verbosity > 2:
             kwargs.update(callback=Callback(self))
@@ -393,11 +361,12 @@ class empbayes_fit(Logger):
             cov = jnp.full_like(hpcov, jnp.nan)
         
         # TODO allow the user to choose the covariance estimation independently
-        # of the minimization method
+        # of the minimization method, possibly with methods or cached
+        # properties. Also give the Fisher and Hessian even if not used.
         
         uresult = gvar.gvar(result.x, cov)
         
-        self.p = _unflat(uresult, hyperprior)
+        self.p = self._unflat(uresult, hyperprior)
         self.pmean = gvar.mean(self.p)
         self.pcov = gvar.evalcov(self.p)
         self.minresult = result
@@ -433,4 +402,42 @@ class empbayes_fit(Logger):
         # and jacobian. => Another problem is that the jacobian and hessian
         # need not be computed all the times, see scipy issue #9265. Check
         # if using value_and_jac is more efficient.
-        
+
+    @staticmethod
+    def _asarrayorbufferdict(x):
+        if hasattr(x, 'keys'):
+            return gvar.BufferDict(x)
+        else:
+            return numpy.asarray(x)
+
+    @staticmethod
+    def _flat(x):
+        if hasattr(x, 'reshape'):
+            return x.reshape(-1)
+        elif isinstance(x, gvar.BufferDict): # pragma: no branch
+            return x.buf
+        else:
+            raise NotImplementedError # pragma: no cover
+
+    @staticmethod
+    def _unflat(x, original):
+        if isinstance(original, numpy.ndarray):
+            out = x.reshape(original.shape)
+            # if not out.shape:
+            #     try:
+            #         out = out.item()
+            #     except jax.errors.ConcretizationTypeError:
+            #         pass
+            return out
+        elif isinstance(original, gvar.BufferDict): # pragma: no branch
+            # normally I would do BufferDict(original, buf=x) but it does not work
+            # with JAX tracers
+            b = gvar.BufferDict(original)
+            b._extension = {}
+            b._buf = x
+            # TODO b.buf = x does not work because BufferDict checks that the
+            # array is a numpy array.
+            return b
+        else:
+            raise NotImplementedError # pragma: no cover
+

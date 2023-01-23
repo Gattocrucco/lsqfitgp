@@ -1,6 +1,6 @@
 # lsqfitgp/_array.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -29,19 +29,6 @@ __all__ = [
     'broadcast_arrays',
     'asarray',
 ]
-
-def _readonlyview(x):
-    if isinstance(x, numpy.ndarray):
-        x = x.view()
-        x.flags.writeable = False
-        # jax arrays and StructuredArrays are already readonly
-    return x
-
-def _wrapifstructured(x):
-    if x.dtype.names is None:
-        return x
-    else:
-        return StructuredArray(x)
 
 @tree_util.register_pytree_node_class
 class StructuredArray:
@@ -73,6 +60,16 @@ class StructuredArray:
     """
     
     @classmethod
+    def _readonlyview_wrapifstructured(cls, x):
+        if x.dtype.names is not None:
+            x = cls(x)
+        if isinstance(x, numpy.ndarray):
+            x = x.view()
+            x.flags.writeable = False
+            # jax arrays and StructuredArrays are already readonly
+        return x
+
+    @classmethod
     def _array(cls, s, t, d, readonly=False):
         """
         Create a new StructuredArray with shape `s`, dtype `t`, using `d` as
@@ -100,21 +97,27 @@ class StructuredArray:
         return len(self.shape)
     
     def __new__(cls, array):
-        assert isinstance(array, (numpy.ndarray, cls))
-        assert array.dtype.names is not None
         d = {
-            name: _readonlyview(_wrapifstructured(array[name]))
+            name: cls._readonlyview_wrapifstructured(array[name])
             for name in array.dtype.names
         }
         return cls._array(array.shape, array.dtype, d)
         
-        # TODO accept a DataFrame. Use 'iloc' for duck typing. Unpack the
-        # dataframe columns one by one and keep a reference.
-        
-        # TODO accept a non-structured array by using the last axis as
+        # TODO from a non-structured array by using the last axis as
         # field dimension, with default field names as in
-        # numpy.lib.recfunctions.unstructured_to_structured. => Only if really
-        # necessary, because silent hidden conversions can be confusing.
+        # numpy.lib.recfunctions.unstructured_to_structured.
+    
+    @classmethod
+    def from_dataframe(cls, df):
+        """
+        Make a Structured array from a DataFrame. Data is not copied.
+        """
+        d = {
+            col: cls._readonlyview_wrapifstructured(df[col].to_numpy())
+            for col in df.columns
+        }
+        dtype = [(name, value.dtype) for name, value in d.items()]
+        return cls._array((len(df),), dtype, d)
     
     def __getitem__(self, key):
         if isinstance(key, str):
@@ -148,7 +151,7 @@ class StructuredArray:
         # TODO support casting and broadcasting
         assert prev.dtype == val.dtype
         assert prev.shape == val.shape
-        self._dict[key] = _readonlyview(_wrapifstructured(val))
+        self._dict[key] = self._readonlyview_wrapifstructured(val)
     
     def reshape(self, *shape):
         """
@@ -168,7 +171,8 @@ class StructuredArray:
         Return a view of the array broadcasted to another shape. See
         numpy.broadcast_to.
         """
-        numpy.broadcast_shapes(self.shape, shape) # raises if not broadcastable
+        # raises if not broadcastable
+        numpy.broadcast_to(numpy.empty(self.shape, []), shape, **kw)
         d = {
             name: broadcast_to(x, shape + self.dtype[name].shape, **kw)
             for name, x in self._dict.items()

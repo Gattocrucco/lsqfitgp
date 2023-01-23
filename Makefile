@@ -1,6 +1,6 @@
 # lsqfitgp/Makefile
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -45,6 +45,9 @@ DOCSPY = cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) $(PY) --rc
 
 tests:
 	$(TESTSPY) -m pytest
+
+# I did not manage to make parallel pytest (pytest -n<processes>) work with
+# coverage
 
 EXAMPLES = $(wildcard examples/*.py)
 EXAMPLES := $(filter-out examples/runexamples.py, $(EXAMPLES))
