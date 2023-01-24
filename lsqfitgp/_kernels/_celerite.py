@@ -49,7 +49,7 @@ def Celerite(delta, gamma=1, B=0):
     Angus: *Fast and Scalable Gaussian Process Modeling With Applications To
     Astronomical Time Series*.
     """
-    if _patch_jax.isconcrete(gamma, B):
+    with _patch_jax.skipifabstract():
         assert 0 <= gamma < jnp.inf, gamma
         assert abs(B) <= gamma, (B, gamma)
     return jnp.exp(-gamma * delta) * (jnp.cos(delta) + B * jnp.sin(delta))
@@ -98,7 +98,7 @@ def Harmonic(delta, Q=1):
     
     # TODO will fail if Q is traced.
     
-    if _patch_jax.isconcrete(Q):
+    with _patch_jax.skipifabstract():
         assert 0 < Q < jnp.inf, Q
     
     tau = jnp.abs(delta)

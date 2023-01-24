@@ -24,7 +24,7 @@ import gvar
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 from jax import tree_util
-import numpy as np
+import numpy
 from scipy import linalg
 
 gvar_ufuncs = [
@@ -83,8 +83,8 @@ gvar.BufferDict.add_distribution('erfinv', gvar.erf)
 
 def scipy_eigh(x):
     w, v = linalg.eigh(x)
-    w = np.abs(w)
-    si = np.argsort(w)
+    w = numpy.abs(w)
+    si = numpy.argsort(w)
     return w[si], v.T[si]
 
 gvar.SVD._analyzers = dict(scipy_eigh=scipy_eigh)
@@ -117,15 +117,15 @@ def jacobian(g):
         The indices that map the last axis of jac to primary gvars in the
         global covariance matrix.
     """
-    g = np.asarray(g)
+    g = numpy.asarray(g)
     v = gvar.svec(0)
     for x in g.flat:
         v = v.add(getsvec(x), 1, 1)
     indices = v.indices()
-    jac = np.zeros((g.size, len(indices)), float)
+    jac = numpy.zeros((g.size, len(indices)), float)
     for i, x in enumerate(g.flat):
         v = getsvec(x)
-        ind = np.searchsorted(indices, v.indices())
+        ind = numpy.searchsorted(indices, v.indices())
         jac[i, ind] = v.values()
     jac = jac.reshape(g.shape + indices.shape)
     return jac, indices
@@ -149,12 +149,12 @@ def from_jacobian(mean, jac, indices):
         The new gvars.
     """
     cov = gvar.gvar.cov
-    mean = np.asarray(mean)
+    mean = numpy.asarray(mean)
     shape = mean.shape
     mean = mean.flat
-    jac = np.array(jac) # TODO patches gvar issue #27
+    jac = numpy.array(jac) # TODO patches gvar issue #27
     jac = jac.reshape(len(mean), len(indices))
-    g = np.zeros(len(mean), object)
+    g = numpy.zeros(len(mean), object)
     for i, jacrow in enumerate(jac):
         der = gvar.svec(len(indices))
         der._assign(jac[i], indices)

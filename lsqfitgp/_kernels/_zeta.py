@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy
 from jax import numpy as jnp
 
 from .. import _special
@@ -26,11 +25,8 @@ from .. import _Kernel
 from .._Kernel import stationarykernel
 
 def _zeta_derivable(nu=None):
-    if _patch_jax.isconcrete(nu):
-        nu = _patch_jax.concrete(nu)
-        return max(0, numpy.ceil(nu) - 1)
-    else:
-        return None
+    with _patch_jax.skipifabstract():
+        return max(0, jnp.ceil(nu) - 1)
 
 @stationarykernel(maxdim=1, derivable=_zeta_derivable, saveargs=True)
 def _ZetaBase(delta, nu=None):
@@ -73,7 +69,7 @@ def _ZetaBase(delta, nu=None):
     
     # TODO the derivative w.r.t. nu is probably broken
     
-    if _patch_jax.isconcrete(nu):
+    with _patch_jax.skipifabstract():
         assert 0 <= nu < jnp.inf, nu
         
     s = 1 + 2 * nu

@@ -156,13 +156,26 @@ def solve(t, b):
 
 def chol_solve_numpy(t, b, diageps=None):
     """
-    t (..., n)
-    b (..., n, m) or (n,)
+    
+    Solve a linear system for the cholesky factor of a symmetric Toeplitz
+    matrix. The algorithm is:
+    
     t[0] += diageps
     m = toeplitz(t)
     l = chol(m)
     return solve(l, b)
-    pure numpy, object arrays supported
+    
+    Numpy object arrays are supported. Broadcasts like matmul.
+    
+    Parameters
+    ----------
+    t : (..., n) array
+        The first row or column of the matrix.
+    b : (..., n, m) or (n,) array
+        The right hand side of the linear system.
+    diageps : scalar, optional
+        Term added to the diagonal elements of the matrix for regularization.
+
     """
         
     t = numpy.copy(t, subok=True)

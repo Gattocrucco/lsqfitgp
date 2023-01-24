@@ -741,9 +741,8 @@ class GP:
         for k, t in tensors.items():
             t = jnp.asarray(t)
             # no need to check dtype since jax supports only numerical arrays
-            if self._checkfinite and _patch_jax.isconcrete(t):
-                T = _patch_jax.concrete(t)
-                if not numpy.all(numpy.isfinite(T)):
+            with _patch_jax.skipifabstract():
+                if self._checkfinite and not jnp.all(jnp.isfinite(t)):
                     raise ValueError(f'tensors[{k!r}] contains infs/nans')
             rshape = self._elements[k].shape
             if t.shape and t.shape[t.ndim - axes:] != rshape[:axes]:
@@ -866,19 +865,18 @@ class GP:
                 inp[i] = a.at[zeros].set(0)
             
         # Compute JVP and check it is identical to the function itself.
-        out0, out1 = jax.jvp(func, inp, inp)
-        if _patch_jax.isconcrete(out0, out1):
-            out0, out1 = _patch_jax.concrete(out0, out1)
+        with _patch_jax.skipifabstract():
+            out0, out1 = jax.jvp(func, inp, inp)
             if out1.dtype == jax.float0:
-                cond = numpy.allclose(out0, 0)
+                cond = jnp.allclose(out0, 0)
             else:
-                cond = numpy.allclose(out0, out1)
+                cond = jnp.allclose(out0, out1)
             if not cond:
                 raise RuntimeError('the transformation is not linear')
         
             # Check that the function is elementwise.
             if elementwise:
-                if out0.shape != shape or not (numpy.allclose(out0[zeros], 0) and numpy.allclose(out1[zeros], 0)):
+                if out0.shape != shape or not (jnp.allclose(out0[zeros], 0) and jnp.allclose(out1[zeros], 0)):
                     raise RuntimeError('the transformation is not elementwise')
     
     def addcov(self, covblocks, key=None, decomps=None):
@@ -969,9 +967,8 @@ class GP:
                     raise ValueError(f'shape {block.shape!r} of diagonal block {key!r} is not symmetric')
                 shapes[xkey] = head
                 
-                if self._checksym and _patch_jax.isconcrete(block):
-                    B = _patch_jax.concrete(block)
-                    if not numpy.allclose(B, B.T):
+                with _patch_jax.skipifabstract():
+                    if self._checksym and not jnp.allclose(block, block.T):
                         raise ValueError(f'diagonal block {key!r} is not symmetric')
                 
             preblocks[keys] = block
@@ -990,9 +987,8 @@ class GP:
         # diagonal blocks match those of diagonal ones.
         blocks = {}
         for keys, block in preblocks.items():
-            if self._checkfinite and _patch_jax.isconcrete(block):
-                B = _patch_jax.concrete(block)
-                if not numpy.all(numpy.isfinite(B)):
+            with _patch_jax.skipifabstract():
+                if self._checkfinite and not jnp.all(jnp.isfinite(block)):
                     raise ValueError(f'block {keys!r} not finite')
             xkey, ykey = keys
             if xkey == ykey:
@@ -1016,13 +1012,12 @@ class GP:
         
         # Check symmetry of out of diagonal blocks.
         if self._checksym:
-            for keys, block in blocks.items():
-                xkey, ykey = keys
-                if xkey != ykey:
-                    blockT = blocks[ykey, xkey]
-                    if _patch_jax.isconcrete(block, blockT):
-                        B, BT = _patch_jax.concrete(block, blockT)
-                        if not numpy.allclose(B.T, BT):
+            with _patch_jax.skipifabstract():
+                for keys, block in blocks.items():
+                    xkey, ykey = keys
+                    if xkey != ykey:
+                        blockT = blocks[ykey, xkey]
+                        if not jnp.allclose(block.T, blockT):
                             raise ValueError(f'block {keys!r} is not the transpose of block {revkeys!r}')
         
         # Create _Cov objects.
@@ -1192,12 +1187,11 @@ class GP:
             # TODO handle zero cov block efficiently
             cov = jnp.zeros((x.size, y.size))
         
-        if _patch_jax.isconcrete(cov):
-            C = _patch_jax.concrete(cov)
-            if self._checkfinite and not numpy.all(numpy.isfinite(C)):
-                raise RuntimeError('covariance block {!r} is not finite'.format((xkey, ykey)))
-            if self._checksym and xkey == ykey and not numpy.allclose(C, C.T):
-                raise RuntimeError('covariance block {!r} is not symmetric'.format((xkey, ykey)))
+        with _patch_jax.skipifabstract():
+            if self._checkfinite and not jnp.all(jnp.isfinite(cov)):
+                raise RuntimeError(f'covariance block {(xkey, ykey)!r} is not finite')
+            if self._checksym and xkey == ykey and not jnp.allclose(cov, cov.T):
+                raise RuntimeError(f'covariance block {(xkey, ykey)!r} is not symmetric')
 
         return cov
 
@@ -1216,11 +1210,9 @@ class GP:
             block = self._makecovblock(row, col)
             if row != col:
                 if self._checksym:
-                    if _patch_jax.isconcrete(block):
+                    with _patch_jax.skipifabstract():
                         blockT = self._makecovblock(col, row)
-                        assert _patch_jax.isconcrete(blockT)
-                        B, BT = _patch_jax.concrete(block, blockT)
-                        if not numpy.allclose(B.T, BT):
+                        if not jnp.allclose(block.T, blockT):
                             msg = 'covariance block {!r} is not symmetric'
                             raise RuntimeError(msg.format((row, col)))
                 self._covblocks[col, row] = block.T
@@ -1298,16 +1290,15 @@ class GP:
         # 3) QR, check diagonal of R
         # For QR, can I use directly the tau coefficients? (halves the
         # computation time, going to 1/4 diagonalization ~ ldlt)
-        if not _patch_jax.isconcrete(cov):
-            return
-        eigv = linalg.eigvalsh(_patch_jax.concrete(cov))
-        mineigv = numpy.min(eigv)
-        if mineigv < 0:
-            bound = -len(cov) * numpy.finfo(float).eps * numpy.max(eigv) * self._posepsfac
-            if mineigv < bound:
-                msg = 'covariance matrix is not positive definite: '
-                msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
-                raise numpy.linalg.LinAlgError(msg)
+        with _patch_jax.skipifabstract():
+            eigv = jnp.linalg.eigvalsh(cov)
+            mineigv = jnp.min(eigv)
+            if mineigv < 0:
+                bound = -len(cov) * jnp.finfo(float).eps * jnp.max(eigv) * self._posepsfac
+                if mineigv < bound:
+                    msg = 'covariance matrix is not positive definite: '
+                    msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
+                    raise numpy.linalg.LinAlgError(msg)
     
     def _priorpointscov(self, key):
         
@@ -1713,16 +1704,17 @@ class GP:
         return decomp, ymean
     
     def _check_ymean(self, ymean):
-        if self._checkfinite and _patch_jax.isconcrete(ymean):
-            if not numpy.all(numpy.isfinite(_patch_jax.concrete(ymean))):
+        with _patch_jax.skipifabstract():
+            if self._checkfinite and not jnp.all(jnp.isfinite(ymean)):
                 raise ValueError('mean of `given` is not finite')
     
     def _check_ycov(self, ycov):
-        if ycov is not None and not isinstance(ycov, _linalg.Decomposition) and _patch_jax.isconcrete(ycov):
-            C = _patch_jax.concrete(ycov)
-            if self._checkfinite and not numpy.all(numpy.isfinite(C)):
+        if ycov is None or isinstance(ycov, _linalg.Decomposition):
+            return
+        with _patch_jax.skipifabstract():
+            if self._checkfinite and not jnp.all(jnp.isfinite(ycov)):
                 raise ValueError('covariance matrix of `given` is not finite')
-            if self._checksym and not numpy.allclose(C, C.T):
+            if self._checksym and not jnp.allclose(ycov, ycov.T):
                 raise ValueError('covariance matrix of `given` is not symmetric')
 
     def marginal_likelihood(self, given, givencov=None, separate=False, **kw):

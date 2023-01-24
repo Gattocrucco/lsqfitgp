@@ -17,6 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import pathlib
+import traceback
+
 from jax.config import config
 config.update("jax_enable_x64", True)
 
@@ -78,27 +81,27 @@ def elementwise_grad(fun, argnum=0):
         return tangent_out
     return funderiv
 
-def _isconcrete(x):
-    return not isinstance(x, core.Tracer) or isinstance(x.aval, core.ConcreteArray)
-
-def isconcrete(*args):
-    children, _ = tree_util.tree_flatten(args)
-    return all(map(_isconcrete, children))
-
-def _concrete(x):
-    # This is not needed from simple operations with operators on scalars.
-    # It is needed for functions that expect a numpy array, and then you
-    # have to use the actual numpy function instead of the jax version,
-    # because during jit tracing all jax functions produce abstract arrays.
-    return x.aval.val if isinstance(x, core.Tracer) else x
-    # TODO maybe use jax.core.concrete_aval? But I'm not sure of what it does
-    # TODO this should be replaced with jax.ensure_compile_time_eval()
-
-def concrete(*args):
-    result = tree_util.tree_map(_concrete, args)
-    if len(args) == 1:
-        result, = result
-    return result
+class skipifabstract:
+    """
+    Context manager to try to do all operations eagerly even during jit, and
+    ignore ConcretizationTypeError exceptions.
+    """
+    # I feared this would be slow because of the slow jax exception handling,
+    # but %timeit suggests it isn't
+    
+    def __enter__(self):
+        self.mgr = jax.ensure_compile_time_eval()
+        self.mgr.__enter__()
+    
+    def __exit__(self, exc_type, exc_value, tb):
+        exit = self.mgr.__exit__(exc_type, exc_value, tb)
+        if exit or exc_type is jax.errors.ConcretizationTypeError:
+            return True
+        
+        if exc_type is IndexError and traceback.extract_tb(tb)[-1].name == 'arg_info_pytree':
+            # TODO this ignores a jax internal bug I don't understand, appears
+            # in examples/pdf4.py
+            return True
 
 # TODO make stop_hessian work in reverse mode
 # see jax issue #10994

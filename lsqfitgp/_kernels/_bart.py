@@ -315,21 +315,19 @@ class BART(_BARTBase):
         assert jnp.issubdtype(splitsafter.dtype, jnp.integer)
         
         # check splitting points are nonnegative
-        if _patch_jax.isconcrete(splitsbefore, splitsbetween, splitsafter):
-            with jax.ensure_compile_time_eval():
-                assert jnp.all(splitsbefore >= 0)
-                assert jnp.all(splitsbetween >= 0)
-                assert jnp.all(splitsafter >= 0)
+        with _patch_jax.skipifabstract():
+            assert jnp.all(splitsbefore >= 0)
+            assert jnp.all(splitsbetween >= 0)
+            assert jnp.all(splitsafter >= 0)
         
         # get splitting probabilities
         if pnt is None:
             assert maxd == int(maxd) and maxd >= 0, maxd
             alpha = jnp.asarray(alpha)
             beta = jnp.asarray(beta)
-            if _patch_jax.isconcrete(alpha, beta):
-                with jax.ensure_compile_time_eval():
-                    assert jnp.all((0 <= alpha) & (alpha <= 1))
-                    assert jnp.all(beta >= 0)
+            with _patch_jax.skipifabstract():
+                assert jnp.all((0 <= alpha) & (alpha <= 1))
+                assert jnp.all(beta >= 0)
             d = jnp.arange(maxd + 1)
             alpha = alpha[..., None]
             beta = beta[..., None]
@@ -354,11 +352,10 @@ class BART(_BARTBase):
             gamma = jnp.asarray(gamma)
         
         # check values are in range
-        if _patch_jax.isconcrete(gamma, pnt, weights):
-            with jax.ensure_compile_time_eval():
-                assert jnp.all((0 <= gamma) & (gamma <= 1))
-                assert jnp.all((0 <= pnt) & (pnt <= 1))
-                assert jnp.all(weights >= 0)
+        with _patch_jax.skipifabstract():
+            assert jnp.all((0 <= gamma) & (gamma <= 1))
+            assert jnp.all((0 <= pnt) & (pnt <= 1))
+            assert jnp.all(weights >= 0)
 
         # set first splitting probability to 1 to remove flat baseline (keep
         # last!)

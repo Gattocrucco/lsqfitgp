@@ -268,8 +268,9 @@ class CrossKernel:
         if maxdim is not None:
             def transf(x):
                 nd = _nd(x.dtype)
-                if nd > maxdim:
-                    raise ValueError(f'kernel called on type with dimensionality {nd} > maxdim={maxdim}')
+                with _patch_jax.skipifabstract():
+                    if nd > maxdim:
+                        raise ValueError(f'kernel called on type with dimensionality {nd} > maxdim={maxdim}')
                 return x
         
         if dim is not None:
@@ -283,12 +284,12 @@ class CrossKernel:
                     return x[dim]
         
         if loc is not None:
-            if _patch_jax.isconcrete(loc):
+            with _patch_jax.skipifabstract():
                 assert -jnp.inf < loc < jnp.inf
             transf = lambda x, transf=transf: transf_recurse_dtype(lambda x: x - loc, transf(x))
         
         if scale is not None:
-            if _patch_jax.isconcrete(scale):
+            with _patch_jax.skipifabstract():
                 assert 0 < scale < jnp.inf
             transf = lambda x, transf=transf: transf_recurse_dtype(lambda x: x / scale, transf(x))
         
@@ -370,7 +371,7 @@ class CrossKernel:
     def __pow__(self, value):
         if not _isscalar(value):
             return NotImplemented
-        if _patch_jax.isconcrete(value):
+        with _patch_jax.skipifabstract():
             assert 0 <= value < jnp.inf, value
         return self._binary(value, lambda f, g: lambda x: f(x) ** g(x))
         # Only infinitely divisible kernels allow non-integer exponent.
@@ -695,8 +696,8 @@ class Kernel(CrossKernel):
         return self._maxdim
         
     def _binary(self, value, op):
-        if _isscalar(value) and _patch_jax.isconcrete(value):
-            assert 0 <= value < jnp.inf, value
+        with _patch_jax.skipifabstract():
+            assert not _isscalar(value) or 0 <= value < jnp.inf, value
         return super()._binary(value, op)
     
 class StationaryKernel(Kernel):
@@ -736,7 +737,7 @@ class StationaryKernel(Kernel):
         
         transf = lambda q: q
         if scale is not None:
-            if _patch_jax.isconcrete(scale):
+            with _patch_jax.skipifabstract():
                 assert 0 < scale < jnp.inf
             transf = lambda q : q / scale
         
@@ -805,7 +806,7 @@ class IsotropicKernel(StationaryKernel):
         transf = lambda q: q
         
         if scale is not None:
-            if _patch_jax.isconcrete(scale):
+            with _patch_jax.skipifabstract():
                 assert 0 < scale < jnp.inf
             transf = lambda q: q / scale ** 2
         

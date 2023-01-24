@@ -35,7 +35,7 @@ warnings.filterwarnings('ignore', r'JAX on Mac ARM machines is experimental and 
 warnings.filterwarnings('ignore', r'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure\.')
 
 for file in sys.argv[1:]:
-    print('running {}...'.format(file))
+    print('runexamples.py: running {}...'.format(file))
     with open(file, 'r') as stream:
         code = stream.read()
     

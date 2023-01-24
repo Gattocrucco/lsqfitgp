@@ -35,10 +35,9 @@ def Wiener(x, y):
     
     Reference: Rasmussen and Williams (2006, p. 94).
     """
-    if _patch_jax.isconcrete(x, y):
-        with jax.ensure_compile_time_eval():
-            assert jnp.all(x >= 0)
-            assert jnp.all(y >= 0)
+    with _patch_jax.skipifabstract():
+        assert jnp.all(x >= 0)
+        assert jnp.all(y >= 0)
     return jnp.minimum(x, y)
 
 def _fracbrownian_derivable(H=1/2, K=1):
@@ -66,7 +65,7 @@ def FracBrownian(x, y, H=1/2, K=1):
     # TODO I think the correlation between successive same step increments
     # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
     
-    if _patch_jax.isconcrete(H, K):
+    with _patch_jax.skipifabstract():
         assert 0 < H <= 1, H
         assert 0 < K <= 1, K
     H2 = 2 * H
@@ -109,10 +108,9 @@ def WienerIntegral(x, y):
     # TODO can I generate this algorithmically for arbitrary integration order?
     # If I don't find a closed formula I can use sympy.
     
-    if _patch_jax.isconcrete(x, y):
-        with jax.ensure_compile_time_eval():
-            assert jnp.all(x >= 0)
-            assert jnp.all(y >= 0)
+    with _patch_jax.skipifabstract():
+        assert jnp.all(x >= 0)
+        assert jnp.all(y >= 0)
     a = _minimum(x, y)
     b = _maximum(x, y)
     return 1/2 * a ** 2 * (b - a / 3)
@@ -135,10 +133,9 @@ def OrnsteinUhlenbeck(x, y):
     
     # TODO reference? look on wikipedia
     
-    if _patch_jax.isconcrete(x, y):
-        with jax.ensure_compile_time_eval():
-            assert jnp.all(x >= 0)
-            assert jnp.all(y >= 0)
+    with _patch_jax.skipifabstract():
+        assert jnp.all(x >= 0)
+        assert jnp.all(y >= 0)
     return jnp.exp(-jnp.abs(x - y)) - jnp.exp(-(x + y))
 
 @kernel(forcekron=True, derivable=False)
@@ -159,10 +156,9 @@ def BrownianBridge(x, y):
     # (t^2H(1-s) + s^2H(1-t) + s(1-t)^2H + t(1-s)^2H - (t+s) - |t-s|^2H + 2ts)/2
     # but I have to check if it is correct. (In new kernel FracBrownianBridge.)
     
-    if _patch_jax.isconcrete(x, y):
-        with jax.ensure_compile_time_eval():
-            assert jnp.all(x >= 0) and jnp.all(x <= 1)
-            assert jnp.all(y >= 0) and jnp.all(y <= 1)
+    with _patch_jax.skipifabstract():
+        assert jnp.all(x >= 0) and jnp.all(x <= 1)
+        assert jnp.all(y >= 0) and jnp.all(y <= 1)
     return jnp.minimum(x, y) - x * y
 
 def _stationaryfracbrownian_derivable(H=1/2):
@@ -182,7 +178,7 @@ def StationaryFracBrownian(delta, H=1/2):
     
     # TODO older reference, see [29] is GS06.
     
-    if _patch_jax.isconcrete(H):
+    with _patch_jax.skipifabstract():
         assert 0 < H <= 1, H
     H2 = 2 * H
     return 1/2 * (jnp.abs(delta + 1) ** H2 + jnp.abs(delta - 1) ** H2 - 2 * jnp.abs(delta) ** H2)

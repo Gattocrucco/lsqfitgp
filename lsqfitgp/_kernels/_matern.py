@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy
 from jax import numpy as jnp
 
 from .. import _patch_jax
@@ -44,18 +43,15 @@ def Maternp(r2, p=None):
 
     Reference: Rasmussen and Williams (2006, p. 85).
     """
-    if _patch_jax.isconcrete(p):
+    with _patch_jax.skipifabstract():
         assert int(p) == p and p >= 0, p
     r2 = (2 * p + 1) * r2
     return _special.kvmodx2_hi(r2 + 1e-30, p)
     # TODO see if I can remove the 1e-30 improving kvmodx2_hi_jvp
 
 def _matern_derivable(nu=None):
-    if _patch_jax.isconcrete(nu):
-        nu = _patch_jax.concrete(nu)
-        return max(0, numpy.ceil(nu) - 1)
-    else:
-        return None
+    with _patch_jax.skipifabstract():
+        return max(0, jnp.ceil(nu) - 1)
 
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
@@ -74,7 +70,7 @@ def Matern(r2, nu=None):
 
     Reference: Rasmussen and Williams (2006, p. 84).
     """
-    if _patch_jax.isconcrete(nu):
+    with _patch_jax.skipifabstract():
         assert 0 <= nu < jnp.inf, nu
     r2 = 2 * jnp.where(nu, nu, 1) * r2  # for v = 0 the correct limit is white
                                         # noise, so I avoid doing r2 * 0
@@ -100,10 +96,12 @@ def Matern(r2, nu=None):
 #         return zl + (nu - lnu) * (zr - zl) / (rnu - lnu)
 
 def _bessel_derivable(nu=0):
-    return nu // 2
+    with _patch_jax.skipifabstract():
+        return nu // 2
 
 def _bessel_maxdim(nu=0):
-    return 2 * (numpy.floor(nu) + 1)
+    with _patch_jax.skipifabstract():
+        return 2 * (jnp.floor(nu) + 1)
 
 @isotropickernel(derivable=_bessel_derivable, maxdim=_bessel_maxdim)
 def Bessel(r2, nu=0):
@@ -120,7 +118,7 @@ def Bessel(r2, nu=0):
     
     Reference: Rasmussen and Williams (2006, p. 89).
     """
-    if _patch_jax.isconcrete(nu):
+    with _patch_jax.skipifabstract():
         assert 0 <= nu < jnp.inf, nu
     r2 = r2 * (2 + nu / 2) ** 2
     return _special.gamma(nu + 1) * _special.jvmodx2(nu, r2)

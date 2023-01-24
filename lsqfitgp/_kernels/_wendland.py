@@ -18,7 +18,6 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 from jax import numpy as jnp
-import numpy
 
 from .. import _patch_jax
 from .._Kernel import stationarykernel, isotropickernel
@@ -27,7 +26,8 @@ def _wendland_derivable(k=0, **_):
     return k
 
 def _wendland_maxdim(k=0, alpha=1):
-    return numpy.floor(2 * alpha - 1)
+    with _patch_jax.skipifabstract():
+        return jnp.floor(2 * alpha - 1)
 
 @isotropickernel(input='soft', derivable=_wendland_derivable, maxdim=_wendland_maxdim)
 def Wendland(r, k=0, alpha=1):
@@ -58,7 +58,7 @@ def Wendland(r, k=0, alpha=1):
     # be a general mechanism implemented in GP that gives sparse x and y to
     # the kernel
     
-    if _patch_jax.isconcrete(k, alpha):
+    with _patch_jax.skipifabstract():
         D = _wendland_maxdim(k, alpha)
         assert D >= 1, D
     
@@ -120,7 +120,7 @@ def Circular(delta, tau=4, c=1/2):
     
     Reference: Padonou and Roustant (2016).
     """
-    if _patch_jax.isconcrete(tau, c):
+    with _patch_jax.skipifabstract():
         assert tau >= 4, tau
         assert 0 < c <= 1/2, c
     x = delta % 1

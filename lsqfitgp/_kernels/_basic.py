@@ -22,6 +22,7 @@ import re
 import collections
 
 import numpy
+import jax
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
@@ -108,7 +109,7 @@ def GammaExp(r2, gamma=1):
 
     Reference: Rasmussen and Williams (2006, p. 86).
     """
-    if _patch_jax.isconcrete(gamma):
+    with _patch_jax.skipifabstract():
         assert 0 < gamma <= 2, gamma
     nondiff = jnp.exp(-(r2 ** (gamma / 2)))
     diff = jnp.exp(-r2)
@@ -150,7 +151,7 @@ def NNKernel(x, y, sigma0=1):
     
     # TODO the `2`s in the formula are a bit arbitrary. Remove them or give
     # motivation relative to the precise formulation of the neural network.
-    if _patch_jax.isconcrete(sigma0):
+    with _patch_jax.skipifabstract():
         assert 0 < sigma0 < jnp.inf
     q = sigma0 ** 2
     denom = (1 + 2 * (q + _dot(x, x))) * (1 + 2 * (q + _dot(y, y)))
@@ -183,9 +184,9 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     """
     sx = scalefun(x)
     sy = scalefun(y)
-    if _patch_jax.isconcrete(sx, sy):
-        assert numpy.all(_patch_jax.concrete(sx) > 0)
-        assert numpy.all(_patch_jax.concrete(sy) > 0)
+    with _patch_jax.skipifabstract():
+        assert jnp.all(sx > 0)
+        assert jnp.all(sy > 0)
     denom = sx ** 2 + sy ** 2
     factor = jnp.sqrt(2 * sx * sy / denom)
     distsq = _Kernel.sum_recurse_dtype(lambda x, y: (x - y) ** 2, x, y)
@@ -210,7 +211,7 @@ def Periodic(delta, outerscale=1):
     
     Reference: Rasmussen and Williams (2006, p. 92).
     """
-    if _patch_jax.isconcrete(outerscale):
+    with _patch_jax.skipifabstract():
         assert 0 < outerscale < jnp.inf
     return jnp.exp(-2 * (jnp.sin(delta / 2) / outerscale) ** 2)
 
@@ -233,9 +234,8 @@ def Categorical(x, y, cov=None):
     cov = jnp.asarray(cov)
     assert len(cov.shape) == 2
     assert cov.shape[0] == cov.shape[1]
-    if _patch_jax.isconcrete(cov):
-        C = _patch_jax.concrete(cov)
-        assert numpy.allclose(C, C.T)
+    with _patch_jax.skipifabstract():
+        assert jnp.allclose(cov, cov.T)
     return cov[x, y]
 
 @kernel
@@ -348,7 +348,7 @@ def Cauchy(r2, alpha=2, beta=2):
     (2006, p. 86).
     
     """
-    if _patch_jax.isconcrete(alpha, beta):
+    with _patch_jax.skipifabstract():
         assert 0 < alpha <= 2, alpha
         assert 0 < beta, beta
     power = jnp.where(alpha == 2, r2, r2 ** (alpha / 2))
@@ -374,7 +374,7 @@ def CausalExpQuad(r, alpha=1):
         
     From https://github.com/wesselb/mlkernels.
     """
-    if _patch_jax.isconcrete(alpha):
+    with _patch_jax.skipifabstract():
         assert alpha >= 0, alpha
     return jspecial.erfc(alpha / 4 * r) * jnp.exp(-1/2 * jnp.square(r))
     # TODO taylor-expand erfc near 0 and use r2
@@ -394,10 +394,9 @@ def Decaying(x, y):
     Reference: Swersky, Snoek and Adams (2014).
     """
     # TODO high dimensional version of this, see mlkernels issue #3
-    if _patch_jax.isconcrete(x, y):
-        X, Y = _patch_jax.concrete(x, y)
-        assert numpy.all(X >= 0)
-        assert numpy.all(Y >= 0)
+    with _patch_jax.skipifabstract():
+        assert jnp.all(x >= 0)
+        assert jnp.all(y >= 0)
     return 1 / (x + y + 1)
     # use x + y + 1 instead of 1 + x + y because the latter is less numerically
     # symmetric for small x and y

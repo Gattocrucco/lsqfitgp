@@ -493,10 +493,10 @@ class AR(_ARBase):
         # numerical accuracy and would reduce compilation time if ported to jax
         # (current one is O(p), that would be O(log p)).
         
-        if _patch_jax.isconcrete(coef) and coef.size:
-            c = _patch_jax.concrete(coef)
-            numpy.testing.assert_equal(c[0].item(), 1)
-            numpy.testing.assert_allclose(numpy.imag(c), 0, rtol=0, atol=1e-4)
+        if coef.size:
+            with _patch_jax.skipifabstract():
+                numpy.testing.assert_equal(coef[0].item(), 1)
+                numpy.testing.assert_allclose(jnp.imag(coef), 0, rtol=0, atol=1e-4)
         return -coef.real[1:]
         
         # TODO possibly not accurate for large p. Do a test with an

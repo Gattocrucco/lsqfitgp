@@ -60,7 +60,7 @@ examples: $(EXAMPLES)
 $(EXAMPLES):
 	$(EXAMPLESPY) examples/runexamples.py $@
 
-docs/kernelsref.rst: docs/kernelsref.py lsqfitgp/_kernels.py lsqfitgp/_patch_jax.py
+docs/kernelsref.rst: docs/kernelsref.py lsqfitgp/_kernels/*.py lsqfitgp/_patch_jax.py
 	$(DOCSPY) $(notdir $<)
 
 docs/examplesref.rst: docs/examplesref.py lsqfitgp/*.py lsqfitgp/*/*.py
