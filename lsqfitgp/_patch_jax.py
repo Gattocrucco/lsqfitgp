@@ -128,7 +128,7 @@ class skipifabstract:
 # TODO make stop_hessian work in reverse mode
 # see jax issue #10994
 # ad.primitive_transposes[ad_util.stop_gradient_p] = lambda ct, _: [lax.stop_gradient(ct)]
-# try with jax.jvp and jax.stop_gradient, I tried once and I failed but I did
+# try with jax.jvp and lax.stop_gradient, I tried once and I failed but I did
 # not try hard enough
 
 @jax.custom_jvp
