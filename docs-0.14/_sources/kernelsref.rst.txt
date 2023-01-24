@@ -39,11 +39,9 @@ default values of the keyword parameters, apart from some specific cases like
 .. warning::
 
    You may encounter problems with second derivatives for
-   :class:`CausalExpQuad`, :class:`FracBrownian`, :class:`NNKernel`,
-   :class:`Taylor`, and with first derivatives too for :class:`Wendland` (but
-   only in more than one dimension). :class:`Color` stops working for :math:`n
-   > 20`. The following kernels are not compatible with the JAX JIT:
-   :class:`Bessel`, :class:`Matern`, :class:`Taylor`.
+   :class:`CausalExpQuad`, :class:`FracBrownian`, :class:`NNKernel`, and with
+   first derivatives too for :class:`Wendland` (but only in more than one
+   dimension). :class:`Color` stops working for :math:`n > 20`.
 
 Index
 -----
@@ -182,7 +180,7 @@ Documentation
     :class-doc-from: class
 .. image:: kernelsref-GammaExp.png
 .. image:: kernelsref-GammaExp-samples.png
-.. autoclass:: Gibbs(x, y, scalefun=<function <lambda> at 0x1222bab00>)
+.. autoclass:: Gibbs(x, y, scalefun=<function <lambda> at 0x11dc9e7a0>)
     :members:
     :class-doc-from: class
 .. image:: kernelsref-Gibbs.png
