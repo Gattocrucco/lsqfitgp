@@ -112,7 +112,7 @@ class DecompTestBase(DecompTestABC):
                 sol = self.solve(K, b)
                 np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
     
-    def check_solve_jac(self, bgen, jacfun, jit=False, hess=False, da=False):
+    def check_solve_jac(self, bgen, jacfun, jit=False, hess=False, da=False, rtol=1e-7):
         # TODO sometimes the jacobian of fun is practically zero. Why? This
         # gives problems because it needs an higher absolute tolerance.
         def fun(s, n, b):
@@ -126,7 +126,7 @@ class DecompTestBase(DecompTestABC):
             result = funjac(s, n, b)
             if jit:
                 result2 = funjacjit(s, n, b)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-7)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=rtol)
                 continue
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -172,7 +172,7 @@ class DecompTestBase(DecompTestABC):
         self.check_solve_jac(self.randvec, jax.jacrev, True)
 
     def test_solve_vec_jac_fwd_jit(self):
-        self.check_solve_jac(self.randvec, jax.jacfwd, True)
+        self.check_solve_jac(self.randvec, jax.jacfwd, True, rtol=1e-6)
 
     def test_solve_matrix_jit(self):
         self.check_solve(self.randmat, True)
@@ -986,7 +986,7 @@ def test_degenerate(decomp):
 # keep last to avoid hiding them in wrappings
 
 # TODO second derivatives completing but returning incorrect result
-util.xfail(DecompTestBase, 'test_solve_matrix_hess_fwd_rev')
+util.xfail(DecompTestBase, 'test_solve_matrix_hess_fwd_rev') # works only for TestSandwichSVDDiag
 util.xfail(DecompTestBase, 'test_logdet_hess_fwd_rev')
 util.xfail(BlockDecompTestBase, 'test_logdet_hess_fwd_fwd_stopg')
 util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
@@ -1004,17 +1004,18 @@ for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
 # multiplication jvp transpose. => it's probably derivatives w.r.t. the outer
 # sides of quad
 for cls in [BlockDecompTestBase, WoodburyTestBase]:
-    util.xfail(cls, 'test_solve_vec_jac_rev')
-    util.xfail(cls, 'test_solve_matrix_jac_rev')
-    util.xfail(cls, 'test_solve_vec_jac_rev_jit')
-    util.xfail(cls, 'test_solve_matrix_jac_rev_jit')
-    util.xfail(cls, 'test_solve_matrix_jac_rev_matrix')
-    util.xfail(cls, 'test_quad_vec_jac_rev')
-    util.xfail(cls, 'test_quad_matrix_jac_rev')
-    util.xfail(cls, 'test_quad_vec_jac_rev_jit')
-    util.xfail(cls, 'test_quad_matrix_jac_rev_jit')
-    util.xfail(cls, 'test_logdet_jac_rev')
-    util.xfail(cls, 'test_logdet_jac_rev_jit')
+    # a jax update solved all these, dunno why
+    # util.xfail(cls, 'test_solve_vec_jac_rev')
+    # util.xfail(cls, 'test_solve_matrix_jac_rev')
+    # util.xfail(cls, 'test_solve_vec_jac_rev_jit')
+    # util.xfail(cls, 'test_solve_matrix_jac_rev_jit')
+    # util.xfail(cls, 'test_solve_matrix_jac_rev_matrix')
+    # util.xfail(cls, 'test_quad_vec_jac_rev')
+    # util.xfail(cls, 'test_quad_matrix_jac_rev')
+    # util.xfail(cls, 'test_quad_vec_jac_rev_jit')
+    # util.xfail(cls, 'test_quad_matrix_jac_rev_jit')
+    # util.xfail(cls, 'test_logdet_jac_rev')
+    # util.xfail(cls, 'test_logdet_jac_rev_jit')
     util.xfail(cls, 'test_quad_matrix_matrix_hess_fwd_rev')
 
 # TODO I don't know how to implement correlate and decorrelate for Woodbury

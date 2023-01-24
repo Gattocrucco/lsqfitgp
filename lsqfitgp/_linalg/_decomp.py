@@ -478,7 +478,7 @@ class ReduceRank(Diag):
             dtype = K.dtype
             shape = (len(K), rank)
         self._w, self._V = jax.pure_callback(
-            lambda K: sparse.linalg.eigsh(K, k=rank, which='LM'),
+            lambda K: sparse.linalg.eigsh(numpy.asarray(K), k=rank, which='LM'),
             (wdummy, Vdummy),
             K,
         )
