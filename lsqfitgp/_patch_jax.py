@@ -35,6 +35,26 @@ from jax import tree_util
 from jax._src import ad_util
 
 def makejaxufunc(ufunc, *derivs):
+    """
+    
+    Wrap a numpy ufunc to add jax support.
+    
+    Parameters
+    ----------
+    ufunc : callable
+        Elementwise function following numpy broadcasting and type promotion
+        rules. Keyword arguments not supported.
+    derivs : sequence of callable
+        Derivatives of the function w.r.t. each positional argument, with the
+        same signature as `ufunc`. Pass None to indicate a missing derivative.
+        There must be as many derivatives as the arguments to `ufunc`.
+    
+    Return
+    ------
+    func : callable
+        Wrapped `ufunc`. Supports jit, but the calculation is performed on cpu.
+    
+    """
 
     nondiff_argnums = [i for i, d in enumerate(derivs) if d is None]
     
@@ -108,6 +128,8 @@ class skipifabstract:
 # TODO make stop_hessian work in reverse mode
 # see jax issue #10994
 # ad.primitive_transposes[ad_util.stop_gradient_p] = lambda ct, _: [lax.stop_gradient(ct)]
+# try with jax.jvp and jax.stop_gradient, I tried once and I failed but I did
+# not try hard enough
 
 @jax.custom_jvp
 def stop_hessian(x):

@@ -484,6 +484,9 @@ class ReduceRank(Diag):
         )
         # TODO maybe I can use custom_solve to add derivatives to it in
         # direct mode
+        
+        # TODO try using jnp.matmul instead of passing the matrix and check
+        # if it improves performance due to lower default comput precision
     
     def correlate(self, b):
         return super().correlate(b[:len(self._w)])

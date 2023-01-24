@@ -386,7 +386,8 @@ I can do (positive scalar) ** kernel (=> implement Kernel.__rpow__). Also
 correct, it would mean that all positive kernels are infinitely divisible.
 
 Standard functions with positive Taylor coefficients: tan, 1/sin, 1/cos, asin,
-acos, 1/(1-x), exp, -log(1-x), sinh, cosh, atanh, I_a (real a > -1).
+acos, 1/(1-x), exp, -log(1-x), sinh, cosh, atanh, I_a (real a > -1), and their
+truncated versions (e^x - 1, e^x - 1 - x, etc.).
 
 When doing kernel base power, or in general applying functions which have a
 narrow domain, the kernel must be within bounds. For weakly stationary kernels,
@@ -401,8 +402,6 @@ even recognize this and so for example np.tan(kernel) would work.
 
 Turning bands operator (Gneiting 2002, p. 501). Applies to isotropic kernels,
 introduces negative correlations. Preserves support and derivability.
-
-Look at what the Schoenberg theorem is (seen in seminar by Théo Galy-Fajou)
 
 Tentative coherent implementation of transformations and their compositions:
 Each transformation is implemented by a method of the kernel. Kernel provides

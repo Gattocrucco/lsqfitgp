@@ -50,8 +50,8 @@ setuptools.setup(
     install_requires=[
         'numpy>=1.20', # first version with broadcast_shapes
         'scipy>=1.4.1', # first supporting special.zeta(negative number)
-        'jax>=0.3.13', # release at adoption
-        'jaxlib>=0.3.10', # release at adoption
+        'jax>=0.3.17', # first supporting pure_callback()
+        'jaxlib>=0.3.15', # latest release before jax 0.3.17
         'gvar>=11.10', # first version with new gvars correlated with old ones
     ]
 )
