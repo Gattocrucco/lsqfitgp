@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_decomp.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023 Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -471,7 +471,19 @@ class ReduceRank(Diag):
     """
     
     def __init__(self, K, rank=1):
-        self._w, self._V = sparse.linalg.eigsh(numpy.asarray(K), k=rank, which='LM')
+        class wdummy:
+            dtype = K.dtype
+            shape = (rank,)
+        class Vdummy:
+            dtype = K.dtype
+            shape = (len(K), rank)
+        self._w, self._V = jax.pure_callback(
+            lambda K: sparse.linalg.eigsh(K, k=rank, which='LM'),
+            (wdummy, Vdummy),
+            K,
+        )
+        # TODO maybe I can use custom_solve to add derivatives to it in
+        # direct mode
     
     def correlate(self, b):
         return super().correlate(b[:len(self._w)])

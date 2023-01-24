@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_linalg.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -126,7 +126,7 @@ class DecompTestBase(DecompTestABC):
             result = funjac(s, n, b)
             if jit:
                 result2 = funjacjit(s, n, b)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-8)
+                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-7)
                 continue
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -993,10 +993,9 @@ util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
 util.xfail(WoodburyTestBase, 'test_logdet_hess_fwd_fwd_stopg')
 util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
 
-# TODO linalg.sparse.eigsh does not have a jax counterpart, but apparently
-# they are now making an effort to add sparse support to jax, let's wait
+# TODO linalg.sparse.eigsh is not implemented in jax
 for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
-    if name.endswith('_jit') or name.endswith('_da'):
+    if name.endswith('_da'):
         util.xfail(TestReduceRank, name)
 
 # TODO reverse diff broken because they use quads within other stuff probably.

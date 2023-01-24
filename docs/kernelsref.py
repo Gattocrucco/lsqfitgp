@@ -1,6 +1,6 @@
 # lsqfitgp/docs/kernelsref.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,9 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Generate a file with the list of kernels. They are documented using
-autofunction instead of autoclass because they are built using decorators and
-autoclass is not good at supporting that."""
+""" Generate a file with the list of kernels """
 
 outputfile = 'kernelsref.rst'
 
@@ -84,11 +82,9 @@ default values of the keyword parameters, apart from some specific cases like
 .. warning::
 
    You may encounter problems with second derivatives for
-   :class:`CausalExpQuad`, :class:`FracBrownian`, :class:`NNKernel`,
-   :class:`Taylor`, and with first derivatives too for :class:`Wendland` (but
-   only in more than one dimension). :class:`Color` stops working for :math:`n
-   > 20`. The following kernels are not compatible with the JAX JIT:
-   :class:`Bessel`, :class:`Matern`, :class:`Taylor`.
+   :class:`CausalExpQuad`, :class:`FracBrownian`, :class:`NNKernel`, and with
+   first derivatives too for :class:`Wendland` (but only in more than one
+   dimension). :class:`Color` stops working for :math:`n > 20`.
 
 Index
 -----

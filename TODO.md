@@ -128,11 +128,10 @@ Add jit tests to test_GP
 gvar #27 is closed with 11.10.1, go through the code to remove the array
 copies, and increase the minimum supported gvar version
 
-Probably many non-abstract array checks in `GP` can be made to work under jit
-for the first evaluation using `jax.ensure_compile_time_eval` (unless tracers
-arriving from pre-barrier code can not be concretized, which could well be the
-case). => See also https://jax.readthedocs.io/en/latest/debugging/index.html,
-in particular `jax.experimental.checkify`.
+Use `jax.experimental.checkify` instead of `_patch_jax.skipifabstract`, then
+handle checking in `empbayes_fit`, with options to check errors or not (default
+checks everything and raises mid-minimization). Maybe wait for `checkify` to
+become non-experimental?
 
 ## Implementation details
 
@@ -149,11 +148,6 @@ In defining abstract methods, use the single line syntax:
     def cippa(*_): pass
 
 such that there is not need to add # pragma: no cover (I hope, try it)
-
-jax 0.3.16 introduces pure_callback, to use python functions within
-jit-compiled ones. Coupled with custom_jvp, I think I can use it to quickly add
-jit support for some kernels until I implement them in JAX, Matérn in
-particular. Also the sparse solver.
 
 ## New functionality
 

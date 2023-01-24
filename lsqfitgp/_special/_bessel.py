@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_bessel.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -32,10 +32,11 @@ j1 = _patch_jax.makejaxufunc(special.j1, lambda x: (j0(x) - jv(2, x)) / 2.0)
 jv = _patch_jax.makejaxufunc(special.jv, None, lambda v, z: jvp(v, z, 1))
 jvp = _patch_jax.makejaxufunc(special.jvp, None, lambda v, z, n: jvp(v, z, n + 1), None)
 
+kv = _patch_jax.makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
+kvp = _patch_jax.makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
+
 # iv = _patch_jax.makejaxufunc(special.iv, None, lambda v, z: ivp(v, z, 1))
 # ivp = _patch_jax.makejaxufunc(special.ivp, None, lambda v, z, n: ivp(v, z, n + 1), None)
-# kv = _patch_jax.makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
-# kvp = _patch_jax.makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
 
 # See jax #1870, #2466, #9956, #11002 and
 # https://github.com/josipd/jax/blob/master/jax/experimental/jambax.py
@@ -68,7 +69,7 @@ def jvmodx2_jvp(nu, primals, tangents):
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 2))
 def kvmodx2(nu, x2, norm_offset=0):
     x = jnp.sqrt(x2)
-    normal = 2 / _gamma.gamma(nu + norm_offset) * (x / 2) ** nu * special.kv(nu, x)
+    normal = 2 / _gamma.gamma(nu + norm_offset) * (x / 2) ** nu * kv(nu, x)
     atzero = 1 / jnp.prod(nu + jnp.arange(norm_offset))
     atzero = jnp.where(nu > 0, atzero, 1) # for nu < 0 the correct limit
                                           # would be inf, but in practice it

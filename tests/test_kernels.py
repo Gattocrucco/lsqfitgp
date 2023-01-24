@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_kernels.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -950,15 +950,6 @@ util.xfail(TestWendland, 'test_positive_deriv_nd') # seen xpassing in the wild
 util.xfail(TestWendland, 'test_jit_deriv_nd')
 
 # TODO These are not isotropic kernels, what is the problem?
-util.xfail(TestTaylor, 'test_double_diff_nd_second')
-util.xfail(TestNNKernel, 'test_double_diff_nd_second')
-util.xfail(TestFracBrownian, 'test_double_diff_nd_second')
-
-# TODO functions not supported by XLA. Wait for jax to add them?
-for test in [TestTaylor, TestBessel, TestMatern]:
-    util.xfail(test, 'test_jit')
-    util.xfail(test, 'test_jit_deriv')
-    util.xfail(test, 'test_jit_deriv2')
-    util.xfail(test, 'test_jit_nd')
-    util.xfail(test, 'test_jit_deriv_nd')
-    util.xfail(test, 'test_jit_deriv2_nd')
+util.xfail(TestTaylor, 'test_double_diff_nd_second') # numerical precision
+util.xfail(TestNNKernel, 'test_double_diff_nd_second') # large difference
+util.xfail(TestFracBrownian, 'test_double_diff_nd_second') # large difference

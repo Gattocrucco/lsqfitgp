@@ -1,6 +1,6 @@
 # lsqfitgp/_patch_jax.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -35,32 +35,34 @@ from jax import tree_util
 from jax._src import ad_util
 
 def makejaxufunc(ufunc, *derivs):
-    # TODO use jax.something.standard_primitive
-    
-    prim = core.Primitive(ufunc.__name__)
+
+    nondiff_argnums = [i for i, d in enumerate(derivs) if d is None]
     
     @functools.wraps(ufunc)
+    @functools.partial(jax.custom_jvp, nondiff_argnums=nondiff_argnums)
     def func(*args):
-        return prim.bind(*args)
+        args = tuple(map(jnp.asarray, args))
+        class ResultDummy:
+            shape = jnp.broadcast_shapes(*(arg.shape for arg in args))
+            dtype = jnp.result_type(*args)
+        return jax.pure_callback(ufunc, ResultDummy, *args, vectorized=True)
 
-    @prim.def_impl
-    def impl(*args):
-        return ufunc(*args)
-
-    @prim.def_abstract_eval
-    def abstract_eval(*args):
-        shape = jnp.broadcast_shapes(*(x.shape for x in args))
-        dtype = jnp.result_type(*(x.dtype for x in args))
-        return core.ShapedArray(shape, dtype)
-
-    jvps = (
-        None if d is None
-        else (lambda d: lambda g, *args: d(*args) * g)(d)
-        for d in derivs
-    )
-    ad.defjvp(prim, *jvps)
-
-    batching.defbroadcasting(prim)
+    @func.defjvp
+    def func_jvp(*allargs):
+        ndargs = allargs[:-2]
+        dargs = allargs[-2]
+        dargst = allargs[-1]
+        
+        itnd = iter(ndargs)
+        itd = iter(dargs)
+        args = [next(itnd) if d is None else next(itd) for d in derivs]
+        
+        result = func(*args)
+        tangent = sum([
+            d(*args) * t for t, d in
+            zip(dargst, (d for d in derivs if d is not None))
+        ])
+        return result, tangent
     
     return func
 
