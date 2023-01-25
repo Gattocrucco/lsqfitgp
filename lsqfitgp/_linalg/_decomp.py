@@ -479,10 +479,8 @@ class ReduceRank(Diag):
             shape = (len(K), rank)
         self._w, self._V = jax.pure_callback(
             lambda K: sparse.linalg.eigsh(numpy.asarray(K), k=rank, which='LM'),
-            (wdummy, Vdummy),
-            K,
+            (wdummy, Vdummy), K,
         )
-        # TODO use lax.custom_linear_solve to add derivatives in direct mode
         
         # TODO try using jnp.matmul instead of passing the matrix and check
         # if it improves performance due to lower default comput precision

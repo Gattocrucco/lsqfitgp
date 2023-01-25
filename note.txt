@@ -2481,6 +2481,7 @@ Are they new? Do they still fail in old jax versions? In which version did they
 stop failing? Should I unmark them and require jax >= 0.3.24? Or wait to see
 if they remain xpasses with further updates or regress back? => They are still
 ok in jax 0.3.25, but let's wait until 0.4 which should be coming soon.
+=> turns out they work already in 0.3.17, I removed the marks.
 
 2022-11-06
 ==========
