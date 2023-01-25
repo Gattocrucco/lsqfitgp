@@ -29,8 +29,8 @@ class AutoPyTree:
     """
     
     def __init_subclass__(cls, **kw):
-        tree_util.register_pytree_node_class(cls)
         super().__init_subclass__(**kw)
+        tree_util.register_pytree_node_class(cls)
     
     # Since I decide dinamically which members are children based on their type,
     # I have to cache the jax pytree structure aux_data such that the

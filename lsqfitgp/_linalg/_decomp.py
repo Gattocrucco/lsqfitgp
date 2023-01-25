@@ -204,7 +204,16 @@ class DecompAutoDiff(DecompPyTree):
     
     @property
     def n(self):
-        return len(self._K)
+        return len(self._dad_args_[0])
+    
+    def matrix(self, K, *args, **kw):
+        return K
+    
+    def map_traceable_init_args(self, fun, K, *args, **kw):
+        return (fun(K), *args), kw
+    
+    def _dad_matrix_(self):
+        return self.matrix(*self._dad_args_, **self._dad_kw_)
     
     def _popattr(self, kw, attr, default):
         if not hasattr(self, attr):
@@ -217,25 +226,30 @@ class DecompAutoDiff(DecompPyTree):
         
     def __init_subclass__(cls, **kw):
         
-        # For __init__ I can't use an _autodiff flag like below to avoid double
-        # wrapping because the wrapper is called as super().__init__ in
-        # subclasses, so I assign self._K *after* calling old__init__.
-        
+        super().__init_subclass__(**kw)
+
         old__init__ = cls.__init__
         
         @functools.wraps(old__init__)
-        def __init__(self, K, *args, **kw):
+        def __init__(self, *args, **kw):
             self._popattr(kw, 'direct_autodiff', False)
             self._popattr(kw, 'stop_hessian', False)
             if self.direct_autodiff and self.stop_hessian:
-                old__init__(self, _patch_jax.stop_hessian(K), *args, **kw)
+                nargs, nkw = self.map_traceable_init_args(_patch_jax.stop_hessian, *args, **kw)
+                old__init__(self, *nargs, **nkw)
             elif self.direct_autodiff:
-                old__init__(self, K, *args, **kw)
+                old__init__(self, *args, **kw)
             else:
-                old__init__(self, jax.lax.stop_gradient(K), *args, **kw)
+                nargs, nkw = self.map_traceable_init_args(jax.lax.stop_gradient, *args, **kw)
+                old__init__(self, *nargs, **nkw)
                 if self.stop_hessian:
-                    K = _patch_jax.stop_hessian(K)
-            self._K = K
+                    args, kw = self.map_traceable_init_args(_patch_jax.stop_hessian, *args, **kw)
+            self._dad_args_ = args
+            self._dad_kw_ = kw
+            # For __init__ I can't use an _autodiff flag like below to avoid
+            # double wrapping because the wrapper is called as super().__init__
+            # in subclasses, so I assign _dad_args_ and _dad_kw *after* calling
+            # old__init__.
         
         cls.__init__ = __init__
         
@@ -247,8 +261,6 @@ class DecompAutoDiff(DecompPyTree):
                 if not hasattr(newmeth, '_autodiff'):
                     newmeth._autodiff = True
                 setattr(cls, name, newmeth)
-        
-        super().__init_subclass__(**kw)
     
     @staticmethod
     def _make_solve(oldsolve):
@@ -270,7 +282,7 @@ class DecompAutoDiff(DecompPyTree):
             if self.direct_autodiff:
                 return oldsolve(self, b)
             else:
-                return solve_autodiff(self, self._K, b)
+                return solve_autodiff(self, self._dad_matrix_(), b)
         
         # solve_autodiff is used by logdet_jvp and quad_jvp.
         solve._autodiff = solve_autodiff
@@ -327,7 +339,7 @@ class DecompAutoDiff(DecompPyTree):
             if self.direct_autodiff:
                 return oldquad(self, b, c)
             elif c is None:
-                return quad_autodiff_cnone(self, self._K, b)
+                return quad_autodiff_cnone(self, self._dad_matrix_(), b)
             elif c.dtype == object:
                 return oldquad(self, b, c)
                 # if c contains gvars, the output is an array of gvars, and
@@ -335,7 +347,7 @@ class DecompAutoDiff(DecompPyTree):
                 # checked not to return object dtypes, so I have to call
                 # oldquad
             else:
-                return quad_autodiff(self, self._K, b, c)
+                return quad_autodiff(self, self._dad_matrix_(), b, c)
         
         return quad
     
@@ -360,7 +372,7 @@ class DecompAutoDiff(DecompPyTree):
             if self.direct_autodiff:
                 return oldlogdet(self)
             else:
-                return logdet_autodiff(self, self._K)
+                return logdet_autodiff(self, self._dad_matrix_())
         
         return logdet
         
