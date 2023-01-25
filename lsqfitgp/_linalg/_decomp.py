@@ -77,6 +77,7 @@ Woodbury
 import abc
 import functools
 import warnings
+import inspect
 
 import jax
 from jax import numpy as jnp
@@ -196,22 +197,25 @@ class Decomposition(metaclass=abc.ABCMeta):
 class DecompPyTree(Decomposition, _pytree.AutoPyTree):
     pass
 
-class DecompAutoDiff(DecompPyTree):
+class DecompAutoDiffBase(DecompPyTree):
     """
     Abstract subclass adding JAX autodiff support to subclasses of
     Decomposition, even if the decomposition algorithm is not supported by JAX.
     """
     
-    @property
-    def n(self):
-        return len(self._dad_args_[0])
-    
-    def matrix(self, K, *args, **kw):
+    @abc.abstractmethod
+    def matrix(self, *args, **kw):
+        """ Given the initialization arguments, returns the matrix to be
+        decomposed """
         return K
-    
-    def map_traceable_init_args(self, fun, K, *args, **kw):
-        return (fun(K), *args), kw
-    
+            
+    @abc.abstractmethod
+    def map_traceable_init_args(self, fun, *args, **kw):
+        """ Given a function Any -> Any, and the initialization arguments,
+        apply the function only to those arguments which are considered inputs
+        to the definition of the matrix """
+        return mapped_args, mapped_kw
+        
     def _dad_matrix_(self):
         return self.matrix(*self._dad_args_, **self._dad_kw_)
     
@@ -227,6 +231,12 @@ class DecompAutoDiff(DecompPyTree):
     def __init_subclass__(cls, **kw):
         
         super().__init_subclass__(**kw)
+        
+        if inspect.isabstract(cls):
+            # do not wrap the class methods if it's still abstract, because
+            # __init_subclass__ will necessarily be invoked again on the
+            # concrete subclasses
+            return
 
         old__init__ = cls.__init__
         
@@ -375,6 +385,18 @@ class DecompAutoDiff(DecompPyTree):
                 return logdet_autodiff(self, self._dad_matrix_())
         
         return logdet
+
+class DecompAutoDiff(DecompAutoDiffBase):
+    
+    @property
+    def n(self):
+        return len(self._dad_args_[0])
+    
+    def matrix(self, K, *args, **kw):
+        return K
+    
+    def map_traceable_init_args(self, fun, K, *args, **kw):
+        return (fun(K), *args), kw
         
 class Diag(DecompAutoDiff):
     """
@@ -413,8 +435,7 @@ class Diag(DecompAutoDiff):
         if eps is None:
             eps = len(w) * jnp.finfo(w.dtype).eps
         assert 0 <= eps < 1
-        return eps * jnp.max(w)
-        # TODO or max(abs(w))?
+        return eps * jnp.max(jnp.abs(w))
 
 class EigCutFullRank(Diag):
     """
