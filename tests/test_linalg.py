@@ -523,12 +523,6 @@ class DecompTestBase(DecompTestABC):
             sol = self.decompclass(K).quad(b)
             np.testing.assert_allclose(sol, result)
 
-class TestDiag(DecompTestBase):
-    
-    @property
-    def decompclass(self):
-        return _linalg.Diag
-
 class TestEigCutFullRank(DecompTestBase):
     
     @property
@@ -650,11 +644,11 @@ class BlockDecompTestBase(DecompTestBase):
             return _linalg.BlockDecomp(Pdec, S, Q, subdec, **kw)
         return decomp
     
-class TestBlockDiag(BlockDecompTestBase):
+class TestBlockEigCutFullRank(BlockDecompTestBase):
     
     @property
     def subdecompclass(self):
-        return _linalg.Diag
+        return _linalg.EigCutFullRank
 
 class BlockDiagDecompTestBase(DecompTestBase):
     """
@@ -699,11 +693,11 @@ class BlockDiagDecompTestBase(DecompTestBase):
             return _linalg.BlockDiagDecomp(*args)
         return decomp
 
-class TestBlockDiagDiag(BlockDiagDecompTestBase):
+class TestBlockDiagEigCutFullRank(BlockDiagDecompTestBase):
     
     @property
     def subdecompclass(self):
-        return _linalg.Diag
+        return _linalg.EigCutFullRank
 
 class SandwichTestBase(DecompTestBase):
     """
@@ -781,21 +775,21 @@ class SandwichTestBase(DecompTestBase):
     def logdet(self, K):
         return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
 
-class TestSandwichQRDiag(SandwichTestBase):
+class TestSandwichQREigCutFullRank(SandwichTestBase):
     
     @property
     def subdecompclass(self):
-        return _linalg.Diag
+        return _linalg.EigCutFullRank
     
     @property
     def sandwichclass(self):
         return _linalg.SandwichQR
 
-class TestSandwichSVDDiag(SandwichTestBase):
+class TestSandwichSVDEigCutFullRank(SandwichTestBase):
     
     @property
     def subdecompclass(self):
-        return _linalg.Diag
+        return _linalg.EigCutFullRank
     
     @property
     def sandwichclass(self):
@@ -869,11 +863,11 @@ class WoodburyTestBase(DecompTestBase):
             return _linalg.Woodbury(A_decomp, B, C_decomp, self.subdecompclass, sign=self.sign(n), **kw)
         return decomposition
 
-class TestWoodburyDiag(WoodburyTestBase):
+class TestWoodburyEigCutFullRank(WoodburyTestBase):
     
     @property
     def subdecompclass(self):
-        return _linalg.Diag
+        return _linalg.EigCutFullRank
             
 @util.tryagain
 def test_solve_triangular():

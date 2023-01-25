@@ -32,16 +32,26 @@ support for singular matrices is considered a bug.
 
 These classes never check for infs/nans in the matrices.
 
-Classes
--------
+Abstract classes
+----------------
 Decomposition
     Abstract base class.
 DecompPyTree
     Abstract subclass that register subclasses as jax pytrees.
-DecompAutoDiff
+DecompAutoDiffBase
     Abstract subclass that adds decomposition-independent jax-autodiff support.
+DecompAutoDiff
+    Specialization of DecompAutoDiffBase for classes which take as
+    initialization input a single matrix object.
 Diag
     Diagonalization.
+SVD
+    Diagonalization with negative eigenvalues.
+CholReg
+    Abstract class for regularized Cholesky decomposition.
+
+Concrete classes
+----------------
 EigCutFullRank
     Diagonalization rounding up small (or negative) eigenvalues.
 EigCutLowRank
@@ -54,8 +64,6 @@ ReduceRank
     Partial diagonalization with higher eigenvalues only.
 Chol
     Cholesky decomposition.
-CholReg
-    Abstract class for regularized Cholesky decomposition.
 CholGersh
     Cholesky regularized using an estimate of the maximum eigenvalue.
 CholToeplitz
@@ -387,6 +395,8 @@ class DecompAutoDiffBase(DecompPyTree):
         return logdet
 
 class DecompAutoDiff(DecompAutoDiffBase):
+    """ Specialization of DecompAutoDiffBase for classes which take as
+    initialization input a single matrix object """
     
     @property
     def n(self):
@@ -403,6 +413,7 @@ class Diag(DecompAutoDiff):
     Diagonalization.
     """
     
+    @abc.abstractmethod
     def __init__(self, K):
         self._w, self._V = jlinalg.eigh(K)
     
@@ -461,7 +472,7 @@ class EigCutLowRank(Diag):
         self._w = jnp.where(cond, 1, self._w)
         self._V = jnp.where(cond, 0, self._V)
 
-class _SVD(Diag):
+class SVD(Diag):
     """ Like Diag but supports negative values in w """
     
     def logdet(self):
@@ -473,7 +484,7 @@ class _SVD(Diag):
     def decorrelate(self, b):
         return (self._V / jnp.sqrt(jnp.abs(self._w))).T @ b
         
-class SVDCutFullRank(_SVD):
+class SVDCutFullRank(SVD):
     """
     Diagonalization. Eigenvalues below `eps` in absolute value are set to
     `eps` with their sign, where `eps` is relative to the largest eigenvalue.
@@ -485,7 +496,7 @@ class SVDCutFullRank(_SVD):
         cond = jnp.abs(self._w) < eps
         self._w = jnp.where(cond, eps * jnp.sign(self._w), self._w)
         
-class SVDCutLowRank(_SVD):
+class SVDCutLowRank(SVD):
     """
     Diagonalization. Eigenvalues below `eps` in absolute value are removed,
     where `eps` is relative to the largest eigenvalue.
