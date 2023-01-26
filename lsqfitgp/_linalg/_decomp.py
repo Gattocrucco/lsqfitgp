@@ -137,7 +137,7 @@ class Decomposition(metaclass=abc.ABCMeta):
     """
     
     @abc.abstractmethod
-    def __init__(self, K): # pragma: no cover
+    def __init__(self, *args, **kw): # pragma: no cover
         """
         Decompose matrix K.
         """
@@ -195,14 +195,24 @@ class Decomposition(metaclass=abc.ABCMeta):
         return self.quad(jnp.eye(self.n))
     
     @property
-    @abc.abstractmethod
-    def n(self): # pragma: no cover
+    def n(self):
         """
         Return n where the decomposed matrix is n x n.
+        """
+        return len(self.matrix())
+    
+    @abc.abstractmethod
+    def matrix(self): # pragma: no cover
+        """
+        Return the matrix to be decomposed.
         """
         pass
 
 class DecompPyTree(Decomposition, _pytree.AutoPyTree):
+    """
+    Marks a decomposition as JAX PyTree, with automatic detection of which
+    members are to be traced by JAX.
+    """
     pass
 
 class DecompAutoDiffBase(DecompPyTree):
@@ -212,20 +222,23 @@ class DecompAutoDiffBase(DecompPyTree):
     """
     
     @abc.abstractmethod
-    def matrix(self, *args, **kw):
+    def _matrix(self, *args, **kw):
         """ Given the initialization arguments, returns the matrix to be
         decomposed """
         return K
             
     @abc.abstractmethod
-    def map_traceable_init_args(self, fun, *args, **kw):
+    def _map_traceable_init_args(self, fun, *args, **kw):
         """ Given a function Any -> Any, and the initialization arguments,
         apply the function only to those arguments which are considered inputs
         to the definition of the matrix """
         return mapped_args, mapped_kw
         
-    def _dad_matrix_(self):
-        return self.matrix(*self._dad_args_, **self._dad_kw_)
+    def matrix(self):
+        return self._matrix(*self._dad_args_, **self._dad_kw_)
+        
+    def _jax_vars(self):
+        return super()._jax_vars() + ['_dad_args_', '_dad_kw_']
     
     def _popattr(self, kw, attr, default):
         if not hasattr(self, attr):
@@ -250,24 +263,30 @@ class DecompAutoDiffBase(DecompPyTree):
         
         @functools.wraps(old__init__)
         def __init__(self, *args, **kw):
+            
+            # I can't avoid double wrapping because the superclass __init__ is
+            # wrapped and may get called with super(), so I use a flag to check
+            # if we are an __init__ called by the old__init__ of a subclass
+            if getattr(self, '_dad_initialized_', False):
+                return old__init(self, *args, **kw)
+            self._dad_initialized_ = True
+            
             self._popattr(kw, 'direct_autodiff', False)
             self._popattr(kw, 'stop_hessian', False)
+            
             if self.direct_autodiff and self.stop_hessian:
-                nargs, nkw = self.map_traceable_init_args(_patch_jax.stop_hessian, *args, **kw)
+                nargs, nkw = self._map_traceable_init_args(_patch_jax.stop_hessian, *args, **kw)
                 old__init__(self, *nargs, **nkw)
             elif self.direct_autodiff:
                 old__init__(self, *args, **kw)
             else:
-                nargs, nkw = self.map_traceable_init_args(jax.lax.stop_gradient, *args, **kw)
+                nargs, nkw = self._map_traceable_init_args(jax.lax.stop_gradient, *args, **kw)
                 old__init__(self, *nargs, **nkw)
                 if self.stop_hessian:
-                    args, kw = self.map_traceable_init_args(_patch_jax.stop_hessian, *args, **kw)
+                    args, kw = self._map_traceable_init_args(_patch_jax.stop_hessian, *args, **kw)
+            
             self._dad_args_ = args
             self._dad_kw_ = kw
-            # For __init__ I can't use an _autodiff flag like below to avoid
-            # double wrapping because the wrapper is called as super().__init__
-            # in subclasses, so I assign _dad_args_ and _dad_kw *after* calling
-            # old__init__.
         
         cls.__init__ = __init__
         
@@ -289,6 +308,7 @@ class DecompAutoDiffBase(DecompPyTree):
         
         @solve_autodiff.defjvp
         def solve_vjp(self, primals, tangents):
+            assert not self.direct_autodiff
             K, b = primals
             K_dot, b_dot = tangents
             primal = solve_autodiff(self, K, b)
@@ -300,7 +320,7 @@ class DecompAutoDiffBase(DecompPyTree):
             if self.direct_autodiff:
                 return oldsolve(self, b)
             else:
-                return solve_autodiff(self, self._dad_matrix_(), b)
+                return solve_autodiff(self, self.matrix(), b)
         
         # solve_autodiff is used by logdet_jvp and quad_jvp.
         solve._autodiff = solve_autodiff
@@ -320,15 +340,19 @@ class DecompAutoDiffBase(DecompPyTree):
         
         # TODO the tangent_K calculation with quad_autodiff breaks backward
         # derivatives, I don't know why. Maybe I should define a new
-        # decomposition function sandwitch(b, X, c) which computes b.T K^-1 X
+        # decomposition function sandwich(b, X, c) which computes b.T K^-1 X
         # K^-1 c and use it both for numerical accuracy (I'm guessing that
         # avoiding the two concatenated solves within solve is good) and to make
         # the jvp work. For things like ToeplitzML that stream-decompose each
         # time, it would be more efficient to have versions of solve and quad
-        # with an arbitrary number of right-hand sides.
+        # with an arbitrary number of right-hand sides. => I could have
+        # a generic operation sandwich(b, X1, X2, ..., c) that computes
+        # b K^-1 X1 K^-1 X2 K^-1 ... K^-1 c, such that its derivatives can
+        # be defined in terms of itself.
 
         @quad_autodiff.defjvp
         def quad_jvp(self, primals, tangents):
+            assert not self.direct_autodiff
             K, b, c = primals
             K_dot, b_dot, c_dot = tangents
             primal = quad_autodiff(self, K, b, c)
@@ -344,6 +368,7 @@ class DecompAutoDiffBase(DecompPyTree):
             
         @quad_autodiff_cnone.defjvp
         def quad_cnone_jvp(self, primals, tangents):
+            assert not self.direct_autodiff
             K, b = primals
             K_dot, b_dot = tangents
             primal = quad_autodiff_cnone(self, K, b)
@@ -357,7 +382,7 @@ class DecompAutoDiffBase(DecompPyTree):
             if self.direct_autodiff:
                 return oldquad(self, b, c)
             elif c is None:
-                return quad_autodiff_cnone(self, self._dad_matrix_(), b)
+                return quad_autodiff_cnone(self, self.matrix(), b)
             elif c.dtype == object:
                 return oldquad(self, b, c)
                 # if c contains gvars, the output is an array of gvars, and
@@ -365,7 +390,7 @@ class DecompAutoDiffBase(DecompPyTree):
                 # checked not to return object dtypes, so I have to call
                 # oldquad
             else:
-                return quad_autodiff(self, self._dad_matrix_(), b, c)
+                return quad_autodiff(self, self.matrix(), b, c)
         
         return quad
     
@@ -378,6 +403,7 @@ class DecompAutoDiffBase(DecompPyTree):
                         
         @logdet_autodiff.defjvp
         def logdet_jvp(self, primals, tangents):
+            assert not self.direct_autodiff
             K, = primals
             K_dot, = tangents
             primal = logdet_autodiff(self, K)
@@ -390,7 +416,7 @@ class DecompAutoDiffBase(DecompPyTree):
             if self.direct_autodiff:
                 return oldlogdet(self)
             else:
-                return logdet_autodiff(self, self._dad_matrix_())
+                return logdet_autodiff(self, self.matrix())
         
         return logdet
 
@@ -398,14 +424,11 @@ class DecompAutoDiff(DecompAutoDiffBase):
     """ Specialization of DecompAutoDiffBase for classes which take as
     initialization input a single matrix object """
     
-    @property
-    def n(self):
-        return len(self._dad_args_[0])
-    
-    def matrix(self, K, *args, **kw):
+    def _matrix(self, K, *_, **__):
         return K
     
-    def map_traceable_init_args(self, fun, K, *args, **kw):
+    def _map_traceable_init_args(self, fun, K, *args, **kw):
+        assert not self.direct_autodiff
         return (fun(K), *args), kw
         
 class Diag(DecompAutoDiff):
@@ -806,11 +829,22 @@ class BlockDecomp(DecompPyTree):
     @property
     def n(self):
         return sum(self._Q.shape)
+    
+    def matrix(self):
+        raise NotImplementedError
 
-class BlockDiagDecomp(DecompPyTree):
+class BlockDiagDecomp(DecompAutoDiffBase):
     
     # TODO allow NxN instead of 2x2?
     
+    def _matrix(self, A_decomp, B_decomp):
+        assert not self.direct_autodiff
+        return jlinalg.block_diag(A_decomp.matrix(), B_decomp.matrix())
+            
+    def _map_traceable_init_args(self, fun, A_decomp, B_decomp):
+        assert not self.direct_autodiff
+        return (fun(A_decomp), fun(B_decomp)), {}
+
     def __init__(self, A_decomp, B_decomp):
         """
         
@@ -927,6 +961,9 @@ class SandwichQR(DecompPyTree):
     @property
     def n(self):
         return len(self._B)
+    
+    def matrix(self):
+        raise NotImplementedError
 
 def _rq(a, **kw):
     """
@@ -1045,6 +1082,9 @@ class SandwichSVD(DecompPyTree):
     @property
     def n(self):
         return len(self._B)
+    
+    def matrix(self):
+        raise NotImplementedError
 
 class Woodbury(DecompPyTree):
     
@@ -1112,3 +1152,6 @@ class Woodbury(DecompPyTree):
     @property
     def n(self):
         return self._A.n
+    
+    def matrix(self):
+        raise NotImplementedError

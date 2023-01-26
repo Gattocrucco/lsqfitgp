@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_pytree.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -28,6 +28,14 @@ class AutoPyTree:
     Class adding automatic recursive support for jax pytree flattening
     """
     
+    def _jax_vars(self):
+        """ Returns list of object attribute names which are to be considered
+        children of the PyTree node """
+        return [
+            n for n, v in vars(self).items()
+            if isinstance(v, (jnp.ndarray, numpy.ndarray, AutoPyTree))
+        ]
+    
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
         tree_util.register_pytree_node_class(cls)
@@ -38,13 +46,11 @@ class AutoPyTree:
     # with dummies as children. This happens in jax.jacfwd for some reason.
     @functools.cached_property
     def _aux_data(self):
-        jax_vars = []
-        other_vars = []
-        for n, v in vars(self).items():
-            if isinstance(v, (jnp.ndarray, numpy.ndarray, AutoPyTree)):
-                jax_vars.append(n)
-            else:
-                other_vars.append((n, v))
+        jax_vars = self._jax_vars()
+        other_vars = [
+            (n, v) for n, v in vars(self).items()
+            if n not in jax_vars
+        ]
         # assert jax_vars
         return jax_vars, other_vars
     

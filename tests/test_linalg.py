@@ -114,7 +114,9 @@ class DecompTestBase(DecompTestABC):
     
     def check_solve_jac(self, bgen, jacfun, jit=False, hess=False, da=False, rtol=1e-7):
         # TODO sometimes the jacobian of fun is practically zero. Why? This
-        # gives problems because it needs an higher absolute tolerance.
+        # gives problems because it needs an higher absolute tolerance. =>
+        # because in 1x1 matrices there is only the diagonal, which does not
+        # depend on s (but this can't be that problem, because it's exactly 0)
         def fun(s, n, b):
             K = self.mat(s, n)
             return self.decompclass(K, direct_autodiff=da).solve(b)
@@ -690,7 +692,7 @@ class BlockDiagDecompTestBase(DecompTestBase):
             A = K[:p, :p]
             B = K[p:, p:]
             args = (self.subdecompclass(A, **kw), self.subdecompclass(B, **kw))
-            return _linalg.BlockDiagDecomp(*args)
+            return _linalg.BlockDiagDecomp(*args, **kw)
         return decomp
 
 class TestBlockDiagEigCutFullRank(BlockDiagDecompTestBase):
