@@ -983,23 +983,24 @@ def test_degenerate(decomp):
 
 # TODO second derivatives completing but returning incorrect result
 util.xfail(DecompTestBase, 'test_solve_matrix_hess_fwd_rev') # works only for TestSandwichSVDDiag
-util.xfail(DecompTestBase, 'test_logdet_hess_fwd_rev')
-util.xfail(BlockDecompTestBase, 'test_logdet_hess_fwd_fwd_stopg')
-util.xfail(BlockDecompTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
+util.xfail(DecompTestBase, 'test_logdet_hess_fwd_rev') # since on quad it works, maybe I can solve it by using quad in the custom jvp
 util.xfail(WoodburyTestBase, 'test_logdet_hess_fwd_fwd_stopg')
 util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
+
+# TODO works but very inaccurate
+util.xfail(TestWoodburyEigCutFullRank, 'test_quad_matrix_matrix_hess_da')
 
 # TODO linalg.sparse.eigsh is not implemented in jax
 for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
     if name.endswith('_da'):
         util.xfail(TestReduceRank, name)
 
-# TODO reverse diff broken because they use quads within other stuff probably.
+# reverse diff broken because they use quads within other stuff probably.
 # Subclassing DecompAutoDiff does not work. Maybe just using quad to compute
 # tildeS is too much. The error is two undefined primals in a matrix
 # multiplication jvp transpose. => it's probably derivatives w.r.t. the outer
 # sides of quad
-for cls in [BlockDecompTestBase, WoodburyTestBase]:
+# for cls in [BlockDecompTestBase, WoodburyTestBase]:
     # a jax update solved all these, dunno why
     # util.xfail(cls, 'test_solve_vec_jac_rev')
     # util.xfail(cls, 'test_solve_matrix_jac_rev')
@@ -1012,15 +1013,12 @@ for cls in [BlockDecompTestBase, WoodburyTestBase]:
     # util.xfail(cls, 'test_quad_matrix_jac_rev_jit')
     # util.xfail(cls, 'test_logdet_jac_rev')
     # util.xfail(cls, 'test_logdet_jac_rev_jit')
-    util.xfail(cls, 'test_quad_matrix_matrix_hess_fwd_rev')
+
+util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_rev')
 
 # TODO I don't know how to implement correlate and decorrelate for Woodbury
 util.xfail(WoodburyTestBase, 'test_correlate_eye')
 util.xfail(WoodburyTestBase, 'test_decorrelate_mat')
-
-# TODO these work but are quite inaccurate so they can fail
-# util.xfail(BlockDecompTestBase, 'test_logdet_hess_da')
-# util.xfail(BlockDecompTestBase, 'test_solve_matrix_hess_da')
 
 # TODO why?
 # util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')

@@ -234,15 +234,50 @@ class DecompAutoDiffBase(DecompPyTree):
         to the definition of the matrix """
         return mapped_args, mapped_kw
         
-    def matrix(self):
-        return self._matrix(*self._dad_args_, **self._dad_kw_)
-        
-    def _jax_vars(self):
-        return super()._jax_vars() + ['_dad_args_', '_dad_kw_']
+    def _store_args(self, args, kw):
+        class Marker: pass
+        margs, mkw = self._map_traceable_init_args(lambda _: Marker, *args, **kw)
+        self._dad_jax_args_ = {
+            i: v for i, (v, m) in enumerate(zip(args, margs)) if m is Marker
+        }
+        self._dad_other_args_ = {
+            i: v for i, (v, m) in enumerate(zip(args, margs)) if m is not Marker
+        }
+        self._dad_jax_kw_ = {
+            k: v for k, v in kw.items() if mkw[k] is Marker
+        }
+        self._dad_other_kw_ = {
+            k: v for k, v in kw.items() if mkw[k] is not Marker
+        }
     
-    def _popattr(self, kw, attr, default):
+    def _jax_vars(self):
+        return super()._jax_vars() + ['_dad_jax_args_', '_dad_jax_kw_']
+    
+    def _get_args(self):
+        args = dict(self._dad_jax_args_)
+        args.update(self._dad_other_args_)
+        args = tuple(args[i] for i in sorted(args))
+        kw = dict(**self._dad_jax_kw_, **self._dad_other_kw_)
+        return args, kw
+    
+    def matrix(self):
+        args, kw = self._get_args()
+        return self._matrix(*args, **kw)
+        
+    def _getarg(self, kw, attr, default, nextguy):
         if not hasattr(self, attr):
-            setattr(self, attr, kw.pop(attr, default))
+            setattr(self, attr, kw.get(attr, default))
+            if not self._hasarg(nextguy, attr):
+                kw.pop(attr, None)
+    
+    @staticmethod
+    def _hasarg(func, arg):
+        try:
+            inspect.signature(func).bind_partial(**{arg: None})
+        except TypeError:
+            return False
+        else:
+            return True
     
     # TODO try using jax.linearize and jax.convert_closure. Or: try to pass
     # the decomposition products as variadic arguments to the intermediate
@@ -268,11 +303,11 @@ class DecompAutoDiffBase(DecompPyTree):
             # wrapped and may get called with super(), so I use a flag to check
             # if we are an __init__ called by the old__init__ of a subclass
             if getattr(self, '_dad_initialized_', False):
-                return old__init(self, *args, **kw)
+                return old__init__(self, *args, **kw)
             self._dad_initialized_ = True
             
-            self._popattr(kw, 'direct_autodiff', False)
-            self._popattr(kw, 'stop_hessian', False)
+            self._getarg(kw, 'direct_autodiff', False, old__init__)
+            self._getarg(kw, 'stop_hessian', False, old__init__)
             
             if self.direct_autodiff and self.stop_hessian:
                 nargs, nkw = self._map_traceable_init_args(_patch_jax.stop_hessian, *args, **kw)
@@ -285,8 +320,7 @@ class DecompAutoDiffBase(DecompPyTree):
                 if self.stop_hessian:
                     args, kw = self._map_traceable_init_args(_patch_jax.stop_hessian, *args, **kw)
             
-            self._dad_args_ = args
-            self._dad_kw_ = kw
+            self._store_args(args, kw)
         
         cls.__init__ = __init__
         
@@ -428,7 +462,6 @@ class DecompAutoDiff(DecompAutoDiffBase):
         return K
     
     def _map_traceable_init_args(self, fun, K, *args, **kw):
-        assert not self.direct_autodiff
         return (fun(K), *args), kw
         
 class Diag(DecompAutoDiff):
@@ -730,7 +763,7 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     def decorrelate(self, b):
         return _toeplitz.chol_solve(self.t, b)
 
-class BlockDecomp(DecompPyTree):
+class BlockDecomp(DecompAutoDiffBase):
     """
     Decomposition of a 2x2 symmetric block matrix using decompositions of the
     diagonal blocks.
@@ -738,10 +771,17 @@ class BlockDecomp(DecompPyTree):
     Reference: Gaussian Processes for Machine Learning, A.3, p. 201.
     """
     
-    # This class can be used only starting from a seed block and adding
+    # TODO This class can be used only starting from a seed block and adding
     # other blocks one at a time. Would a divide et impera approach be useful
-    # for my case?
+    # for my case? Is it possible at all?
         
+    def _matrix(self, P_decomp, S, Q, S_decomp_class, **kw):
+        assert not self.direct_autodiff
+        return jnp.block([[P_decomp.matrix(), Q], [Q.T, S]])
+            
+    def _map_traceable_init_args(self, fun, P_decomp, S, Q, S_decomp_class, **kw):
+        return (fun(P_decomp), fun(S), fun(Q), S_decomp_class), kw
+
     def __init__(self, P_decomp, S, Q, S_decomp_class, **kw):
         """
         The matrix to be decomposed is
@@ -763,6 +803,11 @@ class BlockDecomp(DecompPyTree):
         self._Q = Q
         self._invP = P_decomp
         self._tildeS = S_decomp_class(S - P_decomp.quad(Q), **kw)
+        
+        # TODO does it make sense to allow to use woodbury on the schur
+        # complement of P? Maybe to be general I should take an instantiated
+        # decomposition schurP_decomp instead of a class. Or maybe detect
+        # a woodbury class with a woodbury ABC and pass arguments appropriately.
     
     def solve(self, b):
         invP = self._invP
@@ -830,9 +875,6 @@ class BlockDecomp(DecompPyTree):
     def n(self):
         return sum(self._Q.shape)
     
-    def matrix(self):
-        raise NotImplementedError
-
 class BlockDiagDecomp(DecompAutoDiffBase):
     
     # TODO allow NxN instead of 2x2?
@@ -842,7 +884,6 @@ class BlockDiagDecomp(DecompAutoDiffBase):
         return jlinalg.block_diag(A_decomp.matrix(), B_decomp.matrix())
             
     def _map_traceable_init_args(self, fun, A_decomp, B_decomp):
-        assert not self.direct_autodiff
         return (fun(A_decomp), fun(B_decomp)), {}
 
     def __init__(self, A_decomp, B_decomp):
