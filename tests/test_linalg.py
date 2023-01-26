@@ -67,7 +67,7 @@ class DecompTestBase(DecompTestABC):
     - self.decompclass can be applied only on a matrix generated either with
       self.mat or self.randsymmat
     
-    - in each method, use only one of self.mat or self.randsymmat
+    - in each test method, use only one of self.mat or self.randsymmat
     
     """
     
@@ -832,7 +832,7 @@ class WoodburyTestBase(DecompTestBase):
     def ABC(self, n, M):
         A = M[:n, :n]
         B = M[:n, n:]
-        C = M[n:, n:]
+        C = jnp.linalg.inv(M[n:, n:])
         return A, B, C
         
     def randsymmat(self, n):
