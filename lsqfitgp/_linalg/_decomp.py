@@ -1188,8 +1188,10 @@ class Woodbury(DecompAutoDiffBase):
 
     def __init__(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
         """
+
         Decompose M = A ± B C B^T using Woodbury's formula, with M, A, and C
-        positive definite. Very inaccurate if A and/or C are ill-conditioned.
+        positive semidefinite. Very inaccurate if A and/or C are
+        ill-conditioned.
         
         Parameters
         ----------
@@ -1214,6 +1216,9 @@ class Woodbury(DecompAutoDiffBase):
         X = C_decomp.inv() + sign * A_decomp.quad(B)
         self._X = decompcls(X, **kw)
         self._sign = sign
+    
+    # (A ± BCB^T)^-1
+    #   = A^-1 ∓ A^-1 B (C^-1 ± B^T A^-1 B)^-1 B^T A^-1
     
     def solve(self, b):
         A, B, X, s = self._A, self._B, self._X, self._sign
@@ -1240,6 +1245,86 @@ class Woodbury(DecompAutoDiffBase):
     def logdet(self):
         A, C, X = self._A, self._C, self._X
         return A.logdet() + C.logdet() + X.logdet()
+    
+    def correlate(self, b, *, transpose=False):
+        raise NotImplementedError
+    
+    def decorrelate(self, b):
+        raise NotImplementedError
+    
+    @property
+    def n(self):
+        return self._A.n
+
+class Woodbury2(DecompAutoDiffBase):
+    
+    def _matrix(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
+        assert not self.direct_autodiff
+        return A_decomp.matrix() + sign * B @ C_decomp.matrix() @ B.T
+            
+    def _map_traceable_init_args(self, fun, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
+        return (fun(A_decomp), fun(B), fun(C_decomp), decompcls, sign), kw
+
+    def __init__(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
+        """
+
+        Decompose M = A ± B C B^T using Woodbury's formula, with M, A, and C
+        positive semidefinite. Very inaccurate if A is ill-conditioned.
+        
+        Parameters
+        ----------
+        A_decomp : Decomposition
+            Instantiated decomposition of A.
+        B : array
+            The B matrix, can be rectangular.
+        C_decomp : Decomposition
+            Instantiated decomposition of C.
+        decompcls : type
+            Decomposition class used to decompose I ± L^T B^T A^-1 B L, where
+            C = LL^T.
+        sign : {-1, 1}
+            The sign in the expression above, default 1.
+        **kw :
+            Keyword arguments are passed to the initialization of `decompcls`.
+        
+        """
+        assert B.shape == (A_decomp.n, C_decomp.n)
+        self._A = A_decomp
+        self._C = C_decomp
+        self._BL = C_decomp.correlate(B.T, transpose=True).T
+        I = jnp.eye(C_decomp.n)
+        self._X = decompcls(I + sign * A_decomp.quad(self._BL), **kw)
+        self._sign = sign
+    
+    # C = LL^T
+    # (A ± BCB^T)^-1 =
+    #   = A^-1 ∓ A^-1 B L (I ± L^T B^T A^-1 B L)^-1 L^T B^T A^-1
+    #                      ~~~~~~~~~~~~~~~~~~~~
+    #                             =: X
+    
+    def solve(self, b):
+        A, X, BL, s = self._A, self._X, self._BL, self._sign
+        A_1b = A.solve(b)
+        LTBTA_1b = A.quad(BL, b)
+        A_1BL = A.solve(BL)
+        return A_1b - s * X.quad(A_1BL.T, LTBTA_1b)
+    
+    def quad(self, b, c=None):
+        A, X, BL, s = self._A, self._X, self._BL, self._sign
+        if c is None:
+            bTA_1b = A.quad(b)
+            LTBTA_1b = A.quad(BL, b)
+            return bTA_1b - s * X.quad(LTBTA_1b)
+        else:
+            bTA_1c = A.quad(b, c)
+            LTBTA_1c = A.quad(BL, c)
+            LTBTA_1b = A.quad(BL, b)
+            return bTA_1c - s * X.quad(LTBTA_1b, LTBTA_1c)
+    
+    def logdet(self):
+        A, X = self._A, self._X
+        # det(A ± BL L^TB^T) = det(A) det(I ± L^TB^T A^-1 BL)
+        return A.logdet() + X.logdet()
     
     def correlate(self, b, *, transpose=False):
         raise NotImplementedError
