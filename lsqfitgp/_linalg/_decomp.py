@@ -236,6 +236,9 @@ class DecompAutoDiffBase(DecompPyTree):
         
     def _store_args(self, args, kw):
         class Marker: pass
+        args, kw = self._map_traceable_init_args(lambda x: x, *args, **kw)
+        # apply _map_traceable_init_args twice to have a consistent placement
+        # of arguments between args, kw and margs, mkw
         margs, mkw = self._map_traceable_init_args(lambda _: Marker, *args, **kw)
         self._dad_jax_args_ = {
             i: v for i, (v, m) in enumerate(zip(args, margs)) if m is Marker
@@ -586,6 +589,7 @@ class ReduceRank(Diag):
         # if it improves performance due to lower default comput precision
         
         # TODO try out lobpcg, which is also supported by jax (experimental)
+        # => call this Lanczos, and make a new class LOBPCG
     
     def correlate(self, b):
         return super().correlate(b[:len(self._w)])
@@ -949,8 +953,15 @@ class BlockDiagDecomp(DecompAutoDiffBase):
     def n(self):
         return self._A.n + self._B.n
 
-class SandwichQR(DecompPyTree):
+class SandwichQR(DecompAutoDiffBase):
     
+    def _matrix(self, A_decomp, B):
+        assert not self.direct_autodiff
+        return B @ A_decomp.matrix() @ B.T
+            
+    def _map_traceable_init_args(self, fun, A_decomp, B):
+        return (fun(A_decomp), fun(B)), {}
+
     def __init__(self, A_decomp, B):
         """
         Decompose M = B A B^T with the QR decomposition of B.
@@ -1003,9 +1014,6 @@ class SandwichQR(DecompPyTree):
     def n(self):
         return len(self._B)
     
-    def matrix(self):
-        raise NotImplementedError
-
 def _rq(a, **kw):
     """
     Decompose a as r q, with r lower-triangular and q orthogonal
@@ -1071,8 +1079,15 @@ def _rq(a, **kw):
 #     def n(self):
 #         return len(self._B)
 
-class SandwichSVD(DecompPyTree):
+class SandwichSVD(DecompAutoDiffBase):
     
+    def _matrix(self, A_decomp, B):
+        assert not self.direct_autodiff
+        return B @ A_decomp.matrix() @ B.T
+            
+    def _map_traceable_init_args(self, fun, A_decomp, B):
+        return (fun(A_decomp), fun(B)), {}
+
     def __init__(self, A_decomp, B):
         """
         Decompose M = B A B^T with the SVD decomposition of B.
@@ -1124,11 +1139,15 @@ class SandwichSVD(DecompPyTree):
     def n(self):
         return len(self._B)
     
-    def matrix(self):
-        raise NotImplementedError
-
-class Woodbury(DecompPyTree):
+class Woodbury(DecompAutoDiffBase):
     
+    def _matrix(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
+        assert not self.direct_autodiff
+        return A_decomp.matrix() + sign * B @ C_decomp.matrix() @ B.T
+            
+    def _map_traceable_init_args(self, fun, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
+        return (fun(A_decomp), fun(B), fun(C_decomp), decompcls, sign), kw
+
     def __init__(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
         """
         Decompose M = A ± B C B^T using Woodbury's formula, with M, A, and C
@@ -1193,6 +1212,3 @@ class Woodbury(DecompPyTree):
     @property
     def n(self):
         return self._A.n
-    
-    def matrix(self):
-        raise NotImplementedError

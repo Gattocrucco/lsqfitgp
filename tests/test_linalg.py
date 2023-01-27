@@ -750,7 +750,7 @@ class SandwichTestBase(DecompTestBase):
                 A = self.matA(self._sparam, len(K))
             B = self.Bs[len(K)]
             A_decomp = self.subdecompclass(A, **kw)
-            return self.sandwichclass(A_decomp, B)
+            return self.sandwichclass(A_decomp, B, **kw)
         return decomposition
             
     def randsymmat(self, n):
@@ -987,9 +987,6 @@ util.xfail(DecompTestBase, 'test_logdet_hess_fwd_rev') # since on quad it works,
 util.xfail(WoodburyTestBase, 'test_logdet_hess_fwd_fwd_stopg')
 util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
 
-# TODO works but very inaccurate
-util.xfail(TestWoodburyEigCutFullRank, 'test_quad_matrix_matrix_hess_da')
-
 # TODO linalg.sparse.eigsh is not implemented in jax
 for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
     if name.endswith('_da'):
@@ -1001,7 +998,7 @@ for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
 # multiplication jvp transpose. => it's probably derivatives w.r.t. the outer
 # sides of quad
 # for cls in [BlockDecompTestBase, WoodburyTestBase]:
-    # a jax update solved all these, dunno why
+    # a jax update between 0.3.13 and 0.3.17 solved all these, dunno why
     # util.xfail(cls, 'test_solve_vec_jac_rev')
     # util.xfail(cls, 'test_solve_matrix_jac_rev')
     # util.xfail(cls, 'test_solve_vec_jac_rev_jit')
@@ -1014,11 +1011,12 @@ for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
     # util.xfail(cls, 'test_logdet_jac_rev')
     # util.xfail(cls, 'test_logdet_jac_rev_jit')
 
-util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_rev')
-
 # TODO I don't know how to implement correlate and decorrelate for Woodbury
 util.xfail(WoodburyTestBase, 'test_correlate_eye')
 util.xfail(WoodburyTestBase, 'test_decorrelate_mat')
 
 # TODO why?
 # util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')
+
+# TODO this sometimes is very inaccurate
+# TestWoodburyEigCutFullRank.test_logdet_hess_fwd_fwd
