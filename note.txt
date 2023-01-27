@@ -2144,8 +2144,8 @@ rank A <= size A - size C. This is very limiting. <======== *******
 things to do:
 
     - add composite decomposition support to decompautodiff (DONE)
-    - apply it to all existing CDs and rerun tests
-    - add option "transpose" to correlate, test it
+    - apply it to all existing CDs and rerun tests (DONE)
+    - add option "transpose" to correlate, test it (DONE)
     - write Woodbury2 for singular C and test it
     - write Woodbury3 using Bernstein 8.4.33 for singular A and C
 

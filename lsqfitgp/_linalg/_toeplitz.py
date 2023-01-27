@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_toeplitz.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -134,13 +134,20 @@ def chol(t):
 
 @jax.jit
 def chol_solve(t, *bs):
-    ops = [_seqalg.SolveTriLowerColByFull(0, b) for b in bs]
-    out = _seqalg.sequential_algorithm(len(t), [SymSchur(t)] + ops)
+    ops = [SymSchur(t)] + [_seqalg.SolveTriLowerColByFull(0, b) for b in bs]
+    out = _seqalg.sequential_algorithm(len(t), ops)
     return out[1] if len(bs) == 1 else out[1:]
 
 @jax.jit
 def chol_matmul(t, b):
-    _, out = _seqalg.sequential_algorithm(len(t), [SymSchur(t), _seqalg.MatMulColByFull(0, b)])
+    ops = [SymSchur(t), _seqalg.Rows(b), _seqalg.MatMulColByRow(0, 1)]
+    _, _, out = _seqalg.sequential_algorithm(len(t), ops)
+    return out
+
+@jax.jit
+def chol_transp_matmul(t, b):
+    ops = [SymSchur(t), _seqalg.MatMulRowByFull(0, b), _seqalg.Stack(1)]
+    _, _, out = _seqalg.sequential_algorithm(len(t), ops)
     return out
 
 @jax.jit

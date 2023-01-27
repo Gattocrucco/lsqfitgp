@@ -71,6 +71,9 @@ CholToeplitz
     of the maximum eigenvalue. Uses Schur's algorithm.
 CholToeplitzML
     Like CholToeplitz but does not store the cholesky factor in memory.
+
+Composite decompositions
+------------------------
 BlockDecomp
     Decompose a 2x2 block matrix.
 BlockDiagDecomp
@@ -170,10 +173,11 @@ class Decomposition(metaclass=abc.ABCMeta):
         pass
     
     @abc.abstractmethod
-    def correlate(self, b): # pragma: no cover
+    def correlate(self, b, *, transpose=False): # pragma: no cover
         """
         Compute A @ b where K = A @ A.T. If b represents iid variables with
-        unitary variance, A @ b has covariance matrix K.
+        unitary variance, A @ b has covariance matrix K. If transpose=True,
+        compute A.T @ b.
         """
         pass
     
@@ -219,6 +223,7 @@ class DecompAutoDiffBase(DecompPyTree):
     """
     Abstract subclass adding JAX autodiff support to subclasses of
     Decomposition, even if the decomposition algorithm is not supported by JAX.
+    Concrete subclasses have to define _matrix and _map_traceable_init_args.
     """
     
     @abc.abstractmethod
@@ -235,6 +240,7 @@ class DecompAutoDiffBase(DecompPyTree):
         return mapped_args, mapped_kw
         
     def _store_args(self, args, kw):
+        """ store initialization arguments """
         class Marker: pass
         args, kw = self._map_traceable_init_args(lambda x: x, *args, **kw)
         # apply _map_traceable_init_args twice to have a consistent placement
@@ -254,9 +260,12 @@ class DecompAutoDiffBase(DecompPyTree):
         }
     
     def _jax_vars(self):
+        """ tell AutoPyTree about additional variables to be considered
+        children """
         return super()._jax_vars() + ['_dad_jax_args_', '_dad_jax_kw_']
     
     def _get_args(self):
+        """ get initialization arguments saved by _store_args """
         args = dict(self._dad_jax_args_)
         args.update(self._dad_other_args_)
         args = tuple(args[i] for i in sorted(args))
@@ -268,6 +277,8 @@ class DecompAutoDiffBase(DecompPyTree):
         return self._matrix(*args, **kw)
         
     def _getarg(self, kw, attr, default, nextguy):
+        """ saves an initialization argument as instance attribute, and decide
+        if the argument is to be passed to the subclass __init__ """
         if not hasattr(self, attr):
             setattr(self, attr, kw.get(attr, default))
             if not self._hasarg(nextguy, attr):
@@ -275,6 +286,7 @@ class DecompAutoDiffBase(DecompPyTree):
     
     @staticmethod
     def _hasarg(func, arg):
+        """ check if callable func accepts argument keyword argument arg """
         try:
             inspect.signature(func).bind_partial(**{arg: None})
         except TypeError:
@@ -288,6 +300,7 @@ class DecompAutoDiffBase(DecompPyTree):
     # the double undefined primals.
         
     def __init_subclass__(cls, **kw):
+        """ wrap the subclass methods to implement automatic differentiation """
         
         super().__init_subclass__(**kw)
         
@@ -494,8 +507,11 @@ class Diag(DecompAutoDiff):
     def logdet(self):
         return jnp.sum(jnp.log(self._w))
     
-    def correlate(self, b):
-        return (self._V * jnp.sqrt(self._w)) @ b
+    def correlate(self, b, *, transpose=False):
+        A = self._V * jnp.sqrt(self._w)
+        if transpose:
+            A = A.T 
+        return A @ b
     
     def decorrelate(self, b):
         return (self._V / jnp.sqrt(self._w)).T @ b
@@ -537,8 +553,11 @@ class SVD(Diag):
     def logdet(self):
         return jnp.sum(jnp.log(jnp.abs(self._w)))
     
-    def correlate(self, b):
-        return (self._V * jnp.sqrt(jnp.abs(self._w))) @ b
+    def correlate(self, b, *, transpose=False):
+        A = self._V * jnp.sqrt(jnp.abs(self._w))
+        if transpose:
+            A = A.T
+        return A @ b
     
     def decorrelate(self, b):
         return (self._V / jnp.sqrt(jnp.abs(self._w))).T @ b
@@ -591,8 +610,11 @@ class ReduceRank(Diag):
         # TODO try out lobpcg, which is also supported by jax (experimental)
         # => call this Lanczos, and make a new class LOBPCG
     
-    def correlate(self, b):
-        return super().correlate(b[:len(self._w)])
+    def correlate(self, b, *, transpose=False):
+        if transpose:
+            return super().correlate(b, transpose=True)
+        else:
+            return super().correlate(b[:len(self._w)])
 
 def solve_triangular(a, b, lower=False):
     """
@@ -669,8 +691,8 @@ class Chol(DecompAutoDiff, CholEps):
     def logdet(self):
         return 2 * jnp.sum(jnp.log(jnp.diag(self._L)))
     
-    def correlate(self, b):
-        return self._L @ b
+    def correlate(self, b, *, transpose=False):
+        return (self._L.T if transpose else self._L) @ b
     
     def decorrelate(self, b):
         return solve_triangular_auto(self._L, b, lower=True)
@@ -761,8 +783,11 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     def logdet(self):
         return _toeplitz.logdet(self.t)
     
-    def correlate(self, b):
-        return _toeplitz.chol_matmul(self.t, b)
+    def correlate(self, b, *, transpose=False):
+        if transpose:
+            return _toeplitz.chol_transp_matmul(self.t, b)
+        else:
+            return _toeplitz.chol_matmul(self.t, b)
     
     def decorrelate(self, b):
         return _toeplitz.chol_solve(self.t, b)
@@ -845,22 +870,26 @@ class BlockDecomp(DecompAutoDiffBase):
     def logdet(self):
         return self._invP.logdet() + self._tildeS.logdet()
     
-    def correlate(self, b):
+    def correlate(self, b, *, transpose=False):
         # Block Cholesky decomposition:
         # K = [P    Q] = L L^T
         #     [Q^T  S]
-        # L = [A   ]
-        #     [B  C]
+        # L = [A   ]        L^T = [A^T  B^T]
+        #     [B  C]              [     C^T]
         # AA^T = P
         # AB^T = Q  ==>  B^T = A^-1Q
-        # BB^T + CC^T = S  ==>  CC^T = S - Q^T P^-1 Q
+        # BB^T + CC^T = S  ==>  CC^T = S - Q^T P^-1 Q = S̃
         invP = self._invP
         tildeS = self._tildeS
         Q = self._Q
         f = b[:len(Q)]
         g = b[len(Q):]
-        x = invP.correlate(f)
-        y = _transpose(invP.decorrelate(Q)) @ f + tildeS.correlate(g)
+        if transpose:
+            x = invP.correlate(f, transpose=True) + invP.decorrelate(Q @ g)
+            y = tildeS.correlate(g, transpose=True)
+        else:
+            x = invP.correlate(f)
+            y = _transpose(invP.decorrelate(Q)) @ f + tildeS.correlate(g)
         return jnp.concatenate([x, y])
     
     def decorrelate(self, b):
@@ -933,13 +962,16 @@ class BlockDiagDecomp(DecompAutoDiffBase):
     def logdet(self):
         return self._A.logdet() + self._B.logdet()
     
-    def correlate(self, b):
+    def correlate(self, b, *, transpose=False):
         A = self._A
         B = self._B
         An = A.n
         f = b[:An]
         g = b[An:]
-        return jnp.concatenate([A.correlate(f), B.correlate(g)])
+        return jnp.concatenate([
+            A.correlate(f, transpose=transpose),
+            B.correlate(g, transpose=transpose),
+        ])
     
     def decorrelate(self, b):
         A = self._A
@@ -1001,9 +1033,12 @@ class SandwichQR(DecompAutoDiffBase):
         B_logdet = jnp.sum(jnp.log(jnp.abs(jnp.diag(r))))
         return A.logdet() + 2 * B_logdet
     
-    def correlate(self, b):
+    def correlate(self, b, *, transpose=False):
         A, B = self._A, self._B
-        return B @ A.correlate(b[:A.n])
+        if transpose:
+            return A.correlate(B.T @ b, transpose=True)
+        else:
+            return B @ A.correlate(b[:A.n])
     
     def decorrelate(self, b):
         A, q, r = self._A, self._q, self._r
@@ -1126,9 +1161,12 @@ class SandwichSVD(DecompAutoDiffBase):
         B_logdet = jnp.sum(jnp.log(s))
         return A.logdet() + 2 * B_logdet
     
-    def correlate(self, b):
+    def correlate(self, b, *, transpose=False):
         A, B = self._A, self._B
-        return B @ A.correlate(b[:A.n])
+        if transpose:
+            return A.correlate(B.T @ b, transpose=True)
+        else:
+            return B @ A.correlate(b[:A.n])
     
     def decorrelate(self, b):
         A, u, s, vh = self._A, self._u, self._s, self._vh
@@ -1166,7 +1204,7 @@ class Woodbury(DecompAutoDiffBase):
         sign : {-1, 1}
             The sign in the expression above, default 1.
         **kw :
-            Keyword arguments are passed to `decompcls`'s initialization.
+            Keyword arguments are passed to the initialization of `decompcls`.
         
         """
         assert B.shape == (A_decomp.n, C_decomp.n)
@@ -1203,7 +1241,7 @@ class Woodbury(DecompAutoDiffBase):
         A, C, X = self._A, self._C, self._X
         return A.logdet() + C.logdet() + X.logdet()
     
-    def correlate(self, b):
+    def correlate(self, b, *, transpose=False):
         raise NotImplementedError
     
     def decorrelate(self, b):

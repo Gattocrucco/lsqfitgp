@@ -516,6 +516,20 @@ class DecompTestBase(DecompTestABC):
             Q = A @ A.T
             np.testing.assert_allclose(K, Q)
     
+    def test_double_correlate(self):
+        for n in self.sizes:
+            K = self.randsymmat(n)
+            d = self.decompclass(K)
+            K2 = d.correlate(d.correlate(np.eye(n), transpose=True))
+            util.assert_close_matrices(K, K2, atol=1e-15, rtol=1e-14)
+    
+    def test_correlate_transpose(self):
+        for n in self.sizes:
+            K = self.randsymmat(n)
+            AT = self.decompclass(K).correlate(np.eye(n), transpose=True)
+            K2 = AT.T @ AT
+            util.assert_close_matrices(K, K2, atol=1e-15, rtol=1e-14)
+
     def test_decorrelate_mat(self):
         for n in self.sizes:
             K = self.randsymmat(n)
@@ -1012,8 +1026,9 @@ for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
     # util.xfail(cls, 'test_logdet_jac_rev_jit')
 
 # TODO I don't know how to implement correlate and decorrelate for Woodbury
-util.xfail(WoodburyTestBase, 'test_correlate_eye')
-util.xfail(WoodburyTestBase, 'test_decorrelate_mat')
+for name, meth in inspect.getmembers(WoodburyTestBase, inspect.isfunction):
+    if 'correlate' in name:
+        util.xfail(WoodburyTestBase, name)
 
 # TODO why?
 # util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')

@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_seqalg.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -137,35 +137,58 @@ class MatMulIterByFull(Consumer, SingleInput):
             ab = jnp.squeeze(ab, -1)
         return ab
 
-class MatMulRowByFull(MatMulIterByFull):
+class MatMulRowByFull(Producer, MatMulIterByFull):
     
     def init(self, n, a0):
-        b = self.b
         assert a0.ndim == 1
-        assert b.shape[0] == len(a0)
-        ab = jnp.empty((n, b.shape[1]), jnp.result_type(a0.dtype, b.dtype))
-        self.ab = ab.at[0, :].set(a0 @ b)
+        assert self.b.shape[0] == len(a0)
+        self.abi = a0 @ self.b
     
     def iter_out(self, i):
-        abi = self.ab[i, :]
+        abi = self.abi
         if self.vec:
             abi = jnp.squeeze(abi, -1)
         return abi
-    # TODO do a Producer version that does not save ab
     
     def iter(self, i, ai):
-        self.ab = self.ab.at[i, :].set(ai @ self.b)
+        """ i-th row of input @ b """
+        self.abi = ai @ self.b
     
-class MatMulColByFull(MatMulIterByFull):
-
+class SolveTriLowerColByFull(MatMulIterByFull):
+    # x[0] /= a[0, 0]
+    # for i in range(1, len(x)):
+    #     x[i:] -= x[i - 1] * a[i:, i - 1]
+    #     x[i] /= a[i, i]
+        
     def init(self, n, a0):
         b = self.b
-        assert a0.ndim == 1
+        del self.b
+        assert a0.shape == (n,)
         assert b.shape[0] == n
-        self.ab = a0[:, None] * b[0, None, :]
+        self.prevai = a0.at[0].set(0)
+        self.ab = b.at[0, :].divide(a0[0])
     
     def iter(self, i, ai):
-        self.ab = self.ab + ai[:, None] * self.b[i, None, :]
+        ab = self.ab
+        ab = ab - ab[i - 1, :] * self.prevai[:, None]
+        self.ab = ab.at[i, :].divide(ai[i])
+        self.prevai = ai.at[i].set(0)
+
+class Rows(Producer):
+    
+    def __init__(self, x):
+        self.x = x
+    
+    inputs = ()
+    
+    def init(self, n):
+        pass
+        
+    def iter_out(self, i):
+        return self.x[i, ...]
+    
+    def iter(self, i):
+        pass
 
 class MatMulColByRow(Consumer):
     
@@ -190,26 +213,6 @@ class MatMulColByRow(Consumer):
     
     def finalize(self):
         return self.ab
-
-class SolveTriLowerColByFull(MatMulIterByFull):
-    # x[0] /= a[0, 0]
-    # for i in range(1, len(x)):
-    #     x[i:] -= x[i - 1] * a[i:, i - 1]
-    #     x[i] /= a[i, i]
-        
-    def init(self, n, a0):
-        b = self.b
-        del self.b
-        assert a0.shape == (n,)
-        assert b.shape[0] == n
-        self.prevai = a0.at[0].set(0)
-        self.ab = b.at[0, :].divide(a0[0])
-    
-    def iter(self, i, ai):
-        ab = self.ab
-        ab = ab - ab[i - 1, :] * self.prevai[:, None]
-        self.ab = ab.at[i, :].divide(ai[i])
-        self.prevai = ai.at[i].set(0)
 
 class SumLogDiag(Consumer, SingleInput):
     """input = operation producing the rows/columns of a square matrix"""
