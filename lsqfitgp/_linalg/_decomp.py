@@ -74,9 +74,9 @@ CholToeplitzML
 
 Composite decompositions
 ------------------------
-BlockDecomp
+Block
     Decompose a 2x2 block matrix.
-BlockDiagDecomp
+BlockDiag
     Decompose a 2x2 block diagonal matrix.
 SandwichQR, SandwichSVD
     Decompose B A B^T.
@@ -792,7 +792,7 @@ class CholToeplitzML(DecompAutoDiff, CholEps):
     def decorrelate(self, b):
         return _toeplitz.chol_solve(self.t, b)
 
-class BlockDecomp(DecompAutoDiffBase):
+class Block(DecompAutoDiffBase):
     """
     Decomposition of a 2x2 symmetric block matrix using decompositions of the
     diagonal blocks.
@@ -908,7 +908,7 @@ class BlockDecomp(DecompAutoDiffBase):
     def n(self):
         return sum(self._Q.shape)
     
-class BlockDiagDecomp(DecompAutoDiffBase):
+class BlockDiag(DecompAutoDiffBase):
     
     # TODO allow NxN instead of 2x2?
     

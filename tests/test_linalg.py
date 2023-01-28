@@ -20,6 +20,7 @@
 import sys
 import abc
 import inspect
+import functools
 
 import jax
 from jax import numpy as jnp
@@ -47,7 +48,9 @@ class DecompTestABC(metaclass=abc.ABCMeta):
     def decompclass(self):
         pass
             
-    def __init_subclass__(cls):
+    def __init_subclass__(cls, **kw):
+        super().__init_subclass__(**kw)
+        
         cls.matjac = jax.jacfwd(cls.mat, 1)
         cls.mathess = jax.jacfwd(cls.matjac, 1)
             
@@ -58,6 +61,16 @@ class DecompTestABC(metaclass=abc.ABCMeta):
             # marked on all subclasses
             if name.startswith('test_'):
                 setattr(cls, name, util.tryagain(meth, method=True))
+        
+        # assign automatically decomposition classes, if not defined
+        if cls.__name__.startswith('Test') and inspect.isabstract(cls):
+            name = cls.__name__[4:]
+            if '_' in name:
+                comp, name = name.split('_')
+                cls.compositeclass = getattr(_linalg, comp)
+                cls.subdecompclass = getattr(_linalg, name)
+            else:
+                cls.decompclass = getattr(_linalg, name)
         
 class DecompTestBase(DecompTestABC):
     """
@@ -313,7 +326,7 @@ class DecompTestBase(DecompTestABC):
                 if not stopg:
                     d2K = self.mathess(s, n)
                     sol -= b.T @ self.solve(K, d2K) @ Kc
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-5)
+                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=2e-5)
     
     def test_quad_vec(self):
         self.check_quad(self.randvec)
@@ -538,42 +551,23 @@ class DecompTestBase(DecompTestABC):
             result = x.T @ x
             sol = self.decompclass(K).quad(b)
             np.testing.assert_allclose(sol, result)
-
-class TestEigCutFullRank(DecompTestBase):
+            
+class CompositeDecompTestBase(DecompTestBase):
     
     @property
-    def decompclass(self):
-        return _linalg.EigCutFullRank
-
-class TestEigCutLowRank(DecompTestBase):
+    @abc.abstractmethod
+    def compositeclass(self): pass
     
     @property
-    def decompclass(self):
-        return _linalg.EigCutLowRank
+    @abc.abstractmethod
+    def subdecompclass(self): pass
 
-class TestSVDCutFullRank(DecompTestBase):
-    
-    @property
-    def decompclass(self):
-        return _linalg.SVDCutFullRank
-
-class TestSVDCutLowRank(DecompTestBase):
-    
-    @property
-    def decompclass(self):
-        return _linalg.SVDCutLowRank
-
-class TestChol(DecompTestBase):
-    
-    @property
-    def decompclass(self):
-        return _linalg.Chol
-
-class TestCholGersh(DecompTestBase):
-    
-    @property
-    def decompclass(self):
-        return _linalg.CholGersh
+class TestEigCutFullRank(DecompTestBase): pass
+class TestEigCutLowRank(DecompTestBase): pass
+class TestSVDCutFullRank(DecompTestBase): pass
+class TestSVDCutLowRank(DecompTestBase): pass
+class TestChol(DecompTestBase): pass
+class TestCholGersh(DecompTestBase): pass
 
 class ToeplitzBase(DecompTestBase):
 
@@ -588,29 +582,18 @@ class ToeplitzBase(DecompTestBase):
         x = np.arange(n)
         return np.pi * jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
 
-class TestCholToeplitz(ToeplitzBase):
-    
-    @property
-    def decompclass(self):
-        return _linalg.CholToeplitz
-    
-class TestCholToeplitzML(ToeplitzBase):
-    
-    @property
-    def decompclass(self):
-        return _linalg.CholToeplitzML    
+class TestCholToeplitz(ToeplitzBase): pass
+class TestCholToeplitzML(ToeplitzBase): pass
         
 class TestReduceRank(DecompTestBase):
     
+    ranks = functools.cached_property(lambda self: {})
+    
     def rank(self, n):
-        if not hasattr(self, 'ranks'):
-            self.ranks = dict()
-            # do not use __init__ or __new__ because they shoo away pytest
         return self.ranks.setdefault(n, rng.integers(1, n + 1))
     
-    @property
-    def decompclass(self):
-        return lambda K, **kw: _linalg.ReduceRank(K, rank=self.rank(len(K)), **kw)
+    def decompclass(self, K, **kw):
+        return _linalg.ReduceRank(K, rank=self.rank(len(K)), **kw)
     
     def solve(self, K, b):
         invK, rank = linalg.pinv(K, return_rank=True)
@@ -635,47 +618,30 @@ class TestReduceRank(DecompTestBase):
     def logdet(self, K):
         return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
         
-class BlockDecompTestBase(DecompTestBase):
+class BlockDecompTestBase(CompositeDecompTestBase):
     """
     Abstract class for testing BlockDecomp. Concrete subclasses must
     overwrite `subdecompclass`.
     """
     
-    @property
-    @abc.abstractmethod
-    def subdecompclass(self):
-        pass
-            
-    @property
-    def decompclass(self):
-        def decomp(K, **kw):
-            if len(K) == 1:
-                return self.subdecompclass(K, **kw)
-            p = rng.integers(1, len(K))
-            P = K[:p, :p]
-            Q = K[:p, p:]
-            S = K[p:, p:]
-            Pdec = self.subdecompclass(P, **kw)
-            subdec = lambda K, **kw: self.subdecompclass(K, **kw)
-            return _linalg.BlockDecomp(Pdec, S, Q, subdec, **kw)
-        return decomp
+    def decompclass(self, K, **kw):
+        if len(K) == 1:
+            return self.subdecompclass(K, **kw)
+        p = rng.integers(1, len(K))
+        P = K[:p, :p]
+        Q = K[:p, p:]
+        S = K[p:, p:]
+        Pdec = self.subdecompclass(P, **kw)
+        subdec = lambda K, **kw: self.subdecompclass(K, **kw)
+        return _linalg.Block(Pdec, S, Q, subdec, **kw)
     
-class TestBlockEigCutFullRank(BlockDecompTestBase):
-    
-    @property
-    def subdecompclass(self):
-        return _linalg.EigCutFullRank
+class TestBlock_EigCutFullRank(BlockDecompTestBase): pass
 
-class BlockDiagDecompTestBase(DecompTestBase):
+class BlockDiagDecompTestBase(CompositeDecompTestBase):
     """
     Abstract class for testing BlockDiagDecomp. Concrete subclasses must
     overwrite `subdecompclass`.
     """
-    
-    @property
-    @abc.abstractmethod
-    def subdecompclass(self):
-        pass
     
     def randsymmat(self, n):
         p = rng.integers(1, n) if n > 1 else 0
@@ -696,76 +662,47 @@ class BlockDiagDecompTestBase(DecompTestBase):
             [jnp.zeros((n-p, p)), B],
         ])
                 
-    @property
-    def decompclass(self):
-        def decomp(K, **kw):
-            if len(K) == 1:
-                return self.subdecompclass(K, **kw)
-            p = self._p
-            assert p < len(K)
-            A = K[:p, :p]
-            B = K[p:, p:]
-            args = (self.subdecompclass(A, **kw), self.subdecompclass(B, **kw))
-            return _linalg.BlockDiagDecomp(*args, **kw)
-        return decomp
+    def decompclass(self, K, **kw):
+        if len(K) == 1:
+            return self.subdecompclass(K, **kw)
+        p = self._p
+        assert p < len(K)
+        A = K[:p, :p]
+        B = K[p:, p:]
+        args = (self.subdecompclass(A, **kw), self.subdecompclass(B, **kw))
+        return _linalg.BlockDiag(*args, **kw)
 
-class TestBlockDiagEigCutFullRank(BlockDiagDecompTestBase):
-    
-    @property
-    def subdecompclass(self):
-        return _linalg.EigCutFullRank
+class TestBlockDiag_EigCutFullRank(BlockDiagDecompTestBase): pass
 
-class SandwichTestBase(DecompTestBase):
+class SandwichTestBase(CompositeDecompTestBase):
     """
     Abstract base class to test Sandwich* decompositions
     """
     
-    @property
-    @abc.abstractmethod
-    def subdecompclass(self):
-        """ class to decompose the inner matrix """
-        pass
-    
-    @property
-    @abc.abstractmethod
-    def sandwichclass(self):
-        """ main decomposition class """
-        pass
-    
-    def _init(self):
-        # do not use __init__ or __new__ because they shoo away pytest, even
-        # if defined in a superclass
-        if not hasattr(self, 'ranks'):
-            self.ranks = {}
-            self.As = {}
-            self.Bs = {}
+    ranks = functools.cached_property(lambda self: {})
+    As = functools.cached_property(lambda self: {})
+    Bs = functools.cached_property(lambda self: {})
     
     def rank(self, n):
-        self._init()
         return self.ranks.setdefault(n, rng.integers(1, n + 1))
     
     def B(self, n):
-        self._init()
         return self.Bs.setdefault(n, rng.standard_normal((n, self.rank(n))))
     
     def randA(self, n):
-        self._init()
         return self.As.setdefault(n, super().randsymmat(self.rank(n)))
     
     def matA(self, s, n):
         return super().mat(s, self.rank(n))
         
-    @property
-    def decompclass(self):
-        def decomposition(K, **kw):
-            if self._afrom == 'randsymmat':
-                A = self.As[len(K)]
-            elif self._afrom == 'mat':
-                A = self.matA(self._sparam, len(K))
-            B = self.Bs[len(K)]
-            A_decomp = self.subdecompclass(A, **kw)
-            return self.sandwichclass(A_decomp, B, **kw)
-        return decomposition
+    def decompclass(self, K, **kw):
+        if self._afrom == 'randsymmat':
+            A = self.As[len(K)]
+        elif self._afrom == 'mat':
+            A = self.matA(self._sparam, len(K))
+        B = self.Bs[len(K)]
+        A_decomp = self.subdecompclass(A, **kw)
+        return self.compositeclass(A_decomp, B, **kw)
             
     def randsymmat(self, n):
         A = self.randA(n)
@@ -791,60 +728,25 @@ class SandwichTestBase(DecompTestBase):
     def logdet(self, K):
         return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
 
-class TestSandwichQREigCutFullRank(SandwichTestBase):
-    
-    @property
-    def subdecompclass(self):
-        return _linalg.EigCutFullRank
-    
-    @property
-    def sandwichclass(self):
-        return _linalg.SandwichQR
+class TestSandwichQR_EigCutFullRank(SandwichTestBase): pass
+class TestSandwichSVD_EigCutFullRank(SandwichTestBase): pass
 
-class TestSandwichSVDEigCutFullRank(SandwichTestBase):
-    
-    @property
-    def subdecompclass(self):
-        return _linalg.EigCutFullRank
-    
-    @property
-    def sandwichclass(self):
-        return _linalg.SandwichSVD
-
-class WoodburyTestBase(DecompTestBase):
+class WoodburyTestBase(CompositeDecompTestBase):
     """
     Abstract base class to test Woodbury*
     """
     
-    @property
-    @abc.abstractmethod
-    def subdecompclass(self):
-        """ class to decompose A, C, and C^-1 - B^T A^-1 B """
-        pass
-    
-    @property
-    @abc.abstractmethod
-    def woodburyclass(self):
-        pass
-    
-    def _init(self):
-        # do not use __init__ or __new__ because they shoo away pytest, even
-        # if defined in a superclass
-        if not hasattr(self, 'ranks'):
-            self.ranks = {}
-            self.Ms = {}
-            self.signs = {}
+    ranks = functools.cached_property(lambda self: {})
+    Ms = functools.cached_property(lambda self: {})
+    signs = functools.cached_property(lambda self: {})
     
     def rank(self, n):
-        self._init()
         return self.ranks.setdefault(n, rng.integers(1, n + 1))
     
     def sign(self, n):
-        self._init()
         return self.signs.setdefault(n, -1 + 2 * rng.integers(2))
     
     def randM(self, n):
-        self._init()
         return self.Ms.setdefault(n, super().randsymmat(n + self.rank(n)))
     
     def matM(self, s, n):
@@ -853,7 +755,7 @@ class WoodburyTestBase(DecompTestBase):
     def ABC(self, n, M):
         A = M[:n, :n]
         B = M[:n, n:]
-        C = jnp.linalg.inv(M[n:, n:])
+        C = jnp.linalg.inv(M[n:, n:]) # such that A - BCB^T is p.s.d.
         return A, B, C
         
     def randsymmat(self, n):
@@ -869,30 +771,20 @@ class WoodburyTestBase(DecompTestBase):
         self._mfrom = 'mat'
         self._sparam = s
         return K
-        
-    @property
-    def decompclass(self):
-        def decomposition(K, **kw):
-            n = len(K)
-            if self._mfrom == 'randsymmat':
-                M = self.randM(n)
-            elif self._mfrom == 'mat':
-                M = self.matM(self._sparam, n)
-            A, B, C = self.ABC(n, M)
-            A_decomp = self.subdecompclass(A, **kw)
-            C_decomp = self.subdecompclass(C, **kw)
-            return self.woodburyclass(A_decomp, B, C_decomp, self.subdecompclass, sign=self.sign(n), **kw)
-        return decomposition
+    
+    def decompclass(self, K, **kw):
+        n = len(K)
+        if self._mfrom == 'randsymmat':
+            M = self.randM(n)
+        elif self._mfrom == 'mat':
+            M = self.matM(self._sparam, n)
+        A, B, C = self.ABC(n, M)
+        A_decomp = self.subdecompclass(A, **kw)
+        C_decomp = self.subdecompclass(C, **kw)
+        return self.compositeclass(A_decomp, B, C_decomp, self.subdecompclass, sign=self.sign(n), **kw)
 
-class TestWoodburyEigCutFullRank(WoodburyTestBase):
-    
-    woodburyclass = _linalg.Woodbury
-    subdecompclass = _linalg.EigCutFullRank
-            
-class TestWoodbury2EigCutFullRank(WoodburyTestBase):
-    
-    woodburyclass = _linalg.Woodbury2
-    subdecompclass = _linalg.EigCutFullRank
+class TestWoodbury_EigCutFullRank(WoodburyTestBase): pass
+class TestWoodbury2_EigCutFullRank(WoodburyTestBase): pass
             
 @util.tryagain
 def test_solve_triangular():
@@ -1043,10 +935,10 @@ for name, meth in inspect.getmembers(WoodburyTestBase, inspect.isfunction):
 
 # TODO these derivatives are a full nan, no idea, but it depends on the values,
 # and on the sign, so they xpass at random. really no idea
-util.xfail(TestWoodbury2EigCutFullRank, 'test_solve_matrix_jac_fwd_da')
-util.xfail(TestWoodbury2EigCutFullRank, 'test_quad_matrix_matrix_jac_fwd_da')
-util.xfail(TestWoodbury2EigCutFullRank, 'test_quad_matrix_matrix_hess_da')
-util.xfail(TestWoodbury2EigCutFullRank, 'test_logdet_hess_da')
+util.xfail(TestWoodbury2_EigCutFullRank, 'test_solve_matrix_jac_fwd_da')
+util.xfail(TestWoodbury2_EigCutFullRank, 'test_quad_matrix_matrix_jac_fwd_da')
+util.xfail(TestWoodbury2_EigCutFullRank, 'test_quad_matrix_matrix_hess_da')
+util.xfail(TestWoodbury2_EigCutFullRank, 'test_logdet_hess_da')
 
 # TODO why?
 # util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')
