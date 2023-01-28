@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_gvar.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,9 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+
 import numpy as np
 import gvar
 
+sys.path.insert(0, '.')
 from lsqfitgp import _patch_gvar
 import util
 

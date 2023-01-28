@@ -93,7 +93,7 @@ class DecompTestBase(DecompTestABC):
         O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
         eigvals = rng.uniform(1e-2, 1e2, size=n)
         K = (O * eigvals) @ O.T
-        np.testing.assert_allclose(K, K.T)
+        util.assert_allclose(K, K.T, rtol=1e-11)
         return K
     
     def mat(self, s, n):
@@ -120,10 +120,10 @@ class DecompTestBase(DecompTestABC):
             result = fun(K, b)
             if jit:
                 result2 = funjit(K, b)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-11)
+                util.assert_allclose(result2, result, atol=1e-15, rtol=1e-11)
             else:
                 sol = self.solve(K, b)
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
+                util.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
     
     def check_solve_jac(self, bgen, jacfun, jit=False, hess=False, da=False, rtol=1e-7):
         # TODO sometimes the jacobian of fun is practically zero. Why? This
@@ -141,7 +141,7 @@ class DecompTestBase(DecompTestABC):
             result = funjac(s, n, b)
             if jit:
                 result2 = funjacjit(s, n, b)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=rtol)
+                util.assert_allclose(result2, result, atol=1e-15, rtol=rtol)
                 continue
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -150,14 +150,14 @@ class DecompTestBase(DecompTestABC):
             if not hess:
                 # -K^-1 dK K^-1 b
                 sol = -KdK @ Kb
-                np.testing.assert_allclose(result, sol, atol=1e-13, rtol=1e-3)
+                util.assert_allclose(result, sol, atol=1e-13, rtol=1e-3)
             else:
                 #  K^-1 dK K^-1 dK K^-1 b   +
                 # -K^-1 d2K K^-1 b          +
                 #  K^-1 dK K^-1 dK K^-1 b
                 d2K = self.mathess(s, n)
                 sol = 2 * KdK @ KdK @ Kb - self.solve(K, d2K) @ Kb
-                np.testing.assert_allclose(result, sol, atol=1e-13, rtol=1e-3)
+                util.assert_allclose(result, sol, atol=1e-13, rtol=1e-3)
     
     def test_solve_vec(self):
         self.check_solve(self.randvec)
@@ -220,7 +220,7 @@ class DecompTestBase(DecompTestABC):
             A = self.randmat(n).T
             sol = -A @ self.solve(K.T, self.solve(K, dK).T).T @ b
             result = funjac(s, n, b, A)
-            np.testing.assert_allclose(sol, result, rtol=1e-3)
+            util.assert_allclose(sol, result, rtol=1e-3)
         
     def test_solve_matrix_jac_rev_matrix(self):
         self.solve_matrix_jac_matrix(jax.jacrev)
@@ -237,14 +237,14 @@ class DecompTestBase(DecompTestABC):
         # once I got:
         # LinAlgWarning: Ill-conditioned matrix (rcond=5.70425e-17): result may
         # not be accurate.
-        np.testing.assert_allclose(q, 0, atol=1e-7)
+        util.assert_allclose(q, 0, atol=1e-7)
         
         # TODO to compare matrices, use the 2-norm.
         
         diffcov = gvar.evalcov(diff)
         solmax = np.max(linalg.eigvalsh(solcov))
         diffmax = np.max(linalg.eigvalsh(diffcov))
-        np.testing.assert_allclose(diffmax / solmax, 0, atol=1e-10)
+        util.assert_allclose(diffmax / solmax, 0, atol=1e-10)
     
     def randvecgvar(self, n):
         mean = self.randvec(n)
@@ -287,10 +287,10 @@ class DecompTestBase(DecompTestABC):
             result = fun(K, b, c)
             if jit:
                 result2 = funjit(K, b, c)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-11)
+                util.assert_allclose(result2, result, atol=1e-15, rtol=1e-11)
             else:
                 sol = self.quad(K, b, c)
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-9)
+                util.assert_allclose(result, sol, atol=1e-15, rtol=1e-9)
     
     def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False, hess=False, da=False, stopg=False):
         def fun(s, n, b, c):
@@ -305,7 +305,7 @@ class DecompTestBase(DecompTestABC):
             result = fungrad(s, n, b, c)
             if jit:
                 result2 = fungradjit(s, n, b, c)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-7)
+                util.assert_allclose(result2, result, atol=1e-15, rtol=1e-7)
                 continue
             if c is None:
                 c = b
@@ -317,7 +317,7 @@ class DecompTestBase(DecompTestABC):
                 # b.T K^-1 c
                 # -b.T K^-1 dK K^-1 c
                 sol = -b.T @ KdK @ Kc
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-6)
+                util.assert_allclose(result, sol, atol=1e-15, rtol=1e-6)
             else:
                 #  b.T K^-1 dK K^-1 dK K^-1 c   +
                 # -b.T K^-1 d2K K^-1 c          +
@@ -326,7 +326,7 @@ class DecompTestBase(DecompTestABC):
                 if not stopg:
                     d2K = self.mathess(s, n)
                     sol -= b.T @ self.solve(K, d2K) @ Kc
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=2e-5)
+                util.assert_allclose(result, sol, atol=1e-15, rtol=2e-5)
     
     def test_quad_vec(self):
         self.check_quad(self.randvec)
@@ -408,10 +408,10 @@ class DecompTestBase(DecompTestABC):
             result = fun(K)
             if jit:
                 result2 = funjit(K)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-14)
+                util.assert_allclose(result2, result, atol=1e-15, rtol=1e-14)
             else:
                 sol = self.logdet(K)
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-10)
+                util.assert_allclose(result, sol, atol=1e-15, rtol=1e-10)
     
     def check_logdet_jac(self, jacfun, jit=False, hess=False, num=False, da=False, stopg=False):
         def fun(s, n):
@@ -428,7 +428,7 @@ class DecompTestBase(DecompTestABC):
             result = fungrad(s, n)
             if jit:
                 result2 = fungradjit(s, n)
-                np.testing.assert_allclose(result2, result, atol=1e-15, rtol=1e-9)
+                util.assert_allclose(result2, result, atol=1e-15, rtol=1e-9)
                 continue
             K = self.mat(s, n)
             dK = self.matjac(s, n)
@@ -436,7 +436,7 @@ class DecompTestBase(DecompTestABC):
             if not hess:
                 # tr(K^-1 dK)
                 sol = np.trace(KdK)
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
+                util.assert_allclose(result, sol, atol=1e-15, rtol=1e-4)
                 # TODO 1e-4? really? in general probably low tolerances are
                 # needed for CholToeplitz and to a lesser extent Chol, not for
                 # the diagonalizations
@@ -447,7 +447,7 @@ class DecompTestBase(DecompTestABC):
                     d2K = self.mathess(s, n)
                     Kd2K = self.solve(K, d2K)
                     sol += np.trace(Kd2K)
-                np.testing.assert_allclose(result, sol, atol=1e-15, rtol=1e-5)
+                util.assert_allclose(result, sol, atol=1e-15, rtol=1e-5)
     
     def test_logdet(self):
         self.check_logdet()
@@ -484,7 +484,7 @@ class DecompTestBase(DecompTestABC):
             K = self.randsymmat(n)
             sol = self.solve(K, np.eye(n))
             result = self.decompclass(K).inv()
-            np.testing.assert_allclose(sol, result)
+            util.assert_allclose(sol, result, rtol=1e-11)
         
     def check_tree_decomp(self, conversion):
         for n in self.sizes:
@@ -527,7 +527,7 @@ class DecompTestBase(DecompTestABC):
             K = self.randsymmat(n)
             A = self.decompclass(K).correlate(np.eye(n))
             Q = A @ A.T
-            np.testing.assert_allclose(K, Q)
+            util.assert_allclose(K, Q, rtol=1e-11)
     
     def test_double_correlate(self):
         for n in self.sizes:
@@ -550,7 +550,7 @@ class DecompTestBase(DecompTestABC):
             x = self.decompclass(K).decorrelate(b)
             result = x.T @ x
             sol = self.decompclass(K).quad(b)
-            np.testing.assert_allclose(sol, result)
+            util.assert_allclose(sol, result, rtol=1e-13)
             
 class CompositeDecompTestBase(DecompTestBase):
     
@@ -606,7 +606,7 @@ class TestReduceRank(DecompTestBase):
         eigvals = rng.uniform(1e-2, 1e2, size=rank)
         O = O[:, :rank]
         K = (O * eigvals) @ O.T
-        np.testing.assert_allclose(K, K.T)
+        util.assert_allclose(K, K.T, rtol=1e-11)
         return K
     
     def mat(self, s, n):
@@ -708,7 +708,7 @@ class SandwichTestBase(CompositeDecompTestBase):
         A = self.randA(n)
         B = self.B(n)
         K = B @ A @ B.T
-        np.testing.assert_allclose(K, K.T)
+        util.assert_allclose(K, K.T, rtol=1e-11)
         self._afrom = 'randsymmat'
         return K
     
@@ -761,7 +761,7 @@ class WoodburyTestBase(CompositeDecompTestBase):
     def randsymmat(self, n):
         A, B, C = self.ABC(n, self.randM(n))
         K = A + self.sign(n) * B @ C @ B.T
-        np.testing.assert_allclose(K, K.T)
+        util.assert_allclose(K, K.T, rtol=1e-11)
         self._mfrom = 'randsymmat'
         return K
     
@@ -798,7 +798,7 @@ def test_solve_triangular():
                 shape = rng.integers(1, 4, size=ndim)
                 B = rng.standard_normal((*shape[:-1], n, *shape[-1:]))
                 x = _linalg.solve_triangular(A, B, lower=lower)
-                np.testing.assert_allclose(A @ x, B, rtol=1e-10)
+                util.assert_allclose(A @ x, B, rtol=1e-10)
 
 @util.tryagain
 def test_toeplitz_gershgorin():
@@ -806,7 +806,7 @@ def test_toeplitz_gershgorin():
     m = linalg.toeplitz(t)
     b1 = _linalg._decomp._gershgorin_eigval_bound(m)
     b2 = _linalg._toeplitz.eigv_bound(t)
-    np.testing.assert_allclose(b2, b1, rtol=1e-15)
+    util.assert_allclose(b2, b1, rtol=1e-15)
 
 def check_toeplitz():
     mod = _linalg._toeplitz
@@ -817,24 +817,24 @@ def check_toeplitz():
     
         l1 = mod.chol(t)
         l2 = linalg.cholesky(m, lower=True)
-        np.testing.assert_allclose(l1, l2, rtol=1e-8)
+        util.assert_allclose(l1, l2, rtol=1e-8)
     
         b = rng.standard_normal((len(t), 30))
         lb1 = mod.chol_matmul(t, b)
         lb2 = l2 @ b
-        np.testing.assert_allclose(lb1, lb2, rtol=1e-7)
+        util.assert_allclose(lb1, lb2, rtol=1e-7)
 
         ld1 = mod.logdet(t)
         _, ld2 = np.linalg.slogdet(m)
-        np.testing.assert_allclose(ld1, ld2, rtol=1e-9)
+        util.assert_allclose(ld1, ld2, rtol=1e-9)
     
         ilb1 = mod.chol_solve(t, b)
         ilb2 = linalg.solve_triangular(l2, b, lower=True)
-        np.testing.assert_allclose(ilb1, ilb2, rtol=1e-6)
+        util.assert_allclose(ilb1, ilb2, rtol=1e-6)
     
         imb1 = mod.solve(t, b)
         imb2 = np.linalg.solve(m, b)
-        np.testing.assert_allclose(imb1, imb2, rtol=1e-5)
+        util.assert_allclose(imb1, imb2, rtol=1e-5)
 
 @util.tryagain
 def test_toeplitz_nojit():
@@ -868,7 +868,7 @@ def test_toeplitz_chol_solve_numpy():
                     continue
                 b = rng.standard_normal((*bshape, n, *shape))
                 ilb = _linalg._toeplitz.chol_solve_numpy(t, b, diageps=1e-12)
-                np.testing.assert_allclose(*np.broadcast_arrays(l @ ilb, b), rtol=1e-6)
+                util.assert_allclose(*np.broadcast_arrays(l @ ilb, b), rtol=1e-6)
 
 @mark.parametrize('mode', ['reduced', 'full'])
 def test_rq(mode):
@@ -891,7 +891,9 @@ def test_degenerate(decomp):
     util.assert_close_matrices(d.quad(a), a, atol=0, rtol=1e-14)
 
 # TODO since the decompositions are pseudoinverses, I should do all tests
-# on singular matrices too instead of just here for some of them.
+# on singular matrices too instead of just here for some of them. To make
+# a degenerate matrix, multiply the current matrix factories by a random
+# singular projector.
 
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings
@@ -936,6 +938,7 @@ for name, meth in inspect.getmembers(WoodburyTestBase, inspect.isfunction):
 # TODO these derivatives are a full nan, no idea, but it depends on the values,
 # and on the sign, so they xpass at random. really no idea
 util.xfail(TestWoodbury2_EigCutFullRank, 'test_solve_matrix_jac_fwd_da')
+util.xfail(TestWoodbury2_EigCutFullRank, 'test_solve_matrix_hess_da')
 util.xfail(TestWoodbury2_EigCutFullRank, 'test_quad_matrix_matrix_jac_fwd_da')
 util.xfail(TestWoodbury2_EigCutFullRank, 'test_quad_matrix_matrix_hess_da')
 util.xfail(TestWoodbury2_EigCutFullRank, 'test_logdet_hess_da')

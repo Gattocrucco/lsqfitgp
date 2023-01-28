@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_bart.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,10 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+
 import numpy as np
 import pytest
 from pytest import mark
 
+sys.path.insert(0, '.')
 import lsqfitgp as lgp
 
 gen = np.random.default_rng(202207191826)

@@ -115,7 +115,7 @@ ratio = {adnorm / dnorm:.2g}  (rtol = {rtol:.2g})"""
     assert adnorm <= atol + rtol * dnorm, msg
 
 def _assert_similar_gvars(g, h, rtol, atol):
-    np.testing.assert_allclose(gvar.mean(g), gvar.mean(h), rtol=rtol, atol=atol)
+    assert_allclose(gvar.mean(g), gvar.mean(h), rtol=rtol, atol=atol)
     g = np.reshape(g, -1)
     h = np.reshape(h, -1)
     assert_close_matrices(gvar.evalcov(g), gvar.evalcov(h), rtol=rtol, atol=atol)
@@ -128,9 +128,13 @@ def assert_similar_gvars(*gs, rtol=0, atol=0):
 def assert_same_gvars(g, h, *, atol=0):
     z = g - h
     z = np.reshape(z, -1)
-    np.testing.assert_allclose(gvar.mean(z), np.zeros(z.shape), rtol=0, atol=atol)
+    assert_allclose(gvar.mean(z), np.zeros(z.shape), rtol=0, atol=atol)
     assert_close_matrices(gvar.evalcov(z), np.zeros(2 * z.shape), rtol=0, atol=atol)
 
 def assert_close_decomps(actual, desired, *, rtol=0, atol=0):
     assert actual.n == desired.n
     assert_close_matrices(actual.inv(), desired.inv(), rtol=rtol, atol=atol)
+
+def assert_allclose(actual, desired, *, rtol=0, atol=0, equal_nan=False, **kw):
+    """ change the default arguments of np.testing.assert_allclose """
+    np.testing.assert_allclose(actual, desired, rtol=rtol, atol=atol, equal_nan=equal_nan, **kw)

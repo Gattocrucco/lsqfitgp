@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_pred.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -26,6 +26,7 @@ import gvar
 
 sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
+import util
 
 # TODO add gpkw for setting checksym, checkpos, solvers
 
@@ -54,7 +55,7 @@ def pred(kw, seed, err):
     return mean, cov
 
 def assert_close(x, y):
-    np.testing.assert_allclose(x, y, rtol=1e-05, atol=1e-08)
+    util.assert_allclose(x, y, rtol=1e-05, atol=1e-08)
 
 def assert_close_cov(a, b, stol, mtol):
     assert np.sqrt(np.sum((a - b) ** 2) / a.size) < stol

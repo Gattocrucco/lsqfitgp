@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_autoreg.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -24,6 +24,7 @@ from numpy.polynomial import polynomial
 from scipy import linalg
 import pytest
 
+sys.path.insert(0, '.')
 import lsqfitgp as lgp
 import util
 
@@ -57,7 +58,7 @@ def test_yule_walker_inv():
         acf2 = lgp.AR.gamma_from_phi(phi)
         acf /= acf[0]
         acf2 /= acf2[0]
-        np.testing.assert_allclose(acf2, acf, rtol=1e-12)
+        util.assert_allclose(acf2, acf, rtol=1e-12)
 
 def test_yule_walker_inv_extend():
     for p in plist:
@@ -66,7 +67,7 @@ def test_yule_walker_inv_extend():
         acf2 = lgp.AR.gamma_from_phi(phi)
         phi3 = np.pad(phi, (0, 1 + p))
         acf3 = lgp.AR.gamma_from_phi(phi3)
-        np.testing.assert_allclose(acf3[:len(acf2)], acf2, rtol=1e-14)
+        util.assert_allclose(acf3[:len(acf2)], acf2, rtol=1e-14)
 
 def test_yule_walker_inv_evolve():
     for p in plist:
@@ -75,18 +76,18 @@ def test_yule_walker_inv_evolve():
         phi2 = np.pad(phi, (0, 1 + p))
         acf2 = lgp.AR.gamma_from_phi(phi2)
         acf3 = lgp.AR.extend_gamma(acf2[:1 + p], phi, 1 + p)
-        np.testing.assert_allclose(acf3, acf2, atol=1e-300, rtol=1e-12)
+        util.assert_allclose(acf3, acf2, atol=1e-300, rtol=1e-12)
 
 def test_yule_walker_inv_0():
     acf = lgp._kernels.AR.gamma_from_phi(np.empty(0))
-    np.testing.assert_allclose(acf, [1], rtol=1e-15)
+    util.assert_allclose(acf, [1], rtol=1e-15)
 
 def test_yule_walker_inv_1():
     bound = 1 - 1e-8
     phi = gen.uniform(-bound, bound)
     acf = lgp.AR.gamma_from_phi([phi])
     acf2 = 1 / ((1 - phi) * (1 + phi)) * phi ** np.arange(2)
-    np.testing.assert_allclose(acf, acf2, rtol=1e-15)
+    util.assert_allclose(acf, acf2, rtol=1e-15)
 
 def test_phase_degeneracy():
     phases = [
@@ -103,7 +104,7 @@ def test_phase_degeneracy():
     for ph1, ph2 in phases:
         c1 = lgp.AR(slnr=[], lnc=lnc(ph1))(0, lag)
         c2 = lgp.AR(slnr=[], lnc=lnc(ph2))(0, lag)
-        np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-13)
+        util.assert_allclose(c2, c1, atol=0, rtol=1e-13)
 
 def test_real_complex():
     lag = np.arange(100)
@@ -113,7 +114,7 @@ def test_real_complex():
                 add = list(np.arange(1, m + 1) * 0.1 + 1j)
                 c1 = lgp.AR(slnr=2 * n * [r], lnc=add)(0, lag)
                 c2 = lgp.AR(slnr=[], lnc=add + n * [r])(0, lag)
-                np.testing.assert_allclose(c2, c1, atol=0, rtol=1e-7)
+                util.assert_allclose(c2, c1, atol=0, rtol=1e-7)
 
 def test_ar0():
     lag = np.arange(100)
@@ -126,7 +127,7 @@ def test_ar0():
     for kw in params:
         for norm in range(1):
             c = lgp.AR(**kw, norm=norm)(0, lag)
-            np.testing.assert_allclose(c, acf, atol=0, rtol=0)
+            util.assert_allclose(c, acf, atol=0, rtol=0)
 
 def test_ar1():
     lag = np.arange(100)
@@ -141,7 +142,7 @@ def test_ar1():
             for norm in range(1):
                 c = lgp.AR(**kw, norm=norm)(0, lag)
                 den = acf[0] if norm else 1
-                np.testing.assert_allclose(c, acf / den, atol=1e-300, rtol=1e-12)
+                util.assert_allclose(c, acf / den, atol=1e-300, rtol=1e-12)
 
 # def test_ar2():
 #     p = 2

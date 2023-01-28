@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_fit.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -183,7 +183,7 @@ def test_method():
             fits.append(fit)
         p = fits[0].minresult.x
         for fit in fits[1:]:
-            np.testing.assert_allclose(fit.minresult.x, p, atol=1e-5)
+            util.assert_allclose(fit.minresult.x, p, atol=1e-5)
 
 def test_checks():
     with pytest.raises(KeyError):
@@ -248,7 +248,7 @@ def test_data():
 
         p = fits[0].minresult.x
         for fit in fits[1:]:
-            np.testing.assert_allclose(fit.minresult.x, p, atol=1e-6)
+            util.assert_allclose(fit.minresult.x, p, atol=1e-6)
             
 #### XFAILS #####
 

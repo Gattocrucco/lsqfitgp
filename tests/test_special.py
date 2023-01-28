@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_jax.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+
 import jax
 from jax import test_util
 import numpy as np
@@ -25,6 +27,7 @@ import pytest
 from pytest import mark
 import mpmath
 
+sys.path.insert(0, '.')
 from lsqfitgp import _special, _patch_jax
 import util
 
@@ -34,7 +37,7 @@ def test_sinc():
     x = np.linspace(-0.1, 0.1, 1000)
     s1 = np.sinc(x)
     s2 = _special.sinc(x)
-    np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-15)
+    util.assert_allclose(s2, s1, atol=1e-15, rtol=1e-15)
 
 def test_jvmodx2():
     nu = np.linspace(-5, 5, 20)
@@ -42,8 +45,8 @@ def test_jvmodx2():
     for v in nu:
         s1 = (x / 2) ** -v * special.jv(v, x)
         s2 = _special.jvmodx2(v, x ** 2)
-        np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
-        np.testing.assert_allclose(_special.jvmodx2(v, 0), 1 / special.gamma(v + 1), rtol=1e-14)
+        util.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
+        util.assert_allclose(_special.jvmodx2(v, 0), 1 / special.gamma(v + 1), rtol=1e-14)
         test_util.check_grads(lambda x: _special.jvmodx2(v, x ** 2), (x,), 2)
 
 def test_kvmodx2():
@@ -53,12 +56,12 @@ def test_kvmodx2():
     for v in nu:
         s1 = 2 / special.gamma(v) * (x / 2) ** v * special.kv(v, x)
         s2 = _special.kvmodx2(v, x ** 2)
-        np.testing.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
-        np.testing.assert_allclose(_special.kvmodx2(v, 0), 1, rtol=1e-14)
+        util.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
+        util.assert_allclose(_special.kvmodx2(v, 0), 1, rtol=1e-14)
         test_util.check_grads(lambda x: _special.kvmodx2(v, x ** 2), (xsoft,), 2)
         if v >= 0.5: # negative diverges, and below 0.5 d/dx at 0 is inf
             for no in range(5):
-                np.testing.assert_allclose(_special.kvmodx2(v, 1e-15, no), _special.kvmodx2(v, 0, no), equal_nan=False)
+                util.assert_allclose(_special.kvmodx2(v, 1e-15, no), _special.kvmodx2(v, 0, no), rtol=1e-11)
         # TODO really need to check at 0 in other cases
     xz = np.linspace(0, 1, 1000)
     np.testing.assert_equal(_special.kvmodx2(0, xz), np.where(xz, 0, 1))
@@ -73,7 +76,7 @@ def test_kvmodx2_hi():
         for _ in range(3):
             s1 = f1(x2)
             s2 = f2(x2)
-            np.testing.assert_allclose(s1, s2, atol=0, rtol=1e-14)
+            util.assert_allclose(s1, s2, atol=0, rtol=1e-14)
             f1 = _patch_jax.elementwise_grad(f1)
             f2 = _patch_jax.elementwise_grad(f2)
 
@@ -91,11 +94,11 @@ def test_exp1_imag_and_ci():
     for x in xs:
         y1 = _special.exp1_imag(x)
         y2 = special.exp1(-1j * x)
-        np.testing.assert_allclose(y1, y2, atol=0, rtol=1e-14)
+        util.assert_allclose(y1, y2, atol=0, rtol=1e-14)
         
         y1 = _special.ci(x)
         _, y2 = special.sici(x)
-        np.testing.assert_allclose(y1, y2, atol=1e-15, rtol=1e-15)
+        util.assert_allclose(y1, y2, atol=1e-15, rtol=1e-15)
 
 def test_expm1x():
     x = np.linspace(-2, 2, 10000)
@@ -371,7 +374,7 @@ def bernoulli_poly_handwritten(n, x):
 def check_bernoulli(n, x):
     r1 = bernoulli_poly_handwritten(n, x)
     r2 = _special.periodic_bernoulli(n, x)
-    np.testing.assert_allclose(r1, r2, equal_nan=False)
+    util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-9)
 
 def test_bernoulli():
     for n in range(7):

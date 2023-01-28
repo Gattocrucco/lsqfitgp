@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_GP.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -101,7 +101,7 @@ def test_compare_transfs():
         prior = gp.prior(keys, raw=True)
         for k1 in keys:
             for k2 in keys:
-                np.testing.assert_allclose(prior[0, 0], prior[k1, k2], atol=1e-15, rtol=1e-15)
+                util.assert_allclose(prior[0, 0], prior[k1, k2], atol=1e-15, rtol=1e-15)
     
     # with functions
     gp = preparegp()
@@ -184,9 +184,9 @@ def test_lintransf_matmul():
     m = gen.standard_normal((30, len(x)))
     gp.addlintransf(lambda x: m @ x, [0], 1)
     prior = gp.prior([0, 1], raw=True)
-    np.testing.assert_allclose(m @ prior[0, 0] @ m.T, prior[1, 1])
-    np.testing.assert_allclose(m @ prior[0, 1], prior[1, 1])
-    np.testing.assert_allclose(prior[1, 0] @ m.T, prior[1, 1])
+    util.assert_allclose(m @ prior[0, 0] @ m.T, prior[1, 1], rtol=1e-12)
+    util.assert_allclose(m @ prior[0, 1], prior[1, 1], rtol=1e-12)
+    util.assert_allclose(prior[1, 0] @ m.T, prior[1, 1], rtol=1e-12)
 
 def test_prior_gvar():
     gp = lgp.GP(lgp.ExpQuad())
@@ -324,7 +324,7 @@ def test_addprocrescale():
     prior = gp.prior(raw=True)
     for i in range(3):
         for j in range(3):
-            np.testing.assert_allclose(prior[0, 0], prior[i, j], rtol=1e-15, atol=1e-15)
+            util.assert_allclose(prior[0, 0], prior[i, j], rtol=1e-15, atol=1e-15)
 
 def test_missing_proc():
     gp = lgp.GP()
@@ -635,7 +635,7 @@ def test_priortransf():
     cov1 = gp.prior(2, raw=True)
     u = gp.prior(2)
     cov2 = gvar.evalcov(u)
-    np.testing.assert_allclose(cov1, cov2, rtol=1e-15)
+    util.assert_allclose(cov1, cov2, rtol=1e-15)
 
 def test_new_element():
     gp = lgp.GP()
@@ -706,7 +706,7 @@ def test_marginal_likelihood_separate():
     ml1 = gp.marginal_likelihood({0: y})
     l, r = gp.marginal_likelihood({0: y}, separate=True)
     ml2 = -1/2 * (l + r @ r)
-    np.testing.assert_allclose(ml2, ml1, rtol=1e-15)
+    util.assert_allclose(ml2, ml1, rtol=1e-15)
 
 def test_marginal_likelihood_checks():
     gp = lgp.GP(lgp.ExpQuad())
@@ -733,7 +733,7 @@ def test_marginal_likelihood_gvar():
     m = a.T @ a
     ml1 = gp.marginal_likelihood({0: gvar.gvar(y, m)})
     ml2 = gp.marginal_likelihood({0: y}, {(0, 0): m})
-    np.testing.assert_allclose(ml2, ml1, rtol=1e-15)
+    util.assert_allclose(ml2, ml1, rtol=1e-15)
 
 def test_singleton():
     dp = lgp._GP.DefaultProcess
@@ -949,7 +949,7 @@ def test_givencov_decomp():
     e = gen.standard_normal((2 * len(d), len(d)))
     gp.addtransf({3: e}, 4)
     dec1, dec2 = decs(gp, [1, 4])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-11)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-10)
     assert dec2._C.n == len(b) + len(d)    
     
     # sum of two matrices
