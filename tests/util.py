@@ -102,7 +102,7 @@ def tryagain(fun, rep=2, method=False):
     meta['newfun'] = newfun
     return newfun
 
-def assert_close_matrices(actual, desired, rtol=1e-5, atol=1e-8):
+def assert_close_matrices(actual, desired, *, rtol=0, atol=0):
     if actual.shape == desired.shape and actual.size == 0:
         return
     dnorm = linalg.norm(desired, 2)
@@ -112,7 +112,7 @@ matrices actual and desired are not close in 2-norm
 norm(desired) = {dnorm:.2g}
 norm(actual - desired) = {adnorm:.2g}  (atol = {atol:.2g})
 ratio = {adnorm / dnorm:.2g}  (rtol = {rtol:.2g})"""
-    assert adnorm < atol + rtol * dnorm, msg
+    assert adnorm <= atol + rtol * dnorm, msg
 
 def _assert_similar_gvars(g, h, rtol, atol):
     np.testing.assert_allclose(gvar.mean(g), gvar.mean(h), rtol=rtol, atol=atol)
@@ -120,20 +120,17 @@ def _assert_similar_gvars(g, h, rtol, atol):
     h = np.reshape(h, -1)
     assert_close_matrices(gvar.evalcov(g), gvar.evalcov(h), rtol=rtol, atol=atol)
 
-def assert_similar_gvars(*gs, rtol=1e-5, atol=1e-8):
+def assert_similar_gvars(*gs, rtol=0, atol=0):
     if gs:
         for g in gs[1:]:
             _assert_similar_gvars(g, gs[0], rtol, atol)
 
-def assert_same_gvars(g, h, atol=1e-8):
+def assert_same_gvars(g, h, *, atol=0):
     z = g - h
     z = np.reshape(z, -1)
     np.testing.assert_allclose(gvar.mean(z), np.zeros(z.shape), rtol=0, atol=atol)
     assert_close_matrices(gvar.evalcov(z), np.zeros(2 * z.shape), rtol=0, atol=atol)
 
-def assert_close_decomps(actual, desired, rtol=0, atol=0):
+def assert_close_decomps(actual, desired, *, rtol=0, atol=0):
     assert actual.n == desired.n
-    assert_close_matrices(actual.inv(), desired.inv(), rtol, atol)
-
-# TODO use rtol = atol = 0 as default everywhere, to force users to specify the
-# degree of accuracy expected
+    assert_close_matrices(actual.inv(), desired.inv(), rtol=rtol, atol=atol)
