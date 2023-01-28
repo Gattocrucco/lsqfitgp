@@ -47,6 +47,8 @@ Diag
     Diagonalization.
 SVD
     Diagonalization with negative eigenvalues.
+Chol
+    Cholesky decomposition.
 CholReg
     Abstract class for regularized Cholesky decomposition.
 
@@ -62,15 +64,12 @@ SVDCutLowRank
     Diagonalization removing small eigenvalues.
 ReduceRank
     Partial diagonalization with higher eigenvalues only.
-Chol
-    Cholesky decomposition.
 CholGersh
     Cholesky regularized using an estimate of the maximum eigenvalue.
 CholToeplitz
     Cholesky decomposition of a Toeplitz matrix regularized using an estimate
-    of the maximum eigenvalue. Uses Schur's algorithm.
-CholToeplitzML
-    Like CholToeplitz but does not store the cholesky factor in memory.
+    of the maximum eigenvalue. Uses Schur's and Levisons' algorithms. Does not
+    store the Cholesky factor in memory.
 
 Composite decompositions
 ------------------------
@@ -668,6 +667,7 @@ class Chol(DecompAutoDiff, CholEps):
     Cholesky decomposition.
     """
     
+    @abc.abstractmethod
     def __init__(self, K):
         self._L = jlinalg.cholesky(K, lower=True, check_finite=False)
         with _patch_jax.skipifabstract():
@@ -739,20 +739,7 @@ class CholGersh(CholReg):
         maxeigv = _gershgorin_eigval_bound(mat)
         return mat.at[jnp.diag_indices(len(mat))].add(self._eps(eps, mat, maxeigv))
 
-class CholToeplitz(Chol):
-    """
-    Cholesky decomposition of a Toeplitz matrix. Only the first row of the
-    matrix is read.
-    """
-    
-    def __init__(self, K, eps=None):
-        t = jnp.asarray(K[0])
-        m = _toeplitz.eigv_bound(t)
-        eps = self._eps(eps, t, m)
-        t = t.at[0].add(eps)
-        self._L = _toeplitz.chol(t)
-
-class CholToeplitzML(DecompAutoDiff, CholEps):
+class CholToeplitz(DecompAutoDiff, CholEps):
     """
     Cholesky decomposition of a Toeplitz matrix. Only the first row of the
     matrix is read. It does not store the decomposition in memory, it is

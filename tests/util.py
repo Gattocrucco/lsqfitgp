@@ -103,15 +103,22 @@ def tryagain(fun, rep=2, method=False):
     return newfun
 
 def assert_close_matrices(actual, desired, *, rtol=0, atol=0):
-    if actual.shape == desired.shape and actual.size == 0:
+    actual = np.asarray(actual)
+    desired = np.asarray(desired)
+    assert actual.shape == desired.shape
+    if actual.size == 0:
         return
+    actual = np.atleast_1d(actual)
+    desired = np.atleast_1d(desired)
+    
     dnorm = linalg.norm(desired, 2)
     adnorm = linalg.norm(actual - desired, 2)
+    ratio = adnorm / dnorm if dnorm else np.nan
     msg = f"""\
 matrices actual and desired are not close in 2-norm
 norm(desired) = {dnorm:.2g}
 norm(actual - desired) = {adnorm:.2g}  (atol = {atol:.2g})
-ratio = {adnorm / dnorm:.2g}  (rtol = {rtol:.2g})"""
+ratio = {ratio:.2g}  (rtol = {rtol:.2g})"""
     assert adnorm <= atol + rtol * dnorm, msg
 
 def _assert_similar_gvars(g, h, rtol, atol):

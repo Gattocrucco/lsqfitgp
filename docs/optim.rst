@@ -21,6 +21,8 @@
 
 .. _optim:
 
+.. TODO: explain and test f32/f64
+
 Optimization
 ============
 
