@@ -44,7 +44,7 @@ EXAMPLESPY = COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) $(PY) --context=
 DOCSPY = cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) $(PY) --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX)
 
 tests:
-	$(TESTSPY) -m pytest -rX
+	$(TESTSPY) -m pytest -rfEX
 
 # I did not manage to make parallel pytest (pytest -n<processes>) work with
 # coverage

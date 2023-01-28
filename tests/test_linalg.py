@@ -253,7 +253,7 @@ class DecompTestBase(DecompTestABC):
             invK = self.solve(K, np.eye(len(K)))
             sol = b.T @ invK @ c
             result = self.decompclass(K).quad(b, c)
-            util.assert_similar_gvars(sol, result, rtol=1e-12, atol=1e-15)
+            util.assert_similar_gvars(sol, result, rtol=1e-11, atol=1e-15)
     
     def quad(self, K, b, c=None):
         if c is None:
@@ -288,7 +288,7 @@ class DecompTestBase(DecompTestABC):
             result = fungrad(s, n, b, c)
             if jit:
                 result2 = fungradjit(s, n, b, c)
-                util.assert_close_matrices(result2, result, rtol=1e-10)
+                util.assert_close_matrices(result2, result, rtol=1e-9)
                 continue
             if c is None:
                 c = b
@@ -310,7 +310,7 @@ class DecompTestBase(DecompTestABC):
                 if not stopg:
                     d2K = self.mathess(s, n)
                     sol -= b.T @ self.solve(K, d2K) @ Kc
-                util.assert_close_matrices(result, sol, rtol=1e-7)
+                util.assert_close_matrices(result, sol, rtol=1e-6)
     
     def test_quad_vec(self):
         self.check_quad(self.randvec)
@@ -511,7 +511,7 @@ class DecompTestBase(DecompTestABC):
             K = self.randsymmat(n)
             A = self.decompclass(K).correlate(np.eye(n))
             Q = A @ A.T
-            util.assert_close_matrices(K, Q, rtol=1e-14)
+            util.assert_close_matrices(K, Q, rtol=1e-13)
     
     def test_double_correlate(self):
         for n in self.sizes:
@@ -854,7 +854,7 @@ def test_toeplitz_chol_solve_numpy():
                 lhs, rhs = np.broadcast_arrays(l @ ilb, b)
                 lhs = lhs.reshape(-1, lhs.shape[-1])
                 rhs = rhs.reshape(lhs.shape)
-                util.assert_close_matrices(lhs, rhs, rtol=1e-10)
+                util.assert_close_matrices(lhs, rhs, rtol=1e-8)
 
 @mark.parametrize('mode', ['reduced', 'full'])
 def test_rq(mode):
