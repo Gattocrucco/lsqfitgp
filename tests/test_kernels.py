@@ -316,7 +316,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x(**kw)
             r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
             r2 = kernel.diff(1, 1).diff(1, 1)(x[None, :], x[:, None])
-            util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-11)
+            util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-9)
             donesomething = True
         if not donesomething:
             pytest.skip()

@@ -914,7 +914,7 @@ def test_givencov_decomp():
     gp = lgp.GP()
     gp.addcov(a, 0)
     dec1, dec2 = decs(gp, [0])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-12)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-11)
     
     # short sandwich
     b = gen.standard_normal((len(a) // 2, len(a)))

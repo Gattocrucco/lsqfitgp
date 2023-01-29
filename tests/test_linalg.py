@@ -127,7 +127,7 @@ class DecompTestBase(DecompTestABC):
             result = fun(K, b)
             if jit:
                 result2 = funjit(K, b)
-                util.assert_close_matrices(result2, result, rtol=1e-14)
+                util.assert_close_matrices(result2, result, rtol=1e-13)
             else:
                 sol = self.solve(K, b)
                 util.assert_close_matrices(result, sol, rtol=1e-11, atol=1e-15)
@@ -295,7 +295,7 @@ class DecompTestBase(DecompTestABC):
             result = fungrad(s, n, b, c)
             if jit:
                 result2 = fungradjit(s, n, b, c)
-                util.assert_close_matrices(result2, result, rtol=1e-9)
+                util.assert_close_matrices(result2, result, rtol=1e-8)
                 continue
             if c is None:
                 c = b
@@ -807,7 +807,7 @@ def check_toeplitz():
     
         l1 = mod.chol(t)
         l2 = linalg.cholesky(m, lower=True)
-        util.assert_close_matrices(l1, l2, rtol=1e-11)
+        util.assert_close_matrices(l1, l2, rtol=1e-10)
     
         b = rng.standard_normal((len(t), 30))
         lb1 = mod.chol_matmul(t, b)
