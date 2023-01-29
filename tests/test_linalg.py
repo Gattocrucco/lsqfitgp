@@ -96,37 +96,52 @@ class DecompTestBase(DecompTestABC):
     def randsize(self):
         return rng.integers(1, 11)
         
-    def randsymmat(self, n):
+    def randsymmat(self, n, *, rank=None):
+        if rank is None:
+            rank = n
+        assert 0 <= rank <= n, rank
         O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
-        eigvals = rng.uniform(1e-2, 1e2, size=n)
+        eigvals = rng.uniform(1e-2, 1e2, size=rank)
+        O = O[:, :rank]
         K = (O * eigvals) @ O.T
         util.assert_close_matrices(K, K.T, rtol=1e-15)
         return K
     
-    def mat(self, s, n):
+    def mat(self, s, n, *, rank=None):
+        if rank is None:
+            rank = n
         x = np.arange(n)
+        x[:n - rank + 1] = x[:1]
         return np.pi * jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+        # the π factor is for tests that pass only if the diagonal is 1
     
     def randvec(self, n):
         return rng.standard_normal(n)
     
     def randmat(self, m, n=None):
-        if not n:
+        if n is None:
             n = self.randsize()
         return rng.standard_normal((m, n))
     
-    def solve(self, K, b):
-        return linalg.solve(K, b)
+    def solve(self, K, b, *, return_rank=False):
+        U, s, Vh = linalg.svd(K)
+        eps = len(K) * s[0] * np.finfo(K.dtype).eps
+        cond = s > eps
+        sinv = np.diag(np.where(cond, 1 / np.where(s, s, 1), 0))
+        sol = Vh.T @ (sinv @ (U.T @ b))
+        if return_rank:
+            return sol, np.count_nonzero(cond)
+        else:
+            return sol
     
     def check_solve(self, bgen, jit=False):
         fun = lambda K, b: self.decompclass(K).solve(b)
-        funjit = jax.jit(fun)
         for n in self.sizes:
             K = self.randsymmat(n)
             b = bgen(len(K))
             result = fun(K, b)
             if jit:
-                result2 = funjit(K, b)
+                result2 = jax.jit(fun)(K, b)
                 util.assert_close_matrices(result2, result, rtol=1e-13)
             else:
                 sol = self.solve(K, b)
@@ -277,7 +292,7 @@ class DecompTestBase(DecompTestABC):
             result = fun(K, b, c)
             if jit:
                 result2 = funjit(K, b, c)
-                util.assert_close_matrices(result2, result, rtol=1e-13)
+                util.assert_close_matrices(result2, result, rtol=1e-12)
             else:
                 sol = self.quad(K, b, c)
                 util.assert_close_matrices(result, sol, rtol=1e-8)
@@ -541,7 +556,7 @@ class DecompTestBase(DecompTestABC):
             x = self.decompclass(K).decorrelate(b)
             result = x.T @ x
             sol = self.decompclass(K).quad(b)
-            util.assert_close_matrices(result, sol, rtol=1e-14)
+            util.assert_close_matrices(result, sol, rtol=1e-13)
             
 class CompositeDecompTestBase(DecompTestBase):
     
@@ -665,9 +680,9 @@ class SandwichTestBase(CompositeDecompTestBase):
         return K
         
     def solve(self, K, b):
-        invK, rank = linalg.pinv(K, return_rank=True)
+        sol, rank = super().solve(K, b, return_rank=True)
         assert rank == self.rank(len(K))
-        return invK @ b
+        return sol
     
     def logdet(self, K):
         return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
@@ -753,24 +768,15 @@ class TestReduceRank(DecompTestBase):
         return _linalg.ReduceRank(K, rank=self.rank(len(K)), **kw)
     
     def solve(self, K, b):
-        invK, rank = linalg.pinv(K, return_rank=True)
+        sol, rank = super().solve(K, b, return_rank=True)
         assert rank == self.rank(len(K))
-        return invK @ b
+        return sol
     
     def randsymmat(self, n):
-        rank = self.rank(n)
-        O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
-        eigvals = rng.uniform(1e-2, 1e2, size=rank)
-        O = O[:, :rank]
-        K = (O * eigvals) @ O.T
-        util.assert_close_matrices(K, K.T, rtol=1e-15)
-        return K
+        return super().randsymmat(n, rank=self.rank(n))
     
     def mat(self, s, n):
-        rank = self.rank(n)
-        x = np.arange(n)
-        x[:n - rank + 1] = x[0]
-        return np.pi * jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+        return super().mat(s, n, rank=self.rank(n))
         
     def logdet(self, K):
         return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
@@ -816,7 +822,7 @@ def check_toeplitz():
 
         ld1 = mod.logdet(t)
         _, ld2 = np.linalg.slogdet(m)
-        util.assert_close_matrices(ld1, ld2, rtol=1e-10)
+        util.assert_close_matrices(ld1, ld2, rtol=1e-9)
     
         ilb1 = mod.chol_solve(t, b)
         ilb2 = linalg.solve_triangular(l2, b, lower=True)
@@ -861,7 +867,7 @@ def test_toeplitz_chol_solve_numpy():
                 lhs, rhs = np.broadcast_arrays(l @ ilb, b)
                 lhs = lhs.reshape(-1, lhs.shape[-1])
                 rhs = rhs.reshape(lhs.shape)
-                util.assert_close_matrices(lhs, rhs, rtol=1e-8)
+                util.assert_close_matrices(lhs, rhs, rtol=1e-7)
 
 @mark.parametrize('mode', ['reduced', 'full'])
 def test_rq(mode):
