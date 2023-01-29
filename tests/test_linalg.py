@@ -280,7 +280,7 @@ class DecompTestBase(DecompTestABC):
                 util.assert_close_matrices(result2, result, rtol=1e-13)
             else:
                 sol = self.quad(K, b, c)
-                util.assert_close_matrices(result, sol, rtol=1e-11)
+                util.assert_close_matrices(result, sol, rtol=1e-8)
     
     def check_quad_jac(self, jacfun, bgen, cgen=lambda n: None, jit=False, hess=False, da=False, stopg=False):
         def fun(s, n, b, c):

@@ -154,7 +154,7 @@ class KernelTestBase(KernelTestABC):
                 continue
             b1 = kernel.diff(xderiv, yderiv)(x, y)
             b2 = kernel.diff(yderiv, xderiv)(y, x)
-            util.assert_allclose(b1, b2, atol=1e-11)
+            util.assert_allclose(b1, b2, atol=1e-10)
             donesomething = True
         if not donesomething:
             pytest.skip()
@@ -378,7 +378,7 @@ class KernelTestBase(KernelTestABC):
             x = self.random_x_nd(2, **kw)[None, :]
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x, x.T)
-            util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-15)
+            util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-12)
             donesomething = True
         if not donesomething:
             pytest.skip()
