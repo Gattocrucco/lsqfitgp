@@ -256,11 +256,3 @@ def test_data():
 # It is not wrong harmonic. Is the Laplace approximation not appropriate for
 # this model? Or is the hessian approximation with the BFGS matrix wrong?
 pytest.mark.xfail(test_period)
-
-if sys.version.startswith('3.8'):
-    # some obscure error with scipy 1.3.2 + python 3.8 + jax about a jax
-    # array hessian arriving to inner scipy code without being converted to
-    # a numpy array. I thought that the conversion happened here:
-    # https://github.com/scipy/scipy/blob/78904d646f6fea3736aa7698394aebd2872e2638/scipy/optimize/_differentiable_functions.py#L361
-    # but apparently it doesn't. I surrender.
-    pytest.mark.xfail(test_method)

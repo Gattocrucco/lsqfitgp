@@ -932,7 +932,7 @@ util.skip(TestMA, 'test_normalized')
 util.xfail(TestWendland, 'test_positive_deriv2_nd')
 util.xfail(TestWendland, 'test_double_diff_nd_second_chopped')
 util.xfail(TestWendland, 'test_continuous_at_zero_2')
-util.xfail(TestWendland, 'test_jit_deriv2_nd')
+util.xfail(TestWendland, 'test_jit_deriv2_nd') # seen xpassing, precision?
 util.xfail(TestCausalExpQuad, 'test_positive_deriv2_nd')
 util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped')
 util.xfail(TestCausalExpQuad, 'test_continuous_at_zero_2')
@@ -946,7 +946,7 @@ util.xfail(TestCausalExpQuad, 'test_positive_deriv2') # NOT 1 - erf cancel
 # reason I don't catch it without taking a derivative. => This explanation is
 # likely wrong since the jit test fails too, without checking positivity.
 util.xfail(TestWendland, 'test_positive_deriv_nd') # seen xpassing in the wild
-util.xfail(TestWendland, 'test_jit_deriv_nd')
+util.xfail(TestWendland, 'test_jit_deriv_nd') # seen xpassing, precision?
 
 # TODO These are not isotropic kernels, what is the problem?
 util.xfail(TestTaylor, 'test_double_diff_nd_second') # numerical precision

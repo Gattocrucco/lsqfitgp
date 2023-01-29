@@ -2615,3 +2615,51 @@ Other alternative to SVD which should be equivalent though: diagonalize
 CtC to compute (CtC)+. Diagonalization is twice as fast as SVD.
 
 Paper on Cholesky pinv: jhurani2012
+
+............
+
+Xpasses on CI #208:
+
+XPASS tests/test_fit.py::test_period
+XPASS tests/test_kernels.py::TestWendland::test_positive_deriv2
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_solve_matrix_jac_fwd_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_jac_fwd_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_hess_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_logdet_hess_da
+
+XPASS tests/test_kernels.py::TestWendland::test_jit_deriv2_nd
+XPASS tests/test_kernels.py::TestWendland::test_positive_deriv2
+XPASS tests/test_kernels.py::TestWendland::test_jit_deriv_nd
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_solve_matrix_jac_fwd_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_jac_fwd_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_hess_da
+
+XPASS tests/test_fit.py::test_method
+XPASS tests/test_kernels.py::TestWendland::test_positive_deriv2
+XPASS tests/test_kernels.py::TestWendland::test_positive_deriv_nd
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_solve_matrix_jac_fwd_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_solve_matrix_hess_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_jac_fwd_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_logdet_hess_da
+
+XPASS tests/test_fit.py::test_method
+XPASS tests/test_kernels.py::TestWendland::test_jit_deriv2_nd
+XPASS tests/test_kernels.py::TestWendland::test_positive_deriv2
+XPASS tests/test_kernels.py::TestWendland::test_jit_deriv_nd
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_solve_matrix_jac_fwd_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_jac_fwd_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_hess_da
+
+Union:
+
+XPASS tests/test_fit.py::test_method  ==>  old xfail, no longer applies
+XPASS tests/test_fit.py::test_period  ==>  could reasonably happen by chance
+XPASS tests/test_kernels.py::TestWendland::test_jit_deriv2_nd  ==>  new xpass
+XPASS tests/test_kernels.py::TestWendland::test_jit_deriv_nd  ==>  new xpass
+XPASS tests/test_kernels.py::TestWendland::test_positive_deriv2  ==> from here on, known xpasses
+XPASS tests/test_kernels.py::TestWendland::test_positive_deriv_nd
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_logdet_hess_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_hess_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_jac_fwd_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_solve_matrix_hess_da
+XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_solve_matrix_jac_fwd_da
