@@ -567,19 +567,23 @@ work in reverse mode. Default False.</p>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl>
 <dt><strong>decomp</strong><span class="classifier">Decomposition</span></dt><dd><p>An object representing the decomposition of the matrix. The
-available methods are (A being the matrix):</p>
+available methods and properties are (A being the matrix):</p>
 <dl class="simple">
+<dt>n</dt><dd><p>The size of the matrix.</p>
+</dd>
+<dt>matrix()</dt><dd><p>Return A.</p>
+</dd>
 <dt>inv()</dt><dd><p>Compute A^-1.</p>
 </dd>
-<dt>solve(b)</dt><dd><p>Compute A^-1 B.</p>
+<dt>solve(b)</dt><dd><p>Compute A^-1 b.</p>
 </dd>
-<dt>quad(b[, c])</dt><dd><p>Compute B^T A^-1 B or B^T A^-1 C.</p>
+<dt>quad(b[, c])</dt><dd><p>Compute b^T A^-1 b or b^T A^-1 c.</p>
 </dd>
 <dt>logdet()</dt><dd><p>Compute log(det(A)).</p>
 </dd>
-<dt>decorrelate(b)</dt><dd><p>Compute L^-1 B such that A = LL^T.</p>
+<dt>decorrelate(b)</dt><dd><p>Compute L^-1 b such that A = LL^T.</p>
 </dd>
-<dt>correlate(b)</dt><dd><p>Compute LB with L as above.</p>
+<dt>correlate(b)</dt><dd><p>Compute Lb with L as above.</p>
 </dd>
 </dl>
 </dd>

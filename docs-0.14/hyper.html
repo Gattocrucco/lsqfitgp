@@ -423,21 +423,21 @@ prior variance less than 1.</p>
 <p>Is there a somewhat clear explanation of this? Yes there is! In
 <a class="reference internal" href="kernels.html#kernelexpl"><span class="std std-ref">More on kernels</span></a>, we said that any kernel can be written as</p>
 <div class="math notranslate nohighlight">
-\[k(x, y) = \sum_i h_i(x) h_i(y).\]</div>
+\[k(x, x') = \sum_i h_i(x) h_i(x').\]</div>
 <p>What are the <span class="math notranslate nohighlight">\(h_i\)</span> for the exponential quadratic kernel? Well, first I
 have to say that I’ll actually do an integral instead of a summation, but
 whatever. The solution is, guess what, Gaussians:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}h_\mu(x) &amp;= \exp(-(x - \mu)^2), \\
 \int_{-\infty}^\infty \mathrm d\mu\,
-h_\mu(x) h_\mu(y) &amp;=
+h_\mu(x) h_\mu(x') &amp;=
 \int_{-\infty}^\infty \mathrm d\mu\,
-\exp(-2\mu^2 + 2\mu(x + y) - x^2 - y^2) = \\
+\exp(-2\mu^2 + 2\mu(x + x') - x^2 - x'^2) = \\
 &amp;= \int_{-\infty}^\infty \mathrm d\mu\,
 \exp\left(
--2\left(\mu - \frac{x+y}2 \right)^2 + \frac {(x+y)^2} 2 - x^2 - y^2
+-2\left(\mu - \frac{x+x'}2 \right)^2 + \frac {(x+x')^2} 2 - x^2 - x'^2
 \right) = \\
-&amp;= \sqrt{\frac\pi2} \exp\left(-\frac12 (x-y)^2 \right).\end{split}\]</div>
+&amp;= \sqrt{\frac\pi2} \exp\left(-\frac12 (x-x')^2 \right).\end{split}\]</div>
 <p>This means that the fit is trying to redraw the datapoints using a combination
 of Gaussians, so it will be happy when the datapoints are similar to a bunch of
 Gaussians, such that it doesn’t have to figure out a nontrivial mixture of

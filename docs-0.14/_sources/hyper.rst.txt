@@ -342,23 +342,28 @@ Is there a somewhat clear explanation of this? Yes there is! In
 :ref:`kernelexpl`, we said that any kernel can be written as
 
 .. math::
-    k(x, y) = \sum_i h_i(x) h_i(y).
+    k(x, x') = \sum_i h_i(x) h_i(x').
 
 What are the :math:`h_i` for the exponential quadratic kernel? Well, first I
 have to say that I'll actually do an integral instead of a summation, but
 whatever. The solution is, guess what, Gaussians:
 
+.. This explanation does not make sense because this base is not orthogonal. An
+.. alternative would be taking the orthogonal basis of Hermite functions,
+.. although that's quite a detour possibly. Another alternative is considering
+.. the curvature of the covariance function.
+
 .. math::
     h_\mu(x) &= \exp(-(x - \mu)^2), \\
     \int_{-\infty}^\infty \mathrm d\mu\,
-    h_\mu(x) h_\mu(y) &=
+    h_\mu(x) h_\mu(x') &=
     \int_{-\infty}^\infty \mathrm d\mu\,
-    \exp(-2\mu^2 + 2\mu(x + y) - x^2 - y^2) = \\
+    \exp(-2\mu^2 + 2\mu(x + x') - x^2 - x'^2) = \\
     &= \int_{-\infty}^\infty \mathrm d\mu\,
     \exp\left(
-    -2\left(\mu - \frac{x+y}2 \right)^2 + \frac {(x+y)^2} 2 - x^2 - y^2
+    -2\left(\mu - \frac{x+x'}2 \right)^2 + \frac {(x+x')^2} 2 - x^2 - x'^2
     \right) = \\
-    &= \sqrt{\frac\pi2} \exp\left(-\frac12 (x-y)^2 \right).
+    &= \sqrt{\frac\pi2} \exp\left(-\frac12 (x-x')^2 \right).
 
 This means that the fit is trying to redraw the datapoints using a combination
 of Gaussians, so it will be happy when the datapoints are similar to a bunch of
