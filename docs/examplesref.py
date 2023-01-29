@@ -1,6 +1,6 @@
 # lsqfitgp/docs/examplesref.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -25,7 +25,7 @@ import pathlib
 import re
 import textwrap
 
-examples = pathlib.Path('.').glob('../examples/*.py')
+examples = pathlib.Path('../examples').glob('*.py')
 examples = list(sorted(examples))
 
 pattern = re.compile(r'(?s)"""(.+)"""')

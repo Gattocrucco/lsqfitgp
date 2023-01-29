@@ -27,8 +27,8 @@ assumed to be positive semidefinite in principle but not numerically,
 decompositions differ on how the eventual numerical degeneracy is handled.
 
 It is intended that the matrix inverse is a Moore-Penrose pseudoinverse in case
-of (numerically) singular matrices. A different pseudoinverse or lack of
-support for singular matrices is considered a bug.
+of (numerically) singular matrices. Some decompositions do not support
+pseudoinversion, i.e., the matrix must be well-conditioned.
 
 These classes never check for infs/nans in the matrices.
 

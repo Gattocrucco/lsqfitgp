@@ -1,6 +1,6 @@
 # lsqfitgp/_GP.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -1887,3 +1887,5 @@ class GP:
         m = m.reshape(n, n)
         decompcls = cls._getdecomp(solver)
         return decompcls(posdefmatrix, **kw)
+        
+        # TODO extend the interface to use composite decompositions

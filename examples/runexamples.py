@@ -1,6 +1,6 @@
 # lsqfitgp/examples/runexamples.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -31,7 +31,6 @@ import gvar
 sys.path.insert(0, '..') # to import lsqfitgp if run from examples/
 sys.path.insert(0, '.')
 
-warnings.filterwarnings('ignore', r'JAX on Mac ARM machines is experimental and minimally tested\. Please see https://github.com/google/jax/issues/5501 in the event of problems\.')
 warnings.filterwarnings('ignore', r'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure\.')
 
 for file in sys.argv[1:]:

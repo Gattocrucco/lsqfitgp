@@ -2508,3 +2508,110 @@ Woodbury2.
 
 This should be equivalent to using Block. Think it through. I could make it
 automatic by grouping the given keys with zero error.
+
+2023-01-29
+==========
+
+Degenerate Woodbury (copied from 2022-09-10) is
+
+    C = (I - XX+) B
+    
+    M = (I - C+C) [I + (I - C+C) Bt X+ B (I - C+C)]-1 (I - C+C)
+
+    (X + BBt)+ = (CCt)+ + (I - BC+)t X+ (I - BC+) - (I - BC+)t X+ B M Bt X+ (I - BC+)
+
+............
+
+If X = 0, then X+ = 0, so it becomes
+
+    C = B
+    
+    M = (I - B+B) [I + (I - B+B) Bt X+ B (I - B+B)]-1 (I - B+B) =
+      = (I - B+B) [I + Bt X+ B]-1 (I - B+B) =
+      = (I - B+B) I (I - B+B) =
+      = I - B+B
+
+    (X + BBt)+ = (BBt)+ + (I - BB+)t X+ (I - BB+) - (I - BB+)t X+ B M Bt X+ (I - BB+) =
+               = (BBt)+ - (I - BB+) X+ B (I - B+B) Bt X+ (I - BB+) =
+               = (BBt)+ - (I - BB+) X+ BBt X+ (I - BB+) =
+               = (BBt)+
+
+                                                                        g.a.c.
+
+............
+
+I try a simplification
+
+    (I - C+C) Bt = (I - C+(I - XX+) B) Bt =
+                 = Bt - C+ (I - XX+) BBt
+
+nope, does not help
+
+............
+
+    C = (I - XX+) B
+    
+    M = (I - C+C) [I + (I - C+C) Bt X+ B (I - C+C)]-1 (I - C+C)
+
+    (X + BBt)+ = (CCt)+ + (I - BC+)t X+ (I - BC+) - (I - BC+)t X+ B M Bt X+ (I - BC+)
+    
+I rewrite it in a slightly different way:
+
+    C = (I - XX+) B
+    Z = B (I - C+C)
+    W = [I + Zt X+ Z]-1
+    (X + BBt)+ = (CCt)+ + (I - BC+)t X+ (I - BC+) - (I - BC+)t X+ Z W Zt X+ (I - BC+)
+    (CCt)+ = C+t C+
+    
+How do I evaluate it in practice?
+
+  - the matrix to be decomposed is X + VYVt
+  - inputs: decomposition of X, decomposition of Y, matrix V
+  - the decomposition of X must support ill-conditioning, the one of Y not
+  - B = Y.correlate(V.T, transpose=True).T
+  - C = X.kerproj(B) (XX+ = X+X because X is hermitian, so no ambiguity)
+  - compute the thin svd of C           <----- expensive
+  - compute C+ (it's tall so it's a "fast" matmul)
+  - Z = B (I - C+C)
+  - W = I + X.quad(Z)
+  - decompose W                         <----- expensive (much less than C svd because I can use Cholesky)
+
+These are the initialization computations. To compute a quadratic form bt A c:
+
+  - compute C+b and C+c
+  - compute b' = (I - BC+)b if b is short, b' = b - B(C+b) if b is tall
+  - analogously for c'
+  - X.quad(b', c')
+  - W.quad(X.quad(Z, b'), X.quad(Z, c'))
+
+I have to implement kerproj in Decomposition.
+
+Can I accelerate the computation of C+? If C if full column rank, I can use
+Cholesky on (CtC)^-1:
+
+    C+ = (CtC)^-1 Ct
+
+This won't work if C is not maximum rank, but maybe it does if I replace the
+inverse with a pseudoinverse?
+
+    C' = (CtC)+ Ct
+    
+    CC'C = C (CtC)+ CtC =
+         = C C+ C+t Ct C =
+         = CC+ (CC+)t C =
+         = CC+ CC+ C =
+         = CC+C
+         = C
+    
+    etc.
+
+I also found it on Wikipedia. This means I can use my cholesky-pseudoinverse
+trick to approximate (CtC)+.
+
+    C+C = (CtC)+ CtC = image projector of CtC
+    I - C+C = kernel projector of CtC
+
+Other alternative to SVD which should be equivalent though: diagonalize
+CtC to compute (CtC)+. Diagonalization is twice as fast as SVD.
+
+Paper on Cholesky pinv: jhurani2012
