@@ -140,7 +140,8 @@ def assert_same_gvars(g, h, *, atol=0):
 
 def assert_close_decomps(actual, desired, *, rtol=0, atol=0):
     assert actual.n == desired.n
-    assert_close_matrices(actual.inv(), desired.inv(), rtol=rtol, atol=atol)
+    assert_close_matrices(desired.solve(actual.matrix()), np.eye(desired.n), rtol=rtol, atol=atol)
+    assert_close_matrices(actual.solve(desired.matrix()), np.eye(desired.n), rtol=rtol, atol=atol)
 
 def assert_allclose(actual, desired, *, rtol=0, atol=0, equal_nan=False, **kw):
     """ change the default arguments of np.testing.assert_allclose """

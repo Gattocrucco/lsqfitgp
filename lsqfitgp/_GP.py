@@ -1270,7 +1270,7 @@ class GP:
             cov = self._assemblecovblocks(ancestors)
             covdec = self._decompclass(cov, **kw)
             # TODO obtain covdec from _solver recursively, to use cache?
-            decomp = _linalg.Woodbury(ycov, transf, covdec, self._decompclass, sign=1, **kw)
+            decomp = _linalg.Woodbury2(ycov, transf, covdec, self._decompclass, sign=1, **kw)
         else:
             Kxx = self._assemblecovblocks(keys)
             if ycov is not None:
@@ -1847,20 +1847,24 @@ class GP:
         -------
         decomp : Decomposition
             An object representing the decomposition of the matrix. The
-            available methods are (A being the matrix):
+            available methods and properties are (A being the matrix):
         
+            n
+                The size of the matrix.
+            matrix()
+                Return A.
             inv()
                 Compute A^-1.
             solve(b)
-                Compute A^-1 B.
+                Compute A^-1 b.
             quad(b[, c])
-                Compute B^T A^-1 B or B^T A^-1 C.
+                Compute b^T A^-1 b or b^T A^-1 c.
             logdet()
                 Compute log(det(A)).
             decorrelate(b)
-                Compute L^-1 B such that A = LL^T.
+                Compute L^-1 b such that A = LL^T.
             correlate(b)
-                Compute LB with L as above.
+                Compute Lb with L as above.
         
         Notes
         -----

@@ -2494,3 +2494,17 @@ under jit, should be reproducible with 1-length arrays and all go mask.
 
 In the eigenvalue truncating decompositions, add the missing epsilons to the
 determinant to make it smooth.
+
+2023-01-28
+==========
+
+Idea: to make pdf9 work, instead of implementing Woodbury3, I can condition on
+the constraints, obtain all the covariance matrices of data + plot, put back
+these matrices into the GP with addcov, then condition these on the data. The
+first step is doable because I condition on a small number of values; the
+second is numerically ok because the error matrix is not degenerate, and even
+if the constrained prior is very ill-conditioned, that can be handled by
+Woodbury2.
+
+This should be equivalent to using Block. Think it through. I could make it
+automatic by grouping the given keys with zero error.

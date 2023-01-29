@@ -39,6 +39,13 @@ from lsqfitgp import _linalg, _kernels
 # operation applied to solution in 2-norm instead of comparing solutions
 # computed in different ways
 
+# TODO since the decompositions are pseudoinverses, I should do all tests on
+# singular matrices too instead of just for some of them in test_degenerate. To
+# make a degenerate matrix, multiply the current matrix factories by a random
+# singular projector. To do:
+#   - fix and document pinv behavior in Decomposition
+#   - decide which properties to check (just the first MP identity? All four?)
+
 rng = np.random.default_rng(202208091144)
 
 class DecompTestABC(metaclass=abc.ABCMeta):
@@ -875,11 +882,6 @@ def test_degenerate(decomp):
     a = linalg.block_diag(np.eye(5), 0)
     d = decomp(a)
     util.assert_close_matrices(d.quad(a), a, rtol=1e-14)
-
-# TODO since the decompositions are pseudoinverses, I should do all tests
-# on singular matrices too instead of just here for some of them. To make
-# a degenerate matrix, multiply the current matrix factories by a random
-# singular projector.
 
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings

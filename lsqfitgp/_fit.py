@@ -324,7 +324,7 @@ class empbayes_fit(Logger):
                 now = time.time()
                 duration = now - self.stamp
                 self.stamp = now
-                nicep = self._unflat(p, hyperprior)
+                nicep = self.this._unflat(p, hyperprior)
                 self.this.log(f'iteration {self.it} ({duration:.2g} s)', 3)
                 self.this.log(f'parameters = {nicep}', 4)
                 

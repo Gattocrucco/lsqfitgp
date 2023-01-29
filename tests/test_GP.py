@@ -904,8 +904,9 @@ def test_givencov_decomp():
         givencov2 = gp.decompose(cov)
         dec1, _ = gp._prior_decomp(given, givencov1)
         dec2, _ = gp._prior_decomp(given, givencov2)
-        assert not isinstance(dec1, lgp._linalg.Woodbury)
-        assert isinstance(dec2, lgp._linalg.Woodbury)
+        classes = (lgp._linalg.Woodbury, lgp._linalg.Woodbury2)
+        assert not isinstance(dec1, classes)
+        assert isinstance(dec2, classes)
         return dec1, dec2
     
     # generic matrix
@@ -919,30 +920,30 @@ def test_givencov_decomp():
     b = gen.standard_normal((len(a) // 2, len(a)))
     gp.addtransf({0: b}, 1)
     dec1, dec2 = decs(gp, [1])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-13)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-12)
     assert dec2._C.n == len(b)
     
     # tall sandwich
     c = gen.standard_normal((len(a) * 2, len(a)))
     gp.addtransf({0: c}, 2)
     dec1, dec2 = decs(gp, [2])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-12)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-10)
     assert dec2._C.n == len(a)
     
     # short and tall sandwich
     dec1, dec2 = decs(gp, [1, 2])
-    util.assert_close_decomps(dec2, dec1, rtol=2e-3) # TODO wildly inaccurate!
+    util.assert_close_decomps(dec2, dec1, rtol=1e-10)
     assert dec2._C.n == len(b) + len(a)
 
     # two generic matrices
     d = genpd(20)
     gp.addcov(d, 3)
     dec1, dec2 = decs(gp, [0, 3])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-9)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-10)
     
     # matrix, short and tall sandwich
     dec1, dec2 = decs(gp, [0, 1, 2])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-3) # TODO wildly inaccurate
+    util.assert_close_decomps(dec2, dec1, rtol=1e-7)
     assert dec2._C.n == len(b) + 2 * len(a)
     
     # short and tall sandwich, starting from different matrices
@@ -963,13 +964,13 @@ def test_givencov_decomp():
     # the same matrix, twice
     gp.addcov({(k, q): a for k in [7, 8] for q in [7, 8]})
     dec1, dec2 = decs(gp, [7, 8])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-1) # TODO wildly inaccurate
+    util.assert_close_decomps(dec2, dec1, rtol=1e-12)
     assert dec2._C.n == 2 * len(a)
     
     # low rank givencov
     dec1, dec2 = decs(gp, [0], len(a) // 2)
-    util.assert_close_decomps(dec2, dec1, rtol=0.1) # TODO wildly inaccurate
-
+    util.assert_close_decomps(dec2, dec1, rtol=0.5) # TODO wildly inaccurate
+    
 # TODO use a structured array with checksym=False, it fails right now when
 # the array passes through jnp.broadcast_to. => Maybe after writing the test
 # I should wrap all structured arrays with StructuredArray in GP.addx.
