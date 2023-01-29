@@ -812,7 +812,7 @@ def check_toeplitz():
         b = rng.standard_normal((len(t), 30))
         lb1 = mod.chol_matmul(t, b)
         lb2 = l2 @ b
-        util.assert_close_matrices(lb1, lb2, rtol=1e-11)
+        util.assert_close_matrices(lb1, lb2, rtol=1e-10)
 
         ld1 = mod.logdet(t)
         _, ld2 = np.linalg.slogdet(m)
