@@ -123,16 +123,25 @@ class DecompTestBase(DecompTestABC):
             n = self.randsize()
         return rng.standard_normal((m, n))
     
-    def solve(self, K, b, *, return_rank=False):
+    def quad_or_solve(self, K, b, c=None, return_rank=False):
         U, s, Vh = linalg.svd(K)
         eps = len(K) * s[0] * np.finfo(K.dtype).eps
         cond = s > eps
         sinv = np.diag(np.where(cond, 1 / np.where(s, s, 1), 0))
-        sol = Vh.T @ (sinv @ (U.T @ b))
+        if c is None:
+            sol = Vh.T @ (sinv @ (U.T @ b))
+        else:
+            sol = (Vh @ b).T @ sinv @ (U.T @ c)
         if return_rank:
             return sol, np.count_nonzero(cond)
         else:
             return sol
+    
+    def solve(self, K, b):
+        return self.quad_or_solve(K, b)
+    
+    def quad(self, K, b, c):
+        return self.quad_or_solve(K, b, c)
     
     def check_solve(self, bgen, jit=False):
         fun = lambda K, b: self.decompclass(K).solve(b)
@@ -679,8 +688,8 @@ class SandwichTestBase(CompositeDecompTestBase):
         self._sparam = s
         return K
         
-    def solve(self, K, b):
-        sol, rank = super().solve(K, b, return_rank=True)
+    def quad_or_solve(self, K, *args, **kw):
+        sol, rank = super().quad_or_solve(K, *args, return_rank=True, **kw)
         assert rank == self.rank(len(K))
         return sol
     
@@ -767,8 +776,8 @@ class TestReduceRank(DecompTestBase):
     def decompclass(self, K, **kw):
         return _linalg.ReduceRank(K, rank=self.rank(len(K)), **kw)
     
-    def solve(self, K, b):
-        sol, rank = super().solve(K, b, return_rank=True)
+    def quad_or_solve(self, K, *args, **kw):
+        sol, rank = super().quad_or_solve(K, *args, return_rank=True, **kw)
         assert rank == self.rank(len(K))
         return sol
     

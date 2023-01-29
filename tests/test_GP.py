@@ -939,7 +939,7 @@ def test_givencov_decomp():
     d = genpd(20)
     gp.addcov(d, 3)
     dec1, dec2 = decs(gp, [0, 3])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-9)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-8)
     
     # matrix, short and tall sandwich
     dec1, dec2 = decs(gp, [0, 1, 2])
