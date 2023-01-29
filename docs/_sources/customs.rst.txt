@@ -52,7 +52,7 @@ wrote the positivity requirement with an integral, but it can also be written
 as a sum:
 
 .. math::
-    \forall g: \sum_x \sum_x' g(x) k(x, x') g(x') \ge 0.
+    \forall g: \sum_x \sum_{x'} g(x) k(x, x') g(x') \ge 0.
 
 It still holds that a function of the form :math:`k(x, x') = \sum_i h_i(x)
 h_i(x')` is a valid kernel. So if we invent a family of functions :math:`h_i`

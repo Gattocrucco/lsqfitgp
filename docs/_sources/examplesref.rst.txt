@@ -12,7 +12,7 @@ repository. The links point to the file preview on github.
 
 Short index
 -----------
-a_ b_ c_ d_ dft_ doubleint_ e_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
+a_ b_ c_ d_ dft_ doubleint_ e_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ pdf9_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
 
 Long index
 ----------
@@ -243,6 +243,14 @@ Long index
     Like pdf7, but with more realistic PDFs
     
     .. image:: ../examples/plot/pdf8.png
+
+.. _pdf9:
+
+  * `pdf9.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf9.py>`_: Fit of parton distributions functions (PDFs)
+
+    Like pdf8, but only with linear data
+    
+    .. image:: ../examples/plot/pdf9.png
 
 .. _q:
 
