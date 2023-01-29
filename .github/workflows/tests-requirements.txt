@@ -8,5 +8,5 @@ pytest
 coverage
 mpmath
 pandas
-polars
+polars<0.16 # 0.16 currently does not work on macos
 pyarrow
