@@ -53,6 +53,7 @@ EXAMPLES = $(wildcard examples/*.py)
 EXAMPLES := $(filter-out examples/runexamples.py, $(EXAMPLES))
 EXAMPLES := $(filter-out examples/pdf7.py, $(EXAMPLES))
 EXAMPLES := $(filter-out examples/pdf8.py, $(EXAMPLES))
+EXAMPLES := $(filter-out examples/pdf9.py, $(EXAMPLES))
 .PHONY: $(EXAMPLES)
 
 examples: $(EXAMPLES)

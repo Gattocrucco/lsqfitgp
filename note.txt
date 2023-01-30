@@ -2663,3 +2663,36 @@ XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matri
 XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_quad_matrix_matrix_jac_fwd_da
 XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_solve_matrix_hess_da
 XPASS tests/test_linalg.py::TestWoodbury2_EigCutFullRank::test_solve_matrix_jac_fwd_da
+
+............
+
+How do I generate a degenerate random Toeplitz matrix? Is the product
+circulant x toeplitz still toeplitz?
+
+    C_ij = C_i+k mod n,j+k mod n
+    T_ij = T_i+k,j+k
+    
+    (CT)_i+k,j+k =
+        = ∑ l=1^n  C_i+k,l T_l,j+k =
+        = ∑ l=1^n  C_i+k,l T_l,j+k
+
+Problem: I can not shift l in T because it runs from 1 to n.
+
+Found on Wikipedia: a p.s.d. Toeplitz matrix diagonalizes with a Vandermonde
+matrix:
+
+    V_ij = e^(i2π (i-1) f_j)
+    T = VDV*
+    T_ij = V_i+k,l D_l V_j+k,l =
+         = e^(i2π (i+k-1 - (j+k-1)) f_l) D_l =
+         = e^(i2π (i-j) f_l) D_l
+
+Now I want T real. I can't just take the real part because the rank changes
+(a cosine can not be split as a product like the exponential). I have to
+choose f and D to get a real matrix. For each f ≠ 0, -f must appear. Use f=0
+to pad if odd.
+
+    T_ij = D_0 + (e^(i2π (i - j) f_l) + e^(i2π (i - j) -f_l)) D_l/2 =
+         = D_0 + cos(2π (i - j) f_l)
+
+The rank is #D/2.

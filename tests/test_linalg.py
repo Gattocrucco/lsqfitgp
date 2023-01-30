@@ -578,17 +578,28 @@ class CompositeDecompTestBase(DecompTestBase):
     def subdecompclass(self): pass
 
 class ToeplitzBase(DecompTestBase):
-
-    def randsymmat(self, n):
-        x = np.arange(n)
-        beta = 2 * np.exp(1/3 * rng.standard_normal())
-        scale = np.exp(1/3 * rng.standard_normal())
-        kernel = _kernels.Cauchy(scale=scale, beta=beta)
-        return np.pi * kernel(x[None, :], x[:, None])
     
-    def mat(self, s, n):
-        x = np.arange(n)
-        return np.pi * jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
+    @staticmethod
+    def singular_toeplitz(n, rank, ampl):
+        assert 0 <= rank <= n
+        assert ampl.shape == (rank // 2 + rank % 2,)
+        freqs = jnp.linspace(0, 1, 2 + n)[1 - rank % 2:1 + rank // 2]
+        i = jnp.arange(n)[:, None]
+        j = jnp.arange(n)[None, :]
+        comps = jnp.cos(2 * jnp.pi * (i - j) * freqs[:, None, None]) * ampl[:, None, None]
+        return jnp.sum(comps, axis=0)
+
+    def randsymmat(self, n, *, rank=None):
+        if rank is None:
+            rank = n
+        ampl = rng.gamma(2, 1/2, rank // 2 + rank % 2)
+        return self.singular_toeplitz(n, rank, ampl)
+    
+    def mat(self, s, n, *, rank=None):
+        if rank is None:
+            rank = n
+        ampl = 1 + jnp.cos(s + jnp.arange(rank // 2 + rank % 2))
+        return self.singular_toeplitz(n, rank, ampl)
 
 class BlockDecompTestBase(CompositeDecompTestBase):
     """
