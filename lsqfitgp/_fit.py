@@ -189,6 +189,7 @@ class empbayes_fit(Logger):
         hpdec = _linalg.EigCutFullRank(hpcov)
         precision = hpdec.inv()
         self.log(f'{hpdec.n} hyperparameters', 2)
+        # TODO log number of datapoints
         
         if isinstance(data, tuple) and len(data) == 1:
             data, = data

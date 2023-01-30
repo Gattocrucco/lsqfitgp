@@ -1103,6 +1103,13 @@ def _rq(a, **kw):
 
 class SandwichSVD(DecompAutoDiffBase):
     
+    # TODO to compute the pseudoinverse, compute C = A.correlate(B.T,
+    # transpose=True).T to have M = CCt, then compute C+ to have M+ = C+t C+.
+    # To compute C+ in a customizable way, use C+ = (CtC)+ Ct, and decompose
+    # CtC with a user-provided class. Make A optional, if A=None, then C = B
+    # and M = BBt. If C is short, use C+ = Ct (CCt)+. Remove SandwichQR and
+    # make a single 
+    
     def _matrix(self, A_decomp, B):
         assert not self.direct_autodiff
         return B @ A_decomp.matrix() @ B.T

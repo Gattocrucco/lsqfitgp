@@ -18,9 +18,6 @@ warnings.filterwarnings('ignore', r'total derivative orders \(\d+, \d+\) greater
 #### DEFINITIONS ####
 
 ndata = 3000 # number of datapoints
-# 500 is too low to get a good fit for the hyperparameters
-# 1000 is good w/o passing the pre-decomposed data error, w/ has problems
-# 2000 is fine w/ pre-decomposition
 
 qtopm = np.array([
     #  d, db,  u, ub,  s, sb,  c, cb
@@ -377,7 +374,7 @@ ax.fill_between(x, m - s, m + s, label='prior', color='lightgray')
 ax.errorbar(x, gvar.mean(ypost), gvar.sdev(ypost), label='posterior', color='black', linestyle='', capsize=3, marker='.')
 ax.plot(ytrue, drawstyle='steps-mid', label='true value', color='red')
 
-legkw = dict(loc='upper left', title_fontsize='large')
+legkw = dict(loc='best', title_fontsize='large')
 for ax in axs[:3]:
     ax.legend(title='PDFs', **legkw)
 axs[3].legend(title='Data', **legkw)

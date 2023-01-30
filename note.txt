@@ -2696,3 +2696,15 @@ to pad if odd.
          = D_0 + cos(2π (i - j) f_l)
 
 The rank is #D/2.
+
+............
+
+To use my decompositions with rectangular matrices, I can define a class
+that decomposes AtA or AAt with a symmetric decomp.
+
+2023-01-30
+==========
+
+In particular, to decompose a non p.s.d. symmetric matrix A with cholesky, do
+
+    A^-1 = A(A^2)^-1.

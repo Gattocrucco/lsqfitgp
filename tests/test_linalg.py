@@ -624,12 +624,16 @@ class BlockDiagDecompTestBase(CompositeDecompTestBase):
     overwrite `subdecompclass`.
     """
     
-    def randsymmat(self, n):
+    def randsymmat(self, n, *, rank=None):
+        if rank is None:
+            rank = n
         p = rng.integers(1, n) if n > 1 else 0
+        r = rng.integers(max(1, rank + p - n), min(rank, p + 1)) if rank > 1 else 0
+        assert 0 <= p <= n and 0 <= r <= p and 0 <= rank - r <= n - p
         K = np.zeros((n, n))
         if p > 0:
-            K[:p, :p] = super().randsymmat(p)
-        K[p:, p:] = super().randsymmat(n - p)
+            K[:p, :p] = super().randsymmat(p, rank=r)
+        K[p:, p:] = super().randsymmat(n - p, rank=rank - r)
         self._p = p
         return K
     
@@ -733,6 +737,11 @@ class WoodburyTestBase(CompositeDecompTestBase):
         B = M[:n, n:]
         C = jnp.linalg.inv(M[n:, n:]) # such that A - BCB^T is p.s.d.
         return A, B, C
+        # TODO to make them with arbitrary rank A and C, do the following:
+        # - generate two low-rank projectors Pa and Pc
+        # - A -> Pa A Pa
+        # - B -> Pa B Pc
+        # - C -> (Pc M[n:, n:] Pc)+
         
     def randsymmat(self, n):
         A, B, C = self.ABC(n, self.randM(n))
