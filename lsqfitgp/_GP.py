@@ -40,6 +40,9 @@ __all__ = [
     'GP',
 ]
 
+# TODO make these helper functions methods of GP (first check if they are used
+# somewhere else)
+
 def _concatenate(alist):
     """
     Decides to use numpy.concatenate or jnp.concatenate depending on the
@@ -79,7 +82,7 @@ def _compatible_dtypes(d1, d2): # pragma: no cover
     another float, as long as the field name and position is the same).
     Currently not used.
 
-    May not be needed in numpy 1.23 (to be released yet).
+    May not be needed in numpy 1.23, check what result_type does now.
     """
     if d1.names != d2.names or d1.shape != d2.shape:
         return False
@@ -93,6 +96,8 @@ def _compatible_dtypes(d1, d2): # pragma: no cover
         except TypeError:
             return False
     return True
+
+# TODO make these helper classes members of GP
 
 class _Element(metaclass=abc.ABCMeta):
     """
@@ -220,6 +225,14 @@ class DefaultProcess(_Singleton):
     pass
 
 _zerokernel = _Kernel.Zero()
+
+# TODO make many methods that do not return anything return self, to allow
+# a polars-like syntax as lgp.GP(kernel).addx(x, 0).addx(x, 1).prior()
+
+# TODO change the method names that define processes to def* instead of add*,
+# such that the distinction between the two kinds is clear
+
+# TODO use DefaultProcess in all process-defining methods for consistency.
 
 class GP:
     """
@@ -1863,8 +1876,8 @@ class GP:
                 Compute log(det(A)).
             decorrelate(b)
                 Compute L^-1 b such that A = LL^T.
-            correlate(b)
-                Compute Lb with L as above.
+            correlate(b[, transpose=True])
+                Compute Lb or L^T b with L as above.
         
         Notes
         -----
@@ -1889,3 +1902,4 @@ class GP:
         return decompcls(posdefmatrix, **kw)
         
         # TODO extend the interface to use composite decompositions
+        # TODO accept a bufferdict for covariance matrix

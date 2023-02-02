@@ -193,6 +193,7 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
     # - default gamma='auto'? => wait for better gamma
     # - make gamma='auto' depend on maxd and reset with a dictionary, error
     #   if not specified
+    # - use as default, for the time being, maxd=4, reset=2, gamma=0.95?
 
 class BART(_BARTBase):
     

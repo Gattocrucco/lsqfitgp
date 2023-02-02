@@ -1,6 +1,6 @@
 # lsqfitgp/_fastraniter.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -29,6 +29,8 @@ __all__ = [
     'raniter',
     'sample',
 ]
+
+# TODO add options to use a numpy random generator object or a jax random key
 
 def raniter(mean, cov, n=None, eps=None):
     """

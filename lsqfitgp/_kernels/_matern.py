@@ -99,6 +99,11 @@ def _bessel_derivable(nu=0):
     with _patch_jax.skipifabstract():
         return nu // 2
 
+# TODO looking at the plot in the reference, it seems derivable also for nu = 0.
+# what's up? investigate numerically by overwriting the derivability. rasmussen
+# does not say anything about it. Problem: my custom derivatives may not work
+# properly in this case.
+
 def _bessel_maxdim(nu=0):
     with _patch_jax.skipifabstract():
         return 2 * (jnp.floor(nu) + 1)

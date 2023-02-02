@@ -54,6 +54,9 @@ class DecompTestABC(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def decompclass(self):
         pass
+        
+    # TODO class argument to make use low rank matrices, just sets a flag
+    # somewhere, and the methods use the flag
             
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
@@ -568,6 +571,8 @@ class DecompTestBase(DecompTestABC):
             util.assert_close_matrices(result, sol, rtol=1e-13)
             
 class CompositeDecompTestBase(DecompTestBase):
+    """ Abstract class to test decompositions which do not take as input
+    the matrix itself """
     
     @property
     @abc.abstractmethod
@@ -576,17 +581,26 @@ class CompositeDecompTestBase(DecompTestBase):
     @property
     @abc.abstractmethod
     def subdecompclass(self): pass
+    
+    @staticmethod
+    def splitrank(n1, n2, rank):
+        r = rng.integers(max(1, rank - n2), min(rank, n1 + 1)) if rank > 1 else 0
+        assert 0 <= r <= n1 and 0 <= rank - r <= n2
+        return r, rank - r
 
 class ToeplitzBase(DecompTestBase):
     
     @staticmethod
     def singular_toeplitz(n, rank, ampl):
+        """ produce an n x n real symmetric toeplitz matrix with given rank,
+        ampl is an array of input values used deterministically in the
+        construction """
         assert 0 <= rank <= n
         assert ampl.shape == (rank // 2 + rank % 2,)
         freqs = jnp.linspace(0, 1, 2 + n)[1 - rank % 2:1 + rank // 2]
         i = jnp.arange(n)[:, None]
         j = jnp.arange(n)[None, :]
-        comps = jnp.cos(2 * jnp.pi * (i - j) * freqs[:, None, None]) * ampl[:, None, None]
+        comps = jnp.cos(2 * jnp.pi * (i - j) * freqs[:, None, None]) * jnp.abs(ampl[:, None, None])
         return jnp.sum(comps, axis=0)
 
     def randsymmat(self, n, *, rank=None):
@@ -603,8 +617,7 @@ class ToeplitzBase(DecompTestBase):
 
 class BlockDecompTestBase(CompositeDecompTestBase):
     """
-    Abstract class for testing BlockDecomp. Concrete subclasses must
-    overwrite `subdecompclass`.
+    Abstract class for testing BlockDecomp.
     """
     
     def decompclass(self, K, **kw):
@@ -620,15 +633,14 @@ class BlockDecompTestBase(CompositeDecompTestBase):
     
 class BlockDiagDecompTestBase(CompositeDecompTestBase):
     """
-    Abstract class for testing BlockDiagDecomp. Concrete subclasses must
-    overwrite `subdecompclass`.
+    Abstract class for testing BlockDiagDecomp.
     """
     
     def randsymmat(self, n, *, rank=None):
         if rank is None:
             rank = n
         p = rng.integers(1, n) if n > 1 else 0
-        r = rng.integers(max(1, rank + p - n), min(rank, p + 1)) if rank > 1 else 0
+        r, _ = self.splitrank(p, n - p, rank)
         assert 0 <= p <= n and 0 <= r <= p and 0 <= rank - r <= n - p
         K = np.zeros((n, n))
         if p > 0:
@@ -716,44 +728,66 @@ class WoodburyTestBase(CompositeDecompTestBase):
     Abstract base class to test Woodbury*
     """
     
-    ranks = functools.cached_property(lambda self: {})
+    inners = functools.cached_property(lambda self: {})
     Ms = functools.cached_property(lambda self: {})
     signs = functools.cached_property(lambda self: {})
+    projectors = functools.cached_property(lambda self: {})
+    ranks = functools.cached_property(lambda self: {})
     
-    def rank(self, n):
-        return self.ranks.setdefault(n, rng.integers(1, n + 1))
+    def inner(self, n):
+        return self.inners.setdefault(n, rng.integers(1, n + 1))
     
     def sign(self, n):
         return self.signs.setdefault(n, -1 + 2 * rng.integers(2))
     
     def randM(self, n):
-        return self.Ms.setdefault(n, super().randsymmat(n + self.rank(n)))
+        return self.Ms.setdefault(n, super().randsymmat(n + self.inner(n)))
     
     def matM(self, s, n):
-        return super().mat(s, n + self.rank(n))
+        return super().mat(s, n + self.inner(n))
+        
+    def rank(self, n, r):
+        out = self.ranks.setdefault(n, self.splitrank(n, self.inner(n), r))
+        assert r == sum(out)
+        return out
     
-    def ABC(self, n, M):
+    def proj(self, n, r):
+        u1 = stats.ortho_group.rvs(n)
+        u2 = stats.ortho_group.rvs(self.inner(n))
+        r1, r2 = self.rank(n, r)
+        w1 = np.zeros(len(u1))
+        w2 = np.zeros(len(u2))
+        w1[:r1] = 1
+        w2[:r2] = 1
+        p1 = (u1 * w1) @ u1.T
+        p2 = (u2 * w2) @ u2.T
+        return self.projectors.setdefault(n, (p1, p2))
+    
+    def ABC(self, n, M, rank):
         A = M[:n, :n]
         B = M[:n, n:]
-        C = jnp.linalg.inv(M[n:, n:]) # such that A - BCB^T is p.s.d.
+        C = M[n:, n:] # such that A - BCB^T is p.s.d.
+        if rank is not None:
+            pa, pc = self.proj(n, rank)
+            A = pa @ A @ pa
+            B = pa @ B @ pc
+            C = pc @ C @ pc
+        C = jnp.linalg.pinv(C)
         return A, B, C
-        # TODO to make them with arbitrary rank A and C, do the following:
-        # - generate two low-rank projectors Pa and Pc
-        # - A -> Pa A Pa
-        # - B -> Pa B Pc
-        # - C -> (Pc M[n:, n:] Pc)+
         
-    def randsymmat(self, n):
-        A, B, C = self.ABC(n, self.randM(n))
+    def randsymmat(self, n, *, rank=None):
+        A, B, C = self.ABC(n, self.randM(n), rank)
         K = A + self.sign(n) * B @ C @ B.T
-        util.assert_close_matrices(K, K.T, rtol=1e-15)
+        util.assert_close_matrices(K, K.T, rtol=1e-14)
         self._mfrom = 'randsymmat'
+        self._rank = rank
         return K
     
-    def mat(self, s, n):
-        A, B, C = self.ABC(n, self.matM(s, n))
+    def mat(self, s, n, *, rank=None):
+        A, B, C = self.ABC(n, self.matM(s, n), rank)
         K = A + self.sign(n) * B @ C @ B.T
         self._mfrom = 'mat'
+        self._rank = rank
         self._sparam = s
         return K
     
@@ -763,7 +797,7 @@ class WoodburyTestBase(CompositeDecompTestBase):
             M = self.randM(n)
         elif self._mfrom == 'mat':
             M = self.matM(self._sparam, n)
-        A, B, C = self.ABC(n, M)
+        A, B, C = self.ABC(n, M, self._rank)
         A_decomp = self.subdecompclass(A, **kw)
         C_decomp = self.subdecompclass(C, **kw)
         return self.compositeclass(A_decomp, B, C_decomp, self.subdecompclass, sign=self.sign(n), **kw)

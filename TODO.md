@@ -84,6 +84,8 @@ Explain somewhere the jax 32/64 bit thing.
 
 Add an example with regression + gp
 
+Link gppdf report in the introduction page
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu

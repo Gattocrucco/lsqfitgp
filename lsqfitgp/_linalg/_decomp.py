@@ -161,7 +161,7 @@ class Decomposition(metaclass=abc.ABCMeta):
         pass
         
     # TODO to compute efficiently the predictive variance I need a new method
-    # diagquad(b). And for things like toeplitzml and other memoryless solvers
+    # diagquad(b). And for things like toeplitz and other memoryless solvers
     # to be added in the future, quad_and_logdet for the marginal likelihood.
     
     @abc.abstractmethod
@@ -170,6 +170,9 @@ class Decomposition(metaclass=abc.ABCMeta):
         Compute log(det(K)).
         """
         pass
+        
+        # TODO adopt a clear convention: if the matrix is degenerate, it's
+        # log pdet + regularization to make it continuous
     
     @abc.abstractmethod
     def correlate(self, b, *, transpose=False): # pragma: no cover
