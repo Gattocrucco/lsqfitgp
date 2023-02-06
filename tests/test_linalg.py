@@ -25,6 +25,7 @@ import functools
 import jax
 from jax import numpy as jnp
 from jax import test_util
+from jax.scipy import linalg as jlinalg
 import numpy as np
 from scipy import linalg, stats
 import gvar
@@ -103,7 +104,7 @@ class DecompTestBase(DecompTestABC):
         if rank is None:
             rank = n
         assert 0 <= rank <= n, rank
-        O = stats.ortho_group.rvs(n) if n > 1 else np.atleast_2d(1)
+        O = stats.ortho_group.rvs(n, random_state=rng) if n > 1 else np.atleast_2d(1)
         eigvals = rng.uniform(1e-2, 1e2, size=rank)
         O = O[:, :rank]
         K = (O * eigvals) @ O.T
@@ -636,34 +637,40 @@ class BlockDiagDecompTestBase(CompositeDecompTestBase):
     Abstract class for testing BlockDiagDecomp.
     """
     
+    _getp = functools.cached_property(lambda self: {})
+    def getp(self, n):
+        return self._getp.setdefault(n, rng.integers(1, n) if n > 1 else 0)
+    
+    _getranks = functools.cached_property(lambda self: {})
+    def getranks(self, n, rank):
+        p = self.getp(n)
+        return self._getranks.setdefault(n, self.splitrank(p, n - p, rank))
+    
     def randsymmat(self, n, *, rank=None):
         if rank is None:
             rank = n
-        p = rng.integers(1, n) if n > 1 else 0
-        r, _ = self.splitrank(p, n - p, rank)
-        assert 0 <= p <= n and 0 <= r <= p and 0 <= rank - r <= n - p
+        p = self.getp(n)
+        r1, r2 = self.getranks(n, rank)
+        assert 0 <= p <= n and 0 <= r1 <= p and 0 <= r2 <= n - p and r1 + r2 == rank
         K = np.zeros((n, n))
         if p > 0:
-            K[:p, :p] = super().randsymmat(p, rank=r)
-        K[p:, p:] = super().randsymmat(n - p, rank=rank - r)
-        self._p = p
+            K[:p, :p] = super().randsymmat(p, rank=r1)
+        K[p:, p:] = super().randsymmat(n - p, rank=r2)
         return K
     
-    def mat(self, s, n):
-        p = n // 2
-        A = super().mat(s, p)
-        B = super().mat(s, n - p)
-        self._p = p
-        return jnp.block([
-            [A, jnp.zeros((p, n-p))],
-            [jnp.zeros((n-p, p)), B],
-        ])
+    def mat(self, s, n, *, rank=None):
+        if rank is None:
+            rank = n
+        p = self.getp(n)
+        r1, r2 = self.getranks(n, rank)
+        A = super().mat(s, p, rank=r1)
+        B = super().mat(s, n - p, rank=r2)
+        return jlinalg.block_diag(A, B)
                 
     def decompclass(self, K, **kw):
         if len(K) == 1:
             return self.subdecompclass(K, **kw)
-        p = self._p
-        assert p < len(K)
+        p = self.getp(len(K))
         A = K[:p, :p]
         B = K[p:, p:]
         args = (self.subdecompclass(A, **kw), self.subdecompclass(B, **kw))
@@ -674,32 +681,31 @@ class SandwichTestBase(CompositeDecompTestBase):
     Abstract base class to test Sandwich* decompositions
     """
     
-    ranks = functools.cached_property(lambda self: {})
-    As = functools.cached_property(lambda self: {})
-    Bs = functools.cached_property(lambda self: {})
-    
+    _inner = functools.cached_property(lambda self: {})
+    def inner(self, n):
+        return self._inner.setdefault(n, rng.integers(1, n + 1))
+            
+    _rank = functools.cached_property(lambda self: {})
+    def setrank(self, n, rank):
+        if rank is None:
+            rank = self.inner(n)
+        self._rank[n] = rank
     def rank(self, n):
-        return self.ranks.setdefault(n, rng.integers(1, n + 1))
-    
+        return self._rank[n]
+        
+    _B = functools.cached_property(lambda self: {})
     def B(self, n):
-        return self.Bs.setdefault(n, rng.standard_normal((n, self.rank(n))))
+        return self._B.setdefault(n, rng.standard_normal((n, self.rank(n))))
     
+    _randA = functools.cached_property(lambda self: {})
     def randA(self, n):
-        return self.As.setdefault(n, super().randsymmat(self.rank(n)))
+        return self._randA.setdefault(n, super().randsymmat(self.inner(n), rank=self.rank(n)))
     
     def matA(self, s, n):
-        return super().mat(s, self.rank(n))
-        
-    def decompclass(self, K, **kw):
-        if self._afrom == 'randsymmat':
-            A = self.As[len(K)]
-        elif self._afrom == 'mat':
-            A = self.matA(self._sparam, len(K))
-        B = self.Bs[len(K)]
-        A_decomp = self.subdecompclass(A, **kw)
-        return self.compositeclass(A_decomp, B, **kw)
-            
-    def randsymmat(self, n):
+        return super().mat(s, self.inner(n), rank=self.rank(n))
+    
+    def randsymmat(self, n, *, rank=None):
+        self.setrank(n, rank)
         A = self.randA(n)
         B = self.B(n)
         K = B @ A @ B.T
@@ -707,7 +713,8 @@ class SandwichTestBase(CompositeDecompTestBase):
         self._afrom = 'randsymmat'
         return K
     
-    def mat(self, s, n):
+    def mat(self, s, n, *, rank=None):
+        self.setrank(n, rank)
         A = self.matA(s, n)
         B = self.B(n)
         K = B @ A @ B.T
@@ -715,45 +722,53 @@ class SandwichTestBase(CompositeDecompTestBase):
         self._sparam = s
         return K
         
+    def decompclass(self, K, **kw):
+        if self._afrom == 'randsymmat':
+            A = self.randA(len(K))
+        elif self._afrom == 'mat':
+            A = self.matA(self._sparam, len(K))
+        B = self.B(len(K))
+        A_decomp = self.subdecompclass(A, **kw)
+        return self.compositeclass(A_decomp, B, **kw)
+            
     def quad_or_solve(self, K, *args, **kw):
         sol, rank = super().quad_or_solve(K, *args, return_rank=True, **kw)
-        assert rank == self.rank(len(K))
+        assert rank == self.inner(len(K)) # TODO use rank
         return sol
     
     def logdet(self, K):
-        return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
+        return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.inner(len(K)):])) # TODO use ranks
 
 class WoodburyTestBase(CompositeDecompTestBase):
     """
     Abstract base class to test Woodbury*
     """
     
-    inners = functools.cached_property(lambda self: {})
-    Ms = functools.cached_property(lambda self: {})
-    signs = functools.cached_property(lambda self: {})
-    projectors = functools.cached_property(lambda self: {})
-    ranks = functools.cached_property(lambda self: {})
-    
+    _inner = functools.cached_property(lambda self: {})
     def inner(self, n):
-        return self.inners.setdefault(n, rng.integers(1, n + 1))
+        return self._inner.setdefault(n, rng.integers(1, n + 1))
     
+    _sign = functools.cached_property(lambda self: {})
     def sign(self, n):
-        return self.signs.setdefault(n, -1 + 2 * rng.integers(2))
+        return self._sign.setdefault(n, -1 + 2 * rng.integers(2))
     
+    _randM = functools.cached_property(lambda self: {})
     def randM(self, n):
-        return self.Ms.setdefault(n, super().randsymmat(n + self.inner(n)))
+        return self._randM.setdefault(n, super().randsymmat(n + self.inner(n)))
     
     def matM(self, s, n):
         return super().mat(s, n + self.inner(n))
         
+    _rank = functools.cached_property(lambda self: {})
     def rank(self, n, r):
-        out = self.ranks.setdefault(n, self.splitrank(n, self.inner(n), r))
+        out = self._rank.setdefault(n, self.splitrank(n, self.inner(n), r))
         assert r == sum(out)
         return out
     
+    _proj = functools.cached_property(lambda self: {})
     def proj(self, n, r):
-        u1 = stats.ortho_group.rvs(n)
-        u2 = stats.ortho_group.rvs(self.inner(n))
+        u1 = stats.ortho_group.rvs(n, random_state=rng)
+        u2 = stats.ortho_group.rvs(self.inner(n), random_state=rng)
         r1, r2 = self.rank(n, r)
         w1 = np.zeros(len(u1))
         w2 = np.zeros(len(u2))
@@ -761,7 +776,7 @@ class WoodburyTestBase(CompositeDecompTestBase):
         w2[:r2] = 1
         p1 = (u1 * w1) @ u1.T
         p2 = (u2 * w2) @ u2.T
-        return self.projectors.setdefault(n, (p1, p2))
+        return self._proj.setdefault(n, (p1, p2))
     
     def ABC(self, n, M, rank):
         A = M[:n, :n]
