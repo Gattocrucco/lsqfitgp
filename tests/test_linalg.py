@@ -36,7 +36,7 @@ import util
 sys.path = ['.'] + sys.path
 from lsqfitgp import _linalg, _kernels
 
-# TODO rewrite most comparisons to check for closeness of inputs with inverse
+# TODO rewrite many comparisons to check for closeness of inputs with inverse
 # operation applied to solution in 2-norm instead of comparing solutions
 # computed in different ways
 
@@ -47,17 +47,36 @@ from lsqfitgp import _linalg, _kernels
 #   - fix and document pinv behavior in Decomposition
 #   - decide which properties to check (just the first MP identity? All four?)
 
-rng = np.random.default_rng(202208091144)
+# TODO per-class tolerances. Possible way: inline dictionary with classes as
+# keys in comparison function calls, evaluated with .get(self.__class__,
+# default tolerance)
 
-class DecompTestABC(metaclass=abc.ABCMeta):
+# TODO remove some redundant tests to speed up the suite (_matrix and _vec
+# variants, double comparison with jit target)
+
+s1, s2 = np.random.SeedSequence(202302061416).spawn(2)
+rng = np.random.default_rng(s1)
+np.random.seed(s2.generate_state(1))
+
+class DecompTestABC(abc.ABC):
 
     @property
     @abc.abstractmethod
     def decompclass(self):
+        """ Decomposition subclass to be tested """
+        pass
+    
+    @property
+    @abc.abstractmethod
+    def lowrank(self):
+        """ Boolean indicating if the tests matrices are singular """
         pass
         
     # TODO class argument to make use low rank matrices, just sets a flag
-    # somewhere, and the methods use the flag
+    # somewhere, and the methods use the flag => better: there is a method that
+    # is the single source of random ranks, and uses the flag to always be
+    # full-rank. The flag is set automatically by the _LowRank suffix in the
+    # class name.
             
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
@@ -65,23 +84,35 @@ class DecompTestABC(metaclass=abc.ABCMeta):
         cls.matjac = jax.jacfwd(cls.mat, 1)
         cls.mathess = jax.jacfwd(cls.matjac, 1)
             
-        # wrap all methods to try again in case of failure,
-        # to hedge against bad random matrices
+        # wrap all methods to try again in case of failure, to hedge against bad
+        # random matrices. vars() only gives methods overwritten by a subclass,
+        # so we do not get all members, such that subclasses inherit xfails,
+        # which would be hidden by the decorator
         for name, meth in vars(cls).items():
-            # do not get all members, or all xfails would be needed to be
-            # marked on all subclasses
             if name.startswith('test_'):
                 setattr(cls, name, util.tryagain(meth, method=True))
         
-        # assign automatically decomposition classes, if not defined
-        if cls.__name__.startswith('Test') and inspect.isabstract(cls):
-            name = cls.__name__[4:]
+        def setattr_ifmis(cls, name, value):
+            prev = getattr(cls, name, None)
+            sup = getattr(DecompTestABC, name, prev)
+            if not hasattr(cls, name) or sup is prev:
+                setattr(cls, name, value)
+        
+        # configure automatically the subclass if it's still abstract
+        name = cls.__name__
+        if name.startswith('Test') and inspect.isabstract(cls):
+            name = name[4:]
+            if name.endswith('_LowRank'):
+                name = name[:-8]
+                cls.lowrank = True
+            else:
+                cls.lowrank = False
             if '_' in name:
                 comp, name = name.split('_')
-                cls.compositeclass = getattr(_linalg, comp)
-                cls.subdecompclass = getattr(_linalg, name)
+                setattr_ifmis(cls, 'compositeclass', getattr(_linalg, comp))
+                setattr_ifmis(cls, 'subdecompclass', getattr(_linalg, name))
             else:
-                cls.decompclass = getattr(_linalg, name)
+                setattr_ifmis(cls, 'decompclass', getattr(_linalg, name))
         
 class DecompTestBase(DecompTestABC):
     """
@@ -837,10 +868,9 @@ class TestEigCutFullRank(DecompTestBase): pass
         
 class TestReduceRank(DecompTestBase):
     
-    ranks = functools.cached_property(lambda self: {})
-    
+    _rank = functools.cached_property(lambda self: {})
     def rank(self, n):
-        return self.ranks.setdefault(n, rng.integers(1, n + 1))
+        return self._rank.setdefault(n, rng.integers(1, n + 1))
     
     def decompclass(self, K, **kw):
         return _linalg.ReduceRank(K, rank=self.rank(len(K)), **kw)

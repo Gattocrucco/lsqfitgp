@@ -594,7 +594,9 @@ class ReduceRank(Diag):
     Keep only the first `rank` higher eigenmodes.
     """
     
-    def __init__(self, K, rank=1):
+    def __init__(self, K, *, rank=None):
+        if rank is None:
+            raise ValueError('rank not specified')
         class wdummy:
             dtype = K.dtype
             shape = (rank,)
@@ -607,7 +609,8 @@ class ReduceRank(Diag):
         )
         
         # TODO try using jnp.matmul instead of passing the matrix and check
-        # if it improves performance due to lower default comput precision
+        # if it improves performance due to lower default comput precision =>
+        # behavior under jit not clear
         
         # TODO try out lobpcg, which is also supported by jax (experimental)
         # => call this Lanczos, and make a new class LOBPCG
