@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 import sys
 import abc
 import inspect
@@ -47,12 +48,8 @@ from lsqfitgp import _linalg, _kernels
 #   - fix and document pinv behavior in Decomposition
 #   - decide which properties to check (just the first MP identity? All four?)
 
-# TODO per-class tolerances. Possible way: inline dictionary with classes as
-# keys in comparison function calls, evaluated with .get(self.__class__,
-# default tolerance)
-
 # TODO remove some redundant tests to speed up the suite (_matrix and _vec
-# variants, double comparison with jit target)
+# variants)
 
 s1, s2 = np.random.SeedSequence(202302061416).spawn(2)
 rng = np.random.default_rng(s1)
@@ -214,6 +211,13 @@ class DecompTestBase(DecompTestABC):
         """ b^T K^+ b or b^T K^+ c """
         return self.quad_or_solve(K, b, b if c is None else c)
     
+    @classmethod
+    def clskey(cls, mapping, default):
+        for k, v in mapping.items():
+            if re.search(k, cls.__name__, flags=re.IGNORECASE):
+                return v
+        return default
+    
     def check_solve(self, bgen, jit=False):
         fun = lambda K, b: self.decompclass(K).solve(b)
         for n in self.sizes:
@@ -253,8 +257,10 @@ class DecompTestBase(DecompTestABC):
                 # TODO use correct formulas for pseudoinverses
                 # -K^-1 dK K^-1 b
                 sol = -KdK @ Kb
-                util.assert_close_matrices(result, sol, rtol=1e-3)
-                # 1e-3 is for Woodbury, otherwise 1e-11
+                util.assert_close_matrices(result, sol, rtol=self.clskey({
+                    r'woodbury[^2]': 1e-3, # TODO e.g. TestWoodbury_EigCutFullRank.test_solve_matrix_jac_fwd_matrix, why so inaccurate?
+                    r'cholgersh': 1e-6,
+                }, 1e-8))
             else:
                 # TODO use correct formulas for pseudoinverses
                 #  K^-1 dK K^-1 dK K^-1 b   +
@@ -887,6 +893,11 @@ class TestReduceRank(DecompTestBase):
     def decompclass(self, K, **kw):
         return _linalg.ReduceRank(K, rank=self.rank(len(K)), **kw)
     
+class TestSVDCutLowRank_LowRank(DecompTestBase): pass
+class TestEigCutLowRank_LowRank(DecompTestBase): pass
+class TestReduceRank_LowRank(TestReduceRank): pass
+# class TestEigCutFullRank_LowRank(DecompTestBase): pass # fails as expected
+
 @util.tryagain
 def test_solve_triangular():
     for n in DecompTestBase.sizes:
