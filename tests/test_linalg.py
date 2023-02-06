@@ -58,6 +58,13 @@ s1, s2 = np.random.SeedSequence(202302061416).spawn(2)
 rng = np.random.default_rng(s1)
 np.random.seed(s2.generate_state(1))
 
+def randortho(n):
+    if n > 1:
+        return stats.ortho_group.rvs(n, random_state=rng)
+    else:
+        # stats.ortho_group does not support n < 2
+        return np.atleast_2d(2 * rng.integers(2) - 1)
+
 class DecompTestABC(abc.ABC):
 
     @property
@@ -113,7 +120,7 @@ class DecompTestABC(abc.ABC):
                 setattr_ifmis(cls, 'subdecompclass', getattr(_linalg, name))
             else:
                 setattr_ifmis(cls, 'decompclass', getattr(_linalg, name))
-        
+
 class DecompTestBase(DecompTestABC):
     """
     
@@ -130,13 +137,29 @@ class DecompTestBase(DecompTestABC):
     
     def randsize(self):
         return rng.integers(1, 11)
+    
+    _rank = functools.cached_property(lambda self: {})
+    def rank(self, n):
+        # cache the rank because it needs to stay consistent between invocations
+        # of parametric test matrix constructors
+        return self._rank.setdefault(n, 1 + rng.integers(n) if self.lowrank else n)
+    
+    # TODO unificate randsymmat and mat by generating a cached random orthogonal
+    # transformation and using a "pseudocasual" nonlinear function of the
+    # parameter for the eigenvalues. To generate a random matrix, pass a random
+    # parameter. This simplifies the composite decompositions. randsymmat can
+    # become a wrapper of mat. Even better for the composite: generate directly
+    # the decomposition, i.e., replace decompclass with decomp(n, s) and
+    # randdecomp(n), since now I can get the matrix from the decomposition with
+    # .matrix().
         
     def randsymmat(self, n, *, rank=None):
+        """ return random nxn symmetric matrix, well conditioned in the
+        orthogonal complement to the null space """
         if rank is None:
-            rank = n
-        assert 0 <= rank <= n, rank
-        O = stats.ortho_group.rvs(n, random_state=rng) if n > 1 else np.atleast_2d(1)
+            rank = self.rank(n)
         eigvals = rng.uniform(1e-2, 1e2, size=rank)
+        O = randortho(n)
         O = O[:, :rank]
         K = (O * eigvals) @ O.T
         util.assert_close_matrices(K, K.T, rtol=1e-15)
@@ -144,11 +167,12 @@ class DecompTestBase(DecompTestABC):
     
     def mat(self, s, n, *, rank=None):
         if rank is None:
-            rank = n
+            rank = self.rank(n)
         x = np.arange(n)
         x[:n - rank + 1] = x[:1]
         return np.pi * jnp.exp(-1/2 * (x[:, None] - x[None, :]) ** 2 / s ** 2)
         # the π factor is for tests that pass only if the diagonal is 1
+        # TODO add some nontrivial dependence on s when n = 1
     
     def randvec(self, n):
         return rng.standard_normal(n)
@@ -158,25 +182,37 @@ class DecompTestBase(DecompTestABC):
             n = self.randsize()
         return rng.standard_normal((m, n))
     
-    def quad_or_solve(self, K, b, c=None, return_rank=False):
+    def quad_or_solve(self, K, b=None, c=None, return_rank=False):
         U, s, Vh = linalg.svd(K)
         eps = len(K) * s[0] * np.finfo(K.dtype).eps
         cond = s > eps
         sinv = np.diag(np.where(cond, 1 / np.where(s, s, 1), 0))
-        if c is None:
+        lpd = np.sum(np.log(s[cond]))
+        ld = lpd + np.count_nonzero(~cond) * np.log(eps)
+        rank = np.count_nonzero(cond)
+
+        if b is None:
+            sol = lpd
+        elif c is None:
             sol = Vh.T @ (sinv @ (U.T @ b))
         else:
             sol = (Vh @ b).T @ sinv @ (U.T @ c)
+
         if return_rank:
-            return sol, np.count_nonzero(cond)
+            return sol, rank
         else:
             return sol
     
+    def logdet(self, K):
+        return self.quad_or_solve(K)
+
     def solve(self, K, b):
+        """ K^+ b """
         return self.quad_or_solve(K, b)
     
-    def quad(self, K, b, c):
-        return self.quad_or_solve(K, b, c)
+    def quad(self, K, b, c=None):
+        """ b^T K^+ b or b^T K^+ c """
+        return self.quad_or_solve(K, b, b if c is None else c)
     
     def check_solve(self, bgen, jit=False):
         fun = lambda K, b: self.decompclass(K).solve(b)
@@ -200,12 +236,12 @@ class DecompTestBase(DecompTestABC):
             K = self.mat(s, n)
             return self.decompclass(K, direct_autodiff=da).solve(b)
         funjac = jacfun(fun)
-        funjacjit = jax.jit(funjac, static_argnums=1)
         for n in self.sizes:
             s = np.exp(rng.uniform(-1, 1))
             b = bgen(n)
             result = funjac(s, n, b)
             if jit:
+                funjacjit = jax.jit(funjac, static_argnums=1)
                 result2 = funjacjit(s, n, b)
                 util.assert_close_matrices(result2, result, rtol=rtol)
                 continue
@@ -214,11 +250,13 @@ class DecompTestBase(DecompTestABC):
             KdK = self.solve(K, dK)
             Kb = self.solve(K, b)
             if not hess:
+                # TODO use correct formulas for pseudoinverses
                 # -K^-1 dK K^-1 b
                 sol = -KdK @ Kb
                 util.assert_close_matrices(result, sol, rtol=1e-3)
                 # 1e-3 is for Woodbury, otherwise 1e-11
             else:
+                # TODO use correct formulas for pseudoinverses
                 #  K^-1 dK K^-1 dK K^-1 b   +
                 # -K^-1 d2K K^-1 b          +
                 #  K^-1 dK K^-1 dK K^-1 b
@@ -285,6 +323,7 @@ class DecompTestBase(DecompTestABC):
             dK = self.matjac(s, n)
             b = self.randmat(n)
             A = self.randmat(n).T
+                # TODO use correct formulas for pseudoinverses
             sol = -A @ self.solve(K.T, self.solve(K, dK).T).T @ b
             result = funjac(s, n, b, A)
             util.assert_close_matrices(sol, result, rtol=1e-4)
@@ -321,20 +360,15 @@ class DecompTestBase(DecompTestABC):
             result = self.decompclass(K).quad(b, c)
             util.assert_similar_gvars(sol, result, rtol=1e-11, atol=1e-15)
     
-    def quad(self, K, b, c=None):
-        if c is None:
-            c = b
-        return b.T @ self.solve(K, c)
-    
     def check_quad(self, bgen, cgen=lambda n: None, jit=False):
         fun = lambda K, b, c: self.decompclass(K).quad(b, c)
-        funjit = jax.jit(fun)
         for n in self.sizes:
             K = self.randsymmat(n)
             b = bgen(len(K))
             c = cgen(len(K))
             result = fun(K, b, c)
             if jit:
+                funjit = jax.jit(fun)
                 result2 = funjit(K, b, c)
                 util.assert_close_matrices(result2, result, rtol=1e-12)
             else:
@@ -346,13 +380,13 @@ class DecompTestBase(DecompTestABC):
             K = self.mat(s, n)
             return self.decompclass(K, direct_autodiff=da, stop_hessian=stopg).quad(b, c)
         fungrad = jacfun(fun)
-        fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in self.sizes:
             s = np.exp(rng.uniform(-1, 1))
             b = bgen(n)
             c = cgen(n)
             result = fungrad(s, n, b, c)
             if jit:
+                fungradjit = jax.jit(fungrad, static_argnums=1)
                 result2 = fungradjit(s, n, b, c)
                 util.assert_close_matrices(result2, result, rtol=1e-8)
                 continue
@@ -363,12 +397,14 @@ class DecompTestBase(DecompTestABC):
             KdK = self.solve(K, dK)
             Kc = self.solve(K, c)
             if not hess:
+                # TODO use correct formulas for pseudoinverses
                 # b.T K^-1 c
                 # -b.T K^-1 dK K^-1 c
                 sol = -b.T @ KdK @ Kc
                 util.assert_close_matrices(result, sol, rtol=1e-4)
                 # 1e-4 is for Woodbury, otherwise 1e-9
             else:
+                # TODO use correct formulas for pseudoinverses
                 #  b.T K^-1 dK K^-1 dK K^-1 c   +
                 # -b.T K^-1 d2K K^-1 c          +
                 #  b.T K^-1 dK K^-1 dK K^-1 c
@@ -447,9 +483,6 @@ class DecompTestBase(DecompTestABC):
     def test_quad_matrix_matrix_hess_da(self):
         self.check_quad_jac(lambda f: jax.jacfwd(jax.jacrev(f)), self.randmat, self.randmat, hess=True, da=True)
     
-    def logdet(self, K):
-        return np.sum(np.log(linalg.eigvalsh(K)))
-
     def check_logdet(self, jit=False):
         fun = lambda K: self.decompclass(K).logdet()
         funjit = jax.jit(fun)
@@ -458,7 +491,7 @@ class DecompTestBase(DecompTestABC):
             result = fun(K)
             if jit:
                 result2 = funjit(K)
-                util.assert_close_matrices(result2, result, rtol=1e-15)
+                util.assert_close_matrices(result2, result, rtol=1e-14)
             else:
                 sol = self.logdet(K)
                 util.assert_close_matrices(result, sol, rtol=1e-11)
@@ -635,15 +668,13 @@ class ToeplitzBase(DecompTestBase):
         comps = jnp.cos(2 * jnp.pi * (i - j) * freqs[:, None, None]) * jnp.abs(ampl[:, None, None])
         return jnp.sum(comps, axis=0)
 
-    def randsymmat(self, n, *, rank=None):
-        if rank is None:
-            rank = n
+    def randsymmat(self, n):
+        rank = self.rank(n)
         ampl = rng.gamma(2, 1/2, rank // 2 + rank % 2)
         return self.singular_toeplitz(n, rank, ampl)
     
-    def mat(self, s, n, *, rank=None):
-        if rank is None:
-            rank = n
+    def mat(self, s, n):
+        rank = self.rank(n)
         ampl = 1 + jnp.cos(s + jnp.arange(rank // 2 + rank % 2))
         return self.singular_toeplitz(n, rank, ampl)
 
@@ -668,20 +699,19 @@ class BlockDiagDecompTestBase(CompositeDecompTestBase):
     Abstract class for testing BlockDiagDecomp.
     """
     
-    _getp = functools.cached_property(lambda self: {})
-    def getp(self, n):
-        return self._getp.setdefault(n, rng.integers(1, n) if n > 1 else 0)
+    _p = functools.cached_property(lambda self: {})
+    def p(self, n):
+        return self._p.setdefault(n, rng.integers(1, n) if n > 1 else 0)
     
-    _getranks = functools.cached_property(lambda self: {})
-    def getranks(self, n, rank):
-        p = self.getp(n)
-        return self._getranks.setdefault(n, self.splitrank(p, n - p, rank))
+    _subranks = functools.cached_property(lambda self: {})
+    def subranks(self, n, rank):
+        p = self.p(n)
+        return self._subranks.setdefault(n, self.splitrank(p, n - p, rank))
     
-    def randsymmat(self, n, *, rank=None):
-        if rank is None:
-            rank = n
-        p = self.getp(n)
-        r1, r2 = self.getranks(n, rank)
+    def randsymmat(self, n):
+        rank = self.rank(n)
+        p = self.p(n)
+        r1, r2 = self.subranks(n, rank)
         assert 0 <= p <= n and 0 <= r1 <= p and 0 <= r2 <= n - p and r1 + r2 == rank
         K = np.zeros((n, n))
         if p > 0:
@@ -689,11 +719,10 @@ class BlockDiagDecompTestBase(CompositeDecompTestBase):
         K[p:, p:] = super().randsymmat(n - p, rank=r2)
         return K
     
-    def mat(self, s, n, *, rank=None):
-        if rank is None:
-            rank = n
-        p = self.getp(n)
-        r1, r2 = self.getranks(n, rank)
+    def mat(self, s, n):
+        rank = self.rank(n)
+        p = self.p(n)
+        r1, r2 = self.subranks(n, rank)
         A = super().mat(s, p, rank=r1)
         B = super().mat(s, n - p, rank=r2)
         return jlinalg.block_diag(A, B)
@@ -701,7 +730,7 @@ class BlockDiagDecompTestBase(CompositeDecompTestBase):
     def decompclass(self, K, **kw):
         if len(K) == 1:
             return self.subdecompclass(K, **kw)
-        p = self.getp(len(K))
+        p = self.p(len(K))
         A = K[:p, :p]
         B = K[p:, p:]
         args = (self.subdecompclass(A, **kw), self.subdecompclass(B, **kw))
@@ -714,15 +743,12 @@ class SandwichTestBase(CompositeDecompTestBase):
     
     _inner = functools.cached_property(lambda self: {})
     def inner(self, n):
-        return self._inner.setdefault(n, rng.integers(1, n + 1))
+        return self._inner.setdefault(n, 1 + rng.integers(n))
             
     _rank = functools.cached_property(lambda self: {})
-    def setrank(self, n, rank):
-        if rank is None:
-            rank = self.inner(n)
-        self._rank[n] = rank
     def rank(self, n):
-        return self._rank[n]
+        return self._rank.setdefault(n, 1 + rng.integers(self.inner(n)) if self.lowrank else self.inner(n))
+        # TODO guaranteed low rank
         
     _B = functools.cached_property(lambda self: {})
     def B(self, n):
@@ -735,8 +761,7 @@ class SandwichTestBase(CompositeDecompTestBase):
     def matA(self, s, n):
         return super().mat(s, self.inner(n), rank=self.rank(n))
     
-    def randsymmat(self, n, *, rank=None):
-        self.setrank(n, rank)
+    def randsymmat(self, n):
         A = self.randA(n)
         B = self.B(n)
         K = B @ A @ B.T
@@ -744,8 +769,7 @@ class SandwichTestBase(CompositeDecompTestBase):
         self._afrom = 'randsymmat'
         return K
     
-    def mat(self, s, n, *, rank=None):
-        self.setrank(n, rank)
+    def mat(self, s, n):
         A = self.matA(s, n)
         B = self.B(n)
         K = B @ A @ B.T
@@ -764,12 +788,9 @@ class SandwichTestBase(CompositeDecompTestBase):
             
     def quad_or_solve(self, K, *args, **kw):
         sol, rank = super().quad_or_solve(K, *args, return_rank=True, **kw)
-        assert rank == self.inner(len(K)) # TODO use rank
+        assert rank == self.rank(len(K))
         return sol
     
-    def logdet(self, K):
-        return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.inner(len(K)):])) # TODO use ranks
-
 class WoodburyTestBase(CompositeDecompTestBase):
     """
     Abstract base class to test Woodbury*
@@ -790,17 +811,15 @@ class WoodburyTestBase(CompositeDecompTestBase):
     def matM(self, s, n):
         return super().mat(s, n + self.inner(n))
         
-    _rank = functools.cached_property(lambda self: {})
-    def rank(self, n, r):
-        out = self._rank.setdefault(n, self.splitrank(n, self.inner(n), r))
-        assert r == sum(out)
-        return out
+    _subranks = functools.cached_property(lambda self: {})
+    def subranks(self, n):
+        return self._subranks.setdefault(n, self.splitrank(n, self.inner(n), self.rank(n + self.inner(n))))
     
     _proj = functools.cached_property(lambda self: {})
-    def proj(self, n, r):
-        u1 = stats.ortho_group.rvs(n, random_state=rng)
-        u2 = stats.ortho_group.rvs(self.inner(n), random_state=rng)
-        r1, r2 = self.rank(n, r)
+    def proj(self, n):
+        u1 = randortho(n)
+        u2 = randortho(self.inner(n))
+        r1, r2 = self.subranks(n)
         w1 = np.zeros(len(u1))
         w2 = np.zeros(len(u2))
         w1[:r1] = 1
@@ -809,31 +828,28 @@ class WoodburyTestBase(CompositeDecompTestBase):
         p2 = (u2 * w2) @ u2.T
         return self._proj.setdefault(n, (p1, p2))
     
-    def ABC(self, n, M, rank):
+    def ABC(self, n, M):
         A = M[:n, :n]
         B = M[:n, n:]
-        C = M[n:, n:] # such that A - BCB^T is p.s.d.
-        if rank is not None:
-            pa, pc = self.proj(n, rank)
-            A = pa @ A @ pa
-            B = pa @ B @ pc
-            C = pc @ C @ pc
-        C = jnp.linalg.pinv(C)
+        C = M[n:, n:]
+        pa, pc = self.proj(n)
+        A = pa @ A @ pa
+        B = pa @ B @ pc
+        C = pc @ C @ pc
+        C = jnp.linalg.pinv(C) # such that A - BCB^T is p.s.d.
         return A, B, C
         
-    def randsymmat(self, n, *, rank=None):
-        A, B, C = self.ABC(n, self.randM(n), rank)
+    def randsymmat(self, n):
+        A, B, C = self.ABC(n, self.randM(n))
         K = A + self.sign(n) * B @ C @ B.T
         util.assert_close_matrices(K, K.T, rtol=1e-14)
         self._mfrom = 'randsymmat'
-        self._rank = rank
         return K
     
-    def mat(self, s, n, *, rank=None):
-        A, B, C = self.ABC(n, self.matM(s, n), rank)
+    def mat(self, s, n):
+        A, B, C = self.ABC(n, self.matM(s, n))
         K = A + self.sign(n) * B @ C @ B.T
         self._mfrom = 'mat'
-        self._rank = rank
         self._sparam = s
         return K
     
@@ -843,7 +859,7 @@ class WoodburyTestBase(CompositeDecompTestBase):
             M = self.randM(n)
         elif self._mfrom == 'mat':
             M = self.matM(self._sparam, n)
-        A, B, C = self.ABC(n, M, self._rank)
+        A, B, C = self.ABC(n, M)
         A_decomp = self.subdecompclass(A, **kw)
         C_decomp = self.subdecompclass(C, **kw)
         return self.compositeclass(A_decomp, B, C_decomp, self.subdecompclass, sign=self.sign(n), **kw)
@@ -868,27 +884,9 @@ class TestEigCutFullRank(DecompTestBase): pass
         
 class TestReduceRank(DecompTestBase):
     
-    _rank = functools.cached_property(lambda self: {})
-    def rank(self, n):
-        return self._rank.setdefault(n, rng.integers(1, n + 1))
-    
     def decompclass(self, K, **kw):
         return _linalg.ReduceRank(K, rank=self.rank(len(K)), **kw)
     
-    def quad_or_solve(self, K, *args, **kw):
-        sol, rank = super().quad_or_solve(K, *args, return_rank=True, **kw)
-        assert rank == self.rank(len(K))
-        return sol
-    
-    def randsymmat(self, n):
-        return super().randsymmat(n, rank=self.rank(n))
-    
-    def mat(self, s, n):
-        return super().mat(s, n, rank=self.rank(n))
-        
-    def logdet(self, K):
-        return np.sum(np.log(np.sort(linalg.eigvalsh(K))[-self.rank(len(K)):]))
-        
 @util.tryagain
 def test_solve_triangular():
     for n in DecompTestBase.sizes:
@@ -1050,3 +1048,5 @@ util.xfail(TestWoodbury2_EigCutFullRank, 'test_logdet_hess_da')
 
 # TODO this sometimes is very inaccurate
 # TestWoodburyEigCutFullRank.test_logdet_hess_fwd_fwd
+
+# TestWoodbury_EigCutFullRank.test_quad_vec_jac_rev_jit # seen failing

@@ -172,7 +172,11 @@ class Decomposition(metaclass=abc.ABCMeta):
         pass
         
         # TODO adopt a clear convention: if the matrix is degenerate, it's
-        # log pdet + regularization to make it continuous
+        # log pdet + regularization to make it continuous => problem: when the
+        # regularization changes with the maximum eigenvalue, this gives a
+        # large logdet variation which does not make sense. The regularization
+        # should be fixed. Whatevs, the derivatives won't take this variation
+        # into account.
     
     @abc.abstractmethod
     def correlate(self, b, *, transpose=False): # pragma: no cover
@@ -213,6 +217,10 @@ class Decomposition(metaclass=abc.ABCMeta):
         Return the matrix to be decomposed.
         """
         pass
+    
+    # TODO new properties: m is the inner size (for correlate and decorrelate),
+    # rank is the rank for low-rank or rank revealing decompositions, otherwise
+    # n.
 
 class DecompPyTree(Decomposition, _pytree.AutoPyTree):
     """
@@ -548,6 +556,8 @@ class EigCutLowRank(Diag):
         cond = self._w < eps
         self._w = jnp.where(cond, 1, self._w)
         self._V = jnp.where(cond, 0, self._V)
+        
+        # TODO rank parameter to fix regularization
 
 class SVD(Diag):
     """ Like Diag but supports negative values in w """
