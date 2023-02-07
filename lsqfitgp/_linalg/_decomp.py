@@ -181,6 +181,8 @@ class Decomposition(metaclass=abc.ABCMeta):
         # dynamically the regularization based on the previous ones? The decomp
         # could provide some opaque reg info object, that is to be optionally
         # fed to logdet. Maybe it can be made decomposition-agnostic.
+        #
+        # => change the current methods' name to logpdet, then make a new one
     
     @abc.abstractmethod
     def correlate(self, b, *, transpose=False): # pragma: no cover
@@ -1373,5 +1375,68 @@ class Woodbury2(DecompAutoDiffBase):
     def m(self):
         return self._A.m + self._C.m
 
-class CholPinv():
-    pass
+class Pinv(DecompAutoDiff):
+    
+    # K3 = K³ + εI = AAt
+    # K+ ≈ K K3^-1 K = (A^-1 K)t (A^-1 K)
+    # K ≈ (K+ A) (K+ A)t
+    
+    # K.solve(b) = K3.quad(K, K b)
+    # K.quad(b) = K3.quad(K b)
+    # K.quad(b, c) = K3.quad(Kb, Kc)
+    # K.logdet = 1/3 K3.logdet
+    # K.correlate(b) = K3.quad(K, K K3.correlate(b))
+    # K.correlate(b, T) = K3.correlate(K3.quad(K, K b), T)
+    # K.decorrelate(b) = K3.decorrelate(K b)
+    
+    # TODO pass directly the instantiated decomposition of K^3 along with K?
+    
+    def __init__(self, K, decompcls, **kw):
+        """
+        
+        Approximate a pseudoinverse using an inversion.
+        
+        Parameters
+        ----------
+        K :
+            The matrix to be decomposed.
+        decompcls : type
+            Class used to decompose K^3, need not support ill-conditioned
+            matrices.
+        
+        """
+    
+        self._K3 = decompcls(K @ K @ K, **kw)
+        self._K = K
+    
+    def solve(self, b):
+        K, K3 = self._K, self._K3
+        return K3.quad(K, K @ b)
+    
+    def quad(self, b, c=None):
+        K, K3 = self._K, self._K3
+        if c is None:
+            return K3.quad(K @ b)
+        elif c.dtype == object:
+            return K3.quad(K @ b, numpy.asarray(K) @ c)
+        else:
+            return K3.quad(K @ b, K @ c)
+    
+    def logdet(self):
+        return self._K3.logdet() / 3
+        # TODO this is not a pseudodeterminant
+    
+    def correlate(self, b, *, transpose=False):
+        K, K3 = self._K, self._K3
+        if transpose:
+            return K3.correlate(K3.quad(K, K @ b), transpose=True)
+        else:
+            return K3.quad(K, K @ K3.correlate(b))
+    
+    def decorrelate(self, b):
+        K, K3 = self._K, self._K3
+        return K3.decorrelate(K @ b)
+    
+    @property
+    def m(self):
+        return self._K3.m    
