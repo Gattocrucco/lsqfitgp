@@ -2708,3 +2708,46 @@ that decomposes AtA or AAt with a symmetric decomp.
 In particular, to decompose a non p.s.d. symmetric matrix A with cholesky, do
 
     A^-1 = A(A^2)^-1.
+
+2023-02-07
+==========
+
+jhurani2012 gives
+
+    K+ = ∑ n=1^∞ Kt εⁿ⁻¹ (KKt + εI)⁻ⁿ,
+
+And I tested it in playground/pinv/diagpinv.py. Is it also, for symmetric K,
+
+    K+ = ∑ n=0^∞ εⁿ K (K³ + εI)⁻ⁿ⁻¹ K ?
+
+Let's try with the MP identities:
+
+    f(K) := ∑ n=1^∞ K (I + K^3)^-n K
+    
+    K f(K) K = ∑ n=1^∞ K^2 (I + K^3)^-n K^2 =
+    
+K commutes with I and K^3, so with I + K^3, so with (I + K^3)^-n, so
+    
+             = ∑ n=1^∞ K^3 (I + K^3)^-n K =
+             =: g(K) K
+    
+    g(K) = K^3 (I + K^3)^-1 + g(K) (I + K^3)^-1 -->
+    --> g(K) (I + K^3) = K^3 + g(K) -->
+    --> g(K) K^3 = K^3 -->
+    --> g(K) K = K  ==>  ok
+
+Second identity: K commutes with f(K), so f(K) K = K f(K), so
+
+    f(K) K f(K) = K f(K) f(K) =
+                = ∑ n=1^∞ K f(K) K (I + K^3)^-n K =
+                = ∑ n=1^∞ K (I + K^3)^-n K =
+                = f(K)  ==>  ok
+
+Third and fourth identity: they hold because K commutes with f(K).
+
+    f(K/ε^1/3) = ∑ n=1^∞ K/ε^1/3 (I + K^3/ε)^-n K/ε^1/3 =
+               = ∑ n=1^∞ ε^-2/3 K ε^n (εI + K^3)^-n K =
+               = ε^1/3 K+   -->
+    
+    -->  K+ = ∑ n=1^∞ K ε^(n-1) (εI + K^3)^-n K                         q.e.d.
+
