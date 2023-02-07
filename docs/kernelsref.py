@@ -266,10 +266,10 @@ for kernel in kernels2:
             label = ', '.join(f'{k} = {v}' for k, v in kw.items())
         cov = covfun(x[None, :], x[:, None])
         try:
-            dec = lgp._linalg.CholGersh(cov)
+            dec = lgp._linalg.Chol(cov)
         except np.linalg.LinAlgError:
             dec = lgp._linalg.EigCutFullRank(cov)
-        iid = gen.standard_normal(x.shape + (nsamples,))
+        iid = gen.standard_normal(dec.m, nsamples))
         samples = dec.correlate(iid)
         for j, y in enumerate(samples.T):
             ax.plot(x, y, label=None if j else label)

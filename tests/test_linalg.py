@@ -253,7 +253,7 @@ class DecompTestBase(DecompTestABC):
                 sol = -KdK @ Kb
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
                     r'woodbury[^2]': 1e-3, # TODO e.g. TestWoodbury_EigCutFullRank.test_solve_matrix_jac_fwd_matrix, why so inaccurate?
-                    r'cholgersh': 1e-6,
+                    r'chol': 1e-6,
                 }, 1e-8))
             else:
                 # TODO use correct formulas for pseudoinverses
@@ -520,9 +520,6 @@ class DecompTestBase(DecompTestABC):
                 # tr(K^-1 dK)
                 sol = np.trace(KdK)
                 util.assert_close_matrices(result, sol, rtol=1e-7)
-                # TODO 1e-4? really? in general probably low tolerances are
-                # needed for CholToeplitz and to a lesser extent Chol, not for
-                # the diagonalizations
             else:
                 # tr(-K^-1 dK K^-1 dK + K d2K)
                 sol = -np.trace(KdK @ KdK)
@@ -606,13 +603,16 @@ class DecompTestBase(DecompTestABC):
     # in the custom jvp
 
     def test_correlate_eye(self):
+        self._woodbury_possign = True
         for n in self.sizes:
             K = self.randsymmat(n)
-            A = self.decompclass(K).correlate(np.eye(n))
+            dec = self.decompclass(K)
+            A = dec.correlate(np.eye(dec.m))
             Q = A @ A.T
             util.assert_close_matrices(K, Q, rtol=1e-13)
     
     def test_double_correlate(self):
+        self._woodbury_possign = True
         for n in self.sizes:
             K = self.randsymmat(n)
             d = self.decompclass(K)
@@ -620,6 +620,7 @@ class DecompTestBase(DecompTestABC):
             util.assert_close_matrices(K, K2, atol=1e-15, rtol=1e-13)
     
     def test_correlate_transpose(self):
+        self._woodbury_possign = True
         for n in self.sizes:
             K = self.randsymmat(n)
             AT = self.decompclass(K).correlate(np.eye(n), transpose=True)
@@ -805,6 +806,8 @@ class WoodburyTestBase(CompositeDecompTestBase):
     
     _sign = functools.cached_property(lambda self: {})
     def sign(self, n):
+        if getattr(self, '_woodbury_possign', False):
+            return 1
         return self._sign.setdefault(n, -1 + 2 * rng.integers(2))
     
     _randM = functools.cached_property(lambda self: {})
@@ -879,20 +882,24 @@ class TestBlock_EigCutFullRank(BlockDecompTestBase): pass
 
 class TestCholToeplitz(ToeplitzBase): pass
 
-class TestCholGersh(DecompTestBase): pass
+class TestChol(DecompTestBase): pass
 class TestSVDCutLowRank(DecompTestBase): pass
 class TestSVDCutFullRank(DecompTestBase): pass
 class TestEigCutLowRank(DecompTestBase): pass
 class TestEigCutFullRank(DecompTestBase): pass
         
 class TestLanczos(DecompTestBase):
-    
     def decompclass(self, K, **kw):
         return _linalg.Lanczos(K, rank=self.rank(len(K)), **kw)
     
+class TestLOBPCG(DecompTestBase):
+    def decompclass(self, K, **kw):
+        return _linalg.LOBPCG(K, rank=self.rank(len(K)), **kw)
+
 class TestSVDCutLowRank_LowRank(DecompTestBase): pass
 class TestEigCutLowRank_LowRank(DecompTestBase): pass
 class TestLanczos_LowRank(TestLanczos): pass
+class TestLOBPCG_LowRank(TestLOBPCG): pass
 # class TestEigCutFullRank_LowRank(DecompTestBase): pass # fails as expected
 
 @util.tryagain
@@ -994,7 +1001,7 @@ def test_rq(mode):
         util.assert_close_matrices(q.T @   q @ q.T, q.T, rtol=1e-14)
 
 @mark.parametrize('decomp', [
-    _linalg.CholGersh,
+    _linalg.Chol,
     _linalg.EigCutLowRank,
     _linalg.SVDCutLowRank,
 ])
@@ -1013,9 +1020,10 @@ util.xfail(WoodburyTestBase, 'test_logdet_hess_fwd_fwd_stopg')
 util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
 
 # TODO linalg.sparse.eigsh is not implemented in jax
-for name, meth in inspect.getmembers(TestLanczos, inspect.isfunction):
-    if name.endswith('_da'):
-        util.xfail(TestLanczos, name)
+for testcls in [TestLanczos, TestLOBPCG]:
+    for name, meth in inspect.getmembers(testcls, inspect.isfunction):
+        if name.endswith('_da'):
+            util.xfail(testcls, name)
 
 # reverse diff broken because they use quads within other stuff probably.
 # Subclassing DecompAutoDiff does not work. Maybe just using quad to compute
@@ -1036,11 +1044,8 @@ for name, meth in inspect.getmembers(TestLanczos, inspect.isfunction):
     # util.xfail(cls, 'test_logdet_jac_rev')
     # util.xfail(cls, 'test_logdet_jac_rev_jit')
 
-# TODO I don't know how to implement correlate and decorrelate for Woodbury
-# => do it with a larger i.i.d. space, using the pseudoinverse of the factor
-# (change the definition of correlate to use the pinv)
 for name, meth in inspect.getmembers(WoodburyTestBase, inspect.isfunction):
-    if 'correlate' in name:
+    if 'decorrelate' in name:
         util.xfail(WoodburyTestBase, name)
 
 # TODO these derivatives are a full nan, no idea, but it depends on the values,

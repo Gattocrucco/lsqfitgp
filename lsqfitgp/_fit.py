@@ -291,7 +291,7 @@ class empbayes_fit(Logger):
             kwargs.update(x0=hpmean)
         elif initial == 'priorsample':
             self.log('start from a random sample from the prior', 2)
-            iid = np.random.randn(hpdec.n)
+            iid = np.random.randn(hpdec.m)
             x0 = hpdec.correlate(iid)
             kwargs.update(x0=x0)
         else:

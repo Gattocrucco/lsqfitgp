@@ -1798,7 +1798,8 @@ class GP:
             'svdcut+': _linalg.SVDCutFullRank,
             'svdcut-': _linalg.SVDCutLowRank,
             'lanczos': _linalg.Lanczos,
-            'chol'   : _linalg.CholGersh,
+            'lobpcg': _linalg.LOBPCG,
+            'chol'   : _linalg.Chol,
         }[solver]
     
     @classmethod
@@ -1832,6 +1833,8 @@ class GP:
                 Reduce the rank of the matrix. The complexity is O(n^2 r) where
                 `n` is the matrix size and `r` the required rank, while the
                 other algorithms are O(n^3). Slow for small sizes.
+            'lobpcg'
+                Like 'lanczos' but using the LOBPCG algorithm.
             'chol'
                 Cholesky decomposition after regularizing the matrix with a
                 Gershgorin estimate of the maximum eigenvalue. The fastest of
@@ -1845,8 +1848,9 @@ class GP:
                 relative to the maximum eigenvalue. The default is matrix size
                 * float epsilon.
             rank : positive integer
-                For the 'lanczos' solver, the target rank. It should be much
-                smaller than the matrix size for the method to be convenient.
+                For the 'lanczos' and 'lobpcg' solvers, the target rank. It
+                should be much smaller than the matrix size for the method to
+                be convenient.
             direct_autodiff : bool
                 If True, let JAX compute derivatives tracing through the code
                 instead of using custom derivatives for the various operations.

@@ -47,10 +47,6 @@ Diag
     Diagonalization.
 SVD
     Diagonalization with negative eigenvalues.
-Chol
-    Cholesky decomposition.
-CholReg
-    Abstract class for regularized Cholesky decomposition.
 
 Concrete classes
 ----------------
@@ -64,7 +60,7 @@ SVDCutLowRank
     Diagonalization removing small eigenvalues.
 Lanczos
     Partial diagonalization with higher eigenvalues only.
-CholGersh
+Chol
     Cholesky regularized using an estimate of the maximum eigenvalue.
 CholToeplitz
     Cholesky decomposition of a Toeplitz matrix regularized using an estimate
@@ -189,17 +185,17 @@ class Decomposition(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def correlate(self, b, *, transpose=False): # pragma: no cover
         """
-        Compute A @ b where K = A @ A.T. If b represents iid variables with
-        unitary variance, A @ b has covariance matrix K. If transpose=True,
-        compute A.T @ b.
+        Compute A b where K = A At, with A n x m. If b represents iid
+        variables with unitary variance, A b has covariance matrix K. If
+        transpose=True, compute At b.
         """
         pass
     
     @abc.abstractmethod
     def decorrelate(self, b): # pragma: no cover
         """
-        Solve A @ x = b, where K = A @ A.T. If b represents variables with
-        covariance matrix K, x has identity covariance.
+        Compute A^+ b, where K = A At, with A n x m. If b represents variables
+        with covariance matrix K, A^+ b has idempotent covariance.
         """
         pass
     
@@ -215,9 +211,17 @@ class Decomposition(metaclass=abc.ABCMeta):
     @property
     def n(self):
         """
-        Return n where the decomposed matrix is n x n.
+        The size of the matrix.
         """
         return len(self.matrix())
+    
+    @property
+    def m(self):
+        """
+        The inner size of the decomposition used by `correlate` and
+        `decorrelate`.
+        """
+        return self.n
     
     @abc.abstractmethod
     def matrix(self): # pragma: no cover
@@ -226,9 +230,8 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         pass
     
-    # TODO new properties: m is the inner size (for correlate and decorrelate),
-    # rank is the rank for low-rank or rank revealing decompositions, otherwise
-    # n.
+    # TODO new properties: rank is the rank for low-rank or rank revealing
+    # decompositions, otherwise n.
 
 class DecompPyTree(Decomposition, _pytree.AutoPyTree):
     """
@@ -523,17 +526,17 @@ class Diag(DecompAutoDiff):
         return VTbw @ VTc
     
     def logdet(self):
-        return jnp.sum(jnp.log(self._w))
+        return jnp.sum(jnp.log(jnp.abs(self._w)))
     
     def correlate(self, b, *, transpose=False):
-        A = self._V * jnp.sqrt(self._w)
+        A = self._V * jnp.sqrt(jnp.abs(self._w))
         if transpose:
-            A = A.T 
+            A = A.T
         return A @ b
     
     def decorrelate(self, b):
-        return (self._V / jnp.sqrt(self._w)).T @ b
-    
+        return (self._V / jnp.sqrt(jnp.abs(self._w))).T @ b
+        
     def _eps(self, eps):
         w = self._w
         if eps is None:
@@ -567,22 +570,7 @@ class EigCutLowRank(Diag):
         
         # TODO rank parameter to fix regularization
 
-class SVD(Diag):
-    """ Like Diag but supports negative values in w """
-    
-    def logdet(self):
-        return jnp.sum(jnp.log(jnp.abs(self._w)))
-    
-    def correlate(self, b, *, transpose=False):
-        A = self._V * jnp.sqrt(jnp.abs(self._w))
-        if transpose:
-            A = A.T
-        return A @ b
-    
-    def decorrelate(self, b):
-        return (self._V / jnp.sqrt(jnp.abs(self._w))).T @ b
-        
-class SVDCutFullRank(SVD):
+class SVDCutFullRank(Diag):
     """
     Diagonalization. Eigenvalues below `eps` in absolute value are set to
     `eps` with their sign, where `eps` is relative to the largest eigenvalue.
@@ -594,7 +582,7 @@ class SVDCutFullRank(SVD):
         cond = jnp.abs(self._w) < eps
         self._w = jnp.where(cond, eps * jnp.sign(self._w), self._w)
         
-class SVDCutLowRank(SVD):
+class SVDCutLowRank(Diag):
     """
     Diagonalization. Eigenvalues below `eps` in absolute value are removed,
     where `eps` is relative to the largest eigenvalue.
@@ -607,14 +595,28 @@ class SVDCutLowRank(SVD):
         self._w = jnp.where(cond, 1, self._w)
         self._V = jnp.where(cond, 0, self._V)
 
-class Lanczos(Diag):
+class LowRankDiag(Diag):
+    """
+    Diagonalization with a fixed size truncation of the spectrum.
+    """
+    
+    @abc.abstractmethod
+    def __init__(self, K, *, rank=None):
+        if rank is None:
+            raise ValueError('rank not specified')
+        self._rank = rank
+    
+    @property
+    def m(self):
+        return self._rank
+
+class Lanczos(LowRankDiag):
     """
     Keep only the first `rank` higher eigenmodes.
     """
     
     def __init__(self, K, *, rank=None):
-        if rank is None:
-            raise ValueError('rank not specified')
+        super().__init__(K, rank=rank)
         class wdummy:
             dtype = K.dtype
             shape = (rank,)
@@ -630,14 +632,24 @@ class Lanczos(Diag):
         # if it improves performance due to lower default comput precision =>
         # behavior under jit not clear
         
-        # TODO make a new class LOBPCG
+class LOBPCG(LowRankDiag):
+    """
+    Keep only the first `rank` higher eigenmodes.
+    """
     
-    def correlate(self, b, *, transpose=False):
-        if transpose:
-            return super().correlate(b, transpose=True)
-        else:
-            return super().correlate(b[:len(self._w)])
-
+    def __init__(self, K, *, rank=None):
+        super().__init__(K, rank=rank)
+        class wdummy:
+            dtype = K.dtype
+            shape = (rank,)
+        class Vdummy:
+            dtype = K.dtype
+            shape = (len(K), rank)
+        self._w, self._V = jax.pure_callback(
+            lambda K: sparse.linalg.lobpcg(numpy.asarray(K), numpy.random.randn(*Vdummy.shape)),
+            (wdummy, Vdummy), K,
+        )
+        
 def solve_triangular(a, b, lower=False):
     """
     Pure python implementation of scipy.linalg.solve_triangular for when
@@ -670,13 +682,6 @@ def solve_triangular(a, b, lower=False):
         x = numpy.squeeze(x, -1)
     return x
 
-def solve_triangular_auto(a, b, lower=False):
-    """Works with b both object and non-object array"""
-    if b.dtype == object:
-        return solve_triangular(a, b, lower=lower)
-    else:
-        return jlinalg.solve_triangular(a, b, lower=lower)
-
 class CholEps:
     
     def _eps(self, eps, mat, maxeigv):
@@ -685,30 +690,50 @@ class CholEps:
         assert 0 <= eps < 1
         return eps * maxeigv
 
+def _gershgorin_eigval_bound(mat):
+    """
+    Upper bound on the largest magnitude eigenvalue of the matrix.
+    """
+    return jnp.max(jnp.sum(jnp.abs(mat), axis=1))
+
 class Chol(DecompAutoDiff, CholEps):
     """
     Cholesky decomposition.
     """
     
-    @abc.abstractmethod
-    def __init__(self, K):
-        self._L = jlinalg.cholesky(K, lower=True, check_finite=False)
+    @staticmethod
+    def _scale(a):
+        """
+        Compute a vector s of powers of 2 such that diag(a / outer(s, s)) ~ 1.
+        """
+        d = jnp.diag(a)
+        return jnp.where(d, jnp.exp2(jnp.rint(0.5 * jnp.log2(d))), 1)
+
+    def __init__(self, K, eps=None):
+        s = self._scale(K)
+        K = K / jnp.outer(s, s)
+        maxeigv = _gershgorin_eigval_bound(K)
+        eps = self._eps(eps, K, maxeigv)
+        K = K.at[jnp.diag_indices(len(K))].add(eps)
+        L = jlinalg.cholesky(K, lower=True)
         with _patch_jax.skipifabstract():
-            if not jnp.all(jnp.isfinite(self._L)):
+            if not jnp.all(jnp.isfinite(L)):
                 raise numpy.linalg.LinAlgError('cholesky decomposition not finite, probably matrix not pos def numerically')
+        self._L = L * s[:, None]
     
     def solve(self, b):
-        invLb = solve_triangular_auto(self._L, b, lower=True)
-        return solve_triangular_auto(self._L.T, invLb, lower=False)
+        invLb = jlinalg.solve_triangular(self._L, b, lower=True)
+        return jlinalg.solve_triangular(self._L.T, invLb, lower=False)
     
     def quad(self, b, c=None):
-        invLb = solve_triangular_auto(self._L, b, lower=True)
+        invLb = jlinalg.solve_triangular(self._L, b, lower=True)
         if c is None:
             invLc = invLb
+        elif c.dtype == object:
+            invLc = solve_triangular(self._L, c, lower=True)
+            invLb = numpy.asarray(invLb)
         else:
-            invLc = solve_triangular_auto(self._L, c, lower=True)
-            if c.dtype == object:
-                invLb = numpy.asarray(invLb)
+            invLc = jlinalg.solve_triangular(self._L, c, lower=True)
         return _transpose(invLb) @ invLc
     
     def logdet(self):
@@ -718,49 +743,7 @@ class Chol(DecompAutoDiff, CholEps):
         return (self._L.T if transpose else self._L) @ b
     
     def decorrelate(self, b):
-        return solve_triangular_auto(self._L, b, lower=True)
-
-def _scale(a):
-    """
-    Compute a vector s of powers of 2 such that diag(a / outer(s, s)) ~ 1.
-    """
-    d = jnp.diag(a)
-    return jnp.where(d, jnp.exp2(jnp.rint(0.5 * jnp.log2(d))), 1)
-
-class CholReg(Chol):
-    """
-    Cholesky decomposition correcting for roundoff. Abstract class.
-    """
-    
-    def __init__(self, K, eps=None):
-        s = _scale(K)
-        J = K / jnp.outer(s, s)
-        J = self._regularize(J, eps)
-        super().__init__(J)
-        self._L = self._L * s[:, None]
-    
-    @abc.abstractmethod
-    def _regularize(self, mat, eps): # pragma: no cover
-        """Modify mat to make it numerically positive definite."""
-        pass
-    
-def _gershgorin_eigval_bound(mat):
-    """
-    Upper bound on the largest magnitude eigenvalue of the matrix.
-    """
-    return jnp.max(jnp.sum(jnp.abs(mat), axis=1))
-
-class CholGersh(CholReg):
-    """
-    Cholesky decomposition. The matrix is corrected for numerical roundoff
-    by adding to the diagonal a small number relative to the maximum eigenvalue.
-    `eps` multiplies this number. The maximum eigenvalue is estimated
-    with Gershgorin's theorem.
-    """
-    
-    def _regularize(self, mat, eps):
-        maxeigv = _gershgorin_eigval_bound(mat)
-        return mat.at[jnp.diag_indices(len(mat))].add(self._eps(eps, mat, maxeigv))
+        return jlinalg.solve_triangular(self._L, b, lower=True)
 
 class CholToeplitz(DecompAutoDiff, CholEps):
     """
@@ -806,14 +789,8 @@ class Block(DecompAutoDiffBase):
     """
     Decomposition of a 2x2 symmetric block matrix using decompositions of the
     diagonal blocks.
-    
-    Reference: Gaussian Processes for Machine Learning, A.3, p. 201.
     """
     
-    # TODO This class can be used only starting from a seed block and adding
-    # other blocks one at a time. Would a divide et impera approach be useful
-    # for my case? Is it possible at all?
-        
     def _matrix(self, P_decomp, S, Q, S_decomp_class, **kw):
         assert not self.direct_autodiff
         return jnp.block([[P_decomp.matrix(), Q], [Q.T, S]])
@@ -975,13 +952,13 @@ class BlockDiag(DecompAutoDiffBase):
     def correlate(self, b, *, transpose=False):
         A = self._A
         B = self._B
-        An = A.n
+        An = A.n if transpose else A.m
         f = b[:An]
         g = b[An:]
         return jnp.concatenate([
             A.correlate(f, transpose=transpose),
             B.correlate(g, transpose=transpose),
-        ])
+        ], axis=max(0, b.ndim - 2))
     
     def decorrelate(self, b):
         A = self._A
@@ -989,11 +966,18 @@ class BlockDiag(DecompAutoDiffBase):
         An = A.n
         f = b[:An]
         g = b[An:]
-        return jnp.concatenate([A.decorrelate(f), B.decorrelate(g)])
+        return jnp.concatenate([
+            A.decorrelate(f),
+            B.decorrelate(g),
+        ], axis=max(0, b.ndim - 2))
 
     @property
     def n(self):
         return self._A.n + self._B.n
+    
+    @property
+    def m(self):
+        return self._A.m + self._B.m
 
 class SandwichQR(DecompAutoDiffBase):
     
@@ -1048,7 +1032,7 @@ class SandwichQR(DecompAutoDiffBase):
         if transpose:
             return A.correlate(B.T @ b, transpose=True)
         else:
-            return B @ A.correlate(b[:A.n])
+            return B @ A.correlate(b)
     
     def decorrelate(self, b):
         A, q, r = self._A, self._q, self._r
@@ -1058,6 +1042,10 @@ class SandwichQR(DecompAutoDiffBase):
     @property
     def n(self):
         return len(self._B)
+    
+    @property
+    def m(self):
+        return self._A.m
     
 def _rq(a, **kw):
     """
@@ -1176,14 +1164,14 @@ class SandwichSVD(DecompAutoDiffBase):
     def logdet(self):
         A, s = self._A, self._s
         B_logdet = jnp.sum(jnp.log(s))
-        return A.logdet() + 2 * B_logdet
+        return A.logdet() + 2 * B_logdet # does this makes sense?
     
     def correlate(self, b, *, transpose=False):
         A, B = self._A, self._B
         if transpose:
             return A.correlate(B.T @ b, transpose=True)
         else:
-            return B @ A.correlate(b[:A.n])
+            return B @ A.correlate(b)
     
     def decorrelate(self, b):
         A, u, s, vh = self._A, self._u, self._s, self._vh
@@ -1193,6 +1181,10 @@ class SandwichSVD(DecompAutoDiffBase):
     @property
     def n(self):
         return len(self._B)
+    
+    @property
+    def m(self):
+        return self._A.m
     
 class Woodbury(DecompAutoDiffBase):
     
@@ -1264,14 +1256,28 @@ class Woodbury(DecompAutoDiffBase):
         return A.logdet() + C.logdet() + X.logdet()
     
     def correlate(self, b, *, transpose=False):
-        raise NotImplementedError
+        # A + BCBt = LLt + BMMtBt = [L BM] [L BM]t
+        assert self._sign > 0
+        A, B, C = self._A, self._B, self._C
+        if transpose:
+            return jnp.concatenate([
+                A.correlate(b, transpose=True),
+                C.correlate(B.T @ b, transpose=True)
+            ], axis=max(0, b.ndim - 2))
+        else:
+            return A.correlate(b[:A.m]) + B @ C.correlate(b[A.m:])
     
     def decorrelate(self, b):
+        assert self._sign > 0
         raise NotImplementedError
     
     @property
     def n(self):
         return self._A.n
+    
+    @property
+    def m(self):
+        return self._A.m + self._C.m
 
 class Woodbury2(DecompAutoDiffBase):
     
@@ -1309,7 +1315,7 @@ class Woodbury2(DecompAutoDiffBase):
         self._A = A_decomp
         self._C = C_decomp
         self._BL = C_decomp.correlate(B.T, transpose=True).T
-        I = jnp.eye(C_decomp.n)
+        I = jnp.eye(C_decomp.m)
         self._X = decompcls(I + sign * A_decomp.quad(self._BL), **kw)
         self._sign = sign
     
@@ -1344,14 +1350,28 @@ class Woodbury2(DecompAutoDiffBase):
         return A.logdet() + X.logdet()
     
     def correlate(self, b, *, transpose=False):
-        raise NotImplementedError
+        # A + BCBt = MMt + BLLtBt = [M BL] [M BL]t
+        assert self._sign > 0
+        A, BL = self._A, self._BL
+        if transpose:
+            return jnp.concatenate([
+                A.correlate(b, transpose=True),
+                BL.T @ b,
+            ], axis=max(0, b.ndim - 2))
+        else:
+            return A.correlate(b[:A.m]) + BL @ b[A.m:]
     
     def decorrelate(self, b):
+        assert self._sign > 0
         raise NotImplementedError
     
     @property
     def n(self):
         return self._A.n
+    
+    @property
+    def m(self):
+        return self._A.m + self._C.m
 
 class CholPinv():
     pass

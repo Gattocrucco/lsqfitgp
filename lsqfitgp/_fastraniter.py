@@ -89,7 +89,7 @@ def raniter(mean, cov, n=None, eps=None):
 
     # decompose the covariance matrix
     try:
-        covdec = _linalg.CholGersh(squarecov, eps=eps)
+        covdec = _linalg.Chol(squarecov, eps=eps)
     except np.linalg.LinAlgError:
         warnings.warn('covariance matrix not positive definite with eps={}'.format(eps))
         covdec = _linalg.EigCutFullRank(squarecov, eps=eps)
@@ -97,7 +97,7 @@ def raniter(mean, cov, n=None, eps=None):
     # take samples
     iterable = itertools.count() if n is None else range(n)
     for _ in iterable:
-        iidsamp = np.random.randn(len(flatmean))
+        iidsamp = np.random.randn(covdec.m)
         samp = flatmean + covdec.correlate(iidsamp)
 
         # pack the samples with the original shape
