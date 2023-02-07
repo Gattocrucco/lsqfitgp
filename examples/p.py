@@ -35,7 +35,7 @@ xdata = np.linspace(0, 10, 1000)
 xpred = np.linspace(-15, 25, 300)
 y = np.sin(xdata)
 
-gp = lgp.GP(lgp.ExpQuad(scale=3), solver='lowrank', rank=10, checkpos=False)
+gp = lgp.GP(lgp.ExpQuad(scale=3), solver='lanczos', rank=10, checkpos=False)
 gp.addx(xdata, 'pere')
 gp.addx(xpred, 'banane')
 

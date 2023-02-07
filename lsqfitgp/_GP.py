@@ -1797,7 +1797,7 @@ class GP:
             'eigcut-': _linalg.EigCutLowRank,
             'svdcut+': _linalg.SVDCutFullRank,
             'svdcut-': _linalg.SVDCutLowRank,
-            'lowrank': _linalg.ReduceRank,
+            'lanczos': _linalg.Lanczos,
             'chol'   : _linalg.CholGersh,
         }[solver]
     
@@ -1828,7 +1828,7 @@ class GP:
                 sign.
             'svdcut-'
                 Remove small eigenvalues.
-            'lowrank'
+            'lanczos'
                 Reduce the rank of the matrix. The complexity is O(n^2 r) where
                 `n` is the matrix size and `r` the required rank, while the
                 other algorithms are O(n^3). Slow for small sizes.
@@ -1845,7 +1845,7 @@ class GP:
                 relative to the maximum eigenvalue. The default is matrix size
                 * float epsilon.
             rank : positive integer
-                For the 'lowrank' solver, the target rank. It should be much
+                For the 'lanczos' solver, the target rank. It should be much
                 smaller than the matrix size for the method to be convenient.
             direct_autodiff : bool
                 If True, let JAX compute derivatives tracing through the code

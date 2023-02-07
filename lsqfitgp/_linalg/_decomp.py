@@ -62,7 +62,7 @@ SVDCutFullRank
     Diagonalization rounding up small eigenvalues, keeping their sign.
 SVDCutLowRank
     Diagonalization removing small eigenvalues.
-ReduceRank
+Lanczos
     Partial diagonalization with higher eigenvalues only.
 CholGersh
     Cholesky regularized using an estimate of the maximum eigenvalue.
@@ -176,7 +176,15 @@ class Decomposition(metaclass=abc.ABCMeta):
         # regularization changes with the maximum eigenvalue, this gives a
         # large logdet variation which does not make sense. The regularization
         # should be fixed. Whatevs, the derivatives won't take this variation
-        # into account.
+        # into account. Maybe I should use a fixed eps? Could that be one of
+        # the sources of problems in the hyperparameter fit, e.g., the periodic
+        # fit in the tests? Alternative: use a separate fixed eps for the
+        # regularization. This does not give continuity, but should give
+        # coherent comparability both at the same and different ranks, if the
+        # fixed eps is small enough. Alternative: is there a way to correct
+        # dynamically the regularization based on the previous ones? The decomp
+        # could provide some opaque reg info object, that is to be optionally
+        # fed to logdet. Maybe it can be made decomposition-agnostic.
     
     @abc.abstractmethod
     def correlate(self, b, *, transpose=False): # pragma: no cover
@@ -599,7 +607,7 @@ class SVDCutLowRank(SVD):
         self._w = jnp.where(cond, 1, self._w)
         self._V = jnp.where(cond, 0, self._V)
 
-class ReduceRank(Diag):
+class Lanczos(Diag):
     """
     Keep only the first `rank` higher eigenmodes.
     """
@@ -622,8 +630,7 @@ class ReduceRank(Diag):
         # if it improves performance due to lower default comput precision =>
         # behavior under jit not clear
         
-        # TODO try out lobpcg, which is also supported by jax (experimental)
-        # => call this Lanczos, and make a new class LOBPCG
+        # TODO make a new class LOBPCG
     
     def correlate(self, b, *, transpose=False):
         if transpose:
@@ -676,7 +683,7 @@ class CholEps:
         if eps is None:
             eps = len(mat) * jnp.finfo(_patch_jax.float_type(mat)).eps
         assert 0 <= eps < 1
-        return eps * maxeigv    
+        return eps * maxeigv
 
 class Chol(DecompAutoDiff, CholEps):
     """
@@ -1124,7 +1131,7 @@ class SandwichSVD(DecompAutoDiffBase):
     # To compute C+ in a customizable way, use C+ = (CtC)+ Ct, and decompose
     # CtC with a user-provided class. Make A optional, if A=None, then C = B
     # and M = BBt. If C is short, use C+ = Ct (CCt)+. Remove SandwichQR and
-    # make a single 
+    # make a single Sandwich class with an additional decompcls parameter.
     
     def _matrix(self, A_decomp, B):
         assert not self.direct_autodiff
@@ -1345,3 +1352,6 @@ class Woodbury2(DecompAutoDiffBase):
     @property
     def n(self):
         return self._A.n
+
+class CholPinv():
+    pass

@@ -57,7 +57,7 @@ def chisq_test(g, alpha):
     assert stats.chi2(n).sf(q) > alpha / 2
     assert stats.chi2(n).cdf(q) > alpha / 2
 
-def check_fit(hyperprior, gpfactory, dataerr=None, alpha=1e-5):
+def check_fit(hyperprior, gpfactory, alpha=1e-5):
     """do a fit with empbayes_fit and check the fitted hyperparameters
     are compatible with the ones used to generate the data"""
     
@@ -67,10 +67,6 @@ def check_fit(hyperprior, gpfactory, dataerr=None, alpha=1e-5):
     # generate data
     gp = gpfactory(truehp)
     data = gvar.sample(gp.prior())
-    if dataerr:
-        mean = dataerr * np.random.randn(len(data.buf))
-        sdev = np.full_like(mean, dataerr)
-        data += gvar.BufferDict(data, buf=gvar.gvar(mean, sdev))
         
     # run fit
     fit = lgp.empbayes_fit(hyperprior, gpfactory, data, raises=False)

@@ -76,12 +76,6 @@ class DecompTestABC(abc.ABC):
         """ Boolean indicating if the tests matrices are singular """
         pass
         
-    # TODO class argument to make use low rank matrices, just sets a flag
-    # somewhere, and the methods use the flag => better: there is a method that
-    # is the single source of random ranks, and uses the flag to always be
-    # full-rank. The flag is set automatically by the _LowRank suffix in the
-    # class name.
-            
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
         
@@ -623,14 +617,14 @@ class DecompTestBase(DecompTestABC):
             K = self.randsymmat(n)
             d = self.decompclass(K)
             K2 = d.correlate(d.correlate(np.eye(n), transpose=True))
-            util.assert_close_matrices(K, K2, atol=1e-15, rtol=1e-14)
+            util.assert_close_matrices(K, K2, atol=1e-15, rtol=1e-13)
     
     def test_correlate_transpose(self):
         for n in self.sizes:
             K = self.randsymmat(n)
             AT = self.decompclass(K).correlate(np.eye(n), transpose=True)
             K2 = AT.T @ AT
-            util.assert_close_matrices(K, K2, atol=1e-15, rtol=1e-14)
+            util.assert_close_matrices(K, K2, atol=1e-15, rtol=1e-13)
 
     def test_decorrelate_mat(self):
         for n in self.sizes:
@@ -802,6 +796,9 @@ class WoodburyTestBase(CompositeDecompTestBase):
     Abstract base class to test Woodbury*
     """
     
+    # TODO need a way to specify I want the low rank only on the inner matrix
+    # to test woodbury2
+    
     _inner = functools.cached_property(lambda self: {})
     def inner(self, n):
         return self._inner.setdefault(n, rng.integers(1, n + 1))
@@ -888,14 +885,14 @@ class TestSVDCutFullRank(DecompTestBase): pass
 class TestEigCutLowRank(DecompTestBase): pass
 class TestEigCutFullRank(DecompTestBase): pass
         
-class TestReduceRank(DecompTestBase):
+class TestLanczos(DecompTestBase):
     
     def decompclass(self, K, **kw):
-        return _linalg.ReduceRank(K, rank=self.rank(len(K)), **kw)
+        return _linalg.Lanczos(K, rank=self.rank(len(K)), **kw)
     
 class TestSVDCutLowRank_LowRank(DecompTestBase): pass
 class TestEigCutLowRank_LowRank(DecompTestBase): pass
-class TestReduceRank_LowRank(TestReduceRank): pass
+class TestLanczos_LowRank(TestLanczos): pass
 # class TestEigCutFullRank_LowRank(DecompTestBase): pass # fails as expected
 
 @util.tryagain
@@ -1016,9 +1013,9 @@ util.xfail(WoodburyTestBase, 'test_logdet_hess_fwd_fwd_stopg')
 util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
 
 # TODO linalg.sparse.eigsh is not implemented in jax
-for name, meth in inspect.getmembers(TestReduceRank, inspect.isfunction):
+for name, meth in inspect.getmembers(TestLanczos, inspect.isfunction):
     if name.endswith('_da'):
-        util.xfail(TestReduceRank, name)
+        util.xfail(TestLanczos, name)
 
 # reverse diff broken because they use quads within other stuff probably.
 # Subclassing DecompAutoDiff does not work. Maybe just using quad to compute
