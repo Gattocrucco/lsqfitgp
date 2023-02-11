@@ -2751,3 +2751,11 @@ Third and fourth identity: they hold because K commutes with f(K).
     
     -->  K+ = ∑ n=1^∞ K ε^(n-1) (εI + K^3)^-n K                         q.e.d.
 
+To do next: implement this as _decomp.Pinv2.
+
+2023-02-10
+==========
+
+For Woodbury3, to compute the pseudodeterminant, I can use pdet(AA') =
+pdet(A'A) = det(A'A), if A'A is invertible. A is the matrix that I use for
+correlate etc. But how do I compute det(A'A)?

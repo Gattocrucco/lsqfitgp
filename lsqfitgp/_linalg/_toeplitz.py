@@ -38,9 +38,7 @@ class SymSchur(_seqalg.Producer):
         # assert t[0] > 0, '1-th leading minor is not positive definite'
         self.t = t
     
-    @property
-    def inputs(self):
-        return ()
+    inputs = ()
     
     def init(self, n):
         t = self.t
@@ -94,9 +92,7 @@ class SymLevinson(_seqalg.Producer):
         # assert t[0] > 0, '1-th leading minor is not positive definite'
         self.t = t
     
-    @property
-    def inputs(self):
-        return ()
+    inputs = ()
         
     def init(self, n):
         self.phi1 = jnp.zeros(n)
@@ -158,6 +154,12 @@ def logdet(t):
 @jax.jit
 def solve(t, b):
     ops = [SymLevinson(t), _seqalg.MatMulRowByFull(0, b), _seqalg.MatMulColByRow(0, 1)]
+    _, _, out = _seqalg.sequential_algorithm(len(t), ops)
+    return out
+
+@jax.jit
+def chol_transp_solve(t, b):
+    ops = [SymLevinson(t), _seqalg.Rows(b), _seqalg.MatMulColByRow(0, 1)]
     _, _, out = _seqalg.sequential_algorithm(len(t), ops)
     return out
 

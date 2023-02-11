@@ -19,7 +19,7 @@
 
 """
 
-Decompositions of positive definite matrices.
+Decompositions of nonnegative definite matrices.
 
 A decomposition object is initialized with a square symmetric matrix and then
 can solve linear systems and do other stuff with that matrix. The matrix is
@@ -29,8 +29,6 @@ decompositions differ on how the eventual numerical degeneracy is handled.
 It is intended that the matrix inverse is a Moore-Penrose pseudoinverse in case
 of (numerically) singular matrices. Some decompositions do not support
 pseudoinversion, i.e., the matrix must be well-conditioned.
-
-These classes never check for infs/nans in the matrices.
 
 Abstract classes
 ----------------
@@ -45,8 +43,6 @@ DecompAutoDiff
     initialization input a single matrix object.
 Diag
     Diagonalization.
-SVD
-    Diagonalization with negative eigenvalues.
 
 Concrete classes
 ----------------
@@ -58,7 +54,7 @@ SVDCutFullRank
     Diagonalization rounding up small eigenvalues, keeping their sign.
 SVDCutLowRank
     Diagonalization removing small eigenvalues.
-Lanczos
+Lanczos, LOBPCG
     Partial diagonalization with higher eigenvalues only.
 Chol
     Cholesky regularized using an estimate of the maximum eigenvalue.
@@ -70,13 +66,15 @@ CholToeplitz
 Composite decompositions
 ------------------------
 Block
-    Decompose a 2x2 block matrix.
+    Decompose a 2x2 partitioned matrix.
 BlockDiag
     Decompose a 2x2 block diagonal matrix.
 SandwichQR, SandwichSVD
-    Decompose B A B^T.
-Woodbury
-    Decompose A ± B C B^T.
+    Decompose BAB'.
+Woodbury, Woodbury2
+    Decompose A ± BCB'.
+Pinv, Pinv2
+    Turn any decomposition into one that supports pseudoinversion.
 
 """
 
@@ -102,6 +100,11 @@ from . import _pytree
 # gvar.svec._assign(float[] values, int[] indices)
 # gvar.GVar(float mean, svec derivs, smat cov)
 # it may require cython to be fast since it's not vectorized
+
+# TODO Replace the `eps` argument with epsrel, epsabs. To indicate an automatic
+# setting, use epsrel='auto' or epsabs='auto'. Default: epsrel='auto', epsabs=0.
+# Write a processing method in Decomposition. Add a property eps that returns
+# the computed total epsrel * maxeigv_est + epsabs, may be set by the method.
 
 def _transpose(x):
     """ swap the last two axes of array x, corresponds to matrix tranposition
@@ -137,22 +140,22 @@ class Decomposition(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __init__(self, *args, **kw): # pragma: no cover
         """
-        Decompose matrix K.
+        Decompose a symmetric nonnegative definite matrix K.
         """
         pass
         
     @abc.abstractmethod
     def solve(self, b): # pragma: no cover
         """
-        Solve the linear system K @ x = b.
+        Compute K⁺b.
         """
         pass
     
     @abc.abstractmethod
     def quad(self, b, c=None): # pragma: no cover
         """
-        Compute the quadratic form b.T @ inv(K) @ b if c is not specified, else
-        b.T @ inv(K) @ c. `c` can be an array of gvars.
+        Compute the quadratic form b'K⁻¹b if c is not specified, else b'K⁻¹c.
+        `c` can be an array of gvars.
         """
         pass
         
@@ -163,7 +166,7 @@ class Decomposition(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def logdet(self): # pragma: no cover
         """
-        Compute log(det(K)).
+        Compute log det K.
         """
         pass
         
@@ -187,17 +190,18 @@ class Decomposition(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def correlate(self, b, *, transpose=False): # pragma: no cover
         """
-        Compute A b where K = A At, with A n x m. If b represents iid
-        variables with unitary variance, A b has covariance matrix K. If
-        transpose=True, compute At b.
+        Compute Ab where K = AA', with A n x m. If b represents iid
+        variables with unitary variance, Ab has covariance matrix K. If
+        transpose=True, compute A'b.
         """
         pass
     
     @abc.abstractmethod
-    def decorrelate(self, b): # pragma: no cover
+    def decorrelate(self, b, *, transpose=False): # pragma: no cover
         """
-        Compute A^+ b, where K = A At, with A n x m. If b represents variables
-        with covariance matrix K, A^+ b has idempotent covariance.
+        Compute A⁺b, where K = AA', with A n x m. If b represents variables
+        with covariance matrix K, A⁺b has idempotent covariance A⁺A. If
+        `transpose=True`, compute A⁺'b.
         """
         pass
     
@@ -228,7 +232,7 @@ class Decomposition(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def matrix(self): # pragma: no cover
         """
-        Return the matrix to be decomposed.
+        Return K.
         """
         pass
     
@@ -251,15 +255,25 @@ class DecompAutoDiffBase(DecompPyTree):
     
     @abc.abstractmethod
     def _matrix(self, *args, **kw):
-        """ Given the initialization arguments, returns the matrix to be
+        """ Given the initialization arguments, return the matrix to be
         decomposed """
         return K
             
     @abc.abstractmethod
     def _map_traceable_init_args(self, fun, *args, **kw):
-        """ Given a function Any -> Any, and the initialization arguments,
+        """
+        
+        Given a function Any -> Any, and the initialization arguments,
         apply the function only to those arguments which are considered inputs
-        to the definition of the matrix """
+        to the definition of the matrix. The return layout must be stable
+        under repeated application, i.e., after
+        
+            a1, k1 = self._map_traceable_init_args(lambda x: x, *a0, **k0)
+            a2, k2 = self._map_traceable_init_args(lambda x: x, *a1, **k1)
+        
+        it must be a1 == a2 and k1 == k2.
+        
+        """
         return mapped_args, mapped_kw
         
     def _store_args(self, args, kw):
@@ -536,8 +550,11 @@ class Diag(DecompAutoDiff):
             A = A.T
         return A @ b
     
-    def decorrelate(self, b):
-        return (self._V / jnp.sqrt(jnp.abs(self._w))).T @ b
+    def decorrelate(self, b, *, transpose=False):
+        A_1 = (self._V / jnp.sqrt(jnp.abs(self._w))).T
+        if transpose:
+            A_1 = A_1.T
+        return A_1 @ b
         
     def _eps(self, eps):
         w = self._w
@@ -744,8 +761,9 @@ class Chol(DecompAutoDiff, CholEps):
     def correlate(self, b, *, transpose=False):
         return (self._L.T if transpose else self._L) @ b
     
-    def decorrelate(self, b):
-        return jlinalg.solve_triangular(self._L, b, lower=True)
+    def decorrelate(self, b, *, transpose=False):
+        L = self._L.T if transpose else self._L
+        return jlinalg.solve_triangular(L, b, lower=not transpose)
 
 class CholToeplitz(DecompAutoDiff, CholEps):
     """
@@ -784,14 +802,22 @@ class CholToeplitz(DecompAutoDiff, CholEps):
         else:
             return _toeplitz.chol_matmul(self.t, b)
     
-    def decorrelate(self, b):
-        return _toeplitz.chol_solve(self.t, b)
+    def decorrelate(self, b, *, transpose=False):
+        if transpose:
+            return _toeplitz.chol_transp_solve(self.t, b)
+        else:
+            return _toeplitz.chol_solve(self.t, b)
 
 class Block(DecompAutoDiffBase):
     """
     Decomposition of a 2x2 symmetric block matrix using decompositions of the
     diagonal blocks.
     """
+    
+    # For A- it works, see schott 2017, theorem 7.12, page 298
+    # For A+, it needs to be modified, see schott 2017, theorem 7.13, page 300
+    # For a sufficient condition for working with A+ as written, see schott
+    # 2017, exercise 7.28, page 311
     
     def _matrix(self, P_decomp, S, Q, S_decomp_class, **kw):
         assert not self.direct_autodiff
@@ -871,31 +897,43 @@ class Block(DecompAutoDiffBase):
         invP = self._invP
         tildeS = self._tildeS
         Q = self._Q
-        f = b[:len(Q)]
-        g = b[len(Q):]
+        split = len(Q) if transpose else invP.m
+        f = b[:split]
+        g = b[split:]
         if transpose:
             x = invP.correlate(f, transpose=True) + invP.decorrelate(Q @ g)
             y = tildeS.correlate(g, transpose=True)
         else:
             x = invP.correlate(f)
-            y = _transpose(invP.decorrelate(Q)) @ f + tildeS.correlate(g)
-        return jnp.concatenate([x, y])
+            y = Q.T @ invP.decorrelate(f, transpose=True) + tildeS.correlate(g)
+        return jnp.concatenate([x, y], axis=max(0, b.ndim - 2))
     
-    def decorrelate(self, b):
-        # L^-1 = [   A^-1         ]
-        #        [-C^-1BA^-1  C^-1]
+    def decorrelate(self, b, *, transpose=False):
+        # L^-1 = [    A^-1          ]     L^-T = [A^-T  -A^-T B^T C^-T]
+        #        [-C^-1 B A^-1  C^-1]            [           C^-T     ]
         invP = self._invP
         tildeS = self._tildeS
         Q = self._Q
-        f = b[:len(Q)]
-        g = b[len(Q):]
-        x = invP.decorrelate(f)
-        y = tildeS.decorrelate(g - invP.quad(Q, f))
-        return jnp.concatenate([x, y])
+        split = invP.m if transpose else len(Q)
+        f = b[:split]
+        g = b[split:]
+        if transpose:
+            y = tildeS.decorrelate(g, transpose=True)
+            x = invP.decorrelate(f - invP.decorrelate(Q @ y), transpose=True)
+        else:
+            x = invP.decorrelate(f)
+            y = tildeS.decorrelate(g - invP.quad(Q, f))
+        return jnp.concatenate([x, y], axis=max(0, b.ndim - 2))
         
     @property
     def n(self):
         return sum(self._Q.shape)
+    
+    @property
+    def m(self):
+        return self._invP.m + self._tildeS.m
+    
+    # to compute the rank, use schott 2017, theorem 7.10, page 297
     
 class BlockDiag(DecompAutoDiffBase):
     
@@ -962,15 +1000,15 @@ class BlockDiag(DecompAutoDiffBase):
             B.correlate(g, transpose=transpose),
         ], axis=max(0, b.ndim - 2))
     
-    def decorrelate(self, b):
+    def decorrelate(self, b, *, transpose=False):
         A = self._A
         B = self._B
-        An = A.n
+        An = A.m if transpose else A.n
         f = b[:An]
         g = b[An:]
         return jnp.concatenate([
-            A.decorrelate(f),
-            B.decorrelate(g),
+            A.decorrelate(f, transpose=transpose),
+            B.decorrelate(g, transpose=transpose),
         ], axis=max(0, b.ndim - 2))
 
     @property
@@ -1006,6 +1044,7 @@ class SandwichQR(DecompAutoDiffBase):
         assert B.shape[0] >= B.shape[1]
         self._B = B
         self._q, self._r = jnp.linalg.qr(B, mode='reduced')
+        # Do the QR of A.correlate(B.T, T).T and drop _A
     
     def solve(self, b):
         A, q, r = self._A, self._q, self._r
@@ -1036,10 +1075,18 @@ class SandwichQR(DecompAutoDiffBase):
         else:
             return B @ A.correlate(b)
     
-    def decorrelate(self, b):
+    def decorrelate(self, b, *, transpose=False):
+        # BABt = BL(BL)t
+        # BL = QRL
+        # (QRL)+ = L^-1 R^-1 Qt (valid because Q has orthonormal columns)
+        # (QRL)+t = Q R^-T L^-T
         A, q, r = self._A, self._q, self._r
-        rqb = jlinalg.solve_triangular(r, q.T @ b, lower=False)
-        return A.decorrelate(rqb)
+        if transpose:
+            lb = A.decorrelate(b, transpose=True)
+            return q @ jlinalg.solve_triangular(r.T, lb, lower=True)
+        else:
+            rqb = jlinalg.solve_triangular(r, q.T @ b, lower=False)
+            return A.decorrelate(rqb)
     
     @property
     def n(self):
@@ -1118,10 +1165,10 @@ class SandwichSVD(DecompAutoDiffBase):
     
     # TODO to compute the pseudoinverse, compute C = A.correlate(B.T,
     # transpose=True).T to have M = CCt, then compute C+ to have M+ = C+t C+.
-    # To compute C+ in a customizable way, use C+ = (CtC)+ Ct, and decompose
-    # CtC with a user-provided class. Make A optional, if A=None, then C = B
-    # and M = BBt. If C is short, use C+ = Ct (CCt)+. Remove SandwichQR and
-    # make a single Sandwich class with an additional decompcls parameter.
+    
+    # TODO in a new class: use C+ = (CtC)+ Ct, and decompose CtC with a
+    # user-provided class. Make A optional, if A=None, then C = B and M = BBt.
+    # If C is short, use C+ = Ct (CCt)+.
     
     def _matrix(self, A_decomp, B):
         assert not self.direct_autodiff
@@ -1145,6 +1192,7 @@ class SandwichSVD(DecompAutoDiffBase):
         self._A = A_decomp
         self._B = B
         self._u, self._s, self._vh = jnp.linalg.svd(B, full_matrices=False)
+        # TODO regularize s
     
     def solve(self, b):
         A, u, s, vh = self._A, self._u, self._s, self._vh
@@ -1166,7 +1214,8 @@ class SandwichSVD(DecompAutoDiffBase):
     def logdet(self):
         A, s = self._A, self._s
         B_logdet = jnp.sum(jnp.log(s))
-        return A.logdet() + 2 * B_logdet # does this makes sense?
+        return A.logdet() + 2 * B_logdet # makes sense if A invertible, in
+        # general after I svd an empty sandwich
     
     def correlate(self, b, *, transpose=False):
         A, B = self._A, self._B
@@ -1175,10 +1224,18 @@ class SandwichSVD(DecompAutoDiffBase):
         else:
             return B @ A.correlate(b)
     
-    def decorrelate(self, b):
+    def decorrelate(self, b, *, transpose=False):
+        # BABt = BL(BL)t
+        # BL = USVtL
+        # (BL)+ = L^-1 V S^-1 Ut
+        # (BL)+t = U S^-1 Vt L^-T
         A, u, s, vh = self._A, self._u, self._s, self._vh
-        vsub = jnp.linalg.multi_dot([vh.T / s, u.T, b])
-        return A.decorrelate(vsub)
+        if transpose:
+            lb = A.decorrelate(b, transpose=True)
+            return (u / s) @ (vh @ lb)
+        else:
+            vsub = (vh.T / s) @ (u.T @ b)
+            return A.decorrelate(vsub)
     
     @property
     def n(self):
@@ -1200,9 +1257,7 @@ class Woodbury(DecompAutoDiffBase):
     def __init__(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
         """
 
-        Decompose M = A ± B C B^T using Woodbury's formula, with M, A, and C
-        positive semidefinite. Very inaccurate if A and/or C are
-        ill-conditioned.
+        Decompose K = A ± BCB' using Woodbury's formula. K, A, C > 0.
         
         Parameters
         ----------
@@ -1213,7 +1268,7 @@ class Woodbury(DecompAutoDiffBase):
         C_decomp : Decomposition
             Instantiated decomposition of C.
         decompcls : type
-            Decomposition class used to decompose C^-1 ± B^T A^-1 B.
+            Decomposition class used to decompose C⁻¹ ± B'A⁻¹B'.
         sign : {-1, 1}
             The sign in the expression above, default 1.
         **kw :
@@ -1221,6 +1276,7 @@ class Woodbury(DecompAutoDiffBase):
         
         """
         assert B.shape == (A_decomp.n, C_decomp.n)
+        assert sign in (-1, 1)
         self._A = A_decomp
         self._B = B
         self._C = C_decomp
@@ -1228,8 +1284,11 @@ class Woodbury(DecompAutoDiffBase):
         self._X = decompcls(X, **kw)
         self._sign = sign
     
-    # (A ± BCB^T)^-1
-    #   = A^-1 ∓ A^-1 B (C^-1 ± B^T A^-1 B)^-1 B^T A^-1
+    # (A ± BCB')⁻¹
+    #   = A⁻¹ ∓ A⁻¹B (C⁻¹ ± B'A⁻¹B)⁻¹ B'A⁻¹
+    #                 ~~~~~~~~~~~~
+    #                    =: X
+    #   = A⁻¹ ∓ A⁻¹B X⁻¹ B'A⁻¹
     
     def solve(self, b):
         A, B, X, s = self._A, self._B, self._X, self._sign
@@ -1258,7 +1317,9 @@ class Woodbury(DecompAutoDiffBase):
         return A.logdet() + C.logdet() + X.logdet()
     
     def correlate(self, b, *, transpose=False):
-        # A + BCBt = LLt + BMMtBt = [L BM] [L BM]t
+        # A = LL'
+        # C = NN'
+        # A + BCB' = LL' + BNN'B' = [L BN] [L BN]'
         assert self._sign > 0
         A, B, C = self._A, self._B, self._C
         if transpose:
@@ -1269,9 +1330,31 @@ class Woodbury(DecompAutoDiffBase):
         else:
             return A.correlate(b[:A.m]) + B @ C.correlate(b[A.m:])
     
-    def decorrelate(self, b):
+    def decorrelate(self, b, *, transpose=False):
+        # V = [L BN]
+        # V⁺ = V'(VV')⁻¹
+        #    = V'K⁻¹ =
+        #    = [L'; N'B'] (A⁻¹ - A⁻¹B X⁻¹ B'A⁻¹) =
+        #    = [ L⁻¹ (I - B X⁻¹ B'A⁻¹) ]
+        #      [ N'(I - B'A⁻¹B X⁻¹) B'A⁻¹ ]
+        # V⁺' = [ (I - A⁻¹B X⁻¹ B') L'⁻¹
+        #         A⁻¹ (I - X⁻¹ B'A⁻¹) BN ]
         assert self._sign > 0
-        raise NotImplementedError
+        A, B, C, X = self._A, self._B, self._C, self._X
+        if transpose:
+            f, g = b[:A.m], b[A.m:]
+            BtA_1 = A.solve(B).T
+            Lt_1f = A.decorrelate(f, transpose=True)
+            x = Lt_1f - X.quad(BtA_1, B.T @ Lt_1f)
+            BNg = B @ C.correlate(g)
+            y = A.solve(BNg - X.quad(B.T, A.quad(B, BNg)))
+            return x + y
+        else:
+            BtA_1b = A.quad(B, b)
+            BtA_1B = A.quad(B)
+            x = A.decorrelate(b - X.quad(B.T, BtA_1b))
+            y = C.correlate(BtA_1b - X.quad(BtA_1B, BtA_1b), transpose=True)
+            return jnp.concatenate([x, y], axis=max(0, b.ndim - 2))
     
     @property
     def n(self):
@@ -1293,9 +1376,8 @@ class Woodbury2(DecompAutoDiffBase):
     def __init__(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
         """
 
-        Decompose M = A ± B C B^T using Woodbury's formula, with M, A, and C
-        positive semidefinite. Very inaccurate if A is ill-conditioned.
-        
+        Decompose K = A ± BCB' using Woodbury's formula. K > 0, A > 0, C ≥ 0.
+                
         Parameters
         ----------
         A_decomp : Decomposition
@@ -1305,8 +1387,8 @@ class Woodbury2(DecompAutoDiffBase):
         C_decomp : Decomposition
             Instantiated decomposition of C.
         decompcls : type
-            Decomposition class used to decompose I ± L^T B^T A^-1 B L, where
-            C = LL^T.
+            Decomposition class used to decompose I ± L'B'A⁻¹BL, where
+            C = LL'.
         sign : {-1, 1}
             The sign in the expression above, default 1.
         **kw :
@@ -1314,72 +1396,115 @@ class Woodbury2(DecompAutoDiffBase):
         
         """
         assert B.shape == (A_decomp.n, C_decomp.n)
+        assert sign in (-1, 1)
         self._A = A_decomp
-        self._C = C_decomp
-        self._BL = C_decomp.correlate(B.T, transpose=True).T
+        self._V = C_decomp.correlate(B.T, transpose=True).T
         I = jnp.eye(C_decomp.m)
-        self._X = decompcls(I + sign * A_decomp.quad(self._BL), **kw)
+        self._X = decompcls(I + sign * A_decomp.quad(self._V), **kw)
         self._sign = sign
     
-    # C = LL^T
-    # (A ± BCB^T)^-1 =
-    #   = A^-1 ∓ A^-1 B L (I ± L^T B^T A^-1 B L)^-1 L^T B^T A^-1
-    #                      ~~~~~~~~~~~~~~~~~~~~
-    #                             =: X
+    # C = LL'
+    # (A ± BCB')⁻¹ =
+    #   = (A ± B L L' B')⁻¹ =
+    #          ~~~
+    #          =:V
+    #   = (A ± VV')⁻¹ =
+    #   = A⁻¹ ∓ A⁻¹ V (I ± V' A⁻¹ V)⁻¹ V' A⁻¹
+    #                  ~~~~~~~~~~~~
+    #                     =: X
+    #   = A⁻¹ ∓ A⁻¹ V X⁻¹ V' A⁻¹
+    
+    # TODO: when the sign is negative, can I replace X⁻¹ with X+ to get K+?
     
     def solve(self, b):
-        A, X, BL, s = self._A, self._X, self._BL, self._sign
+        A, X, V, s = self._A, self._X, self._V, self._sign
         A_1b = A.solve(b)
-        LTBTA_1b = A.quad(BL, b)
-        A_1BL = A.solve(BL)
-        return A_1b - s * X.quad(A_1BL.T, LTBTA_1b)
+        VtA_1b = A.quad(V, b)
+        A_1V = A.solve(V)
+        return A_1b - s * X.quad(A_1V.T, VtA_1b)
     
     def quad(self, b, c=None):
-        A, X, BL, s = self._A, self._X, self._BL, self._sign
+        A, X, V, s = self._A, self._X, self._V, self._sign
         if c is None:
             bTA_1b = A.quad(b)
-            LTBTA_1b = A.quad(BL, b)
-            return bTA_1b - s * X.quad(LTBTA_1b)
+            VtA_1b = A.quad(V, b)
+            return bTA_1b - s * X.quad(VtA_1b)
         else:
             bTA_1c = A.quad(b, c)
-            LTBTA_1c = A.quad(BL, c)
-            LTBTA_1b = A.quad(BL, b)
-            return bTA_1c - s * X.quad(LTBTA_1b, LTBTA_1c)
+            VtA_1c = A.quad(V, c)
+            VtA_1b = A.quad(V, b)
+            return bTA_1c - s * X.quad(VtA_1b, VtA_1c)
     
     def logdet(self):
         A, X = self._A, self._X
-        # det(A ± BL L^TB^T) = det(A) det(I ± L^TB^T A^-1 BL)
+        # det(A ± VV') = det(A) det(I ± V' A⁻¹ V)
         return A.logdet() + X.logdet()
     
     def correlate(self, b, *, transpose=False):
-        # A + BCBt = MMt + BLLtBt = [M BL] [M BL]t
+        # A = NN'
+        # A + BCB' = NN' + VV' = [N V] [N V]'
         assert self._sign > 0
-        A, BL = self._A, self._BL
+        A, V = self._A, self._V
         if transpose:
             return jnp.concatenate([
                 A.correlate(b, transpose=True),
-                BL.T @ b,
+                V.T @ b,
             ], axis=max(0, b.ndim - 2))
         else:
-            return A.correlate(b[:A.m]) + BL @ b[A.m:]
+            return A.correlate(b[:A.m]) + V @ b[A.m:]
     
-    def decorrelate(self, b):
+    def decorrelate(self, b, *, transpose=False):
+        # A = NN'
+        # A + BCB' = [N V] [N V]'
+        #            ~~~~~
+        #             =: Q
+        # Q+ = Q' (QQ')⁻¹ =
+        #    = Q' (A + BCB')⁻¹ =
+        #    = [N'; V'] (A⁻¹ - A⁻¹ V X⁻¹ V' A⁻¹) =
+        #    = [ N' N'⁻¹ N⁻¹ - N' N'⁻¹ N⁻¹ V X⁻¹ V' A⁻¹ ] =
+        #      [ V' A⁻¹ - V' A⁻¹ V X⁻¹ V' A⁻¹           ]
+        #    = [ N⁻¹ - N⁻¹ V X⁻¹ V' A⁻¹    ] =
+        #      [ (I - V' A⁻¹ V X⁻¹) V' A⁻¹ ]
+        #    = [ (I - N⁻¹ V X⁻¹ V' N'⁻¹) N⁻¹         ]
+        #      [ (I - V' N'⁻¹ N⁻¹ V X⁻¹) V' N'⁻¹ N⁻¹ ]
+        # Q+' = [ N'⁻¹ - A⁻¹ V X⁻¹ V' N'⁻¹
+        #         A⁻¹ V - A⁻¹ V X⁻¹ V' A⁻¹ V ] =
+        #     = [ (I - A⁻¹ V X⁻¹ V') N'⁻¹
+        #         (I - A⁻¹ V X⁻¹ V') A⁻¹ V ]
         assert self._sign > 0
-        raise NotImplementedError
-    
+        A, V, X = self._A, self._V, self._X
+        if transpose:
+            f, g = b[:A.m], b[A.m:]
+            Nt_1f = A.decorrelate(f, transpose=True)
+            A_1V = A.solve(V)
+            x = Nt_1f - X.quad(A_1V.T, V.T @ Nt_1f)
+            Vg = V @ g
+            VtA_1Vg = A.quad(V, Vg)
+            A_1Vg = A.solve(Vg)
+            y = A_1Vg - X.quad(A_1V.T, VtA_1Vg)
+            return x + y
+        else:
+            N_1V = A.decorrelate(V)
+            N_1b = A.decorrelate(b)
+            VtA_1b = N_1V.T @ N_1b
+            x = N_1b - X.quad(N_1V.T, VtA_1b)
+            VtA_1V = N_1V.T @ N_1V
+            y = VtA_1b - X.quad(VtA_1V, VtA_1b)
+            return jnp.concatenate([x, y], axis=max(0, b.ndim - 2))
+        
     @property
     def n(self):
         return self._A.n
     
     @property
     def m(self):
-        return self._A.m + self._C.m
+        return self._A.m + self._V.shape[1]
 
 class Pinv(DecompAutoDiff):
     
-    # K3 = K³ + εI = AAt
-    # K+ ≈ K K3^-1 K = (A^-1 K)t (A^-1 K)
-    # K ≈ (K+ A) (K+ A)t
+    # K3 = K³ + εI = MMt
+    # K+ ≈ K K3^-1 K = (M^-1 K)t (M^-1 K)
+    # K ≈ (K+ M) (K+ M)t
     
     # K.solve(b) = K3.quad(K, K b)
     # K.quad(b) = K3.quad(K b)
@@ -1388,6 +1513,7 @@ class Pinv(DecompAutoDiff):
     # K.correlate(b) = K3.quad(K, K K3.correlate(b))
     # K.correlate(b, T) = K3.correlate(K3.quad(K, K b), T)
     # K.decorrelate(b) = K3.decorrelate(K b)
+    # K.decorrelate(b, T) = K @ K3.decorrelate(b, T)
     
     # TODO pass directly the instantiated decomposition of K^3 along with K?
     
@@ -1433,10 +1559,209 @@ class Pinv(DecompAutoDiff):
         else:
             return K3.quad(K, K @ K3.correlate(b))
     
-    def decorrelate(self, b):
+    def decorrelate(self, b, *, transpose=False):
         K, K3 = self._K, self._K3
-        return K3.decorrelate(K @ b)
+        if transpose:
+            return K @ K3.decorrelate(b, transpose=True)
+        else:
+            return K3.decorrelate(K @ b)
     
     @property
     def m(self):
         return self._K3.m    
+
+class Pinv2(DecompAutoDiff):
+    
+    # K3 = K³ + εI = MM'
+    # K⁺ = ∑ n=1^∞ εⁿ⁻¹ K K3⁻ⁿ K =
+    #    = ∑ n=1^∞ εⁿ⁻¹ (M⁻ⁿ K)' (M⁻ⁿ K)
+    #    = A⁺' A⁺
+    # A⁺ = [M⁻¹ K; √ε M⁻² K; ...]
+    # A = (A⁺' A⁺)⁺ A⁺' = K A⁺' = K² [M'⁻¹, √ε M'⁻², ...]
+    # K = AA'
+        
+    # TODO pass directly the instantiated decomposition of K^3 along with K?
+    
+    def __init__(self, K, decompcls, N=1, eps=None, **kw):
+        """
+        
+        Approximate K⁺ with the truncated series
+        
+            K⁺ ≈ ∑ n=1^N εⁿ⁻¹ K (K³ + εI)⁻ⁿ K.
+        
+        Parameters
+        ----------
+        K : (n, n) array
+            The matrix to be decomposed.
+        decompcls : type
+            Class used to decompose K³ + εI, need not support ill-conditioned
+            matrices. It should not add its own diagonal regularization.
+        N : int
+            Truncation order of the series.
+        eps : float
+            Positive regularization used to make K³ invertible, relative to
+            an upper bound on the spectral radius of K³.
+        **kw :
+            Keyword arguments are passed to `decompcls`.
+        
+        """
+        
+        assert N >= 1
+        K3 = K @ K @ K
+        if eps is None:
+            eps = len(K3) * jnp.finfo(K.dtype).eps
+        eps *= jnp.max(jnp.sum(jnp.abs(K3), axis=1))
+        K3 = K3.at[jnp.diag_indices_from(K3)].add(eps)
+        self._K3 = decompcls(K3, **kw)
+        self._K = K
+        self._N = N
+        self._eps = eps
+    
+    # K.solve(b) =
+    # ∑ n=1^N ε^(n-1) K3.quad(K3.solve^n/2-1(K), K3.solve^n/2(Kb))       n even
+    #                 K3.quad(K3.solve^(n-1)/2(K), K3.solve^(n-1)/2(Kb)) n odd
+    # n  p1 p2
+    # 1  0  0
+    # 2  0  1
+    # 3  1  1
+    # 4  1  2
+    # 5  2  2
+    # etc.
+    def solve(self, b):
+        eps, K, K3, N = self._eps, self._K, self._K3, self._N
+        K3solveK = K
+        K3solveKb = K @ b
+        coef = 1
+        acc = K3.quad(K3solveK, K3solveKb)
+        for n in range(2, N + 1):
+            coef *= eps
+            if n % 2:
+                K3solveK = K3.solve(K3solveK)
+            else:
+                K3solveKb = K3.solve(K3solveKb)
+            acc += coef * K3.quad(K3solveK, K3solveKb)
+        return acc
+    
+    # K.quad(b) =
+    # ∑ n=1^N ε^(n-1) K3.quad(K3.solve^n/2-1(Kb), K3.solve^n/2(Kb))   n even
+    #                 K3.quad(K3.solve^(n-1)/2(Kb))                   n odd
+    # K.quad(b, c) =
+    # ∑ n=1^N ε^(n-1) K3.quad(K3.solve^n/2-1(Kb), K3.solve^n/2(Kc))       n even
+    #                 K3.quad(K3.solve^(n-1)/2(Kb), K3.solve^(n-1)/2(Kc)) n odd
+    # K.quad(b, c_obj) =
+    # ∑ n=1^N ε^(n-1) K3.quad(K3.solve^(n-1)(Kb), Kc)
+    #
+    # n  p1 p2
+    # 1  0  0
+    # 2  0  1
+    # 3  1  1
+    # 4  1  2
+    # 5  2  2
+    # etc.
+    def quad(self, b, c=None):
+        eps, K, K3, N = self._eps, self._K, self._K3, self._N
+        coef = 1
+        
+        if c is None:
+            K3solveKb = K @ b
+            acc = K3.quad(K3solveKb)
+            for n in range(2, N + 1):
+                coef *= eps
+                if n % 2:
+                    acc += coef * K3.quad(K3solveKb)
+                else:
+                    K3solveKb_next = K3.solve(K3solveKb)
+                    acc += coef * K3.quad(K3solveKb, K3solveKb_next)
+                    K3solveKb = K3solveKb_next
+
+        elif c.dtype == object:
+            K3solveKb = K @ b
+            Kc = numpy.asarray(K) @ c
+            acc = K3.quad(K3solveKb, Kc)
+            for n in range(2, N + 1):
+                coef *= eps
+                K3solveKb = K3.solve(K3solveKb)
+                acc += coef * K3.quad(K3solveKb, Kc)
+
+        else:
+            K3solveKc = K @ c
+            K3solveKb = K @ b
+            acc = K3.quad(K3solveKb, K3solveKc)
+            for n in range(2, N + 1):
+                coef *= eps
+                if n % 2:
+                    K3solveKb = K3.solve(K3solveKb)
+                else:
+                    K3solveKc = K3.solve(K3solveKc)
+                acc += coef * K3.quad(K3solveKb, K3solveKc)
+
+        return acc
+    
+    # K.logdet = 1/3 K3.logdet
+    def logdet(self):
+        return self._K3.logdet() / 3
+        # TODO this is not a pseudodeterminant
+    
+    # K.correlate(b) =
+    # K^2 ∑ n=1^N ε^(n-1)/2 K3.decorrelate^n(b_n, T)
+    
+    # K.correlate(b, T) = [
+    #   ε^(n-1)/2 K3.decorrelate^n(K^2 b)
+    #   for n in 1 ... N
+    # ]
+    def correlate(self, b, *, transpose=False):
+        seps, K2, K3, N = jnp.sqrt(self._eps), self._K @ self._K, self._K3, self._N
+        coef = 1
+        
+        if transpose:
+            K3decK2b = K2 @ b
+            parts = []
+            for n in range(1, N + 1):
+                K3decK2b = K3.decorrelate(K3decK2b)
+                parts.append(coef * K3decK2b)
+                coef *= seps
+            return jnp.concatenate(parts, axis=max(0, b.ndim - 2))
+        
+        else:
+            acc = 0
+            for n in range(1, N + 1):
+                K3decbn = b[K3.m * (n - 1):K3.m * n]
+                for k in range(n):
+                    K3decbn = K3.decorrelate(K3decbn, transpose=True)
+                acc += coef * K3decbn
+                coef *= seps
+            return K2 @ acc
+    
+    # K.decorrelate(b) = [
+    #   ε^(n-1)/2 K3.decorrelate^n(K b)
+    #   for n in 1 ... N
+    # ]
+    
+    # K.decorrelate(b, T) =
+    # K ∑ n=1^N ε^(n-1)/2 K3.decorrelate^n(b_n, T)
+    def decorrelate(self, b, *, transpose=False):
+        seps, K, K3, N = jnp.sqrt(self._eps), self._K, self._K3, self._N
+        coef = 1
+        
+        if transpose:
+            acc = 0
+            for n in range(1, N + 1):
+                K3decbn = b[K3.m * (n - 1):K3.m * n]
+                for k in range(n):
+                    K3decbn = K3.decorrelate(K3decbn, transpose=True)
+                acc += coef * K3decbn
+                coef *= seps
+            return K @ acc
+
+        else:
+            K3decKb = K @ b
+            parts = []
+            for n in range(1, N + 1):
+                K3decKb = K3.decorrelate(K3decKb)
+                parts.append(coef * K3decKb)
+                coef *= seps
+            return jnp.concatenate(parts, axis=max(0, b.ndim - 2))
+    
+    @property
+    def m(self):
+        return self._K3.m * self._N

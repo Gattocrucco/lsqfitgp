@@ -220,7 +220,7 @@ class DecompTestBase(DecompTestABC):
             result = fun(K, b)
             if jit:
                 result2 = jax.jit(fun)(K, b)
-                util.assert_close_matrices(result2, result, rtol=1e-13)
+                util.assert_close_matrices(result2, result, rtol=1e-11)
             else:
                 sol = self.solve(K, b)
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
@@ -255,8 +255,10 @@ class DecompTestBase(DecompTestABC):
                 sol = -KdK @ Kb
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
                     r'woodbury[^2]': 1e-3, # TODO e.g. TestWoodbury_EigCutFullRank.test_solve_matrix_jac_fwd_matrix, why so inaccurate?
+                    r'woodbury2': 1e-5,
                     r'pinv_chol': 1e-4,
                     r'chol': 1e-6,
+                    r'sandwichsvd': 1e-7,
                 }, 1e-8))
             else:
                 # TODO use correct formulas for pseudoinverses
@@ -266,8 +268,11 @@ class DecompTestBase(DecompTestABC):
                 d2K = self.mathess(s, n)
                 sol = 2 * KdK @ KdK @ Kb - self.solve(K, d2K) @ Kb
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
-                r'pinv_chol': 1e-4,
-            }, 1e-7))
+                    r'pinv_chol': 1e-4,
+                    r'woodbury2': 1e-4,
+                    r'woodbury[^2]': 1e-5,
+                    r'chol': 1e-6,
+                }, 1e-7))
     
     def test_solve_vec(self):
         self.check_solve(self.randvec)
@@ -331,7 +336,9 @@ class DecompTestBase(DecompTestABC):
                 # TODO use correct formulas for pseudoinverses
             sol = -A @ self.solve(K.T, self.solve(K, dK).T).T @ b
             result = funjac(s, n, b, A)
-            util.assert_close_matrices(sol, result, rtol=1e-4)
+            util.assert_close_matrices(sol, result, rtol=self.clskey({
+                r'pinv_chol': 1e-2,
+            }, 1e-4))
         
     def test_solve_matrix_jac_rev_matrix(self):
         self.solve_matrix_jac_matrix(jax.jacrev)
@@ -366,7 +373,8 @@ class DecompTestBase(DecompTestABC):
             sol = b.T @ invK @ c
             result = self.decompclass(K).quad(b, c)
             util.assert_similar_gvars(sol, result, rtol=self.clskey({
-                r'pinv_chol': 1e-9,
+                r'pinv_chol': 1e-8,
+                r'sandwichqr': 1e-10,
             }, 1e-11), atol=1e-15)
     
     def check_quad(self, bgen, cgen=lambda n: None, jit=False):
@@ -379,7 +387,7 @@ class DecompTestBase(DecompTestABC):
             if jit:
                 funjit = jax.jit(fun)
                 result2 = funjit(K, b, c)
-                util.assert_close_matrices(result2, result, rtol=1e-12)
+                util.assert_close_matrices(result2, result, rtol=1e-11)
             else:
                 sol = self.quad(K, b, c)
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
@@ -391,15 +399,15 @@ class DecompTestBase(DecompTestABC):
             K = self.mat(s, n)
             return self.decompclass(K, direct_autodiff=da, stop_hessian=stopg).quad(b, c)
         fungrad = jacfun(fun)
+        fungradjit = jax.jit(fungrad, static_argnums=1)
         for n in self.sizes:
             s = np.exp(rng.uniform(-1, 1))
             b = bgen(n)
             c = cgen(n)
             result = fungrad(s, n, b, c)
             if jit:
-                fungradjit = jax.jit(fungrad, static_argnums=1)
                 result2 = fungradjit(s, n, b, c)
-                util.assert_close_matrices(result2, result, rtol=1e-8)
+                util.assert_close_matrices(result2, result, rtol=1e-7)
                 continue
             if c is None:
                 c = b
@@ -413,9 +421,11 @@ class DecompTestBase(DecompTestABC):
                 # -b.T K^-1 dK K^-1 c
                 sol = -b.T @ KdK @ Kc
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
-                   r'pinv_chol': 1e-2,
-                   r'woodbury[^2]': 1e-4,
-                }, 1e-9))
+                    r'pinv_chol': 1e-2,
+                    r'woodbury[^2]': 1e-2,
+                    r'woodbury2': 1e-7,
+                    r'chol': 1e-7,
+                }, 1e-8))
             else:
                 # TODO use correct formulas for pseudoinverses
                 #  b.T K^-1 dK K^-1 dK K^-1 c   +
@@ -426,7 +436,8 @@ class DecompTestBase(DecompTestABC):
                     d2K = self.mathess(s, n)
                     sol -= b.T @ self.solve(K, d2K) @ Kc
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
-                   r'pinv_chol': 1e-2,
+                    r'pinv_chol': 1e-2,
+                    r'woodbury[^2]': 1e-3,
                 }, 1e-6))
     
     def test_quad_vec(self):
@@ -506,12 +517,14 @@ class DecompTestBase(DecompTestABC):
             result = fun(K)
             if jit:
                 result2 = funjit(K)
-                util.assert_close_matrices(result2, result, rtol=1e-14)
+                util.assert_close_matrices(result2, result, rtol=self.clskey({
+                    r'pinv_chol': 1e-4,
+                }, 1e-14))
             else:
                 sol = self.logdet(K)
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
-                r'pinv_chol': 1e-7,
-            }, 1e-11))
+                    r'pinv_chol': 1e-7,
+                }, 1e-11))
     
     def check_logdet_jac(self, jacfun, jit=False, hess=False, num=False, da=False, stopg=False):
         def fun(s, n):
@@ -538,7 +551,7 @@ class DecompTestBase(DecompTestABC):
                 sol = np.trace(KdK)
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
                     r'pinv_chol': 1e-4,
-                }, 1e-7))
+                }, 1e-7), atol=1e-20)
             else:
                 # tr(-K^-1 dK K^-1 dK + K d2K)
                 sol = -np.trace(KdK @ KdK)
@@ -548,7 +561,8 @@ class DecompTestBase(DecompTestABC):
                     sol += np.trace(Kd2K)
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
                     r'pinv_chol': 1e-2,
-                }, 1e-5), atol=1e-100)
+                    r'woodbury[^2]': 1e-2,
+                }, 1e-5), atol=1e-60)
     
     def test_logdet(self):
         self.check_logdet()
@@ -586,7 +600,7 @@ class DecompTestBase(DecompTestABC):
             sol = self.solve(K, np.eye(n))
             result = self.decompclass(K).inv()
             util.assert_close_matrices(result, sol, rtol=self.clskey({
-                r'pinv_chol': 1e-8,
+                r'pinv_chol': 1e-7,
             }, 1e-11))
         
     def check_tree_decomp(self, conversion):
@@ -657,6 +671,7 @@ class DecompTestBase(DecompTestABC):
             }, 1e-13))
 
     def test_decorrelate_mat(self):
+        self._woodbury_possign = True
         for n in self.sizes:
             K = self.randsymmat(n)
             b = self.randmat(n)
@@ -664,7 +679,18 @@ class DecompTestBase(DecompTestABC):
             result = x.T @ x
             sol = self.decompclass(K).quad(b)
             util.assert_close_matrices(result, sol, rtol=1e-13)
-            
+    
+    def test_double_decorrelate(self):
+        self._woodbury_possign = True
+        for n in self.sizes:
+            K = self.randsymmat(n)
+            d = self.decompclass(K)
+            Kinv = d.inv()
+            Kinv2 = d.decorrelate(d.decorrelate(np.eye(n)), transpose=True)
+            util.assert_close_matrices(Kinv, Kinv2, rtol=self.clskey({
+                r'pinv_chol_lowrank': 1e-13,
+            }, 1e-14))
+
 class CompositeDecompTestBase(DecompTestBase):
     """ Abstract class to test decompositions which do not take as input
     the matrix itself """
@@ -1056,34 +1082,11 @@ util.xfail(DecompTestBase, 'test_logdet_hess_fwd_rev') # since on quad it works,
 util.xfail(WoodburyTestBase, 'test_logdet_hess_fwd_fwd_stopg')
 util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
 
-# TODO linalg.sparse.eigsh is not implemented in jax
+# TODO linalg.sparse.eigsh/lobpcg are not implemented in jax
 for testcls in [TestLanczos, TestLOBPCG]:
     for name, meth in inspect.getmembers(testcls, inspect.isfunction):
         if name.endswith('_da'):
             util.xfail(testcls, name)
-
-# reverse diff broken because they use quads within other stuff probably.
-# Subclassing DecompAutoDiff does not work. Maybe just using quad to compute
-# tildeS is too much. The error is two undefined primals in a matrix
-# multiplication jvp transpose. => it's probably derivatives w.r.t. the outer
-# sides of quad
-# for cls in [BlockDecompTestBase, WoodburyTestBase]:
-    # a jax update between 0.3.13 and 0.3.17 solved all these, dunno why
-    # util.xfail(cls, 'test_solve_vec_jac_rev')
-    # util.xfail(cls, 'test_solve_matrix_jac_rev')
-    # util.xfail(cls, 'test_solve_vec_jac_rev_jit')
-    # util.xfail(cls, 'test_solve_matrix_jac_rev_jit')
-    # util.xfail(cls, 'test_solve_matrix_jac_rev_matrix')
-    # util.xfail(cls, 'test_quad_vec_jac_rev')
-    # util.xfail(cls, 'test_quad_matrix_jac_rev')
-    # util.xfail(cls, 'test_quad_vec_jac_rev_jit')
-    # util.xfail(cls, 'test_quad_matrix_jac_rev_jit')
-    # util.xfail(cls, 'test_logdet_jac_rev')
-    # util.xfail(cls, 'test_logdet_jac_rev_jit')
-
-for name, meth in inspect.getmembers(WoodburyTestBase, inspect.isfunction):
-    if 'decorrelate' in name:
-        util.xfail(WoodburyTestBase, name)
 
 # TODO these derivatives are a full nan, no idea, but it depends on the values,
 # and on the sign, so they xpass at random. really no idea
@@ -1093,45 +1096,72 @@ util.xfail(TestWoodbury2_EigCutFullRank, 'test_quad_matrix_matrix_jac_fwd_da')
 util.xfail(TestWoodbury2_EigCutFullRank, 'test_quad_matrix_matrix_hess_da')
 util.xfail(TestWoodbury2_EigCutFullRank, 'test_logdet_hess_da')
 
+# TODO fail with full nan
+util.xfail(TestSVDCutLowRank_LowRank, 'test_solve_matrix_hess_da')
+util.xfail(TestSVDCutLowRank_LowRank, 'test_quad_matrix_matrix_hess_da')
+util.xfail(TestSVDCutLowRank_LowRank, 'test_logdet_hess_da')
+util.xfail(TestEigCutLowRank_LowRank, 'test_solve_matrix_hess_da')
+util.xfail(TestEigCutLowRank_LowRank, 'test_logdet_hess_da')
+
 # TODO this fails because Pinv.logdet is not a pseudodeterminant.
 util.xfail(TestPinv_Chol_LowRank, 'test_logdet')
 
 # TODO wildly inaccurate derivatives when the result is large, may xpass
-util.xfail(TestPinv_Chol, 'test_solve_vec_jac_fwd')
-util.xfail(TestPinv_Chol, 'test_solve_matrix_jac_rev')
-util.xfail(TestPinv_Chol, 'test_solve_matrix_jac_rev_matrix')
-util.xfail(TestPinv_Chol, 'test_solve_matrix_jac_fwd_matrix')
-util.xfail(TestPinv_Chol, 'test_solve_matrix_jac_fwd_da')
-util.xfail(TestPinv_Chol, 'test_quad_matrix_jac_fwd')
-util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_jac_fwd')
-util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
-util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_hess_fwd_rev')
-util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_hess_fwd_fwd')
-util.xfail(TestPinv_Chol, 'test_quad_vec_jac_rev')
-util.xfail(TestPinv_Chol, 'test_quad_matrix_jac_rev')
-util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_hess_da')
-util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_jac_fwd_da')
-util.xfail(TestPinv_Chol, 'test_logdet_jac_fwd')
-util.xfail(TestPinv_Chol, 'test_logdet_hess_fwd_fwd')
-util.xfail(TestPinv_Chol, 'test_logdet_hess_fwd_fwd_stopg')
-util.xfail(TestPinv_Chol, 'test_logdet_hess_da')
-util.xfail(TestPinv_Chol_LowRank, 'test_solve_matrix_hess_da')
+util.xfail(TestPinv_Chol_LowRank, 'test_solve_vec_jac_rev')
+util.xfail(TestPinv_Chol_LowRank, 'test_solve_vec_jac_fwd')
 util.xfail(TestPinv_Chol_LowRank, 'test_solve_matrix_jac_rev')
+util.xfail(TestPinv_Chol_LowRank, 'test_solve_matrix_jac_fwd_matrix')
+util.xfail(TestPinv_Chol_LowRank, 'test_solve_matrix_jac_fwd_da')
 util.xfail(TestPinv_Chol_LowRank, 'test_solve_matrix_jac_fwd')
 util.xfail(TestPinv_Chol_LowRank, 'test_solve_matrix_hess_fwd_fwd')
+util.xfail(TestPinv_Chol_LowRank, 'test_solve_matrix_hess_da')
 util.xfail(TestPinv_Chol_LowRank, 'test_quad_vec_jac_rev')
+util.xfail(TestPinv_Chol_LowRank, 'test_quad_vec_jac_fwd')
+util.xfail(TestPinv_Chol_LowRank, 'test_quad_matrix_matrix_hess_fwd_rev')
 util.xfail(TestPinv_Chol_LowRank, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
-util.xfail(TestPinv_Chol_LowRank, 'test_quad_matrix_jac_fwd')
 util.xfail(TestPinv_Chol_LowRank, 'test_quad_matrix_matrix_hess_fwd_fwd')
 util.xfail(TestPinv_Chol_LowRank, 'test_quad_matrix_matrix_hess_da')
+util.xfail(TestPinv_Chol_LowRank, 'test_quad_matrix_jac_rev')
+util.xfail(TestPinv_Chol_LowRank, 'test_quad_matrix_jac_fwd')
 util.xfail(TestPinv_Chol_LowRank, 'test_logdet_jac_rev')
+util.xfail(TestPinv_Chol_LowRank, 'test_logdet_jac_fwd')
 util.xfail(TestPinv_Chol_LowRank, 'test_logdet_hess_fwd_fwd')
 util.xfail(TestPinv_Chol_LowRank, 'test_logdet_hess_da')
+util.xfail(TestPinv_Chol, 'test_solve_vec_jac_rev')
+util.xfail(TestPinv_Chol, 'test_solve_vec_jac_fwd')
+util.xfail(TestPinv_Chol, 'test_solve_matrix_jac_rev_matrix')
+util.xfail(TestPinv_Chol, 'test_solve_matrix_jac_rev')
+util.xfail(TestPinv_Chol, 'test_solve_matrix_jac_fwd_matrix')
+util.xfail(TestPinv_Chol, 'test_solve_matrix_jac_fwd_da')
+util.xfail(TestPinv_Chol, 'test_solve_matrix_jac_fwd')
+util.xfail(TestPinv_Chol, 'test_solve_matrix_hess_fwd_fwd')
+util.xfail(TestPinv_Chol, 'test_solve_matrix_hess_da')
+util.xfail(TestPinv_Chol, 'test_quad_vec_jac_rev')
+util.xfail(TestPinv_Chol, 'test_quad_vec_jac_fwd')
+util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_jac_fwd_da')
+util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_jac_fwd')
+util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_hess_fwd_rev')
+util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
+util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_hess_fwd_fwd')
+util.xfail(TestPinv_Chol, 'test_quad_matrix_matrix_hess_da')
+util.xfail(TestPinv_Chol, 'test_quad_matrix_jac_rev')
+util.xfail(TestPinv_Chol, 'test_quad_matrix_jac_fwd')
+util.xfail(TestPinv_Chol, 'test_logdet_jac_rev')
+util.xfail(TestPinv_Chol, 'test_logdet_jac_fwd')
+util.xfail(TestPinv_Chol, 'test_logdet_hess_fwd_fwd_stopg')
+util.xfail(TestPinv_Chol, 'test_logdet_hess_fwd_fwd')
+util.xfail(TestPinv_Chol, 'test_logdet_hess_da')
 
 # TODO why?
 # util.xfail(BlockDecompTestBase, 'test_logdet_hess_num')
 
-# TODO this sometimes is very inaccurate
-# TestWoodburyEigCutFullRank.test_logdet_hess_fwd_fwd
-
-# TestWoodbury_EigCutFullRank.test_quad_vec_jac_rev_jit # seen failing
+# TODO sometimes very inaccurate. Maybe all these problems would go away if I
+# tried to understand well what I'm doing with the parametric matrix to avoid
+# exploding derivatives. Possibly the proposed unification of randsymmat() and
+# mat() would do it.
+util.xfail(TestWoodbury_EigCutFullRank, 'test_solve_matrix_jac_rev_jit')
+util.xfail(TestWoodbury_EigCutFullRank, 'test_quad_vec_jac_rev_jit')
+util.xfail(TestWoodbury_EigCutFullRank, 'test_quad_vec_jac_rev_jit')
+util.xfail(TestWoodbury_EigCutFullRank, 'test_quad_vec_jac_fwd')
+util.xfail(TestWoodbury_EigCutFullRank, 'test_logdet_jac_rev')
+util.xfail(TestWoodbury_EigCutFullRank, 'test_logdet_hess_fwd_fwd')

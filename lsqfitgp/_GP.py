@@ -1297,17 +1297,13 @@ class GP:
         return decomp
         
     def _checkpos(self, cov):
-        # TODO faster but less interpretable ways of checking positivity:
-        # 1) cholesky + eps, if fails it's not positive
-        # 2) ldlt, check each 2x2 block     <--- probably best? is it stable?
-        # 3) QR, check diagonal of R
-        # For QR, can I use directly the tau coefficients? (halves the
-        # computation time, going to 1/4 diagonalization ~ ldlt)
+        # TODO use an iterative method to get only the two extreme eigenvalues.
+        # see playground/checkpos.py
         with _patch_jax.skipifabstract():
             eigv = jnp.linalg.eigvalsh(cov)
             mineigv = jnp.min(eigv)
             if mineigv < 0:
-                bound = -len(cov) * jnp.finfo(float).eps * jnp.max(eigv) * self._posepsfac
+                bound = -len(cov) * jnp.finfo(cov.dtype).eps * jnp.max(eigv) * self._posepsfac
                 if mineigv < bound:
                     msg = 'covariance matrix is not positive definite: '
                     msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
