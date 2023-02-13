@@ -54,7 +54,7 @@ print('fit...')
 m, cov = gp.predfromdata({'pere': z}, 'banane', raw=True)
 
 print('samples...')
-samples = m + gp.decompose(cov, solver='chol', eps=1e-5).correlate(np.random.randn(len(cov)))
+samples = m + gp.decompose(cov, solver='chol', epsrel=1e-5).correlate(np.random.randn(len(cov)))
 
 print('plot...')
 fig, ax = plt.subplots(num='r', clear=True, subplot_kw=dict(projection='3d', computed_zorder=False))

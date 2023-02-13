@@ -921,19 +921,16 @@ def test_givencov_decomp():
     gp.addtransf({0: b}, 1)
     dec1, dec2 = decs(gp, [1])
     util.assert_close_decomps(dec2, dec1, rtol=1e-12)
-    assert dec2._C.n == len(b)
     
     # tall sandwich
     c = gen.standard_normal((len(a) * 2, len(a)))
     gp.addtransf({0: c}, 2)
     dec1, dec2 = decs(gp, [2])
     util.assert_close_decomps(dec2, dec1, rtol=1e-10)
-    assert dec2._C.n == len(a)
     
     # short and tall sandwich
     dec1, dec2 = decs(gp, [1, 2])
     util.assert_close_decomps(dec2, dec1, rtol=1e-10)
-    assert dec2._C.n == len(b) + len(a)
 
     # two generic matrices
     d = genpd(20)
@@ -944,14 +941,12 @@ def test_givencov_decomp():
     # matrix, short and tall sandwich
     dec1, dec2 = decs(gp, [0, 1, 2])
     util.assert_close_decomps(dec2, dec1, rtol=1e-7)
-    assert dec2._C.n == len(b) + 2 * len(a)
     
     # short and tall sandwich, starting from different matrices
     e = gen.standard_normal((2 * len(d), len(d)))
     gp.addtransf({3: e}, 4)
     dec1, dec2 = decs(gp, [1, 4])
     util.assert_close_decomps(dec2, dec1, rtol=1e-10)
-    assert dec2._C.n == len(b) + len(d)    
     
     # sum of two matrices
     f = genpd(len(a))
@@ -959,13 +954,11 @@ def test_givencov_decomp():
     gp.addtransf({0: 1, 5: 1}, 6)
     dec1, dec2 = decs(gp, [6])
     util.assert_close_decomps(dec2, dec1, rtol=1e-12)
-    assert dec2._C.n == len(a)
     
     # the same matrix, twice
     gp.addcov({(k, q): a for k in [7, 8] for q in [7, 8]})
     dec1, dec2 = decs(gp, [7, 8])
     util.assert_close_decomps(dec2, dec1, rtol=1e-12)
-    assert dec2._C.n == 2 * len(a)
     
     # low rank givencov
     dec1, dec2 = decs(gp, [0], len(a) // 2)

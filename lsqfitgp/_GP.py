@@ -1801,15 +1801,15 @@ class GP:
     @classmethod
     def decompose(cls, posdefmatrix, solver='eigcut+', **kw):
         """
-        Decompose a positive definite matrix.
+        Decompose a nonnegative definite matrix.
         
         The decomposition can be used to calculate linear algebra expressions
-        where the inverse of the matrix appears.
+        where the (pseudo)inverse of the matrix appears.
         
         Parameters
         ----------
         posdefmatrix : array
-            A positive semidefinite nonempty symmetric square matrix. If the
+            A nonnegative definite nonempty symmetric square matrix. If the
             array is not square, it must have a shape of the kind (k, n, m,
             ..., k, n, m, ...) and is reshaped to (k * n * m * ..., k * n * m *
             ...).
@@ -1830,7 +1830,8 @@ class GP:
                 `n` is the matrix size and `r` the required rank, while the
                 other algorithms are O(n^3). Slow for small sizes.
             'lobpcg'
-                Like 'lanczos' but using the LOBPCG algorithm.
+                Like 'lanczos' but using the LOBPCG algorithm, faster but less
+                accurate.
             'chol'
                 Cholesky decomposition after regularizing the matrix with a
                 Gershgorin estimate of the maximum eigenvalue. The fastest of
@@ -1838,11 +1839,15 @@ class GP:
         **kw :
             Additional options.
 
-            eps : positive float
+            epsrel, epsabs : positive float or 'auto'
                 For solvers 'eigcut+', 'eigcut-', 'svdcut+', 'svdcut-', 'chol'.
-                Specifies the threshold for considering small the eigenvalues,
-                relative to the maximum eigenvalue. The default is matrix size
-                * float epsilon.
+                Specify the threshold for considering small the eigenvalues:
+                
+                    eps = epsrel * maximum_eigenvalue + epsabs
+                
+                epsrel='auto' sets epsrel = matrix_size * float_epsilon, 
+                while epsabs='auto' sets epsabs = float_epsilon. Default is
+                epsrel='auto', epsabs=0.
             rank : positive integer
                 For the 'lanczos' and 'lobpcg' solvers, the target rank. It
                 should be much smaller than the matrix size for the method to
@@ -1860,24 +1865,32 @@ class GP:
         -------
         decomp : Decomposition
             An object representing the decomposition of the matrix. The
-            available methods and properties are (A being the matrix):
+            available methods and properties are (K being the matrix):
         
             n
                 The size of the matrix.
             matrix()
-                Return A.
+                Return K.
             inv()
-                Compute A^-1.
+                Compute K⁺.
             solve(b)
-                Compute A^-1 b.
+                Compute K⁺b.
             quad(b[, c])
-                Compute b^T A^-1 b or b^T A^-1 c.
+                Compute b'K⁺b or b'K⁺c.
+            diagquad(b)
+                Compute the diagonal of b'K⁺b.
             logdet()
-                Compute log(det(A)).
-            decorrelate(b)
-                Compute L^-1 b such that A = LL^T.
+                Compute log(det(K)).
+            tracesolve(b)
+                Compute tr(K⁺b).
             correlate(b[, transpose=True])
-                Compute Lb or L^T b with L as above.
+                Compute Ab or A'b such that K = AA', with A n x m.
+            decorrelate(b[, transpose=True])
+                Compute A⁺b or A⁺'b with A as above.
+            m
+                The inner size of A.
+            eps
+                The threshold below which eigenvalues are not calculable.
         
         Notes
         -----

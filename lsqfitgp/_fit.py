@@ -403,6 +403,10 @@ class empbayes_fit(Logger):
         # and jacobian. => Another problem is that the jacobian and hessian
         # need not be computed all the times, see scipy issue #9265. Check
         # if using value_and_jac is more efficient.
+        
+        # TODO now that I have Decomposition.matrix(), I could write
+        # by hand the gradient and Fisher matrix expressions to save on jax
+        # tracing time.
 
     @staticmethod
     def _asarrayorbufferdict(x):

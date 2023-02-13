@@ -37,6 +37,8 @@ import util
 sys.path = ['.'] + sys.path
 from lsqfitgp import _linalg, _kernels
 
+TRYAGAIN = False
+
 # TODO rewrite many comparisons to check for closeness of inputs with inverse
 # operation applied to solution in 2-norm instead of comparing solutions
 # computed in different ways
@@ -86,9 +88,10 @@ class DecompTestABC(abc.ABC):
         # random matrices. vars() only gives methods overwritten by a subclass,
         # so we do not get all members, such that subclasses inherit xfails,
         # which would be hidden by the decorator
-        for name, meth in vars(cls).items():
-            if name.startswith('test_'):
-                setattr(cls, name, util.tryagain(meth, method=True))
+        if TRYAGAIN:
+            for name, meth in vars(cls).items():
+                if name.startswith('test_'):
+                        setattr(cls, name, util.tryagain(meth, method=True))
         
         def setattr_ifmis(cls, name, value):
             prev = getattr(cls, name, None)
@@ -142,7 +145,9 @@ class DecompTestBase(DecompTestABC):
     # become a wrapper of mat. Even better for the composite: generate directly
     # the decomposition, i.e., replace decompclass with decomp(n, s) and
     # randdecomp(n), since now I can get the matrix from the decomposition with
-    # .matrix().
+    # .matrix(). => Problem: if I fix the orthogonal transf, ∂K will have the
+    # same kernel as K, which is not general. I could add a rotation around a
+    # random axis after the orthogonal transformation.
         
     def randsymmat(self, n, *, rank=None):
         """ return random nxn symmetric matrix, well conditioned in the
@@ -255,8 +260,8 @@ class DecompTestBase(DecompTestABC):
                 sol = -KdK @ Kb
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
                     r'woodbury[^2]': 1e-3, # TODO e.g. TestWoodbury_EigCutFullRank.test_solve_matrix_jac_fwd_matrix, why so inaccurate?
+                    r'pinv(2|)_chol': 1e-4,
                     r'woodbury2': 1e-5,
-                    r'pinv_chol': 1e-4,
                     r'chol': 1e-6,
                     r'sandwichsvd': 1e-7,
                 }, 1e-8))
@@ -362,6 +367,7 @@ class DecompTestBase(DecompTestABC):
             result = self.decompclass(K).quad(b, c)
             util.assert_similar_gvars(sol, result, rtol=self.clskey({
                 r'pinv_chol': 1e-3,
+                r'pinv2_chol': 1e-7,
             }, 1e-10), atol=1e-15)
 
     def test_quad_matrix_vec_gvar(self):
@@ -524,6 +530,7 @@ class DecompTestBase(DecompTestABC):
                 sol = self.logdet(K)
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
                     r'pinv_chol': 1e-7,
+                    r'pinv2_chol': 1e-8,
                 }, 1e-11))
     
     def check_logdet_jac(self, jacfun, jit=False, hess=False, num=False, da=False, stopg=False):
@@ -930,6 +937,12 @@ class PinvTestBase(CompositeDecompTestBase):
     def decompclass(self, K, **kw):
         return self.compositeclass(K, self.subdecompclass, **kw)
 
+class Pinv2TestBase(CompositeDecompTestBase):
+    
+    def decompclass(self, K, **kw):
+        decompcls = lambda *args, **kw: self.subdecompclass(*args, epsrel=0, **kw)
+        return self.compositeclass(K, decompcls, epsrel=1e-10, N=2, **kw)
+
 class TestWoodbury2_EigCutFullRank(WoodburyTestBase): pass
 class TestWoodbury_EigCutFullRank(WoodburyTestBase): pass
 
@@ -957,12 +970,14 @@ class TestLOBPCG(DecompTestBase):
         return _linalg.LOBPCG(K, rank=self.rank(len(K)), **kw)
 
 class TestPinv_Chol(PinvTestBase): pass
+class TestPinv2_Chol(Pinv2TestBase): pass
 
 class TestSVDCutLowRank_LowRank(DecompTestBase): pass
 class TestEigCutLowRank_LowRank(DecompTestBase): pass
 class TestLanczos_LowRank(TestLanczos): pass
 class TestLOBPCG_LowRank(TestLOBPCG): pass
 class TestPinv_Chol_LowRank(PinvTestBase): pass
+class TestPinv2_Chol_LowRank(Pinv2TestBase): pass
 # class TestEigCutFullRank_LowRank(DecompTestBase): pass # fails as expected
 
 @util.tryagain
@@ -1103,8 +1118,9 @@ util.xfail(TestSVDCutLowRank_LowRank, 'test_logdet_hess_da')
 util.xfail(TestEigCutLowRank_LowRank, 'test_solve_matrix_hess_da')
 util.xfail(TestEigCutLowRank_LowRank, 'test_logdet_hess_da')
 
-# TODO this fails because Pinv.logdet is not a pseudodeterminant.
+# TODO this fails because Pinv(2).logdet is not a pseudodeterminant.
 util.xfail(TestPinv_Chol_LowRank, 'test_logdet')
+util.xfail(TestPinv2_Chol_LowRank, 'test_logdet')
 
 # TODO wildly inaccurate derivatives when the result is large, may xpass
 util.xfail(TestPinv_Chol_LowRank, 'test_solve_vec_jac_rev')

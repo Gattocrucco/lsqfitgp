@@ -43,6 +43,8 @@ DecompAutoDiff
     initialization input a single matrix object.
 Diag
     Diagonalization.
+LowRankDiag
+    Diagonalization with spectrum truncation.
 
 Concrete classes
 ----------------
@@ -101,11 +103,6 @@ from . import _pytree
 # gvar.GVar(float mean, svec derivs, smat cov)
 # it may require cython to be fast since it's not vectorized
 
-# TODO Replace the `eps` argument with epsrel, epsabs. To indicate an automatic
-# setting, use epsrel='auto' or epsabs='auto'. Default: epsrel='auto', epsabs=0.
-# Write a processing method in Decomposition. Add a property eps that returns
-# the computed total epsrel * maxeigv_est + epsabs, may be set by the method.
-
 def _transpose(x):
     """ swap the last two axes of array x, corresponds to matrix tranposition
     with the broadcasting convention of matmul """
@@ -120,13 +117,15 @@ def _transpose(x):
 class Decomposition(metaclass=abc.ABCMeta):
     """
     
-    Abstract base class for positive definite symmetric matrices decomposition.
+    Abstract base class for nonnegative definite symmetric matrix decomposition.
     
     Methods
     -------
     solve
     quad
+    diagquad
     logdet
+    tracesolve
     correlate
     decorrelate
     inv
@@ -134,6 +133,7 @@ class Decomposition(metaclass=abc.ABCMeta):
     Properties
     ----------
     n
+    m
     
     """
     
@@ -142,33 +142,45 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         Decompose a symmetric nonnegative definite matrix K.
         """
-        pass
+        raise NotImplementedError
         
     @abc.abstractmethod
     def solve(self, b): # pragma: no cover
         """
         Compute K⁺b.
         """
-        pass
+        raise NotImplementedError
     
-    @abc.abstractmethod
-    def quad(self, b, c=None): # pragma: no cover
+    def quad(self, b, c=None):
         """
-        Compute the quadratic form b'K⁻¹b if c is not specified, else b'K⁻¹c.
+        Compute the quadratic form b'K⁺b if c is not specified, else b'K⁺c.
         `c` can be an array of gvars.
         """
-        pass
+        if c is None:
+            return _transpose(b) @ self.solve(b)
+        elif c.dtype == object:
+            return numpy.asarray(_transpose(self.solve(b))) @ c
+        else:
+            return _transpose(b) @ self.solve(c)
+    
+    def diagquad(self, b):
+        """
+        Compute diag(b'K⁺b).
+        """
+        result = self.quad(b)
+        if result.ndim >= 2:
+            result = jnp.diagonal(result, 0, -2, -1)
+        return result
         
-    # TODO to compute efficiently the predictive variance I need a new method
-    # diagquad(b). And for things like toeplitz and other memoryless solvers
-    # to be added in the future, quad_and_logdet for the marginal likelihood.
+    # TODO to compute efficiently the likelihood with things like toeplitz and
+    # other memoryless solvers to be added in the future, add quad_and_logdet.
     
     @abc.abstractmethod
     def logdet(self): # pragma: no cover
         """
         Compute log det K.
         """
-        pass
+        raise NotImplementedError
         
         # TODO adopt a clear convention: if the matrix is degenerate, it's
         # log pdet + regularization to make it continuous => problem: when the
@@ -187,6 +199,12 @@ class Decomposition(metaclass=abc.ABCMeta):
         #
         # => change the current methods' name to logpdet, then make a new one
     
+    def tracesolve(self, b):
+        """
+        Compute tr(K⁺b).
+        """
+        return jnp.trace(self.solve(b))
+    
     @abc.abstractmethod
     def correlate(self, b, *, transpose=False): # pragma: no cover
         """
@@ -194,16 +212,21 @@ class Decomposition(metaclass=abc.ABCMeta):
         variables with unitary variance, Ab has covariance matrix K. If
         transpose=True, compute A'b.
         """
-        pass
+        raise NotImplementedError
     
-    @abc.abstractmethod
-    def decorrelate(self, b, *, transpose=False): # pragma: no cover
+    def decorrelate(self, b, *, transpose=False):
         """
         Compute A⁺b, where K = AA', with A n x m. If b represents variables
         with covariance matrix K, A⁺b has idempotent covariance A⁺A. If
         `transpose=True`, compute A⁺'b.
         """
-        pass
+        # K = AA'
+        # A⁺ = A'(AA')⁺ = A'K⁺
+        # A⁺' = K⁺A
+        if transpose:
+            return self.solve(self.correlate(b))
+        else:
+            return self.correlate(self.solve(b), transpose=True)
     
     def inv(self):
         """
@@ -234,10 +257,28 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         Return K.
         """
-        pass
+        raise NotImplementedError
     
     # TODO new properties: rank is the rank for low-rank or rank revealing
     # decompositions, otherwise n.
+    
+    def _parseeps(self, mat, epsrel, epsabs, maxeigv=None):
+        machine_eps = jnp.finfo(_patch_jax.float_type(mat)).eps
+        if epsrel == 'auto':
+            epsrel = len(mat) * machine_eps
+        if epsabs == 'auto':
+            epsabs = machine_eps
+        if maxeigv is None:
+            maxeigv = _gershgorin_eigval_bound(mat)
+        self._eps = epsrel * maxeigv + epsabs
+        return self._eps
+    
+    @property
+    def eps(self):
+        """
+        The threshold below which eigenvalues are too small to be determined.
+        """
+        return self._eps
 
 class DecompPyTree(Decomposition, _pytree.AutoPyTree):
     """
@@ -254,13 +295,13 @@ class DecompAutoDiffBase(DecompPyTree):
     """
     
     @abc.abstractmethod
-    def _matrix(self, *args, **kw):
+    def _matrix(self, *args, **kw): # pragma: no cover
         """ Given the initialization arguments, return the matrix to be
         decomposed """
-        return K
+        raise NotImplementedError
             
     @abc.abstractmethod
-    def _map_traceable_init_args(self, fun, *args, **kw):
+    def _map_traceable_init_args(self, fun, *args, **kw): # pragma: no cover
         """
         
         Given a function Any -> Any, and the initialization arguments,
@@ -274,7 +315,7 @@ class DecompAutoDiffBase(DecompPyTree):
         it must be a1 == a2 and k1 == k2.
         
         """
-        return mapped_args, mapped_kw
+        raise NotImplementedError
         
     def _store_args(self, args, kw):
         """ store initialization arguments """
@@ -435,7 +476,8 @@ class DecompAutoDiffBase(DecompPyTree):
         # with an arbitrary number of right-hand sides. => I could have
         # a generic operation sandwich(b, X1, X2, ..., c) that computes
         # b K^-1 X1 K^-1 X2 K^-1 ... K^-1 c, such that its derivatives can
-        # be defined in terms of itself.
+        # be defined in terms of itself, but handling repeated arguments is
+        # cumbersome.
 
         @quad_autodiff.defjvp
         def quad_jvp(self, primals, tangents):
@@ -448,9 +490,9 @@ class DecompAutoDiffBase(DecompPyTree):
             Kc = self.solve._autodiff(self, K, c)
             tangent_K = -_transpose(Kb) @ K_dot @ Kc
             tangent_b = quad_autodiff(self, K, b_dot, c)
-            # tangent_b = _transpose(b_dot) @ self.solve._autodiff(self, K, c)
+            # tangent_b = _transpose(b_dot) @ Kc
             tangent_c = quad_autodiff(self, K, b, c_dot)
-            # tangent_c = _transpose(b) @ self.solve._autodiff(self, K, c_dot)
+            # tangent_c = _transpose(Kb) @ c_dot
             return primal, tangent_K + tangent_b + tangent_c
             
         @quad_autodiff_cnone.defjvp
@@ -462,7 +504,12 @@ class DecompAutoDiffBase(DecompPyTree):
             # tangent_K = -quad_autodiff(self, K, b, quad_autodiff(self, K, K_dot, b))
             Kb = self.solve._autodiff(self, K, b)
             tangent_K = -_transpose(Kb) @ K_dot @ Kb
+            # using solve + matmul instead of double for tangent_K quad does
+            # only O(n^2) matrix-vector multiplications instead of O(n^3)
+            # matrix-matrix, but my intuition suggests it could be less
+            # numerically accurate
             tangent_b = quad_autodiff(self, K, b_dot, b)
+            # tangent_b = _transpose(b_dot) @ Kb
             return primal, tangent_K + tangent_b + _transpose(tangent_b)
 
         def quad(self, b, c=None):
@@ -495,8 +542,7 @@ class DecompAutoDiffBase(DecompPyTree):
             K_dot, = tangents
             primal = logdet_autodiff(self, K)
             tangent = jnp.trace(self.solve._autodiff(self, K, K_dot))
-            # TODO for efficiency I should define a new method
-            # tracesolve.
+            # TODO define the derivative of tracesolve to use it here
             return primal, tangent
         
         def logdet(self):
@@ -523,23 +569,24 @@ class Diag(DecompAutoDiff):
     """
     
     @abc.abstractmethod
-    def __init__(self, K):
+    def __init__(self, K, *, epsrel='auto', epsabs=0):
         self._w, self._V = jlinalg.eigh(K)
+        self._parseeps(K, epsrel, epsabs, jnp.max(jnp.abs(self._w)))
     
     def solve(self, b):
         return (self._V / self._w) @ (self._V.T @ b)
     
     def quad(self, b, c=None):
         VTb = self._V.T @ b
-        VTbw = _transpose(VTb) / self._w
+        bTVw = _transpose(VTb) / self._w
         if c is None:
             VTc = VTb
         elif c.dtype == object:
             VTc = numpy.array(self._V).T @ c
-            VTbw = numpy.array(VTbw)
+            bTVw = numpy.array(bTVw)
         else:
             VTc = self._V.T @ c
-        return VTbw @ VTc
+        return bTVw @ VTc
     
     def logdet(self):
         return jnp.sum(jnp.log(jnp.abs(self._w)))
@@ -555,24 +602,16 @@ class Diag(DecompAutoDiff):
         if transpose:
             A_1 = A_1.T
         return A_1 @ b
-        
-    def _eps(self, eps):
-        w = self._w
-        if eps is None:
-            eps = len(w) * jnp.finfo(w.dtype).eps
-        assert 0 <= eps < 1
-        return eps * jnp.max(jnp.abs(w))
-
+    
 class EigCutFullRank(Diag):
     """
     Diagonalization. Eigenvalues below `eps` are set to `eps`, where `eps` is
     relative to the largest eigenvalue.
     """
     
-    def __init__(self, K, eps=None):
-        super().__init__(K)
-        eps = self._eps(eps)
-        self._w = jnp.where(self._w < eps, eps, self._w)
+    def __init__(self, K, **kw):
+        super().__init__(K, **kw)
+        self._w = jnp.where(self._w < self.eps, self.eps, self._w)
             
 class EigCutLowRank(Diag):
     """
@@ -580,10 +619,9 @@ class EigCutLowRank(Diag):
     relative to the largest eigenvalue.
     """
     
-    def __init__(self, K, eps=None):
-        super().__init__(K)
-        eps = self._eps(eps)
-        cond = self._w < eps
+    def __init__(self, K, **kw):
+        super().__init__(K, **kw)
+        cond = self._w < self.eps
         self._w = jnp.where(cond, 1, self._w)
         self._V = jnp.where(cond, 0, self._V)
         
@@ -595,11 +633,10 @@ class SVDCutFullRank(Diag):
     `eps` with their sign, where `eps` is relative to the largest eigenvalue.
     """
     
-    def __init__(self, K, eps=None):
-        super().__init__(K)
-        eps = self._eps(eps)
-        cond = jnp.abs(self._w) < eps
-        self._w = jnp.where(cond, eps * jnp.sign(self._w), self._w)
+    def __init__(self, K, **kw):
+        super().__init__(K, **kw)
+        cond = jnp.abs(self._w) < self.eps
+        self._w = jnp.where(cond, self.eps * jnp.sign(self._w), self._w)
         
 class SVDCutLowRank(Diag):
     """
@@ -607,10 +644,9 @@ class SVDCutLowRank(Diag):
     where `eps` is relative to the largest eigenvalue.
     """
     
-    def __init__(self, K, eps=None):
-        super().__init__(K)
-        eps = self._eps(eps)
-        cond = jnp.abs(self._w) < eps
+    def __init__(self, K, **kw):
+        super().__init__(K, **kw)
+        cond = jnp.abs(self._w) < self.eps
         self._w = jnp.where(cond, 1, self._w)
         self._V = jnp.where(cond, 0, self._V)
 
@@ -651,6 +687,10 @@ class Lanczos(LowRankDiag):
         # if it improves performance due to lower default comput precision =>
         # behavior under jit not clear
         
+        # TODO try using linalg.blas.get_blas_func('symv', [K]) for the matrix
+        # vector product. sparse.linalg does not seem to take into account
+        # that the matrix is symmetric to do the matvec product.
+        
 class LOBPCG(LowRankDiag):
     """
     Keep only the first `rank` higher eigenmodes.
@@ -669,6 +709,10 @@ class LOBPCG(LowRankDiag):
             (wdummy, Vdummy), K,
         )
         
+        # TODO try using jax's own implementation of LOBPCG
+
+# TODO look into the pivoted Cholesky decomposition from Gardner et al. 2018
+
 def solve_triangular(a, b, lower=False):
     """
     Pure python implementation of scipy.linalg.solve_triangular for when
@@ -701,38 +745,29 @@ def solve_triangular(a, b, lower=False):
         x = numpy.squeeze(x, -1)
     return x
 
-class CholEps:
-    
-    def _eps(self, eps, mat, maxeigv):
-        if eps is None:
-            eps = len(mat) * jnp.finfo(_patch_jax.float_type(mat)).eps
-        assert 0 <= eps < 1
-        return eps * maxeigv
-
 def _gershgorin_eigval_bound(mat):
     """
     Upper bound on the largest magnitude eigenvalue of the matrix.
     """
     return jnp.max(jnp.sum(jnp.abs(mat), axis=1))
 
-class Chol(DecompAutoDiff, CholEps):
+class Chol(DecompAutoDiff):
     """
     Cholesky decomposition.
     """
     
     @staticmethod
-    def _scale(a):
+    def _scale(K):
         """
-        Compute a vector s of powers of 2 such that diag(a / outer(s, s)) ~ 1.
+        Compute a vector s of powers of 2 such that diag(K / outer(s, s)) ~ 1.
         """
-        d = jnp.diag(a)
+        d = jnp.diag(K)
         return jnp.where(d, jnp.exp2(jnp.rint(0.5 * jnp.log2(d))), 1)
 
-    def __init__(self, K, eps=None):
+    def __init__(self, K, *, epsrel='auto', epsabs=0):
         s = self._scale(K)
-        K = K / jnp.outer(s, s)
-        maxeigv = _gershgorin_eigval_bound(K)
-        eps = self._eps(eps, K, maxeigv)
+        K = K / s / s[:, None]
+        eps = self._parseeps(K, epsrel, epsabs)
         K = K.at[jnp.diag_indices(len(K))].add(eps)
         L = jlinalg.cholesky(K, lower=True)
         with _patch_jax.skipifabstract():
@@ -765,17 +800,17 @@ class Chol(DecompAutoDiff, CholEps):
         L = self._L.T if transpose else self._L
         return jlinalg.solve_triangular(L, b, lower=not transpose)
 
-class CholToeplitz(DecompAutoDiff, CholEps):
+class CholToeplitz(DecompAutoDiff):
     """
     Cholesky decomposition of a Toeplitz matrix. Only the first row of the
     matrix is read. It does not store the decomposition in memory, it is
     evaluated each time column by column during operations.
     """
     
-    def __init__(self, K, eps=None):
+    def __init__(self, K, *, epsrel='auto', epsabs=0):
         t = jnp.asarray(K[0, :])
         m = _toeplitz.eigv_bound(t)
-        eps = self._eps(eps, t, m)
+        eps = self._parseeps(t, epsrel, epsabs, m)
         self.t = t.at[0].add(eps)
     
     def solve(self, b):
@@ -783,12 +818,12 @@ class CholToeplitz(DecompAutoDiff, CholEps):
     
     def quad(self, b, c=None):
         t = self.t
-        if c is not None and c.dtype == object:
-            ilb = numpy.array(_toeplitz.chol_solve(t, b))
-            ilc = _toeplitz.chol_solve_numpy(t, c)
-        elif c is None:
+        if c is None:
             ilb = _toeplitz.chol_solve(t, b)
             ilc = ilb
+        elif c.dtype == object:
+            ilb = numpy.array(_toeplitz.chol_solve(t, b))
+            ilc = _toeplitz.chol_solve_numpy(t, c)
         else:
             ilb, ilc = _toeplitz.chol_solve(t, b, c)
         return _transpose(ilb) @ ilc
@@ -826,12 +861,12 @@ class Block(DecompAutoDiffBase):
     def _map_traceable_init_args(self, fun, P_decomp, S, Q, S_decomp_class, **kw):
         return (fun(P_decomp), fun(S), fun(Q), S_decomp_class), kw
 
-    def __init__(self, P_decomp, S, Q, S_decomp_class, **kw):
+    def __init__(self, P_decomp, S, Q, decompcls, **kw):
         """
         The matrix to be decomposed is
         
-            K = [[P,   Q]
-                 [Q.T, S]]
+            K = [P   Q]
+                [Q'  S]
         
         Parameters
         ----------
@@ -839,14 +874,14 @@ class Block(DecompAutoDiffBase):
             An instantiated decomposition of P.
         S, Q : matrices
             The other blocks.
-        S_decomp_class : subclass of Decomposition
-            A subclass of Decomposition used to decompose S - Q.T P^-1 Q.
+        decompcls : type
+            A subclass of Decomposition used to decompose S - Q'P⁻¹Q.
         **kw :
-            Additional keyword arguments are passed to S_decomp_class.
+            Additional keyword arguments are passed to `decompcls`.
         """
         self._Q = Q
         self._invP = P_decomp
-        self._tildeS = S_decomp_class(S - P_decomp.quad(Q), **kw)
+        self._tildeS = decompcls(S - P_decomp.quad(Q), **kw)
         
         # TODO does it make sense to allow to use woodbury on the schur
         # complement of P? Maybe to be general I should take an instantiated
@@ -884,16 +919,24 @@ class Block(DecompAutoDiffBase):
     
     def logdet(self):
         return self._invP.logdet() + self._tildeS.logdet()
+        # TODO Is this valid for the pseudodeterminant? It isn't in general, but
+        # it could be for p.s.d. matrices. schott 2017, theorem 7.10, page 297
+        # shows that the rank decomposes in this way, so maybe the pdet does
+        # too.
+    
+    @property
+    def eps(self):
+        return jnp.maximum(self._invP.eps, self._tildeS.eps())
     
     def correlate(self, b, *, transpose=False):
         # Block Cholesky decomposition:
-        # K = [P    Q] = L L^T
-        #     [Q^T  S]
-        # L = [A   ]        L^T = [A^T  B^T]
-        #     [B  C]              [     C^T]
-        # AA^T = P
-        # AB^T = Q  ==>  B^T = A^-1Q
-        # BB^T + CC^T = S  ==>  CC^T = S - Q^T P^-1 Q = S̃
+        # K = [P   Q] = LL'
+        #     [Q'  S]
+        # L = [A   ]        L' = [A'  B']
+        #     [B  C]             [    C']
+        # AA' = P
+        # AB' = Q  ==>  B' = AQ
+        # BB' + CC' = S  ==>  CC' = S - Q'P⁻¹Q = S̃
         invP = self._invP
         tildeS = self._tildeS
         Q = self._Q
@@ -909,8 +952,8 @@ class Block(DecompAutoDiffBase):
         return jnp.concatenate([x, y], axis=max(0, b.ndim - 2))
     
     def decorrelate(self, b, *, transpose=False):
-        # L^-1 = [    A^-1          ]     L^-T = [A^-T  -A^-T B^T C^-T]
-        #        [-C^-1 B A^-1  C^-1]            [           C^-T     ]
+        # L⁻¹ = [   A⁻¹       ]     L'⁻¹ = [A'⁻¹  -A'⁻¹B'C'⁻¹]
+        #       [-C⁻¹BA⁻¹  C⁻¹]            [          C'⁻¹   ]
         invP = self._invP
         tildeS = self._tildeS
         Q = self._Q
@@ -953,8 +996,8 @@ class BlockDiag(DecompAutoDiffBase):
         
         The matrix is
         
-            [[A  0]
-             [0  B]]
+            K = [A   ]
+                [   B]
         
         Parameters
         ----------
@@ -988,6 +1031,10 @@ class BlockDiag(DecompAutoDiffBase):
     
     def logdet(self):
         return self._A.logdet() + self._B.logdet()
+    
+    @property
+    def eps(self):
+        return jnp.maximum(self._A.eps, self._B.eps())
     
     def correlate(self, b, *, transpose=False):
         A = self._A
@@ -1030,7 +1077,7 @@ class SandwichQR(DecompAutoDiffBase):
 
     def __init__(self, A_decomp, B):
         """
-        Decompose M = B A B^T with the QR decomposition of B.
+        Decompose K = BAB' with the QR decomposition of B.
         
         Parameters
         ----------
@@ -1068,6 +1115,10 @@ class SandwichQR(DecompAutoDiffBase):
         B_logdet = jnp.sum(jnp.log(jnp.abs(jnp.diag(r))))
         return A.logdet() + 2 * B_logdet
     
+    @property
+    def eps(self):
+        return self._A.eps # TODO take B into account somehow
+    
     def correlate(self, b, *, transpose=False):
         A, B = self._A, self._B
         if transpose:
@@ -1076,10 +1127,10 @@ class SandwichQR(DecompAutoDiffBase):
             return B @ A.correlate(b)
     
     def decorrelate(self, b, *, transpose=False):
-        # BABt = BL(BL)t
+        # BAB' = BL(BL)'
         # BL = QRL
-        # (QRL)+ = L^-1 R^-1 Qt (valid because Q has orthonormal columns)
-        # (QRL)+t = Q R^-T L^-T
+        # (QRL)⁺ = L⁻¹R⁻¹Q' (valid because Q has orthonormal columns)
+        # (QRL)⁺' = QR'⁻¹L'⁻¹
         A, q, r = self._A, self._q, self._r
         if transpose:
             lb = A.decorrelate(b, transpose=True)
@@ -1179,7 +1230,7 @@ class SandwichSVD(DecompAutoDiffBase):
 
     def __init__(self, A_decomp, B):
         """
-        Decompose M = B A B^T with the SVD decomposition of B.
+        Decompose K = BAB' with the SVD decomposition of B.
         
         Parameters
         ----------
@@ -1217,6 +1268,10 @@ class SandwichSVD(DecompAutoDiffBase):
         return A.logdet() + 2 * B_logdet # makes sense if A invertible, in
         # general after I svd an empty sandwich
     
+    @property
+    def eps(self):
+        return self._A.eps # TODO take B into account somehow
+        
     def correlate(self, b, *, transpose=False):
         A, B = self._A, self._B
         if transpose:
@@ -1225,10 +1280,10 @@ class SandwichSVD(DecompAutoDiffBase):
             return B @ A.correlate(b)
     
     def decorrelate(self, b, *, transpose=False):
-        # BABt = BL(BL)t
-        # BL = USVtL
-        # (BL)+ = L^-1 V S^-1 Ut
-        # (BL)+t = U S^-1 Vt L^-T
+        # BAB' = BL(BL)'
+        # BL = USV'L
+        # (BL)⁺ = L⁻¹VS⁻¹U'
+        # (BL)⁺' = US⁻¹V'L'⁻¹
         A, u, s, vh = self._A, self._u, self._s, self._vh
         if transpose:
             lb = A.decorrelate(b, transpose=True)
@@ -1316,6 +1371,11 @@ class Woodbury(DecompAutoDiffBase):
         A, C, X = self._A, self._C, self._X
         return A.logdet() + C.logdet() + X.logdet()
     
+    @property
+    def eps(self):
+        A, C, X = self._A, self._C, self._X
+        return jnp.max(jnp.array([A.eps, C.eps, X.eps]))
+    
     def correlate(self, b, *, transpose=False):
         # A = LL'
         # C = NN'
@@ -1376,7 +1436,7 @@ class Woodbury2(DecompAutoDiffBase):
     def __init__(self, A_decomp, B, C_decomp, decompcls, sign=1, **kw):
         """
 
-        Decompose K = A ± BCB' using Woodbury's formula. K > 0, A > 0, C ≥ 0.
+        Decompose K = A ± BCB' using Woodbury's formula. K, A > 0, C ≥ 0.
                 
         Parameters
         ----------
@@ -1439,6 +1499,11 @@ class Woodbury2(DecompAutoDiffBase):
         A, X = self._A, self._X
         # det(A ± VV') = det(A) det(I ± V' A⁻¹ V)
         return A.logdet() + X.logdet()
+    
+    @property
+    def eps(self):
+        A, X = self._A, self._X
+        return jnp.maximum(A.eps, X.eps)
     
     def correlate(self, b, *, transpose=False):
         # A = NN'
@@ -1568,7 +1633,11 @@ class Pinv(DecompAutoDiff):
     
     @property
     def m(self):
-        return self._K3.m    
+        return self._K3.m
+    
+    @property
+    def eps(self):
+        return jnp.cbrt(self._K3.eps)
 
 class Pinv2(DecompAutoDiff):
     
@@ -1582,7 +1651,7 @@ class Pinv2(DecompAutoDiff):
         
     # TODO pass directly the instantiated decomposition of K^3 along with K?
     
-    def __init__(self, K, decompcls, N=1, eps=None, **kw):
+    def __init__(self, K, decompcls, *, N=1, epsrel='auto', epsabs=0, **kw):
         """
         
         Approximate K⁺ with the truncated series
@@ -1593,7 +1662,7 @@ class Pinv2(DecompAutoDiff):
         ----------
         K : (n, n) array
             The matrix to be decomposed.
-        decompcls : type
+        decompcls : callable
             Class used to decompose K³ + εI, need not support ill-conditioned
             matrices. It should not add its own diagonal regularization.
         N : int
@@ -1607,10 +1676,9 @@ class Pinv2(DecompAutoDiff):
         """
         
         assert N >= 1
+        K = jnp.asarray(K)
         K3 = K @ K @ K
-        if eps is None:
-            eps = len(K3) * jnp.finfo(K.dtype).eps
-        eps *= jnp.max(jnp.sum(jnp.abs(K3), axis=1))
+        eps = self._parseeps(K3, epsrel, epsabs)
         K3 = K3.at[jnp.diag_indices_from(K3)].add(eps)
         self._K3 = decompcls(K3, **kw)
         self._K = K
@@ -1678,6 +1746,7 @@ class Pinv2(DecompAutoDiff):
             K3solveKb = K @ b
             Kc = numpy.asarray(K) @ c
             acc = K3.quad(K3solveKb, Kc)
+            eps = numpy.asarray(eps)
             for n in range(2, N + 1):
                 coef *= eps
                 K3solveKb = K3.solve(K3solveKb)
@@ -1765,3 +1834,7 @@ class Pinv2(DecompAutoDiff):
     @property
     def m(self):
         return self._K3.m * self._N
+
+    @property
+    def eps(self):
+        return jnp.cbrt(self._K3.eps)
