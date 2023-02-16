@@ -22,6 +22,7 @@ import sys
 import numpy as np
 from scipy import stats
 import pytest
+import gvar
 
 sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
@@ -107,8 +108,7 @@ def test_raniter_shape_dict():
     sample = lgp.sample(mean, cov)
     assert_equal_dict_shapes(sample, mean)
 
-def test_raniter_nonbd():
+def test_raniter_bd():
     mean, cov = make_mean_cov_dict((1,))
-    mean = dict(mean)
-    cov = dict(cov)
+    mean = gvar.BufferDict(mean)
     sample = lgp.sample(mean, cov)

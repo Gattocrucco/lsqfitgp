@@ -950,6 +950,14 @@ def test_wendland_highk():
     with pytest.raises(NotImplementedError):
         kernel(0, 0)
 
+def test_default_transf():
+    k1 = _Kernel.Kernel(lambda x, y: x * y, loc=1, maxdim=None)
+    k2 = _Kernel.Kernel(lambda x, y: x * y, loc=1)
+    x = np.linspace(-5, 3, 10)[:, None]
+    v1 = k1(x, x.T)
+    v2 = k2(x, x.T)
+    util.assert_equal(v1, v2)
+
 #####################  XFAILS/SKIPS  #####################
 
 util.skip(TestAR, 'test_normalized')

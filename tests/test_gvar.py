@@ -21,6 +21,7 @@ import sys
 
 import numpy as np
 import gvar
+from jax import tree_util
 
 sys.path.insert(0, '.')
 from lsqfitgp import _patch_gvar
@@ -45,3 +46,10 @@ def test_jacobian():
     check_jacobian(0, ())
     check_jacobian(10, (5,), 0)
     check_jacobian(100, (5,), 0.5)
+
+def test_bdtree():
+    x = gvar.BufferDict(a=[1, 2], b=[3, 4])
+    l, t = tree_util.tree_flatten(x)
+    y = tree_util.tree_unflatten(t, l)
+    assert np.all(x.buf == y.buf)
+    assert x.keys() == y.keys()

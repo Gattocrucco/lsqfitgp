@@ -1110,6 +1110,8 @@ def test_toeplitz_chol_solve_numpy():
                 rhs = rhs.reshape(lhs.shape)
                 util.assert_close_matrices(lhs, rhs, rtol=1e-7)
     with pytest.raises(np.linalg.LinAlgError):
+        _linalg._toeplitz.chol_solve_numpy([-1], [1])
+    with pytest.raises(np.linalg.LinAlgError):
         _linalg._toeplitz.chol_solve_numpy([1, 2], [1, 1])
     with pytest.raises(np.linalg.LinAlgError):
         _linalg._toeplitz.chol_solve_numpy([1, 0.5, 2], [1, 1, 1])

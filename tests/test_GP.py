@@ -1010,3 +1010,15 @@ def test_pred_gvars_givencov():
     y3 = gp.predfromdata({0: mean}, 1, gp.decompose(sdev ** 2))
     util.assert_similar_gvars(y1, y2)
     util.assert_similar_gvars(y1, y3)
+
+def test_pred_fromfit_decomp():
+    gp = lgp.GP(lgp.ExpQuad())
+    gp.addx(0, 0)
+    gp.addx(1, 1)
+    mean, sdev = 1, 2
+    y0 = gp.predfromdata({0: gvar.gvar(mean, sdev)}, 0)
+    y1 = gp.predfromfit({0: y0}, 1)
+    y2 = gp.predfromfit({0: gvar.mean(y0)}, 1, {(0, 0): gvar.var(y0)})
+    y3 = gp.predfromfit({0: gvar.mean(y0)}, 1, gp.decompose(gvar.var(y0)))
+    util.assert_similar_gvars(y1, y2)
+    util.assert_similar_gvars(y1, y3)
