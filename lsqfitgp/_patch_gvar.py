@@ -1,6 +1,6 @@
 # lsqfitgp/_patch_gvar.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -49,28 +49,29 @@ gvar_ufuncs = [
     'erf',
 ]
 
-def jaxsupport(jax_ufunc):
-    """
-    Create a wrapper of a function that will dispatch to another specified
-    function if the argument is a jax array.
-    """
-    def decorator(gvar_ufunc):
-        @functools.wraps(gvar_ufunc)
-        def newfunc(x):
-            if isinstance(x, jnp.ndarray):
-                return jax_ufunc(x)
-            else:
-                return gvar_ufunc(x)
-        return newfunc
-    return decorator
+# def jaxsupport(jax_ufunc):
+#     """
+#     Create a wrapper of a function that will dispatch to another specified
+#     function if the argument is a jax array.
+#     """
+#     def decorator(gvar_ufunc):
+#         @functools.wraps(gvar_ufunc)
+#         def newfunc(x):
+#             if isinstance(x, jnp.ndarray):
+#                 return jax_ufunc(x)
+#             else:
+#                 return gvar_ufunc(x)
+#         return newfunc
+#     return decorator
 
 for fname in gvar_ufuncs:
     fgvar = getattr(gvar, fname)
-    fjax = getattr(jspecial if fname == 'erf' else jnp, fname)
-    # fboth = functools.singledispatch(fgvar)
-    # fboth.register(jnp.ndarray, fjax)
+    fjax = getattr(jnp, fname, getattr(jspecial, fname, NotImplemented))
+    fboth = functools.singledispatch(fgvar)
+    fboth.register(jnp.ndarray, fjax)
     # python dispatch mechanism does not work, see jax issue #11075
-    fboth = jaxsupport(fjax)(fgvar)
+    # TODO may work since jax 0.4.1, check
+    # fboth = jaxsupport(fjax)(fgvar)
     setattr(gvar, fname, fboth)
 
 # reset transformations to support jax arrays
@@ -89,8 +90,9 @@ def scipy_eigh(x):
 
 gvar.SVD._analyzers = dict(scipy_eigh=scipy_eigh)
 # default uses SVD instead of diagonalization because it once was more stable
+# TODO may be the default already now, check
 
-def getsvec(x):
+def _getsvec(x):
     """
     Get the sparse vector of derivatives of a GVar.
     """
@@ -98,6 +100,18 @@ def getsvec(x):
         return x.internaldata[1]
     else:
         return gvar.svec(0)
+
+def _merge_svec(gvlist, start=None, stop=None):
+    if start is None:
+        return _merge_svec(gvlist, 0, len(gvlist))
+    n = stop - start
+    if n <= 0:
+        return gvar.svec(0)
+    if n == 1:
+        return _getsvec(gvlist[start])
+    left = _merge_svec(gvlist, start, start + n // 2)
+    right = _merge_svec(gvlist, start + n // 2, stop)
+    return left.add(right, 1, 1)
 
 def jacobian(g):
     """
@@ -118,13 +132,15 @@ def jacobian(g):
         global covariance matrix.
     """
     g = numpy.asarray(g)
-    v = gvar.svec(0)
-    for x in g.flat:
-        v = v.add(getsvec(x), 1, 1)
+    # v = gvar.svec(0)
+    # for x in g.flat:
+    #     v = v.add(_getsvec(x), 1, 1)
+    #     # TODO merge hierarchically instead of linearly
+    v = _merge_svec(g.flat)
     indices = v.indices()
     jac = numpy.zeros((g.size, len(indices)), float)
     for i, x in enumerate(g.flat):
-        v = getsvec(x)
+        v = _getsvec(x)
         ind = numpy.searchsorted(indices, v.indices())
         jac[i, ind] = v.values()
     jac = jac.reshape(g.shape + indices.shape)
@@ -152,7 +168,8 @@ def from_jacobian(mean, jac, indices):
     mean = numpy.asarray(mean)
     shape = mean.shape
     mean = mean.flat
-    jac = numpy.array(jac) # TODO patches gvar issue #27
+    # jac = numpy.array(jac) # TODO patches gvar issue #27
+    jac = numpy.asarray(jac)
     jac = jac.reshape(len(mean), len(indices))
     g = numpy.zeros(len(mean), object)
     for i, jacrow in enumerate(jac):

@@ -2840,3 +2840,149 @@ With Fisher, back to default eps:
 As expected, same minimum but larger errors. Much slower, 190 s, with many more
 iterations (why?). Add separate covariance determination to empbayes_fit.
 
+2023-02-14
+==========
+
+My current decomposition system is a mess. I can't take reverse gradients.
+I can't straightforwardly implement optimized algorithms that compute together
+likelihood, gradient, and fisher. Jax patterns break down unpredictably. I
+have to redesign it from scratch.
+
+Guidelines and requirements:
+
+  - Sufficient modularity to implement composite decompositions (Woodbury,
+    Block)
+
+  - Does not mess up jax in any way
+  
+  - Caches decompositions
+
+  - Favors optimizing together the likelihood and its derivatives
+
+Operations (in the following I indicate with lowercase inputs which are
+typically vectors or tall matrices, and uppercase inputs which are typically
+large matrices, since optimization requires taking it into account):
+
+    pinv_bilinear(A, r) => A'K⁺r (for the posterior mean)
+    pinv_bilinear_robj(A, r) same but r can be gvars
+    ginv_quad(A) => A'K⁻A (for the posterior covariance)
+        I want the pseudoinverse for the mean because the data may not be
+        in the span and I want to project it orthogonally, while for the
+        covariance I expect B and K to come from a pos def matrix so they are
+        coherent
+    ginv_diagquad(A) => diag(A'K⁻A) (for the posterior variance)
+    minus_log_normal_density(r, dK, dr, value: bool, gradient: bool, fisher: bool)
+        This computes on request
+            value: 1/2 tr(KK⁺) log 2π
+                 + 1/2 tr(I-KK⁺) log 2π
+                 + 1/2 log pdet K
+                 + 1/2 tr(I-KK⁺) log ε
+                 + 1/2 r'(K⁺+(I-KK⁺)/ε)r
+            gradient: 1/2 tr(K⁺dK)
+                    + r'(K⁺+(I-KK⁺)/ε) dr
+                    - 1/2 r'(K⁺+2(I-KK⁺)/ε)dKK⁺r
+            fisher: 1/2 tr(K⁺dK(K⁺+2(I-KK⁺)/ε)dK)
+                  + dr'(K⁺+(I-KK⁺)/ε)dr
+        dK and dr have their dimensions first, and derivatives last (like
+        jax.jac*). There should be options for omitting the pieces with ε.
+        I also need a way to make densities with different values of ε
+        comparable with each other (may not be possible, if it is, it
+        probably requires a history of ranks and ε).
+    correlate(x)
+        Zx where K = ZZ'.
+    back_correlate(X):
+        Z'X, this is used by Sandwich and Woodbury.
+    
+............
+
+Proof of the ∂ log pdet:
+
+    log det (A + ε(I - AA⁺)) =
+        = log pdet A + tr(I - AA⁺) log ε  -->
+    
+    -->  log pdet A = log det (A + ε(I - AA⁺)) - tr(I - AA⁺) log ε
+    
+    ∂ log pdet A = tr((A + ε(I - AA⁺))⁻¹ ∂(A + ε(I - AA⁺))) +
+                   - tr(∂(I - AA⁺)) log ε =
+                  
+                 = tr((A⁺ + (I - AA⁺)/ε) (∂A + ε ∂(I - AA⁺))) +
+                   - 2 tr((I - AA⁺) ∂A A⁺) log ε =
+                   
+                 = tr((A⁺ + (I - AA⁺)/ε) (∂A - ε(I - AA⁺)∂AA⁺ - εA⁺∂A(I - AA⁺))) =
+
+There are 6 terms. The only nonzero terms are those with ∂A alone.
+
+                 = tr(A⁺∂A + (I - AA⁺)∂A/ε)
+
+And now if ∂A intersects the kernel of A I'm fucked, like Holbrook (2018) says.
+But the derivative of ∂ log pdet A(x)/∂x should be defined even if A changes
+kernel.
+
+Example: let's say A is 2x2, and R(x) = rotation by x, and
+
+    A(x) = R(x) diag(x, 0) R'(x).
+
+Then
+
+    log pdet A = log x
+    ∂ log pdet A/∂x = 1/x
+
+even though the range of A is the first column of R, (cos(x), -sin(x)), and
+changes with x:
+
+    ∂R(x)/∂x = ∂/∂x [cos(x) sin(x); -sin(x) cos(x)] =
+             = [-sin(x) cos(x); -cos(x) -sin(x)]
+    
+    ∂A/∂x = ∂R(x)/∂x diag(x, 0) R'(x) +
+            + R(x) diag(1, 0) R'(x) +
+            + R(x) diag(x, 0) ∂R'(x)/∂x =
+        
+          = [-sin(x) -cos(x)]' x [cos(x) -sin(x)] +
+            + [cos(x) -sin(x)]' [cos(x) -sin(x)] +
+            + [cos(x) -sin(x)]' x [-sin(x) -cos(x)] =
+        
+          = x [-CS SS; -CC CS] +
+            + [CC -CS; -SC SS] +
+            + x [-CS -CC; SS CS] =
+        
+          = x [-2CS, SS - CC; SS - CC, 2CS] +
+            + 
+
+Whatevs I can skip the explicit calculation:
+
+    A⁺ = R(x) diag(1/x, 0) R'(x)
+    tr(A⁺∂A/∂x) = tr(R(x) diag(1/x, 0) R'(x) [
+        ∂R(x)/∂x diag(x, 0) R'(x) +
+        + R(x) diag(1, 0) R'(x) +
+        + R(x) diag(x, 0) ∂R'(x)/∂x
+    ])
+
+Quicker: is ∂A in the range of A for hermitian A?
+
+    A = QDQ'
+    QQ' = I  -->  ∂QQ' + Q∂Q' = 0  -->  ∂Q = -Q∂Q'Q
+    ∂A = ∂Q DQ' + Q ∂D Q' + QD ∂Q' =
+       = -Q∂Q'QDQ' + Q∂DQ' - QDQ'∂QQ' =
+       = -Q∂Q'A + Q∂DQ' -A∂QQ'
+    I - AA⁺ = QD̅Q', where D̅D = 0, D̅∂D = 0
+    (I - AA⁺)∂A = -QD̅∂Q'A = -QD̅∂Q'QDQ = QD̅Q'∂QDQ' = (I - AA⁺)∂QDQ'
+
+But:
+
+    tr((I - AA⁺)∂A) = tr((I - AA⁺)∂A(I - AA⁺))
+    (I - AA⁺)∂A(I - AA⁺) = 0
+
+Easier proof of (I - AA⁺)∂A(I - A⁺A) = 0: differentiate (I - AA⁺)A(I - A⁺A) = 0.
+
+............
+
+    det(A + LBL') = det A det B det(B⁻¹ + L'A⁻¹L)
+
+    det(A + εI) = det A det(I + εA⁻¹)
+    
+    det(εI + A) = 
+        = det(εI + LL') =
+        = εⁿ det(I + L'L/ε)
+
+Bah, nothing useful. Indeed it must not be possible to recover the eigenvalues
+below machine precision.

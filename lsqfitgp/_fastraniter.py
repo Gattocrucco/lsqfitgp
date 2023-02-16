@@ -89,7 +89,7 @@ def raniter(mean, cov, n=None, eps=None):
 
     # decompose the covariance matrix
     try:
-        covdec = _linalg.Chol(squarecov, epsrel=eps)
+        covdec = _linalg.Chol(squarecov, epsrel='auto' if eps is None else eps)
     except np.linalg.LinAlgError:
         warnings.warn('covariance matrix not positive definite with eps={}'.format(eps))
         covdec = _linalg.EigCutFullRank(squarecov, epsrel=0)

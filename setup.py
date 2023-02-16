@@ -50,8 +50,8 @@ setuptools.setup(
     install_requires=[
         'numpy>=1.20', # first version with broadcast_shapes
         'scipy>=1.5', # minimum required by jax 0.3.17
-        'jax>=0.3.17', # first supporting pure_callback()
-        'jaxlib>=0.3.15', # latest release before jax 0.3.17
-        'gvar>=11.10', # first version with new gvars correlated with old ones
+        'jax>=0.4.1', # first supporting type dispatching on jax arrays
+        'jaxlib>=0.4.1',
+        'gvar>=11.10.1', # first supporting gvar.gvar(x, cov) with readonly cov
     ]
 )

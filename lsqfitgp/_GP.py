@@ -27,7 +27,7 @@ import numpy
 import jax
 from jax import numpy as jnp
 from jax.scipy import linalg as jlinalg
-from scipy import linalg
+from scipy import linalg, sparse
 
 from . import _Kernel
 from . import _linalg
@@ -40,199 +40,26 @@ __all__ = [
     'GP',
 ]
 
-# TODO make these helper functions methods of GP (first check if they are used
-# somewhere else)
-
-def _concatenate(alist):
-    """
-    Decides to use numpy.concatenate or jnp.concatenate depending on the
-    input to support gvars.
-    """
-    if any(a.dtype == object for a in alist):
-        return numpy.concatenate(alist)
-    else:
-        return jnp.concatenate(alist)
-
-def _triu_indices_and_back(n):
-    """
-    Return indices to get the upper triangular part of a matrix, and indices to
-    convert a flat array of upper triangular elements to a symmetric matrix.
-    """
-    indices = jnp.triu_indices(n)
-    q = jnp.empty((n, n), indices[0].dtype)
-    a = jnp.arange(len(indices[0]))
-    q = q.at[indices].set(a)
-    q = q.at[indices[::-1]].set(a)
-    return indices, q
-
-def _isarraylike_nostructured(x):
-    return numpy.isscalar(x) or jnp.isscalar(x) or isinstance(x, (list, tuple, numpy.ndarray, jnp.ndarray))
-
-def _isarraylike(x):
-    return _isarraylike_nostructured(x) or isinstance(x, _array.StructuredArray)
-
-def _isdictlike(x):
-    return isinstance(x, (dict, gvar.BufferDict))
-
-def _compatible_dtypes(d1, d2): # pragma: no cover
-    """
-    Function to check x arrays datatypes passed to GP.addx. If the dtype is
-    structured, it checks the structure of the fields is the same, but allows
-    casting of concrete dtypes (like, in one array a field can be int, in
-    another float, as long as the field name and position is the same).
-    Currently not used.
-
-    May not be needed in numpy 1.23, check what result_type does now.
-    """
-    if d1.names != d2.names or d1.shape != d2.shape:
-        return False
-    if d1.names is not None:
-        for name in d1.names:
-            if not _compatible_dtypes(d1.fields[name][0], d2.fields[name][0]):
-                return False
-    else:
-        try:
-            numpy.result_type(d1, d2) # TODO not strict enough!
-        except TypeError:
-            return False
-    return True
-
-# TODO make these helper classes members of GP
-
-class _Element(metaclass=abc.ABCMeta):
-    """
-    Abstract class for an object holding information associated to a key in a
-    GP object.
-    """
-    
-    @property
-    @abc.abstractmethod
-    def shape(self): # pragma: no cover
-        """Output shape"""
-        pass
-    
-    @property
-    def size(self):
-        return numpy.prod(self.shape, dtype=int)
-
-class _Points(_Element):
-    """Points where the process is evaluated"""
-    
-    def __init__(self, x, deriv, proc):
-        assert _isarraylike(x)
-        assert isinstance(deriv, _Deriv.Deriv)
-        self.x = x
-        self.deriv = deriv
-        self.proc = proc
-    
-    @property
-    def shape(self):
-        return self.x.shape
-
-class _LinTransf(_Element):
-    """Linear transformation of other _Element objects"""
-    
-    shape = None
-    
-    def __init__(self, transf, keys, shape):
-        self.transf = transf
-        self.keys = keys
-        self.shape = shape
-    
-    def matrices(self, gp):
-        """
-        Matrix coefficients of the transformation (with flattened inputs and
-        output)
-        """
-        elems = [gp._elements[key] for key in self.keys]
-        matrices = []
-        transf = jax.vmap(self.transf, 0, 0)
-        for i, elem in enumerate(elems):
-            inputs = [
-                jnp.eye(elem.size).reshape((elem.size,) + elem.shape)
-                if j == i else
-                jnp.zeros((elem.size,) + ej.shape)
-                for j, ej in enumerate(elems)
-            ]
-            output = transf(*inputs).reshape(elem.size, self.size).T
-            matrices.append(output)
-        return matrices
-
-class _Cov(_Element):
-    """User-provided covariance matrix block(s)"""
-    
-    shape = None
-    
-    def __init__(self, blocks, shape):
-        """ blocks = dict (key, key) -> matrix """
-        self.blocks = blocks
-        self.shape = shape
-
-class _Proc(metaclass=abc.ABCMeta):
-    """
-    Abstract base class for an object holding information about a process
-    in a GP object.
-    """
-    
-    @abc.abstractmethod
-    def __init__(self): # pragma: no cover
-        pass
-    
-class _ProcKernel(_Proc):
-    """An independent process defined with a kernel"""
-    
-    def __init__(self, kernel, deriv=0):
-        assert isinstance(kernel, _Kernel.Kernel)
-        self.kernel = kernel
-        self.deriv = deriv
-    
-class _ProcTransf(_Proc):
-    """A process defined as a linear transformation of other processes"""
-    
-    def __init__(self, ops, deriv):
-        """ops = dict proc key -> callable"""
-        self.ops = ops
-        self.deriv = deriv
-
-class _ProcLinTransf(_Proc):
-    
-    def __init__(self, transf, keys, deriv):
-        self.transf = transf
-        self.keys = keys
-        self.deriv = deriv
-
-class _ProcKernelOp(_Proc):
-    """A process defined by an operation on the kernel of another process"""
-    
-    def __init__(self, proc, method, arg):
-        """proc = proc key, method = Kernel method, arg = argument to method"""
-        self.proc = proc
-        self.method = method
-        self.arg = arg
-        
-class _SingletonMeta(type):
-    
-    def __repr__(cls):
-        return cls.__name__
-
-class _Singleton(metaclass=_SingletonMeta):
-    
-    def __new__(cls):
-        raise NotImplementedError(f"{cls.__name__} can not be instantiated")
-
-class DefaultProcess(_Singleton):
-    """Key for the default process in GP objects"""
-    pass
-
-_zerokernel = _Kernel.Zero()
-
 # TODO make many methods that do not return anything return self, to allow
-# a polars-like syntax as lgp.GP(kernel).addx(x, 0).addx(x, 1).prior()
+# a polars-like syntax as lgp.GP(kernel).addx(x, 0).addx(x, 1).prior() => make
+# GP immutable and return a new GP, with non-copies of actual data? Kernels
+# are already immutable, jax arrays too. StructuredArray is not, I would have
+# to change with .at[field] = ....
 
 # TODO change the method names that define processes to def* instead of add*,
-# such that the distinction between the two kinds is clear
-
-# TODO use DefaultProcess in all process-defining methods for consistency.
+# such that the distinction between the two kinds is clear, and take the
+# occasion to break the parameter order: make a coherent standard
+# name of new thing, operation, name of old thing, *, options
+#
+# defproc(key, kernel, *, deriv=0)
+# defproctransf(key, ops, *, deriv=0)
+# defproclintransf(key, procs, transf, *, deriv=0, checklin=False)
+# defprocderiv(key, deriv, proc)
+# defprocxtransf(key, transf, proc)
+# defprocrescale(key, scalefun, proc)
+#
+# Do not use DefaultProcess implicitly, document it as GP.DefaultProcess that
+# is used as default by instatiation methods
 
 class GP:
     """
@@ -308,29 +135,190 @@ class GP:
 
     """
     
-    # TODO maybe checkpos=True is a too strong default. It can quickly grow
-    # beyond doable even if the actual computations remain light. Also, it
-    # does not really make sense that it is used only in case of gvar output.
-    # Alternative 1: set checkpos=False by default and if True build all the
-    # covariance blocks the first time I call _covblock and check everything.
-    # Alternative 2: only check the matrices I need to invert. Alternative 3:
-    # the default is to check only if the matrices are small enough that it is
-    # not a problem. Alternative 4: check diagonal blocks.
-    # Current behaviour: only the covariance of things added with addx is
-    # checked, and only if gvars are used at some point
-    # Alternative 5: do the check in _solver only on things to be solved
-    # => Idea: do the full check even when not using gvars, only on
-    # non-transformed variables, but issue a warning if the system is large
+    @staticmethod
+    def _concatenate(alist):
+        """
+        Decides to use numpy.concatenate or jnp.concatenate depending on the
+        input to support gvars.
+        """
+        if any(a.dtype == object for a in alist):
+            return numpy.concatenate(alist)
+        else:
+            return jnp.concatenate(alist)
+
+    @staticmethod
+    def _triu_indices_and_back(n):
+        """
+        Return indices to get the upper triangular part of a matrix, and indices to
+        convert a flat array of upper triangular elements to a symmetric matrix.
+        """
+        indices = jnp.triu_indices(n)
+        q = jnp.empty((n, n), indices[0].dtype)
+        a = jnp.arange(len(indices[0]))
+        q = q.at[indices].set(a)
+        q = q.at[indices[::-1]].set(a)
+        return indices, q
+
+    @classmethod
+    def _isarraylike(cls, x):
+        return not cls._isdictlike(x) and (isinstance(x, (list, tuple, numpy.ndarray, jnp.ndarray, _array.StructuredArray)) or numpy.ndim(x) == 0)
+
+    @staticmethod
+    def _isdictlike(x):
+        return isinstance(x, (dict, gvar.BufferDict))
+
+    @staticmethod
+    def _compatible_dtypes(d1, d2): # pragma: no cover
+        """
+        Function to check x arrays datatypes passed to GP.addx. If the dtype is
+        structured, it checks the structure of the fields is the same, but allows
+        casting of concrete dtypes (like, in one array a field can be int, in
+        another float, as long as the field name and position is the same).
+        Currently not used.
+
+        May not be needed in numpy 1.23, check what result_type does now.
+        """
+        if d1.names != d2.names or d1.shape != d2.shape:
+            return False
+        if d1.names is not None:
+            for name in d1.names:
+                if not _compatible_dtypes(d1.fields[name][0], d2.fields[name][0]):
+                    return False
+        else:
+            try:
+                numpy.result_type(d1, d2) # TODO not strict enough!
+            except TypeError:
+                return False
+        return True
     
-    # TODO maybe the default should be solver='eigcut-' (or 'svdcut-'?) because
-    # it adds less noise. It is moot anyway if the plot is done sampling with
-    # gvar.raniter or lgp.raninter because they do add their own noise. But this
-    # will be solved when I add GP sampling methods. A more sensible choice
-    # could be LDLT since it's not bothered by non posdef but it's the fastest
-    # apart from cholesky, however it's not implemented in JAX. Maybe I should
-    # use cholesky+autorange eps, up to 5 tries it's faster than ldlt.
+    class _Element(metaclass=abc.ABCMeta):
+        """
+        Abstract class for an object holding information associated to a key in
+        a GP object.
+        """
     
-    def __init__(self, covfun=None, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, checklin=True, posepsfac=1, **kw):
+        @property
+        @abc.abstractmethod
+        def shape(self): # pragma: no cover
+            """Output shape"""
+            pass
+    
+        @property
+        def size(self):
+            return numpy.prod(self.shape, dtype=int)
+
+    class _Points(_Element):
+        """Points where the process is evaluated"""
+    
+        def __init__(self, x, deriv, proc):
+            assert GP._isarraylike(x)
+            assert isinstance(deriv, _Deriv.Deriv)
+            self.x = x
+            self.deriv = deriv
+            self.proc = proc
+    
+        @property
+        def shape(self):
+            return self.x.shape
+
+    class _LinTransf(_Element):
+        """Linear transformation of other _Element objects"""
+    
+        shape = None
+    
+        def __init__(self, transf, keys, shape):
+            self.transf = transf
+            self.keys = keys
+            self.shape = shape
+    
+        def matrices(self, gp):
+            """
+            Matrix coefficients of the transformation (with flattened inputs
+            and output)
+            """
+            elems = [gp._elements[key] for key in self.keys]
+            matrices = []
+            transf = jax.vmap(self.transf, 0, 0)
+            for i, elem in enumerate(elems):
+                inputs = [
+                    jnp.eye(elem.size).reshape((elem.size,) + elem.shape)
+                    if j == i else
+                    jnp.zeros((elem.size,) + ej.shape)
+                    for j, ej in enumerate(elems)
+                ]
+                output = transf(*inputs).reshape(elem.size, self.size).T
+                matrices.append(output)
+            return matrices
+
+    class _Cov(_Element):
+        """User-provided covariance matrix block(s)"""
+    
+        shape = None
+    
+        def __init__(self, blocks, shape):
+            """ blocks = dict (key, key) -> matrix """
+            self.blocks = blocks
+            self.shape = shape
+
+    class _Proc(metaclass=abc.ABCMeta):
+        """
+        Abstract base class for an object holding information about a process
+        in a GP object.
+        """
+    
+        @abc.abstractmethod
+        def __init__(self): # pragma: no cover
+            pass
+    
+    class _ProcKernel(_Proc):
+        """An independent process defined with a kernel"""
+    
+        def __init__(self, kernel, deriv=0):
+            assert isinstance(kernel, _Kernel.Kernel)
+            self.kernel = kernel
+            self.deriv = deriv
+    
+    class _ProcTransf(_Proc):
+        """A process defined as a linear transformation of other processes"""
+    
+        def __init__(self, ops, deriv):
+            """ops = dict proc key -> callable"""
+            self.ops = ops
+            self.deriv = deriv
+
+    class _ProcLinTransf(_Proc):
+    
+        def __init__(self, transf, keys, deriv):
+            self.transf = transf
+            self.keys = keys
+            self.deriv = deriv
+
+    class _ProcKernelOp(_Proc):
+        """A process defined by an operation on the kernel of another process"""
+    
+        def __init__(self, proc, method, arg):
+            """proc = proc key, method = Kernel method, arg = argument to method"""
+            self.proc = proc
+            self.method = method
+            self.arg = arg
+        
+    class _SingletonMeta(type):
+    
+        def __repr__(cls):
+            return cls.__name__
+
+    class _Singleton(metaclass=_SingletonMeta):
+    
+        def __new__(cls):
+            raise NotImplementedError(f"{cls.__name__} can not be instantiated")
+
+    class DefaultProcess(_Singleton):
+        """Key for the default process in GP objects"""
+        pass
+
+    _zerokernel = _Kernel.Zero()
+
+    def __init__(self, covfun=None, *, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, checklin=True, posepsfac=1, **kw):
         self._elements = dict() # key -> _Element
         self._covblocks = dict() # (key, key) -> matrix
         self._priordict = gvar.BufferDict({}, dtype=object) # key -> gvar array (shaped)
@@ -340,7 +328,7 @@ class GP:
         if covfun is not None:
             if not isinstance(covfun, _Kernel.Kernel):
                 raise TypeError('covariance function must be of class Kernel')
-            self._procs[DefaultProcess] = _ProcKernel(covfun)
+            self._procs[self.DefaultProcess] = self._ProcKernel(covfun)
         decomp = self._getdecomp(solver)
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **kw)
         self._checkpositive = bool(checkpos)
@@ -375,13 +363,13 @@ class GP:
             raise KeyError(f'process key {key!r} already used in GP')
         
         if kernel is None:
-            kernel = self._procs[DefaultProcess].kernel
+            kernel = self._procs[self.DefaultProcess].kernel
         
         deriv = _Deriv.Deriv(deriv)
         
-        self._procs[key] = _ProcKernel(kernel, deriv)
+        self._procs[key] = self._ProcKernel(kernel, deriv)
     
-    def addproctransf(self, ops, key, deriv=0):
+    def addproctransf(self, ops, key=DefaultProcess, deriv=0):
         """
         
         Define a new process as a linear combination of other processes.
@@ -398,7 +386,8 @@ class GP:
             functions. The functions must take an argument of the same kind
             of the domain of the process.
         key : hashable
-            The name that identifies the new process in the GP object.
+            The name that identifies the new process in the GP object. If not
+            specified, sets the default process.
         deriv : Deriv-like
             The linear combination is derived as specified by this
             parameter.
@@ -421,7 +410,7 @@ class GP:
         
         deriv = _Deriv.Deriv(deriv)
         
-        self._procs[key] = _ProcTransf(ops, deriv)
+        self._procs[key] = self._ProcTransf(ops, deriv)
         
         # functions = [
         #     op if callable(op)
@@ -438,7 +427,7 @@ class GP:
         #     return fun
         # self.addproclintransf(equivalent_lintransf, list(ops.keys()), key, deriv, False)
     
-    def addproclintransf(self, transf, keys, key, deriv=0, checklin=False):
+    def addproclintransf(self, transf, keys, key=DefaultProcess, deriv=0, checklin=False):
         """
         
         Define a new process as a linear combination of other processes.
@@ -455,7 +444,8 @@ class GP:
         keys : sequence
             The keys of the processes to be passed to the transformation.
         key : hashable
-            The name that identifies the new process in the GP object.
+            The name that identifies the new process in the GP object. If not
+            specified, sets the default process.
         deriv : Deriv-like
             The linear combination is derived as specified by this
             parameter.
@@ -479,7 +469,7 @@ class GP:
         deriv = _Deriv.Deriv(deriv)
         
         if len(keys) == 0:
-            self._procs[key] = _ProcKernel(_zerokernel)
+            self._procs[key] = self._ProcKernel(self._zerokernel)
             return
         
         if checklin is None:
@@ -496,7 +486,7 @@ class GP:
             shapes = [(11,)] * len(keys)
             self._checklinear(checktransf, shapes, elementwise=True)
         
-        self._procs[key] = _ProcLinTransf(transf, keys, deriv)
+        self._procs[key] = self._ProcLinTransf(transf, keys, deriv)
 
     def addkernelop(self, method, arg, key, proc=DefaultProcess):
         """
@@ -525,7 +515,7 @@ class GP:
         if proc not in self._procs:
             raise KeyError(f'process {proc!r} not found')
                 
-        self._procs[key] = _ProcKernelOp(proc, method, arg)
+        self._procs[key] = self._ProcKernelOp(proc, method, arg)
     
     def addprocderiv(self, deriv, key, proc=DefaultProcess):
         """
@@ -630,22 +620,26 @@ class GP:
         # TODO after I implement block solving, add per-key covariance matrix
         # flags.
         
-        # TODO add `copy` parameter, default False, to copy the input arrays.
+        # TODO add `copy` parameter, default False, to copy the input arrays
+        # if they are numpy arrays.
+        
+        # this interface does not allow adding a single dictionary as x element
+        # unless it's wrapped as a 0d numpy array, but this is for the best
         
         deriv = _Deriv.Deriv(deriv)
 
         if proc not in self._procs:
             raise KeyError(f'process named {proc!r} not found')
                 
-        if _isarraylike(x):
-            if key is None:
-                raise ValueError('x is array but key is None')
-            x = {key: x}
-        elif _isdictlike(x):
+        if self._isdictlike(x):
             if key is not None:
                 raise ValueError('can not specify key if x is a dictionary')
             if None in x:
                 raise ValueError('None key in x not allowed')
+        elif self._isarraylike(x):
+            if key is None:
+                raise ValueError('x is array but key is None')
+            x = {key: x}
         else:
             raise TypeError('x must be array or dict')
         
@@ -656,7 +650,7 @@ class GP:
             gx = x[key]
             
             # Convert to numpy array or StructuredArray.
-            if not _isarraylike(gx):
+            if not self._isarraylike(gx):
                 raise TypeError('x[{!r}] is not array-like'.format(key))
             gx = _array.asarray(gx)
 
@@ -698,7 +692,7 @@ class GP:
                     if dim not in gx.dtype.names:
                         raise ValueError(f'deriv field {dim!r} not in x')
             
-            self._elements[key] = _Points(gx, deriv, proc)
+            self._elements[key] = self._Points(gx, deriv, proc)
         
     def addtransf(self, tensors, key, axes=1):
         """
@@ -858,7 +852,7 @@ class GP:
             shapes = [self._elements[k].shape for k in keys]
             self._checklinear(transf, shapes)
         
-        self._elements[key] = _LinTransf(transf, keys, shape)
+        self._elements[key] = self._LinTransf(transf, keys, shape)
     
     def _checklinear(self, func, inshapes, elementwise=False):
         
@@ -937,19 +931,19 @@ class GP:
         # interpreted as the decomposition of the whole block matrix.
         
         # Check type of `covblocks` and standardize it to dictionary.
-        if _isarraylike(covblocks):
+        if self._isdictlike(covblocks):
+            if key is not None:
+                raise ValueError('can not specify key if covblocks is a dictionary')
+            if None in covblocks:
+                raise ValueError('None key in covblocks not allowed')
+            if decomps is not None and not self._isdictlike(decomps):
+                raise TypeError('covblocks is dictionary but decomps is not')
+        elif self._isarraylike(covblocks):
             if key is None:
                 raise ValueError('covblocks is array but key is None')
             covblocks = {(key, key): covblocks}
             if decomps is not None:
                 decomps = {key: decomps}
-        elif _isdictlike(covblocks):
-            if key is not None:
-                raise ValueError('can not specify key if covblocks is a dictionary')
-            if None in covblocks:
-                raise ValueError('None key in covblocks not allowed')
-            if decomps is not None and not _isdictlike(decomps):
-                raise TypeError('covblocks is dictionary but decomps is not')
         else:
             raise TypeError('covblocks must be array or dict')
         
@@ -966,6 +960,10 @@ class GP:
                 if key in self._elements:
                     raise KeyError(f'key {key!r} already in GP')
             xkey, ykey = keys
+            if block is None:
+                raise TypeError(f'block {keys!r} is None')
+                # because jnp.asarray(None) interprets None as nan
+                # (see jax issue #14506)
             block = jnp.asarray(block)
             
             if xkey == ykey:
@@ -1035,7 +1033,7 @@ class GP:
         
         # Create _Cov objects.
         for key, shape in shapes.items():
-            self._elements[key] = _Cov(blocks, shape)
+            self._elements[key] = self._Cov(blocks, shape)
             decomp = decomps.get(key)
             if decomp is not None:
                 self._decompcache[key,] = decomp
@@ -1051,19 +1049,19 @@ class GP:
         xp = self._procs[xpkey]
         yp = self._procs[ypkey]
         
-        if isinstance(xp, _ProcKernel) and isinstance(yp, _ProcKernel):
+        if isinstance(xp, self._ProcKernel) and isinstance(yp, self._ProcKernel):
             kernel = self._crosskernel_kernels(xpkey, ypkey)
-        elif isinstance(xp, _ProcTransf):
+        elif isinstance(xp, self._ProcTransf):
             kernel = self._crosskernel_transf_any(xpkey, ypkey)
-        elif isinstance(yp, _ProcTransf):
+        elif isinstance(yp, self._ProcTransf):
             kernel = self._crosskernel_transf_any(ypkey, xpkey)._swap()
-        elif isinstance(xp, _ProcLinTransf):
+        elif isinstance(xp, self._ProcLinTransf):
             kernel = self._crosskernel_lintransf_any(xpkey, ypkey)
-        elif isinstance(yp, _ProcLinTransf):
+        elif isinstance(yp, self._ProcLinTransf):
             kernel = self._crosskernel_lintransf_any(ypkey, xpkey)._swap()
-        elif isinstance(xp, _ProcKernelOp):
+        elif isinstance(xp, self._ProcKernelOp):
             kernel = self._crosskernel_op_any(xpkey, ypkey)
-        elif isinstance(yp, _ProcKernelOp):
+        elif isinstance(yp, self._ProcKernelOp):
             kernel = self._crosskernel_op_any(ypkey, xpkey)._swap()
         else:
             raise TypeError(f'unrecognized process types {type(xp)!r} and {type(yp)!r}')
@@ -1081,24 +1079,24 @@ class GP:
         if xp is yp:
             return xp.kernel.diff(xp.deriv, xp.deriv)
         else:
-            return _zerokernel
+            return self._zerokernel
     
     def _crosskernel_transf_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]
         yp = self._procs[ypkey]
         
-        kernelsum = _zerokernel
+        kernelsum = self._zerokernel
         
         for pkey, factor in xp.ops.items():
             kernel = self._crosskernel(pkey, ypkey)
-            if kernel is _zerokernel:
+            if kernel is self._zerokernel:
                 continue
             
             if not callable(factor):
                 factor = (lambda f: lambda _: f)(factor)
             kernel = kernel.rescale(factor, None)
             
-            if kernelsum is _zerokernel:
+            if kernelsum is self._zerokernel:
                 kernelsum = kernel
             else:
                 kernelsum += kernel
@@ -1128,8 +1126,8 @@ class GP:
         else:
             basekernel = self._crosskernel(xp.proc, ypkey)
         
-        if basekernel is _zerokernel:
-            return _zerokernel
+        if basekernel is self._zerokernel:
+            return self._zerokernel
         elif xp is yp:
             return getattr(basekernel, xp.method)(xp.arg, xp.arg)
         else:
@@ -1139,20 +1137,20 @@ class GP:
         x = self._elements[xkey]
         y = self._elements[ykey]
         
-        assert isinstance(x, _Points)
-        assert isinstance(y, _Points)
+        assert isinstance(x, self._Points)
+        assert isinstance(y, self._Points)
         
         kernel = self._crosskernel(x.proc, y.proc)
-        if kernel is _zerokernel:
+        if kernel is self._zerokernel:
             # TODO handle zero cov block efficiently
             return jnp.zeros((x.size, y.size))
         
         kernel = kernel.diff(x.deriv, y.deriv)
         
         if x is y and not self._checksym:
-            indices, back = _triu_indices_and_back(x.size)
-            ax = jnp.broadcast_to(x.x.reshape(-1)[:, None], (x.x.size, y.x.size))[indices]
-            ay = jnp.broadcast_to(y.x.reshape(-1)[None, :], (x.x.size, y.x.size))[indices]
+            indices, back = self._triu_indices_and_back(x.size)
+            ax = _array.broadcast_to(x.x.reshape(-1)[:, None], (x.x.size, y.x.size))[indices]
+            ay = _array.broadcast_to(y.x.reshape(-1)[None, :], (x.x.size, y.x.size))[indices]
             halfcov = kernel(ax, ay)
             cov = halfcov[back]
         else:
@@ -1165,7 +1163,7 @@ class GP:
     def _makecovblock_lintransf_any(self, xkey, ykey):
         x = self._elements[xkey]
         y = self._elements[ykey]
-        assert isinstance(x, _LinTransf)
+        assert isinstance(x, self._LinTransf)
         
         # Gather covariance matrices to be transformed.
         covs = []
@@ -1187,14 +1185,14 @@ class GP:
     def _makecovblock(self, xkey, ykey):
         x = self._elements[xkey]
         y = self._elements[ykey]
-        if isinstance(x, _Points) and isinstance(y, _Points):
+        if isinstance(x, self._Points) and isinstance(y, self._Points):
             cov = self._makecovblock_points(xkey, ykey)
-        elif isinstance(x, _LinTransf):
+        elif isinstance(x, self._LinTransf):
             cov = self._makecovblock_lintransf_any(xkey, ykey)
-        elif isinstance(y, _LinTransf):
+        elif isinstance(y, self._LinTransf):
             cov = self._makecovblock_lintransf_any(ykey, xkey)
             cov = cov.T
-        elif isinstance(x, _Cov) and isinstance(y, _Cov) and x.blocks is y.blocks and (xkey, ykey) in x.blocks:
+        elif isinstance(x, self._Cov) and isinstance(y, self._Cov) and x.blocks is y.blocks and (xkey, ykey) in x.blocks:
             cov = x.blocks[xkey, ykey]
         else:
             # TODO handle zero cov block efficiently
@@ -1214,10 +1212,16 @@ class GP:
             self._checkpositive_todo = False
             keys = [
                 k for k, v in self._elements.items()
-                if isinstance(v, (_Points, _Cov))
+                if isinstance(v, (self._Points, self._Cov))
             ]
             fullcov = self._assemblecovblocks(list(keys))
             self._checkpos(fullcov)
+            # TODO new trigger: whenever a public function is about to return
+            # something (prior, pred, _prior_decomp) call a method with the list
+            # of blocks to be checked, this method keeps a cache of sets of
+            # blocks checked together, if the set to be checked is in some
+            # previous set ignore, otherwise assemble it, check, and add to
+            # the cache list
             
         if (row, col) not in self._covblocks:
             block = self._makecovblock(row, col)
@@ -1270,7 +1274,7 @@ class GP:
             for key in keys:
                 elem = self._elements[key]
                 nest = False
-                if isinstance(elem, _LinTransf):
+                if isinstance(elem, self._LinTransf):
                     size = sum(self._elements[k].size for k in elem.keys)
                     if size < elem.size:
                         nest = True
@@ -1297,13 +1301,19 @@ class GP:
         return decomp
         
     def _checkpos(self, cov):
-        # TODO use an iterative method to get only the two extreme eigenvalues.
-        # see playground/checkpos.py
         with _patch_jax.skipifabstract():
-            eigv = jnp.linalg.eigvalsh(cov)
-            mineigv = jnp.min(eigv)
+            # eigv = jnp.linalg.eigvalsh(cov)
+            # mineigv, maxeigv = jnp.min(eigv), jnp.max(eigv)
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', r'Exited at iteration .+? with accuracies')
+                warnings.filterwarnings('ignore', r'Exited postprocessing with accuracies')
+                X = numpy.random.randn(len(cov), 1)
+                A = numpy.asarray(cov)
+                (mineigv,), _ = sparse.linalg.lobpcg(A, X, largest=False)
+                (maxeigv,), _ = sparse.linalg.lobpcg(A, X, largest=True)
+            assert mineigv <= maxeigv
             if mineigv < 0:
-                bound = -len(cov) * jnp.finfo(cov.dtype).eps * jnp.max(eigv) * self._posepsfac
+                bound = -len(cov) * jnp.finfo(cov.dtype).eps * maxeigv * self._posepsfac
                 if mineigv < bound:
                     msg = 'covariance matrix is not positive definite: '
                     msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
@@ -1312,13 +1322,13 @@ class GP:
     def _priorpointscov(self, key):
         
         x = self._elements[key]
-        classes = (_Points, _Cov)
+        classes = (self._Points, self._Cov)
         assert isinstance(x, classes)
         mean = numpy.zeros(x.size)
         cov = self._covblock(key, key).astype(float)
         assert cov.shape == 2 * mean.shape, cov.shape
         
-        cov = numpy.array(cov) # TODO workaround for gvar issue #27
+        # cov = numpy.array(cov) # TODO workaround for gvar issue #27
 
         # get preexisting primary gvars to be correlated with the new ones
         preitems = [
@@ -1344,7 +1354,7 @@ class GP:
     
     def _priorlintransf(self, key):
         x = self._elements[key]
-        assert isinstance(x, _LinTransf)
+        assert isinstance(x, self._LinTransf)
         
         # Gather all gvars to be transformed.
         elems = [
@@ -1380,9 +1390,9 @@ class GP:
         prior = self._priordict.get(key, None)
         if prior is None:
             x = self._elements[key]
-            if isinstance(x, (_Points, _Cov)):
+            if isinstance(x, (self._Points, self._Cov)):
                 prior = self._priorpointscov(key)
-            elif isinstance(x, _LinTransf):
+            elif isinstance(x, self._LinTransf):
                 prior = self._priorlintransf(key)
             else:
                 raise TypeError(type(x))
@@ -1580,7 +1590,7 @@ class GP:
         outslices = self._slices(outkeys)
         
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
-        y = _concatenate(ylist)
+        y = self._concatenate(ylist)
         
         Kxxs = self._assemblecovblocks(inkeys, outkeys)
         
@@ -1629,8 +1639,8 @@ class GP:
         else: # (keepcorr and not raw)        
             yplist = [numpy.reshape(self._prior(key), -1) for key in inkeys]
             ysplist = [numpy.reshape(self._prior(key), -1) for key in outkeys]
-            yp = _concatenate(yplist)
-            ysp = _concatenate(ysplist)
+            yp = self._concatenate(yplist)
+            ysp = self._concatenate(ysplist)
             
             mat = ycov if fromdata else None
             y = numpy.asarray(y) # because y - yp fails if y is a jax array
@@ -1659,7 +1669,7 @@ class GP:
         
         elif not keepcorr:
             
-            cov = numpy.array(cov) # TODO workaround for gvar issue #27
+            # cov = numpy.array(cov) # TODO workaround for gvar issue #27
             
             flatout = gvar.gvar(mean, cov, fast=True)
         
@@ -1686,7 +1696,7 @@ class GP:
     
     def _prior_decomp(self, given, givencov=None, **kw):
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
-        y = _concatenate(ylist)
+        y = self._concatenate(ylist)
         
         # Get mean.
         if y.dtype == object:

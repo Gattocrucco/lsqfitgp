@@ -69,6 +69,7 @@ kwargs = [
     for keepcorr in [False, True]
     if not (keepcorr and raw)
 ]
+# TODO rewrite using pytest parameters
 
 def postfix(kw1, kw2):
     postfix = '_'

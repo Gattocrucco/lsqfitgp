@@ -382,13 +382,29 @@ class DecompAutoDiffBase(DecompPyTree):
         
         super().__init_subclass__(**kw)
         
-        if inspect.isabstract(cls):
-            # do not wrap the class methods if it's still abstract, because
-            # __init_subclass__ will necessarily be invoked again on the
-            # concrete subclasses
-            return
-
         old__init__ = cls.__init__
+
+        if inspect.isabstract(cls):
+            # Do not wrap the class methods if it's still abstract, because
+            # __init_subclass__ will necessarily be invoked again on the
+            # concrete subclasses. But wrap the __init__ to drop
+            # DecompAutoDiffBase additional arguments eventually passed to
+            # super().__init__ from the subclass.
+            
+            argnames = ['direct_autodiff', 'stop_hessian']
+            missing_names = [
+                name for name in argnames
+                if not cls._hasarg(old__init__, name)
+            ]
+            if missing_names:
+                @functools.wraps(old__init__)
+                def __init__(self, *args, **kw):
+                    for name in missing_names:
+                        kw.pop(name, None)
+                    old__init__(self, *args, **kw)
+                cls.__init__ = __init__
+            
+            return
         
         @functools.wraps(old__init__)
         def __init__(self, *args, **kw):
@@ -602,6 +618,12 @@ class Diag(DecompAutoDiff):
         if transpose:
             A_1 = A_1.T
         return A_1 @ b
+        
+# TODO merge the diagonalizations into a single class Diag with options
+# rank=None, if specified applies before epsilon cut, inflate: bool, signed:
+# bool. Default inflate=True (to avoid ignoring incompatible y and breaking the
+# continuity of the logdet), signed=True (to provide an accurate solve and
+# quad). In the GP interface, make a single method name 'diag'.
     
 class EigCutFullRank(Diag):
     """

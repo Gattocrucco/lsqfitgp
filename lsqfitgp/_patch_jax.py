@@ -117,7 +117,7 @@ class skipifabstract:
     
     def __exit__(self, exc_type, exc_value, tb):
         exit = self.mgr.__exit__(exc_type, exc_value, tb)
-        if exit or exc_type is jax.errors.ConcretizationTypeError:
+        if exit or exc_type in (jax.errors.ConcretizationTypeError, jax.errors.TracerArrayConversionError):
             return True
         
         if exc_type is IndexError and traceback.extract_tb(tb)[-1].name == 'arg_info_pytree':

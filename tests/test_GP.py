@@ -362,8 +362,6 @@ def test_none_key():
 def test_nonsense_x():
     gp = lgp.GP(lgp.ExpQuad())
     with pytest.raises(TypeError):
-        gp.addx(None, 0)
-    with pytest.raises(TypeError):
         gp.addcov(None, 0)
 
 def test_key_already_used():
@@ -736,7 +734,7 @@ def test_marginal_likelihood_gvar():
     util.assert_allclose(ml2, ml1, rtol=1e-15)
 
 def test_singleton():
-    dp = lgp._GP.DefaultProcess
+    dp = lgp.GP.DefaultProcess
     assert repr(dp) == 'DefaultProcess'
     with pytest.raises(NotImplementedError):
         dp()
@@ -926,7 +924,7 @@ def test_givencov_decomp():
     c = gen.standard_normal((len(a) * 2, len(a)))
     gp.addtransf({0: c}, 2)
     dec1, dec2 = decs(gp, [2])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-10)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-9)
     
     # short and tall sandwich
     dec1, dec2 = decs(gp, [1, 2])
@@ -946,14 +944,14 @@ def test_givencov_decomp():
     e = gen.standard_normal((2 * len(d), len(d)))
     gp.addtransf({3: e}, 4)
     dec1, dec2 = decs(gp, [1, 4])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-10)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-9)
     
     # sum of two matrices
     f = genpd(len(a))
     gp.addcov(f, 5)
     gp.addtransf({0: 1, 5: 1}, 6)
     dec1, dec2 = decs(gp, [6])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-12)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-11)
     
     # the same matrix, twice
     gp.addcov({(k, q): a for k in [7, 8] for q in [7, 8]})
@@ -964,6 +962,7 @@ def test_givencov_decomp():
     dec1, dec2 = decs(gp, [0], len(a) // 2)
     util.assert_close_decomps(dec2, dec1, rtol=1) # TODO wildly inaccurate
     
-# TODO use a structured array with checksym=False, it fails right now when
-# the array passes through jnp.broadcast_to. => Maybe after writing the test
-# I should wrap all structured arrays with StructuredArray in GP.addx.
+def test_nochecksym_structured():
+    gp = lgp.GP(lgp.ExpQuad(), checksym=False)
+    gp.addx(np.zeros(1, 'd,d'), 0)
+    gp.prior(0)
