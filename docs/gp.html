@@ -121,7 +121,7 @@
 <span id="gp"></span><h1><span class="section-number">6. </span>Gaussian process class<a class="headerlink" href="#gaussian-process-class" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.GP">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkfinite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posepsfac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkfinite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posepsfac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Object that represents a Gaussian process over arbitrary input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -171,10 +171,10 @@ definite is multiplied by this factor (default 1).</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproc" title="lsqfitgp.GP.addproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproc</span></code></a>([kernel, key, deriv])</p></td>
 <td><p>Add an independent process.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproctransf" title="lsqfitgp.GP.addproctransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproctransf</span></code></a>(ops, key[, deriv])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproctransf" title="lsqfitgp.GP.addproctransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproctransf</span></code></a>(ops[, key, deriv])</p></td>
 <td><p>Define a new process as a linear combination of other processes.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproclintransf" title="lsqfitgp.GP.addproclintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproclintransf</span></code></a>(transf, keys, key[, deriv, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.addproclintransf" title="lsqfitgp.GP.addproclintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproclintransf</span></code></a>(transf, keys[, key, deriv, ...])</p></td>
 <td><p>Define a new process as a linear combination of other processes.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.GP.addkernelop" title="lsqfitgp.GP.addkernelop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addkernelop</span></code></a>(method, arg, key[, proc])</p></td>
@@ -205,10 +205,16 @@ definite is multiplied by this factor (default 1).</p>
 <td><p>Compute the logarithm of the probability of the data.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.GP.decompose" title="lsqfitgp.GP.decompose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decompose</span></code></a>(posdefmatrix[, solver])</p></td>
-<td><p>Decompose a positive definite matrix.</p></td>
+<td><p>Decompose a nonnegative definite matrix.</p></td>
 </tr>
 </tbody>
 </table>
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.GP.DefaultProcess">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DefaultProcess</span></span><a class="headerlink" href="#lsqfitgp.GP.DefaultProcess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Key for the default process in GP objects</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addcov">
 <span class="sig-name descname"><span class="pre">addcov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covblocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decomps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addcov" title="Permalink to this definition">¶</a></dt>
@@ -348,7 +354,7 @@ default process.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addproclintransf">
-<span class="sig-name descname"><span class="pre">addproclintransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproclintransf" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addproclintransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproclintransf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Define a new process as a linear combination of other processes.</p>
 <p>Let f_i(x), i = 1, 2, … be already defined processes, and T
 a linear map from processes to a single process. The new process is</p>
@@ -362,7 +368,8 @@ a linear map from processes to a single process. The new process is</p>
 </dd>
 <dt><strong>keys</strong><span class="classifier">sequence</span></dt><dd><p>The keys of the processes to be passed to the transformation.</p>
 </dd>
-<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the new process in the GP object.</p>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the new process in the GP object. If not
+specified, sets the default process.</p>
 </dd>
 <dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>The linear combination is derived as specified by this
 parameter.</p>
@@ -400,7 +407,7 @@ default process.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.addproctransf">
-<span class="sig-name descname"><span class="pre">addproctransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ops</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproctransf" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">addproctransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ops</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">DefaultProcess</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deriv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.addproctransf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Define a new process as a linear combination of other processes.</p>
 <p>Let f_i(x), i = 1, 2, … be already defined processes, and g_i(x) be
 deterministic functions. The new process is defined as</p>
@@ -414,7 +421,8 @@ deterministic functions. The new process is defined as</p>
 functions. The functions must take an argument of the same kind
 of the domain of the process.</p>
 </dd>
-<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the new process in the GP object.</p>
+<dt><strong>key</strong><span class="classifier">hashable</span></dt><dd><p>The name that identifies the new process in the GP object. If not
+specified, sets the default process.</p>
 </dd>
 <dt><strong>deriv</strong><span class="classifier">Deriv-like</span></dt><dd><p>The linear combination is derived as specified by this
 parameter.</p>
@@ -510,13 +518,13 @@ the default process.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.GP.decompose">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decompose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">posdefmatrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP.decompose" title="Permalink to this definition">¶</a></dt>
-<dd><p>Decompose a positive definite matrix.</p>
+<dd><p>Decompose a nonnegative definite matrix.</p>
 <p>The decomposition can be used to calculate linear algebra expressions
-where the inverse of the matrix appears.</p>
+where the (pseudo)inverse of the matrix appears.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
-<dt><strong>posdefmatrix</strong><span class="classifier">array</span></dt><dd><p>A positive semidefinite nonempty symmetric square matrix. If the
+<dt><strong>posdefmatrix</strong><span class="classifier">array</span></dt><dd><p>A nonnegative definite nonempty symmetric square matrix. If the
 array is not square, it must have a shape of the kind (k, n, m,
 …, k, n, m, …) and is reshaped to (k * n * m * …, k * n * m *
 …).</p>
@@ -532,9 +540,12 @@ sign.</p>
 </dd>
 <dt>‘svdcut-’</dt><dd><p>Remove small eigenvalues.</p>
 </dd>
-<dt>‘lowrank’</dt><dd><p>Reduce the rank of the matrix. The complexity is O(n^2 r) where
+<dt>‘lanczos’</dt><dd><p>Reduce the rank of the matrix. The complexity is O(n^2 r) where
 <cite>n</cite> is the matrix size and <cite>r</cite> the required rank, while the
 other algorithms are O(n^3). Slow for small sizes.</p>
+</dd>
+<dt>‘lobpcg’</dt><dd><p>Like ‘lanczos’ but using the LOBPCG algorithm, faster but less
+accurate.</p>
 </dd>
 <dt>‘chol’</dt><dd><p>Cholesky decomposition after regularizing the matrix with a
 Gershgorin estimate of the maximum eigenvalue. The fastest of
@@ -543,14 +554,19 @@ the O(n^3) algorithms.</p>
 </dl>
 </dd>
 <dt><strong>**kw</strong></dt><dd><p>Additional options.</p>
-<dl class="simple">
-<dt>eps<span class="classifier">positive float</span></dt><dd><p>For solvers ‘eigcut+’, ‘eigcut-’, ‘svdcut+’, ‘svdcut-’, ‘chol’.
-Specifies the threshold for considering small the eigenvalues,
-relative to the maximum eigenvalue. The default is matrix size
-* float epsilon.</p>
+<dl>
+<dt>epsrel, epsabs<span class="classifier">positive float or ‘auto’</span></dt><dd><p>For solvers ‘eigcut+’, ‘eigcut-’, ‘svdcut+’, ‘svdcut-’, ‘chol’.
+Specify the threshold for considering small the eigenvalues:</p>
+<blockquote>
+<div><p>eps = epsrel * maximum_eigenvalue + epsabs</p>
+</div></blockquote>
+<p>epsrel=’auto’ sets epsrel = matrix_size * float_epsilon, 
+while epsabs=’auto’ sets epsabs = float_epsilon. Default is
+epsrel=’auto’, epsabs=0.</p>
 </dd>
-<dt>rank<span class="classifier">positive integer</span></dt><dd><p>For the ‘lowrank’ solver, the target rank. It should be much
-smaller than the matrix size for the method to be convenient.</p>
+<dt>rank<span class="classifier">positive integer</span></dt><dd><p>For the ‘lanczos’ and ‘lobpcg’ solvers, the target rank. It
+should be much smaller than the matrix size for the method to
+be convenient.</p>
 </dd>
 <dt>direct_autodiff<span class="classifier">bool</span></dt><dd><p>If True, let JAX compute derivatives tracing through the code
 instead of using custom derivatives for the various operations.
@@ -567,23 +583,31 @@ work in reverse mode. Default False.</p>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl>
 <dt><strong>decomp</strong><span class="classifier">Decomposition</span></dt><dd><p>An object representing the decomposition of the matrix. The
-available methods and properties are (A being the matrix):</p>
+available methods and properties are (K being the matrix):</p>
 <dl class="simple">
 <dt>n</dt><dd><p>The size of the matrix.</p>
 </dd>
-<dt>matrix()</dt><dd><p>Return A.</p>
+<dt>matrix()</dt><dd><p>Return K.</p>
 </dd>
-<dt>inv()</dt><dd><p>Compute A^-1.</p>
+<dt>inv()</dt><dd><p>Compute K⁺.</p>
 </dd>
-<dt>solve(b)</dt><dd><p>Compute A^-1 b.</p>
+<dt>solve(b)</dt><dd><p>Compute K⁺b.</p>
 </dd>
-<dt>quad(b[, c])</dt><dd><p>Compute b^T A^-1 b or b^T A^-1 c.</p>
+<dt>quad(b[, c])</dt><dd><p>Compute b’K⁺b or b’K⁺c.</p>
 </dd>
-<dt>logdet()</dt><dd><p>Compute log(det(A)).</p>
+<dt>diagquad(b)</dt><dd><p>Compute the diagonal of b’K⁺b.</p>
 </dd>
-<dt>decorrelate(b)</dt><dd><p>Compute L^-1 b such that A = LL^T.</p>
+<dt>logdet()</dt><dd><p>Compute log(det(K)).</p>
 </dd>
-<dt>correlate(b)</dt><dd><p>Compute Lb with L as above.</p>
+<dt>tracesolve(b)</dt><dd><p>Compute tr(K⁺b).</p>
+</dd>
+<dt>correlate(b[, transpose=True])</dt><dd><p>Compute Ab or A’b such that K = AA’, with A n x m.</p>
+</dd>
+<dt>decorrelate(b[, transpose=True])</dt><dd><p>Compute A⁺b or A⁺’b with A as above.</p>
+</dd>
+<dt>m</dt><dd><p>The inner size of A.</p>
+</dd>
+<dt>eps</dt><dd><p>The threshold below which eigenvalues are not calculable.</p>
 </dd>
 </dl>
 </dd>
