@@ -142,7 +142,6 @@ def from_jacobian(mean, jac, indices):
     mean = numpy.asarray(mean)
     shape = mean.shape
     mean = mean.flat
-    # jac = numpy.array(jac) # TODO patches gvar issue #27
     jac = numpy.asarray(jac)
     jac = jac.reshape(len(mean), len(indices))
     g = numpy.zeros(len(mean), object)

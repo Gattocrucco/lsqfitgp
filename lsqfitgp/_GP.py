@@ -1326,8 +1326,6 @@ class GP:
         cov = self._covblock(key, key).astype(float)
         assert cov.shape == 2 * mean.shape, cov.shape
         
-        # cov = numpy.array(cov) # TODO workaround for gvar issue #27
-
         # get preexisting primary gvars to be correlated with the new ones
         preitems = [
             k
@@ -1670,9 +1668,7 @@ class GP:
             return mean, cov
         
         elif not keepcorr:
-            
-            # cov = numpy.array(cov) # TODO workaround for gvar issue #27
-            
+                        
             flatout = gvar.gvar(mean, cov, fast=True)
         
         if not strip:

@@ -2986,3 +2986,22 @@ Easier proof of (I - AA⁺)∂A(I - A⁺A) = 0: differentiate (I - AA⁺)A(I - A
 
 Bah, nothing useful. Indeed it must not be possible to recover the eigenvalues
 below machine precision.
+
+2023-02-16
+==========
+
+Changes v0.13 --> v0.14:
+
+- scipy 1.5, jax 0.4.1, gvar 11.10.1
+- StructuredArray.from_dataframe
+- Bessel, Matern, Taylor, lanczos work with jax jit
+- renamed lowrank --> lanczos
+- GP checkpos wth lobpcg, and coherent
+- addproc(lin)transf by default assings to the DefaultProcess
+- fixed bugs
+- woodbury -> woodbury2 (supports singular inner matrix)
+- new decomp lobpcg
+- eps --> epsrel, epsabs
+- correlate and decorrelate transposed
+- n, m, eps, matrix()
+- BART: weights, interpolation, reset depth
