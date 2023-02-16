@@ -302,7 +302,7 @@ def test_intercept():
     c1 = lgp.BART.correlation(*sss, alpha=alpha)
     c2 = lgp.BART.correlation(*sss, alpha=alpha, intercept=False)
     c2 = c2 * alpha + (1 - alpha)
-    util.assert_allclose(c1, c2)
+    util.assert_allclose(c1, c2, rtol=1e-15)
 
 def test_splits_1d():
     l = [2]
