@@ -49,29 +49,11 @@ gvar_ufuncs = [
     'erf',
 ]
 
-# def jaxsupport(jax_ufunc):
-#     """
-#     Create a wrapper of a function that will dispatch to another specified
-#     function if the argument is a jax array.
-#     """
-#     def decorator(gvar_ufunc):
-#         @functools.wraps(gvar_ufunc)
-#         def newfunc(x):
-#             if isinstance(x, jnp.ndarray):
-#                 return jax_ufunc(x)
-#             else:
-#                 return gvar_ufunc(x)
-#         return newfunc
-#     return decorator
-
 for fname in gvar_ufuncs:
     fgvar = getattr(gvar, fname)
     fjax = getattr(jnp, fname, getattr(jspecial, fname, NotImplemented))
     fboth = functools.singledispatch(fgvar)
     fboth.register(jnp.ndarray, fjax)
-    # python dispatch mechanism does not work, see jax issue #11075
-    # TODO may work since jax 0.4.1, check
-    # fboth = jaxsupport(fjax)(fgvar)
     setattr(gvar, fname, fboth)
 
 # reset transformations to support jax arrays
@@ -87,10 +69,6 @@ def scipy_eigh(x):
     w = numpy.abs(w)
     si = numpy.argsort(w)
     return w[si], v.T[si]
-
-gvar.SVD._analyzers = dict(scipy_eigh=scipy_eigh)
-# default uses SVD instead of diagonalization because it once was more stable
-# TODO may be the default already now, check
 
 def _getsvec(x):
     """
@@ -132,10 +110,6 @@ def jacobian(g):
         global covariance matrix.
     """
     g = numpy.asarray(g)
-    # v = gvar.svec(0)
-    # for x in g.flat:
-    #     v = v.add(_getsvec(x), 1, 1)
-    #     # TODO merge hierarchically instead of linearly
     v = _merge_svec(g.flat)
     indices = v.indices()
     jac = numpy.zeros((g.size, len(indices)), float)

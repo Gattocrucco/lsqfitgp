@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
+import functools
 import sys
 import abc
 import warnings
@@ -332,7 +333,6 @@ class GP:
         decomp = self._getdecomp(solver)
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **kw)
         self._checkpositive = bool(checkpos)
-        self._checkpositive_todo = True
         self._posepsfac = float(posepsfac)
         self._checksym = bool(checksym)
         self._checkfinite = bool(checkfinite)
@@ -1205,24 +1205,9 @@ class GP:
                 raise RuntimeError(f'covariance block {(xkey, ykey)!r} is not symmetric')
 
         return cov
-
+    
     def _covblock(self, row, col):
         
-        if self._checkpositive and self._checkpositive_todo:
-            self._checkpositive_todo = False
-            keys = [
-                k for k, v in self._elements.items()
-                if isinstance(v, (self._Points, self._Cov))
-            ]
-            fullcov = self._assemblecovblocks(list(keys))
-            self._checkpos(fullcov)
-            # TODO new trigger: whenever a public function is about to return
-            # something (prior, pred, _prior_decomp) call a method with the list
-            # of blocks to be checked, this method keeps a cache of sets of
-            # blocks checked together, if the set to be checked is in some
-            # previous set ignore, otherwise assemble it, check, and add to
-            # the cache list
-            
         if (row, col) not in self._covblocks:
             block = self._makecovblock(row, col)
             if row != col:
@@ -1234,7 +1219,7 @@ class GP:
                             raise RuntimeError(msg.format((row, col)))
                 self._covblocks[col, row] = block.T
             self._covblocks[row, col] = block
-        
+
         return self._covblocks[row, col]
         
     def _assemblecovblocks(self, rowkeys, colkeys=None):
@@ -1318,6 +1303,19 @@ class GP:
                     msg = 'covariance matrix is not positive definite: '
                     msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
                     raise numpy.linalg.LinAlgError(msg)
+    
+    _checkpos_cache = functools.cached_property(lambda self: [])
+    def _checkpos_keys(self, keys):
+        # TODO go back to ancestors of _LinTransf?
+        if not self._checkpositive:
+            return
+        keys = set(keys)
+        for prev_keys in self._checkpos_cache:
+            if keys.issubset(prev_keys):
+                return
+        cov = self._assemblecovblocks(list(keys))
+        self._checkpos(cov)
+        self._checkpos_cache.append(keys)
     
     def _priorpointscov(self, key):
         
@@ -1440,6 +1438,8 @@ class GP:
             outkeys = key
         else:
             outkeys = None
+        
+        self._checkpos_keys([key] if outkeys is None else outkeys)
         
         if raw and outkeys is not None:
             return {
@@ -1588,9 +1588,11 @@ class GP:
             outkeys = [key]
             strip = True
         outslices = self._slices(outkeys)
-        
+                
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = self._concatenate(ylist)
+        
+        self._checkpos_keys(inkeys + outkeys)
         
         Kxxs = self._assemblecovblocks(inkeys, outkeys)
         
@@ -1697,6 +1699,8 @@ class GP:
     def _prior_decomp(self, given, givencov=None, **kw):
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = self._concatenate(ylist)
+        
+        self._checkpos_keys(inkeys)
         
         # Get mean.
         if y.dtype == object:

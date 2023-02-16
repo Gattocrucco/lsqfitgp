@@ -269,7 +269,7 @@ for kernel in kernels2:
             dec = lgp._linalg.Chol(cov)
         except np.linalg.LinAlgError:
             dec = lgp._linalg.EigCutFullRank(cov)
-        iid = gen.standard_normal(dec.m, nsamples))
+        iid = gen.standard_normal((dec.m, nsamples))
         samples = dec.correlate(iid)
         for j, y in enumerate(samples.T):
             ax.plot(x, y, label=None if j else label)
