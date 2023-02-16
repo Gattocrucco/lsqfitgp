@@ -922,6 +922,34 @@ def test_transf_not_implemented():
         with pytest.raises(NotImplementedError):
             getattr(kernel, meth)(True, True)
 
+def test_maxdim():
+    _Kernel.Kernel(lambda x, y: 1, maxdim=None)
+    kernel = _Kernel.Kernel(lambda x, y: 1, maxdim=0)
+    with pytest.raises(ValueError):
+        kernel(0, 0)
+    kernel = _Kernel.Kernel(lambda x, y: 1, maxdim=1)
+    with pytest.raises(ValueError):
+        z = np.zeros((), 'd,d')
+        kernel(z, z)
+
+def test_nary():
+    kernel = _Kernel.Kernel(lambda x, y: np.maximum(0, 1 - np.abs(x - y)))
+    g = lambda x: 2 * x
+    k1 = _Kernel.Kernel._nary(lambda f: lambda x: g(x) * f(x), [kernel], kernel.side.LEFT)
+    k2 = _Kernel.Kernel._nary(lambda f: lambda y: g(y) * f(y), [kernel], kernel.side.RIGHT)
+    x = np.linspace(-5, 5, 30)
+    m1 = k1(x[:, None], x[None, :])
+    assert not np.allclose(m1, m1.T)
+    m2 = k2(x[:, None], x[None, :])
+    assert not np.allclose(m2, m2.T)
+    assert not np.allclose(m1, m2)
+    util.assert_close_matrices(m1, m2.T)
+
+def test_wendland_highk():
+    kernel = _kernels.Wendland(k=4)
+    with pytest.raises(NotImplementedError):
+        kernel(0, 0)
+
 #####################  XFAILS/SKIPS  #####################
 
 util.skip(TestAR, 'test_normalized')

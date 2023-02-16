@@ -160,5 +160,34 @@ def test_zero_slnr():
             p1 = lgp.AR.phi_from_roots(p * [s * 0.], [])
             p2 = -np.atleast_1d(np.poly(p * [s]))[1:]
             np.testing.assert_equal(p1, p2)
+
+def test_ma_norm():
+    x = np.arange(10)[:, None]
+    w = [0.1, 0.3, -0.6]
+    k1 = lgp.MA(w=w)
+    k2 = lgp.MA(w=w, norm=True)
+    v1 = k1(x, x.T)
+    v2 = k2(x, x.T)
+    v2 *= np.sum(np.square(w))
+    util.assert_allclose(v1, v2, rtol=1e-15)
+
+def test_ar_invalid_argset():
+    kernel = lgp.AR(phi=[1, 2, 3])
+    with pytest.raises(ValueError):
+        kernel([1,2,3],[3,2,1])
+
+def test_ar_norm():
+    for kw in [
+        dict(phi=[1.4, 0.3], maxlag=100),
+        dict(slnr=[0.1], lnc=[0.2 - 1.j])
+    ]:
+        k1 = lgp.AR(**kw)
+        k2 = lgp.AR(**kw, norm=True)
+        x = np.arange(10)[:, None]
+        v1 = k1(x, x.T)
+        v2 = k2(x, x.T)
+        v2 *= v1[0, 0]
+        util.assert_allclose(v1, v2, rtol=1e-14)    
+
 # TODO
 # test reflection of extend_gamma

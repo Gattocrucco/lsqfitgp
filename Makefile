@@ -29,6 +29,14 @@ TARGETS = upload release $(RELEASE_TARGETS) covreport
 all:
 	@echo "available targets: $(TARGETS)"
 	@echo "release = $(RELEASE_TARGETS) (in order)"
+	@echo "Release instructions:"
+	@echo "1) push and check CI completes"
+	@echo "2) $$ make release"
+	@echo "3) $$ make upload"
+	@echo "4) publish the github release"
+	@echo "5) bump version number"
+	@echo "6) switch to branch gh-pages and pull"
+	@echo "7) add new version to index, commit and push"
 
 upload:
 	twine upload dist/*

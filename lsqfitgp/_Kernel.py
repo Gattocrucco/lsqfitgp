@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -107,7 +107,7 @@ def _nd(dtype):
 def _greatest_common_superclass(classes):
     # from https://stackoverflow.com/a/25787091/3942284
     classes = [x.mro() for x in classes]
-    for x in classes[0]:
+    for x in classes[0]: # pragma: no branch
         if all(x in mro for mro in classes):
             return x
 
@@ -122,18 +122,15 @@ class CrossKernel:
 
     @staticmethod
     def _newkernel_from(core, kernels):
+        assert kernels
         classes = (IsotropicKernel, *map(type, kernels))
         cls = _greatest_common_superclass(classes)
         assert issubclass(cls, CrossKernel)
         obj = cls.__new__(cls)
-        if kernels:
-            mind = [k._minderivable for k in kernels]
-            maxd = [k._maxderivable for k in kernels]
-            obj._minderivable = tuple(numpy.min(mind, 0))
-            obj._maxderivable = tuple(numpy.max(maxd, 0)) # TODO or is it the sum?
-        else:
-            obj._minderivable = (0, sys.maxsize)
-            obj._maxderivable = (0, sys.maxsize)
+        mind = [k._minderivable for k in kernels]
+        maxd = [k._maxderivable for k in kernels]
+        obj._minderivable = tuple(numpy.min(mind, axis=0))
+        obj._maxderivable = tuple(numpy.max(maxd, axis=0)) # TODO or is it the sum?
         obj._kernel = core
         obj.initargs = None
         obj._maxdim = None
@@ -223,6 +220,8 @@ class CrossKernel:
         # the second callable is called with input points to determine on
         # which points exactly the kernel is derivable. (But still returns
         # a single boolean for an array of points, equivalent to an `all`.)
+        
+        # TODO maxdim's default should be None, not sys.maxsize
                 
         if saveargs:
             self.initargs = dict(
@@ -337,7 +336,7 @@ class CrossKernel:
         elif side is cls.side.BOTH:
             wrapper = lambda c, _, __: lambda xy: c(*xy)
             arg = lambda x, y: (x, y)
-        else:
+        else: # pragma: no cover
             raise KeyError(side)
         
         cores = [k._kernel for k in kernels]

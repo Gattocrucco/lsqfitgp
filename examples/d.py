@@ -1,6 +1,6 @@
 # lsqfitgp/examples/d.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -37,9 +37,9 @@ y = np.cos(xdata)
 
 print('make GP...')
 gp = lgp.GP(lgp.ExpQuad(scale=3))
-gp.addx(xdata, 'data', 1)
+gp.addx(xdata, 'data', deriv=1)
 gp.addx(xpred, 'integral')
-gp.addx(xpred, 'pred', 1)
+gp.addx(xpred, 'pred', deriv=1)
 
 print('fit...')
 u = gp.predfromdata({'data': y}, ['integral', 'pred'])

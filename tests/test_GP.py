@@ -380,10 +380,10 @@ def test_key_already_used():
     with pytest.raises(KeyError):
         gp.addcov(1, 0)
 
-def test_not_array():
+def test_bad_array():
     gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(TypeError):
-        gp.addx({0: {}})
+    with pytest.raises(ValueError):
+        gp.addx({0: [[1, 2], 3]})
 
 def test_not_empty():
     gp = lgp.GP(lgp.ExpQuad())
@@ -966,3 +966,46 @@ def test_nochecksym_structured():
     gp = lgp.GP(lgp.ExpQuad(), checksym=False)
     gp.addx(np.zeros(1, 'd,d'), 0)
     gp.prior(0)
+
+def test_nochecksym_tracer():
+    def fun():
+        gp = lgp.GP(lgp.ExpQuad(), checksym=False)
+        gp.addx(np.zeros(1), 0)
+        return gp.prior(0, raw=True)
+    jax.jit(fun)()
+
+def test_decompose_nd():
+    cov = np.array(2)
+    d1 = lgp.GP.decompose(cov)
+    d2 = lgp.GP.decompose(cov.reshape(1, 1))
+    d3 = lgp.GP.decompose(cov.reshape(1, 1, 1, 1))
+    util.assert_close_decomps(d1, d2)
+    util.assert_close_decomps(d1, d3)
+
+def test_pred_woodbury():
+    gp = lgp.GP(lgp.ExpQuad())
+    gp.addx(0, 0)
+    gp.addx(1, 1)
+    cov = 2
+    covdec = gp.decompose(cov)
+    y1 = gp.predfromdata({0: 1}, 1, {(0, 0): cov})
+    y2 = gp.predfromdata({0: 1}, 1, covdec)
+    util.assert_similar_gvars(y1, y2, rtol=1e-15)
+
+def test_pred_ambiguous_error_covariance():
+    gp = lgp.GP(lgp.ExpQuad())
+    gp.addx(0, 0)
+    gp.addx(1, 1)
+    with pytest.raises(ValueError):
+        gp.predfromdata({0: gvar.gvar(0, 1)}, 1, {(0, 0): 2})
+
+def test_pred_gvars_givencov():
+    gp = lgp.GP(lgp.ExpQuad())
+    gp.addx(0, 0)
+    gp.addx(1, 1)
+    mean, sdev = 1, 2
+    y1 = gp.predfromdata({0: gvar.gvar(mean, sdev)}, 1)
+    y2 = gp.predfromdata({0: mean}, 1, {(0, 0): sdev ** 2})
+    y3 = gp.predfromdata({0: mean}, 1, gp.decompose(sdev ** 2))
+    util.assert_similar_gvars(y1, y2)
+    util.assert_similar_gvars(y1, y3)

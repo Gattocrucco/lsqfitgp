@@ -381,7 +381,23 @@ def test_bernoulli():
         x = gen.uniform(0, 1, size=100)
         check_bernoulli(n, x)
 
-# TODO test expn
+@np.vectorize
+def expint(n, z):
+    return complex(mpmath.expint(n, z))
+
+def test_expn():
+    x = gen.uniform(0, 30, 10)
+    n = np.arange(2, 12)
+    result_64 = np.array([_special.expn_imag(n, x) for n in n])
+    result_32 = np.array([_special.expn_imag(n.astype('i4'), x.astype('f')) for n in n])
+    assert result_64.dtype == 'complex128'
+    assert result_32.dtype == 'complex64'
+    sol = expint(n[:, None], -1j * x)
+    util.assert_allclose(result_64, sol, rtol=1e-7) # TODO quite bad
+    util.assert_allclose(result_32, sol, atol=0.01) # TODO very bad!!
+
+def test_kvp():
+    test_util.check_grads(lambda z: _special.kv(3.2, z), (1.5,), 2)
 
 # TODO these tests currently take 4 min out of 17 total. I guess the bottleneck
 # is mpmath. I should produce and commit a cache of values.

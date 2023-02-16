@@ -1,6 +1,6 @@
 # lsqfitgp/examples/o.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -35,7 +35,7 @@ derivs = [0, 1, 2]
 
 gp = lgp.GP(lgp.ExpQuad(scale=2))
 for d in derivs:
-    gp.addx(x, d, d)
+    gp.addx(x, d, deriv=d)
 
 cov = gp.prior(raw=True)
 

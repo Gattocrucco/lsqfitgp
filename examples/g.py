@@ -1,6 +1,6 @@
 # lsqfitgp/examples/g.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -38,8 +38,8 @@ y = np.sin(xdata)
 print('make GP...')
 gp = lgp.GP(lgp.ExpQuad(scale=3))
 gp.addx(xdata, 'data')
-gp.addx(xpred, 'pred', 0)
-gp.addx(xpred, 'predderiv', 1)
+gp.addx(xpred, 'pred', deriv=0)
+gp.addx(xpred, 'predderiv', deriv=1)
 
 print('fit...')
 umean, ucov = gp.predfromdata({'data': y}, ['pred', 'predderiv'], raw=True)

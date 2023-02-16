@@ -186,8 +186,8 @@ def chol_solve_numpy(t, b, diageps=None):
         Term added to the diagonal elements of the matrix for regularization.
 
     """
-        
-    t = numpy.copy(t, subok=True)
+    
+    t = numpy.array(t, subok=True)
     n = t.shape[-1]
         
     b = numpy.asanyarray(b)
@@ -195,6 +195,9 @@ def chol_solve_numpy(t, b, diageps=None):
     if vec:
         b = b[:, None]
     assert b.shape[-2] == n
+    
+    t = t.astype(numpy.result_type(t, 0.1), copy=False)
+    b = b.astype(numpy.result_type(b, 0.1), copy=False)
     
     if n == 0:
         shape = numpy.broadcast_shapes(t.shape[:-1], b.shape[:-2])

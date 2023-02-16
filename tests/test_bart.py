@@ -26,6 +26,8 @@ from pytest import mark
 sys.path.insert(0, '.')
 import lsqfitgp as lgp
 
+import util
+
 gen = np.random.default_rng(202207191826)
 
 plist = [1, 2, 5]
@@ -54,7 +56,7 @@ mdmark = mark.parametrize('md', range(5))
 def test_lower_lt_upper(sb, sbw, sa, w, a, b, md):
     """ 0 <= lower <= interp/stricter upper <= upper <= 1 """
     lw = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=0, maxd=md, weights=w)
-    au = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma='auto', maxd=md, weights=w)
+    au = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma='auto' if 1 <= md <= 3 else 0, maxd=md, weights=w)
     vg = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=1, maxd=md * 2, reset=[md], weights=w)
     up = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=1, maxd=md, weights=w)
     np.testing.assert_array_max_ulp(np.zeros_like(lw), np.minimum(0, lw))
@@ -271,6 +273,51 @@ def test_duplicates():
     x = np.repeat(np.arange(10 * 2.).reshape(-1, 2), 2, axis=0).view('d,d').squeeze(axis=-1)
     length, splits = lgp.BART.splits_from_coord(x)
     assert np.all(length == 9)
+
+def test_integer():
+    X = np.arange(10 * 2).reshape(1, -1, 2)
+    X1 = X.astype('d').view('d,d').squeeze(-1)
+    X2 = X.astype('l').view('l,l').squeeze(-1)
+    kernel1 = lgp.BART(splits=lgp.BART.splits_from_coord(X1))
+    kernel2 = lgp.BART(splits=lgp.BART.splits_from_coord(X2))
+    v1 = kernel1(X1, X1.T)
+    v2 = kernel2(X1, X1.T)
+    util.assert_equal(v1, v2)
+
+def test_pnt():
+    sss = [1, 2], [3, 1], [5, 8]
+    alpha = 0.9
+    beta = 1.6
+    c1 = lgp.BART.correlation(*sss, alpha=alpha, beta=beta, maxd=2)
+    c2 = lgp.BART.correlation(*sss, alpha=None, beta=None, pnt=[alpha, alpha/2 ** beta, alpha/3 ** beta])
+    util.assert_allclose(c1, c2)
+
+def test_wrong_gamma():
+    with pytest.raises(KeyError):
+        lgp.BART.correlation([0], [0], [0], gamma='ciao')
+
+def test_intercept():
+    sss = [1, 2], [3, 1], [5, 8]
+    alpha = 0.9
+    c1 = lgp.BART.correlation(*sss, alpha=alpha)
+    c2 = lgp.BART.correlation(*sss, alpha=alpha, intercept=False)
+    c2 = c2 * alpha + (1 - alpha)
+    util.assert_allclose(c1, c2)
+
+def test_splits_1d():
+    l = [2]
+    s = np.array([-1/2, 1/2])
+    x = np.array([-1, 0, 1])[:, None]
+    k1 = lgp.BART(splits=(l, s))
+    k2 = lgp.BART(splits=(l, s[:, None]))
+    v1 = k1(x, x.T)
+    v2 = k1(x, x.T)
+    util.assert_equal(v1, v2)
+
+def test_f32():
+    sss = [1, 2], [3, 1], [5, 8]
+    c = lgp.BART.correlation(*sss, pnt=np.array([0.9, 0.4, 0.3], 'f'))
+    assert c.dtype == 'f'
 
 # TODO
 # - increases at fixed n0 and ntot if the difference between nminus and nplus

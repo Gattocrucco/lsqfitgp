@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_expint.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -26,6 +26,7 @@ from jax.scipy import special as jspecial
 
 from . import _gamma
 from . import _taylor
+from .. import _patch_jax
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def expn_imag(n, x):
@@ -52,13 +53,16 @@ def expn_imag(n, x):
     # something like softmin(1/(n-1), 1/x) e^-ix, where the softmin scale
     # increases with n (how?)
     
-    dt = jnp.empty(0).dtype
-    if dt == jnp.float32:
-        nt = 10 # TODO optimize to raise maximum n
-    else:
-        nt = 20 # TODO optimize to raise maximum n
-    eps = jnp.finfo(dt).eps
-    knee = (special.gamma(n + nt) / eps) ** (1 / (n + nt - 1))
+    x = jnp.asarray(x)
+    with jax.ensure_compile_time_eval():
+        n = jnp.asarray(n)
+        dt = _patch_jax.float_type(n, x)
+        if dt == jnp.float32:
+            nt = jnp.array(10, 'i4') # TODO optimize to raise maximum n
+        else:
+            nt = 20 # TODO optimize to raise maximum n
+        eps = jnp.finfo(dt).eps
+        knee = (special.gamma(n + nt) / eps) ** (1 / (n + nt - 1))
     small = expn_imag_smallx(n, x)
     large = expn_asymp(n, -1j * x, nt)
     return jnp.where(x < knee, small, large)
@@ -76,8 +80,9 @@ def expn_imag_smallx(n, x):
         
     # DLMF 8.19.7
     
+    n, x = jnp.asarray(n), jnp.asarray(x)
     k = jnp.arange(n)
-    fact = jnp.cumprod(k.at[0].set(1), dtype=float)
+    fact = jnp.cumprod(k.at[0].set(1), dtype=_patch_jax.float_type(n, x))
     n_1fact = fact[-1]
     ix = 1j * x
     E_1 = exp1_imag(x) # E_1(-ix)
@@ -91,7 +96,7 @@ def expn_imag_smallx(n, x):
     # like 30, I can always compute all the terms and set some of them to zero
 
 def expn_asymp_coefgen(s, e, n):
-    k = jnp.arange(s, e)
+    k = jnp.arange(s, e, dtype=n.dtype)
     return (-1) ** k * _gamma.poch(n, k)
 
 def expn_asymp(n, z, nt):
@@ -204,15 +209,17 @@ _g_denom = [
 def _si_smallx(x):
     """ Compute Si(x) = int_0^x dt sin t / t, for x < 4"""
     x2 = jnp.square(x)
-    num = jnp.polyval(jnp.array(_si_num[::-1]), x2)
-    denom = jnp.polyval(jnp.array(_si_denom[::-1]), x2)
+    dtype = _patch_jax.float_type(x)
+    num = jnp.polyval(jnp.array(_si_num[::-1], dtype), x2)
+    denom = jnp.polyval(jnp.array(_si_denom[::-1], dtype), x2)
     return x * num / denom
 
 def _minus_cin_smallx(x):
     """ Compute -Cin(x) = int_0^x dt (cos t - 1) / t, for x < 4 """
     x2 = jnp.square(x)
-    num = jnp.polyval(jnp.array(_ci_num[::-1]), x2)
-    denom = jnp.polyval(jnp.array(_ci_denom[::-1]), x2)
+    dtype = _patch_jax.float_type(x)
+    num = jnp.polyval(jnp.array(_ci_num[::-1], dtype), x2)
+    denom = jnp.polyval(jnp.array(_ci_denom[::-1], dtype), x2)
     return x2 * num / denom
 
 def _ci_smallx(x):
@@ -223,15 +230,17 @@ def _ci_smallx(x):
 def _f_largex(x):
     """ Compute f(x) = int_0^oo dt sin t / (x + t), for x > 4 """
     x2 = 1 / jnp.square(x)
-    num = jnp.polyval(jnp.array(_f_num[::-1]), x2)
-    denom = jnp.polyval(jnp.array(_f_denom[::-1]), x2)
+    dtype = _patch_jax.float_type(x)
+    num = jnp.polyval(jnp.array(_f_num[::-1], dtype), x2)
+    denom = jnp.polyval(jnp.array(_f_denom[::-1], dtype), x2)
     return num / denom / x
 
 def _g_largex(x):
     """ Compute g(x) = int_0^oo dt cos t / (x + t), for x > 4 """
     x2 = 1 / jnp.square(x)
-    num = jnp.polyval(jnp.array(_g_num[::-1]), x2)
-    denom = jnp.polyval(jnp.array(_g_denom[::-1]), x2)
+    dtype = _patch_jax.float_type(x)
+    num = jnp.polyval(jnp.array(_g_num[::-1], dtype), x2)
+    denom = jnp.polyval(jnp.array(_g_denom[::-1], dtype), x2)
     return x2 * num / denom
 
 def _exp1_imag_smallx(x):

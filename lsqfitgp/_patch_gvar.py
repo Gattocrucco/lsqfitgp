@@ -64,12 +64,6 @@ gvar.BufferDict.add_distribution('log', gvar.exp)
 gvar.BufferDict.add_distribution('sqrt', gvar.square)
 gvar.BufferDict.add_distribution('erfinv', gvar.erf)
 
-def scipy_eigh(x):
-    w, v = linalg.eigh(x)
-    w = numpy.abs(w)
-    si = numpy.argsort(w)
-    return w[si], v.T[si]
-
 def _getsvec(x):
     """
     Get the sparse vector of derivatives of a GVar.

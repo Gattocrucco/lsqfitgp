@@ -454,3 +454,7 @@ def test_dataframe(cls):
     s = lgp.StructuredArray.from_dataframe(df)
     a2 = np.array(s)
     util.assert_equal(a, a2)
+
+def test_not_handled():
+    with pytest.raises(TypeError):
+        np.concatenate([lgp.StructuredArray(np.zeros(1, 'd,d'))])

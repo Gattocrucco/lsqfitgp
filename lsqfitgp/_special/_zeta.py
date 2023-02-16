@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_zeta.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -246,7 +246,7 @@ _zeta_zero_coef = [         # = _gen_zeta_zero_coef(17)
     8.345880582550168e-05,
 ]
 
-def _gen_zeta_zero_coef(n):
+def _gen_zeta_zero_coef(n): # pragma: no cover
     """
     Compute first n derivatives of zeta(s) - 1/(s-1) at s = 0
     """

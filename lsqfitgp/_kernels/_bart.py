@@ -345,6 +345,7 @@ class BART(_BARTBase):
         # get interpolation coefficients
         if isinstance(gamma, str):
             if gamma == 'auto':
+                assert reset is None and 1 <= pnt.shape[-1] - 1 <= 3
                 p = weights.shape[-1]
                 gamma = cls._gamma(p, pnt)
             else:
@@ -424,8 +425,10 @@ class BART(_BARTBase):
         if s.ndim == 1:
             s = s[:, None]
         assert l.size == s.shape[1]
+        with _patch_jax.skipifabstract():
+            assert jnp.all((0 <= l) & (l <= s.shape[0]))
+            assert jnp.all(jnp.sort(s, axis=0) == s)
         return l, s
-        # TODO check they are sorted if concrete
     
     @staticmethod
     @functools.partial(jax.jit, static_argnames=('side',))
@@ -541,10 +544,10 @@ class BART(_BARTBase):
         # enabled, so I have to sync the types to avoid losing precision in the
         # digamma
         ft = _patch_jax.float_type(pnt, gamma, w)
-        if ft == jnp.float32:
-            it = jnp.int32
-        elif ft == jnp.float64:
+        if ft == jnp.float64:
             it = jnp.int64
+        else:
+            it = jnp.int32
         
         # optimization to avoid looping over ignored axes
         nminus = jnp.where(w, nminus, 0)

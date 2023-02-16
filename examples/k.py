@@ -1,6 +1,6 @@
 # lsqfitgp/examples/k.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -39,7 +39,7 @@ print('make GP...')
 gp = lgp.GP(lgp.Maternp(p=2, scale=3), checkpos=False)
 gp.addx(xdata, 'data')
 gp.addx(xpred, 'pred')
-gp.addx(xpred, 'deriv', 1)
+gp.addx(xpred, 'deriv', deriv=1)
 
 print('fit...')
 u = gp.pred({'data': y}, ['pred', 'deriv'], fromdata=True)

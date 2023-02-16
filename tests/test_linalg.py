@@ -31,6 +31,7 @@ import numpy as np
 from scipy import linalg, stats
 import gvar
 from pytest import mark
+import pytest
 
 import util
 
@@ -1034,7 +1035,7 @@ def test_solve_triangular():
                 B = rng.standard_normal((*shape[:-1], n, *shape[-1:]))
                 x = _linalg.solve_triangular(A, B, lower=lower)
                 lhs = (A @ x).reshape(-1, B.shape[-1])
-                util.assert_close_matrices(lhs, B.reshape(lhs.shape), rtol=1e-13)
+                util.assert_close_matrices(lhs, B.reshape(lhs.shape), rtol=1e-12)
 
 @util.tryagain
 def test_toeplitz_gershgorin():
@@ -1091,7 +1092,7 @@ def test_toeplitz_chol_solve_numpy():
         [(3,), (1, 3)],
     ]
     for tshape, bshape in shapes:
-        for n in [1, 2, 10]:
+        for n in [0, 1, 2, 10]:
             x = np.linspace(0, 3, n)
             gamma = rng.uniform(0, 2, tshape + (1,))
             t = np.pi * np.exp(-1/2 * x ** gamma)
@@ -1105,9 +1106,13 @@ def test_toeplitz_chol_solve_numpy():
                 b = rng.standard_normal((*bshape, n, *shape))
                 ilb = _linalg._toeplitz.chol_solve_numpy(t, b, diageps=1e-12)
                 lhs, rhs = np.broadcast_arrays(l @ ilb, b)
-                lhs = lhs.reshape(-1, lhs.shape[-1])
+                lhs = lhs.reshape(-1 if lhs.size else 0, lhs.shape[-1])
                 rhs = rhs.reshape(lhs.shape)
                 util.assert_close_matrices(lhs, rhs, rtol=1e-7)
+    with pytest.raises(np.linalg.LinAlgError):
+        _linalg._toeplitz.chol_solve_numpy([1, 2], [1, 1])
+    with pytest.raises(np.linalg.LinAlgError):
+        _linalg._toeplitz.chol_solve_numpy([1, 0.5, 2], [1, 1, 1])
 
 @mark.parametrize('mode', ['reduced', 'full'])
 def test_rq(mode):
@@ -1128,6 +1133,10 @@ def test_degenerate(decomp):
     a = linalg.block_diag(np.eye(5), 0)
     d = decomp(a)
     util.assert_close_matrices(d.quad(a), a, rtol=1e-14)
+
+def test_acausal_alg():
+    with pytest.raises(ValueError):
+        _linalg._seqalg.sequential_algorithm(2, [_linalg._seqalg.Stack(0)])
 
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings

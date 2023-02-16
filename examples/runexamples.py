@@ -34,7 +34,7 @@ sys.path.insert(0, '.')
 warnings.filterwarnings('ignore', r'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure\.')
 
 for file in sys.argv[1:]:
-    print('runexamples.py: running {}...'.format(file))
+    print('\nrunexamples.py: running {}...'.format(file))
     with open(file, 'r') as stream:
         code = stream.read()
     

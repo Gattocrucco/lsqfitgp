@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_gamma.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -122,7 +122,7 @@ _gammaln1_coef_1 = [        # = _gen_gammaln1_coef(53, 1)
     -0.01886792452830189,
 ]
 
-def _gen_gammaln1_coef(n, x):
+def _gen_gammaln1_coef(n, x): # pragma: no cover
     """ compute Taylor coefficients of log Γ(x) """
     import mpmath as mp
     with mp.workdps(32):

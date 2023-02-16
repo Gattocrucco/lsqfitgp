@@ -1587,7 +1587,7 @@ class Woodbury2(DecompAutoDiffBase):
     def m(self):
         return self._A.m + self._V.shape[1]
 
-class Pinv(DecompAutoDiff):
+class Pinv(DecompAutoDiff): # pragma: no cover
     
     # K3 = K³ + εI = MMt
     # K+ ≈ K K3^-1 K = (M^-1 K)t (M^-1 K)
@@ -1661,7 +1661,7 @@ class Pinv(DecompAutoDiff):
     def eps(self):
         return jnp.cbrt(self._K3.eps)
 
-class Pinv2(DecompAutoDiff):
+class Pinv2(DecompAutoDiff): # pragma: no cover
     
     # K3 = K³ + εI = MM'
     # K⁺ = ∑ n=1^∞ εⁿ⁻¹ K K3⁻ⁿ K =

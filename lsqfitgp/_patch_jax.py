@@ -120,9 +120,9 @@ class skipifabstract:
         if exit or exc_type in (jax.errors.ConcretizationTypeError, jax.errors.TracerArrayConversionError):
             return True
         
-        if exc_type is IndexError and traceback.extract_tb(tb)[-1].name == 'arg_info_pytree':
+        if exc_type is IndexError and traceback.extract_tb(tb)[-1].name == 'arg_info_pytree': # pragma: no cover
             # TODO this ignores a jax internal bug I don't understand, appears
-            # in examples/pdf4.py
+            # in examples/pdf4.py, and not on CI
             return True
 
 # TODO make stop_hessian work in reverse mode
@@ -173,9 +173,9 @@ def value_and_ops(f, *ops, has_aux=False, **kw): # pragma: no cover
             return aux + (y,)
     return lastfop
 
-def tree_all(predicate, *trees):
-    pred = tree_util.tree_map(predicate, *trees)
-    return tree_util.tree_reduce(lambda acc, p: acc and p, pred, True)
+# def tree_all(predicate, *trees):
+#     pred = tree_util.tree_map(predicate, *trees)
+#     return tree_util.tree_reduce(lambda acc, p: acc and p, pred, True)
 
 def float_type(*args):
     t = jnp.result_type(*args)

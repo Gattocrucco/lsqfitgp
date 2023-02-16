@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_stdcplx.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -74,7 +74,7 @@ ops = {
     ]
 }
 
-def gen_ops_factors(n):
+def gen_ops_factors(n): # pragma: no cover
     key = random.PRNGKey(202208101236)
     factors = {}
     for op, (job, est) in ops.items():

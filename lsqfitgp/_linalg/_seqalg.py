@@ -83,8 +83,7 @@ class Producer(SequentialOperation):
 class Consumer(SequentialOperation):
     """produces a final output but no iteration output"""
     
-    def iter_out(self, i):
-        pass
+    iter_out = NotImplemented
 
 class SingleInput(SequentialOperation):
     

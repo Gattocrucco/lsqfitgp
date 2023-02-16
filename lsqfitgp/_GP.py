@@ -160,14 +160,6 @@ class GP:
         q = q.at[indices[::-1]].set(a)
         return indices, q
 
-    @classmethod
-    def _isarraylike(cls, x):
-        return not cls._isdictlike(x) and (isinstance(x, (list, tuple, numpy.ndarray, jnp.ndarray, _array.StructuredArray)) or numpy.ndim(x) == 0)
-
-    @staticmethod
-    def _isdictlike(x):
-        return isinstance(x, (dict, gvar.BufferDict))
-
     @staticmethod
     def _compatible_dtypes(d1, d2): # pragma: no cover
         """
@@ -212,7 +204,7 @@ class GP:
         """Points where the process is evaluated"""
     
         def __init__(self, x, deriv, proc):
-            assert GP._isarraylike(x)
+            assert isinstance(x, (numpy.ndarray, jnp.ndarray, _array.StructuredArray))
             assert isinstance(deriv, _Deriv.Deriv)
             self.x = x
             self.deriv = deriv
@@ -339,7 +331,7 @@ class GP:
         self._checklin = bool(checklin)
         self._decompname = str(solver)
     
-    def addproc(self, kernel=None, key=DefaultProcess, deriv=0):
+    def addproc(self, kernel=None, key=DefaultProcess, *, deriv=0):
         """
         
         Add an independent process.
@@ -369,7 +361,7 @@ class GP:
         
         self._procs[key] = self._ProcKernel(kernel, deriv)
     
-    def addproctransf(self, ops, key=DefaultProcess, deriv=0):
+    def addproctransf(self, ops, key=DefaultProcess, *, deriv=0):
         """
         
         Define a new process as a linear combination of other processes.
@@ -427,7 +419,7 @@ class GP:
         #     return fun
         # self.addproclintransf(equivalent_lintransf, list(ops.keys()), key, deriv, False)
     
-    def addproclintransf(self, transf, keys, key=DefaultProcess, deriv=0, checklin=False):
+    def addproclintransf(self, transf, keys, key=DefaultProcess, *, deriv=0, checklin=False):
         """
         
         Define a new process as a linear combination of other processes.
@@ -586,7 +578,7 @@ class GP:
         assert callable(scalefun)
         self.addkernelop('rescale', scalefun, key, proc)
     
-    def addx(self, x, key=None, deriv=0, proc=DefaultProcess):
+    def addx(self, x, key=None, *, deriv=0, proc=DefaultProcess):
         """
         
         Add points where the Gaussian process is evaluated.
@@ -633,17 +625,15 @@ class GP:
         if proc not in self._procs:
             raise KeyError(f'process named {proc!r} not found')
                 
-        if self._isdictlike(x):
+        if hasattr(x, 'keys'):
             if key is not None:
                 raise ValueError('can not specify key if x is a dictionary')
             if None in x:
                 raise ValueError('None key in x not allowed')
-        elif self._isarraylike(x):
-            if key is None:
-                raise ValueError('x is array but key is None')
-            x = {key: x}
         else:
-            raise TypeError('x must be array or dict')
+            if key is None:
+                raise ValueError('x is not dictionary but key is None')
+            x = {key: x}
         
         for key in x:
             if key in self._elements:
@@ -651,10 +641,15 @@ class GP:
             
             gx = x[key]
             
-            # Convert to numpy array or StructuredArray.
-            if not self._isarraylike(gx):
-                raise TypeError('x[{!r}] is not array-like'.format(key))
+            # Convert to JAX array, numpy array or StructuredArray.
             gx = _array.asarray(gx)
+            if isinstance(gx, numpy.ndarray):
+                try:
+                    # convert eagerly to jax array to avoid problems if a
+                    # traced jax array is used to fancy index the numpy array
+                    gx = jnp.asarray(gx)
+                except TypeError:
+                    pass
 
             # Check it is not empty.
             if not gx.size:
@@ -696,7 +691,7 @@ class GP:
             
             self._elements[key] = self._Points(gx, deriv, proc)
         
-    def addtransf(self, tensors, key, axes=1):
+    def addtransf(self, tensors, key, *, axes=1):
         """
         
         Apply a linear transformation to already specified process points. The
@@ -791,7 +786,7 @@ class GP:
         keys = list(tens.keys())
         self.addlintransf(equiv_lintransf, keys, key, checklin=False)
     
-    def addlintransf(self, transf, keys, key, checklin=None):
+    def addlintransf(self, transf, keys, key, *, checklin=None):
         """
         
         Define a finite linear transformation of the evaluated process.
@@ -888,7 +883,7 @@ class GP:
                 if out0.shape != shape or not (jnp.allclose(out0[zeros], 0) and jnp.allclose(out1[zeros], 0)):
                     raise RuntimeError('the transformation is not elementwise')
     
-    def addcov(self, covblocks, key=None, decomps=None):
+    def addcov(self, covblocks, key=None, *, decomps=None):
         """
         
         Add user-defined prior covariance matrix blocks.
@@ -933,21 +928,19 @@ class GP:
         # interpreted as the decomposition of the whole block matrix.
         
         # Check type of `covblocks` and standardize it to dictionary.
-        if self._isdictlike(covblocks):
+        if hasattr(covblocks, 'keys'):
             if key is not None:
                 raise ValueError('can not specify key if covblocks is a dictionary')
             if None in covblocks:
                 raise ValueError('None key in covblocks not allowed')
-            if decomps is not None and not self._isdictlike(decomps):
+            if decomps is not None and not hasattr(decomps, 'keys'):
                 raise TypeError('covblocks is dictionary but decomps is not')
-        elif self._isarraylike(covblocks):
+        else:
             if key is None:
-                raise ValueError('covblocks is array but key is None')
+                raise ValueError('covblocks is not dictionary but key is None')
             covblocks = {(key, key): covblocks}
             if decomps is not None:
                 decomps = {key: decomps}
-        else:
-            raise TypeError('covblocks must be array or dict')
         
         if decomps is None:
             decomps = {}
@@ -1392,12 +1385,12 @@ class GP:
                 prior = self._priorpointscov(key)
             elif isinstance(x, self._LinTransf):
                 prior = self._priorlintransf(key)
-            else:
+            else: # pragma: no cover
                 raise TypeError(type(x))
             self._priordict[key] = prior
         return prior
     
-    def prior(self, key=None, raw=False):
+    def prior(self, key=None, *, raw=False):
         """
         
         Return an array or a dictionary of arrays of gvars representing the
@@ -1492,7 +1485,7 @@ class GP:
         else:
             covblocks = [
                 [
-                    givencov[keylist[i], keylist[j]].reshape(ylist[i].shape + ylist[j].shape)
+                    jnp.asarray(givencov[keylist[i], keylist[j]]).reshape(ylist[i].shape + ylist[j].shape)
                     for j in range(len(keylist))
                 ]
                 for i in range(len(keylist))
@@ -1509,7 +1502,7 @@ class GP:
         stops = numpy.pad(numpy.cumsum(sizes), (1, 0))
         return [slice(stops[i - 1], stops[i]) for i in range(1, len(stops))]
     
-    def pred(self, given, key=None, givencov=None, fromdata=None, raw=False, keepcorr=None):
+    def pred(self, given, key=None, givencov=None, *, fromdata=None, raw=False, keepcorr=None):
         """
         
         Compute the posterior.
@@ -1591,6 +1584,9 @@ class GP:
                 
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = self._concatenate(ylist)
+        if y.dtype == object:
+            if ycovblocks is not None:
+                raise ValueError('given may contain gvars but a separate covariance matrix has been provided')
         
         self._checkpos_keys(inkeys + outkeys)
         
@@ -1630,11 +1626,9 @@ class GP:
                 # complete formula:
                 # A = Kxx^-1 @ Kxxs
                 # cov = Kxsxs - A.T @ (Kxx - ycov) @ A
-                if ycov is None:
-                    pass
-                elif isinstance(ycov, _linalg.Decomposition):
-                    raise TypeError('givencov is a Decomposition, need the original matrix if fromdata=False')
-                else:
+                if ycov is not None:
+                    if isinstance(ycov, _linalg.Decomposition):
+                        ycov = ycov.matrix()
                     A = solver.solve(Kxxs)
                     cov = cov + A.T @ ycov @ A
             
@@ -1644,8 +1638,13 @@ class GP:
             yp = self._concatenate(yplist)
             ysp = self._concatenate(ysplist)
             
+            if y.dtype != object and ycov is not None:
+                if isinstance(ycov, _linalg.Decomposition):
+                    ycov = ycov.matrix()
+                y = gvar.gvar(y, ycov)
+            else:
+                y = numpy.asarray(y) # because y - yp fails if y is a jax array
             mat = ycov if fromdata else None
-            y = numpy.asarray(y) # because y - yp fails if y is a jax array
             flatout = ysp + self._solver(inkeys, mat).quad(Kxxs, y - yp)
         
         if raw and not strip:
@@ -1738,7 +1737,7 @@ class GP:
             if self._checksym and not jnp.allclose(ycov, ycov.T):
                 raise ValueError('covariance matrix of `given` is not symmetric')
 
-    def marginal_likelihood(self, given, givencov=None, separate=False, **kw):
+    def marginal_likelihood(self, given, givencov=None, *, separate=False, **kw):
         """
         
         Compute the logarithm of the probability of the data.
@@ -1924,7 +1923,7 @@ class GP:
         n = numpy.prod(head, dtype=int)
         m = m.reshape(n, n)
         decompcls = cls._getdecomp(solver)
-        return decompcls(posdefmatrix, **kw)
+        return decompcls(m, **kw)
         
         # TODO extend the interface to use composite decompositions
         # TODO accept a bufferdict for covariance matrix
