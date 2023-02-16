@@ -459,6 +459,8 @@ class GP:
         
         """
         
+        # TODO support single key in keys
+        
         if key in self._procs:
             raise KeyError(f'process key {key!r} already used in GP')
     

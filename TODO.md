@@ -519,10 +519,6 @@ sì visto che (1/k!)^2 si può
     `sum_k=0^oo x^k/(k!)^n = 0_F_(n-1)([], [1]*(n-1), x)`
 But scipy.special does not implement the generalized hypergeometric function.
 
-Fare la versione del kernel Zeta con solo il seno. Nel caso n=1 viene il
-Brownian bridge. => no, dovrebbe funzionare prendendo la parte dispari
-con addproclintransf, fare un esempio di prova
-
 Add order: int >= 0 parameter to Gibbs that rescales the kernel by
 (s(x)s(y))^order, useful when taking derivatives to have the derivative of
 order `order` with constant variance (check this is actually the case). =>
