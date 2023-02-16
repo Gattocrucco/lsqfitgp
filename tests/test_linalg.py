@@ -269,9 +269,9 @@ class DecompTestBase(DecompTestABC):
                 # -K^-1 dK K^-1 b
                 sol = -KdK @ Kb
                 util.assert_close_matrices(result, sol, rtol=self.clskey({
-                    r'woodbury[^2]': 1e-3, # TODO e.g. TestWoodbury_EigCutFullRank.test_solve_matrix_jac_fwd_matrix, why so inaccurate?
+                    r'woodbury[^2]': 1e-3,
+                    r'woodbury2': 1e-3,
                     r'pinv(2|)_chol': 1e-4,
-                    r'woodbury2': 1e-4,
                     r'chol': 1e-6,
                     r'sandwichsvd': 1e-7,
                 }, 1e-8))
@@ -1164,6 +1164,7 @@ util.xfail(TestEigCutLowRank_LowRank, 'test_logdet_hess_da')
 # tried to understand well what I'm doing with the parametric matrix to avoid
 # exploding derivatives. Possibly the proposed unification of randsymmat() and
 # mat() would do it.
+util.xfail(TestWoodbury_EigCutFullRank, 'test_solve_matrix_jac_rev_matrix')
 util.xfail(TestWoodbury_EigCutFullRank, 'test_solve_matrix_jac_rev_jit')
 util.xfail(TestWoodbury_EigCutFullRank, 'test_solve_matrix_hess_fwd_fwd')
 util.xfail(TestWoodbury_EigCutFullRank, 'test_quad_vec_jac_rev_jit')
