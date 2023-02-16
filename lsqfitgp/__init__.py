@@ -1,6 +1,6 @@
 # lsqfitgp/__init__.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -23,7 +23,7 @@ Module to fit Gaussian processes
 See the manual at https://gattocrucco.github.io/lsqfitgp/docs
 """
 
-__version__ = '0.14'
+__version__ = '0.15'
 
 from . import _patch_jax
 from . import _patch_gvar

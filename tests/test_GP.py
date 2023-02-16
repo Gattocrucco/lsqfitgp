@@ -1017,8 +1017,8 @@ def test_pred_fromfit_decomp():
     gp.addx(1, 1)
     mean, sdev = 1, 2
     y0 = gp.predfromdata({0: gvar.gvar(mean, sdev)}, 0)
-    y1 = gp.predfromfit({0: y0}, 1)
-    y2 = gp.predfromfit({0: gvar.mean(y0)}, 1, {(0, 0): gvar.var(y0)})
-    y3 = gp.predfromfit({0: gvar.mean(y0)}, 1, gp.decompose(gvar.var(y0)))
+    y1 = gp.predfromfit({0: y0}, 1, keepcorr=False)
+    y2 = gp.predfromfit({0: gvar.mean(y0)}, 1, {(0, 0): gvar.var(y0)}, keepcorr=False)
+    y3 = gp.predfromfit({0: gvar.mean(y0)}, 1, gp.decompose(gvar.var(y0)), keepcorr=False)
     util.assert_similar_gvars(y1, y2)
     util.assert_similar_gvars(y1, y3)
