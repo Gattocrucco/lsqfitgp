@@ -146,10 +146,11 @@ def from_jacobian(mean, jac, indices):
     return g.reshape(shape)
     
 def bufferdict_flatten(bd):
-    return tuple(bd.values()), tuple(bd.keys())
+    return tuple(bd.values()), (bd.dtype, tuple(bd.keys()))
 
-def bufferdict_unflatten(keys, values):
-    return gvar.BufferDict(zip(keys, values))
+def bufferdict_unflatten(meta, values):
+    dtype, keys = meta
+    return gvar.BufferDict(zip(keys, values), dtype=dtype)
 
 # register BufferDict as a pytree
 tree_util.register_pytree_node(gvar.BufferDict, bufferdict_flatten, bufferdict_unflatten)

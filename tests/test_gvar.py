@@ -53,3 +53,11 @@ def test_bdtree():
     y = tree_util.tree_unflatten(t, l)
     assert np.all(x.buf == y.buf)
     assert x.keys() == y.keys()
+    for k in x:
+        assert x.slice_shape(k) == y.slice_shape(k)
+
+def test_bdtree_dtype():
+    x = gvar.BufferDict(dict(a=0), dtype=bool)
+    l, t = tree_util.tree_flatten(x)
+    y = tree_util.tree_unflatten(t, l)
+    assert x.dtype == y.dtype
