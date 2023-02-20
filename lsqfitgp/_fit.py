@@ -20,6 +20,7 @@
 import warnings
 import functools
 import time
+import textwrap
 
 import gvar
 import jax
@@ -29,6 +30,7 @@ from scipy import optimize
 
 from . import _GP
 from . import _linalg
+from . import _patch_jax
 
 __all__ = [
     'empbayes_fit',
@@ -39,14 +41,18 @@ class Logger:
     def __init__(self, verbosity=0):
         self._verbosity = verbosity
     
-    def log(self, message, verbosity=1, level=None):
-        """print a message"""
-        if verbosity > self._verbosity:
-            return
+    def indent(self, text, level=None):
+        """ indent a text by provided level or by global current level """
         if level is None:
             level = self.loglevel._level
-        indent = 4 * level * ' '
-        print(f'{indent}{message}')
+        prefix = 4 * level * ' '
+        return textwrap.indent(text, prefix)
+    
+    def log(self, message, verbosity=1, level=None):
+        """ print a message """
+        if verbosity > self._verbosity:
+            return
+        print(self.indent(message, level))
     
     class _LogLevel:
         """shared context manager to indent messages"""
@@ -77,6 +83,8 @@ class empbayes_fit(Logger):
         method='gradient',
         initial='priormean',
         verbosity=0,
+        covariance='auto',
+        fix=None,
     ):
         """
     
@@ -152,6 +160,28 @@ class empbayes_fit(Logger):
                 Log each iteration.
             4
                 More detailed iteration log.
+        covariance : str
+            Method to estimate the posterior covariance matrix of the
+            hyperparameters:
+    
+            'hess'
+                Use the hessian of the log posterior in the MAP as precision
+                matrix.
+            'fisher'
+                Use the Fisher information in the MAP, plus the prior precision,
+                as precision matrix.
+            'minhess'
+                Use the hessian returned by the minimizer as precision matrix,
+                may be an estimate.
+            'auto' (default)
+                Use the minimizer hessian if applicable, Fisher otherwise.
+            'none'
+                Do not estimate the covariance matrix.
+        fix : scalar, array or dictionary of scalars/arrays
+            A set of booleans, with the same format as `hyperprior`, indicating
+            which hyperparameters are kept fixed to their initial value.
+            Scalars and arrays are broadcasted to the shape of `hyperprior`.
+            If a dictionary, missing keys are treated as False.
     
         Attributes
         ----------
@@ -160,6 +190,11 @@ class empbayes_fit(Logger):
             maximize the marginal likelihood. The covariance matrix is computed
             as the inverse of the hessian of the marginal likelihood. These
             gvars do not track correlations with the hyperprior or the data.
+        prior : scalar, array or dictionary of scalars/arrays
+            A copy of the hyperprior.
+        fix : scalar, array or dictionary of scalars/arrays
+            A set of booleans, with the same format as `p`, indicating which
+            parameters where kept fixed to the initial values.
         pmean : scalar, array or dictionary of scalars/arrays
             Mean of `p`.
         pcov : scalar, array or dictionary of scalars/arrays
@@ -180,41 +215,20 @@ class empbayes_fit(Logger):
         self.log('**** call lsqfitgp.empbayes_fit ****')
     
         assert callable(gpfactory)
-    
-        # Analyze the hyperprior.
-        hyperprior = self._asarrayorbufferdict(hyperprior)
-        flathp = self._flat(hyperprior)
-        hpmean = gvar.mean(flathp)
-        hpcov = gvar.evalcov(flathp) # TODO use evalcov_blocks
-        hpdec = _linalg.EigCutFullRank(hpcov)
+        
+        # analyze the hyperprior
+        hpmean, hpdec, hpinitial, hpunflat = self._parse_hyperprior(hyperprior, initial, fix)
+        del hyperprior, initial, fix
         precision = hpdec.inv()
-        self.log(f'{hpdec.n} hyperparameters', 2)
-        # TODO log number of datapoints
         
-        if isinstance(data, tuple) and len(data) == 1:
-            data, = data
-        
-        if callable(data):
-            self.log('data is callable', 2)
-            cachedargs = None
-        elif isinstance(data, tuple):
-            self.log('data errors provided separately', 2)
-            assert len(data) == 2
-            cachedargs = data
-        elif self._flat(self._asarrayorbufferdict(data)).dtype == object:
-            self.log('data has errors as gvars', 2)
-            data = gvar.gvar(data)
-            datamean = gvar.mean(data)
-            datacov = gvar.evalcov(data)
-            cachedargs = (datamean, datacov)
-        else:
-            self.log('data has no errors', 2)
-            cachedargs = (data,)
+        # analyze data
+        data, cachedargs = self._parse_data(data)
+        # TODO log number of datapoints (not trivial, must be done in callback)
         
         def make(p):
             priorchi2 = hpdec.quad(p - hpmean)
 
-            hp = self._unflat(p, hyperprior)
+            hp = hpunflat(p)
             gp = gpfactory(hp, **gpfactorykw)
             assert isinstance(gp, _GP.GP)
             
@@ -236,9 +250,11 @@ class empbayes_fit(Logger):
             ml = gp.marginal_likelihood(*args, stop_hessian=method == 'hessmod')
             logp = -ml + 1/2 * priorchi2
             return logp
-                
-        jac = dojit(jax.jacfwd(fun)) # can't change to rev due to, I guess, the priorchi2 term quad derivatives w.r.t. b
-        hess = dojit(jax.jacfwd(jac))
+        
+        fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jax.jacfwd))
+        # can't change to rev due to, I guess, the priorchi2 term quad
+        # derivatives w.r.t. b
+        hess = dojit(jax.jacfwd(jax.jacfwd(fun)))
         # TODO a reverse mode jac would be very useful with many hyperparameters
         # and grad-only optimization.
         
@@ -253,7 +269,6 @@ class empbayes_fit(Logger):
                 decomp, _ = gp._prior_decomp(*args, stop_hessian=True)
                 return -1/2 * decomp.logdet()
             
-            @dojit
             def fisherprec(p):
                 return fisher(p) + precision
         
@@ -274,41 +289,23 @@ class empbayes_fit(Logger):
                 gld, (decomp, ymean) = grad_logdet_and_aux(p)
                 return (gld, ymean), decomp
             
-            @dojit
             def fisherprec(p):
                 (F, J), decomp = fisher_and_jac_and_aux(p)
                 return F + precision + decomp.quad(J)
         
-        kwargs = dict(fun=fun, jac=jac)
-        
-        if not isinstance(initial, str):
-            self.log('start from provided point', 2)
-            initial = self._asarrayorbufferdict(initial)
-            flatinitial = self._flat(initial)
-            kwargs.update(x0=flatinitial)
-        elif initial == 'priormean':
-            self.log('start from prior mean', 2)
-            kwargs.update(x0=hpmean)
-        elif initial == 'priorsample':
-            self.log('start from a random sample from the prior', 2)
-            iid = np.random.randn(hpdec.m)
-            x0 = hpdec.correlate(iid)
-            kwargs.update(x0=x0)
-        else:
-            raise KeyError(initial)
+        minargs = dict(fun=fun_and_jac, jac=True, x0=hpinitial)
         
         if method == 'nograd':
-            kwargs.pop('jac')
-            kwargs.update(method='nelder-mead')
+            minargs.update(fun=fun, jac=None, method='nelder-mead')
         elif method == 'gradient':
-            kwargs.update(method='bfgs')
+            minargs.update(method='bfgs')
         elif method == 'hessian':
-            kwargs.update(hess=hess, method='trust-exact')
+            minargs.update(hess=hess, method='trust-exact')
         elif method == 'fisher':
-            kwargs.update(hess=fisherprec, method='dogleg')
+            minargs.update(hess=dojit(fisherprec), method='dogleg')
             # dogleg requires positive definiteness
         elif method == 'hessmod':
-            kwargs.update(hess=hess, method='trust-exact')
+            minargs.update(hess=hess, method='trust-exact')
         else:
             raise KeyError(method)
         self.log(f'minimization method {method!r}', 2)
@@ -325,22 +322,29 @@ class empbayes_fit(Logger):
                 now = time.time()
                 duration = now - self.stamp
                 self.stamp = now
-                nicep = self.this._unflat(p, hyperprior)
+                nicep = hpunflat(p)
                 self.this.log(f'iteration {self.it} ({duration:.2g} s)', 3)
                 self.this.log(f'parameters = {nicep}', 4)
                 
-            # TODO write a method to format the parameters nicely.
+            # TODO write a method to format the parameters nicely. => use
+            # gvar.tabulate?
+            
+            # TODO log also the number of function evaluations, distinguishing
+            # fun, fun_and_jac, jac, hess, fisher. To count them, make a
+            # decorator for the functions.
 
         if verbosity > 2:
-            kwargs.update(callback=Callback(self))
+            minargs.update(callback=Callback(self))
         
-        kwargs.update(minkw)
+        minargs.update(minkw)
         with self.loglevel:
             start = time.time()
-            result = optimize.minimize(**kwargs)
+            result = optimize.minimize(**minargs)
             end = time.time()
             total = end - start
+        self.log(f'total time: {total:.2g} s')
         
+        # check the minimization was successful
         if not result.success:
             msg = 'minimization failed: {}'.format(result.message)
             if raises:
@@ -350,32 +354,56 @@ class empbayes_fit(Logger):
             else:
                 self.log(msg)
         
-        if hasattr(result, 'hess_inv'):
-            self.log('use minimizer estimate of inverse hessian as covariance', 2)
-            cov = result.hess_inv
-        elif hasattr(result, 'hess'):
-            self.log('use minimizer hessian as covariance', 2)
-            hessdec = _linalg.EigCutFullRank(result.hess)
-            cov = hessdec.inv()
-        else:
-            self.log('no covariance information', 2)
-            cov = jnp.full_like(hpcov, jnp.nan)
+        # determine method to compute posterior covariance
+        if covariance == 'auto':
+            if hasattr(result, 'hess_inv') or hasattr(result, 'hess'):
+                covariance = 'minhess'
+            else:
+                covariance = 'fisher'
         
-        # TODO allow the user to choose the covariance estimation independently
-        # of the minimization method, possibly with methods or cached
-        # properties. Also give the Fisher and Hessian even if not used.
+        # compute posterior covariance of the hyperparameters
+        if covariance == 'fisher':
+            self.log('use fisher plus prior precision as precision', 2)
+            if method == 'fisher':
+                prec = result.hess
+            else:
+                prec = fisherprec(result.x)
+            cov = _linalg.EigCutFullRank(prec).inv()
+        elif covariance == 'hess':
+            self.log('use log posterior hessian as precision', 2)
+            if method == 'hess':
+                prec = result.hess
+            else:
+                prec = hess(result.x)
+            cov = _linalg.EigCutFullRank(prec).inv()
+        elif covariance == 'minhess':
+            if hasattr(result, 'hess_inv'):
+                self.log('use minimizer estimate of inverse hessian as covariance', 2)
+                cov = result.hess_inv
+            elif hasattr(result, 'hess'):
+                self.log('use minimizer hessian as precision', 2)
+                cov = _linalg.EigCutFullRank(result.hess).inv()
+            else:
+                raise RuntimeError('the minimizer did not return an estimate of the hessian')
+        elif covariance == 'none':
+            cov = jnp.full(2 * result.x.shape, jnp.nan)
+        else:
+            raise KeyError(covariance)
         
         uresult = gvar.gvar(result.x, cov)
         
-        self.p = self._unflat(uresult, hyperprior)
+        self.p = gvar.gvar(hpunflat(uresult))
         self.pmean = gvar.mean(self.p)
         self.pcov = gvar.evalcov(self.p)
         self.minresult = result
-        self.minargs = kwargs
+        self.minargs = minargs
 
         self.log(f'posterior = {self.p}')
-        self.log(f'prior = {hyperprior}', 2)
-        self.log(f'total time: {total:.2g} s')
+        self.log(f'prior = {self.prior}', 2)
+        # TODO format the prior and posterior as a table. Make a function
+        # tabulate_together(*xs) that uses gvar.tabulate(..., columns=len(x))
+        # with green screen headers and then postprocesses the text output to
+        # remove redundant keys columns.
         self.log('**** exit lsqfitgp.empbayes_fit ****')
 
         # TODO would it be meaningful to add correlation of the fit result with
@@ -406,27 +434,137 @@ class empbayes_fit(Logger):
         
         # TODO now that I have Decomposition.matrix(), I could write
         # by hand the gradient and Fisher matrix expressions to save on jax
-        # tracing time.
+        # tracing time. => wait for the new linalg system
+    
+    def _parse_hyperprior(self, hyperprior, initial, fix):
+        
+        # check fix against hyperprior and fill missing values
+        hyperprior = self._copyasarrayorbufferdict(hyperprior)
+        fix = self._parse_fix(hyperprior, fix)
+        flatfix = self._flatview(fix)
+
+        # extract distribution of free hyperparameters
+        flathp = self._flatview(hyperprior)
+        freehp = flathp[~flatfix]
+        mean = gvar.mean(freehp)
+        cov = gvar.evalcov(freehp) # TODO use evalcov_blocks
+        dec = _linalg.EigCutFullRank(cov)
+        assert dec.n == freehp.size
+        self.log(f'{freehp.size}/{flathp.size} free hyperparameters', 2)
+        
+        # determine starting point for minimization
+        if not isinstance(initial, str):
+            self.log('start from provided point', 2)
+            initial = self._copyasarrayorbufferdict(initial)
+            flatinitial = self._flatview(initial)
+        elif initial == 'priormean':
+            self.log('start from prior mean', 2)
+            flatinitial = gvar.mean(flathp)
+        elif initial == 'priorsample':
+            self.log('start from a random sample from the prior', 2)
+            if freehp.size < flathp.size:
+                cov = gvar.evalcov(flathp) # TODO use evalcov_blocks
+                fulldec = _linalg.EigCutFullRank(cov)
+            else:
+                fulldec = dec
+            iid = np.random.randn(fulldec.m)
+            flatinitial = fulldec.correlate(iid)
+        else:
+            raise KeyError(initial)
+        x0 = flatinitial[~flatfix]
+        
+        # make function to add fixed values and reshape to original format
+        fixed_indices, = jnp.nonzero(flatfix)
+        unfixed_indices, = jnp.nonzero(~flatfix)
+        fixed_values = jnp.asarray(flatinitial[flatfix])
+        def unflat(x):
+            if isinstance(x, jnp.ndarray):
+                assert x.ndim == 1
+                y = jnp.empty(flatfix.size, x.dtype)
+                y = y.at[unfixed_indices].set(x)
+                y = y.at[fixed_indices].set(fixed_values)
+            else:
+                x = numpy.asarray(x)
+                assert x.ndim == 1
+                y = numpy.empty(flatfix.size, x.dtype)
+                y[unfixed_indices] = x
+                y[fixed_indices] = fixed_values
+            return self._unflatview(y, hyperprior)
+        
+        # set attributes and return objects used in fit
+        self.prior = hyperprior
+        return mean, dec, x0, unflat
+    
+    def _parse_fix(self, hyperprior, fix):
+        
+        if fix is None:
+            if hasattr(hyperprior, 'keys'):
+                fix = gvar.BufferDict(hyperprior, buf=numpy.zeros(hyperprior.size, bool))
+            else:
+                fix = numpy.zeros(hyperprior.shape, bool)
+        else:
+            fix = self._copyasarrayorbufferdict(fix)
+            if hasattr(fix, 'keys'):
+                assert hasattr(hyperprior, 'keys'), 'fix is dictionary but hyperprior is array'
+                assert all(k in hyperprior for k in fix), 'some keys in fix are missing in hyperprior'
+                fix = gvar.BufferDict({
+                    k: numpy.broadcast_to(fix[k], v.shape)
+                    if k in fix else
+                    numpy.zeros(v.shape, bool)
+                    for k, v in hyperprior.items()
+                }, dtype=bool)
+                # TODO recognize transformed keys
+            else:
+                assert not hasattr(hyperprior, 'keys'), 'fix is array but hyperprior is dictionary'
+                fix = numpy.broadcast_to(fix, hyperprior.shape).astype(bool)
+        
+        self.fix = fix
+        return fix
+    
+    def _parse_data(self, data):
+        
+        if isinstance(data, tuple) and len(data) == 1:
+            data, = data
+
+        if callable(data):
+            self.log('data is callable', 2)
+            cachedargs = None
+        elif isinstance(data, tuple):
+            self.log('data errors provided separately', 2)
+            assert len(data) == 2
+            cachedargs = data
+        elif self._flatview(self._copyasarrayorbufferdict(data)).dtype == object:
+            self.log('data has errors as gvars', 2)
+            data = gvar.gvar(data)
+            datamean = gvar.mean(data)
+            datacov = gvar.evalcov(data)
+            cachedargs = (datamean, datacov)
+        else:
+            self.log('data has no errors', 2)
+            cachedargs = (data,)
+        
+        return data, cachedargs
 
     @staticmethod
-    def _asarrayorbufferdict(x):
+    def _copyasarrayorbufferdict(x):
         if hasattr(x, 'keys'):
             return gvar.BufferDict(x)
         else:
-            return numpy.asarray(x)
+            return numpy.array(x)
 
     @staticmethod
-    def _flat(x):
+    def _flatview(x):
         if hasattr(x, 'reshape'):
             return x.reshape(-1)
-        elif isinstance(x, gvar.BufferDict): # pragma: no branch
+        elif hasattr(x, 'buf'):
             return x.buf
-        else:
-            raise NotImplementedError # pragma: no cover
+        else: # pragma: no cover
+            raise NotImplementedError
 
     @staticmethod
-    def _unflat(x, original):
+    def _unflatview(x, original):
         if isinstance(original, numpy.ndarray):
+            # TODO is this never applied to jax arrays?
             out = x.reshape(original.shape)
             # if not out.shape:
             #     try:
@@ -434,15 +572,16 @@ class empbayes_fit(Logger):
             #     except jax.errors.ConcretizationTypeError:
             #         pass
             return out
-        elif isinstance(original, gvar.BufferDict): # pragma: no branch
-            # normally I would do BufferDict(original, buf=x) but it does not work
-            # with JAX tracers
+        elif isinstance(original, gvar.BufferDict):
+            # normally I would do BufferDict(original, buf=x) but it does not
+            # work with JAX tracers
             b = gvar.BufferDict(original)
             b._extension = {}
             b._buf = x
-            # TODO b.buf = x does not work because BufferDict checks that the
-            # array is a numpy array.
+            # b.buf = x does not work because BufferDict checks that the
+            # array is a numpy array
+            # TODO maybe make a feature request to gvar to accept array_like
+            # buf
             return b
-        else:
-            raise NotImplementedError # pragma: no cover
-
+        else: # pragma: no cover
+            raise NotImplementedError

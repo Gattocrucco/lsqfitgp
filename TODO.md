@@ -987,16 +987,16 @@ something like `addtransf`.
 
 #### Sparse
 
-Sparse algorithms. Make a custom minimal CSR class that allows an autograd
-box as values buffer with only kernel operations implemented (addition,
-multiplication, matrix multiplication, power). Make two decompositions
-specifically for sparse matrices, sparselu and sparselowrank. Finite support
-kernels have a parameter sparse=True to return a sparse matrix. Operations
-between a sparse and a dense object should raise an error while computing
-the kernel if the result is dense, but not while making prediction.
-Alternative: make pydata/sparse work with autograd. I hope I can inject the
-code into the module so I don't have to rely on a fork. Probably I have to
-define some missing basic functions and define the vjp of the constructors.
+`GP.addcov` accepts directly sparse matrices (JAX or scipy format), while
+`GP.addx`, `GP.addtransf` and `GP.addlintransf` get an additional parameter
+`sparsity=None` that accepts a matrix used to represent the sparsity pattern,
+with boolean interpretation. This matrix may be dense or sparse. The `Points`
+block building method uses the sparsity pattern to make indices to select two
+1d arrays of x values, and to shape the result back into a sparse matrix.
+`LinTransf` should work as is if jax operations support sparse matrices (or
+should I apply `sparsify` automatically if all inputs are sparse?). Then
+add some solvers with sparse algorithms, adapt `Lanczos` and `LOBPCG` to avoid
+the dense conversion.
 
 #### Sparse inverse (DAG)
 

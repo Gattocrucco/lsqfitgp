@@ -380,28 +380,24 @@ def CausalExpQuad(r, alpha=1):
     # TODO taylor-expand erfc near 0 and use r2
 
 @kernel(derivable=True, maxdim=1)
-def Decaying(x, y):
+def Decaying(x, y, alpha=1):
     """
     Decaying kernel.
     
     .. math::
         k(x, y) =
-        \\frac{1}{1 + x + y},
-        \\quad x, y \\ge 0
-    
-    It is infinitely divisible.
-    
+        \\frac{1}{(1 + x + y)^\\alpha},
+        \\quad x, y, \\alpha \\ge 0
+        
     Reference: Swersky, Snoek and Adams (2014).
     """
     # TODO high dimensional version of this, see mlkernels issue #3
     with _patch_jax.skipifabstract():
         assert jnp.all(x >= 0)
         assert jnp.all(y >= 0)
-    return 1 / (x + y + 1)
+    return 1 / (x + y + 1) ** alpha
     # use x + y + 1 instead of 1 + x + y because the latter is less numerically
-    # symmetric for small x and y
-    
-    # TODO infinite divisibility checking system like maxdim and derivable
+    # accurate and symmetric for small x and y
 
 @isotropickernel(derivable=False, input='soft')
 def Log(r):

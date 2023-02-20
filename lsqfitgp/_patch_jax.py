@@ -106,7 +106,7 @@ def elementwise_grad(fun, argnum=0):
 class skipifabstract:
     """
     Context manager to try to do all operations eagerly even during jit, and
-    ignore ConcretizationTypeError exceptions.
+    skip entirely if it is not possible.
     """
     # I feared this would be slow because of the slow jax exception handling,
     # but %timeit suggests it isn't
@@ -141,8 +141,7 @@ def stop_hessian_jvp(primals, tangents):
     x_dot, = tangents
     return x, lax.stop_gradient(x_dot)
 
-def value_and_ops(f, *ops, has_aux=False, **kw): # pragma: no cover
-    # currently not used, written for empbayes_fit
+def value_and_ops(f, *ops, has_aux=False, **kw):
     """
     Creates a function returning the values of f and its derivatives defined
     by stacking the operators in ops. Example:
