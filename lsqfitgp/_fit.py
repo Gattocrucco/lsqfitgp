@@ -31,6 +31,7 @@ from scipy import optimize
 from . import _GP
 from . import _linalg
 from . import _patch_jax
+from . import _patch_gvar
 
 __all__ = [
     'empbayes_fit',
@@ -386,7 +387,7 @@ class empbayes_fit(Logger):
             else:
                 raise RuntimeError('the minimizer did not return an estimate of the hessian')
         elif covariance == 'none':
-            cov = jnp.full(2 * result.x.shape, jnp.nan)
+            cov = numpy.full(result.x.size, numpy.nan)
         else:
             raise KeyError(covariance)
         
@@ -398,12 +399,11 @@ class empbayes_fit(Logger):
         self.minresult = result
         self.minargs = minargs
 
-        self.log(f'posterior = {self.p}')
-        self.log(f'prior = {self.prior}', 2)
-        # TODO format the prior and posterior as a table. Make a function
-        # tabulate_together(*xs) that uses gvar.tabulate(..., columns=len(x))
-        # with green screen headers and then postprocesses the text output to
-        # remove redundant keys columns.
+        if verbosity >= 2:
+            self.log(_patch_gvar.tabulate_together(
+                self.p, self.prior, self.p - self.prior,
+                headers=['param', 'posterior', 'prior', 'difference'],
+            ), 2)
         self.log('**** exit lsqfitgp.empbayes_fit ****')
 
         # TODO would it be meaningful to add correlation of the fit result with
