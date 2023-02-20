@@ -768,7 +768,7 @@ test_kwargs = {
     _kernels.Cauchy: dict(kwargs_list=[dict(alpha=a, beta=b) for a in [0.001, 0.5, 0.999, 1, 1.001, 1.5, 1.999, 2] for b in [0.001, 0.5, 1, 1.5, 2, 4, 8]]),
     _kernels.CausalExpQuad: dict(kwargs_list=[dict(alpha=a) for a in [0, 1, 2]]),
     _kernels.Decaying: dict(
-        random_x_fun=lambda **_: np.random.uniform(0, 5, size=100)
+        random_x_fun=lambda **_: np.random.uniform(0, 5, size=100),
         kwargs_list=[dict(alpha=a) for a in [0, .5, 1, 2]],
     ),
     _kernels.StationaryFracBrownian: dict(kwargs_list=[dict(H=H) for H in [0.1, 0.5, 1]]),
