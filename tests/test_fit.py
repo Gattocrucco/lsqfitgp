@@ -138,9 +138,10 @@ def test_flat():
     truegp = gpfactory1(truehp)
     trueprior = truegp.prior()
     data = gvar.sample(trueprior)
-    fit1 = lgp.empbayes_fit(hp, gpfactory1, data)
-    fit2 = lgp.empbayes_fit(hp.buf, gpfactory2, data)
-    fit3 = lgp.empbayes_fit(hp.buf[0], gpfactory3, data)
+    kw = dict(raises=False)
+    fit1 = lgp.empbayes_fit(hp, gpfactory1, data, **kw)
+    fit2 = lgp.empbayes_fit(hp.buf, gpfactory2, data, **kw)
+    fit3 = lgp.empbayes_fit(hp.buf[0], gpfactory3, data, **kw)
     util.assert_similar_gvars(fit1.p.buf[0], fit2.p[0], fit3.p)
 
 @util.tryagain

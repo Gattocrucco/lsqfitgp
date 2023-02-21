@@ -689,6 +689,7 @@ class DecompTestBase(DecompTestABC):
             util.assert_close_matrices(K, Q, rtol=self.clskey({
                 r'pinv2_chol': 1e-4,
                 r'pinv_chol': 1e-10,
+                r'lobpcg': 1e-12,
             }, 1e-13))
     
     def test_double_correlate(self):

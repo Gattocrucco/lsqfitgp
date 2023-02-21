@@ -87,6 +87,7 @@ To browse it locally after `make tests` etc., do `make covreport` and open
 
   * [stheno](https://github.com/wesselb/stheno)
   * [tinygp](https://github.com/dfm/tinygp)
+  * [GPJax](https://github.com/JaxGaussianProcesses/GPJax)
 
 See also [Comparison of Gaussian process Software](https://en.wikipedia.org/wiki/Comparison_of_Gaussian_process_software)
 on Wikipedia.

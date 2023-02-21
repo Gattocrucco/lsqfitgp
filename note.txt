@@ -3005,3 +3005,10 @@ Changes v0.13 --> v0.14:
 - correlate and decorrelate transposed
 - n, m, eps, matrix()
 - BART: weights, interpolation, reset depth
+
+2023-03-20
+==========
+
+With 12 hyperparameters and 3000 datapoints, the fisher matrix is already
+totally undoable with my current implementation! I really have to rewrite
+the linalg system to compute it directly.

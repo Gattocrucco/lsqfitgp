@@ -21,6 +21,7 @@ import warnings
 import functools
 import time
 import textwrap
+import datetime
 
 import gvar
 import jax
@@ -188,14 +189,15 @@ class empbayes_fit(Logger):
         ----------
         p : scalar, array or dictionary of scalars/arrays
             A collection of gvars representing the hyperparameters that
-            maximize the marginal likelihood. The covariance matrix is computed
-            as the inverse of the hessian of the marginal likelihood. These
-            gvars do not track correlations with the hyperprior or the data.
+            maximize their posterior. These gvars do not track correlations
+            with the hyperprior or the data.
         prior : scalar, array or dictionary of scalars/arrays
             A copy of the hyperprior.
+        initial : scalar, array or dictionary of scalars/arrays
+            Starting point of the minimization, with the same format as `p`.
         fix : scalar, array or dictionary of scalars/arrays
             A set of booleans, with the same format as `p`, indicating which
-            parameters where kept fixed to the initial values.
+            parameters were kept fixed to the values in `initial`.
         pmean : scalar, array or dictionary of scalars/arrays
             Mean of `p`.
         pcov : scalar, array or dictionary of scalars/arrays
@@ -321,14 +323,14 @@ class empbayes_fit(Logger):
             def __call__(self, p):
                 self.it += 1
                 now = time.time()
-                duration = now - self.stamp
+                duration = datetime.timedelta(seconds=now - self.stamp)
                 self.stamp = now
                 nicep = hpunflat(p)
-                self.this.log(f'iteration {self.it} ({duration:.2g} s)', 3)
+                self.this.log(f'iteration {self.it} ({duration})', 3)
                 self.this.log(f'parameters = {nicep}', 4)
                 
             # TODO write a method to format the parameters nicely. => use
-            # gvar.tabulate?
+            # gvar.tabulate? => nope, need actual gvars
             
             # TODO log also the number of function evaluations, distinguishing
             # fun, fun_and_jac, jac, hess, fisher. To count them, make a
@@ -342,8 +344,8 @@ class empbayes_fit(Logger):
             start = time.time()
             result = optimize.minimize(**minargs)
             end = time.time()
-            total = end - start
-        self.log(f'total time: {total:.2g} s')
+        total = datetime.timedelta(seconds=end - start)
+        self.log(f'total time: {total}')
         
         # check the minimization was successful
         if not result.success:
@@ -401,9 +403,9 @@ class empbayes_fit(Logger):
 
         if verbosity >= 2:
             self.log(_patch_gvar.tabulate_together(
-                self.p, self.prior, self.p - self.prior,
-                headers=['param', 'posterior', 'prior', 'difference'],
-            ), 2)
+                self.prior, gvar.gvar(self.initial), self.p, self.p - self.prior, self.p - self.initial,
+                headers=['param', 'prior', 'initial', 'posterior', 'post-prior', 'post-ini'],
+            ))
         self.log('**** exit lsqfitgp.empbayes_fit ****')
 
         # TODO would it be meaningful to add correlation of the fit result with
@@ -440,6 +442,7 @@ class empbayes_fit(Logger):
         
         # check fix against hyperprior and fill missing values
         hyperprior = self._copyasarrayorbufferdict(hyperprior)
+        self._check_no_redundant_keys(hyperprior)
         fix = self._parse_fix(hyperprior, fix)
         flatfix = self._flatview(fix)
 
@@ -453,24 +456,8 @@ class empbayes_fit(Logger):
         self.log(f'{freehp.size}/{flathp.size} free hyperparameters', 2)
         
         # determine starting point for minimization
-        if not isinstance(initial, str):
-            self.log('start from provided point', 2)
-            initial = self._copyasarrayorbufferdict(initial)
-            flatinitial = self._flatview(initial)
-        elif initial == 'priormean':
-            self.log('start from prior mean', 2)
-            flatinitial = gvar.mean(flathp)
-        elif initial == 'priorsample':
-            self.log('start from a random sample from the prior', 2)
-            if freehp.size < flathp.size:
-                cov = gvar.evalcov(flathp) # TODO use evalcov_blocks
-                fulldec = _linalg.EigCutFullRank(cov)
-            else:
-                fulldec = dec
-            iid = np.random.randn(fulldec.m)
-            flatinitial = fulldec.correlate(iid)
-        else:
-            raise KeyError(initial)
+        initial = self._parse_initial(hyperprior, initial, dec)
+        flatinitial = self._flatview(initial)
         x0 = flatinitial[~flatfix]
         
         # make function to add fixed values and reshape to original format
@@ -491,10 +478,19 @@ class empbayes_fit(Logger):
                 y[fixed_indices] = fixed_values
             return self._unflatview(y, hyperprior)
         
-        # set attributes and return objects used in fit
         self.prior = hyperprior
         return mean, dec, x0, unflat
     
+    @staticmethod
+    def _check_no_redundant_keys(hyperprior):
+        if not hasattr(hyperprior, 'keys'):
+            return
+        for k in hyperprior:
+            m = hyperprior.extension_pattern.match(k)
+            if m and m.group(1) in hyperprior.invfcn:
+                altk = m.group(2)
+                assert altk not in hyperprior, f'duplicate keys {altk!r} and {k!r} in hyperprior'
+
     def _parse_fix(self, hyperprior, fix):
         
         if fix is None:
@@ -506,20 +502,65 @@ class empbayes_fit(Logger):
             fix = self._copyasarrayorbufferdict(fix)
             if hasattr(fix, 'keys'):
                 assert hasattr(hyperprior, 'keys'), 'fix is dictionary but hyperprior is array'
-                assert all(k in hyperprior for k in fix), 'some keys in fix are missing in hyperprior'
-                fix = gvar.BufferDict({
-                    k: numpy.broadcast_to(fix[k], v.shape)
-                    if k in fix else
-                    numpy.zeros(v.shape, bool)
-                    for k, v in hyperprior.items()
-                }, dtype=bool)
-                # TODO recognize transformed keys
+                assert all(hyperprior.has_dictkey(k) for k in fix), 'some keys in fix are missing in hyperprior'
+                newfix = {}
+                for k, v in hyperprior.items():
+                    key = None
+                    m = hyperprior.extension_pattern.match(k)
+                    if m and m.group(1) in hyperprior.invfcn:
+                        altk = m.group(2)
+                        if altk in fix:
+                            assert k not in fix, f'duplicate keys {k!r} and {altk!r} in fix'
+                            key = altk
+                    if key is None and k in fix:
+                        key = k
+                    if key is None:
+                        elem = numpy.zeros(v.shape, bool)
+                    else:
+                        elem = numpy.broadcast_to(fix[key], v.shape)
+                    newfix[k] = elem
+                fix = gvar.BufferDict(newfix, dtype=bool)
             else:
                 assert not hasattr(hyperprior, 'keys'), 'fix is array but hyperprior is dictionary'
                 fix = numpy.broadcast_to(fix, hyperprior.shape).astype(bool)
         
         self.fix = fix
         return fix
+    
+    def _parse_initial(self, hyperprior, initial, dec):
+        
+        if not isinstance(initial, str):
+            self.log('start from provided point', 2)
+            initial = self._copyasarrayorbufferdict(initial)
+            if hasattr(hyperprior, 'keys'):
+                assert hasattr(initial, 'keys'), 'hyperprior is dictionary but initial is array'
+                assert set(hyperprior.keys()) == set(initial.keys())
+                assert all(hyperprior[k].shape == initial[k].shape for k in hyperprior)
+            else:
+                assert not hasattr(initial, 'keys'), 'hyperprior is array but initial is dictionary'
+                assert hyperprior.shape == initial.shape
+        
+        elif initial == 'priormean':
+            self.log('start from prior mean', 2)
+            initial = gvar.mean(hyperprior)
+        
+        elif initial == 'priorsample':
+            self.log('start from a random sample from the prior', 2)
+            if dec.size < hyperprior.size:
+                flathp = self._flatview(hyperprior)
+                cov = gvar.evalcov(flathp) # TODO use evalcov_blocks
+                fulldec = _linalg.EigCutFullRank(cov)
+            else:
+                fulldec = dec
+            iid = numpy.random.randn(fulldec.m)
+            flatinitial = fulldec.correlate(iid)
+            initial = self._unflatview(flatinitial, hyperprior)
+        
+        else:
+            raise KeyError(initial)
+        
+        self.initial = initial
+        return initial
     
     def _parse_data(self, data):
         
