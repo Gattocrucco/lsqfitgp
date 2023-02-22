@@ -142,7 +142,7 @@ def from_jacobian(mean, jac, indices):
     g = numpy.zeros(len(mean), object)
     for i, jacrow in enumerate(jac):
         der = gvar.svec(len(indices))
-        der._assign(jac[i], indices)
+        der._assign(jacrow, indices)
         g[i] = gvar.GVar(mean[i], der, cov)
     return g.reshape(shape)
     

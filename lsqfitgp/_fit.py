@@ -220,17 +220,15 @@ class empbayes_fit(Logger):
         assert callable(gpfactory)
         
         # analyze the hyperprior
-        hpmean, hpdec, hpinitial, hpunflat = self._parse_hyperprior(hyperprior, initial, fix)
+        hpinitial, hpunflat = self._parse_hyperprior(hyperprior, initial, fix)
         del hyperprior, initial, fix
-        precision = hpdec.inv()
         
         # analyze data
         data, cachedargs = self._parse_data(data)
         # TODO log number of datapoints (not trivial, must be done in callback)
         
         def make(p):
-            priorchi2 = hpdec.quad(p - hpmean)
-
+            
             hp = hpunflat(p)
             gp = gpfactory(hp, **gpfactorykw)
             assert isinstance(gp, _GP.GP)
@@ -242,16 +240,16 @@ class empbayes_fit(Logger):
                 if not isinstance(args, tuple):
                     args = (args,)
             
-            return gp, args, priorchi2
+            return gp, args
         
         def dojit(f):
             return jax.jit(f) if jit else f
         
         @dojit
         def fun(p):
-            gp, args, priorchi2 = make(p)
+            gp, args = make(p)
             ml = gp.marginal_likelihood(*args, stop_hessian=method == 'hessmod')
-            logp = -ml + 1/2 * priorchi2
+            logp = -ml + 1/2 * (p @ p)
             return logp
         
         fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jax.jacfwd))
@@ -268,12 +266,13 @@ class empbayes_fit(Logger):
             # can't change inner jac to rev due to jax issue #10994
             # (stop_hessian)
             def fisher(p):
-                gp, args, _ = make(p)
+                gp, args = make(p)
                 decomp, _ = gp._prior_decomp(*args, stop_hessian=True)
                 return -1/2 * decomp.logdet()
             
             def fisherprec(p):
-                return fisher(p) + precision
+                f = fisher(p)
+                return f + jnp.eye(len(f), dtype=f.dtype)
         
         else:
             
@@ -283,7 +282,7 @@ class empbayes_fit(Logger):
             
             @functools.partial(jax.jacfwd, has_aux=True)
             def grad_logdet_and_aux(p):
-                gp, args, _ = make(p)
+                gp, args = make(p)
                 decomp, ymean = gp._prior_decomp(*args, stop_hessian=True)
                 return -1/2 * decomp.logdet(), (decomp, ymean)
             
@@ -294,7 +293,7 @@ class empbayes_fit(Logger):
             
             def fisherprec(p):
                 (F, J), decomp = fisher_and_jac_and_aux(p)
-                return F + precision + decomp.quad(J)
+                return F + jnp.eye(len(F), dtype=F.dtype) + decomp.quad(J)
         
         if method == 'fisher':
             fisherprec = dojit(fisherprec)
@@ -487,28 +486,35 @@ class empbayes_fit(Logger):
         # determine starting point for minimization
         initial = self._parse_initial(hyperprior, initial, dec)
         flatinitial = self._flatview(initial)
-        x0 = flatinitial[~flatfix]
+        x0 = dec.decorrelate(flatinitial[~flatfix] - mean)
+        # TODO for initial = 'priormean', x0 is zero, skip decorrelate
+        # for initial = 'priorsample', x0 is iid normal, but I have to sync
+        # it with the user-exposed unflattened initial in _parse_initial
         
-        # make function to add fixed values and reshape to original format
+        # make function to correlate, add fixed values, and reshape to original
+        # format
         fixed_indices, = jnp.nonzero(flatfix)
         unfixed_indices, = jnp.nonzero(~flatfix)
         fixed_values = jnp.asarray(flatinitial[flatfix])
         def unflat(x):
-            if isinstance(x, jnp.ndarray):
-                assert x.ndim == 1
-                y = jnp.empty(flatfix.size, x.dtype)
-                y = y.at[unfixed_indices].set(x)
-                y = y.at[fixed_indices].set(fixed_values)
-            else:
-                x = numpy.asarray(x)
-                assert x.ndim == 1
+            assert x.ndim == 1
+            if x.dtype == object:
+                jac, indices = _patch_gvar.jacobian(x)
+                xmean = mean + dec.correlate(gvar.mean(x))
+                xjac = dec.correlate(jac)
+                x = _patch_gvar.from_jacobian(xmean, xjac, indices)
                 y = numpy.empty(flatfix.size, x.dtype)
                 y[unfixed_indices] = x
                 y[fixed_indices] = fixed_values
+            else:
+                x = mean + dec.correlate(x)
+                y = jnp.empty(flatfix.size, x.dtype)
+                y = y.at[unfixed_indices].set(x)
+                y = y.at[fixed_indices].set(fixed_values)
             return self._unflatview(y, hyperprior)
         
         self.prior = hyperprior
-        return mean, dec, x0, unflat
+        return x0, unflat
     
     @staticmethod
     def _check_no_redundant_keys(hyperprior):
