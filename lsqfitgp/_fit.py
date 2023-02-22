@@ -296,8 +296,20 @@ class empbayes_fit(Logger):
                 (F, J), decomp = fisher_and_jac_and_aux(p)
                 return F + precision + decomp.quad(J)
         
-        minargs = dict(fun=fun_and_jac, jac=True, x0=hpinitial)
+        if method == 'fisher':
+            fisherprec = dojit(fisherprec)
+            # fisherprec may be used once for estimation of the posterior
+            # precision, so do not jit unless it's used multiple times since
+            # jit is somewhat slow
         
+        # wrap functions to count number of calls
+        fun = self._CountCalls(fun)
+        fun_and_jac = self._CountCalls(fun_and_jac)
+        hess = self._CountCalls(hess)
+        fisherprec = self._CountCalls(fisherprec)
+        
+        # prepare minimizer arguments
+        minargs = dict(fun=fun_and_jac, jac=True, x0=hpinitial)
         if method == 'nograd':
             minargs.update(fun=fun, jac=None, method='nelder-mead')
         elif method == 'gradient':
@@ -305,7 +317,7 @@ class empbayes_fit(Logger):
         elif method == 'hessian':
             minargs.update(hess=hess, method='trust-exact')
         elif method == 'fisher':
-            minargs.update(hess=dojit(fisherprec), method='dogleg')
+            minargs.update(hess=fisherprec, method='dogleg')
             # dogleg requires positive definiteness
         elif method == 'hessmod':
             minargs.update(hess=hess, method='trust-exact')
@@ -326,16 +338,12 @@ class empbayes_fit(Logger):
                 duration = datetime.timedelta(seconds=now - self.stamp)
                 self.stamp = now
                 nicep = hpunflat(p)
-                self.this.log(f'iteration {self.it} ({duration})', 3)
+                self.this.log(f'iteration {self.it}, time: {duration}, calls: fun {fun.partial()}, funjac {fun_and_jac.partial()}, fisher {fisherprec.partial()}, hess {hess.partial()}', 3)
                 self.this.log(f'parameters = {nicep}', 4)
                 
             # TODO write a method to format the parameters nicely. => use
             # gvar.tabulate? => nope, need actual gvars
             
-            # TODO log also the number of function evaluations, distinguishing
-            # fun, fun_and_jac, jac, hess, fisher. To count them, make a
-            # decorator for the functions.
-
         if verbosity > 2:
             minargs.update(callback=Callback(self))
         
@@ -345,7 +353,7 @@ class empbayes_fit(Logger):
             result = optimize.minimize(**minargs)
             end = time.time()
         total = datetime.timedelta(seconds=end - start)
-        self.log(f'total time: {total}')
+        self.log(f'totals: time: {total}, calls: fun {fun.total()}, funjac {fun_and_jac.total()}, fisher {fisherprec.total()}, hess {hess.total()}')
         
         # check the minimization was successful
         if not result.success:
@@ -436,7 +444,28 @@ class empbayes_fit(Logger):
         
         # TODO now that I have Decomposition.matrix(), I could write
         # by hand the gradient and Fisher matrix expressions to save on jax
-        # tracing time. => wait for the new linalg system
+        # tracing time. => wait for the new linalg system => don't wait, make
+        # it non-crap right away!
+    
+    class _CountCalls:
+        
+        def __init__(self, func):
+            self._func = func
+            self._total = 0
+            self._partial = 0
+        
+        def __call__(self, *args, **kw):
+            self._total += 1
+            self._partial += 1
+            return self._func(*args, **kw)
+        
+        def partial(self):
+            result = self._partial
+            self._partial = 0
+            return result
+        
+        def total(self):
+            return self._total
     
     def _parse_hyperprior(self, hyperprior, initial, fix):
         
