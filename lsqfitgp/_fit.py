@@ -246,19 +246,20 @@ class empbayes_fit(Logger):
             return jax.jit(f) if jit else f
         
         @dojit
-        def fun(p):
+        def fun(p, *, stop_hessian=False):
             gp, args = make(p)
-            ml = gp.marginal_likelihood(*args, stop_hessian=method == 'hessmod')
+            ml = gp.marginal_likelihood(*args, stop_hessian=stop_hessian)
             logp = -ml + 1/2 * (p @ p)
             return logp
         
-        fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jax.jacfwd))
-        # can't change to rev due to, I guess, the priorchi2 term quad
-        # derivatives w.r.t. b
-        hess = dojit(jax.jacfwd(jax.jacfwd(fun)))
-        # TODO a reverse mode jac would be very useful with many hyperparameters
-        # and grad-only optimization.
-        
+        fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jax.jacrev))
+        if method == 'hessmod':
+            hess = dojit(jax.jacfwd(jax.jacfwd(functools.partial(fun, stop_hessian=True))))
+            # can't change inner jacfwd to jacrev due to jax issue #10994
+            # (stop_hessian)
+        else:
+            hess = dojit(jax.jacfwd(jax.jacrev(fun)))
+                    
         if not callable(data):
             
             @jax.jacfwd
