@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>8. Fitting &#8212; lsqfitgp 0.14 documentation</title>
+    <title>8. Fitting &#8212; lsqfitgp 0.15 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -27,7 +27,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">lsqfitgp 0.14</a></h1>
+<h1 class="logo"><a href="index.html">lsqfitgp 0.15</a></h1>
 
 
 
@@ -120,7 +120,7 @@
 <span id="fit"></span><h1><span class="section-number">8. </span>Fitting<a class="headerlink" href="#fitting" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.empbayes_fit">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gradient'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'priormean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gradient'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'priormean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Maximum a posteriori fit.</p>
 <p>Maximizes the marginal likelihood of the data with a Gaussian process
 model that depends on hyperparameters, multiplied by a prior on the
@@ -195,6 +195,29 @@ terminal:</p>
 </dd>
 </dl>
 </dd>
+<dt><strong>covariance</strong><span class="classifier">str</span></dt><dd><p>Method to estimate the posterior covariance matrix of the
+hyperparameters:</p>
+<dl class="simple">
+<dt>‘hess’</dt><dd><p>Use the hessian of the log posterior in the MAP as precision
+matrix.</p>
+</dd>
+<dt>‘fisher’</dt><dd><p>Use the Fisher information in the MAP, plus the prior precision,
+as precision matrix.</p>
+</dd>
+<dt>‘minhess’</dt><dd><p>Use the hessian returned by the minimizer as precision matrix,
+may be an estimate.</p>
+</dd>
+<dt>‘auto’ (default)</dt><dd><p>Use the minimizer hessian if applicable, Fisher otherwise.</p>
+</dd>
+<dt>‘none’</dt><dd><p>Do not estimate the covariance matrix.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>fix</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>A set of booleans, with the same format as <cite>hyperprior</cite>, indicating
+which hyperparameters are kept fixed to their initial value.
+Scalars and arrays are broadcasted to the shape of <cite>hyperprior</cite>.
+If a dictionary, missing keys are treated as False.</p>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
@@ -206,9 +229,15 @@ terminal:</p>
 <dt class="field-odd">Attributes<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>p</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>A collection of gvars representing the hyperparameters that
-maximize the marginal likelihood. The covariance matrix is computed
-as the inverse of the hessian of the marginal likelihood. These
-gvars do not track correlations with the hyperprior or the data.</p>
+maximize their posterior. These gvars do not track correlations
+with the hyperprior or the data.</p>
+</dd>
+<dt><strong>prior</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>A copy of the hyperprior.</p>
+</dd>
+<dt><strong>initial</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>Starting point of the minimization, with the same format as <cite>p</cite>.</p>
+</dd>
+<dt><strong>fix</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>A set of booleans, with the same format as <cite>p</cite>, indicating which
+parameters were kept fixed to the values in <cite>initial</cite>.</p>
 </dd>
 <dt><strong>pmean</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>Mean of <cite>p</cite>.</p>
 </dd>
