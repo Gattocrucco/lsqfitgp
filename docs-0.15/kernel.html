@@ -1,0 +1,458 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>2. Generic kernel classes &#8212; lsqfitgp 0.15 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="3. Kernel decorators" href="kerneldec.html" />
+    <link rel="prev" title="1. Kernels reference" href="kernelsref.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">lsqfitgp 0.15</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="userguide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">1. Kernels reference</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2. Generic kernel classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">3. Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelop.html">4. Kernel operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deriv.html">5. Derivative specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html">6. Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fit.html">8. Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="reference.html">Reference manual</a><ul>
+      <li>Previous: <a href="kernelsref.html" title="previous chapter"><span class="section-number">1. </span>Kernels reference</a></li>
+      <li>Next: <a href="kerneldec.html" title="next chapter"><span class="section-number">3. </span>Kernel decorators</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernelsref.html" title="Previous document"><span class="section-number">1. </span>Kernels reference</a>
+        </li>
+        <li>
+          <a href="kerneldec.html" title="Next document"><span class="section-number">3. </span>Kernel decorators</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="generic-kernel-classes">
+<h1><span class="section-number">2. </span>Generic kernel classes<a class="headerlink" href="#generic-kernel-classes" title="Permalink to this heading">¶</a></h1>
+<p>All kernels in <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> are subclasses of <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a> or <a class="reference internal" href="#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a> (the latter two are
+themselves subclasses of <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a>).</p>
+<p><a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a> itself is a subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">CrossKernel</span></code>, which represents
+the covariance function between two different processes. In symbols, the kernel
+of a process <span class="math notranslate nohighlight">\(f\)</span> is</p>
+<div class="math notranslate nohighlight">
+\[k_f(x, y) = \operatorname{Cov}[f(x), f(y)],\]</div>
+<p>while the cross kernel between processes <span class="math notranslate nohighlight">\(f\)</span> and <span class="math notranslate nohighlight">\(g\)</span> is</p>
+<div class="math notranslate nohighlight">
+\[k_{fg}(x, y) = \operatorname{Cov}[f(x), g(y)].\]</div>
+<p>However you will probably never need to deal directly with a cross kernel, they
+are generated automatically behind the scenes by <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>.</p>
+<p>The three general classes can be used directly by instantiating them with a
+callable which will do the actual computation. However, this can be done in a
+simpler and more functional way using the decorators <a class="reference internal" href="kerneldec.html#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">kernel()</span></code></a>,
+<a class="reference internal" href="kerneldec.html#lsqfitgp.stationarykernel" title="lsqfitgp.stationarykernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">stationarykernel()</span></code></a> and <a class="reference internal" href="kerneldec.html#lsqfitgp.isotropickernel" title="lsqfitgp.isotropickernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">isotropickernel()</span></code></a>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.Kernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sys.maxsize</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for objects representing covariance kernels.</p>
+<p>A Kernel object is callable, the signature is obj(x, y). Kernel objects
+can be summed and multiplied between them and with scalars, or raised
+to power with a scalar exponent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>kernel</strong><span class="classifier">callable</span></dt><dd><p>A function with signature <code class="docutils literal notranslate"><span class="pre">kernel(x,</span> <span class="pre">y)</span></code>, where <cite>x</cite> and <cite>y</cite> are
+two broadcastable numpy arrays, which computes the covariance of
+f(x) with f(y) where f is the Gaussian process.</p>
+</dd>
+<dt><strong>dim</strong><span class="classifier">None or str</span></dt><dd><p>When the input arrays are structured arrays, if <cite>dim</cite> is None the
+kernel will operate on all fields, i.e., it will be passed the whole
+arrays. If <cite>dim</cite> is a string, <cite>kernel</cite> will see only the arrays for
+the field named <cite>dim</cite>. If <cite>dim</cite> is a string and the array is not
+structured, an exception is raised. If the field for name <cite>dim</cite> has
+a nontrivial shape, the array passed to <cite>kernel</cite> is still
+structured but has only field <cite>dim</cite>.</p>
+</dd>
+<dt><strong>loc, scale</strong><span class="classifier">scalar</span></dt><dd><p>The inputs to <cite>kernel</cite> are transformed as (x - loc) / scale.</p>
+</dd>
+<dt><strong>forcekron</strong><span class="classifier">bool</span></dt><dd><p>If True, when calling <cite>kernel</cite>, if <cite>x</cite> and <cite>y</cite> are structured
+arrays, i.e., if they represent multidimensional input, <cite>kernel</cite> is
+invoked separately for each dimension, and the result is the
+product. Default False. The selection indicated by <cite>dim</cite> limits the
+dimensions over which <cite>forcekron</cite> applies.</p>
+</dd>
+<dt><strong>derivable</strong><span class="classifier">bool, int, None, or callable</span></dt><dd><p>Specifies how many times the kernel can be derived, only for error
+checking purposes. True means infinitely many times derivable. If
+callable, it is called with the same keyword arguments as <cite>kernel</cite>.
+If None (default) it means that the degree of derivability is
+unknown.</p>
+</dd>
+<dt><strong>saveargs</strong><span class="classifier">bool</span></dt><dd><p>If True, save the all the initialization arguments in a
+dictionary under the attribute <cite>initargs</cite>. Default False.</p>
+</dd>
+<dt><strong>maxdim</strong><span class="classifier">int, callable or None</span></dt><dd><p>The maximum input dimensionality accepted by the kernel. If
+callable, it is called with the same keyword arguments as the
+kernel. Default sys.maxsize.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to <cite>kernel</cite>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>derivable</strong><span class="classifier">int or None</span></dt><dd><p>How many times the process represented by the kernel is derivable.
+<code class="docutils literal notranslate"><span class="pre">sys.maxsize</span></code> if it is smooth. <code class="docutils literal notranslate"><span class="pre">None</span></code> if the derivability is
+unknown.</p>
+</dd>
+<dt><strong>maxdim</strong><span class="classifier">int or None</span></dt><dd><p>Maximum input dimensionality. None means unknown.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.Kernel.rescale" title="lsqfitgp.Kernel.rescale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rescale</span></code></a>(xfun, yfun)</p></td>
+<td><p>Multiply the kernel by functions of its arguments.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.Kernel.diff" title="lsqfitgp.Kernel.diff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">diff</span></code></a>(xderiv, yderiv)</p></td>
+<td><p>Return a Kernel-like object that computes the derivatives of this kernel.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.Kernel.xtransf" title="lsqfitgp.Kernel.xtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xtransf</span></code></a>(xfun, yfun)</p></td>
+<td><p>Transform the inputs of the kernel.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.Kernel.fourier" title="lsqfitgp.Kernel.fourier"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fourier</span></code></a>(dox, doy)</p></td>
+<td><p>Compute the Fourier series of the kernel.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.Kernel.taylor" title="lsqfitgp.Kernel.taylor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">taylor</span></code></a>(dox, doy)</p></td>
+<td><p>Compute the Taylor series of the kernel.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.Kernel.diff">
+<span class="sig-name descname"><span class="pre">diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xderiv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yderiv</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel.diff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a Kernel-like object that computes the derivatives of this
+kernel. The derivatives are computed automatically with JAX. If
+<cite>xderiv</cite> and <cite>yderiv</cite> are trivial, this is a no-op.</p>
+<div class="math notranslate nohighlight">
+\[h(x, y) = \frac{\partial^n}{\partial x^n}
+          \frac{\partial^m}{\partial y^m}
+          k(x, y)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>xderiv, yderiv</strong><span class="classifier">Deriv-like</span></dt><dd><p>A <a class="reference internal" href="deriv.html#lsqfitgp.Deriv" title="lsqfitgp.Deriv"><code class="xref py py-class docutils literal notranslate"><span class="pre">Deriv</span></code></a> object or something that can be converted to a
+Deriv object.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>h</strong><span class="classifier">Kernel-like</span></dt><dd><p>An object representing the derivatives of this one. If <code class="docutils literal notranslate"><span class="pre">xderiv</span> <span class="pre">==</span>
+<span class="pre">yderiv</span></code>, it is actually another Kernel.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>RuntimeError</dt><dd><p>The derivative orders are greater than the <cite>derivative</cite> attribute.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.Kernel.fourier">
+<span class="sig-name descname"><span class="pre">fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doy</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel.fourier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Fourier series of the kernel.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}h(k, y) = \begin{cases}
+    \frac2T \int_0^T \mathrm dx\, k(x, y)
+    \cos\left(\frac{2\pi}T \frac k2 x\right)
+    &amp; \text{if $k$ is even} \\
+    \frac2T \int_0^T \mathrm dx\, k(x, y)
+    \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
+    &amp; \text{if $k$ is odd}
+\end{cases}\end{split}\]</div>
+<p>The period <cite>T</cite> is implicit in the definition of the kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>dox, doy</strong><span class="classifier">bool</span></dt><dd><p>Specify if to compute the series w.r.t. x, y or both. If both are
+False, this is a no-op.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>h</strong><span class="classifier">Kernel-like</span></dt><dd><p>A Kernel-like object computing the Fourier series. If dox and
+doy are equal, it is a Kernel.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.Kernel.rescale">
+<span class="sig-name descname"><span class="pre">rescale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xfun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yfun</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel.rescale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiply the kernel by functions of its arguments.</p>
+<div class="math notranslate nohighlight">
+\[h(x, y) = f(x) k(x, y) g(y)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>xfun, yfun</strong><span class="classifier">callable or None</span></dt><dd><p>Functions from the type of the arguments of the kernel to scalar.
+If both are None, this is a no-op.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>h</strong><span class="classifier">Kernel-like</span></dt><dd><p>The rescaled kernel. If <code class="docutils literal notranslate"><span class="pre">xfun</span> <span class="pre">is</span> <span class="pre">yfun</span></code>, it is a Kernel object,
+otherwise a Kernel-like one.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.Kernel.side">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">side</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel.side" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.Kernel.taylor">
+<span class="sig-name descname"><span class="pre">taylor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doy</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel.taylor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Taylor series of the kernel.</p>
+<div class="math notranslate nohighlight">
+\[h(k, y) = \left.
+    \frac{\partial^k}{\partial x^k} k(x, y)
+\right|_{x_0}\]</div>
+<p>The expansion point <cite>x0</cite> is implicit in the definition of the kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>dox, doy</strong><span class="classifier">bool</span></dt><dd><p>Specify if to compute the series w.r.t. x, y or both. If both are
+False, this is a no-op.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>h</strong><span class="classifier">Kernel-like</span></dt><dd><p>A Kernel-like object computing the Taylor series. If dox and
+doy are equal, it is a Kernel.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.Kernel.xtransf">
+<span class="sig-name descname"><span class="pre">xtransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xfun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yfun</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel.xtransf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform the inputs of the kernel.</p>
+<div class="math notranslate nohighlight">
+\[h(x, y) = k(f(x), g(y))\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>xfun, yfun</strong><span class="classifier">callable or None</span></dt><dd><p>Functions mapping a new kind of input to the kind of input
+accepted by the kernel. If both are None, this is a no-op.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>h</strong><span class="classifier">Kernel-like</span></dt><dd><p>The transformed kernel. If <code class="docutils literal notranslate"><span class="pre">xfun</span> <span class="pre">is</span> <span class="pre">yfun</span></code>, it is a Kernel object,
+otherwise a Kernel-like one.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.StationaryKernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">StationaryKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'signed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.StationaryKernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subclass of <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a> for isotropic kernels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>kernel</strong><span class="classifier">callable</span></dt><dd><p>A function taking one argument <cite>delta</cite> which is the difference
+between x and y, plus optionally keyword arguments.</p>
+</dd>
+<dt><strong>input</strong><span class="classifier">{‘signed’, ‘soft’, ‘hard’}</span></dt><dd><p>If ‘signed’ (default), <cite>kernel</cite> is passed the bare difference. If
+‘soft’, <cite>kernel</cite> is passed the absolute value of the difference,
+and the difference of equal points is a small number instead of
+zero. If ‘hard’, the absolute value.</p>
+</dd>
+<dt><strong>scale</strong><span class="classifier">scalar</span></dt><dd><p>The difference is divided by <cite>scale</cite>.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a> init.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.IsotropicKernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">IsotropicKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'squared'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.IsotropicKernel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subclass of <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a> for isotropic kernels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>kernel</strong><span class="classifier">callable</span></dt><dd><p>A function taking one argument <cite>r2</cite> which is the squared distance
+between x and y, plus optionally keyword arguments.</p>
+</dd>
+<dt><strong>input</strong><span class="classifier">{‘squared’, ‘hard’, ‘soft’, ‘raw’}</span></dt><dd><p>If ‘squared’ (default), <cite>kernel</cite> is passed the squared distance.
+If ‘hard’, it is passed the distance (not squared). If ‘soft’, it
+is passed the distance, and the distance of equal points is a small
+number instead of zero. If ‘raw’, the kernel is passed both points
+separately like non-stationary kernels.</p>
+</dd>
+<dt><strong>scale</strong><span class="classifier">scalar</span></dt><dd><p>The distance is divided by <cite>scale</cite>.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a> init.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The ‘soft’ option will cause problems with second derivatives in more
+than one dimension.</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernelsref.html" title="Previous document"><span class="section-number">1. </span>Kernels reference</a>
+        </li>
+        <li>
+          <a href="kerneldec.html" title="Next document"><span class="section-number">3. </span>Kernel decorators</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020-2023, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/kernel.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
