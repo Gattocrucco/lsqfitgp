@@ -224,8 +224,9 @@ assigning to fields without breaking <code class="xref py py-mod docutils litera
 
     <span class="n">points</span> <span class="o">=</span> <span class="n">makepoints</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
     <span class="n">points</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">StructuredArray</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
-    <span class="n">points</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">time</span> <span class="o">-</span> <span class="n">delay</span><span class="p">,</span> <span class="n">time</span><span class="p">])</span> <span class="c1"># &lt;- jax numpy</span>
-        <span class="c1"># a StructuredArray can be assigned only a whole field at once</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">time</span> <span class="o">-</span> <span class="n">delay</span><span class="p">,</span> <span class="n">time</span><span class="p">]))</span>
+    <span class="c1">#                              ~~~ jax numpy</span>
+    <span class="c1"># this creates a copy of the array with the modified field</span>
     <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">gp</span>
