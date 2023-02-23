@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/hyperstruct.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -129,8 +129,9 @@ assigning to fields without breaking :mod:`jax`::
         
         points = makepoints(time)
         points = lgp.StructuredArray(points)
-        points['time'] = jnp.array([time - delay, time]) # <- jax numpy
-            # a StructuredArray can be assigned only a whole field at once
+        points = points.at['time'].set(jnp.array([time - delay, time]))
+        #                              ~~~ jax numpy
+        # this creates a copy of the array with the modified field
         gp.addx(points, 'data')
         
         return gp
