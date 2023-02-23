@@ -153,7 +153,9 @@ information.update({
     'data': data,
 })
 
+lgp.empbayes_fit.FORWARD_JAC = True
 fit = lgp.empbayes_fit(hyperprior, makegp, information, raises=False, jit=False, verbosity=3)
+lgp.empbayes_fit.FORWARD_JAC = False
 
 print('hyperparameters:')
 for k in fit.p.all_keys():
