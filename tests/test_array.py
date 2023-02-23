@@ -242,7 +242,11 @@ def test_setfield():
         name = a.dtype.names[0]
         a0 = a[name]
         rng = np.random.default_rng(array_meta_hash(a))
-        a[name] = random_array(a0.shape, a0.dtype, rng)
+        val = random_array(a0.shape, a0.dtype, rng)
+        if hasattr(a, 'at'):
+            a = a.at[name].set(val)
+        else:
+            a[name] = val
         return a
     dtypes = [
         [('f0', float)],
@@ -404,21 +408,13 @@ StructuredArray({
     s = "StructuredArray({})"
     assert repr(y) == s
 
-def test_readonly():
-    x = random_array((2, 3), '4f,d,?')
-    x = lgp.StructuredArray(x)
-    x = x[:, 1]
-    with pytest.raises(ValueError):
-        y0 = x['f0']
-        x['f0'] = random_array(y0.shape, y0.dtype)
-
 def test_set_subfield():
     y = random_array(5, [('a', [('b', float)])])
     x = lgp.StructuredArray(y)
     a = x['a']
-    x['a'] = random_array(a.shape, a.dtype)
+    x = x.at['a'].set(random_array(a.shape, a.dtype))
     b = x['a']['b']
-    x['a']['b'] = random_array(b.shape, b.dtype)
+    x = x.at['a'].set(x['a'].at['b'].set(random_array(b.shape, b.dtype)))
 
 def test_s2u():
     dtypes = [

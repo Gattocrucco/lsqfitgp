@@ -3006,14 +3006,14 @@ Changes v0.13 --> v0.14:
 - n, m, eps, matrix()
 - BART: weights, interpolation, reset depth
 
-2023-03-20
+2023-02-20
 ==========
 
 With 12 hyperparameters and 3000 datapoints, the fisher matrix is already
 totally undoable with my current implementation! I really have to rewrite
 the linalg system to compute it directly.
 
-2023-03-22
+2023-02-22
 ==========
 
 Changed forward to reverse jac in empbayes_fit after whitening the parameters.
@@ -3054,3 +3054,11 @@ totals: time: 0:02:12.439041, calls: fun 0, funjac 32, fisher 0, hess 0
         U(alpha_g)     0.0 (1.0)       1.16963 (0)     0.76 (50)     0.8 (1.1)    -0.41 (50)
 
 It works and its 4x faster.
+
+2023-02-23
+==========
+
+pdf4.py, t.py and u.py, if use empbayes_fit(..., jit=True), fail with leaking
+tracer errors in logdet. Running with jax.checking_leaks stops on a previous
+leak occurring in elementwise_grad instead. For the time being I run them
+without the jit.

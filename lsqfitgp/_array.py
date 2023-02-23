@@ -35,15 +35,16 @@ class StructuredArray:
     """
     JAX-friendly imitation of a numpy structured array.
     
-    It behaves like a read-only numpy structured array, with the exception that
-    you can set a whole field/subfield.
+    It behaves like a read-only numpy structured array, and you can create
+    a copy with a modified field with a jax-like syntax.
     
     Examples
     --------
     >>> a = numpy.empty(3, dtype=[('f', float), ('g', float)])
     >>> a = StructuredArray(a)
-    >>> a['f'] = numpy.arange(3) # this is allowed
-    >>> a[1] = (0.3, 0.4) # this raises an error
+    >>> a = a.at['f'].set(numpy.arange(3))
+    is equivalent to
+    >>> a['f'] = numpy.arange(3)
         
     Parameters
     ----------
@@ -70,7 +71,7 @@ class StructuredArray:
         return x
 
     @classmethod
-    def _array(cls, s, t, d, readonly=False):
+    def _array(cls, s, t, d):
         """
         Create a new StructuredArray with shape `s`, dtype `t`, using `d` as
         `_dict` member (no copy).
@@ -85,7 +86,6 @@ class StructuredArray:
         out.dtype = t
         out.shape = s
         out._dict = d
-        out._readonly = readonly
         return out
     
     @property
@@ -97,6 +97,8 @@ class StructuredArray:
         return len(self.shape)
     
     def __new__(cls, array):
+        if isinstance(array, cls):
+            return array
         d = {
             name: cls._readonlyview_wrapifstructured(array[name])
             for name in array.dtype.names
@@ -137,21 +139,41 @@ class StructuredArray:
                 for name, x in self._dict.items()
             }
             shape = numpy.empty(self.shape, [])[key].shape
-            return self._array(shape, self.dtype, d, readonly=True)
+            return self._array(shape, self.dtype, d)
     
-    def __setitem__(self, key, val):
-        if self._readonly:
-            msg = 'This StructuredArray is read-only, maybe you did '
-            msg += '"array[index][label] = ..." instead of '
-            msg += '"array[label] = numpy.array([...])"?'
-            raise ValueError(msg)
-        assert key in self.dtype.names
-        assert isinstance(val, (numpy.ndarray, jnp.ndarray, StructuredArray))
-        prev = self._dict[key]
-        # TODO support casting and broadcasting
-        assert prev.dtype == val.dtype
-        assert prev.shape == val.shape
-        self._dict[key] = self._readonlyview_wrapifstructured(val)
+    @property
+    def at(self):
+        return self._Getter(self)
+        # TODO support a more convenient way of setting subfields
+        # x = x.at['a']['b'].set(...)
+        # instead of
+        # x = x.at['a'].set(x['a'].at['b'].set(...))
+    
+    class _Getter:
+        
+        def __init__(self, array):
+            self.array = array
+        
+        def __getitem__(self, key):
+            if key not in self.array.dtype.names:
+                raise KeyError(key)
+            return self.Setter(self.array, key)
+        
+        class Setter:
+            
+            def __init__(self, array, key):
+                self.array = array
+                self.key = key
+            
+            def set(self, val):
+                assert isinstance(val, (numpy.ndarray, jnp.ndarray, StructuredArray))
+                prev = self.array._dict[self.key]
+                # TODO support casting and broadcasting
+                assert prev.dtype == val.dtype
+                assert prev.shape == val.shape
+                d = dict(self.array._dict)
+                d[self.key] = self.array._readonlyview_wrapifstructured(val)
+                return self.array._array(self.array.shape, self.array.dtype, d)
     
     def reshape(self, *shape):
         """
@@ -186,7 +208,6 @@ class StructuredArray:
             keys = tuple(self._dict.keys()),
             dtype = self.dtype,
             shape = self.shape,
-            _readonly = self._readonly,
         )
         return children, aux_data
     

@@ -58,8 +58,8 @@ def makegp(params):
     kernel = lgp.Cauchy(scale=params['time_scale'], dim='time', beta=2)
     kernel *= lgp.ExpQuad(scale=params['label_scale'], dim='label')
     gp = lgp.GP(kernel)
-    x['time'] = jnp.array([time, time - params['delay']])
-    gp.addx(x, 'A')
+    xmod = x.at['time'].set(jnp.array([time, time - params['delay']]))
+    gp.addx(xmod, 'A')
     return gp
 
 start = systime.time()
@@ -68,21 +68,26 @@ hyperprior = gvar.BufferDict({
     'log(label_scale)': gvar.log(gvar.gvar(10, 10)),
     'delay': gvar.gvar(10, 20)
 })
-params = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, jit=False).p
+
+# lgp.empbayes_fit.FORWARD_JAC = True
+# lgp.empbayes_fit.SEPARATE_JAC = True
+# import jax
+# with jax.checking_leaks():
+fit = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, jit=False)
 end = systime.time()
 
 print('minimization time = {:.2g} sec'.format(end - start))
-print('time scale = {}'.format(params['time_scale']))
-corr = lgp.ExpQuad(scale=gvar.mean(params['label_scale']))(0, 1)
-print('correlation = {:.3g} (equiv. scale = {})'.format(corr, params['label_scale']))
-print('delay = {}'.format(params['delay']))
+print('time scale = {}'.format(fit.p['time_scale']))
+corr = lgp.ExpQuad(scale=gvar.mean(fit.p['label_scale']))(0, 1)
+print('correlation = {:.3g} (equiv. scale = {})'.format(corr, fit.p['label_scale']))
+print('delay = {}'.format(fit.p['delay']))
 
-gp = makegp(gvar.mean(params))
+gp = makegp(gvar.mean(fit.p))
 
 xpred = np.empty((2, 100), dtype=x.dtype)
 time_pred = np.linspace(np.min(time), np.max(time) + 1.5 * (np.max(time) - np.min(time)), xpred.shape[1])
 xpred['time'][0] = time_pred
-xpred['time'][1] = time_pred - gvar.mean(params['delay'])
+xpred['time'][1] = time_pred - gvar.mean(fit.p['delay'])
 xpred['label'][0] = 0
 xpred['label'][1] = 1
 gp.addx(xpred, 'B')

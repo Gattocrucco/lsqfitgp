@@ -92,7 +92,7 @@ def transf_recurse_dtype(transf, x, *args):
         # redundant creation of StructuredArrays with nested dtypes; whatever
         for name in x.dtype.names:
             newargs = tuple(y[name] for y in args)
-            x[name] = transf_recurse_dtype(transf, x[name], *newargs)
+            x = x.at[name].set(transf_recurse_dtype(transf, x[name], *newargs))
         return x
 
 def _nd(dtype):
@@ -581,9 +581,9 @@ class CrossKernel:
             def f(x, y, *args):
                 i = -1
                 for i, dim in enumerate(xderiv):
-                    x[dim] = args[i]
+                    x = x.at[dim].set(args[i])
                 for j, dim in enumerate(yderiv):
-                    y[dim] = args[1 + i + j]
+                    y = y.at[dim].set(args[1 + i + j])
                 return kernel(x, y)
                 
             # Make derivatives.
