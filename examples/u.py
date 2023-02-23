@@ -1,6 +1,6 @@
 # lsqfitgp/examples/u.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -62,7 +62,7 @@ prior = {
     'log(time_scale)': gvar.log(gvar.gvar(3, 2))
 }
 datadict = {'data': data, 'fixed_point': [gvar.gvar(0, 1e2)]}
-params = lgp.empbayes_fit(prior, makegp, datadict, raises=False, jit=True).p
+params = lgp.empbayes_fit(prior, makegp, datadict, raises=False, jit=False).p
 print('time_scale:', params['time_scale'])
 gp = makegp(gvar.mean(params))
 

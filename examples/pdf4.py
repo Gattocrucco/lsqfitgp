@@ -2,12 +2,16 @@
 
 Like pdf3, but with hyperparameters"""
 
+import warnings
+
 import lsqfitgp as lgp
 import numpy as np
 from matplotlib import pyplot as plt
 import gvar
 
 np.random.seed(20220416)
+
+warnings.filterwarnings('ignore', r'total derivative orders')
 
 #### COMPONENTS ####
 
@@ -148,7 +152,8 @@ information = dict(constraints)
 information.update({
     'data': data,
 })
-fit = lgp.empbayes_fit(hyperprior, makegp, information, raises=False, jit=True)
+
+fit = lgp.empbayes_fit(hyperprior, makegp, information, raises=False, jit=False, verbosity=3)
 
 print('hyperparameters:')
 for k in fit.p.all_keys():

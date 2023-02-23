@@ -1,6 +1,6 @@
 # lsqfitgp/examples/t.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -68,7 +68,7 @@ hyperprior = gvar.BufferDict({
     'log(label_scale)': gvar.log(gvar.gvar(10, 10)),
     'delay': gvar.gvar(10, 20)
 })
-params = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, jit=True).p
+params = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, jit=False).p
 end = systime.time()
 
 print('minimization time = {:.2g} sec'.format(end - start))

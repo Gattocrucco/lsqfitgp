@@ -73,6 +73,9 @@ class Logger:
 
 class empbayes_fit(Logger):
 
+    SEPARATE_JAC = False
+    FORWARD_JAC = False
+
     def __init__(
         self,
         hyperprior,
@@ -244,6 +247,8 @@ class empbayes_fit(Logger):
         
         def dojit(f):
             return jax.jit(f) if jit else f
+        if jit:
+            self.log('compile functions with jax jit')
         
         @dojit
         def fun(p, *, stop_hessian=False):
@@ -252,13 +257,15 @@ class empbayes_fit(Logger):
             logp = -ml + 1/2 * (p @ p)
             return logp
         
-        fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jax.jacrev))
+        jactr = jax.jacfwd if self.FORWARD_JAC else jax.jacrev
+        fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jactr))
+        jac = dojit(jactr(fun))
         if method == 'hessmod':
             hess = dojit(jax.jacfwd(jax.jacfwd(functools.partial(fun, stop_hessian=True))))
             # can't change inner jacfwd to jacrev due to jax issue #10994
             # (stop_hessian)
         else:
-            hess = dojit(jax.jacfwd(jax.jacrev(fun)))
+            hess = dojit(jax.jacfwd(jactr(fun)))
                     
         if not callable(data):
             
@@ -305,11 +312,15 @@ class empbayes_fit(Logger):
         # wrap functions to count number of calls
         fun = self._CountCalls(fun)
         fun_and_jac = self._CountCalls(fun_and_jac)
+        jac = self._CountCalls(jac)
         hess = self._CountCalls(hess)
         fisherprec = self._CountCalls(fisherprec)
         
         # prepare minimizer arguments
-        minargs = dict(fun=fun_and_jac, jac=True, x0=hpinitial)
+        if self.SEPARATE_JAC:
+            minargs = dict(fun=fun, jac=jac, x0=hpinitial)
+        else:
+            minargs = dict(fun=fun_and_jac, jac=True, x0=hpinitial)
         if method == 'nograd':
             minargs.update(fun=fun, jac=None, method='nelder-mead')
         elif method == 'gradient':
@@ -338,7 +349,7 @@ class empbayes_fit(Logger):
                 duration = datetime.timedelta(seconds=now - self.stamp)
                 self.stamp = now
                 nicep = hpunflat(p)
-                self.this.log(f'iteration {self.it}, time: {duration}, calls: fun {fun.partial()}, funjac {fun_and_jac.partial()}, fisher {fisherprec.partial()}, hess {hess.partial()}', 3)
+                self.this.log(f'iteration {self.it}, time: {duration}, calls: fun {fun.partial()}, jac {jac.partial()}, fun&jac {fun_and_jac.partial()}, fisher {fisherprec.partial()}, hess {hess.partial()}', 3)
                 self.this.log(f'parameters = {nicep}', 4)
                 
             # TODO write a method to format the parameters nicely. => use
@@ -353,7 +364,7 @@ class empbayes_fit(Logger):
             result = optimize.minimize(**minargs)
             end = time.time()
         total = datetime.timedelta(seconds=end - start)
-        self.log(f'totals: time: {total}, calls: fun {fun.total()}, funjac {fun_and_jac.total()}, fisher {fisherprec.total()}, hess {hess.total()}')
+        self.log(f'totals: time: {total}, calls: fun {fun.total()}, jac {jac.total()}, fun&jac {fun_and_jac.total()}, fisher {fisherprec.total()}, hess {hess.total()}')
         
         # check the minimization was successful
         if not result.success:
@@ -448,11 +459,13 @@ class empbayes_fit(Logger):
         # it non-crap right away!
     
     class _CountCalls:
+        """ wrap a callable to count calls """
         
         def __init__(self, func):
             self._func = func
             self._total = 0
             self._partial = 0
+            functools.update_wrapper(self, func)
         
         def __call__(self, *args, **kw):
             self._total += 1
@@ -460,11 +473,13 @@ class empbayes_fit(Logger):
             return self._func(*args, **kw)
         
         def partial(self):
+            """ return the partial counter and reset it """
             result = self._partial
             self._partial = 0
             return result
         
         def total(self):
+            """ return the total number of calls """
             return self._total
     
     def _parse_hyperprior(self, hyperprior, initial, fix):
