@@ -966,7 +966,10 @@ def test_givencov_decomp():
 def test_nochecksym_structured():
     gp = lgp.GP(lgp.ExpQuad(), checksym=False)
     gp.addx(np.zeros(1, 'd,d'), 0)
-    gp.prior(0)
+    gp.prior(0, raw=True)
+
+def test_nochecksym_structured_jit():
+    jax.jit(test_nochecksym_structured)()
 
 def test_nochecksym_tracer():
     def fun():

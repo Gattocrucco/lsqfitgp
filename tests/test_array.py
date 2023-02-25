@@ -23,12 +23,14 @@ import itertools
 import numpy as np
 from numpy.lib import recfunctions
 from jax import tree_util
+from jax import numpy as jnp
 import pytest
 import pandas as pd
 import polars as pl
 
 sys.path.insert(0, '.')
 import lsqfitgp as lgp
+from lsqfitgp import _array
 import util
 
 rng = np.random.default_rng(202301231524)
@@ -414,7 +416,10 @@ def test_set_subfield():
     a = x['a']
     x = x.at['a'].set(random_array(a.shape, a.dtype))
     b = x['a']['b']
-    x = x.at['a'].set(x['a'].at['b'].set(random_array(b.shape, b.dtype)))
+    newb = random_array(b.shape, b.dtype)
+    x1 = x.at['a'].set(x['a'].at['b'].set(newb))
+    x2 = x.at['a']['b'].set(newb)
+    util.assert_equal(np.array(x1), np.array(x2))
 
 def test_s2u():
     dtypes = [
@@ -454,3 +459,19 @@ def test_dataframe(cls):
 def test_not_handled():
     with pytest.raises(TypeError):
         np.concatenate([lgp.StructuredArray(np.zeros(1, 'd,d'))])
+
+def test_asjax():
+    
+    x = random_array(4, float)
+    assert isinstance(x, np.ndarray)
+    x = _array._asarray_jaxifpossible(x)
+    assert isinstance(x, jnp.ndarray)
+
+    x = random_array(5, 'S5')
+    x = _array._asarray_jaxifpossible(x)
+    assert isinstance(x, np.ndarray)
+
+    x = random_array(2, 'd,U10')
+    x = _array._asarray_jaxifpossible(x)
+    assert isinstance(x['f0'], jnp.ndarray)
+    assert isinstance(x['f1'], np.ndarray)

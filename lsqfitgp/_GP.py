@@ -43,9 +43,8 @@ __all__ = [
 
 # TODO make many methods that do not return anything return self, to allow
 # a polars-like syntax as lgp.GP(kernel).addx(x, 0).addx(x, 1).prior() => make
-# GP immutable and return a new GP, with non-copies of actual data? Kernels
-# are already immutable, jax arrays too. StructuredArray is not, I would have
-# to change with .at[field] = ....
+# GP immutable and return a new GP, with non-copies of actual data? Kernels, jax
+# arrays and StructuredArray are already immutable.
 
 # TODO change the method names that define processes to def* instead of add*,
 # such that the distinction between the two kinds is clear, and take the
@@ -642,14 +641,9 @@ class GP:
             gx = x[key]
             
             # Convert to JAX array, numpy array or StructuredArray.
-            gx = _array.asarray(gx)
-            if isinstance(gx, numpy.ndarray):
-                try:
-                    # convert eagerly to jax array to avoid problems if a
-                    # traced jax array is used to fancy index the numpy array
-                    gx = jnp.asarray(gx)
-                except TypeError:
-                    pass
+            gx = _array._asarray_jaxifpossible(gx)
+            # convert eagerly to jax array to avoid problems if a traced jax
+            # array is used to fancy index the numpy array
 
             # Check it is not empty.
             if not gx.size:

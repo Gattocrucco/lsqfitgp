@@ -19,6 +19,7 @@
 
 import numpy
 from numpy.lib import recfunctions
+import jax
 from jax import numpy as jnp
 from jax import tree_util
 
@@ -105,9 +106,9 @@ class StructuredArray:
         }
         return cls._array(array.shape, array.dtype, d)
         
-        # TODO from a non-structured array by using the last axis as
-        # field dimension, with default field names as in
-        # numpy.lib.recfunctions.unstructured_to_structured.
+    # TODO from a non-structured array by using the last axis as field
+    # dimension, with default field names as in
+    # numpy.lib.recfunctions.unstructured_to_structured.
     
     @classmethod
     def from_dataframe(cls, df):
@@ -138,16 +139,12 @@ class StructuredArray:
                 ]
                 for name, x in self._dict.items()
             }
-            shape = numpy.empty(self.shape, [])[key].shape
+            shape = jax.eval_shape(lambda : jnp.empty(self.shape)[key]).shape
             return self._array(shape, self.dtype, d)
     
     @property
     def at(self):
         return self._Getter(self)
-        # TODO support a more convenient way of setting subfields
-        # x = x.at['a']['b'].set(...)
-        # instead of
-        # x = x.at['a'].set(x['a'].at['b'].set(...))
     
     class _Getter:
         
@@ -161,9 +158,15 @@ class StructuredArray:
         
         class Setter:
             
-            def __init__(self, array, key):
+            def __init__(self, array, key, parent=None):
                 self.array = array
                 self.key = key
+                self.parent = parent
+
+            def __getitem__(self, subkey):
+                if subkey not in self.array.dtype[self.key].names:
+                    raise KeyError(subkey)
+                return self.__class__(self.array[self.key], subkey, self)
             
             def set(self, val):
                 assert isinstance(val, (numpy.ndarray, jnp.ndarray, StructuredArray))
@@ -173,7 +176,11 @@ class StructuredArray:
                 assert prev.shape == val.shape
                 d = dict(self.array._dict)
                 d[self.key] = self.array._readonlyview_wrapifstructured(val)
-                return self.array._array(self.array.shape, self.array.dtype, d)
+                out = self.array._array(self.array.shape, self.array.dtype, d)
+                if self.parent:
+                    return self.parent.set(out)
+                else:
+                    return out
     
     def reshape(self, *shape):
         """
@@ -299,6 +306,35 @@ class StructuredArray:
                 idx += n
         return out, idx
 
+    def transform(self, transf):
+        """
+        
+        Transform the array field-by-field.
+
+        Parameters
+        ----------
+        transf : callable
+            A function array -> array that is applied to each (sub)field of the
+            array. It must preserve the shape and dtype of the input array.
+
+        Return
+        ------
+        transformed_array : StructuredArray
+            A copy of the array where each field has been transformed with
+            `transf`.
+
+        """
+        d = {}
+        for name, value in self._dict.items():
+            if hasattr(value, 'transform'):
+                result = value.transform(transf)
+            else:
+                result = transf(value)
+            assert result.shape == value.shape
+            assert result.dtype == value.dtype
+            d[name] = self._readonlyview_wrapifstructured(result)
+        return self._array(self.shape, self.dtype, d)
+
 @StructuredArray._implements(numpy.broadcast_to)
 def broadcast_to(x, shape, **kw):
     """
@@ -345,6 +381,17 @@ def asarray(x):
         return jnp.asarray(x)
     except (TypeError, ValueError):
         return numpy.asarray(x)
+
+def _asarray_jaxifpossible(x):
+    x = asarray(x)
+    if x.dtype.names:
+        return StructuredArray(x).transform(_asarray_jaxifpossible)
+    if isinstance(x, numpy.ndarray):
+        try:
+            return jnp.asarray(x)
+        except (TypeError, ValueError):
+            pass
+    return x
 
 @StructuredArray._implements(recfunctions.structured_to_unstructured)
 def _structured_to_unstructured(arr, dtype=None, casting='unsafe'):
