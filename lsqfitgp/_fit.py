@@ -344,6 +344,14 @@ class empbayes_fit(Logger):
         else:
             raise KeyError(method)
         self.log(f'minimization method {method!r}', 2)
+
+        functions = {
+            'fun': fun,
+            'jac': jac,
+            'fun&jac': fun_and_jac,
+            'fisher': fisherprec,
+            'hess': hess,
+        }
         
         class Callback:
             
@@ -358,7 +366,8 @@ class empbayes_fit(Logger):
                 duration = datetime.timedelta(seconds=now - self.stamp)
                 self.stamp = now
                 nicep = hpunflat(p)
-                self.this.log(f'iteration {self.it}, time: {duration}, calls: fun {fun.partial()}, jac {jac.partial()}, fun&jac {fun_and_jac.partial()}, fisher {fisherprec.partial()}, hess {hess.partial()}', 3)
+                calls = fun.fmtcalls('partial', functions)
+                self.this.log(f'iteration {self.it}, time: {duration}, calls: {calls}', 3)
                 self.this.log(f'parameters = {nicep}', 4)
                 
             # TODO write a method to format the parameters nicely. => use
@@ -373,7 +382,8 @@ class empbayes_fit(Logger):
             result = optimize.minimize(**minargs)
             end = time.time()
         total = datetime.timedelta(seconds=end - start)
-        self.log(f'totals: time: {total}, calls: fun {fun.total()}, jac {jac.total()}, fun&jac {fun_and_jac.total()}, fisher {fisherprec.total()}, hess {hess.total()}')
+        calls = fun.fmtcalls('total', functions)
+        self.log(f'totals: time: {total}, calls: {calls}')
         
         # check the minimization was successful
         if not result.success:
@@ -490,6 +500,14 @@ class empbayes_fit(Logger):
         def total(self):
             """ return the total number of calls """
             return self._total
+
+        @staticmethod
+        def fmtcalls(method, functions):
+            def counts():
+                for name, func in functions.items():
+                    if (count := getattr(func, method)()):
+                        yield f'{name} {count}'
+            return ', '.join(counts())
     
     def _parse_hyperprior(self, hyperprior, initial, fix):
         
