@@ -74,7 +74,6 @@ class Logger:
 class empbayes_fit(Logger):
 
     SEPARATE_JAC = False
-    FORWARD_JAC = False
 
     def __init__(
         self,
@@ -90,6 +89,8 @@ class empbayes_fit(Logger):
         verbosity=0,
         covariance='auto',
         fix=None,
+        mlkw={},
+        forward=False,
     ):
         """
     
@@ -187,6 +188,10 @@ class empbayes_fit(Logger):
             which hyperparameters are kept fixed to their initial value.
             Scalars and arrays are broadcasted to the shape of `hyperprior`.
             If a dictionary, missing keys are treated as False.
+        mlkw : dict
+            Additional arguments passed to `GP.marginal_likelihood`.
+        forward : bool
+            Use forward instead of backward (default) derivatives.
     
         Attributes
         ----------
@@ -216,6 +221,10 @@ class empbayes_fit(Logger):
             The minimization failed and `raises` is True.
     
         """
+
+        # TODO parameter float32: bool to use short float type. I think that
+        # scipy's optimize may break down with short floats with default
+        # options, I hope that changing termination tolerances does the trick.
 
         Logger.__init__(self, verbosity)
         self.log('**** call lsqfitgp.empbayes_fit ****')
@@ -253,11 +262,11 @@ class empbayes_fit(Logger):
         @dojit
         def fun(p, *, stop_hessian=False):
             gp, args = make(p)
-            ml = gp.marginal_likelihood(*args, stop_hessian=stop_hessian)
+            ml = gp.marginal_likelihood(*args, stop_hessian=stop_hessian, **mlkw)
             logp = -ml + 1/2 * (p @ p)
             return logp
         
-        jactr = jax.jacfwd if self.FORWARD_JAC else jax.jacrev
+        jactr = jax.jacfwd if forward else jax.jacrev
         fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jactr))
         jac = dojit(jactr(fun))
         if method == 'hessmod':
@@ -275,7 +284,7 @@ class empbayes_fit(Logger):
             # (stop_hessian)
             def fisher(p):
                 gp, args = make(p)
-                decomp, _ = gp._prior_decomp(*args, stop_hessian=True)
+                decomp, _ = gp._prior_decomp(*args, stop_hessian=True, **mlkw)
                 return -1/2 * decomp.logdet()
             
             def fisherprec(p):
@@ -291,7 +300,7 @@ class empbayes_fit(Logger):
             @functools.partial(jax.jacfwd, has_aux=True)
             def grad_logdet_and_aux(p):
                 gp, args = make(p)
-                decomp, ymean = gp._prior_decomp(*args, stop_hessian=True)
+                decomp, ymean = gp._prior_decomp(*args, stop_hessian=True, **mlkw)
                 return -1/2 * decomp.logdet(), (decomp, ymean)
             
             @functools.partial(jax.jacfwd, has_aux=True)
@@ -597,14 +606,14 @@ class empbayes_fit(Logger):
         
         elif initial == 'priorsample':
             self.log('start from a random sample from the prior', 2)
-            if dec.size < hyperprior.size:
+            if dec.n < hyperprior.size:
                 flathp = self._flatview(hyperprior)
                 cov = gvar.evalcov(flathp) # TODO use evalcov_blocks
                 fulldec = _linalg.EigCutFullRank(cov)
             else:
                 fulldec = dec
             iid = numpy.random.randn(fulldec.m)
-            flatinitial = fulldec.correlate(iid)
+            flatinitial = numpy.asarray(fulldec.correlate(iid))
             initial = self._unflatview(flatinitial, hyperprior)
         
         else:

@@ -829,6 +829,21 @@ using all gvars created to that point. => If one cares about efficiency, he
 probably won't use gvar in critical paths that are repeated over and over, so
 the point may be moot.
 
+#### `BufferDict` distribution namespaces
+
+The global definitions of Gaussian copulas are a pain. I would like a local
+context where I can override previous definitions. However I would also like
+that pre-existing dictionaries entering the context preserved their definitions.
+This means that definitions must be carried around by `BufferDict`s. However the
+current mechanism allows to put the copulas into an ordinary dictionary, which
+is convenient. So the single `GVar` or array of `GVar`s returned by a copula
+factory (like `BufferDict.uniform`) must have a metadata attribute about the
+copula which is recognized by `BufferDict` on initialization or item setting,
+and which is preserved on item getting.
+
+All this can quickly grow confusing and badly defined. Array-likes of gvars are
+a problem.
+
 ### Solvers
 
 DiagLowRank for low rank matrix + multiple of the identity (multiple rank-1
@@ -942,7 +957,7 @@ subalgebra.
 
 Subclass GPKron where addx has a parameter `dim` and it accepts only
 non-structured arrays. Or, more flexible: make a class Lattice that is
-structured-array-like but different shapes for each field, and a field _kronok
+structured-array-like but different shapes for each field, and a field `_kronok`
 in Kernel update automatically when doing operations with kernels. Also, take a
 look at the pymc3 implementation. Can I use the kronecker optimization when the
 data covariance is non-null? -> Yes with a reasonable approximation of the

@@ -69,11 +69,7 @@ hyperprior = gvar.BufferDict({
     'delay': gvar.gvar(10, 20)
 })
 
-# lgp.empbayes_fit.FORWARD_JAC = True
-# lgp.empbayes_fit.SEPARATE_JAC = True
-# import jax
-# with jax.checking_leaks():
-fit = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, jit=False)
+fit = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, jit=True)
 end = systime.time()
 
 print('minimization time = {:.2g} sec'.format(end - start))

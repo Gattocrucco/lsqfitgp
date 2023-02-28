@@ -53,7 +53,7 @@ __all__ = [
 #
 # defproc(key, kernel, *, deriv=0)
 # defproctransf(key, ops, *, deriv=0)
-# defproclintransf(key, procs, transf, *, deriv=0, checklin=False)
+# defproclintransf(key, transf, procs, *, deriv=0, checklin=False)
 # defprocderiv(key, deriv, proc)
 # defprocxtransf(key, transf, proc)
 # defprocrescale(key, scalefun, proc)
@@ -385,11 +385,6 @@ class GP:
         
         """
         
-        # TODO maybe have a default key=DefaultProcess to enable an idiom
-        # where all components are added together and subsequently the total is
-        # the default, see if this can be applied coherently for all methods
-        # defining a new process
-        
         for k, func in ops.items():
             if k not in self._procs:
                 raise KeyError(f'process key {k!r} not in GP object')
@@ -403,6 +398,9 @@ class GP:
         
         self._procs[key] = self._ProcTransf(ops, deriv)
         
+        # we could implement addproctransf in terms of addproclintransf with
+        # the following code, but addproctransf has linear kernel building
+        # cost so I'm leaving it around (probably not significant anyway)
         # functions = [
         #     op if callable(op)
         #     else (lambda x: lambda _: x)(op)

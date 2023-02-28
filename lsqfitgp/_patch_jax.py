@@ -20,6 +20,12 @@
 import pathlib
 import traceback
 
+# TODO disable this jax 0.4.4 feature because it makes empbayes_fit fail due to
+# leaked tracers, but I can't fix it and maybe it's a jax bug. Wait till next
+# release to see what happens.
+import os
+os.environ['JAX_JIT_PJIT_API_MERGE'] = '0'
+
 from jax.config import config
 config.update("jax_enable_x64", True)
 

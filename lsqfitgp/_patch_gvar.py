@@ -195,15 +195,16 @@ def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
         return ''
     gs = [g if hasattr(g, 'keys') else numpy.asarray(g) for g in gs]
     assert all(hasattr(g, 'keys') for g in gs) or all(not hasattr(g, 'keys') for g in gs)
-    if keys is not None and hasattr(g[0], 'keys'):
+    if keys is not None and hasattr(gs[0], 'keys'):
         gs = [{k: g[k] for k in keys} for g in gs]
     g0 = gs[0]
     if hasattr(g0, 'keys'):
         assert all(set(g.keys()) == set(g0.keys()) for g in gs[1:])
+        gs = [{k: g[k] for k in g0} for g in gs]
     else:
         assert all(g.shape == g0.shape for g in gs[1:])
-    if hasattr(g0, 'keys'):
-        gs = [{k: g[k] for k in g0} for g in gs]
+        if g0.shape == ():
+            gs = [{'--': g} for g in gs]
     tables = [
         _splittable(gvar.tabulate(g, headers=['@', ''], ndecimal=ndecimal))
         for g in gs

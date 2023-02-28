@@ -25,7 +25,7 @@ See the manual at https://gattocrucco.github.io/lsqfitgp/docs
 
 __version__ = '0.15'
 
-from . import _patch_jax
+from . import _patch_jax # keep first due to pre-import jax configs
 from . import _patch_gvar
 
 from jax import numpy, scipy
