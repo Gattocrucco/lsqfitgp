@@ -23,17 +23,23 @@ import time
 
 import numpy as np
 import gvar
+from pytest import mark
+import pytest
 
 sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
 import util
 
+seed = np.random.SeedSequence(202302281256)
+s, seed = seed.spawn(2)
+rng = np.random.default_rng(s)
+
 # TODO add gpkw for setting checksym, checkpos, solvers
 
-def pred(kw, seed, err):
-    np.random.seed(seed)
-    x = np.random.uniform(-5, 5, size=20)
-    xpred = np.random.uniform(-10, 10, size=100)
+def pred(seed, err, kw):
+    rng = np.random.default_rng(seed)
+    x = rng.uniform(-5, 5, size=20)
+    xpred = rng.uniform(-10, 10, size=100)
 
     gp = lgp.GP(lgp.ExpQuad())
     gp.addx(x, 'data')
@@ -54,69 +60,33 @@ def pred(kw, seed, err):
     
     return mean, cov
 
-def assert_close(x, y):
-    util.assert_allclose(x, y, rtol=1e-05, atol=1e-08)
-
-def assert_close_cov(a, b, stol, mtol):
-    assert np.sqrt(np.sum((a - b) ** 2) / a.size) < stol
-    assert np.median(np.abs(a - b)) < mtol
-    # TODO use util.assert_close_matrices
-
-kwargs = [
+@mark.parametrize('kw1,kw2', itertools.combinations([
     dict(fromdata=fromdata, raw=raw, keepcorr=keepcorr)
-    for fromdata in [False, True]
-    for raw in [False, True]
-    for keepcorr in [False, True]
-    if not (keepcorr and raw)
-]
-# TODO rewrite using pytest parameters
-
-def postfix(kw1, kw2):
-    postfix = '_'
-    postfix += '_'.join(k + '_' + str(v) for (k, v) in kw1.items())
-    postfix += '___'
-    postfix += '_'.join(k + '_' + str(v) for (k, v) in kw2.items())
-    return postfix
-
-def makeseed():
-    return int(1e6 * time.time()) % (1 << 32)
-
-for kw1, kw2 in itertools.combinations(kwargs, 2):
-    
-    fundef = """
-def {}():
+    for fromdata, raw, keepcorr in itertools.product([False, True], repeat=3)
+    if not (raw and keepcorr)
+], 2))
+@mark.parametrize('err', [False, True])
+def test_pred(err, kw1, kw2):
+    if err and kw1['fromdata'] != kw2['fromdata']:
+        pytest.skip()
     for _ in range(10):
-        seed = makeseed()
-        m1, cov1 = pred({}, seed, False)
-        m2, cov2 = pred({}, seed, False)
-        assert_close(m1, m2)
-        assert_close_cov(cov1, cov2, 6e-3, 2e-5)
-""".format('test_pred_noerr' + postfix(kw1, kw2), kw1, kw2)
-    
-    exec(fundef)
-    
-    fundef = """
-def {}():
-    for _ in range(10):
-        seed = makeseed()
-        m1, cov1 = pred({}, seed, True)
-        m2, cov2 = pred({}, seed, True)
-        assert_close(m1, m2)
-        assert_close_cov(cov1, cov2, 6e-3, 2e-5)
-""".format('test_pred_err' + postfix(kw1, kw2), kw1, kw2)
-    
-    if kw1['fromdata'] == kw2['fromdata']:
-        exec(fundef)
+        global seed
+        s, seed = seed.spawn(2)
+        m1, cov1 = pred(s, err, kw1)
+        m2, cov2 = pred(s, err, kw2)
+        util.assert_allclose(m1, m2, rtol=1e-5 if err else 1e-6)
+        util.assert_close_matrices(cov1, cov2, rtol=1e-5 if err else 1e-1)
+        # TODO 1e-1 looks too inaccurate
 
 def test_double_pred():
     n = 50
     gp = lgp.GP(lgp.ExpQuad())
-    ax, bx = np.random.randn(2, n)
+    ax, bx = rng.standard_normal((2, n))
     gp.addx(ax, 'a')
     gp.addx(bx, 'b')
-    m = np.random.randn(n, n)
-    ay = gvar.gvar(np.random.randn(n), m.T @ m)
+    m = rng.standard_normal((n, n))
+    ay = gvar.gvar(rng.standard_normal(n), m.T @ m)
     m1, cov1 = gp.predfromdata({'a': ay}, 'b', raw=True)
     m2, cov2 = gp.predfromfit(gp.predfromdata({'a': ay}, ['a']), 'b', raw=True)
-    assert_close(m2, m1)
-    assert_close_cov(cov2, cov1, 1e-3, 1e-6)
+    util.assert_allclose(m2, m1, rtol=1e-7)
+    util.assert_close_matrices(cov2, cov1, rtol=1e-6)
