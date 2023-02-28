@@ -43,19 +43,18 @@ class Logger:
     def __init__(self, verbosity=0):
         self._verbosity = verbosity
     
-    def indent(self, text, level=None):
+    def _indent(self, text, level=0):
         """ indent a text by provided level or by global current level """
-        if level is None:
-            level = self.loglevel._level
+        level = max(0, level + self.loglevel._level)
         prefix = 4 * level * ' '
         return textwrap.indent(text, prefix)
     
-    def log(self, message, verbosity=1, level=None):
+    def log(self, message, verbosity=1, *, level=0):
         """ print a message """
         if verbosity > self._verbosity:
             return
-        print(self.indent(message, level))
-    
+        print(self._indent(message, level))
+
     class _LogLevel:
         """shared context manager to indent messages"""
         
@@ -237,8 +236,7 @@ class empbayes_fit(Logger):
         
         # analyze data
         data, cachedargs = self._parse_data(data)
-        # TODO log number of datapoints (not trivial, must be done in callback)
-        
+
         def make(p):
             
             hp = hpunflat(p)
@@ -251,7 +249,7 @@ class empbayes_fit(Logger):
                 args = data(hp, **gpfactorykw)
                 if not isinstance(args, tuple):
                     args = (args,)
-            
+
             return gp, args
         
         def dojit(f):
@@ -259,13 +257,24 @@ class empbayes_fit(Logger):
         if jit:
             self.log('compile functions with jax jit')
         
+        firstcall = [None]
+        
         @dojit
         def fun(p, *, stop_hessian=False):
             gp, args = make(p)
-            ml = gp.marginal_likelihood(*args, stop_hessian=stop_hessian, **mlkw)
-            logp = -ml + 1/2 * (p @ p)
-            return logp
-        
+            decomp, ymean = gp._prior_decomp(*args, stop_hessian=stop_hessian, **mlkw)
+
+            if firstcall:
+                firstcall.pop()
+                self.log(f'{ymean.size} datapoints', level=-1)
+                    
+            return 1/2 * (
+                decomp.logdet()
+                + decomp.n * jnp.log(2 * jnp.pi)
+                + decomp.quad(ymean)
+                + p @ p
+            )
+
         jactr = jax.jacfwd if forward else jax.jacrev
         fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jactr))
         jac = dojit(jactr(fun))
