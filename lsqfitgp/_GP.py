@@ -1554,6 +1554,11 @@ class GP:
             `gvar.evalcov(posterior)`.
         
         """
+
+        # TODO GP.pred(..., raw=True, onlyvariance=True) computes only the
+        # variance (requires actually implementing diagquad at least in Chol and
+        # Diag).
+
         
         if fromdata is None:
             raise ValueError('you must specify if `given` is data or fit result')

@@ -137,7 +137,7 @@ become non-experimental?
 
 ## Implementation details
 
-Chiamare GP -> _GPBase e poi fare una sottoclasse GP e mettere tutti i metodi
+Chiamare GP -> `_GPBase` e poi fare una sottoclasse GP e mettere tutti i metodi
 di convenienza che non accedono a cose interne in GP.
 
 Fare una github action che carica la release su PyPI quando faccio la release
@@ -489,7 +489,7 @@ class Cippa(Kernel):
 ```
 
 Instead of forbidding Kernel-CrossKernel operations, make Kernel a subclass
-of CrossKernel, implement a generic subclass permanence system in _binary
+of CrossKernel, implement a generic subclass permanence system in `_binary`
 and then let GP raise an error when it receives a CrossKernel. Maybe binary
 should be another decorator which I apply to __add__, __mult__ and __pow__.
 
@@ -582,6 +582,9 @@ written, using 2 pi as period can be less accurate than using 1. However, see
 https://www.gnu.org/software/gsl/doc/html/specfunc.html#restriction-functions.
 
 https://juliagaussianprocesses.github.io/KernelFunctions.jl/stable/kernels/#KernelFunctions.RationalKernel
+
+truncated linear form GPy
+https://gpy.readthedocs.io/en/deploy/GPy.kern.src.html#module-GPy.kern.src.trunclinear
 
 ### Transformations
 
@@ -746,6 +749,33 @@ iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
 For Poisson I can take the square root. How good is it? Ref. Casella-Berger,
 pag. 563, ex. 11.1-11.
 
+### gvar improvements
+
+#### `BufferDict` distribution namespaces
+
+The global definitions of Gaussian copulas are a pain. I would like a local
+context where I can override previous definitions. However I would also like
+that pre-existing dictionaries entering the context preserved their definitions.
+This means that definitions must be carried around by `BufferDict`s. However the
+current mechanism allows to put the copulas into an ordinary dictionary, which
+is convenient. So the single `GVar` or array of `GVar`s returned by a copula
+factory (like `BufferDict.uniform`) must have a metadata attribute about the
+copula which is recognized by `BufferDict` on initialization or item setting,
+and which is preserved on item getting.
+
+All this can quickly grow confusing and badly defined. Array-likes of gvars are
+a problem.
+
+#### bidirectional copula transformations
+
+To set initial hyperparameter values, it would be convenient to have a map from
+untransformed to transformed values. I think it can be backward-compatible.
+Implementing it in `BufferDict.__getitem__` would be inefficient due to the
+linear search, I just need
+
+  * `BufferDict.fcn: dict[str, callable]`
+  * `BufferDict.add_distribution(name, invfcn, fcn=None)`
+
 ## Optimization
 
 ### `gvar`-related issues
@@ -828,21 +858,6 @@ chronology of all the matrices, and anyway it can't be used if you have stopped
 using all gvars created to that point. => If one cares about efficiency, he
 probably won't use gvar in critical paths that are repeated over and over, so
 the point may be moot.
-
-#### `BufferDict` distribution namespaces
-
-The global definitions of Gaussian copulas are a pain. I would like a local
-context where I can override previous definitions. However I would also like
-that pre-existing dictionaries entering the context preserved their definitions.
-This means that definitions must be carried around by `BufferDict`s. However the
-current mechanism allows to put the copulas into an ordinary dictionary, which
-is convenient. So the single `GVar` or array of `GVar`s returned by a copula
-factory (like `BufferDict.uniform`) must have a metadata attribute about the
-copula which is recognized by `BufferDict` on initialization or item setting,
-and which is preserved on item getting.
-
-All this can quickly grow confusing and badly defined. Array-likes of gvars are
-a problem.
 
 ### Solvers
 

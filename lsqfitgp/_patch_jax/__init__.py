@@ -1,4 +1,4 @@
-# lsqfitgp/_patch_jax.py
+# lsqfitgp/_patch_jax/__init__.py
 #
 # Copyright (c) 2022, 2023, Giacomo Petrillo
 #
@@ -17,9 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import pathlib
-import traceback
-
 # TODO disable this jax 0.4.4 feature because it makes empbayes_fit fail due to
 # leaked tracers, but I can't fix it and maybe it's a jax bug. Wait till next
 # release to see what happens.
@@ -29,16 +26,16 @@ os.environ['JAX_JIT_PJIT_API_MERGE'] = '0'
 from jax.config import config
 config.update("jax_enable_x64", True)
 
+import traceback
 import functools
 
 import jax
 from jax import core
 from jax import lax
 from jax import numpy as jnp
-from jax.interpreters import ad
-from jax.interpreters import batching
 from jax import tree_util
-from jax._src import ad_util
+
+from ._vectorize import vectorize
 
 def makejaxufunc(ufunc, *derivs):
     """
@@ -133,6 +130,8 @@ class skipifabstract:
 
 # TODO make stop_hessian work in reverse mode
 # see jax issue #10994
+# from jax.interpreters import ad
+# from jax._src import ad_util
 # ad.primitive_transposes[ad_util.stop_gradient_p] = lambda ct, _: [lax.stop_gradient(ct)]
 # try with jax.jvp and lax.stop_gradient, I tried once and I failed but I did
 # not try hard enough

@@ -374,10 +374,12 @@ class empbayes_fit(Logger):
                 now = time.time()
                 duration = datetime.timedelta(seconds=now - self.stamp)
                 self.stamp = now
-                nicep = hpunflat(p)
                 calls = fun.fmtcalls('partial', functions)
                 self.this.log(f'iteration {self.it}, time: {duration}, calls: {calls}', 3)
-                self.this.log(f'parameters = {nicep}', 4)
+                if verbosity >= 4:
+                    nicep = hpunflat(p)
+                    nicep = self.this._copyasarrayorbufferdict(nicep)
+                    self.this.log(f'parameters = {nicep}', 4)
                 
             # TODO write a method to format the parameters nicely. => use
             # gvar.tabulate? => nope, need actual gvars
@@ -485,6 +487,20 @@ class empbayes_fit(Logger):
         # by hand the gradient and Fisher matrix expressions to save on jax
         # tracing time. => wait for the new linalg system => don't wait, make
         # it non-crap right away!
+
+        # TODO empbayes_fit(autoeps=True) tries to double epsabs until the
+        # minimization succedes, with some maximum number of tries.
+        # autoeps=dict(maxrepeat=5, increaseby=2, initial=1e-16,
+        # startfromzero=True) allows to configure the algorithm.
+
+        # TODO empbayes_fit(maxiter=100) sets the maximum number of minimization
+        # iterations. maxiter=dict (iter=100, calls=200, callsperiter=10) allows
+        # to configure it more finely. The calls limits are cumulative on all
+        # functions (need to make a class counter in _CountCalls), I can
+        # probably implement them by returning nan when the limit is surpassed,
+        # I hope the minimizer stops immediately on nan (test this).
+
+        # TODO save gpfactory to an attribute.
     
     class _CountCalls:
         """ wrap a callable to count calls """

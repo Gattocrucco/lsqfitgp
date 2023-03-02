@@ -28,8 +28,6 @@ __version__ = '0.15'
 from . import _patch_jax # keep first due to pre-import jax configs
 from . import _patch_gvar
 
-from jax import numpy, scipy
-
 from ._GP import *
 from ._Kernel import *
 from ._kernels import *

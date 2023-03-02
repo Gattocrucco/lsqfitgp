@@ -276,6 +276,10 @@ def Expon(delta):
     """
     return jnp.exp(-delta)
 
+    # TODO rename Laplace, write it in terms of the 1-norm directly, then do
+    # TruncLaplace that reaches zero over a prescribed box. (Or truncate with
+    # an option truncbox=[(l0, r0), (l1, r1), ...]).
+
 _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]')
 
 @kernel(forcekron=True, derivable=False)

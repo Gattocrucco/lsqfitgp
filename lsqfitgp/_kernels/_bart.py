@@ -537,7 +537,7 @@ class BART(_BARTBase):
         return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
 
     @classmethod
-    @functools.partial(jnp.vectorize, excluded=(0, 7), signature='(p),(p),(p),(d),(),(p)->()')
+    @functools.partial(_patch_jax.vectorize, excluded=(0, 7), signature='(p),(p),(p),(d),(),(p)->()')
     def _bart_correlation_maxd_vectorized(cls, nminus, n0, nplus, pnt, gamma, w, debug):
 
         # a jax function applied to an int32 gives a float32 even with x64

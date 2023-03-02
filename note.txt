@@ -2881,13 +2881,13 @@ large matrices, since optimization requires taking it into account):
             gradient: 1/2 tr(K⁺dK)
                     + r'(K⁺+(I-KK⁺)/ε) dr
                     - 1/2 r'(K⁺+2(I-KK⁺)/ε)dKK⁺r
-            fisher: 1/2 tr(K⁺dK(K⁺+2(I-KK⁺)/ε)dK)
-                  + dr'(K⁺+(I-KK⁺)/ε)dr
-        dK and dr have their dimensions first, and derivatives last (like
-        jax.jac*). There should be options for omitting the pieces with ε.
-        I also need a way to make densities with different values of ε
-        comparable with each other (may not be possible, if it is, it
-        probably requires a history of ranks and ε).
+            fisher: 1/2 tr(K⁺dK(K⁺+2(I-KK⁺)/ε)d'K)
+                  - 2 tr(K⁺dK(I-KK⁺)d'KK⁺)
+                  + dr'(K⁺+(I-KK⁺)/ε)d'r
+        dK and dr are vector-jacobian products. There should be options for
+        omitting the pieces with ε. I also need a way to make densities with
+        different values of ε comparable with each other (may not be possible,
+        if it is, it probably requires a history of ranks and ε).
     correlate(x)
         Zx where K = ZZ'.
     back_correlate(X):
@@ -3061,4 +3061,82 @@ It works and its 4x faster.
 pdf4.py, t.py and u.py, if use empbayes_fit(..., jit=True), fail with leaking
 tracer errors in logdet. Running with jax.checking_leaks stops on a previous
 leak occurring in elementwise_grad instead. For the time being I run them
-without the jit.
+without the jit. => disabling the new jit implementation of jax 0.4.4 solves
+the problem. I wonder if it is a jax bug. I'll wait for the next jax release.
+
+2023-02-28
+==========
+
+Continuing with the new linalg. Is it possible to compute a fisher-vector
+product more efficiently than by evaluating the fisher matrix explicitly?
+
+    tr(K⁺dKK⁺dK)_ij v_j =
+        = K⁺_kl dK_lmi K⁺_mn dK_nkj v_j
+
+Also, how do I implement Fisher with a vector-jacobian product for dK?
+
+Since K is larger than the number of parameters, maybe I should use the forward
+gradient up to K? But the operation I need for the gradient is exactly the vjp.
+
+2023-03-02
+==========
+
+The BART kernel is very inefficient with a high number of covariates because it
+builds explicitly the broadcasted input arrays. The broadcast occurs when
+computing n-, n0, n+ as
+
+--> 177     l = jnp.minimum(ix, iy)
+    178     r = jnp.maximum(ix, iy)
+    179     before = l
+    180     between = r - l
+    181     after = splits[0] - r
+
+Is there a way to avoid this broadcast?
+
+Other question: even if I fixed this, would no other broadcast occur?
+
+To do:
+
+  - try to call directly BART.correlation with large arrays (n=3000, p=50) and
+    see what happens. => still bad, fills up memory
+
+  - if it works fine, try to remove the broadcast on n*. => not possible because
+    n0 is the difference
+
+  - if it is not possible, rewrite correlation to take as input the indices. =>
+    does not apply
+
+Questions:
+  - would BART.correlation under jit do the same? => better but yep, it fills 14
+    GB with n=3000, p=100, and 3000*3000*100*4 = 3.6 GB. The only improvement is
+    not wasting additional memory.
+  - is it a general characteristic of jnp.vectorize? => looking at the code of
+    jnp.vectorize, it appears that explicit broadcasting is done there to
+    simplify the implementation.
+  - is it a general characteristic of jax.vmap? => no, vmap seems to work well.
+
+How do I reimplement vectorize?
+  - copy the jax implementation in a new file (DONE)
+  - remove broadcasting of the arguments (DONE)
+  - produce "broadcasting shapes" with ones filled in (DONE)
+  - apply vmap for each axis, the outer vmap corresponds to the first axis 
+    (DONE)
+  - each vmap has in_axes=0 or None depending on the axis of the broadcasting
+    shape being > 1 or 1 (DONE)
+  - call the vmapped function with arguments squeezed on non-core axes (DONE)
+
+The new implementation works. Now:
+  - make _patch_jax into a module (DONE)
+  - move the new vectorize implementation there in its own file (DONE)
+  - import it in _patch_jax (DONE)
+  - check if the problem is solved in the test script => nope
+  - rewrite BART.correlation in terms of pairs of indices and totals (make a
+    wrapper to keep the old interface around for compatibility)
+  - if it works, reinstall lsqfitgp in bart/code/pyenv and try again there
+
+The new vectorize works well with a simple test function, but not with the BART
+kernel. Maybe there is some operation that forces a full broadcast when vmapped?
+Investigate this with:
+  - redo the test with maxd=0,1,2 and check if 0 and 1 work
+  - read carefully the code searching for such an operation, and try it
+    separately in the test script
