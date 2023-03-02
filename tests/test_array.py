@@ -475,3 +475,16 @@ def test_asjax():
     x = _array._asarray_jaxifpossible(x)
     assert isinstance(x['f0'], jnp.ndarray)
     assert isinstance(x['f1'], np.ndarray)
+
+def test_shortkey():
+    x = random_array((2, 3), 'd,d')
+    x = lgp.StructuredArray(x)
+    elem = x[0]
+    assert elem.shape == (3,)
+    assert elem.dtype == 'd,d'
+
+def test_longkey():
+    x = random_array((2, 3), '5d,5d')
+    x = lgp.StructuredArray(x)
+    with pytest.raises(IndexError):
+        elem = x[0, 1, 2]

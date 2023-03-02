@@ -135,11 +135,11 @@ class StructuredArray:
             d = {
                 name: x[
                     (key if isinstance(key, tuple) else (key,))
-                    + (slice(None),) * len(self.dtype[name].shape)
+                    + (slice(None),) * self.dtype[name].ndim
                 ]
                 for name, x in self._dict.items()
             }
-            shape = jax.eval_shape(lambda : jnp.empty(self.shape)[key]).shape
+            shape = jax.eval_shape(lambda: jnp.empty(self.shape)[key]).shape
             return self._array(shape, self.dtype, d)
     
     @property

@@ -3136,7 +3136,52 @@ The new implementation works. Now:
 
 The new vectorize works well with a simple test function, but not with the BART
 kernel. Maybe there is some operation that forces a full broadcast when vmapped?
-Investigate this with:
+Investigate this:
   - redo the test with maxd=0,1,2 and check if 0 and 1 work
   - read carefully the code searching for such an operation, and try it
     separately in the test script
+
+Quick test: even replacing x @ y by sum(x * y) is sufficient to break it,
+although it is still true that the new vectorize works much better than the old.
+Maybe any operation that would broadcast the arrays if applied in isolation will
+be bad. If so, I would need to somehow end up doing the broadcast only after
+reducing the covariates.
+
+Problem: anything that depends on n0 = ix - iy is already a nightmare. If there
+was a sum I could maybe write some operations as dot products and split them
+because of positivity, but with a difference I can't. anyn0 is already
+off-limits. Looking around I see many operations that I could write as dot
+products, but also many I can't, like jspecial.digamma(1 + nminus0).
+
+General solution: implement an ufunc batcher and use it in CrossKernel.__call__.
+It triggers by passing batchsize: int to __init__. The size refers to the number
+of bytes of the broadcasted input arrays above which the arrays are split.
+
+How do I implement an ufunc batcher?
+
+I have to use jax.lax loops to avoid tracing out all the batches. This means
+that it will work only with jax-traceable code. I could write later the non-jax
+version if I need it.
+
+Determine the split size per axis. Start from the outer axis. If a single "row"
+of the first axis is smaller than the batch size, batch only over that axis.
+Otherwise split the first axis over all indices and then move on to splitting
+along the second axis, and so on, until either the axes are exhausted or the
+batch size is small enough. (Implement nbytes in StructuredArray.)
+
+This produces a list of split sizes for a certain axis, with the precedent axes
+split over all items.
+
+Or maybe the whole implementation can be recursive. Check if the leading axis is
+sufficient to split (with the broadcasted size). If it is, lax.fori_loop over
+the even splits, and then do apart the remainder. If it isn't, lax.fori_loop
+over all indices calling the batcher on each slice of the array. The recursion
+path is static because it depends only on the shapes, so abstract tracing is
+fine with it.
+
+TODO tomorrow: 
+  - write the batcher in its own file in _patch_jax
+  - test it in test_jax.py
+  - use it to implement batchsize in CrossKernel
+  - apply batchsize to _BARTBase in the decorator, with some reasonable size
+    (100 MB?)

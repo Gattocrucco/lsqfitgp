@@ -464,17 +464,17 @@ class BART(_BARTBase):
     
         nout = nminus + nplus
         n = nout + n0
-        Wn = jnp.sum(jnp.where(n, w, 0))
+        Wn = jnp.sum(jnp.where(n, w, 0)) # <-- @
 
         if pnt.size == 2 and not debug:
             Q = 1 - (1 - gamma) * pnt[1]
-            sump = Q * jnp.sum(jnp.where(n, w * nout / n, 0))
+            sump = Q * jnp.sum(jnp.where(n, w * nout / n, 0)) # <-- @
             return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
     
         if pnt.size == 3 and not debug:
             Q = 1 - (1 - gamma) * pnt[2]
             s = w * nout / n
-            S = jnp.sum(jnp.where(n, s, 0))
+            S = jnp.sum(jnp.where(n, s, 0)) # <-- @
             t = w * n0 / n
             psin = jspecial.digamma(n)
             def terms(nminus, nplus):
@@ -488,7 +488,7 @@ class BART(_BARTBase):
             tplus = terms(nminus, nplus)
             tminus = terms(nplus, nminus)
             tall = jnp.where(n, w * (tplus + tminus) / n, 0)
-            sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall)
+            sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall) # <-- @
             return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
         
             # TODO the pnt.size == 3 calculation is probably less accurate than
