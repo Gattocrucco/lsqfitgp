@@ -19,7 +19,6 @@
 
 import sys
 import warnings
-import copy
 import types
 import enum
 
@@ -41,6 +40,9 @@ __all__ = [
     'isotropickernel',
     'where',
 ]
+
+# TODO make some of these functions static methods of CrossKernel if they are
+# not used elsewhere.
 
 def _asfloat(x):
     if not jnp.issubdtype(x.dtype, jnp.floating):
@@ -120,26 +122,42 @@ class CrossKernel:
     # TODO make some unit tests checking that Kernel classes are
     # propagated properly
 
+    def _copywith(self, core):
+        """
+        Return a kernel object with the same attributes but a new kernel
+        function.
+        """
+        obj = super().__new__(type(self))
+        for n, v in vars(self).items():
+            setattr(obj, n, v)
+        obj._kernel = core
+        return obj
+
     @staticmethod
     def _newkernel_from(core, kernels):
+        """
+        Make a new kernel object which is the result of an operations on the
+        kernels in `kernels`, with implementation callable `core`.
+        """
         assert kernels
         classes = (IsotropicKernel, *map(type, kernels))
         cls = _greatest_common_superclass(classes)
         assert issubclass(cls, CrossKernel)
-        obj = cls.__new__(cls)
+        obj = super(CrossKernel, cls).__new__(cls)
         mind = [k._minderivable for k in kernels]
         maxd = [k._maxderivable for k in kernels]
         obj._minderivable = tuple(numpy.min(mind, axis=0))
         obj._maxderivable = tuple(numpy.max(maxd, axis=0)) # TODO or is it the sum?
-        obj._kernel = core
         obj.initargs = None
         obj._maxdim = None
         # TODO implement maxdim like derivable (distinguish left/right
-        # argument and have minimum/maximum). Here take as minimum the minimum
-        # maxdim of the kernels and as maximum the sum of the maxima.
+        # argument and have minimum/maximum). Here take as minimum the
+        # minimum maxdim of the kernels and as maximum the sum of the
+        # maxima.
+        obj._kernel = core
         return obj
     
-    def __init__(self, kernel, *, dim=None, loc=None, scale=None, forcekron=False, derivable=None, saveargs=False, maxdim=sys.maxsize, **kw):
+    def __new__(cls, kernel, *, dim=None, loc=None, scale=None, forcekron=False, derivable=None, saveargs=False, maxdim=sys.maxsize, batchbytes=None, **kw):
         """
         
         Base class for objects representing covariance kernels.
@@ -192,6 +210,8 @@ class CrossKernel:
             The maximum input dimensionality accepted by the kernel. If
             callable, it is called with the same keyword arguments as the
             kernel. Default sys.maxsize.
+        batchbytes : number, optional
+            If specified, apply `batch(batchbytes)` to the kernel.
         **kw
             Additional keyword arguments are passed to `kernel`.
         
@@ -222,8 +242,11 @@ class CrossKernel:
         # a single boolean for an array of points, equivalent to an `all`.)
         
         # TODO maxdim's default should be None, not sys.maxsize
+
+        self = super().__new__(cls)
                 
         if saveargs:
+            # TODO I want to get rid of this functionality
             self.initargs = dict(
                 dim=dim,
                 loc=loc,
@@ -264,6 +287,9 @@ class CrossKernel:
         
         transf = lambda x: x
         
+        # TODO make maxdim, loc, scale, forcekron, derivable into separate
+        # methods like batch, both for tidiness and to allow the user to
+        # ovverride if needed.
         if maxdim is not None:
             def transf(x):
                 nd = _nd(x.dtype)
@@ -304,6 +330,11 @@ class CrossKernel:
             _kernel = lambda x, y: kernel(transf(x), transf(y), **kw)
         
         self._kernel = _kernel
+
+        if batchbytes is not None:
+            self = self.batch(batchbytes)
+
+        return self
     
     def __call__(self, x, y):
         x = _array.asarray(x)
@@ -350,7 +381,7 @@ class CrossKernel:
     def _binary(self, value, op):
         if _isscalar(value):
             val = value
-            value = self._newkernel_from(lambda x, y: val, [self])
+            value = self._copywith(lambda x, y: val)
             # TODO this may add too much uncertainty in the derivability
             # check
         if not isinstance(value, CrossKernel):
@@ -379,12 +410,12 @@ class CrossKernel:
 
     def _swap(self):
         """permute the arguments (cross kernels are not symmetric)"""
-        obj = copy.copy(self)
-        kernel = obj._kernel
-        obj._kernel = lambda x, y: kernel(y, x)
+        kernel = self._kernel
+        obj = self._copywith(lambda x, y: kernel(y, x))
         obj._minderivable = obj._minderivable[::-1]
         obj._maxderivable = obj._maxderivable[::-1]
         return obj
+        # TODO make _swap public?
                 
     def rescale(self, xfun, yfun):
         """
@@ -506,11 +537,7 @@ class CrossKernel:
             The derivative orders are greater than the `derivative` attribute.
             
         """
-        
-        # TODO maximum dimensionality should be checked too, see PPKernel. But
-        # this would probably fall well under the double callable derivative
-        # case.
-        
+                
         # TODO to check the derivability precisely, I would need to make a new
         # class Derivable (somewhat similar to Deriv) that has two separate
         # counters, `other` and `all`. `all` decrements each time you take a
@@ -615,6 +642,28 @@ class CrossKernel:
         obj._minderivable = tuple(self._minderivable[i] - orders[i] for i in range(2))
         obj._maxderivable = tuple(self._maxderivable[i] -   maxs[i] for i in range(2))
         return obj
+
+    def batch(self, maxnbytes):
+        """
+        Return a batched version of the kernel.
+
+        The batched kernel processes its inputs in chunks to try to limit memory
+        usage.
+
+        Parameters
+        ----------
+        maxnbytes : number
+            The maximum number of input bytes per chunk, counted after
+            broadcasting the inputs (actual broadcasting may not occur if not
+            induced by the operations in the kernel).
+
+        Return
+        ------
+        batched_kernel : CrossKernel
+            The same kernel but with batched computations.
+        """
+        kernel = _patch_jax.batchufunc(self._kernel, maxnbytes=maxnbytes)
+        return self._copywith(kernel)
     
     def fourier(self, dox, doy):
         """
@@ -701,7 +750,7 @@ class Kernel(CrossKernel):
     
 class StationaryKernel(Kernel):
 
-    def __init__(self, kernel, *, input='signed', scale=None, **kw):
+    def __new__(cls, kernel, *, input='signed', scale=None, **kw):
         """
         
         Subclass of :class:`Kernel` for isotropic kernels.
@@ -724,7 +773,7 @@ class StationaryKernel(Kernel):
         """
         
         # TODO using 'signed', 'abs', 'softabs' as labels could be clearer.
-        
+
         if input == 'soft':
             func = lambda x, y: _softabs(x - y)
         elif input == 'signed':
@@ -744,7 +793,7 @@ class StationaryKernel(Kernel):
             q = transf_recurse_dtype(func, x, y)
             return kernel(transf(q), **kwargs)
         
-        Kernel.__init__(self, function, **kw)
+        return Kernel.__new__(cls, function, **kw)
 
 class IsotropicKernel(StationaryKernel):
     
@@ -765,7 +814,7 @@ class IsotropicKernel(StationaryKernel):
     # inhomogeneous distances, would it be better to divide the values or the
     # distance?
     
-    def __init__(self, kernel, *, input='squared', scale=None, **kw):
+    def __new__(cls, kernel, *, input='squared', scale=None, **kw):
         """
         
         Subclass of :class:`Kernel` for isotropic kernels.
@@ -793,7 +842,7 @@ class IsotropicKernel(StationaryKernel):
                 
         """
         if input == 'raw':
-            return Kernel.__init__(self, kernel, scale=scale, **kw)
+            return Kernel.__new__(cls, kernel, scale=scale, **kw)
             
         if input in ('squared', 'hard'):
             func = lambda x, y: (x - y) ** 2
@@ -818,7 +867,7 @@ class IsotropicKernel(StationaryKernel):
             q = sum_recurse_dtype(func, x, y)
             return kernel(transf(q), **kwargs)
         
-        Kernel.__init__(self, function, **kw)
+        return Kernel.__new__(cls, function, **kw)
 
 def _eps(x):
     if jnp.issubdtype(x.dtype, jnp.inexact):
@@ -829,6 +878,21 @@ def _eps(x):
 
 def _softabs(x):
     return jnp.abs(x) + _eps(x)
+
+class Zero(IsotropicKernel):
+
+    def __new__(cls):
+        self = object.__new__(cls)
+        self._kernel = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
+        self._minderivable = (sys.maxsize, sys.maxsize)
+        self._maxderivable = (sys.maxsize, sys.maxsize)
+        self.initargs = None
+        self._maxdim = sys.maxsize
+        return self
+    
+    _swap = lambda self: self
+    diff = lambda self, xderiv, yderiv: self
+    batch = lambda self, maxnbytes: self
 
 def _makekernelsubclass(kernel, superclass, **prekw):
     assert issubclass(superclass, Kernel)
@@ -842,7 +906,7 @@ def _makekernelsubclass(kernel, superclass, **prekw):
     newclass = types.new_class(name, (superclass,))
         
     prekwset = set(prekw)
-    def __init__(self, **kw):
+    def __new__(cls, **kw):
         kwargs = prekw.copy()
         shared_keys = prekwset & set(kw)
         if shared_keys:
@@ -850,9 +914,9 @@ def _makekernelsubclass(kernel, superclass, **prekw):
             msg += ' of kernel ' + name
             warnings.warn(msg)
         kwargs.update(kw)
-        super(newclass, self).__init__(kernel, **kwargs)
+        return super(newclass, cls).__new__(cls, kernel, **kwargs)
     
-    newclass.__init__ = __init__
+    newclass.__new__ = __new__
     newclass.__wrapped__ = named_object
     newclass.__doc__ = named_object.__doc__
     newclass.__qualname__ = getattr(named_object, '__qualname__', name)
@@ -995,14 +1059,3 @@ def where(condfun, kernel1, kernel2, dim=None):
 # choose(lambda comp: comp, [kernel0, kernel1, kernel2, ...], dim='comp')
 # example where `comp` is a string field, and without using `dim`:
 # choose(lambda x: x['comp'], {'a': kernela, 'b': kernelb})
-
-class Zero(IsotropicKernel):
-    
-    def __init__(self):
-        self._kernel = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
-        self._minderivable = (sys.maxsize, sys.maxsize)
-        self._maxderivable = (sys.maxsize, sys.maxsize)
-        self.initargs = None
-    
-    _swap = lambda self: self
-    diff = lambda self, *_: self

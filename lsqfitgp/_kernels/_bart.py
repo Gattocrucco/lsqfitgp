@@ -33,7 +33,7 @@ def _bart_maxdim(splits=None, **_):
     splits = BART._check_splits(splits)
     return splits[0].size
 
-@kernel(maxdim=_bart_maxdim, derivable=False)
+@kernel(maxdim=_bart_maxdim, derivable=False, batchbytes=100e6)
 def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, intercept=True, weights=None, reset=None):
     """
     BART kernel.

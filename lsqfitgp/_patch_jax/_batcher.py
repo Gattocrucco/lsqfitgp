@@ -24,6 +24,27 @@ from jax import numpy as jnp
 import numpy
 
 def batchufunc(func, *, maxnbytes):
+    """
+
+    Make a batched version of an universal function.
+
+    The function is modified to process its inputs in chunks.
+
+    Parameters
+    ----------
+    func : callable
+        A jax-traceable universal function. All arguments are assumed to be
+        arrays which are broadcasted to determine the shape.
+    maxnbytes : number
+        The maximum number of bytes in each input chunck over all input arrays
+        after broadcasting.
+
+    Return
+    ------
+    batched_func : callable
+        The batched version of `func`. Does not accept keyword arguments.
+
+    """
 
     maxnbytes = int(maxnbytes)
     assert maxnbytes > 0
