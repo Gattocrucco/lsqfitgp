@@ -592,3 +592,21 @@ def test_longkey():
     x = lgp.StructuredArray(x)
     with pytest.raises(IndexError):
         elem = x[0, 1, 2]
+
+def test_unflatten_dummy():
+    x = random_array((2, 3), 'f,d,?')
+    x = lgp.StructuredArray(x)
+    _, aux = tree_util.tree_flatten(x)
+    children = (8., False, None)
+    y = tree_util.tree_unflatten(aux, children)
+    assert y.shape == ()
+    assert y.dtype == [('f0', float), ('f1', bool), ('f2', object)]
+
+def test_incompatible_shapes():
+    x = random_array((2, 3), 'f,2d,?')
+    x = lgp.StructuredArray(x)
+    _, aux = tree_util.tree_flatten(x)
+    children = (8., False, None)
+    y = tree_util.tree_unflatten(aux, children)
+    assert y.shape == ()
+    assert y.dtype == [('f0', float), ('f1', bool), ('f2', object)]

@@ -72,21 +72,61 @@ class StructuredArray:
         return x
 
     @classmethod
-    def _array(cls, s, t, d):
+    def _array(cls, s, t, d, *, check=True):
         """
-        Create a new StructuredArray with shape `s`, dtype `t`, using `d` as
-        `_dict` member (no copy).
+        Create a new StructuredArray.
+
+        Parameters
+        ----------
+        s : tuple or None
+            The shape. If None, it is determined automatically from the arrays.
+        t : dtype or None
+            The dtype of the array. If None, it is determined automatically
+            (before the shape).
+        d : dict str -> array
+            The _dict of the array.
+        check : bool
+            If True (default), check the passed values are consistent.
+
+        Return
+        ------
+        out : StructuredArray
+            A new StructuredArray object.
         """
-        # if s is None:
-        #     # infer the shape from the arrays in the dictionary
-        #     f0 = t.names[0]
-        #     a0 = d[f0]
-        #     subshape = t[0].shape
-        #     s = a0.shape[:len(a0.shape) - len(subshape)]
+
+        if t is None:
+            # infer the data type from the arrays in the dictionary
+            ndim = min((x.ndim for x in d.values()), default=None)
+            t = numpy.dtype([
+                (name, x.dtype, x.shape[ndim:])
+                for name, x in d.items()
+            ])
+
+        if s is None:
+            # infer the shape from the arrays in the dictionary
+            assert d, 'can not infer array shape with no fields'
+            f = t.names[0]
+            a = d[f]
+            s = a.shape[:a.ndim - t[0].ndim]
+        
+        if check:
+            assert len(t) == len(d)
+            assert t.names == tuple(d.keys())
+            assert all(
+                x.dtype == t[f].base and x.ndim >= t[f].ndim
+                for f, x in d.items()
+            )
+            shapes = [
+                x.shape[:x.ndim - t[f].ndim]
+                for f, x in d.items()
+            ]
+            assert all(s == s1 for s1 in shapes)
+        
         out = super().__new__(cls)
         out.shape = s
         out.dtype = t
         out._dict = d
+        
         return out
     
     @property
@@ -119,8 +159,9 @@ class StructuredArray:
             col: cls._readonlyview_wrapifstructured(df[col].to_numpy())
             for col in df.columns
         }
-        dtype = [(name, value.dtype) for name, value in d.items()]
+        dtype = numpy.dtype([(name, value.dtype) for name, value in d.items()])
         return cls._array((len(df),), dtype, d)
+        # TODO support polars structured dtypes
     
     def __getitem__(self, key):
         if isinstance(key, str):
@@ -236,35 +277,38 @@ class StructuredArray:
     @classmethod
     def tree_unflatten(cls, aux, children):
         """ JAX PyTree decoder. See `jax.tree_util.tree_unflatten`. """
-        if children:
-            children = [
-                asarray(x, aux['dtype'][i].base)
-                if not getattr(x, 'shape', True)
-                or not hasattr(x, 'dtype')
-                else x
-                for i, x in enumerate(children)
-            ]
-            # need to convert them to arrays because tree_util.tree_flatten
-            # unpacks 0d arrays
-            assert all(
-                x.dtype == aux['dtype'][i].base and x.ndim >= aux['dtype'][i].ndim
-                for i, x in enumerate(children)
-            )
-            shapes = [
-                x.shape[:x.ndim - aux['dtype'][i].ndim]
-                for i, x in enumerate(children)
-            ]
-            shape = shapes[0]
-            assert all(shape == s for s in shapes)
-        else:
-            shape = aux['shape']
-        d = dict(zip(aux['dtype'].names, children))
-        return cls._array(shape, aux['dtype'], d)
 
-        # TODO allow the possibility of changing the item dtype but not the
-        # dtype shape. Changing the dtype shape would lead to ambiguity between
-        # array and dtype shapes.
-    
+        # if there are no fields, keep original shape
+        if not children:
+            return cls._array(aux['shape'], aux['dtype'], {})
+        
+        # convert children to arrays because tree_util.tree_flatten unpacks 0d
+        # arrays
+        children = list(map(asarray, children))
+        
+        # if possible, keep original dtype shapes
+        oldtype = aux['dtype']
+        compatible_tail_shapes = all(
+            x.shape[max(0, x.ndim - oldtype[i].ndim):] == oldtype[i].shape
+            for i, x in enumerate(children)
+        )
+        head_shapes = [
+            x.shape[:max(0, x.ndim - oldtype[i].ndim)]
+            for i, x in enumerate(children)
+        ]
+        compatible_head_shapes = all(head_shapes[0] == s for s in head_shapes)
+        if compatible_tail_shapes and compatible_head_shapes:
+            dtype = numpy.dtype([
+                (oldtype.names[i], x.dtype, oldtype[i].shape)
+                for i, x in enumerate(children)
+            ])
+        else:
+            dtype = None
+
+        d = dict(zip(oldtype.names, children))
+
+        return cls._array(None, dtype, d)
+
     def __repr__(self):
         # code from gvar https://github.com/gplepage/gvar
         # bufferdict.pyx:BufferDict:__str__
