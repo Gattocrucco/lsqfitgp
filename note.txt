@@ -3180,8 +3180,14 @@ path is static because it depends only on the shapes, so abstract tracing is
 fine with it.
 
 TODO tomorrow: 
-  - write the batcher in its own file in _patch_jax
-  - test it in test_jax.py
+  - write the batcher in its own file in _patch_jax (DONE)
+  - test it in test_jax.py (DONE)
   - use it to implement batchsize in CrossKernel
   - apply batchsize to _BARTBase in the decorator, with some reasonable size
     (100 MB?)
+
+2023-03-03
+==========
+
+Next todo: test batcher on ordinary arrays (DONE), then test in on
+StructuredArray (DONE).

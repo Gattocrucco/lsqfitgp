@@ -84,8 +84,8 @@ class StructuredArray:
         #     subshape = t[0].shape
         #     s = a0.shape[:len(a0.shape) - len(subshape)]
         out = super().__new__(cls)
-        out.dtype = t
         out.shape = s
+        out.dtype = t
         out._dict = d
         return out
     
@@ -184,16 +184,35 @@ class StructuredArray:
     
     def reshape(self, *shape):
         """
-        Reshape the array without changing its contents. See numpy.ndarray.reshape.
+        Reshape the array without changing its contents. See
+        numpy.ndarray.reshape.
         """
-        if len(shape) == 1 and isinstance(shape[0], tuple):
+        if len(shape) == 1 and hasattr(shape[0], '__len__'):
             shape = shape[0]
+        shape = tuple(shape)
         d = {
             name: x.reshape(shape + self.dtype[name].shape)
             for name, x in self._dict.items()
         }
         shape = numpy.empty(self.shape, []).reshape(shape).shape
         return self._array(shape, self.dtype, d)
+
+    def squeeze(self, axis=None):
+        """
+        Remove axes of length 1. See numpy.ndarray.squeeze.
+        """
+        if axis is None:
+            axis = tuple(i for i, size in enumerate(self.shape) if size == 1)
+        if not hasattr(axis, '__len__'):
+            axis = (axis,)
+        assert all(self.shape[i] == 1 for i in axis)
+        newshape = [size for i, size in enumerate(self.shape) if i not in axis]
+        return self.reshape(newshape)
+
+    def astype(self, dtype):
+        if dtype != self.dtype:
+            raise NotImplementedError
+        return self
     
     def broadcast_to(self, shape, **kw):
         """
@@ -209,24 +228,42 @@ class StructuredArray:
         return self._array(shape, self.dtype, d)
     
     def tree_flatten(self):
-        """JAX PyTree encoder. See `jax.tree_util.tree_flatten`."""
-        children = tuple(self._dict.values())
-        aux_data = dict(
-            keys = tuple(self._dict.keys()),
-            dtype = self.dtype,
-            shape = self.shape,
-        )
-        return children, aux_data
+        """ JAX PyTree encoder. See `jax.tree_util.tree_flatten`. """
+        children = tuple(self._dict[key] for key in self.dtype.names)
+        aux = dict(shape=self.shape, dtype=self.dtype)
+        return children, aux
     
     @classmethod
-    def tree_unflatten(cls, aux_data, children):
-        """JAX PyTree decoder. See `jax.tree_util.tree_unflatten`."""
-        obj = super().__new__(cls)
-        for attr, val in aux_data.items():
-            if attr != 'keys':
-                setattr(obj, attr, val)
-        obj._dict = dict(zip(aux_data['keys'], children))
-        return obj
+    def tree_unflatten(cls, aux, children):
+        """ JAX PyTree decoder. See `jax.tree_util.tree_unflatten`. """
+        if children:
+            children = [
+                asarray(x, aux['dtype'][i].base)
+                if not getattr(x, 'shape', True)
+                or not hasattr(x, 'dtype')
+                else x
+                for i, x in enumerate(children)
+            ]
+            # need to convert them to arrays because tree_util.tree_flatten
+            # unpacks 0d arrays
+            assert all(
+                x.dtype == aux['dtype'][i].base and x.ndim >= aux['dtype'][i].ndim
+                for i, x in enumerate(children)
+            )
+            shapes = [
+                x.shape[:x.ndim - aux['dtype'][i].ndim]
+                for i, x in enumerate(children)
+            ]
+            shape = shapes[0]
+            assert all(shape == s for s in shapes)
+        else:
+            shape = aux['shape']
+        d = dict(zip(aux['dtype'].names, children))
+        return cls._array(shape, aux['dtype'], d)
+
+        # TODO allow the possibility of changing the item dtype but not the
+        # dtype shape. Changing the dtype shape would lead to ambiguity between
+        # array and dtype shapes.
     
     def __repr__(self):
         # code from gvar https://github.com/gplepage/gvar
@@ -252,6 +289,8 @@ class StructuredArray:
         out += '})'
         
         return out
+
+        # TODO try simply using the __repr__ of self._dict
     
     def __array__(self):
         array = numpy.empty(self.shape, self.dtype)
@@ -276,7 +315,7 @@ class StructuredArray:
     
     @classmethod
     def _implements(cls, np_function):
-        "Register an __array_function__ implementation"
+        """ Register an __array_function__ implementation """
         def decorator(func):
             cls._handled_functions[np_function] = func
             return func
@@ -369,18 +408,22 @@ class broadcast:
     def __init__(self, *arrays):
         self.shape = numpy.broadcast_shapes(*(a.shape for a in arrays))
 
-def asarray(x):
+def asarray(x, dtype=None):
     """
     Version of numpy.asarray that works with StructuredArray and JAX arrays.
-    If x is not a numpy array, returns a JAX array if possible.
+    If x is not an array already, returns a JAX array if possible.
     """
     # not handled by __array_function__
     if isinstance(x, (StructuredArray, jnp.ndarray, numpy.ndarray)):
-        return x
+        return x if dtype is None else x.astype(dtype)
+    if x is None:
+        return numpy.asarray(x, dtype)
+        # partial workaround for jax issue #14506, None would be interpreted as
+        # nan by jax
     try:
-        return jnp.asarray(x)
+        return jnp.asarray(x, dtype)
     except (TypeError, ValueError):
-        return numpy.asarray(x)
+        return numpy.asarray(x, dtype)
 
 def _asarray_jaxifpossible(x):
     x = asarray(x)
@@ -406,3 +449,7 @@ def _structured_to_unstructured(arr, dtype=None, casting='unsafe'):
     out, length = arr._fill_unstructured(out)
     assert length == dummy.shape[-1]
     return out
+
+@StructuredArray._implements(numpy.squeeze)
+def _squeeze(a, axis=None):
+    return a.squeeze(axis)

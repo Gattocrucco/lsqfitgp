@@ -36,6 +36,7 @@ from jax import numpy as jnp
 from jax import tree_util
 
 from ._vectorize import vectorize
+from ._batcher import batchufunc
 
 def makejaxufunc(ufunc, *derivs):
     """
