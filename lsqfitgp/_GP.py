@@ -129,6 +129,12 @@ class GP:
     posepsfac : number
         The threshold used to check if the prior covariance matrix is positive
         definite is multiplied by this factor (default 1).
+    halfmatrix : bool
+        If True and `checksym=False`, compute only half of the covariance
+        matrices by unrolling their lower triangular part as flat arrays. This
+        may actually be a large performance hit if the input arrays have large
+        item size or if the implementation of the kernel takes advantage of
+        non-broadcasted inputs, so it is False by default.
     **kw
         Additional keyword arguments are passed to the solver, see
         :meth:`~GP.decompose`.
@@ -149,24 +155,25 @@ class GP:
     @staticmethod
     def _triu_indices_and_back(n):
         """
-        Return indices to get the upper triangular part of a matrix, and indices to
-        convert a flat array of upper triangular elements to a symmetric matrix.
+        Return indices to get the upper triangular part of a matrix, and indices
+        to convert a flat array of upper triangular elements to a symmetric
+        matrix.
         """
-        indices = jnp.triu_indices(n)
-        q = jnp.empty((n, n), indices[0].dtype)
-        a = jnp.arange(len(indices[0]))
-        q = q.at[indices].set(a)
-        q = q.at[indices[::-1]].set(a)
-        return indices, q
+        ix, iy = jnp.triu_indices(n)
+        q = jnp.empty((n, n), ix.dtype)
+        a = jnp.arange(ix.size)
+        q = q.at[ix, iy].set(a)
+        q = q.at[iy, ix].set(a)
+        return ix, iy, q
 
     @staticmethod
     def _compatible_dtypes(d1, d2): # pragma: no cover
         """
         Function to check x arrays datatypes passed to GP.addx. If the dtype is
-        structured, it checks the structure of the fields is the same, but allows
-        casting of concrete dtypes (like, in one array a field can be int, in
-        another float, as long as the field name and position is the same).
-        Currently not used.
+        structured, it checks the structure of the fields is the same, but
+        allows casting of concrete dtypes (like, in one array a field can be
+        int, in another float, as long as the field name and position is the
+        same). Currently not used.
 
         May not be needed in numpy 1.23, check what result_type does now.
         """
@@ -305,12 +312,23 @@ class GP:
             raise NotImplementedError(f"{cls.__name__} can not be instantiated")
 
     class DefaultProcess(_Singleton):
-        """Key for the default process in GP objects"""
+        """ Key for the default process in GP objects """
         pass
 
     _zerokernel = _Kernel.Zero()
 
-    def __init__(self, covfun=None, *, solver='eigcut+', checkpos=True, checksym=True, checkfinite=True, checklin=True, posepsfac=1, **kw):
+    def __init__(self,
+        covfun=None,
+        *,
+        solver='eigcut+',
+        checkpos=True,
+        checksym=True,
+        checkfinite=True,
+        checklin=True,
+        posepsfac=1,
+        halfmatrix=False,
+        **kw,
+    ):
         self._elements = dict() # key -> _Element
         self._covblocks = dict() # (key, key) -> matrix
         self._priordict = gvar.BufferDict({}, dtype=object) # key -> gvar array (shaped)
@@ -329,7 +347,9 @@ class GP:
         self._checkfinite = bool(checkfinite)
         self._checklin = bool(checklin)
         self._decompname = str(solver)
-    
+        self._halfmatrix = bool(halfmatrix)
+        assert not (halfmatrix and checksym)
+
     def addproc(self, kernel=None, key=DefaultProcess, *, deriv=0):
         """
         
@@ -587,10 +607,7 @@ class GP:
         To specify that on the given `x` a derivative of the process instead of
         the process itself should be evaluated, use the parameter `deriv`.
         
-        `addx` never copies the input arrays if they are numpy arrays, so if
-        you change their contents before doing something with the GP, the
-        change will be reflected on the result. However, after the GP has
-        computed internally its covariance matrix, the x are ignored.
+        `addx` may or may not copy the input arrays.
         
         Parameters
         ----------
@@ -639,9 +656,8 @@ class GP:
             gx = x[key]
             
             # Convert to JAX array, numpy array or StructuredArray.
+            # convert eagerly to jax to avoid problems with tracing.
             gx = _array._asarray_jaxifpossible(gx)
-            # convert eagerly to jax array to avoid problems if a traced jax
-            # array is used to fancy index the numpy array
 
             # Check it is not empty.
             if not gx.size:
@@ -1134,10 +1150,10 @@ class GP:
         
         kernel = kernel.diff(x.deriv, y.deriv)
         
-        if x is y and not self._checksym:
-            indices, back = self._triu_indices_and_back(x.size)
-            ax = _array.broadcast_to(x.x.reshape(-1)[:, None], (x.x.size, y.x.size))[indices]
-            ay = _array.broadcast_to(y.x.reshape(-1)[None, :], (x.x.size, y.x.size))[indices]
+        if x is y and not self._checksym and self._halfmatrix:
+            ix, iy, back = self._triu_indices_and_back(x.size)
+            ax = x.x[ix]
+            ay = y.x[iy]
             halfcov = kernel(ax, ay)
             cov = halfcov[back]
         else:

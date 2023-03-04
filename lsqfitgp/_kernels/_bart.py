@@ -33,7 +33,10 @@ def _bart_maxdim(splits=None, **_):
     splits = BART._check_splits(splits)
     return splits[0].size
 
-@kernel(maxdim=_bart_maxdim, derivable=False, batchbytes=100e6)
+@kernel(maxdim=_bart_maxdim, derivable=False, batchbytes=10e6)
+# TODO maybe batching should be done automatically by GP instead of by the
+# kernels? But before doing that I need to support batching non-traceable
+# functions.
 def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, intercept=True, weights=None, reset=None):
     """
     BART kernel.

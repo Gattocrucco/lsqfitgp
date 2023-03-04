@@ -222,6 +222,7 @@ class CrossKernel:
         xtransf : transform the inputs to the kernel
         fourier : take the Fourier series
         taylor : take the Taylor series
+        batch : batch the computation of the kernel
         
         """
         # TODO linear transformation of input that works with arbitrarily
@@ -657,8 +658,8 @@ class CrossKernel:
             broadcasting the inputs (actual broadcasting may not occur if not
             induced by the operations in the kernel).
 
-        Return
-        ------
+        Returns
+        -------
         batched_kernel : CrossKernel
             The same kernel but with batched computations.
         """

@@ -3182,9 +3182,9 @@ fine with it.
 TODO tomorrow: 
   - write the batcher in its own file in _patch_jax (DONE)
   - test it in test_jax.py (DONE)
-  - use it to implement batchsize in CrossKernel
+  - use it to implement batchsize in CrossKernel (DONE)
   - apply batchsize to _BARTBase in the decorator, with some reasonable size
-    (100 MB?)
+    (100 MB?) (DONE)
 
 2023-03-03
 ==========

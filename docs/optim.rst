@@ -58,16 +58,17 @@ an explicit mean vector and covariance matrix instead of :func:`gvar.raniter`.
 Once you have solved eventual :mod:`gvar`-related issues, if you have at least
 some hundreds of datapoints the next bottleneck is probably in
 :meth:`GP.predfromdata`. Making it faster is quick: select a solver different
-from the default one when initializing the :class:`GP` object, like
-``GP(kernel, solver='chol')``. And don't forget to disable the positivity
-check: ``GP(kernel, solver='chol', checkpos=False)``. The positivity check
-takes :math:`O((n+m)^3)`, so it's guaranteed to become the slower step at some
-point.
+from the default one when initializing the :class:`GP` object, like ``GP(kernel,
+solver='chol')``. And don't forget to disable the :math:`O((n+m)^2)` positivity
+check: ``GP(kernel, solver='chol', checkpos=False)``.
 
-If you have written a custom kernel, it may become a bottleneck. For example
-the letter counting kernel in :ref:`customs` was very slow. A quick way to get
-a 2x improvement is disabling the symmetry check in :class:`GP`: ``GP(kernel,
-checksym=False)``.
+If you have written a custom kernel, it may become a bottleneck. For example the
+letter counting kernel in :ref:`customs` was very slow. A quick way to get a 2x
+improvement is computing only half of the covariance matrix: ``GP(kernel,
+checksym=False, halfmatrix=True)``. Note however that in some cases this may
+cause a large perfomance hit, so by default the full covariance matrix is
+computed even if ``checksym=False`` (but the cross covariance matrices are not
+computed twice).
 
 The JAX compiler
 ----------------

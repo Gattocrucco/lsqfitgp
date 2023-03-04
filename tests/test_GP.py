@@ -45,7 +45,7 @@ def test_prior_raw_shape():
 def test_no_checksym():
     covs = []
     for checksym in [False, True]:
-        gp = lgp.GP(lgp.ExpQuad(), checksym=checksym)
+        gp = lgp.GP(lgp.ExpQuad(), checksym=checksym, halfmatrix=not checksym)
         gp.addx({'x': np.arange(20)})
         covs.append(gp.prior('x', raw=True))
     util.assert_equal(*covs)
@@ -964,7 +964,7 @@ def test_givencov_decomp():
     util.assert_close_decomps(dec2, dec1, rtol=1) # TODO wildly inaccurate
     
 def test_nochecksym_structured():
-    gp = lgp.GP(lgp.ExpQuad(), checksym=False)
+    gp = lgp.GP(lgp.ExpQuad(), checksym=False, halfmatrix=True)
     gp.addx(np.zeros(1, 'd,d'), 0)
     gp.prior(0, raw=True)
 
@@ -973,7 +973,7 @@ def test_nochecksym_structured_jit():
 
 def test_nochecksym_tracer():
     def fun():
-        gp = lgp.GP(lgp.ExpQuad(), checksym=False)
+        gp = lgp.GP(lgp.ExpQuad(), checksym=False, halfmatrix=True)
         gp.addx(np.zeros(1), 0)
         return gp.prior(0, raw=True)
     jax.jit(fun)()
