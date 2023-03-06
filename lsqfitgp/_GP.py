@@ -1111,7 +1111,7 @@ class GP:
         yp = self._procs[ypkey]
         
         kernels = [self._crosskernel(pk, ypkey) for pk in xp.keys]
-        kernel = _Kernel.CrossKernel._nary(xp.transf, kernels, _Kernel.CrossKernel.side.LEFT)
+        kernel = _Kernel.CrossKernel._nary(xp.transf, kernels, _Kernel.CrossKernel._side.LEFT)
         kernel = kernel.diff(xp.deriv, 0)
         
         return kernel
@@ -1152,10 +1152,18 @@ class GP:
         
         if x is y and not self._checksym and self._halfmatrix:
             ix, iy, back = self._triu_indices_and_back(x.size)
-            ax = x.x[ix]
-            ay = y.x[iy]
+            flat = x.x.reshape(-1)
+            ax = flat[ix]
+            ay = flat[iy]
             halfcov = kernel(ax, ay)
             cov = halfcov[back]
+            # TODO to avoid inefficiencies like in BART, maybe _Kernel should
+            # have a method outer(x) that by default simply does self(x[None,
+            # :], x[:, None]) but can be overwritten. This halfmatrix impl could
+            # be moved there with an option outer(x, *, half=False). To carry
+            # over custom implementations of outer, there should be a callable
+            # attribute _outer, optionally set at initialization, that is
+            # transformed by kernel operations.
         else:
             ax = x.x.reshape(-1)[:, None]
             ay = y.x.reshape(-1)[None, :]

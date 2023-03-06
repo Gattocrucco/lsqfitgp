@@ -22,6 +22,7 @@ import sys
 import itertools
 
 import pytest
+from pytest import mark
 import numpy as np
 from jax import numpy as jnp
 import gvar
@@ -36,17 +37,20 @@ gen = np.random.default_rng(202208251700)
 def test_prior_raw_shape():
     gp = lgp.GP(lgp.ExpQuad())
     gp.addx(np.arange(20).reshape(2, 10), 'x')
+    
     cov = gp.prior(raw=True)
     assert cov['x', 'x'].shape == (2, 10, 2, 10)
     
     cov = gp.prior('x', raw=True)
     assert cov.shape == (2, 10, 2, 10)
 
-def test_no_checksym():
+@mark.parametrize('shape', [(20,), (2, 3)])
+def test_halfmatrix(shape):
     covs = []
+    x = gen.standard_normal(shape)
     for checksym in [False, True]:
         gp = lgp.GP(lgp.ExpQuad(), checksym=checksym, halfmatrix=not checksym)
-        gp.addx({'x': np.arange(20)})
+        gp.addx({'x': x})
         covs.append(gp.prior('x', raw=True))
     util.assert_equal(*covs)
 

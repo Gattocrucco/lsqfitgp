@@ -938,8 +938,8 @@ def test_maxdim():
 def test_nary():
     kernel = _Kernel.Kernel(lambda x, y: np.maximum(0, 1 - np.abs(x - y)))
     g = lambda x: 2 * x
-    k1 = _Kernel.Kernel._nary(lambda f: lambda x: g(x) * f(x), [kernel], kernel.side.LEFT)
-    k2 = _Kernel.Kernel._nary(lambda f: lambda y: g(y) * f(y), [kernel], kernel.side.RIGHT)
+    k1 = _Kernel.Kernel._nary(lambda f: lambda x: g(x) * f(x), [kernel], kernel._side.LEFT)
+    k2 = _Kernel.Kernel._nary(lambda f: lambda y: g(y) * f(y), [kernel], kernel._side.RIGHT)
     x = np.linspace(-5, 5, 30)
     m1 = k1(x[:, None], x[None, :])
     assert not np.allclose(m1, m1.T)

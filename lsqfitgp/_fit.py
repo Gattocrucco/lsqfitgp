@@ -213,6 +213,8 @@ class empbayes_fit(Logger):
             The result object returned by `scipy.optimize.minimize`.
         minargs : dict
             The arguments passed to `scipy.optimize.minimize`.
+        gpfactory : callable
+            The `gpfactory` argument.
 
         Raises
         ------
@@ -343,8 +345,16 @@ class empbayes_fit(Logger):
             minargs.update(fun=fun, jac=None, method='nelder-mead')
         elif method == 'gradient':
             minargs.update(method='bfgs')
+            # l-bfgs-b is in general better but when it fails the linear search
+            # it gives up on the hessian and returns very large errors. bfgs
+            # instead returns something sensible even though it failed. I should
+            # use l-bfgs-b and learn to make my fits work (increase epsrel?)
+            # TODO fix the fits in the user guide, right now they don't really
+            # work. explain in the guide how to make them work explicitly. maybe
+            # keep raise=True then, and say something about linear search.
         elif method == 'hessian':
             minargs.update(hess=hess, method='trust-exact')
+            # TODO use trust-constr because it has more options?
         elif method == 'fisher':
             minargs.update(hess=fisherprec, method='dogleg')
             # dogleg requires positive definiteness
@@ -386,6 +396,9 @@ class empbayes_fit(Logger):
             
         if verbosity > 2:
             minargs.update(callback=Callback(self))
+
+        if not covariance in ('auto', 'fisher', 'hess', 'minhess', 'none'):
+            raise KeyError(covariance)
         
         minargs.update(minkw)
         with self.loglevel:
@@ -397,8 +410,10 @@ class empbayes_fit(Logger):
         self.log(f'totals: time: {total}, calls: {calls}')
         
         # check the minimization was successful
-        if not result.success:
-            msg = 'minimization failed: {}'.format(result.message)
+        if result.success:
+            self.log(f'minimization succeeded: {result.message}')
+        else:
+            msg = f'minimization failed: {result.message}'
             if raises:
                 raise RuntimeError(msg)
             elif verbosity == 0:
@@ -412,6 +427,9 @@ class empbayes_fit(Logger):
                 covariance = 'minhess'
             else:
                 covariance = 'fisher'
+            # TODO maybe fisher should not be the default since it can be very
+            # slow right now, in particular with 'nograd' it could be unexpected
+            # that a derivative is computed
         
         # compute posterior covariance of the hyperparameters
         if covariance == 'fisher':
@@ -432,6 +450,12 @@ class empbayes_fit(Logger):
             if hasattr(result, 'hess_inv'):
                 self.log('use minimizer estimate of inverse hessian as covariance', 2)
                 cov = result.hess_inv
+                if hasattr(cov, 'todense'):
+                    # TODO the inverse hessian of l-bfgs-b is crap, I need to
+                    # have a working fisher for that to be usable. => idea: use
+                    # optimize.BFGS with the vectors contained in hess_inv to
+                    # build the bfgs inverse hessian after running l-bfgs-b.
+                    cov = cov.todense()
             elif hasattr(result, 'hess'):
                 self.log('use minimizer hessian as precision', 2)
                 cov = _linalg.EigCutFullRank(result.hess).inv()
@@ -449,12 +473,15 @@ class empbayes_fit(Logger):
         self.pcov = gvar.evalcov(self.p)
         self.minresult = result
         self.minargs = minargs
+        self.gpfactory = gpfactory
 
         if verbosity >= 2:
             self.log(_patch_gvar.tabulate_together(
-                self.prior, gvar.gvar(self.initial), self.p, self.p - self.prior, self.p - self.initial,
-                headers=['param', 'prior', 'initial', 'posterior', 'post-prior', 'post-ini'],
-            ))
+                self.prior, self.p,
+                headers=['param', 'prior', 'posterior'],
+            )) # TODO replace tabulate_toegether with something more flexible I
+            # can use for the callback as well. Maybe import TextMatrix from
+            # miscpy.
         self.log('**** exit lsqfitgp.empbayes_fit ****')
 
         # TODO would it be meaningful to add correlation of the fit result with
@@ -499,8 +526,6 @@ class empbayes_fit(Logger):
         # functions (need to make a class counter in _CountCalls), I can
         # probably implement them by returning nan when the limit is surpassed,
         # I hope the minimizer stops immediately on nan (test this).
-
-        # TODO save gpfactory to an attribute.
     
     class _CountCalls:
         """ wrap a callable to count calls """
@@ -530,7 +555,7 @@ class empbayes_fit(Logger):
         def fmtcalls(method, functions):
             def counts():
                 for name, func in functions.items():
-                    if (count := getattr(func, method)()):
+                    if count := getattr(func, method)():
                         yield f'{name} {count}'
             return ', '.join(counts())
     
@@ -592,7 +617,8 @@ class empbayes_fit(Logger):
             m = hyperprior.extension_pattern.match(k)
             if m and m.group(1) in hyperprior.invfcn:
                 altk = m.group(2)
-                assert altk not in hyperprior, f'duplicate keys {altk!r} and {k!r} in hyperprior'
+                if altk in hyperprior:
+                    raise ValueError(f'duplicate keys {altk!r} and {k!r} in hyperprior')
 
     def _parse_fix(self, hyperprior, fix):
         
@@ -677,12 +703,12 @@ class empbayes_fit(Logger):
             self.log('data errors provided separately', 2)
             assert len(data) == 2
             cachedargs = data
-        elif self._flatview(self._copyasarrayorbufferdict(data)).dtype == object:
+        elif (gdata := self._copyasarrayorbufferdict(data)).dtype == object:
             self.log('data has errors as gvars', 2)
-            data = gvar.gvar(data)
-            datamean = gvar.mean(data)
-            datacov = gvar.evalcov(data)
-            cachedargs = (datamean, datacov)
+            data = gvar.gvar(gdata)
+            # convert to gvar because non-gvars in the array would upset
+            # gvar.mean and gvar.evalcov
+            cachedargs = (gvar.mean(data), gvar.evalcov(data))
         else:
             self.log('data has no errors', 2)
             cachedargs = (data,)

@@ -188,7 +188,7 @@ def test_checks():
     with pytest.raises(RuntimeError) as err:
         def makegp(x):
             gp = lgp.GP(lgp.ExpQuad(), checkfinite=False, checksym=False, checkpos=False)
-            gp.addx(np.nan, 0)
+            gp.addx(x * np.nan, 0)
             return gp
         lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {0: 0})
     assert 'minimization failed: ' in str(err.value)

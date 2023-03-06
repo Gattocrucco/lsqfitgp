@@ -351,7 +351,7 @@ class CrossKernel:
         assert result.shape == shape, (result.shape, shape)
         return result
     
-    class side(enum.Enum):
+    class _side(enum.Enum):
         LEFT = 0
         RIGHT = 1
         BOTH = 2
@@ -359,13 +359,13 @@ class CrossKernel:
     @classmethod
     def _nary(cls, op, kernels, side):
         
-        if side is cls.side.LEFT:
+        if side is cls._side.LEFT:
             wrapper = lambda c, _, y: lambda x: c(x, y)
             arg = lambda x, _: x
-        elif side is cls.side.RIGHT:
+        elif side is cls._side.RIGHT:
             wrapper = lambda c, x, _: lambda y: c(x, y)
             arg = lambda _, y: y
-        elif side is cls.side.BOTH:
+        elif side is cls._side.BOTH:
             wrapper = lambda c, _, __: lambda xy: c(*xy)
             arg = lambda x, y: (x, y)
         else: # pragma: no cover
@@ -387,7 +387,7 @@ class CrossKernel:
             # check
         if not isinstance(value, CrossKernel):
             return NotImplemented
-        return self._nary(op, [self, value], self.side.BOTH)
+        return self._nary(op, [self, value], self._side.BOTH)
     
     def __add__(self, value):
         return self._binary(value, lambda f, g: lambda x: f(x) + g(x))

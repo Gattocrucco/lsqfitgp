@@ -2871,7 +2871,7 @@ large matrices, since optimization requires taking it into account):
         covariance I expect B and K to come from a pos def matrix so they are
         coherent
     ginv_diagquad(A) => diag(A'K⁻A) (for the posterior variance)
-    minus_log_normal_density(r, dK, dr, value: bool, gradient: bool, fisher: bool)
+    minus_log_normal_density(r, dr_vjp, dK_vjp, dr, dK, value: bool, gradient: bool, fisher: bool)
         This computes on request
             value: 1/2 tr(KK⁺) log 2π
                  + 1/2 tr(I-KK⁺) log 2π
@@ -2884,10 +2884,11 @@ large matrices, since optimization requires taking it into account):
             fisher: 1/2 tr(K⁺dK(K⁺+2(I-KK⁺)/ε)d'K)
                   - 2 tr(K⁺dK(I-KK⁺)d'KK⁺)
                   + dr'(K⁺+(I-KK⁺)/ε)d'r
-        dK and dr are vector-jacobian products. There should be options for
-        omitting the pieces with ε. I also need a way to make densities with
-        different values of ε comparable with each other (may not be possible,
-        if it is, it probably requires a history of ranks and ε).
+        dr_vjp and dK_vjp are vector-jacobian products, while dr and dK are full
+        jacobians (needed for fisher only). There should be options for omitting
+        the pieces with ε. I also need a way to make densities with different
+        values of ε comparable with each other (may not be possible, if it is,
+        it probably requires a history of ranks and ε).
     correlate(x)
         Zx where K = ZZ'.
     back_correlate(X):
@@ -3077,6 +3078,28 @@ Also, how do I implement Fisher with a vector-jacobian product for dK?
 
 Since K is larger than the number of parameters, maybe I should use the forward
 gradient up to K? But the operation I need for the gradient is exactly the vjp.
+=> the fact that the optimal way of computing the hessian is fwd(rev(·)) means
+that one of the dK should be a vjp and the other a jvp. So I compute K⁺dKK⁺ with
+the explicit forward jacobian, and then tr((K⁺dKK⁺)dK) with the vjp. So for
+Fisher I need value_and_op(K, jacfwd, jacrev). A similar thing is valid for dr.
+
+=> Wait. If I have to do O(n^3d) K⁺dKK⁺ anyways, then doing O(n^2d) vjp(K⁺dKK⁺)
+does not really solve anything. I can do
+
+    K = ZZ'
+    K⁺ = Z⁺'Z⁺
+    tr(K⁺dKK⁺dK) = tr(Z⁺'Z⁺dKZ⁺'Z⁺dK) = tr(Z⁺dKZ⁺'Z⁺dKZ⁺') =
+        Y = Z⁺dKZ⁺'
+    = tr(YY) = Y_ij Y_ji = Y.flat @ Y.T.flat (what would einsum do?)
+
+In [12]: %timeit jnp.einsum('ij,ji', m, m)
+1.68 ms ± 5.85 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+
+In [13]: %timeit jnp.sum(m * m.T)
+1.48 ms ± 11.4 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+
+In [17]: %timeit m.flatten() @ m.T.flatten()
+2.36 ms ± 38 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 
 2023-03-02
 ==========
@@ -3191,3 +3214,18 @@ TODO tomorrow:
 
 Next todo: test batcher on ordinary arrays (DONE), then test in on
 StructuredArray (DONE).
+
+2023-03-05
+==========
+
+Looks like scipy.optimize.LbfgsInvHessProduct.todense
+
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.LbfgsInvHessProduct.todense.html#scipy.optimize.LbfgsInvHessProduct.todense
+
+    https://github.com/scipy/scipy/blob/c1ed5ece8ffbf05356a22a8106affcd11bd3aee0/scipy/optimize/_lbfgsb_py.py#L474-L494
+
+is O(n^3) when it could be O(n^2). The update step can be written as:
+
+    H - rho ((Hy)s') - rho ((Hy)s')' + rho^2 |y|^2 ss'
+
+Maybe do a issue+pr to scipy.

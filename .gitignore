@@ -1,6 +1,7 @@
 # My stuff
 pyenv
 *.png
+*.sublime-workspace
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
