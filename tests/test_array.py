@@ -48,10 +48,24 @@ def fill_array_at_random(x, rng):
             fill_array_at_random(x[name], rng)
     elif x.dtype == bool:
         x[...] = rng.integers(0, 2, x.shape)
-    elif np.issubdtype(x.dtype, np.number):
+    elif np.issubdtype(x.dtype, np.integer):
+        info = np.iinfo(x.dtype)
+        x[...] = rng.integers(info.min, info.max, x.shape, dtype=x.dtype, endpoint=True)
+    elif np.issubdtype(x.dtype, np.floating):
         x[...] = 100 * rng.standard_normal(x.shape)
+    elif np.issubdtype(x.dtype, np.character):
+        basetype = x.dtype.type
+        size = x.dtype.itemsize // np.dtype((basetype, 1)).itemsize
+        total = x.size * size
+        data = rng.integers(1, 128, total, dtype='u1')
+        data = data.view((np.bytes_, size))
+        data = data.astype((basetype, size))
+        x[...] = data.reshape(x.shape)
+    elif x.dtype == object:
+        for idx in np.ndindex(*x.shape):
+            x[idx] = dict(idx=idx)
     else:
-        pass
+        raise NotImplementedError
 
 def random_array(shape, dtype, rng=rng):
     x = np.empty(shape, dtype)

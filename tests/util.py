@@ -34,6 +34,16 @@ def assert_array_equal(*args):
         assert all(b.dtype.names == a.dtype.names for b in args)
         for n in a.dtype.names:
             assert_array_equal(*(x[n] for x in args))
+    elif isinstance(a, np.ndarray) and all(np.issubdtype(b.dtype, np.character) for b in args):
+        # old versions of numpy do not compare as equal strings with different
+        # allocated space
+        basetype = a.dtype.type
+        assert all(b.dtype.type == basetype for b in args) # check it's the same kind of string type
+        basesize = np.dtype((basetype, 1)).itemsize
+        maxsize = max(b.dtype.itemsize // basesize for b in args)
+        newtype = np.dtype((basetype, maxsize))
+        args = (b.astype(newtype) for b in args)
+        np.testing.assert_equal(*args)
     else:
         np.testing.assert_equal(*args)
 

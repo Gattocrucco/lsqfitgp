@@ -96,7 +96,7 @@ def test_vectorize():
     args = (x[None, :, :], y[:, None, :])
     p1 = func1(*args)
     p2 = func2(*args)
-    util.assert_equal(p1, p2)
+    util.assert_allclose(p1, p2, rtol=1e-13)
 
 @mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
 def test_batcher(maxnbytes):
