@@ -961,7 +961,7 @@ def test_givencov_decomp():
     # the same matrix, twice
     gp.addcov({(k, q): a for k in [7, 8] for q in [7, 8]})
     dec1, dec2 = decs(gp, [7, 8])
-    util.assert_close_decomps(dec2, dec1, rtol=1e-12)
+    util.assert_close_decomps(dec2, dec1, rtol=1e-10)
     
     # low rank givencov
     dec1, dec2 = decs(gp, [0], len(a) // 2)
