@@ -22,7 +22,7 @@
 COVERAGE_SUFFIX=
 
 RELEASE_TARGETS = tests examples docscode docs
-TARGETS = upload release $(RELEASE_TARGETS) covreport
+TARGETS = upload release $(RELEASE_TARGETS) covreport resetenv
 
 .PHONY: all $(TARGETS)
 
@@ -39,12 +39,12 @@ all:
 	@echo "7) add new version to index, commit and push"
 
 upload:
-	twine upload dist/*
+	python3 -m twine upload dist/*
 
 release: $(RELEASE_TARGETS)
 	test -d build && rm -r build || test -
 	test -d dist && rm -r dist || test -
-	python setup.py sdist bdist_wheel
+	python3 -m build
 
 PY = MPLBACKEND=agg coverage run
 TESTSPY = COVERAGE_FILE=.coverage.tests$(COVERAGE_SUFFIX) $(PY) --context=tests$(COVERAGE_SUFFIX)
@@ -88,14 +88,3 @@ docs: gendocs
 covreport:
 	coverage combine
 	coverage html
-
-# TODO write a rule that
-# - removes an eventual preexisting venv
-# - creates a new venv
-# - installs requirements
-# - activate the venv
-# and also a rule just to activate the venv
-# so the hierarchy is:
-# 1 true rule to create the venv
-# 2 phony rule to activate it, depends on 1
-# 3 phony rule to delete the venv, recreate and activate it

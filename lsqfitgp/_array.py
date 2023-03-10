@@ -102,6 +102,7 @@ class StructuredArray:
                 (name, x.dtype, x.shape[ndim:])
                 for name, x in d.items()
             ])
+            # TODO infer the least common head shape instead of counting dims
 
         if s is None:
             # infer the shape from the arrays in the dictionary

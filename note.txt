@@ -3250,3 +3250,8 @@ To compute a Fisher-vector product when there are many parameters, do
 
     tr(K+ dK K+ dK) v =
     = K_vjp(K+ K_jvp(v) K+)
+
+2023-03-10
+==========
+
+pdf4 fails with jax 0.4.6, I think it's skipifabstract again.

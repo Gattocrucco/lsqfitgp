@@ -125,9 +125,12 @@ class skipifabstract:
         if exit or exc_type in (jax.errors.ConcretizationTypeError, jax.errors.TracerArrayConversionError):
             return True
         
-        if exc_type is IndexError and traceback.extract_tb(tb)[-1].name == 'arg_info_pytree': # pragma: no cover
+        weird_cond = exc_type is IndexError and (
+            traceback.extract_tb(tb)[-1].name in ('arg_info_pytree', '_origin_msg'),
+        )
+        if weird_cond: # pragma: no cover
             # TODO this ignores a jax internal bug I don't understand, appears
-            # in examples/pdf4.py, and not on CI
+            # in examples/pdf4.py
             return True
 
 # TODO make stop_hessian work in reverse mode

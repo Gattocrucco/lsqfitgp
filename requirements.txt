@@ -11,10 +11,10 @@ pytest
 pytest-xdist
 coverage
 twine
-wheel
 ipython
 ipdb
 mpmath
 pandas
 polars
 pyarrow
+build
