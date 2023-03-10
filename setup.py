@@ -1,6 +1,6 @@
 # lsqfitgp/setup.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -50,8 +50,8 @@ setuptools.setup(
     install_requires=[
         'numpy>=1.20', # first version with broadcast_shapes
         'scipy>=1.5', # minimum required by jax 0.3.17
-        'jax>=0.4.1', # first supporting type dispatching on jax arrays
-        'jaxlib>=0.4.1',
+        'jax>=0.4.6', # first with optimized vectorize
+        'jaxlib>=0.4.6',
         'gvar>=11.10.1', # first supporting gvar.gvar(x, cov) with readonly cov
     ]
 )

@@ -37,7 +37,6 @@ from jax import lax
 from jax import numpy as jnp
 from jax import tree_util
 
-from ._vectorize import vectorize
 from ._batcher import batchufunc
 
 def makejaxufunc(ufunc, *derivs):
@@ -179,10 +178,6 @@ def value_and_ops(f, *ops, has_aux=False, **kw):
         else:
             return aux + (y,)
     return lastfop
-
-# def tree_all(predicate, *trees):
-#     pred = tree_util.tree_map(predicate, *trees)
-#     return tree_util.tree_reduce(lambda acc, p: acc and p, pred, True)
 
 def float_type(*args):
     t = jnp.result_type(*args)

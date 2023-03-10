@@ -51,8 +51,9 @@ def _asfloat(x):
         return x
 
 def _isscalar(x):
-    return jnp.ndim(x) == 0 and not isinstance(x, CrossKernel)
+    return not isinstance(x, CrossKernel) and jnp.ndim(x) == 0
 
+# TODO reimplement with tree_reduce, closuring ndim to recognize shaped fields
 def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreductor=None):
     x = args[0]
     if x.dtype.names is None:
@@ -64,9 +65,9 @@ def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreducto
             reckw = dict(reductor=reductor, npreductor=npreductor, jnpreductor=jnpreductor)
             result = _reduce_recurse_dtype(fun, *recargs, **reckw)
             
-            dtype = x.dtype.fields[name][0]
-            if dtype.subdtype is not None: # has shape
-                axis = tuple(range(-len(dtype.shape), 0))
+            dtype = x.dtype[name]
+            if dtype.ndim:
+                axis = tuple(range(-dtype.ndim, 0))
                 red = jnpreductor if isinstance(result, jnp.ndarray) else npreductor
                 result = red(result, axis=axis)
             
@@ -86,6 +87,7 @@ def prod_recurse_dtype(fun, *args):
     times = lambda a, b: a * b
     return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=numpy.prod, jnpreductor=jnp.prod)
 
+# TODO reimplement with tree_map
 def transf_recurse_dtype(transf, x, *args):
     if x.dtype.names is None:
         return transf(x, *args)

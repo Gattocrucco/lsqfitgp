@@ -2871,7 +2871,20 @@ large matrices, since optimization requires taking it into account):
         covariance I expect B and K to come from a pos def matrix so they are
         coherent
     ginv_diagquad(A) => diag(A'K⁻A) (for the posterior variance)
-    minus_log_normal_density(r, dr_vjp, dK_vjp, dr, dK, value: bool, gradient: bool, fisher: bool)
+    minus_log_normal_density(
+        r: 1d array,      # the residuals (data - prior mean)
+        dr_vjp: callable, # x -> x_i ∂r_i/∂p_j,   gradient and fishvec
+        dK_vjp: callable, # x -> x_ij ∂K_ij/∂p_k, gradient and fishvec
+        dr_jvp: callable, # x -> ∂r_i/∂r_j x_j,  fishvec
+        dr_jvp: callable, # x -> ∂K_ij/∂p_k x_k, fishvec
+        dr: 2d array,     # ∂r_i/∂p_j,  fisher
+        dK: 3d array,     # ∂K_ij/∂p_k, fisher
+        vec: 1d array,    # input vector of fishvec, same size as params
+        value: bool,
+        gradient: bool,
+        fisher: bool,
+        fishvec: bool,
+    )
         This computes on request
             value: 1/2 tr(KK⁺) log 2π
                  + 1/2 tr(I-KK⁺) log 2π
@@ -2884,11 +2897,11 @@ large matrices, since optimization requires taking it into account):
             fisher: 1/2 tr(K⁺dK(K⁺+2(I-KK⁺)/ε)d'K)
                   - 2 tr(K⁺dK(I-KK⁺)d'KK⁺)
                   + dr'(K⁺+(I-KK⁺)/ε)d'r
-        dr_vjp and dK_vjp are vector-jacobian products, while dr and dK are full
-        jacobians (needed for fisher only). There should be options for omitting
-        the pieces with ε. I also need a way to make densities with different
-        values of ε comparable with each other (may not be possible, if it is,
-        it probably requires a history of ranks and ε).
+            fishvec: fisher matrix times vec
+        There should be options for omitting the pieces with ε. I also need a
+        way to make densities with different values of ε comparable with each
+        other (may not be possible, if it is, it probably requires a history of
+        ranks and ε).
     correlate(x)
         Zx where K = ZZ'.
     back_correlate(X):
@@ -3229,3 +3242,11 @@ is O(n^3) when it could be O(n^2). The update step can be written as:
     H - rho ((Hy)s') - rho ((Hy)s')' + rho^2 |y|^2 ss'
 
 Maybe do a issue+pr to scipy.
+
+2023-03-07
+==========
+
+To compute a Fisher-vector product when there are many parameters, do
+
+    tr(K+ dK K+ dK) v =
+    = K_vjp(K+ K_jvp(v) K+)

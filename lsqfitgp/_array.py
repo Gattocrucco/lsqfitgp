@@ -31,6 +31,7 @@ __all__ = [
     'asarray',
 ]
 
+# TODO use register_pytree_with_keys
 @tree_util.register_pytree_node_class
 class StructuredArray:
     """
@@ -268,6 +269,7 @@ class StructuredArray:
         }
         return self._array(shape, self.dtype, d)
     
+    # TODO implement flatten_with_keys
     def tree_flatten(self):
         """ JAX PyTree encoder. See `jax.tree_util.tree_flatten`. """
         children = tuple(self._dict[key] for key in self.dtype.names)
@@ -389,35 +391,6 @@ class StructuredArray:
                 idx += n
         return out, idx
 
-    def transform(self, transf):
-        """
-        
-        Transform the array field-by-field.
-
-        Parameters
-        ----------
-        transf : callable
-            A function array -> array that is applied to each (sub)field of the
-            array. It must preserve the shape and dtype of the input array.
-
-        Return
-        ------
-        transformed_array : StructuredArray
-            A copy of the array where each field has been transformed with
-            `transf`.
-
-        """
-        d = {}
-        for name, value in self._dict.items():
-            if hasattr(value, 'transform'):
-                result = value.transform(transf)
-            else:
-                result = transf(value)
-            assert result.shape == value.shape
-            assert result.dtype == value.dtype
-            d[name] = self._readonlyview_wrapifstructured(result)
-        return self._array(self.shape, self.dtype, d)
-
 @StructuredArray._implements(numpy.broadcast_to)
 def broadcast_to(x, shape, **kw):
     """
@@ -472,7 +445,7 @@ def asarray(x, dtype=None):
 def _asarray_jaxifpossible(x):
     x = asarray(x)
     if x.dtype.names:
-        return StructuredArray(x).transform(_asarray_jaxifpossible)
+        return tree_util.tree_map(_asarray_jaxifpossible, StructuredArray(x))
     if isinstance(x, numpy.ndarray):
         try:
             return jnp.asarray(x)

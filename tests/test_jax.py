@@ -86,18 +86,6 @@ def test_elementwise_grad_6():
     y2 = jax.jacrev(jax.vmap(jax.grad(f, 0)), 1)(x, x)
     util.assert_equal(y, y2)
 
-def test_vectorize():
-    def func(x, y):
-        return x @ y
-    kw = dict(signature='(p),(p)->()')
-    func1 = jnp.vectorize(func, **kw)
-    func2 = _patch_jax.vectorize(func, **kw)
-    x, y = rng.standard_normal((2, 20, 7))
-    args = (x[None, :, :], y[:, None, :])
-    p1 = func1(*args)
-    p2 = func2(*args)
-    util.assert_allclose(p1, p2, rtol=1e-13)
-
 @mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
 def test_batcher(maxnbytes):
     def func(x, y):

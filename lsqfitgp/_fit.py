@@ -493,39 +493,46 @@ class empbayes_fit(Logger):
         # correction on the residuals term and invent something for the logdet
         # term.
     
-        # TODO it raises very often with "Desired error not necessarily
-        # achieved due to precision loss.". I tried doing a forward grad on
-        # the logdet but does not fix the problem. I still suspect it's the
-        # logdet, maybe the value itself and not the derivative, because as the
-        # matrix changes the regularization can change a lot the value of the
-        # logdet. How do I stabilize it?
+        # TODO it raises very often with "Desired error not necessarily achieved
+        # due to precision loss.". I tried doing a forward grad on the logdet
+        # but does not fix the problem. I still suspect it's the logdet, maybe
+        # the value itself and not the derivative, because as the matrix changes
+        # the regularization can change a lot the value of the logdet. How do I
+        # stabilize it? => scipy's l-bfgs-b seems to fail the linear search less
+        # often
         
         # TODO compute the logGBF for the whole fit (see the gpbart code)
         
-        # TODO instead of recomputing everything many times, I can use nested
-        # has_aux appropriately to compute all the things I need at once. The
-        # problem is that scipy currently does not allow me to provide a
-        # function that computes value, jacobian and hessian at once, only value
-        # and jacobian. => Another problem is that the jacobian and hessian
-        # need not be computed all the times, see scipy issue #9265. Check
-        # if using value_and_jac is more efficient.
-        
-        # TODO now that I have Decomposition.matrix(), I could write
-        # by hand the gradient and Fisher matrix expressions to save on jax
-        # tracing time. => wait for the new linalg system => don't wait, make
-        # it non-crap right away!
-
         # TODO empbayes_fit(autoeps=True) tries to double epsabs until the
         # minimization succedes, with some maximum number of tries.
         # autoeps=dict(maxrepeat=5, increaseby=2, initial=1e-16,
         # startfromzero=True) allows to configure the algorithm.
 
         # TODO empbayes_fit(maxiter=100) sets the maximum number of minimization
-        # iterations. maxiter=dict (iter=100, calls=200, callsperiter=10) allows
+        # iterations. maxiter=dict(iter=100, calls=200, callsperiter=10) allows
         # to configure it more finely. The calls limits are cumulative on all
         # functions (need to make a class counter in _CountCalls), I can
         # probably implement them by returning nan when the limit is surpassed,
         # I hope the minimizer stops immediately on nan (test this).
+
+        # TODO can I approximate the hessian with only function values and no
+        # gradient, i.e., when using nelder-mead? => See Hare (2022), although I
+        # would not know how to apply it properly to the optimization history.
+        # Somehow I need to keep only the "last" iterations.
+
+        # TODO is there a better algorithm than lbfgs for inaccurate functions?
+        # consider SC-BFGS (https://github.com/frankecurtis/SCBFGS). See Basak 
+        # (2022). And NonOpt (https://github.com/frankecurtis/NonOpt).
+
+        # TODO can I estimate the error on the likelihood with the matrices? It
+        # requires the condition number. Basak (2022) gives wide bounds. I could
+        # try an upper bound and see how it compares to the true error, assuming
+        # that the matrix was as ill-conditioned as possible, i.e., use eps as
+        # the lowest eigenvalue, and gershgorin as the highest one.
+
+        # TODO look into jaxopt: it has improved a lot since the last time I saw
+        # it. In particular, it implements l-bfgs and has a "do not stop on
+        # failed line search" option. And it probably supports float32.
     
     class _CountCalls:
         """ wrap a callable to count calls """
