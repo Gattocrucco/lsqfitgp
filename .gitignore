@@ -2,6 +2,7 @@
 pyenv
 *.png
 *.sublime-workspace
+playground
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

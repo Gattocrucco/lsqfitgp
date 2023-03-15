@@ -3255,3 +3255,130 @@ To compute a Fisher-vector product when there are many parameters, do
 ==========
 
 pdf4 fails with jax 0.4.6, I think it's skipifabstract again.
+
+..........
+
+CI fails, only on ubuntu old:
+
+FAILED tests/test_linalg.py::TestBlock_EigCutFullRank::test_quad_vec_jac_fwd_jit - ValueError: array must not contain infs or NaNs
+
+FAILED tests/test_linalg.py::TestChol::test_solve_matrix_jac_fwd_da - AssertionError: matrices actual and desired are not close in 2-norm
+norm(desired) = 1.3
+norm(actual - desired) = 0.061  (atol = 0)
+ratio = 0.045  (rtol = 1e-06)
+
+FAILED tests/test_linalg.py::TestChol::test_solve_matrix_hess_da - AssertionError: matrices actual and desired are not close in 2-norm
+norm(desired) = 2.5
+norm(actual - desired) = 2.5  (atol = 0)
+ratio = 1  (rtol = 1e-06)
+
+FAILED tests/test_linalg.py::TestChol::test_quad_matrix_matrix_jac_fwd_da - AssertionError: matrices actual and desired are not close in 2-norm
+norm(desired) = 11
+norm(actual - desired) = 10  (atol = 0)
+ratio = 0.91  (rtol = 1e-06)
+
+FAILED tests/test_linalg.py::TestChol::test_quad_matrix_matrix_hess_da - AssertionError: matrices actual and desired are not close in 2-norm
+norm(desired) = 2.2
+norm(actual - desired) = 2.2  (atol = 0)
+ratio = 1  (rtol = 1e-06)
+
+FAILED tests/test_linalg.py::TestChol::test_logdet_hess_da - AssertionError: matrices actual and desired are not close in 2-norm
+norm(desired) = 0.36
+norm(actual - desired) = 0.36  (atol = 1e-60)
+ratio = 1  (rtol = 1e-05)
+
+So it's all of the 5 _da tests failing for Chol. What??
+
+I really don't know what's going on. I'll put my head under the sand and hope
+for this to go away. (I really need to write the new linalg...)
+
+........
+
+Idea on pseudoinversion with Cholesky:
+
+    K = LL'
+    L⁺ ≈ L'(LL' + Iε)⁻¹
+
+Nope not useful.
+
+    (L + Iε)(L + Iε)'
+        = LL' + Lε + L'ε + Iε²
+        ≈ LL' + ε(L + L')
+
+Noope.
+
+Let L = f(K) such that K = LL'. I am forced to compute f(K + Iε), and I want to
+obtain f(K) from it afterwards.
+
+    f(K + Iε) ≈ f(K) + ε ∂f/∂K I
+
+Could I do this with the formula for the cholesky jvp/vjp?
+
+    f(K) ≈ f(K + Iε) - f_jvp(I)
+
+From Murray (2016, eq. 6-8):
+
+    ∂L = LΦ(L⁻¹∂KL'⁻¹)
+    Φ(A) := lower triangular part and halve the diagonal
+
+    f_jvp(I) = LΦ(L⁻¹L'⁻¹)
+
+Better to write as a difference:
+
+    K = K̃ + Iε = LL'
+    f(K̃) = f(K - Iε) = f(K) - ε f_jvp(I)
+    L̃ = L - ε LΦ(L⁻¹L'⁻¹) =: L - εLM (with M and LM lower triangular)
+    K̃⁺ = L̃⁺'L̃⁺
+    L̃⁺ = L̃'((L̃L̃' + Iε)⁻¹ + ε(L̃L̃' + Iε)⁻² + O(ε²)) =
+       = (L - εLM)' K⁻¹ (I + εK⁻¹ + O(ε²)) =
+       = (L' - εM'L') L'⁻¹L⁻¹ (I + εK⁻¹ + O(ε²)) =
+       = (I - εM') L⁻¹ (I + εL'⁻¹L⁻¹ + O(ε²)) =
+       = L⁻¹ - εM'L⁻¹ + εL⁻¹L'⁻¹L⁻¹ + O(ε²) =
+       = L⁻¹ + ε(L⁻¹L'⁻¹ - M')L⁻¹ + O(ε²) =
+       = L⁻¹ + εML⁻¹ + O(ε²)
+
+Decomposition steps:        (times for size 10000)
+    0   chol    K = LL'     6s
+    1   trimat  L⁻¹ I       5s
+    2   trimat  [1] L'⁻¹    5s
+
+Note: matmul takes 10s.
+
+Quad steps:
+    0   trivec  L⁻¹ v
+    1   matvec  M' [0]
+
+So it's 3x cholesky. Accuracy? Since I decompose directly the matrix, it should
+be accurate I guess? It depends if the εLM correction is accurate. M gets 1/ε
+terms from the forward substitutions, that then get reduced to O(1) multiplying
+by ε. That does not smell accurate. I'll see.
+
+Is there a way to do compute Φ(L⁻¹L'⁻¹)v without evaluating Φ(L⁻¹L'⁻¹)?
+
+    Φ(L⁻¹L'⁻¹)_ij v_j
+        = L⁻¹_ik L⁻¹_jk v_j δ_j≤i 2^-δ_ij
+
+No, I can't see it.
+
+(X - Φ(X))_ij = X_ij - [X_ij if i > j, 1/2 X_ii if i = j, 0 if i < j] =
+              = [0 if i > j, 1/2 X_ii if i = j, X_ij if i < j] =
+              = Φ(X')'
+
+(L⁻¹L'⁻¹)' = L⁻¹L'⁻¹
+
+2023-03-14
+==========
+
+=> tested in playground/pinv/pchol, does not seem to work well. Anyway, PSTRF
+does pivoted cholesky in 2x time and is rank revealing. => I think there's a
+simple pinv formula for a block singular matrix like the pivoted cholesky
+factor, I could do clean pinv with 2x cholesky time.
+
+2023-03-15
+==========
+
+I added the conversion hess_inv lbfgs -> bfgs, it works fine. Then I tried
+setting l-bfgs-b as default, but it's still not fine when the linear search
+fails, while bfgs from the start gives a sensible inverse hessian. Maybe lfbgs
+does not keep the updates in that case? I have to find a way to fix that. If
+it's missing updates, I could keep my own buffer of gradients and values.

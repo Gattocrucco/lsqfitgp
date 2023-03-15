@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+# TODO maybe use sympy as reference, since it's better maintained than mpmath
+
 import sys
 
 import jax

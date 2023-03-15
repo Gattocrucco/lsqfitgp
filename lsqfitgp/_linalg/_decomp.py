@@ -773,6 +773,10 @@ def _gershgorin_eigval_bound(mat):
     """
     return jnp.max(jnp.sum(jnp.abs(mat), axis=1))
 
+# TODO consider scipy.linalg.lapack.dpstrf that does cholesky pivoted up to a
+# remainder nondef block. on 1000x1000 it takes 2.1x cholesky worst case, i.e.,
+# when it decomposes the full matrix, so it's fast. 
+
 class Chol(DecompAutoDiff):
     """
     Cholesky decomposition.

@@ -167,10 +167,8 @@ def test_method():
         kws = [
             dict(method='nograd', minkw=dict(options=dict(xatol=1e-6))),
             dict(method='gradient'),
-            dict(method='hessian'),
+            dict(method='gradient', minkw=dict(method='l-bfgs-b')),
             dict(method='fisher'),
-            dict(method='fisher'),
-            dict(method='hessmod'),
         ]
         for kw in kws:
             kwargs = dict(data=data)

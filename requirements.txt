@@ -12,7 +12,6 @@ pytest-xdist
 coverage
 twine
 ipython
-ipdb
 mpmath
 pandas
 polars

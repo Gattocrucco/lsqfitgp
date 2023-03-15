@@ -1453,7 +1453,10 @@ class GP:
         if raw and outkeys is not None:
             return {
                 (row, col):
-                self._covblock(row, col).reshape(self._elements[row].shape + self._elements[col].shape)
+                self._covblock(row, col).reshape(
+                    self._elements[row].shape +
+                    self._elements[col].shape
+                )
                 for row in outkeys
                 for col in outkeys
             }
@@ -1684,9 +1687,9 @@ class GP:
             return meandict, covdict
             
         elif raw:
-            assert len(outkeys) == 1
-            mean = mean.reshape(self._elements[outkeys[0]].shape)
-            cov = cov.reshape(2 * self._elements[outkeys[0]].shape)
+            outkey, = outkeys
+            mean = mean.reshape(self._elements[outkey].shape)
+            cov = cov.reshape(2 * self._elements[outkey].shape)
             return mean, cov
         
         elif not keepcorr:
@@ -1699,8 +1702,8 @@ class GP:
                 for key, slic in zip(outkeys, outslices)
             })
         else:
-            assert len(outkeys) == 1
-            return flatout.reshape(self._elements[outkeys[0]].shape)
+            outkey, = outkeys
+            return flatout.reshape(self._elements[outkey].shape)
         
     def predfromfit(self, *args, **kw):
         """

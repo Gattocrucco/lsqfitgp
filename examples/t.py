@@ -27,8 +27,6 @@
 
 """
 
-import time as systime
-
 import lsqfitgp as lgp
 from matplotlib import pyplot as plt
 from jax import numpy as jnp
@@ -36,24 +34,29 @@ import numpy as np
 import gvar
 
 time = np.arange(21)
-x = np.empty((2, len(time)), dtype=[
-    ('time', float),
-    ('label', int)
-])
-x['time'][0] = time
 delay = 20
-x['time'][1] = time - delay
-x['label'][0] = 0
-x['label'][1] = 1
+
+def makex(time, delay):
+    x = np.empty((2, time.size), dtype=[
+        ('time', float),
+        ('label', int)
+    ])
+    x['time'][0] = time
+    x['time'][1] = time - delay
+    x['label'][0] = 0
+    x['label'][1] = 1
+    return lgp.StructuredArray(x)
+
+x = makex(time, delay)
+
 label_names = ['gatti_comprati', 'gatti_morti']
 
 function = lambda x: np.exp(-1/2 * ((x - 10) / 5)**2)
-data_error = 0.05
-data_mean = function(x['time']) + data_error * np.random.randn(*x.shape)
+data_mean = function(x['time'])
 data_mean[1] += 0.02 * time
-data = gvar.gvar(data_mean, np.full_like(data_mean, data_error))
+data = gvar.gvar(data_mean, np.full_like(data_mean, 0.05))
+data = gvar.make_fake_data(data)
 
-x = lgp.StructuredArray(x)
 def makegp(params):
     kernel = lgp.Cauchy(scale=params['time_scale'], dim='time', beta=2)
     kernel *= lgp.ExpQuad(scale=params['label_scale'], dim='label')
@@ -62,49 +65,37 @@ def makegp(params):
     gp.addx(xmod, 'A')
     return gp
 
-start = systime.time()
 hyperprior = gvar.BufferDict({
     'log(time_scale)': gvar.log(gvar.gvar(10, 10)),
-    'log(label_scale)': gvar.log(gvar.gvar(10, 10)),
-    'delay': gvar.gvar(10, 20)
+    'log(label_scale)': gvar.log(gvar.gvar(5, 5)),
+    'delay': gvar.gvar(5, 20)
 })
 
-fit = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, jit=True)
-end = systime.time()
+fit = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, jit=True, verbosity=2)
 
-print('minimization time = {:.2g} sec'.format(end - start))
-print('time scale = {}'.format(fit.p['time_scale']))
+print(f'time scale = {fit.p["time_scale"]}')
 corr = lgp.ExpQuad(scale=gvar.mean(fit.p['label_scale']))(0, 1)
-print('correlation = {:.3g} (equiv. scale = {})'.format(corr, fit.p['label_scale']))
-print('delay = {}'.format(fit.p['delay']))
-
-gp = makegp(gvar.mean(fit.p))
-
-xpred = np.empty((2, 100), dtype=x.dtype)
-time_pred = np.linspace(np.min(time), np.max(time) + 1.5 * (np.max(time) - np.min(time)), xpred.shape[1])
-xpred['time'][0] = time_pred
-xpred['time'][1] = time_pred - gvar.mean(fit.p['delay'])
-xpred['label'][0] = 0
-xpred['label'][1] = 1
-gp.addx(xpred, 'B')
-
-pred = gp.predfromdata({'A': data}, 'B')
+print(f'correlation = {corr:.3g} (equiv. scale = {fit.p["label_scale"]})')
+print(f'delay = {fit.p["delay"]} (true = {delay})')
 
 fig, ax = plt.subplots(num='t', clear=True)
 
-colors = []
-for i in range(2):
-    m = gvar.mean(pred[i])
-    s = gvar.sdev(pred[i])
-    polys = ax.fill_between(time_pred, m - s, m + s, alpha=0.5, label=label_names[i])
-    colors.append(polys.get_facecolor()[0])
+time_pred = np.linspace(np.min(time), np.max(time) + 1.5 * (np.max(time) - np.min(time)), 100)
 
-for sample in gvar.raniter(pred, 3):
-    for i in range(2):
-        ax.plot(time_pred, sample[i], color=colors[i])
+for style, params_sample in zip(['-', '--'], gvar.raniter(fit.p, 2)):
+    
+    gp = makegp(params_sample)
+    xpred = makex(time_pred, params_sample['delay'])
+    gp.addx(xpred, 'B')
+    pred = gp.predfromdata({'A': data}, 'B')
+
+    for sample in gvar.raniter(pred, 1):
+        for i in range(2):
+            ax.plot(time_pred, sample[i], color=f'C{i}', alpha=0.5, label=label_names[i], linestyle=style)
+    label_names = [None, None]
 
 for i in range(2):
-    ax.errorbar(time, gvar.mean(data[i]), yerr=gvar.sdev(data[i]), fmt='.', color=colors[i], alpha=1)
+    ax.errorbar(time, gvar.mean(data[i]), yerr=gvar.sdev(data[i]), fmt='.', color=f'C{i}')
 
 ax.legend(loc='best')
 ax.set_xlabel('time')

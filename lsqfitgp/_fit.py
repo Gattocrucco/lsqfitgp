@@ -120,7 +120,8 @@ class empbayes_fit(Logger):
             If True (default), raise an error when the minimization fails.
             Otherwise, use the last point of the minimization as result.
         minkw : dict, optional
-            Keyword arguments passed to `scipy.optimize.minimize`.
+            Keyword arguments passed to `scipy.optimize.minimize`, overwrites
+            values specified by `empbayes_fit`.
         gpfactorykw : dict, optional
             Keyword arguments passed to `gpfactory`, and also to `data` if it
             is a callable.
@@ -134,15 +135,9 @@ class empbayes_fit(Logger):
                 Use a gradient-free method.
             'gradient'
                 Use a gradient-only method (default).
-            'hessian'
-                Use a Newton method with the Hessian.
             'fisher'
                 Use a Newton method with the Fisher information matrix plus
                 the hyperprior precision matrix.
-            'hessmod'
-                Use a Newton method with a modified Hessian where the
-                second derivatives of the prior covariance matrix w.r.t. the
-                hyperparameters are assumed to be zero.
         initial : str, scalar, array, dictionary of scalars/arrays
             Starting point for the minimization, matching the format of
             `hyperprior`, or one of the following options:
@@ -169,9 +164,6 @@ class empbayes_fit(Logger):
             Method to estimate the posterior covariance matrix of the
             hyperparameters:
     
-            'hess'
-                Use the hessian of the log posterior in the MAP as precision
-                matrix.
             'fisher'
                 Use the Fisher information in the MAP, plus the prior precision,
                 as precision matrix.
@@ -257,14 +249,14 @@ class empbayes_fit(Logger):
         def dojit(f):
             return jax.jit(f) if jit else f
         if jit:
-            self.log('compile functions with jax jit')
+            self.log('compile functions with jax jit', 2)
         
         firstcall = [None]
         
         @dojit
-        def fun(p, *, stop_hessian=False):
+        def fun(p):
             gp, args = make(p)
-            decomp, ymean = gp._prior_decomp(*args, stop_hessian=stop_hessian, **mlkw)
+            decomp, ymean = gp._prior_decomp(*args, **mlkw)
 
             if firstcall:
                 firstcall.pop()
@@ -280,12 +272,6 @@ class empbayes_fit(Logger):
         jactr = jax.jacfwd if forward else jax.jacrev
         fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jactr))
         jac = dojit(jactr(fun))
-        if method == 'hessmod':
-            hess = dojit(jax.jacfwd(jax.jacfwd(functools.partial(fun, stop_hessian=True))))
-            # can't change inner jacfwd to jacrev due to jax issue #10994
-            # (stop_hessian)
-        else:
-            hess = dojit(jax.jacfwd(jactr(fun)))
                     
         if not callable(data):
             
@@ -326,14 +312,14 @@ class empbayes_fit(Logger):
         if method == 'fisher':
             fisherprec = dojit(fisherprec)
             # fisherprec may be used once for estimation of the posterior
-            # precision, so do not jit unless it's used multiple times since
-            # jit is somewhat slow
+            # precision, so do not jit unless it's used multiple times since jit
+            # is somewhat slow (TODO I'm not sure this is true, maybe I observed
+            # another bottleneck and assumed it was jit)
         
         # wrap functions to count number of calls
         fun = self._CountCalls(fun)
         fun_and_jac = self._CountCalls(fun_and_jac)
         jac = self._CountCalls(jac)
-        hess = self._CountCalls(hess)
         fisherprec = self._CountCalls(fisherprec)
         
         # prepare minimizer arguments
@@ -345,31 +331,19 @@ class empbayes_fit(Logger):
             minargs.update(fun=fun, jac=None, method='nelder-mead')
         elif method == 'gradient':
             minargs.update(method='bfgs')
-            # l-bfgs-b is in general better but when it fails the linear search
-            # it gives up on the hessian and returns very large errors. bfgs
-            # instead returns something sensible even though it failed. I should
-            # use l-bfgs-b and learn to make my fits work (increase epsrel?)
-            # TODO fix the fits in the user guide, right now they don't really
-            # work. explain in the guide how to make them work explicitly. maybe
-            # keep raise=True then, and say something about linear search.
-        elif method == 'hessian':
-            minargs.update(hess=hess, method='trust-exact')
-            # TODO use trust-constr because it has more options?
         elif method == 'fisher':
             minargs.update(hess=fisherprec, method='dogleg')
             # dogleg requires positive definiteness
-        elif method == 'hessmod':
-            minargs.update(hess=hess, method='trust-exact')
+            # TODO use trust-constr because it has more options?
         else:
             raise KeyError(method)
-        self.log(f'minimization method {method!r}', 2)
+        self.log(f'method {method!r}', 2)
 
         functions = {
             'fun': fun,
             'jac': jac,
             'fun&jac': fun_and_jac,
             'fisher': fisherprec,
-            'hess': hess,
         }
         
         class Callback:
@@ -397,10 +371,12 @@ class empbayes_fit(Logger):
         if verbosity > 2:
             minargs.update(callback=Callback(self))
 
-        if not covariance in ('auto', 'fisher', 'hess', 'minhess', 'none'):
+        # check invalid argument before running minimizer
+        if not covariance in ('auto', 'fisher', 'minhess', 'none'):
             raise KeyError(covariance)
         
         minargs.update(minkw)
+        self.log(f'minimizer method {minargs["method"]!r}', 2)
         with self.loglevel:
             start = time.time()
             result = optimize.minimize(**minargs)
@@ -421,50 +397,8 @@ class empbayes_fit(Logger):
             else:
                 self.log(msg)
         
-        # determine method to compute posterior covariance
-        if covariance == 'auto':
-            if hasattr(result, 'hess_inv') or hasattr(result, 'hess'):
-                covariance = 'minhess'
-            else:
-                covariance = 'fisher'
-            # TODO maybe fisher should not be the default since it can be very
-            # slow right now, in particular with 'nograd' it could be unexpected
-            # that a derivative is computed
-        
         # compute posterior covariance of the hyperparameters
-        if covariance == 'fisher':
-            self.log('use fisher plus prior precision as precision', 2)
-            if method == 'fisher':
-                prec = result.hess
-            else:
-                prec = fisherprec(result.x)
-            cov = _linalg.EigCutFullRank(prec).inv()
-        elif covariance == 'hess':
-            self.log('use log posterior hessian as precision', 2)
-            if method == 'hess':
-                prec = result.hess
-            else:
-                prec = hess(result.x)
-            cov = _linalg.EigCutFullRank(prec).inv()
-        elif covariance == 'minhess':
-            if hasattr(result, 'hess_inv'):
-                self.log('use minimizer estimate of inverse hessian as covariance', 2)
-                cov = result.hess_inv
-                if hasattr(cov, 'todense'):
-                    # TODO the inverse hessian of l-bfgs-b is crap, I need to
-                    # have a working fisher for that to be usable. => idea: use
-                    # optimize.BFGS with the vectors contained in hess_inv to
-                    # build the bfgs inverse hessian after running l-bfgs-b.
-                    cov = cov.todense()
-            elif hasattr(result, 'hess'):
-                self.log('use minimizer hessian as precision', 2)
-                cov = _linalg.EigCutFullRank(result.hess).inv()
-            else:
-                raise RuntimeError('the minimizer did not return an estimate of the hessian')
-        elif covariance == 'none':
-            cov = numpy.full(result.x.size, numpy.nan)
-        else:
-            raise KeyError(covariance)
+        cov = self._posterior_covariance(method, covariance, result, fisherprec)    
         
         uresult = gvar.gvar(result.x, cov)
         
@@ -560,6 +494,10 @@ class empbayes_fit(Logger):
 
         @staticmethod
         def fmtcalls(method, functions):
+            """
+            format summary of number of calls
+            functions: dict[str, _CountCalls]
+            """
             def counts():
                 for name, func in functions.items():
                     if count := getattr(func, method)():
@@ -721,6 +659,60 @@ class empbayes_fit(Logger):
             cachedargs = (data,)
         
         return data, cachedargs
+
+    def _posterior_covariance(self, method, covariance, minimizer_result, fisher_func):
+        
+        if covariance == 'auto':
+            if hasattr(minimizer_result, 'hess_inv') or hasattr(minimizer_result, 'hess'):
+                covariance = 'minhess'
+            else:
+                covariance = 'fisher'
+            # TODO maybe fisher should not be the default since it can be very
+            # slow right now, in particular with 'nograd' it could be unexpected
+            # that a derivative is computed
+
+        if covariance == 'fisher':
+            self.log('use fisher plus prior precision as precision', 2)
+            if method == 'fisher':
+                prec = minimizer_result.hess
+            else:
+                prec = fisher_func(minimizer_result.x)
+            cov = _linalg.EigCutFullRank(prec).inv()
+
+        elif covariance == 'minhess':
+            if hasattr(minimizer_result, 'hess_inv'):
+                hessinv = minimizer_result.hess_inv
+                if isinstance(hessinv, optimize.LbfgsInvHessProduct):
+                    self.log(f'convert LBFGS({hessinv.n_corrs}) hessian inverse to BFGS as covariance', 2)
+                    cov = self._invhess_lbfgs_to_bfgs(hessinv)
+                    # TODO this still gives a too wide cov when the minimization
+                    # terminates due to bad linear search, is it because of
+                    # dropped updates? This is currently keeping me from setting
+                    # l-bfgs-b as default minimization method.
+                elif isinstance(hessinv, numpy.ndarray):
+                    self.log('use minimizer estimate of inverse hessian as covariance', 2)
+                    cov = hessinv
+            elif hasattr(minimizer_result, 'hess'):
+                self.log('use minimizer hessian as precision', 2)
+                cov = _linalg.EigCutFullRank(minimizer_result.hess).inv()
+            else:
+                raise RuntimeError('the minimizer did not return an estimate of the hessian')
+
+        elif covariance == 'none':
+            cov = numpy.full(minimizer_result.x.size, numpy.nan)
+
+        else:
+            raise KeyError(covariance)
+
+        return cov
+
+    @staticmethod
+    def _invhess_lbfgs_to_bfgs(lbfgs):
+        bfgs = optimize.BFGS()
+        bfgs.initialize(lbfgs.shape[0], 'inv_hess')
+        for i in range(lbfgs.n_corrs):
+            bfgs.update(lbfgs.sk[i], lbfgs.yk[i])
+        return bfgs.get_matrix()
 
     @staticmethod
     def _copyasarrayorbufferdict(x):
