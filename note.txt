@@ -3392,4 +3392,237 @@ dropped, without restoring previous values?
 I implemented a staged timer in empbayes_fit. I made it to work under jit by
 wrapping with pure_callback and passing through it a token value which is added
 to the result but has no effect. However this still does not work; I guess jit
-is reordering the computations.
+is reordering the computations. => fixed by passing intermediate results through
+the callback.
+
+..........
+
+CI failures:
+
+ubuntu-latest:
+
+    FAILED tests/test_linalg.py::TestBlock_EigCutFullRank::test_quad_vec_jac_fwd_jit - ValueError: array must not contain infs or NaNs
+    FAILED tests/test_linalg.py::TestChol::test_solve_matrix_jac_fwd_da - AssertionError: matrices actual and desired are not close in 2-norm
+    norm(desired) = 5.5
+    norm(actual - desired) = 5.2  (atol = 0)
+    ratio = 0.95  (rtol = 1e-06)
+    FAILED tests/test_linalg.py::TestChol::test_solve_matrix_hess_da - AssertionError: matrices actual and desired are not close in 2-norm
+    norm(desired) = 5.4
+    norm(actual - desired) = 5.4  (atol = 0)
+    ratio = 1  (rtol = 1e-06)
+    FAILED tests/test_linalg.py::TestChol::test_quad_matrix_matrix_jac_fwd_da - AssertionError: matrices actual and desired are not close in 2-norm
+    norm(desired) = 14
+    norm(actual - desired) = 6.1  (atol = 0)
+    ratio = 0.44  (rtol = 1e-06)
+    FAILED tests/test_linalg.py::TestChol::test_quad_matrix_matrix_hess_da - AssertionError: matrices actual and desired are not close in 2-norm
+    norm(desired) = 0.28
+    norm(actual - desired) = 0.28  (atol = 0)
+    ratio = 1  (rtol = 1e-06)
+    FAILED tests/test_linalg.py::TestChol::test_logdet_hess_da - AssertionError: matrices actual and desired are not close in 2-norm
+    norm(desired) = 0.24
+    norm(actual - desired) = 0.24  (atol = 1e-60)
+    ratio = 1  (rtol = 1e-05)
+
+ubuntu-20.04:
+
+    FAILED tests/test_fit.py::test_method - ValueError: failed to initialize intent(inout) array -- input not fortran contiguous
+
+        @util.tryagain
+        def test_method():
+        
+            hp = gvar.BufferDict({
+                'log(sdev)': gvar.log(gvar.gvar(1, 1))
+            })
+            x = np.linspace(0, 5, 10)
+            def gpfactory(hp):
+                gp = lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2)
+                gp.addx(x, 'x')
+                return gp
+            truehp = gvar.sample(hp)
+            truegp = gpfactory(truehp)
+            trueprior = truegp.prior()
+            data_fixed = gvar.sample(trueprior)
+            def data_variable(hp):
+                return {k: v + hp['log(sdev)'] for k, v in data_fixed.items()}
+        
+            for data in [data_fixed, data_variable]:
+                fits = []
+                kws = [
+                    dict(method='nograd', minkw=dict(options=dict(xatol=1e-6))),
+                    dict(method='gradient'),
+                    dict(method='gradient', minkw=dict(method='l-bfgs-b')),
+                    dict(method='fisher'),
+                ]
+                for kw in kws:
+                    kwargs = dict(data=data)
+                    kwargs.update(kw)
+                    kwargs.setdefault('minkw', {}).update(x0=truehp.buf)
+    >               fit = lgp.empbayes_fit(hp, gpfactory, **kwargs)
+
+    tests/test_fit.py:177: 
+    _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+    lsqfitgp/_fit.py:405: in __init__
+        result = optimize.minimize(**minargs)
+    /opt/hostedtoolcache/Python/3.8.16/x64/lib/python3.8/site-packages/scipy/optimize/_minimize.py:617: in minimize
+        return _minimize_lbfgsb(fun, x0, args, jac, bounds,
+    _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    fun = <scipy.optimize.optimize.MemoizeJac object at 0x7fbc7b6fe850>
+    x0 = array([-0.50046867]), args = ()
+    jac = <bound method MemoizeJac.derivative of <scipy.optimize.optimize.MemoizeJac object at 0x7fbc7b6fe850>>
+    bounds = [(None, None)], disp = None, maxcor = 10, ftol = 2.220446049250313e-09
+    gtol = 1e-05, eps = 1e-08, maxfun = 15000, maxiter = 15000, iprint = -1
+    callback = <lsqfitgp._fit.empbayes_fit._Callback object at 0x7fbc7b77d2b0>
+    maxls = 20, finite_diff_rel_step = None, unknown_options = {}, m = 10
+    pgtol = 1e-05, factr = 10000000.0, n = 1
+    new_bounds = (array([-inf]), array([inf]))
+    sf = <scipy.optimize._differentiable_functions.ScalarFunction object at 0x7fbc7b95abe0>
+    func_and_grad = <bound method ScalarFunction.fun_and_grad of <scipy.optimize._differentiable_functions.ScalarFunction object at 0x7fbc7b95abe0>>
+
+        def _minimize_lbfgsb(fun, x0, args=(), jac=None, bounds=None,
+                             disp=None, maxcor=10, ftol=2.2204460492503131e-09,
+                             gtol=1e-5, eps=1e-8, maxfun=15000, maxiter=15000,
+                             iprint=-1, callback=None, maxls=20,
+                             finite_diff_rel_step=None, **unknown_options):
+            """
+            Minimize a scalar function of one or more variables using the L-BFGS-B
+            algorithm.
+        
+            Options
+            -------
+            disp : None or int
+                If `disp is None` (the default), then the supplied version of `iprint`
+                is used. If `disp is not None`, then it overrides the supplied version
+                of `iprint` with the behaviour you outlined.
+            maxcor : int
+                The maximum number of variable metric corrections used to
+                define the limited memory matrix. (The limited memory BFGS
+                method does not store the full hessian but uses this many terms
+                in an approximation to it.)
+            ftol : float
+                The iteration stops when ``(f^k -
+                f^{k+1})/max{|f^k|,|f^{k+1}|,1} <= ftol``.
+            gtol : float
+                The iteration will stop when ``max{|proj g_i | i = 1, ..., n}
+                <= gtol`` where ``pg_i`` is the i-th component of the
+                projected gradient.
+            eps : float or ndarray
+                If `jac is None` the absolute step size used for numerical
+                approximation of the jacobian via forward differences.
+            maxfun : int
+                Maximum number of function evaluations.
+            maxiter : int
+                Maximum number of iterations.
+            iprint : int, optional
+                Controls the frequency of output. ``iprint < 0`` means no output;
+                ``iprint = 0``    print only one line at the last iteration;
+                ``0 < iprint < 99`` print also f and ``|proj g|`` every iprint iterations;
+                ``iprint = 99``   print details of every iteration except n-vectors;
+                ``iprint = 100``  print also the changes of active set and final x;
+                ``iprint > 100``  print details of every iteration including x and g.
+            callback : callable, optional
+                Called after each iteration, as ``callback(xk)``, where ``xk`` is the
+                current parameter vector.
+            maxls : int, optional
+                Maximum number of line search steps (per iteration). Default is 20.
+            finite_diff_rel_step : None or array_like, optional
+                If `jac in ['2-point', '3-point', 'cs']` the relative step size to
+                use for numerical approximation of the jacobian. The absolute step
+                size is computed as ``h = rel_step * sign(x0) * max(1, abs(x0))``,
+                possibly adjusted to fit into the bounds. For ``method='3-point'``
+                the sign of `h` is ignored. If None (default) then step is selected
+                automatically.
+        
+            Notes
+            -----
+            The option `ftol` is exposed via the `scipy.optimize.minimize` interface,
+            but calling `scipy.optimize.fmin_l_bfgs_b` directly exposes `factr`. The
+            relationship between the two is ``ftol = factr * numpy.finfo(float).eps``.
+            I.e., `factr` multiplies the default machine floating-point precision to
+            arrive at `ftol`.
+        
+            """
+            _check_unknown_options(unknown_options)
+            m = maxcor
+            pgtol = gtol
+            factr = ftol / np.finfo(float).eps
+        
+            x0 = asarray(x0).ravel()
+            n, = x0.shape
+        
+            if bounds is None:
+                bounds = [(None, None)] * n
+            if len(bounds) != n:
+                raise ValueError('length of x0 != length of bounds')
+        
+            # unbounded variables must use None, not +-inf, for optimizer to work properly
+            bounds = [(None if l == -np.inf else l, None if u == np.inf else u) for l, u in bounds]
+            # LBFGSB is sent 'old-style' bounds, 'new-style' bounds are required by
+            # approx_derivative and ScalarFunction
+            new_bounds = old_bound_to_new(bounds)
+        
+            # check bounds
+            if (new_bounds[0] > new_bounds[1]).any():
+                raise ValueError("LBFGSB - one of the lower bounds is greater than an upper bound.")
+        
+            # initial vector must lie within the bounds. Otherwise ScalarFunction and
+            # approx_derivative will cause problems
+            x0 = np.clip(x0, new_bounds[0], new_bounds[1])
+        
+            if disp is not None:
+                if disp == 0:
+                    iprint = -1
+                else:
+                    iprint = disp
+        
+            sf = _prepare_scalar_function(fun, x0, jac=jac, args=args, epsilon=eps,
+                                          bounds=new_bounds,
+                                          finite_diff_rel_step=finite_diff_rel_step)
+        
+            func_and_grad = sf.fun_and_grad
+        
+            fortran_int = _lbfgsb.types.intvar.dtype
+        
+            nbd = zeros(n, fortran_int)
+            low_bnd = zeros(n, float64)
+            upper_bnd = zeros(n, float64)
+            bounds_map = {(None, None): 0,
+                          (1, None): 1,
+                          (1, 1): 2,
+                          (None, 1): 3}
+            for i in range(0, n):
+                l, u = bounds[i]
+                if l is not None:
+                    low_bnd[i] = l
+                    l = 1
+                if u is not None:
+                    upper_bnd[i] = u
+                    u = 1
+                nbd[i] = bounds_map[l, u]
+        
+            if not maxls > 0:
+                raise ValueError('maxls must be positive.')
+        
+            x = array(x0, float64)
+            f = array(0.0, float64)
+            g = zeros((n,), float64)
+            wa = zeros(2*m*n + 5*n + 11*m*m + 8*m, float64)
+            iwa = zeros(3*n, fortran_int)
+            task = zeros(1, 'S60')
+            csave = zeros(1, 'S60')
+            lsave = zeros(4, fortran_int)
+            isave = zeros(44, fortran_int)
+            dsave = zeros(29, float64)
+        
+            task[:] = 'START'
+        
+            n_iterations = 0
+        
+            while 1:
+                # x, f, g, wa, iwa, task, csave, lsave, isave, dsave = \
+    >           _lbfgsb.setulb(m, x, low_bnd, upper_bnd, nbd, f, g, factr,
+                               pgtol, wa, iwa, task, iprint, csave, lsave,
+                               isave, dsave, maxls)
+    E           ValueError: failed to initialize intent(inout) array -- input not fortran contiguous
+
+So it's probably a scipy 1.5 bug. I switched to scipy==1.5.4.

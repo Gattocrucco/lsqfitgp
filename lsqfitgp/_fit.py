@@ -514,6 +514,14 @@ class empbayes_fit(Logger):
         # automatic policy of this sort for covariance='hessinv' when the linear
         # search fails.
 
+        # TODO reimplement the timing system with host_callback.id_tap. It
+        # should preserve the order because id_tap takes inputs and outputs. I
+        # must take care to make all callbacks happen at runtime instead of
+        # having some of them at runtime. I tried once but failed. Currently
+        # host_callback is experimental, maybe wait until it isn't. => I think
+        # it fails because it's asynchronous and there is only one device. Maybe
+        # host_callback.call would work?
+
     class _CountCalls:
         """ wrap a callable to count calls """
         

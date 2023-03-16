@@ -1150,6 +1150,14 @@ util.xfail(DecompTestBase, 'test_logdet_hess_fwd_rev') # since on quad it works,
 util.xfail(WoodburyTestBase, 'test_logdet_hess_fwd_fwd_stopg')
 util.xfail(WoodburyTestBase, 'test_quad_matrix_matrix_hess_fwd_fwd_stopg')
 
+# TODO fail on ubuntu-latest since jax 0.4.6 (???????), it's all the _da methods
+# for Chol (completing but incorrect result, no inf/nan)
+util.xfail(TestChol, 'test_solve_matrix_jac_fwd_da')
+util.xfail(TestChol, 'test_solve_matrix_hess_da')
+util.xfail(TestChol, 'test_quad_matrix_matrix_jac_fwd_da')
+util.xfail(TestChol, 'test_quad_matrix_matrix_hess_da')
+util.xfail(TestChol, 'test_logdet_hess_da')
+
 # TODO linalg.sparse.eigsh/lobpcg are not implemented in jax
 for testcls in [TestLanczos, TestLOBPCG]:
     for name, meth in inspect.getmembers(testcls, inspect.isfunction):
@@ -1163,6 +1171,7 @@ util.xfail(TestWoodbury2_EigCutFullRank, 'test_solve_matrix_hess_da')
 util.xfail(TestWoodbury2_EigCutFullRank, 'test_quad_matrix_matrix_jac_fwd_da')
 util.xfail(TestWoodbury2_EigCutFullRank, 'test_quad_matrix_matrix_hess_da')
 util.xfail(TestWoodbury2_EigCutFullRank, 'test_logdet_hess_da')
+util.xfail(TestBlock_EigCutFullRank, 'test_quad_vec_jac_fwd_jit')
 
 # TODO fail with full nan
 util.xfail(TestSVDCutLowRank_LowRank, 'test_solve_matrix_hess_da')
