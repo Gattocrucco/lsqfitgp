@@ -37,7 +37,7 @@ classifiers = [
 ]
 dependencies = [
     'numpy>=1.20', # first version with broadcast_shapes
-    'scipy>=1.5.4', # first to solve a lbfgs bug (to be confirmed)
+    'scipy>=1.6.3', # first to solve a lbfgs bug (to be confirmed)
     'jax>=0.4.6', # first with optimized vectorize
     'jaxlib>=0.4.6',
     'gvar>=11.10.1', # first supporting gvar.gvar(x, cov) with readonly cov
