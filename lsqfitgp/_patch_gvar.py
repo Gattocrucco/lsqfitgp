@@ -145,13 +145,24 @@ def from_jacobian(mean, jac, indices):
         der._assign(jacrow, indices)
         g[i] = gvar.GVar(mean[i], der, cov)
     return g.reshape(shape)
-    
-def bufferdict_flatten(bd):
-    return tuple(bd.values()), (bd.dtype, tuple(bd.keys()))
 
-def bufferdict_unflatten(meta, values):
-    dtype, keys = meta
-    return gvar.BufferDict(zip(keys, values), dtype=dtype)
+def _skeleton(bd):
+    return gvar.BufferDict(
+        bd,
+        buf=numpy.broadcast_to(numpy.empty((), bd.dtype), bd.buf.shape),
+        # buf is not copied, so the memoryless broadcast is kept
+    )
+
+def bufferdict_flatten(bd):
+    return (bd.buf,), _skeleton(bd)
+
+def bufferdict_unflatten(skeleton, children):
+    buf, = children
+    new = _skeleton(skeleton)
+    # copy the skeleton to permit multiple unflattening
+    new._extension = {}
+    new._buf = buf
+    return new
 
 # register BufferDict as a pytree
 tree_util.register_pytree_node(gvar.BufferDict, bufferdict_flatten, bufferdict_unflatten)

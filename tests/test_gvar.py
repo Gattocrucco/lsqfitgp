@@ -22,6 +22,7 @@ import sys
 import numpy as np
 import gvar
 from jax import tree_util
+import jax
 
 sys.path.insert(0, '.')
 from lsqfitgp import _patch_gvar
@@ -61,3 +62,11 @@ def test_bdtree_dtype():
     l, t = tree_util.tree_flatten(x)
     y = tree_util.tree_unflatten(t, l)
     assert x.dtype == y.dtype
+
+def test_tracer():
+    x = gvar.BufferDict(a=0., b=1.)
+    @jax.jit
+    def f(x):
+        return tree_util.tree_map(lambda x: x, x)
+    y = f(x)
+    assert x == y

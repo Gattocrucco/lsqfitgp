@@ -91,8 +91,8 @@ for style, params_sample in zip(['-', '--'], gvar.raniter(fit.p, 2)):
 
     for sample in gvar.raniter(pred, 1):
         for i in range(2):
-            ax.plot(time_pred, sample[i], color=f'C{i}', alpha=0.5, label=label_names[i], linestyle=style)
-    label_names = [None, None]
+            label = f'{label_names[i]}, delay={params_sample["delay"]:.1f}'
+            ax.plot(time_pred, sample[i], color=f'C{i}', alpha=0.5, label=label, linestyle=style)
 
 for i in range(2):
     ax.errorbar(time, gvar.mean(data[i]), yerr=gvar.sdev(data[i]), fmt='.', color=f'C{i}')

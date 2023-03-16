@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 import warnings
 import functools
 import time
@@ -28,6 +29,7 @@ import jax
 from jax import numpy as jnp
 import numpy
 from scipy import optimize
+from jax import tree_util
 
 from . import _GP
 from . import _linalg
@@ -37,6 +39,45 @@ from . import _patch_gvar
 __all__ = [
     'empbayes_fit',
 ]
+
+@functools.singledispatch
+def token_getter(x):
+    return x
+
+@functools.singledispatch
+def token_setter(x, token):
+    return token
+
+@token_getter.register(jnp.ndarray)
+@token_getter.register(numpy.ndarray)
+def _(x):
+    return x[x.ndim * (0,)] if x.size else x
+
+@token_setter.register(jnp.ndarray)
+@token_setter.register(numpy.ndarray)
+def _(x, token):
+    x = jnp.asarray(x)
+    return x.at[x.ndim * (0,)].set(token) if x.size else token
+
+
+def token_map_leaf(func, x):
+    if isinstance(x, (jnp.ndarray, numpy.ndarray)):
+        token = token_getter(x)
+        @jax.custom_jvp
+        def jaxfunc(token):
+            return jax.pure_callback(func, token, token, vectorized=True)
+        @jaxfunc.defjvp
+        def _(p, t):
+            return (jaxfunc(*p), *t)
+        token = jaxfunc(token)
+        return token_setter(x, token)
+    else:
+        token = token_getter(x)
+        token = func(token)
+        return token_setter(x, token)
+
+def token_map(func, x):
+    return tree_util.tree_map(lambda x: token_map_leaf(func, x), x)
 
 class Logger:
     
@@ -153,13 +194,15 @@ class empbayes_fit(Logger):
             0
                 No logging (default).
             1
-                Report starting point and result.
+                Minimal report.
             2
-                More detailed report.
+                Detailed report.
             3
                 Log each iteration.
             4
                 More detailed iteration log.
+            5
+                Print the current parameter values at each iteration.
         covariance : str
             Method to estimate the posterior covariance matrix of the
             hyperparameters:
@@ -251,28 +294,32 @@ class empbayes_fit(Logger):
         if jit:
             self.log('compile functions with jax jit', 2)
         
+        timer = self._Timer()
         firstcall = [None]
         
         @dojit
         def fun(p):
+            p = timer.start(p)
             gp, args = make(p)
-            decomp, ymean = gp._prior_decomp(*args, **mlkw)
+            decomp, ymean = gp._prior_decomp(*args, covtransf=timer.partial, **mlkw)
+            decomp = timer.partial(decomp)
 
             if firstcall:
+                # works under jit since the first call is tracing
                 firstcall.pop()
-                self.log(f'{ymean.size} datapoints', level=-1)
+                self.log(f'{ymean.size} datapoints')
                     
-            return 1/2 * (
+            return timer.partial(1/2 * (
                 decomp.logdet()
                 + decomp.n * jnp.log(2 * jnp.pi)
                 + decomp.quad(ymean)
                 + p @ p
-            )
+            ))
 
         jactr = jax.jacfwd if forward else jax.jacrev
         fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jactr))
         jac = dojit(jactr(fun))
-                    
+
         if not callable(data):
             
             @jax.jacfwd
@@ -280,13 +327,14 @@ class empbayes_fit(Logger):
             # can't change inner jac to rev due to jax issue #10994
             # (stop_hessian)
             def fisher(p):
+                p = timer.start(p)
                 gp, args = make(p)
-                decomp, _ = gp._prior_decomp(*args, stop_hessian=True, **mlkw)
+                decomp, _ = gp._prior_decomp(*args, stop_hessian=True, covtransf=timer.partial, **mlkw)
                 return -1/2 * decomp.logdet()
             
             def fisherprec(p):
                 f = fisher(p)
-                return f + jnp.eye(len(f), dtype=f.dtype)
+                return timer.partial(f + jnp.eye(len(f), dtype=f.dtype))
         
         else:
             
@@ -295,9 +343,11 @@ class empbayes_fit(Logger):
             # depends on the hyperparameters.
             
             @functools.partial(jax.jacfwd, has_aux=True)
+            # can't change jac to rev due to jax issue #10994 (stop_hessian)
             def grad_logdet_and_aux(p):
+                p = timer.start(p)
                 gp, args = make(p)
-                decomp, ymean = gp._prior_decomp(*args, stop_hessian=True, **mlkw)
+                decomp, ymean = gp._prior_decomp(*args, stop_hessian=True, covtransf=timer.partial, **mlkw)
                 return -1/2 * decomp.logdet(), (decomp, ymean)
             
             @functools.partial(jax.jacfwd, has_aux=True)
@@ -305,16 +355,11 @@ class empbayes_fit(Logger):
                 gld, (decomp, ymean) = grad_logdet_and_aux(p)
                 return (gld, ymean), decomp
             
+            @dojit
             def fisherprec(p):
                 (F, J), decomp = fisher_and_jac_and_aux(p)
-                return F + jnp.eye(len(F), dtype=F.dtype) + decomp.quad(J)
-        
-        if method == 'fisher':
-            fisherprec = dojit(fisherprec)
-            # fisherprec may be used once for estimation of the posterior
-            # precision, so do not jit unless it's used multiple times since jit
-            # is somewhat slow (TODO I'm not sure this is true, maybe I observed
-            # another bottleneck and assumed it was jit)
+                result = F + jnp.eye(len(F), dtype=F.dtype) + decomp.quad(J)
+                return timer.partial(result)
         
         # wrap functions to count number of calls
         fun = self._CountCalls(fun)
@@ -339,51 +384,44 @@ class empbayes_fit(Logger):
             raise KeyError(method)
         self.log(f'method {method!r}', 2)
 
+        # set up callback to time and log iterations
         functions = {
             'fun': fun,
             'jac': jac,
             'fun&jac': fun_and_jac,
             'fisher': fisherprec,
         }
-        
-        class Callback:
-            
-            def __init__(self, this):
-                self.it = 0
-                self.stamp = time.time()
-                self.this = this
-        
-            def __call__(self, p):
-                self.it += 1
-                now = time.time()
-                duration = datetime.timedelta(seconds=now - self.stamp)
-                self.stamp = now
-                calls = fun.fmtcalls('partial', functions)
-                self.this.log(f'iteration {self.it}, time: {duration}, calls: {calls}', 3)
-                if verbosity >= 4:
-                    nicep = hpunflat(p)
-                    nicep = self.this._copyasarrayorbufferdict(nicep)
-                    self.this.log(f'parameters = {nicep}', 4)
-                
-            # TODO write a method to format the parameters nicely. => use
-            # gvar.tabulate? => nope, need actual gvars
-            
-        if verbosity > 2:
-            minargs.update(callback=Callback(self))
+        callback = self._Callback(self, functions, timer, hpunflat)
+        minargs.update(callback=callback)
 
         # check invalid argument before running minimizer
         if not covariance in ('auto', 'fisher', 'minhess', 'none'):
             raise KeyError(covariance)
         
+        # add user arguments and minimize
         minargs.update(minkw)
         self.log(f'minimizer method {minargs["method"]!r}', 2)
-        with self.loglevel:
-            start = time.time()
-            result = optimize.minimize(**minargs)
-            end = time.time()
-        total = datetime.timedelta(seconds=end - start)
-        calls = fun.fmtcalls('total', functions)
-        self.log(f'totals: time: {total}, calls: {calls}')
+        start = time.time()
+        result = optimize.minimize(**minargs)
+        end = time.time()
+
+        # log total timings and function calls
+        total = end - start
+        times = callback.fmttimes({
+            'gp&cov': timer.totals[0],
+            'decomp': timer.totals[1],
+            'likelihood': timer.totals[2],
+            'other': total - sum(timer.totals.values()),
+        })
+        calls = self._CountCalls.fmtcalls('total', functions)
+        self.log('', 4)
+        self.log(f'total time: {callback.fmttime(total)}')
+        if jit:
+            overhead = callback.estimate_firstcall_overhead()
+            if overhead is not None:
+                self.log(f'estimated compilation time: {callback.fmttime(overhead)}', 2)
+        self.log(f'partials: {times}', 2)
+        self.log(f'calls: {calls}')
         
         # check the minimization was successful
         if result.success:
@@ -416,6 +454,7 @@ class empbayes_fit(Logger):
             )) # TODO replace tabulate_toegether with something more flexible I
             # can use for the callback as well. Maybe import TextMatrix from
             # miscpy.
+            # TODO print the transformed parameters
         self.log('**** exit lsqfitgp.empbayes_fit ****')
 
         # TODO would it be meaningful to add correlation of the fit result with
@@ -467,7 +506,14 @@ class empbayes_fit(Logger):
         # TODO look into jaxopt: it has improved a lot since the last time I saw
         # it. In particular, it implements l-bfgs and has a "do not stop on
         # failed line search" option. And it probably supports float32.
-    
+
+        # TODO I could provide the option to use BFGS to estimate the covariance
+        # independently of the minimizer, using the last n iterations (not all
+        # the evaluations, just the iterations, to skip difficult line
+        # searches.) covariance='bfgs(10)'. I still need, in any case, an
+        # automatic policy of this sort for covariance='hessinv' when the linear
+        # search fails.
+
     class _CountCalls:
         """ wrap a callable to count calls """
         
@@ -496,6 +542,7 @@ class empbayes_fit(Logger):
         def fmtcalls(method, functions):
             """
             format summary of number of calls
+            method : str
             functions: dict[str, _CountCalls]
             """
             def counts():
@@ -503,6 +550,40 @@ class empbayes_fit(Logger):
                     if count := getattr(func, method)():
                         yield f'{name} {count}'
             return ', '.join(counts())
+
+    class _Timer:
+        """ object to time likelihood computations """
+
+        def __init__(self):
+            self.totals = {}
+            self.partials = {}
+            self._last_start = False
+
+        def start(self, token):
+            return token_map(self._start, token)
+
+        def _start(self, token):
+            self.stamp = time.time()
+            self.counter = 0
+            assert not self._last_start
+            self._last_start = True
+            return token
+
+        def reset(self):
+            self.partials = {}
+
+        def partial(self, token):
+            return token_map(self._partial, token)
+
+        def _partial(self, token):
+            now = time.time()
+            delta = now - self.stamp
+            self.partials[self.counter] = self.partials.get(self.counter, 0) + delta
+            self.totals[self.counter] = self.totals.get(self.counter, 0) + delta
+            self.stamp = now
+            self.counter += 1
+            self._last_start = False
+            return token
     
     def _parse_hyperprior(self, hyperprior, initial, fix):
         
@@ -713,6 +794,107 @@ class empbayes_fit(Logger):
         for i in range(lbfgs.n_corrs):
             bfgs.update(lbfgs.sk[i], lbfgs.yk[i])
         return bfgs.get_matrix()
+
+    class _Callback:
+        
+        def __init__(self, this, functions, timer, unflat):
+            self.it = 0
+            self.stamp = time.time()
+            self.this = this
+            self.functions = functions
+            self.timer = timer
+            self.unflat = unflat
+            self.tail_overhead = 0
+            self.tail_overhead_iter = 0
+
+        def __call__(self, p):
+            self.it += 1
+            now = time.time()
+            duration = now - self.stamp
+            
+            worktime = sum(self.timer.partials.values())
+            if worktime:
+                overhead = duration - worktime
+                assert overhead >= 0, (duration, worktime)
+                if self.it == 1:
+                    self.first_overhead = overhead
+                else:
+                    self.tail_overhead_iter += 1
+                    self.tail_overhead += overhead
+
+            if self.this._verbosity >= 3:
+                calls = self.this._CountCalls.fmtcalls('partial', self.functions)
+
+            if self.this._verbosity >= 4:
+                tot = self.fmttime(duration)
+                if self.timer.partials:
+                    times = {
+                        'gp&cov': self.timer.partials[0],
+                        'dec': self.timer.partials[1],
+                        'like': self.timer.partials[2],
+                        'other': duration - sum(self.timer.partials.values()),
+                    }
+                    times = self.fmttimes(times)
+                else:
+                    times = 'n/d'
+                self.this.log(f'\niteration {self.it}', 4)
+                with self.this.loglevel:
+                    self.this.log(f'total time: {tot}', 4)
+                    self.this.log(f'partial: {times}', 4)
+                    self.this.log(f'calls: {calls}', 4)
+
+                if self.this._verbosity >= 5:
+                    nicep = self.unflat(p)
+                    nicep = self.this._copyasarrayorbufferdict(nicep)
+                    with self.this.loglevel:
+                        self.this.log(f'parameters = {nicep}', 5)
+                    # TODO write a method to format the parameters nicely. => use
+                    # gvar.tabulate? => nope, need actual gvars
+
+            elif self.this._verbosity >= 3:
+                times = self.fmttime(duration)
+                self.this.log(f'iter {self.it}, time: {times}, calls: {calls}', 3)
+
+            self.stamp = now
+            self.timer.reset()
+
+        pattern = re.compile(
+            r'((\d+) days, )?(\d{1,2}):(\d{1,2}):(\d{1,2})(.(\d{6}))?')
+
+        @classmethod
+        def fmttime(cls, seconds):
+            td = datetime.timedelta(seconds=seconds)
+            m = cls.pattern.fullmatch(str(td))
+            _, day, hour, minute, second, _, microsec = m.groups()
+            if day:
+                return day.lstrip('0') + 'd' + hour + 'h'
+            elif int(hour):
+                return hour.lstrip('0') + 'h' + minute + 'm'
+            elif int(minute):
+                return minute.lstrip('0') + 'm' + second + 's'
+            elif int(second):
+                if microsec:
+                    return second.lstrip('0') + '.' + microsec[:3] + 's'
+                else:
+                    return second.lstrip('0') + '.000s'
+            elif microsec:
+                if microsec[0] != '0':
+                    return microsec[:3] + 'ms'
+                elif int(microsec[:3]):
+                    return microsec[:3].lstrip('0') + '.' + microsec[3:] + 'ms'
+                else:
+                    return microsec[3:].lstrip('0') + 'μs'
+            else:
+                return '0s'
+
+        @classmethod
+        def fmttimes(cls, times):
+            return ', '.join(f'{k} {cls.fmttime(v)}' for k, v in times.items())
+
+        def estimate_firstcall_overhead(self):
+            if self.tail_overhead_iter and hasattr(self, 'first_overhead'):
+                typical_overhead = self.tail_overhead / self.tail_overhead_iter
+                return self.first_overhead - typical_overhead
 
     @staticmethod
     def _copyasarrayorbufferdict(x):

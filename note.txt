@@ -3382,3 +3382,14 @@ setting l-bfgs-b as default, but it's still not fine when the linear search
 fails, while bfgs from the start gives a sensible inverse hessian. Maybe lfbgs
 does not keep the updates in that case? I have to find a way to fix that. If
 it's missing updates, I could keep my own buffer of gradients and values.
+
+=> Logging bart/comp42/comp42-test.py confirms it's dropping updates. Ack.
+With 15 evals in the failed linsearch, n_corrs=0. Maybe all failed searches are
+dropped, without restoring previous values?
+
+..........
+
+I implemented a staged timer in empbayes_fit. I made it to work under jit by
+wrapping with pure_callback and passing through it a token value which is added
+to the result but has no effect. However this still does not work; I guess jit
+is reordering the computations.

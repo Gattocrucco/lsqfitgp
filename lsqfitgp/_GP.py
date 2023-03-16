@@ -1242,14 +1242,14 @@ class GP:
         ]
         return jnp.block(blocks)
     
-    def _solver(self, keys, ycov=None, **kw):
+    def _solver(self, keys, ycov=None, *, covtransf=None, **kw):
         """
         Return a decomposition of the covariance matrix of the keys in `keys`
-        plus the matrix ycov.
+        plus the matrix ycov. Keyword arguments are passed to the decomposition.
         """
         
         # TODO cache ignores **kw.
-        
+
         keys = tuple(keys)
         
         # Check if decomposition is in cache.
@@ -1281,6 +1281,8 @@ class GP:
                     transfs.append(jnp.eye(elem.size))
             transf = jlinalg.block_diag(*transfs)
             cov = self._assemblecovblocks(ancestors)
+            if covtransf:
+                ycov, transf, cov = covtransf((ycov, transf, cov))
             covdec = self._decompclass(cov, **kw)
             # TODO obtain covdec from _solver recursively, to use cache?
             decomp = _linalg.Woodbury2(ycov, transf, covdec, self._decompclass, sign=1, **kw)
@@ -1288,6 +1290,8 @@ class GP:
             Kxx = self._assemblecovblocks(keys)
             if ycov is not None:
                 Kxx = Kxx + ycov
+            if covtransf:
+                Kxx = covtransf(Kxx)
             decomp = self._decompclass(Kxx, **kw)
         
         # Cache decomposition.
@@ -1718,6 +1722,8 @@ class GP:
         return self.pred(*args, fromdata=True, **kw)
     
     def _prior_decomp(self, given, givencov=None, **kw):
+        """ Internal implementation of marginal_likelihood. Keyword arguments
+        are passed to _solver. """
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = self._concatenate(ylist)
         
