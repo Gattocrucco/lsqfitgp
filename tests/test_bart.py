@@ -319,6 +319,52 @@ def test_f32():
     c = lgp.BART.correlation(*sss, pnt=np.array([0.9, 0.4, 0.3], 'f'))
     assert c.dtype == 'f'
 
+def test_i32():
+    """ test that passing 32 bit integers does not result in 32 bit floating
+    point calculations, which would happen because jax casts int32 to float32
+    """
+    sss = [1, 2], [3, 1], [5, 8]
+    sss = [np.array(s, np.int32) for s in sss]
+    pnt = np.array([0.9, 0.4, 0.3], np.float64)
+    c1 = lgp.BART.correlation(*sss, pnt=pnt)
+    assert c1.dtype == np.float64
+    sss = [np.array(s, np.int64) for s in sss]
+    c2 = lgp.BART.correlation(*sss, pnt=pnt)
+    assert c2.dtype == np.float64
+    np.testing.assert_array_max_ulp(c1, c2, 0)
+
+@mdmark
+@umark
+@bmark
+@amark
+@smark
+def test_altinput(sb, sbw, sa, w, a, b, u, md):
+    """ two alternative implementations give the same result """
+    c1 = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
+    n = sb + sbw + sa
+    ix = sb
+    iy = sb + sbw
+    ix, iy = np.broadcast_arrays(ix, iy)
+    swap = gen.integers(0, 2, size=ix.shape, dtype=bool)
+    ix, iy = np.where(swap, iy, ix), np.where(swap, ix, iy)
+    c2 = lgp.BART.correlation(n, ix, iy, alpha=a, beta=b, gamma=u, maxd=md, weights=w, altinput=True)
+    np.testing.assert_array_max_ulp(c1, c2)
+
+def test_index_input():
+    """ passing coordinates or directly indices gives the same result """
+    n, p = 100, 10
+    asstruct = lambda x: np.asarray(x).view([('f0', x.dtype, p)]).squeeze(-1)
+    X = asstruct(gen.standard_normal((n, p)))
+    splits = lgp.BART.splits_from_coord(X)
+    x, y = asstruct(gen.standard_normal((2, n, p)))
+    x, y = x[:, None], y[None, :]
+    assert x.ndim == y.ndim == 2
+    ix = asstruct(lgp.BART.indices_from_coord(x, splits))
+    iy = asstruct(lgp.BART.indices_from_coord(y, splits))
+    c1 = lgp.BART(splits=splits)(x, y)
+    c2 = lgp.BART(splits=splits, indices=True)(ix, iy)
+    np.testing.assert_array_max_ulp(c1, c2)
+
 # TODO
 # - increases at fixed n0 and ntot if the difference between nminus and nplus
 #   decreases (not completely sure)

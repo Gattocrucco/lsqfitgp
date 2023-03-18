@@ -37,7 +37,18 @@ def _bart_maxdim(splits=None, **_):
 # TODO maybe batching should be done automatically by GP instead of by the
 # kernels? But before doing that I need to support batching non-traceable
 # functions.
-def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, intercept=True, weights=None, reset=None):
+def _BARTBase(x, y,
+    alpha=0.95,
+    beta=2,
+    maxd=2,
+    gamma=1,
+    splits=None,
+    pnt=None,
+    intercept=True,
+    weights=None,
+    reset=None,
+    altimpl=False,
+    indices=False):
     """
     BART kernel.
     
@@ -175,17 +186,31 @@ def _BARTBase(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, 
         x = x[..., None]
     if not y.dtype.names:
         y = y[..., None]
-    ix = BART.indices_from_coord(x, splits)
-    iy = BART.indices_from_coord(y, splits)
-    l = jnp.minimum(ix, iy)
-    r = jnp.maximum(ix, iy)
-    before = l
-    between = r - l
-    after = splits[0] - r
+    if indices:
+        ix = BART._check_x(x)
+        iy = BART._check_x(y)
+        assert jnp.issubdtype(ix.dtype, jnp.integer)
+        assert jnp.issubdtype(iy.dtype, jnp.integer)
+        with _patch_jax.skipifabstract():
+            assert jnp.all((0 <= ix) & (ix <= splits[0]))
+            assert jnp.all((0 <= iy) & (iy <= splits[0]))
+    else:
+        ix = BART.indices_from_coord(x, splits)
+        iy = BART.indices_from_coord(y, splits)
+    if altimpl:
+        arg1 = splits[0]
+        arg2 = ix
+        arg3 = iy
+    else:
+        l = jnp.minimum(ix, iy)
+        r = jnp.maximum(ix, iy)
+        arg1 = l
+        arg2 = r - l
+        arg3 = splits[0] - r
     return BART.correlation(
-        before, between, after,
+        arg1, arg2, arg3,
         pnt=pnt, alpha=alpha, beta=beta, gamma=gamma, maxd=maxd,
-        intercept=intercept, weights=weights, reset=reset,
+        intercept=intercept, weights=weights, reset=reset, altinput=altimpl,
     )
     
     # TODO
@@ -281,7 +306,21 @@ class BART(_BARTBase):
         return cls._searchsorted_vectorized(splits[1], x)
     
     @classmethod
-    def correlation(cls, splitsbefore, splitsbetween, splitsafter, *, alpha=0.95, beta=2, gamma=1, maxd=2, debug=False, pnt=None, intercept=True, weights=None, reset=None):
+    def correlation(cls,
+        splitsbefore_or_totalsplits,
+        splitsbetween_or_index1,
+        splitsafter_or_index2,
+        *,
+        alpha=0.95,
+        beta=2,
+        gamma=1,
+        maxd=2,
+        debug=False,
+        pnt=None,
+        intercept=True,
+        weights=None,
+        reset=None,
+        altinput=False):
         """
         Compute the BART prior correlation between two points.
 
@@ -290,17 +329,25 @@ class BART(_BARTBase):
     
         Parameters
         ----------
-        splitsbefore : int (p,) array
+        splitsbefore_or_totalsplits : int (p,) array
             The number of splitting points less than the two points, separately
-            along each coordinate.
-        splitsbetween : int (p,) array
+            along each coordinate, or the total number of splits if `altinput`.
+        splitsbetween_or_index1 : int (p,) array
             The number of splitting points between the two points, separately
-            along each coordinate.
-        splitsafter : int (p,) array
+            along each coordinate, or the index in the splitting bins of the
+            first point if `altinput`, where 0 means to the left of the leftmost
+            splitting point.
+        splitsafter_or_index2 : int (p,) array
             The number of splitting points greater than the two points,
-            separately along each coordinate.
+            separately along each coordinate, or the index in the splitting bins
+            of the second point if `altinput`.
         debug : bool
             If True, disable shortcuts in the tree recursion. Default False.
+        altinput : bool
+            If True, take as input the indices in the splitting bins of the
+            points instead of the counts of splitting points separating them,
+            and use a different implementation optimized for that case. Default
+            False.
         Other parameters :
             See :class:`BART`.
 
@@ -311,18 +358,18 @@ class BART(_BARTBase):
         """
         
         # check splitting points are integers
-        splitsbefore = jnp.asarray(splitsbefore)
-        splitsbetween = jnp.asarray(splitsbetween)
-        splitsafter = jnp.asarray(splitsafter)
-        assert jnp.issubdtype(splitsbefore.dtype, jnp.integer)
-        assert jnp.issubdtype(splitsbetween.dtype, jnp.integer)
-        assert jnp.issubdtype(splitsafter.dtype, jnp.integer)
+        splitsbefore_or_totalsplits = jnp.asarray(splitsbefore_or_totalsplits)
+        splitsbetween_or_index1 = jnp.asarray(splitsbetween_or_index1)
+        splitsafter_or_index2 = jnp.asarray(splitsafter_or_index2)
+        assert jnp.issubdtype(splitsbefore_or_totalsplits.dtype, jnp.integer)
+        assert jnp.issubdtype(splitsbetween_or_index1.dtype, jnp.integer)
+        assert jnp.issubdtype(splitsafter_or_index2.dtype, jnp.integer)
         
         # check splitting points are nonnegative
         with _patch_jax.skipifabstract():
-            assert jnp.all(splitsbefore >= 0)
-            assert jnp.all(splitsbetween >= 0)
-            assert jnp.all(splitsafter >= 0)
+            assert jnp.all(splitsbefore_or_totalsplits >= 0)
+            assert jnp.all(splitsbetween_or_index1 >= 0)
+            assert jnp.all(splitsafter_or_index2 >= 0)
         
         # get splitting probabilities
         if pnt is None:
@@ -341,7 +388,7 @@ class BART(_BARTBase):
         
         # get covariate weights
         if weights is None:
-            weights = jnp.ones(splitsbefore.shape[-1], pnt.dtype)
+            weights = jnp.ones(splitsbefore_or_totalsplits.shape[-1], pnt.dtype)
         else:
             weights = jnp.asarray(weights)
         
@@ -382,9 +429,12 @@ class BART(_BARTBase):
             probs = pnt[..., t:b + 1]
             if t > 0:
                 probs = probs.at[..., 0].set(1)
-            corr = cls._bart_correlation_maxd_vectorized(
-                splitsbefore, splitsbetween, splitsafter,
-                probs, corr, weights, debug,
+            corr = cls._correlation_vectorized(
+                splitsbefore_or_totalsplits,
+                splitsbetween_or_index1,
+                splitsafter_or_index2,
+                probs, corr, weights,
+                debug, altinput,
             )
         return corr
     
@@ -448,17 +498,23 @@ class BART(_BARTBase):
 
     @classmethod
     @functools.partial(jax.jit, static_argnums=(0, 7))
-    def _bart_correlation_maxd(cls, nminus, n0, nplus, pnt, gamma, w, debug):
-    
+    def _correlation(cls, nminus, n0, nplus, pnt, gamma, w, debug):
+
         assert nminus.shape == n0.shape == nplus.shape == w.shape
         assert nminus.ndim == 1 and nminus.size >= 0
         assert pnt.ndim == 1 and pnt.size > 0
-        
         # TODO repeat this shape checks in BART.correlation such that the
         # error messages are user-legible
+
+        # optimization to avoid looping over ignored axes
+        nminus = jnp.where(w, nminus, 0)
+        n0 = jnp.where(w, n0, 0)
+        nplus = jnp.where(w, nplus, 0)
+        
+        float_type = _patch_jax.float_type(pnt, gamma, w)
         
         if nminus.size == 0:
-            return jnp.array(1, pnt.dtype)
+            return jnp.array(1, float_type)
         
         anyn0 = jnp.any(jnp.logical_and(n0, w))
 
@@ -479,13 +535,13 @@ class BART(_BARTBase):
             s = w * nout / n
             S = jnp.sum(jnp.where(n, s, 0)) # <-- @
             t = w * n0 / n
-            psin = jspecial.digamma(n)
+            psin = jspecial.digamma(n.astype(float_type))
             def terms(nminus, nplus):
                 nminus0 = nminus + n0
                 Wnmod = Wn - jnp.where(nminus0, 0, w)
                 frac = jnp.where(nminus0, w * nminus / nminus0, 0)
                 terms1 = (S - s + frac) / Wnmod
-                psi1nminus0 = jspecial.digamma(1 + nminus0)
+                psi1nminus0 = jspecial.digamma((1 + nminus0).astype(float_type))
                 terms2 = ((nplus - 1) * (S + t) - w * n0 * (psin - psi1nminus0)) / Wn
                 return jnp.where(nplus, terms1 + terms2, 0)
             tplus = terms(nminus, nplus)
@@ -517,7 +573,7 @@ class BART(_BARTBase):
                 nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
                 nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
             
-                sumn += cls._bart_correlation_maxd(nminus, n0, nplus, pnt[1:], gamma, w, debug)
+                sumn += cls._correlation(nminus, n0, nplus, pnt[1:], gamma, w, debug)
             
                 nminus = nminus.at[i].set(nminusi)
                 nplus = nplus.at[i].set(nplusi)
@@ -540,26 +596,112 @@ class BART(_BARTBase):
         return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
 
     @classmethod
-    @functools.partial(jnp.vectorize, excluded=(0, 7), signature='(p),(p),(p),(d),(),(p)->()')
-    def _bart_correlation_maxd_vectorized(cls, nminus, n0, nplus, pnt, gamma, w, debug):
+    @functools.partial(jax.jit, static_argnums=(0, 7))
+    def _correlation2(cls, n, ix, iy, pnt, gamma, w, debug):
 
-        # a jax function applied to an int32 gives a float32 even with x64
-        # enabled, so I have to sync the types to avoid losing precision in the
-        # digamma
-        ft = _patch_jax.float_type(pnt, gamma, w)
-        if ft == jnp.float64:
-            it = jnp.int64
-        else:
-            it = jnp.int32
-        
+        assert n.shape == ix.shape == iy.shape == w.shape
+        assert n.ndim == 1 and n.size >= 0
+        assert pnt.ndim == 1 and pnt.size > 0
+        # TODO repeat this shape checks in BART.correlation such that the
+        # error messages are user-legible
+
         # optimization to avoid looping over ignored axes
-        nminus = jnp.where(w, nminus, 0)
-        n0 = jnp.where(w, n0, 0)
-        nplus = jnp.where(w, nplus, 0)
+        n = jnp.where(w, n, 0)
+        ix = jnp.where(w, ix, 0)
+        iy = jnp.where(w, iy, 0)
+
+        # convert to alternative format
+        nminus = jnp.minimum(ix, iy)
+        nplus = n - jnp.maximum(ix, iy)
+        n0 = jnp.abs(ix - iy)
+        del n, ix, iy
         
-        # fix types to avoid recompilation
-        return cls._bart_correlation_maxd(
-            nminus.astype(it), n0.astype(it), nplus.astype(it),
-            pnt.astype(ft), gamma.astype(ft), w.astype(ft),
-            bool(debug),
-        )
+        float_type = _patch_jax.float_type(pnt, gamma, w)
+        
+        if nminus.size == 0:
+            return jnp.array(1, float_type)
+        
+        anyn0 = jnp.any(jnp.logical_and(n0, w))
+
+        if pnt.size == 1:
+            return jnp.where(anyn0, 1 - (1 - gamma) * pnt[0], 1)
+    
+        nout = nminus + nplus
+        n = nout + n0
+        Wn = jnp.sum(jnp.where(n, w, 0)) # <-- @
+
+        if pnt.size == 2 and not debug:
+            Q = 1 - (1 - gamma) * pnt[1]
+            sump = Q * jnp.sum(jnp.where(n, w * nout / n, 0)) # <-- @
+            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
+    
+        if pnt.size == 3 and not debug:
+            Q = 1 - (1 - gamma) * pnt[2]
+            s = w * nout / n
+            S = jnp.sum(jnp.where(n, s, 0)) # <-- @
+            t = w * n0 / n
+            psin = jspecial.digamma(n.astype(float_type))
+            def terms(nminus, nplus):
+                nminus0 = nminus + n0
+                Wnmod = Wn - jnp.where(nminus0, 0, w)
+                frac = jnp.where(nminus0, w * nminus / nminus0, 0)
+                terms1 = (S - s + frac) / Wnmod
+                psi1nminus0 = jspecial.digamma((1 + nminus0).astype(float_type))
+                terms2 = ((nplus - 1) * (S + t) - w * n0 * (psin - psi1nminus0)) / Wn
+                return jnp.where(nplus, terms1 + terms2, 0)
+            tplus = terms(nminus, nplus)
+            tminus = terms(nplus, nminus)
+            tall = jnp.where(n, w * (tplus + tminus) / n, 0)
+            sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall) # <-- @
+            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
+        
+            # TODO the pnt.size == 3 calculation is probably less accurate than
+            # the recursive one, see comparison limits > 30 ULP in test_bart.py
+    
+        p = len(nminus)
+
+        val = (0., nminus, n0, nplus)
+        def loop(i, val):
+            sump, nminus, n0, nplus = val
+
+            nminusi = nminus[i]
+            n0i = n0[i]
+            nplusi = nplus[i]
+            ni = nminusi + n0i + nplusi
+        
+            val = (0., nminus, n0, nplus, i, nminusi)
+            def loop(k, val):
+                sumn, nminus, n0, nplus, i, nminusi = val
+            
+                # here I use the fact that .at[].set won't set the value if the
+                # index is out of bounds
+                nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
+                nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
+            
+                sumn += cls._correlation(nminus, n0, nplus, pnt[1:], gamma, w, debug)
+            
+                nminus = nminus.at[i].set(nminusi)
+                nplus = nplus.at[i].set(nplusi)
+            
+                return sumn, nminus, n0, nplus, i, nminusi
+        
+            # if ni == 0 I skip recursion by passing 0 as iteration end
+            end = jnp.where(ni, nminusi + nplusi, 0)
+            start = jnp.zeros_like(end)
+            sumn, nminus, n0, nplus, _, _ = lax.fori_loop(start, end, loop, val)
+
+            sump += jnp.where(ni, w[i] * sumn / ni, 0)
+
+            return sump, nminus, n0, nplus
+
+        # skip summation if all(n0 == 0)
+        end = jnp.where(anyn0, p, 0)
+        sump, _, _, _ = lax.fori_loop(0, end, loop, val)
+
+        return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
+
+    @classmethod
+    @functools.partial(jnp.vectorize, excluded=(0, 7, 8), signature='(p),(p),(p),(d),(),(p)->()')
+    def _correlation_vectorized(cls, nminus_or_n, n0_or_ix, nplus_or_iy, pnt, gamma, w, debug, altinput):
+        func = cls._correlation2 if altinput else cls._correlation
+        return func(nminus_or_n, n0_or_ix, nplus_or_iy, pnt, gamma, w, bool(debug))

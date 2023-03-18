@@ -339,6 +339,12 @@ Can I use Fisher scoring instead of the actual hessian and jacobian? => This
 might be known as "natural gradients" in the machine learning literature but
 I'm not sure.
 
+Consider PyBADS (minimization) and PyVBMC (variational posterior) for inference.
+They are mantained python packages implementing algorithms designed for
+expensive (> 0.1s) and inaccurate likelihood evaluations, with < 20 parameters.
+They won't be optimal because I also have the gradient, but at least they won't
+hang in places where the linalg error is large.
+
 ### JAX
 
 I could write a function that converts a JAX function to a gvar function. Then
@@ -347,8 +353,7 @@ the jax function provided by the user.
 
 ### Weird input
 
-Accept xarray.DataSet and pandas.DataFrame as inputs. Probably I can't use
-these as core formats due to autograd.
+Accept xarray.DataSet and pandas.DataFrame as inputs.
 
 Also awkward arrays may be interesting as input format.
 

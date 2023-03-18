@@ -3626,3 +3626,60 @@ ubuntu-20.04:
     E           ValueError: failed to initialize intent(inout) array -- input not fortran contiguous
 
 So it's probably a scipy 1.5 bug. I switched to scipy==1.5.4.
+
+2023-03-17
+==========
+
+Optimize the BART kernel:
+
+  - Cast integers to floats when passing them to digamma, using the floating
+    type deduced from the input arguments (DONE)
+
+  - Remove the type forcing in the vectorizing wrapper (DONE)
+
+  - Run the bart tests (DONE)
+
+  - Check the tests fail if I remove the float cast => they fail, but not
+    because of the lack of accuracy
+
+  - Make a test for the lack of accuracy (DONE)
+
+  - Duplicate the internal implementation (DONE)
+
+  - Rewrite the input of the duplicate in terms of 0 <= ix, iy <= n (DONE)
+
+  - Add an option to the vectorizing wrapper to use the alternative impl (the
+    inputs change interpretation) (DONE)
+
+  - Add an option to correlation too (double interpretation) (DONE)
+
+  - Make a unit test that compares the two implementations (DONE)
+
+  - Add an option to BART (single interpretation) (DONE)
+
+  - Add an option to BART to accept directly indices (DONE)
+
+  - Make BART.indices_from_coord return structured arrays by default => too
+    complicated right now, because I don't have a quick way of making a
+    StructuredArray out of a flat array (I should implement
+    _array.unstructured_to_structured). I think I should drop the all-flat
+    format and instead map the operations over StructuredArray as a pytree,
+    including the splitting counts and points. Operations on subarray fields
+    would still be rolled with _unique and _searchsorted, so it's efficient to
+    compile if needed (high p) but keeps a consistent and legible format and
+    does not waste memory with filler splitting points (e.g. with a ton of
+    dummies and some continuous covariates). Then I convert to flat format only
+    before calling BART.correlation.
+
+  - Make a unit tests to compare index/non-index input (DONE)
+
+  - Write a script to benchmark the two implementations at fixed maxd
+
+  - Optimize the alternate implementation
+
+........
+
+The lbfgsb bug is not fixed by any version of scipy up to the latest, but the
+latest does give a more informative error message. Currently I suspect it does
+not like the gradient because the problematic parameter is called `g`. I have to
+install the old requirements on my computer and see what fails.
