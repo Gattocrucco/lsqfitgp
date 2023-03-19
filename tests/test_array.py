@@ -658,3 +658,29 @@ def test_ix():
     assert isinstance(x1, lgp.StructuredArray)
     util.assert_equal(z1.squeeze(), z)
     util.assert_equal(x1.squeeze(), x)
+
+def test_unstructured_to_structured():
+    x = random_array((8, 9), float)
+    y = lgp.unstructured_to_structured(x)
+    assert isinstance(y, lgp.StructuredArray)
+    assert y.shape == (8,)
+    assert len(y.dtype) == 9
+    z = recfunctions.structured_to_unstructured(y)
+    util.assert_equal(x, z)
+    x[0, 0] = 100000
+    assert y['f0'][0] == 100000
+
+    x = random_array((7, 4), [
+        ('a', float),
+        ('b', float, (2, 3)),
+        ('c', 'f,d'),
+        ('d', [('e', float, (4, 5))], (2, 3)),
+    ])
+    y = recfunctions.structured_to_unstructured(x)
+    z = lgp.unstructured_to_structured(y, x.dtype)
+    assert isinstance(z, lgp.StructuredArray)
+    util.assert_equal(x, z)
+
+    x = random_array((), float)
+    with pytest.raises(ValueError):
+        y = lgp.unstructured_to_structured(x)

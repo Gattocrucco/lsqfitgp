@@ -3801,7 +3801,7 @@ Now to go further I need to try to rewrite as much as possible of the summation
 term as separate calculations on ix and iy that get combined only at the end.
 
 To do next:
-  - commit
+  - commit (DONE)
   - install the current version in the bart repo and re-run the bakeoff
   - compute Wnplus and Wnminus with the max-min trick
   - optimize recursion restart by moving the base cases in the internal function

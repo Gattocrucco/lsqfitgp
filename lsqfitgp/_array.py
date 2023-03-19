@@ -29,6 +29,7 @@ __all__ = [
     'broadcast_to',
     'broadcast_arrays',
     'asarray',
+    'unstructured_to_structured',
 ]
 
 # TODO use register_pytree_with_keys
@@ -85,7 +86,9 @@ class StructuredArray:
             The dtype of the array. If None, it is determined automatically
             (before the shape).
         d : dict str -> array
-            The _dict of the array.
+            The _dict of the array. The arrays, if structured, must be already
+            StructuredArrays. The order of the keys must match the order of the
+            fields.
         check : bool
             If True (default), check the passed values are consistent.
 
@@ -148,10 +151,6 @@ class StructuredArray:
         }
         return cls._array(array.shape, array.dtype, d)
         
-    # TODO from a non-structured array by using the last axis as field
-    # dimension, with default field names as in
-    # numpy.lib.recfunctions.unstructured_to_structured.
-    
     @classmethod
     def from_dataframe(cls, df):
         """
@@ -480,3 +479,42 @@ def _ix(*args):
         x.reshape((1,) * i + (-1,) + (1,) * (n - i - 1))
         for i, x in enumerate(args)
     )
+
+def unstructured_to_structured(arr,
+    dtype=None,
+    names=None,
+    align=False,
+    copy=False,
+    casting='unsafe'):
+    """ Like numpy.lib.recfunctions.unstructured_to_structured, but outputs a
+    StructuredArray. """
+    arr = asarray(arr)
+    dummy_shape = (0,) * (arr.ndim - 1) + arr.shape[-1:]
+    assert len(dummy_shape) == arr.ndim
+    assert dummy_shape[-1:] == arr.shape[-1:]
+    dummy_in = numpy.empty(dummy_shape, arr.dtype)
+    assert dummy_in.nbytes == 0 or dummy_in.ndim == 0
+    dummy_out = recfunctions.unstructured_to_structured(dummy_in,
+        dtype=dtype, names=names, align=align, copy=copy, casting=casting)
+    out, index = _unstructured_to_structured(0, (), arr, dummy_out.dtype, copy, casting)
+    assert index == arr.shape[-1]
+    return out
+
+def _unstructured_to_structured(idx, shape, arr, dtype, copy, casting):
+    arrays = {}
+    for i, name in enumerate(dtype.names):
+        dtbase = dtype[i].base
+        dtshape = shape + dtype[i].shape
+        if dtbase.names is not None:
+            y, idx = _unstructured_to_structured(idx, dtshape, arr, dtbase, copy, casting)
+        else:
+            size = numpy.prod(dtshape, dtype=int)
+            x = arr[..., idx:idx + size]
+            x = x.reshape(arr.shape[:-1] + dtshape)
+            if isinstance(x, jnp.ndarray):
+                y = x.astype(dtbase)
+            else:
+                y = x.astype(dtbase, copy=copy, casting=casting)
+            idx += size
+        arrays[name] = y
+    return StructuredArray._array(arr.shape[:-1] + shape, dtype, arrays), idx
