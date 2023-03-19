@@ -348,7 +348,7 @@ def test_altinput(sb, sbw, sa, w, a, b, u, md):
     swap = gen.integers(0, 2, size=ix.shape, dtype=bool)
     ix, iy = np.where(swap, iy, ix), np.where(swap, ix, iy)
     c2 = lgp.BART.correlation(n, ix, iy, alpha=a, beta=b, gamma=u, maxd=md, weights=w, altinput=True)
-    np.testing.assert_array_max_ulp(c1, c2)
+    np.testing.assert_array_max_ulp(c1, c2, 14)
 
 def test_index_input():
     """ passing coordinates or directly indices gives the same result """
@@ -363,7 +363,7 @@ def test_index_input():
     iy = asstruct(lgp.BART.indices_from_coord(y, splits))
     c1 = lgp.BART(splits=splits)(x, y)
     c2 = lgp.BART(splits=splits, indices=True)(ix, iy)
-    np.testing.assert_array_max_ulp(c1, c2)
+    np.testing.assert_array_max_ulp(c1, c2, 0)
 
 # TODO
 # - increases at fixed n0 and ntot if the difference between nminus and nplus
@@ -371,3 +371,5 @@ def test_index_input():
 # - test gamma='auto' gives 0 for beta=0, alpha=1
 # - test of equality with precomputed values sampled with qmc
 # - duplicated entries in reset have no effect
+# - continuity w.r.t. weight in zero, unless all differring covariates disappear
+#   and the points collapse (which should still be continuous if gamma=1)

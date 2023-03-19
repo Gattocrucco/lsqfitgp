@@ -599,65 +599,101 @@ class BART(_BARTBase):
     @functools.partial(jax.jit, static_argnums=(0, 7))
     def _correlation2(cls, n, ix, iy, pnt, gamma, w, debug):
 
+        assert n.ndim == 1
         assert n.shape == ix.shape == iy.shape == w.shape
-        assert n.ndim == 1 and n.size >= 0
         assert pnt.ndim == 1 and pnt.size > 0
         # TODO repeat this shape checks in BART.correlation such that the
         # error messages are user-legible
 
-        # optimization to avoid looping over ignored axes
+        # infer float type from float arguments
+        flt = _patch_jax.float_type(pnt, gamma, w)
+        
+        # no covariates, always return 1
+        if n.size == 0:
+            return jnp.array(1, flt)
+        
+        # pre-cast all floats to the common type, to avoid unwanted float32
+        # calculations in mixed float-integer operations
+        pnt = pnt.astype(flt)
+        gamma = gamma.astype(flt)
+        w = w.astype(flt)
+        
+        # ignore zero-weight axes
         n = jnp.where(w, n, 0)
         ix = jnp.where(w, ix, 0)
         iy = jnp.where(w, iy, 0)
 
-        # convert to alternative format
-        nminus = jnp.minimum(ix, iy)
-        nplus = n - jnp.maximum(ix, iy)
-        n0 = jnp.abs(ix - iy)
-        del n, ix, iy
-        
-        float_type = _patch_jax.float_type(pnt, gamma, w)
-        
-        if nminus.size == 0:
-            return jnp.array(1, float_type)
-        
-        anyn0 = jnp.any(jnp.logical_and(n0, w))
+        # check if the points coincide
+        seed = jnp.uint64(16132933535611723338)
+        hx = _patch_jax.fasthash64(ix, seed)
+        hy = _patch_jax.fasthash64(iy, seed)
+        anyn0 = hx != hy
+        # no hash collision checking, it would be branchless because of vmap
 
+        # base case of the recursion, no dependence on points apart from the
+        # case when they are equal
         if pnt.size == 1:
             return jnp.where(anyn0, 1 - (1 - gamma) * pnt[0], 1)
     
-        nout = nminus + nplus
-        n = nout + n0
-        Wn = jnp.sum(jnp.where(n, w, 0)) # <-- @
+        Wn = jnp.sum(jnp.where(n, w, 0))
 
+        # shortcut for the last two levels of the recursion
         if pnt.size == 2 and not debug:
+            n0 = jnp.abs(ix - iy)
+            sum_term = jnp.where(n, w / n, 0) @ n0
             Q = 1 - (1 - gamma) * pnt[1]
-            sump = Q * jnp.sum(jnp.where(n, w * nout / n, 0)) # <-- @
-            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
+            P0 = pnt[0]
+            result = (1 - P0 * (1 - Q)) - (P0 * Q / Wn) * sum_term
+            return jnp.where(anyn0, result, 1)
+            # TODO since sum_term does not depend on the depth, resetting the
+            # recursion does not require to recompute it, and so it could be
+            # implemented much more efficiently inside here than in the
+            # user-facing wrapper
     
-        if pnt.size == 3 and not debug:
-            Q = 1 - (1 - gamma) * pnt[2]
-            s = w * nout / n
-            S = jnp.sum(jnp.where(n, s, 0)) # <-- @
-            t = w * n0 / n
-            psin = jspecial.digamma(n.astype(float_type))
-            def terms(nminus, nplus):
-                nminus0 = nminus + n0
-                Wnmod = Wn - jnp.where(nminus0, 0, w)
-                frac = jnp.where(nminus0, w * nminus / nminus0, 0)
-                terms1 = (S - s + frac) / Wnmod
-                psi1nminus0 = jspecial.digamma((1 + nminus0).astype(float_type))
-                terms2 = ((nplus - 1) * (S + t) - w * n0 * (psin - psi1nminus0)) / Wn
-                return jnp.where(nplus, terms1 + terms2, 0)
-            tplus = terms(nminus, nplus)
-            tminus = terms(nplus, nminus)
-            tall = jnp.where(n, w * (tplus + tminus) / n, 0)
-            sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall) # <-- @
-            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
+        # convert to alternative format
+        minxy = jnp.minimum(ix, iy)
+        maxxy = jnp.maximum(ix, iy)
+        nminus = minxy
+        nplus = n - maxxy
+        n0 = maxxy - minxy
         
-            # TODO the pnt.size == 3 calculation is probably less accurate than
-            # the recursive one, see comparison limits > 30 ULP in test_bart.py
-    
+        # shortcut for the last three levels of the recursion
+        if pnt.size == 3 and not debug:
+            nminus0 = maxxy
+            nplus0 = n - minxy
+            nout = n - n0
+            Wnminus = Wn - jnp.where(nplus0, 0, w)
+            Wnplus = Wn - jnp.where(nminus0, 0, w)
+            S = jnp.where(n, w / n, 0) @ nout
+
+            t = w / n * n0
+            terms1 = (S + t) * (1 / Wnminus + 1 / Wnplus + (nout - 2) / Wn)
+
+            terms2 = (
+                w / Wnminus * jnp.where(nplus0, n0.astype(flt) / nplus0, 1) +
+                w / Wnplus * jnp.where(nminus0, n0.astype(flt) / nminus0, 1)
+            )
+
+            psin = jspecial.digamma(n.astype(flt))
+            psiminus = jnp.maximum(
+                jspecial.digamma((1 + ix).astype(flt)),
+                jspecial.digamma((1 + iy).astype(flt)),
+            )
+            psiplus = jnp.maximum(
+                jspecial.digamma((1 + n - ix).astype(flt)),
+                jspecial.digamma((1 + n - iy).astype(flt)),
+            )
+            terms3 = w / Wn * n0 * (2 * psin - psiminus - psiplus)
+
+            terms = terms1 - terms2 - terms3
+            sumi = jnp.where(n, w / n, 0) @ terms
+
+            Q = 1 - (1 - gamma) * pnt[2]
+            sump = (1 - pnt[1]) * S + (pnt[1] * Q) * sumi
+            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
+            # TODO same here: the expensive terms are S and sumi, and they do
+            # not involve pnt.
+
         p = len(nminus)
 
         val = (0., nminus, n0, nplus)

@@ -3673,7 +3673,7 @@ Optimize the BART kernel:
 
   - Make a unit tests to compare index/non-index input (DONE)
 
-  - Write a script to benchmark the two implementations at fixed maxd
+  - Write a script to benchmark the two implementations at fixed maxd (DONE)
 
   - Optimize the alternate implementation
 
@@ -3683,3 +3683,142 @@ The lbfgsb bug is not fixed by any version of scipy up to the latest, but the
 latest does give a more informative error message. Currently I suspect it does
 not like the gradient because the problematic parameter is called `g`. I have to
 install the old requirements on my computer and see what fails.
+
+2023-03-18
+==========
+
+Optimize!
+
+Make the internal implementation a no-op and see how long it takes => 0.45ms
+Make it a matmul reduction => 3.8ms
+Make it a sum(mult) reduction => 36ms
+Make it a pre-reduction => 0.68ms
+
+Conclusion: there is no signicant overhead, and pre-reduction is effective.
+
+I need to compute
+
+    anyn0 = any((ix - iy) & w)
+
+Since I'm doing ix = 0 where w = 0, I have ~w -> ~(ix - iy), so ix - iy -> w,
+so (ix - iy) & w = ix - iy:
+
+    anyn0 = any(ix - iy)
+          = any(ix ≠ iy)
+          = ix ≠ iy
+
+Pre-reduced version:
+
+    hx = hash(ix)
+    hy = hash(iy)
+    anyn0 = hx ≠ hy
+
+As hash I take https://github.com/ztanml/fast-hash. So:
+  - reimplement the hash in jax (DONE)
+  - compile the c version with hardcoded inputs and print their hash (DONE)
+  - check the hashes change a lot by flipping one bit of the input (DONE)
+  - make a unit test that my implementation gives the same values (DONE)
+  - make a unit test that checks that single bit-flipping changes an expected
+    50% of the output bits (do a chisquared test) (lax has popcount) (DONE)
+  - try to unroll the hash (DONE)
+  - use the hash in BART._correlation2 (DONE)
+  - time it => 0.82ms (DONE)
+  - try to introduce collision checking with lax.cond (DONE)
+  - time it (DONE)
+  - if it slows down, drop it (DONE)
+  - if it's still fast, try taking the fwd/rev derivative (NA)
+  - it it slows down, try using stop_gradient somewhere on the collision check 
+    (NA)
+
+I optimized the maxd=0 case and it works fine. Now I have maxd=1.
+
+    1    nout = nminus + nplus
+    2    Wn = jnp.sum(jnp.where(n, w, 0))
+    3    Q = 1 - (1 - gamma) * pnt[1]
+    4    sump = Q * jnp.sum(jnp.where(n, w * nout / n, 0)) # <-- @
+    5    return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
+
+1) I have to avoid computing nout. It's used only in (4).
+
+2) This is fine.
+
+3) Ok.
+
+4) Darn, I can't see a way to avoid crossing ix with iy. If their difference
+was always positive it would be ok.
+
+5) Ok, this is already O(n^2). I think I can avoid using anyn0: if n0=0, then
+nout == n, so it's sump = Q * Wn => no wait it depends on Q. Crap. Whatever.
+
+=> I still got quite an improvement by replacing the summation with a matmul
+(40ms -> 10ms).
+
+Now it's maxd=2.
+
+2023-03-19
+==========
+
+Starting point:
+
+    Old implementation:
+    902 ms ± 5.23 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    New implementation:
+    487 ms ± 11 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Matmul:
+    990 µs ± 27.3 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+
+(I converted the matmul to jax for a fair comparison, it's faster.)
+
+Note from the bart repo:
+
+      * digamma(1 + nminus0) =
+            = digamma(1 + nminus + n0) =
+            = digamma(1 + maximum(ix, iy)) =
+            = maximum(digamma(1 + ix), digamma(1 + iy))
+      * digamma(1 + nplus0) =
+            = digamma(1 + nplus + n0) =
+            = digamma(1 + n - minimum(ix, iy)) =
+            = maximum(digamma(1 + n - ix), digamma(1 + n - iy))
+
+After using it:
+
+    New implementation:
+    141 ms ± 408 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+Next optimization: I replace a single sum-mult with matmul:
+
+    110 ms ± 576 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+Good! A lot of difference just for that! Again for another one:
+
+    63.3 ms ± 549 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+By removing conditions and gathering, I get
+
+    50.4 ms ± 201 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+Now to go further I need to try to rewrite as much as possible of the summation
+term as separate calculations on ix and iy that get combined only at the end.
+
+To do next:
+  - commit
+  - install the current version in the bart repo and re-run the bakeoff
+  - compute Wnplus and Wnminus with the max-min trick
+  - optimize recursion restart by moving the base cases in the internal function
+  - implement the CrossKernel.outer mechanism to avoid recomputing digamma
+
+DISASTER! Since in the recursion reset gamma gets shape n^2, some of my
+optimizations break down, and I'm back to square one:
+
+    Old implementation:
+    899 ms ± 5.32 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    New implementation:
+    319 ms ± 1.99 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Matmul:
+    1.07 ms ± 3.88 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+
+New priority: optimize the recursion restart case.
+
+It looks weird that performance drops so sharply though, it should be a clean
+O(n^2) without p. What's going on? => try to implement the restart internally
+and see if it is sufficient to fix it up.

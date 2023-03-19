@@ -3,6 +3,7 @@ pyenv
 *.png
 *.sublime-workspace
 playground
+tests/fast-hash/main
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

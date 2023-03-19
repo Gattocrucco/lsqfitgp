@@ -624,3 +624,37 @@ def test_incompatible_shapes():
     y = tree_util.tree_unflatten(aux, children)
     assert y.shape == ()
     assert y.dtype == [('f0', float), ('f1', bool), ('f2', object)]
+
+def test_ix():
+    x = lgp.StructuredArray(random_array(8, 'f,2d,?'))
+    y = lgp.StructuredArray(random_array(3, 'i,i'))
+    z = random_array(7, 'd')
+
+    x1, = np.ix_(x)
+    assert isinstance(x1, lgp.StructuredArray)
+    util.assert_equal(x1, x)
+
+    x1, y1 = np.ix_(x, y)
+    assert x1.shape == x.shape + (1,)
+    assert y1.shape == (1,) + y.shape
+    assert isinstance(x1, lgp.StructuredArray)
+    assert isinstance(y1, lgp.StructuredArray)
+    util.assert_equal(x1.squeeze(), x)
+    util.assert_equal(y1.squeeze(), y)
+
+    x1, y1, z1 = np.ix_(x, y, z)
+    assert isinstance(x1, lgp.StructuredArray)
+    assert isinstance(y1, lgp.StructuredArray)
+    assert x1.shape == x.shape + (1, 1)
+    assert y1.shape == (1,) + y.shape + (1,)
+    assert z1.shape == (1, 1) + z.shape
+    util.assert_equal(x1.squeeze(), x)
+    util.assert_equal(y1.squeeze(), y)
+    util.assert_equal(z1.squeeze(), z)
+
+    z1, x1 = np.ix_(z, x)
+    assert z1.shape == z.shape + (1,)
+    assert x1.shape == (1,) + x.shape
+    assert isinstance(x1, lgp.StructuredArray)
+    util.assert_equal(z1.squeeze(), z)
+    util.assert_equal(x1.squeeze(), x)

@@ -8,6 +8,8 @@ import gvar
 import pytest
 from scipy import linalg
 
+import lsqfitgp as lgp
+
 def jaxtonumpy(x):
     """
     Recursively convert jax arrays in x to numpy arrays.
@@ -18,12 +20,13 @@ def jaxtonumpy(x):
 
 def assert_equal(*args):
     """
-    Version of assert_equal that works with jax arrays, and which fixes
-    numpy issue #21739
+    Version of assert_equal that works with jax arrays and StructuredArray, and
+    which fixes numpy issue #21739
     """
-    assert_array_equal(*map(jaxtonumpy, args))
+    assert_array_equal(*jaxtonumpy(args))
 
 def assert_array_equal(*args):
+    args = [np.array(a) if isinstance(a, lgp.StructuredArray) else a for a in args]
     a = args[0]
     if isinstance(a, np.ndarray) and a.size == 0 and a.dtype.names:
         assert all(b.dtype == a.dtype for b in args)

@@ -431,7 +431,6 @@ def asarray(x, dtype=None):
     Version of numpy.asarray that works with StructuredArray and JAX arrays.
     If x is not an array already, returns a JAX array if possible.
     """
-    # not handled by __array_function__
     if isinstance(x, (StructuredArray, jnp.ndarray, numpy.ndarray)):
         return x if dtype is None else x.astype(dtype)
     if x is None:
@@ -471,3 +470,13 @@ def _structured_to_unstructured(arr, dtype=None, casting='unsafe'):
 @StructuredArray._implements(numpy.squeeze)
 def _squeeze(a, axis=None):
     return a.squeeze(axis)
+
+@StructuredArray._implements(numpy.ix_)
+def _ix(*args):
+    args = tuple(map(asarray, args))
+    assert all(x.ndim == 1 for x in args)
+    n = len(args)
+    return tuple(
+        x.reshape((1,) * i + (-1,) + (1,) * (n - i - 1))
+        for i, x in enumerate(args)
+    )
