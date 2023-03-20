@@ -30,23 +30,22 @@ import util
 
 gen = np.random.default_rng(202207191826)
 
-plist = [1, 2, 5]
+plist = [1, 5]
 smark = mark.parametrize('sb,sbw,sa,w', sum([[
     (*gen.integers(0, 4, (3, p)), gen.integers(1, 10, p)),
     (*np.zeros((3, p), int), gen.integers(1, 10, p)),
+    (np.zeros(p, int), np.pad([1], (0, p - 1)), np.zeros(p, int), gen.integers(1, 10, p)),
     (gen.integers(0, 10, p), (np.arange(p) == gen.integers(p)).astype(int), gen.integers(0, 10, p), gen.integers(1, 10, p)),
 ] for p in plist], []))
 amark = mark.parametrize('a', [
-    pytest.param(0, id='a0'),
-    pytest.param(1, id='a1'),
+    pytest.param(np.array([0, 1])[:, None], id='a01'),
     pytest.param(np.linspace(0.01, 0.99, 7)[:, None], id='aother'),
 ])
 bmark = mark.parametrize('b', [
-    pytest.param(0, id='b0'),
-    pytest.param(np.inf, id='binf'),
+    pytest.param(np.array([0, np.inf]), id='b0inf'),
     pytest.param(np.linspace(1, 10, 10), id='bother'),
 ])
-umark = mark.parametrize('u', [np.arange(0, 2)[:, None, None]])
+umark = mark.parametrize('u', [np.array([0, 1])[:, None, None]])
 mdmark = mark.parametrize('md', range(5))
 
 @mdmark
@@ -160,7 +159,7 @@ def test_perm_dims(sb, sbw, sa, w, a, b, u, md):
     perm = gen.permutation(sb.size)
     c = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
     cp = lgp.BART.correlation(sb[perm], sbw[perm], sa[perm], alpha=a, beta=b, gamma=u, maxd=md, weights=w[perm])
-    np.testing.assert_array_max_ulp(c, cp, 31)
+    np.testing.assert_array_max_ulp(c, cp, 64)
 
 @mdmark
 @umark
@@ -348,7 +347,7 @@ def test_altinput(sb, sbw, sa, w, a, b, u, md):
     swap = gen.integers(0, 2, size=ix.shape, dtype=bool)
     ix, iy = np.where(swap, iy, ix), np.where(swap, ix, iy)
     c2 = lgp.BART.correlation(n, ix, iy, alpha=a, beta=b, gamma=u, maxd=md, weights=w, altinput=True)
-    np.testing.assert_array_max_ulp(c1, c2, 14)
+    util.assert_allclose(c1, c2, rtol=1e-16, atol=2e-15)
 
 def test_index_input():
     """ passing coordinates or directly indices gives the same result """

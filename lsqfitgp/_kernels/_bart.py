@@ -662,19 +662,19 @@ class BART(_BARTBase):
             nminus0 = maxxy
             nplus0 = n - minxy
             nout = n - n0
-            Wnminus = Wn - jnp.where(nplus0, 0, w)
-            Wnplus = Wn - jnp.where(nminus0, 0, w)
+            inv_Wnminus = 1 / (Wn - jnp.where(nplus0, 0, jnp.where(n, w, 0)))
+            inv_Wnplus = 1 / (Wn - jnp.where(nminus0, 0, jnp.where(n, w, 0)))
             S = jnp.where(n, w / n, 0) @ nout
 
-            t = w / n * n0
-            terms1 = (S + t) * (1 / Wnminus + 1 / Wnplus + (nout - 2) / Wn)
+            t = jnp.where(n, w / n, 0) * n0
+            terms1 = (S + t) * (inv_Wnminus + inv_Wnplus + (nout - 2) / Wn)
 
             terms2 = (
-                w / Wnminus * jnp.where(nplus0, n0.astype(flt) / nplus0, 1) +
-                w / Wnplus * jnp.where(nminus0, n0.astype(flt) / nminus0, 1)
+                w * inv_Wnminus * jnp.where(nplus0, n0.astype(flt) / nplus0, 1) +
+                w * inv_Wnplus * jnp.where(nminus0, n0.astype(flt) / nminus0, 1)
             )
 
-            psin = jspecial.digamma(n.astype(flt))
+            psin = jspecial.digamma(jnp.where(n, n, 1).astype(flt))
             psiminus = jnp.maximum(
                 jspecial.digamma((1 + ix).astype(flt)),
                 jspecial.digamma((1 + iy).astype(flt)),

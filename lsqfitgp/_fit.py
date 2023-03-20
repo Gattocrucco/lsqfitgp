@@ -867,33 +867,28 @@ class empbayes_fit(Logger):
             self.timer.reset()
 
         pattern = re.compile(
-            r'((\d+) days, )?(\d{1,2}):(\d{1,2}):(\d{1,2})(.(\d{6}))?')
+            r'((\d+) days, )?(\d{1,2}):(\d\d):(\d\d(\.\d{6})?)')
 
         @classmethod
         def fmttime(cls, seconds):
             td = datetime.timedelta(seconds=seconds)
             m = cls.pattern.fullmatch(str(td))
-            _, day, hour, minute, second, _, microsec = m.groups()
+            _, day, hour, minute, second, _ = m.groups()
+            hour = int(hour)
+            minute = int(minute)
+            second = float(second)
             if day:
-                return day.lstrip('0') + 'd' + hour + 'h'
-            elif int(hour):
-                return hour.lstrip('0') + 'h' + minute + 'm'
-            elif int(minute):
-                return minute.lstrip('0') + 'm' + second + 's'
-            elif int(second):
-                if microsec:
-                    return second.lstrip('0') + '.' + microsec[:3] + 's'
-                else:
-                    return second.lstrip('0') + '.000s'
-            elif microsec:
-                if microsec[0] != '0':
-                    return microsec[:3] + 'ms'
-                elif int(microsec[:3]):
-                    return microsec[:3].lstrip('0') + '.' + microsec[3:] + 'ms'
-                else:
-                    return microsec[3:].lstrip('0') + 'μs'
+                return f'{day.lstrip("0")}d{hour:02d}h'
+            elif hour:
+                return f'{hour}h{minute:02d}m'
+            elif minute:
+                return f'{minute}m{second:02.0f}s'
+            elif second >= 0.1:
+                return f'{second:#.2g}'.rstrip('.') + 's'
+            elif second >= 0.0001:
+                return f'{second * 1e3:#.2g}'.rstrip('.') + 'ms'
             else:
-                return '0s'
+                return f'{second * 1e6:.0f}μs'
 
         @classmethod
         def fmttimes(cls, times):
