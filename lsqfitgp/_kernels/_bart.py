@@ -357,7 +357,7 @@ class BART(_BARTBase):
             The prior correlation.
         """
         
-        # check splitting points are integers
+        # check splitting indices are integers
         splitsbefore_or_totalsplits = jnp.asarray(splitsbefore_or_totalsplits)
         splitsbetween_or_index1 = jnp.asarray(splitsbetween_or_index1)
         splitsafter_or_index2 = jnp.asarray(splitsafter_or_index2)
@@ -365,7 +365,7 @@ class BART(_BARTBase):
         assert jnp.issubdtype(splitsbetween_or_index1.dtype, jnp.integer)
         assert jnp.issubdtype(splitsafter_or_index2.dtype, jnp.integer)
         
-        # check splitting points are nonnegative
+        # check splitting indices are nonnegative
         with _patch_jax.skipifabstract():
             assert jnp.all(splitsbefore_or_totalsplits >= 0)
             assert jnp.all(splitsbetween_or_index1 >= 0)
@@ -651,8 +651,9 @@ class BART(_BARTBase):
             # user-facing wrapper
     
         # convert to alternative format
-        minxy = jnp.minimum(ix, iy)
-        maxxy = jnp.maximum(ix, iy)
+        xlty = ix < iy
+        minxy = jnp.where(xlty, ix, iy)
+        maxxy = jnp.where(xlty, iy, ix)
         nminus = minxy
         nplus = n - maxxy
         n0 = maxxy - minxy
@@ -662,35 +663,37 @@ class BART(_BARTBase):
             nminus0 = maxxy
             nplus0 = n - minxy
             nout = n - n0
-            inv_Wnminus = 1 / (Wn - jnp.where(nplus0, 0, jnp.where(n, w, 0)))
-            inv_Wnplus = 1 / (Wn - jnp.where(nminus0, 0, jnp.where(n, w, 0)))
-            S = jnp.where(n, w / n, 0) @ nout
 
-            t = jnp.where(n, w / n, 0) * n0
-            terms1 = (S + t) * (inv_Wnminus + inv_Wnplus + (nout - 2) / Wn)
+            inv_Wn = 1 / Wn
+            inv_Wnmod = 1 / (Wn - jnp.where(n, w, 0))
+            inv_Wnminus = jnp.where(nplus0, inv_Wn, inv_Wnmod)
+            inv_Wnplus = jnp.where(nminus0, inv_Wn, inv_Wnmod)
+            wn = jnp.where(n, w / n, 0)
+            S = wn @ nout
 
-            terms2 = (
-                w * inv_Wnminus * jnp.where(nplus0, n0.astype(flt) / nplus0, 1) +
-                w * inv_Wnplus * jnp.where(nminus0, n0.astype(flt) / nminus0, 1)
-            )
+            t = wn * n0
+            terms1 = (S + t) * (inv_Wnminus + inv_Wnplus + inv_Wn * (nout - 2))
+
+            terms2  = jnp.where( nplus0, w * inv_Wn * n0 /  nplus0, w * inv_Wnmod)
+            terms2 += jnp.where(nminus0, w * inv_Wn * n0 / nminus0, w * inv_Wnmod)
 
             psin = jspecial.digamma(jnp.where(n, n, 1).astype(flt))
-            psiminus = jnp.maximum(
-                jspecial.digamma((1 + ix).astype(flt)),
+            psiminus = jnp.where(xlty,
                 jspecial.digamma((1 + iy).astype(flt)),
+                jspecial.digamma((1 + ix).astype(flt)),
             )
-            psiplus = jnp.maximum(
+            psiplus = jnp.where(xlty,
                 jspecial.digamma((1 + n - ix).astype(flt)),
                 jspecial.digamma((1 + n - iy).astype(flt)),
             )
-            terms3 = w / Wn * n0 * (2 * psin - psiminus - psiplus)
+            terms3 = w * inv_Wn * n0 * (2 * psin - psiminus - psiplus)
 
             terms = terms1 - terms2 - terms3
-            sumi = jnp.where(n, w / n, 0) @ terms
+            sumi = wn @ terms
 
             Q = 1 - (1 - gamma) * pnt[2]
             sump = (1 - pnt[1]) * S + (pnt[1] * Q) * sumi
-            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
+            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump * inv_Wn), 1)
             # TODO same here: the expensive terms are S and sumi, and they do
             # not involve pnt.
 

@@ -138,7 +138,7 @@ class CrossKernel:
     @staticmethod
     def _newkernel_from(core, kernels):
         """
-        Make a new kernel object which is the result of an operations on the
+        Make a new kernel object which is the result of an operation on the
         kernels in `kernels`, with implementation callable `core`.
         """
         assert kernels
@@ -149,7 +149,7 @@ class CrossKernel:
         mind = [k._minderivable for k in kernels]
         maxd = [k._maxderivable for k in kernels]
         obj._minderivable = tuple(numpy.min(mind, axis=0))
-        obj._maxderivable = tuple(numpy.max(maxd, axis=0)) # TODO or is it the sum?
+        obj._maxderivable = tuple(numpy.max(maxd, axis=0)) # TODO or is it the sum, for the nd case?
         obj.initargs = None
         obj._maxdim = None
         # TODO implement maxdim like derivable (distinguish left/right
@@ -339,6 +339,9 @@ class CrossKernel:
 
         return self
     
+    # TODO it would be useful to be able to pass additional keyword arguments
+    # here. Since _kernel may have been transformed, I'd need to add keyword
+    # arguments support to all kernel transformations.
     def __call__(self, x, y):
         x = _array.asarray(x)
         y = _array.asarray(y)
@@ -352,7 +355,7 @@ class CrossKernel:
         assert jnp.issubdtype(result.dtype, jnp.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
         return result
-    
+
     class _side(enum.Enum):
         LEFT = 0
         RIGHT = 1

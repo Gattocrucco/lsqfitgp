@@ -3822,3 +3822,88 @@ New priority: optimize the recursion restart case.
 It looks weird that performance drops so sharply though, it should be a clean
 O(n^2) without p. What's going on? => try to implement the restart internally
 and see if it is sufficient to fix it up.
+
+2023-03-22
+==========
+
+I tried optimizing the calculation of inv_Wnplus and inv_Wnminus by splitting
+them on calculations on ix/iy with maximum/minimum, but it was slower by 5ms.
+While doing that, I noticed that I could write them right away as O(p)
+calculations. Then I wondered if minimum/maximum are intrisically slow compared
+to where, so I used where for the digamma term, and---surprise---I gained 5ms!
+
+........
+
+I'll try to simplify
+
+    inv_Wnminus + inv_Wnplus - 2 * inv_Wn =
+
+    = where(nplus0, inv_Wn, inv_Wnmod) +
+    + where(nminus0, inv_Wn, inv_Wnmod) +
+    - 2 * inv_Wn =
+
+    = where(n - min(x, y), inv_Wn, inv_Wnmod) +
+    + where(max(x, y), inv_Wn, inv_Wnmod) +
+    - 2 * inv_Wn =
+
+    = where(x < y,
+        where(n - x, inv_Wn, inv_Wnmod) + where(y, inv_Wn, inv_Wnmod) - 2 * inv_Wn,
+        where(n - y, inv_Wn, inv_Wnmod) + where(x, inv_Wn, inv_Wnmod) - 2 * inv_Wn,
+    ) =
+
+If x < y, then y > 0 because x ≥ 0. Also, n - x > n - y ≥ 0, so n - x > 0. So
+
+    = where(x < y,
+        0,
+        where(n - y, inv_Wn, inv_Wnmod) + where(x, inv_Wn, inv_Wnmod) - 2 * inv_Wn,
+    ) =
+
+Analogously, if x > y, it's 0. The only interesting case is x == y:
+
+    = where(n - x, inv_Wn, inv_Wnmod) +
+    + where(x, inv_Wn, inv_Wnmod) +
+    - 2 * inv_Wn =
+
+Since we can assume n > 0 (if n = 0 the whole term is suppressed), then
+either x > 0 or n - x > 0. So it's
+
+    = where(x & (n - x), 0, inv_Wnmod - inv_Wn)
+
+Overall, it's
+
+    = where(n0, 0, where(x & (n - x), 0, inv_Wnmod - inv_Wn))
+
+Note: first by mistake I used | instead of &. It's 3ms faster than &. What??
+=> I tried rewriting the expression with ~|~, and with where(where()), but it's
+still 46ms instead of 43ms. Weird.
+
+I'm not using it after all, so I'll paste it here:
+
+    inv_W_corr = jnp.where(n0,
+        0, jnp.where(ix.astype(bool) & (n - ix).astype(bool),
+            0, inv_Wnmod - inv_Wn))
+    terms1 = (S + t) * (inv_Wn * nout + inv_W_corr)
+    # and drop inv_Wnplus, inv_Wnminus
+
+.........
+
+I tried maxd=4, reset=2, and now it's
+
+    Old implementation:
+    898 ms ± 4.3 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    New implementation:
+    97.2 ms ± 403 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+
+Somehow a thing I did improved it from 320ms to 100ms. Nice.
+
+The time is about twice as the single-step calculation, as expected. To do:
+  - optimize the n^2 gamma case separately
+  - put part of the reset mechanism inside the correlation function (remember to
+    keep the old version when using the old impl)
+
+To be continued: I have to call directly BART.correlation to pass array gamma.
+
+.........
+
+To do: modify skipifabstract to not enter ensure_compile_time_eval, and see if
+that solves the leaked tracers problems.
