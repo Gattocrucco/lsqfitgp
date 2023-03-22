@@ -518,3 +518,25 @@ def _unstructured_to_structured(idx, shape, arr, dtype, copy, casting):
             idx += size
         arrays[name] = y
     return StructuredArray._array(arr.shape[:-1] + shape, dtype, arrays), idx
+
+@StructuredArray._implements(numpy.empty_like)
+def _empty_like(prototype, dtype=None, *, shape=None):
+    shape = prototype.shape if shape is None else tuple(shape)
+    dtype = prototype.dtype if dtype is None else numpy.dtype(dtype)
+    return _empty(shape, dtype)
+
+@StructuredArray._implements(numpy.empty)
+def _empty(shape, dtype=float):
+    arrays = {}
+    for i, name in enumerate(dtype.names):
+        dtbase = dtype[i].base
+        dtshape = shape + dtype[i].shape
+        if dtbase.names is not None:
+            y = _empty(dtshape, dtbase)
+        else:
+            try:
+                y = jnp.empty(dtshape, dtbase)
+            except TypeError:
+                y = numpy.empty(dtshape, dtbase)
+        arrays[name] = y
+    return StructuredArray._array(shape, dtype, arrays)

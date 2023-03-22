@@ -684,3 +684,34 @@ def test_unstructured_to_structured():
     x = random_array((), float)
     with pytest.raises(ValueError):
         y = lgp.unstructured_to_structured(x)
+
+def test_empty():
+    like = lgp.StructuredArray(np.empty(0, 'f,f'))
+    dtype = np.dtype([
+        ('a', float),
+        ('b', float, (2, 3)),
+        ('c', 'f,d'),
+        ('d', [('e', float, (4, 5))], (2, 3)),
+        ('g', 'U8'),
+    ])
+    x = np.empty((4, 5), dtype, like=like)
+    assert isinstance(x, lgp.StructuredArray)
+    assert x.shape == (4, 5)
+    assert x.dtype == dtype
+
+    y = np.empty_like(x)
+    assert isinstance(y, lgp.StructuredArray)
+    assert y.shape == x.shape
+    assert y.dtype == x.dtype
+
+    shape = (8,)
+    y = np.empty_like(x, shape=shape)
+    assert isinstance(y, lgp.StructuredArray)
+    assert y.shape == shape
+    assert y.dtype == x.dtype
+
+    dtype = np.dtype('f,2d')
+    y = np.empty_like(x, dtype=dtype)
+    assert isinstance(y, lgp.StructuredArray)
+    assert y.shape == x.shape
+    assert y.dtype == dtype

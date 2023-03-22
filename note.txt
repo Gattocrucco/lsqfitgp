@@ -3802,7 +3802,7 @@ term as separate calculations on ix and iy that get combined only at the end.
 
 To do next:
   - commit (DONE)
-  - install the current version in the bart repo and re-run the bakeoff
+  - install the current version in the bart repo and re-run the bakeoff (DONE)
   - compute Wnplus and Wnminus with the max-min trick
   - optimize recursion restart by moving the base cases in the internal function
   - implement the CrossKernel.outer mechanism to avoid recomputing digamma
