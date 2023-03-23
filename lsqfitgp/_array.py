@@ -366,30 +366,6 @@ class StructuredArray:
             cls._handled_functions[np_function] = func
             return func
         return decorator
-    
-    def _fill_unstructured(self, out, idx=None, shape=None):
-        if idx is None:
-            idx = 0
-        if shape is None:
-            shape = self.shape
-        for name, src in self._dict.items():
-            if isinstance(src, StructuredArray):
-                if src.dtype.names and self.dtype[name].subdtype:
-                    for i in numpy.ndindex(src.shape[len(shape):]):
-                        out, idx = src[(...,) + i]._fill_unstructured(out, idx, shape)
-                    # TODO this loop is inefficient, use strides
-                else:
-                    out, idx = src._fill_unstructured(out, idx, shape)
-            else:
-                n = numpy.prod(src.shape[len(shape):], dtype=int)
-                src = src.reshape(shape + (n,))
-                key = (..., slice(idx, idx + n))
-                if hasattr(out, 'at'):
-                    out = out.at[key].set(src)
-                else:
-                    out[key] = src
-                idx += n
-        return out, idx
 
 @StructuredArray._implements(numpy.broadcast_to)
 def broadcast_to(x, shape, **kw):
@@ -452,20 +428,6 @@ def _asarray_jaxifpossible(x):
             pass
     return x
 
-@StructuredArray._implements(recfunctions.structured_to_unstructured)
-def _structured_to_unstructured(arr, dtype=None, casting='unsafe'):
-    mockup = numpy.empty(0, arr.dtype)
-    dummy = recfunctions.structured_to_unstructured(mockup, dtype=dtype, casting=casting)
-    args = (arr.shape + dummy.shape[-1:], dummy.dtype)
-    try:
-        out = jnp.empty(*args)
-    except TypeError:
-        out = numpy.empty(*args)
-        # TODO can I make out column-major w.r.t. only the last column?
-    out, length = arr._fill_unstructured(out)
-    assert length == dummy.shape[-1]
-    return out
-
 @StructuredArray._implements(numpy.squeeze)
 def _squeeze(a, axis=None):
     return a.squeeze(axis)
@@ -483,30 +445,28 @@ def _ix(*args):
 def unstructured_to_structured(arr,
     dtype=None,
     names=None,
-    align=False,
+    align=False, # TODO maybe align is totally inapplicable even with numpy arrays? What does it mean?
     copy=False,
     casting='unsafe'):
     """ Like numpy.lib.recfunctions.unstructured_to_structured, but outputs a
     StructuredArray. """
     arr = asarray(arr)
-    dummy_shape = (0,) * (arr.ndim - 1) + arr.shape[-1:]
-    assert len(dummy_shape) == arr.ndim
-    assert dummy_shape[-1:] == arr.shape[-1:]
-    dummy_in = numpy.empty(dummy_shape, arr.dtype)
-    assert dummy_in.nbytes == 0 or dummy_in.ndim == 0
-    dummy_out = recfunctions.unstructured_to_structured(dummy_in,
+    if not arr.ndim:
+        raise ValueError('arr must have at least one dimension')
+    mockup = numpy.empty((0,) + arr.shape[-1:], arr.dtype)
+    dummy = recfunctions.unstructured_to_structured(mockup,
         dtype=dtype, names=names, align=align, copy=copy, casting=casting)
-    out, index = _unstructured_to_structured(0, (), arr, dummy_out.dtype, copy, casting)
-    assert index == arr.shape[-1]
+    out, length = _unstructured_to_structured_recursive(0, (), arr, dummy.dtype, copy, casting)
+    assert length == arr.shape[-1]
     return out
 
-def _unstructured_to_structured(idx, shape, arr, dtype, copy, casting):
+def _unstructured_to_structured_recursive(idx, shape, arr, dtype, copy, casting):
     arrays = {}
     for i, name in enumerate(dtype.names):
         dtbase = dtype[i].base
         dtshape = shape + dtype[i].shape
         if dtbase.names is not None:
-            y, idx = _unstructured_to_structured(idx, dtshape, arr, dtbase, copy, casting)
+            y, idx = _unstructured_to_structured_recursive(idx, dtshape, arr, dtbase, copy, casting)
         else:
             size = numpy.prod(dtshape, dtype=int)
             x = arr[..., idx:idx + size]
@@ -518,6 +478,66 @@ def _unstructured_to_structured(idx, shape, arr, dtype, copy, casting):
             idx += size
         arrays[name] = y
     return StructuredArray._array(arr.shape[:-1] + shape, dtype, arrays), idx
+    # TODO this impl pushes the field dims last instead of interleaving them
+    # with the field shapes like _structured_to_unstructured.
+
+@StructuredArray._implements(recfunctions.structured_to_unstructured)
+def _structured_to_unstructured(arr, dtype=None, casting='unsafe'):
+    mockup = numpy.empty(0, arr.dtype)
+    dummy = recfunctions.structured_to_unstructured(mockup, dtype=dtype, casting=casting)
+    args = (arr.shape + dummy.shape[-1:], dummy.dtype)
+    try:
+        out = jnp.empty(*args)
+    except TypeError:
+        out = numpy.empty(*args)
+        # TODO can I make out column-major w.r.t. only the last column?
+    out, length = _structured_to_unstructured_recursive(0, arr, out)
+    assert length == dummy.shape[-1]
+    return out
+
+def _nd(dtype):
+    """ Count the number of scalars in a dtype """
+    base = dtype.base
+    shape = dtype.shape
+    size = numpy.prod(shape, dtype=int)
+    if base.names is None:
+        return size
+    else:
+        return size * sum(_nd(base[name]) for name in base.names)
+
+def _structured_to_unstructured_recursive(idx, arr, out, *strides):
+    dtype = arr.dtype
+    for i, name in enumerate(dtype.names):
+        subarr = arr[name]
+        base = dtype[i].base
+        size = numpy.prod(dtype[i].shape, dtype=int)
+        stride = _nd(base)
+        substrides = strides + ((size, stride),)
+        if base.names is not None:
+            out, newidx = _structured_to_unstructured_recursive(idx, subarr, out, *substrides)
+            shift = newidx - idx
+            assert shift == stride
+            idx += size * stride
+        else:
+            assert stride == 1
+            if all(size == 1 for size, stride in strides):
+                indices = numpy.s_[idx:idx + size]
+                srcsize = size
+            else:
+                indices = sum((
+                    stride * numpy.arange(size)[numpy.s_[:,] + (None,) * i]
+                    for i, (size, stride) in enumerate(reversed(substrides))
+                ), start=idx)
+                indices = indices.reshape(-1)
+                srcsize = indices.size
+            key = numpy.s_[..., indices]
+            src = subarr.reshape(out.shape[:-1] + (srcsize,))
+            if hasattr(out, 'at'):
+                out = out.at[key].set(src)
+            else:
+                out[key] = src
+            idx += size
+    return out, idx
 
 @StructuredArray._implements(numpy.empty_like)
 def _empty_like(prototype, dtype=None, *, shape=None):

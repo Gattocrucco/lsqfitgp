@@ -596,14 +596,25 @@ class BART(_BARTBase):
         return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
 
     @classmethod
-    @functools.partial(jax.jit, static_argnums=(0, 7))
-    def _correlation2(cls, n, ix, iy, pnt, gamma, w, debug):
+    @functools.partial(jax.jit, static_argnums=(0, 7, 8))
+    def _correlation2(cls, n, ix, iy, pnt, gamma, w, debug, repeat):
 
         assert n.ndim == 1
         assert n.shape == ix.shape == iy.shape == w.shape
         assert pnt.ndim == 1 and pnt.size > 0
+        assert gamma.ndim == 0
         # TODO repeat this shape checks in BART.correlation such that the
         # error messages are user-legible
+
+        if repeat is not None:
+            assert (
+                not debug
+                and repeat > 0
+                and pnt.size % repeat == 0
+                and pnt.size // repeat <= 3
+            )
+        else:
+            repeat = 1
 
         # infer float type from float arguments
         flt = _patch_jax.float_type(pnt, gamma, w)
@@ -628,38 +639,35 @@ class BART(_BARTBase):
         hx = _patch_jax.fasthash64(ix, seed)
         hy = _patch_jax.fasthash64(iy, seed)
         anyn0 = hx != hy
-        # no hash collision checking, it would be branchless because of vmap
+        # no hash collision checking, it would be branchless because of vmap,
+        # the probability of collision building a nxn matrix with n=10000 is
+        # -expm1(10000**2 * log1p(-1/2**64)) = 5e-12.
 
         # base case of the recursion, no dependence on points apart from the
         # case when they are equal
-        if pnt.size == 1:
+        if pnt.size // repeat == 1:
             return jnp.where(anyn0, 1 - (1 - gamma) * pnt[0], 1)
-    
+        
+        # normalization for axes weights
         Wn = jnp.sum(jnp.where(n, w, 0))
 
         # shortcut for the last two levels of the recursion
-        if pnt.size == 2 and not debug:
+        if pnt.size // repeat == 2 and not debug:
             n0 = jnp.abs(ix - iy)
             sum_term = jnp.where(n, w / n, 0) @ n0
             Q = 1 - (1 - gamma) * pnt[1]
             P0 = pnt[0]
             result = (1 - P0 * (1 - Q)) - (P0 * Q / Wn) * sum_term
             return jnp.where(anyn0, result, 1)
-            # TODO since sum_term does not depend on the depth, resetting the
-            # recursion does not require to recompute it, and so it could be
-            # implemented much more efficiently inside here than in the
-            # user-facing wrapper
     
         # convert to alternative format
         xlty = ix < iy
         minxy = jnp.where(xlty, ix, iy)
         maxxy = jnp.where(xlty, iy, ix)
-        nminus = minxy
-        nplus = n - maxxy
         n0 = maxxy - minxy
         
         # shortcut for the last three levels of the recursion
-        if pnt.size == 3 and not debug:
+        if pnt.size // repeat == 3 and not debug:
             nminus0 = maxxy
             nplus0 = n - minxy
             nout = n - n0
@@ -694,9 +702,10 @@ class BART(_BARTBase):
             Q = 1 - (1 - gamma) * pnt[2]
             sump = (1 - pnt[1]) * S + (pnt[1] * Q) * sumi
             return jnp.where(anyn0, 1 - pnt[0] * (1 - sump * inv_Wn), 1)
-            # TODO same here: the expensive terms are S and sumi, and they do
-            # not involve pnt.
 
+        # convert to alternative format
+        nminus = minxy
+        nplus = n - maxxy
         p = len(nminus)
 
         val = (0., nminus, n0, nplus)

@@ -99,15 +99,6 @@ def transf_recurse_dtype(transf, x, *args):
             x = x.at[name].set(transf_recurse_dtype(transf, x[name], *newargs))
         return x
 
-def _nd(dtype):
-    if dtype.names is not None:
-        return sum(_nd(dtype[name]) for name in dtype.names)
-    elif dtype.subdtype is not None: # has shape
-        # note: has name ==> does not have shape
-        return numpy.prod(dtype.shape, dtype=int)
-    else:
-        return 1
-
 def _greatest_common_superclass(classes):
     # from https://stackoverflow.com/a/25787091/3942284
     classes = [x.mro() for x in classes]
@@ -295,7 +286,7 @@ class CrossKernel:
         # ovverride if needed.
         if maxdim is not None:
             def transf(x):
-                nd = _nd(x.dtype)
+                nd = _array._nd(x.dtype)
                 with _patch_jax.skipifabstract():
                     if nd > maxdim:
                         raise ValueError(f'kernel called on type with dimensionality {nd} > maxdim={maxdim}')

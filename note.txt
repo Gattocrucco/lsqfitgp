@@ -3897,7 +3897,7 @@ I tried maxd=4, reset=2, and now it's
 Somehow a thing I did improved it from 320ms to 100ms. Nice.
 
 The time is about twice as the single-step calculation, as expected. To do:
-  - optimize the n^2 gamma case separately
+  - optimize the n^2 gamma case separately => already as fast as possible (DONE)
   - put part of the reset mechanism inside the correlation function (remember to
     keep the old version when using the old impl)
 

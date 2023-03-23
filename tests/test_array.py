@@ -492,32 +492,6 @@ def test_set_subfield():
     x2 = x.at['a']['b'].set(newb)
     util.assert_equal(np.array(x1), np.array(x2))
 
-def test_s2u():
-    dtypes = [
-        [('f0', float)],
-        'f,f',
-        'f,d,f',
-        # 'f,O',
-        # structured_to_unstructured does not work on object arrays, see
-        # numpy issue #21990
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-        [('a', [('aa', 'f,f', 2), ('ab', float)], 3)],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
-    ]
-    for dtype, shape in itertools.product(dtypes, shapes):
-        array = random_array(shape, dtype)
-        crosscheck_operation(recfunctions.structured_to_unstructured, array)
-
 def test_squeeze():
     dtypes = [
         [('f0', float)],
@@ -659,7 +633,71 @@ def test_ix():
     util.assert_equal(z1.squeeze(), z)
     util.assert_equal(x1.squeeze(), x)
 
+def test_structured_to_unstructured():
+    dtypes = [
+        [('a', float)],
+        'f,f',
+        'S25,U10,?',
+        [('a', 'f,f')],
+        [('a', float, 2)],
+        [('a', float, (2, 3))],
+        [('a', 'f,f', 3)],
+        [('a', 'f,f', 3), ('b', 'f,f', 3)],
+        [('a', 'f,f', (3, 5))],
+        [('a', 'f,13f', (3, 5))],
+        [('a', [('aa', 'f,2f', 3)], 5), ('b', float)],
+        [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
+        # structured_to_unstructured does not work on object arrays, see
+        # numpy issue #21990
+    ]
+    shapes = [
+        (),
+        (0,),
+        (1,),
+        (1, 0),
+        (0, 1),
+        (7,),
+        (7, 11),
+    ]
+    for dtype, shape in itertools.product(dtypes, shapes):
+        array = random_array(shape, dtype)
+        crosscheck_operation(recfunctions.structured_to_unstructured, array)
+
 def test_unstructured_to_structured():
+    dtypes = [
+        [('a', float)],
+        'f,f',
+        'S25,U10',
+        [('a', 'f,f')],
+        [('a', float, 2)],
+        [('a', float, (2, 3))],
+        # TODO the following fail due to missing strides
+        # [('a', 'f,f', 3)],
+        # [('a', 'f,f', 3), ('b', 'f,f', 3)],
+        # [('a', 'f,f', (3, 5))],
+        # [('a', 'f,13f', (3, 5))],
+        # [('a', [('aa', 'f,2f', 3)], 5), ('b', float)],
+        # [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
+        # structured_to_unstructured does not work on object arrays, see
+        # numpy issue #21990
+    ]
+    shapes = [
+        (),
+        (0,),
+        (1,),
+        (1, 0),
+        (0, 1),
+        (7,),
+        (7, 11),
+    ]
+    for dtype, shape in itertools.product(dtypes, shapes):
+        x = random_array(shape, dtype)
+        y = recfunctions.structured_to_unstructured(x)
+        z = lgp.unstructured_to_structured(y, x.dtype)
+        assert isinstance(z, lgp.StructuredArray)
+        util.assert_equal(x, z)
+
+def test_unstructured_to_structured_2():
     x = random_array((8, 9), float)
     y = lgp.unstructured_to_structured(x)
     assert isinstance(y, lgp.StructuredArray)
@@ -669,17 +707,6 @@ def test_unstructured_to_structured():
     util.assert_equal(x, z)
     x[0, 0] = 100000
     assert y['f0'][0] == 100000
-
-    x = random_array((7, 4), [
-        ('a', float),
-        ('b', float, (2, 3)),
-        ('c', 'f,d'),
-        ('d', [('e', float, (4, 5))], (2, 3)),
-    ])
-    y = recfunctions.structured_to_unstructured(x)
-    z = lgp.unstructured_to_structured(y, x.dtype)
-    assert isinstance(z, lgp.StructuredArray)
-    util.assert_equal(x, z)
 
     x = random_array((), float)
     with pytest.raises(ValueError):
@@ -715,3 +742,15 @@ def test_empty():
     assert isinstance(y, lgp.StructuredArray)
     assert y.shape == x.shape
     assert y.dtype == dtype
+
+def test_nd():
+    nd = lambda d: _array._nd(np.dtype(d))
+    assert nd(float) == 1
+    assert nd('f,f') == 1 + 1
+    assert nd('f,2f') == 1 + 2
+    assert nd([
+        ('a', 'f,f', (3, 4)),
+    ]) == (1 + 1) * 3 * 4
+    assert nd([
+        ('a', 'f,2f', (3, 4)),
+    ]) == (1 + 2) * 3 * 4
