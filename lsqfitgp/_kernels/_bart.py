@@ -422,19 +422,38 @@ class BART(_BARTBase):
         reset = [0] + list(reset) + [pnt.shape[-1] - 1]
         for i, j in zip(reset, reset[1:]):
             assert int(j) == j and i <= j, (i, j)
-        
+
+        # convert reset depths list to brackets with repetition
+        brackets_norep = list(zip(reset, reset[1:]))
+        brackets = [brackets_norep[0] + (1,)]
+        for t, b in brackets_norep[1:]:
+            lt, lb, lr = brackets[-1]
+            if altinput and not debug and lr * (b - t) == lb - lt and b - t <= 2:
+                brackets[-1] = lt, b, lr + 1
+            else:
+                brackets.append((t, b, 1))
+
         # call recursive function for each recursion slice
         corr = gamma
-        for t, b in zip(reversed(reset[:-1]), reversed(reset)):
+        for t, b, repeat in reversed(brackets):
             probs = pnt[..., t:b + 1]
             if t > 0:
                 probs = probs.at[..., 0].set(1)
+            if repeat > 1:
+                head = probs[..., 0:1]
+                one = jnp.ones_like(head)
+                probs = jnp.concatenate(sum(reversed([
+                    [head if i == 0 else one, p]
+                    for i, p in enumerate(jnp.split(probs[..., 1:], repeat))
+                ]), start=[]), axis=-1)
+            else:
+                repeat = None
             corr = cls._correlation_vectorized(
                 splitsbefore_or_totalsplits,
                 splitsbetween_or_index1,
                 splitsafter_or_index2,
                 probs, corr, weights,
-                debug, altinput,
+                debug, altinput, repeat,
             )
         return corr
     
@@ -598,6 +617,14 @@ class BART(_BARTBase):
     @classmethod
     @functools.partial(jax.jit, static_argnums=(0, 7, 8))
     def _correlation2(cls, n, ix, iy, pnt, gamma, w, debug, repeat):
+        # this implementation is optimized assuming that the shapes are as
+        # follows:
+        #   n     (p,)
+        #   ix    (n, 1, p)
+        #   iy    (1, n, p)
+        #   pnt   (d,)
+        #   gamma () or (n, n)
+        #   w     (p,)
 
         assert n.ndim == 1
         assert n.shape == ix.shape == iy.shape == w.shape
@@ -606,6 +633,7 @@ class BART(_BARTBase):
         # TODO repeat this shape checks in BART.correlation such that the
         # error messages are user-legible
 
+        # check the strict conditions under which `repeat` is implemented
         if repeat is not None:
             assert (
                 not debug
@@ -646,7 +674,9 @@ class BART(_BARTBase):
         # base case of the recursion, no dependence on points apart from the
         # case when they are equal
         if pnt.size // repeat == 1:
-            return jnp.where(anyn0, 1 - (1 - gamma) * pnt[0], 1)
+            for pnt in jnp.split(pnt, repeat):
+                gamma = jnp.where(anyn0, 1 - (1 - gamma) * pnt[0], 1)
+            return gamma
         
         # normalization for axes weights
         Wn = jnp.sum(jnp.where(n, w, 0))
@@ -655,10 +685,12 @@ class BART(_BARTBase):
         if pnt.size // repeat == 2 and not debug:
             n0 = jnp.abs(ix - iy)
             sum_term = jnp.where(n, w / n, 0) @ n0
-            Q = 1 - (1 - gamma) * pnt[1]
-            P0 = pnt[0]
-            result = (1 - P0 * (1 - Q)) - (P0 * Q / Wn) * sum_term
-            return jnp.where(anyn0, result, 1)
+            for pnt in jnp.split(pnt, repeat): # TODO jax loop
+                Q = 1 - pnt[1] + gamma * pnt[1]
+                P0 = pnt[0]
+                result = 1 - P0 + Q * (P0 - P0 / Wn * sum_term)
+                gamma = jnp.where(anyn0, result, 1)
+            return gamma
     
         # convert to alternative format
         xlty = ix < iy
@@ -699,14 +731,18 @@ class BART(_BARTBase):
             terms = terms1 - terms2 - terms3
             sumi = wn @ terms
 
-            Q = 1 - (1 - gamma) * pnt[2]
-            sump = (1 - pnt[1]) * S + (pnt[1] * Q) * sumi
-            return jnp.where(anyn0, 1 - pnt[0] * (1 - sump * inv_Wn), 1)
+            for pnt in jnp.split(pnt, repeat): # TODO jax loop
+                Q = 1 - pnt[2] + gamma * pnt[2]
+                sump = (1 - pnt[1]) * S + pnt[1] * Q * sumi
+                result = 1 - pnt[0] + pnt[0] * inv_Wn * sump
+                gamma = jnp.where(anyn0, result, 1)
+            return gamma
 
         # convert to alternative format
         nminus = minxy
         nplus = n - maxxy
         p = len(nminus)
+        del ix, iy
 
         val = (0., nminus, n0, nplus)
         def loop(i, val):
@@ -749,7 +785,7 @@ class BART(_BARTBase):
         return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
 
     @classmethod
-    @functools.partial(jnp.vectorize, excluded=(0, 7, 8), signature='(p),(p),(p),(d),(),(p)->()')
-    def _correlation_vectorized(cls, nminus_or_n, n0_or_ix, nplus_or_iy, pnt, gamma, w, debug, altinput):
-        func = cls._correlation2 if altinput else cls._correlation
+    @functools.partial(jnp.vectorize, excluded=(0, 7, 8, 9), signature='(p),(p),(p),(d),(),(p)->()')
+    def _correlation_vectorized(cls, nminus_or_n, n0_or_ix, nplus_or_iy, pnt, gamma, w, debug, altinput, repeat):
+        func = (lambda *args: cls._correlation2(*args, repeat)) if altinput else cls._correlation
         return func(nminus_or_n, n0_or_ix, nplus_or_iy, pnt, gamma, w, bool(debug))

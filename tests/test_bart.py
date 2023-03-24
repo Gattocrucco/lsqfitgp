@@ -372,3 +372,4 @@ def test_index_input():
 # - duplicated entries in reset have no effect
 # - continuity w.r.t. weight in zero, unless all differring covariates disappear
 #   and the points collapse (which should still be continuous if gamma=1)
+# - reset
