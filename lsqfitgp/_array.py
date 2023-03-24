@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import textwrap
+
 import numpy
 from numpy.lib import recfunctions
 import jax
@@ -364,6 +366,10 @@ class StructuredArray:
         """ Register an __array_function__ implementation """
         def decorator(func):
             cls._handled_functions[np_function] = func
+            func.__doc__ = textwrap.dedent(f"""\
+            Implementation of {np_function.__module__}.{np_function.__name__}
+            for lgp.StructuredArray.
+            """) + textwrap.dedent(np_function.__doc__)
             return func
         return decorator
 
@@ -460,26 +466,41 @@ def unstructured_to_structured(arr,
     assert length == arr.shape[-1]
     return out
 
-def _unstructured_to_structured_recursive(idx, shape, arr, dtype, copy, casting):
+def _unstructured_to_structured_recursive(idx, shape, arr, dtype, copy, casting, *strides):
     arrays = {}
     for i, name in enumerate(dtype.names):
-        dtbase = dtype[i].base
-        dtshape = shape + dtype[i].shape
-        if dtbase.names is not None:
-            y, idx = _unstructured_to_structured_recursive(idx, dtshape, arr, dtbase, copy, casting)
+        base = dtype[i].base
+        subshape = shape + dtype[i].shape
+        size = numpy.prod(dtype[i].shape, dtype=int)
+        stride = _nd(base)
+        substrides = strides + ((size, stride),)
+        if base.names is not None:
+            y, newidx = _unstructured_to_structured_recursive(idx, subshape, arr, base, copy, casting, *substrides)
+            shift = newidx - idx
+            assert shift == stride
+            idx += size * stride
         else:
-            size = numpy.prod(dtshape, dtype=int)
-            x = arr[..., idx:idx + size]
-            x = x.reshape(arr.shape[:-1] + dtshape)
-            if isinstance(x, jnp.ndarray):
-                y = x.astype(dtbase)
+            assert stride == 1
+            if all(size == 1 for size, _ in strides):
+                indices = numpy.s_[idx:idx + size]
+                srcsize = size
             else:
-                y = x.astype(dtbase, copy=copy, casting=casting)
+                indices = sum((
+                    stride * numpy.arange(size)[numpy.s_[:,] + (None,) * i]
+                    for i, (size, stride) in enumerate(reversed(substrides))
+                ), start=idx)
+                indices = indices.reshape(-1)
+                srcsize = indices.size
+            key = numpy.s_[..., indices]
+            x = arr[key]
+            x = x.reshape(arr.shape[:-1] + subshape)
+            if isinstance(x, jnp.ndarray):
+                y = x.astype(base)
+            else:
+                y = x.astype(base, copy=copy, casting=casting)
             idx += size
         arrays[name] = y
     return StructuredArray._array(arr.shape[:-1] + shape, dtype, arrays), idx
-    # TODO this impl pushes the field dims last instead of interleaving them
-    # with the field shapes like _structured_to_unstructured.
 
 @StructuredArray._implements(recfunctions.structured_to_unstructured)
 def _structured_to_unstructured(arr, dtype=None, casting='unsafe'):
@@ -520,7 +541,7 @@ def _structured_to_unstructured_recursive(idx, arr, out, *strides):
             idx += size * stride
         else:
             assert stride == 1
-            if all(size == 1 for size, stride in strides):
+            if all(size == 1 for size, _ in strides):
                 indices = numpy.s_[idx:idx + size]
                 srcsize = size
             else:

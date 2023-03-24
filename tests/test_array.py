@@ -671,13 +671,12 @@ def test_unstructured_to_structured():
         [('a', 'f,f')],
         [('a', float, 2)],
         [('a', float, (2, 3))],
-        # TODO the following fail due to missing strides
-        # [('a', 'f,f', 3)],
-        # [('a', 'f,f', 3), ('b', 'f,f', 3)],
-        # [('a', 'f,f', (3, 5))],
-        # [('a', 'f,13f', (3, 5))],
-        # [('a', [('aa', 'f,2f', 3)], 5), ('b', float)],
-        # [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
+        [('a', 'f,f', 3)],
+        [('a', 'f,f', 3), ('b', 'f,f', 3)],
+        [('a', 'f,f', (3, 5))],
+        [('a', 'f,13f', (3, 5))],
+        [('a', [('aa', 'f,2f', 3)], 5), ('b', float)],
+        [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
         # structured_to_unstructured does not work on object arrays, see
         # numpy issue #21990
     ]
