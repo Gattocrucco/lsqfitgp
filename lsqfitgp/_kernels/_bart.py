@@ -613,6 +613,19 @@ class BART(_BARTBase):
 
         return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
 
+    @staticmethod
+    def _scan_but_first(f, init, xs):
+        assert isinstance(xs, jnp.ndarray)
+        assert len(xs) > 0
+        init, out = f(init, xs[0])
+        assert out is None
+        if len(xs) == 1:
+            return init, out
+        elif len(xs) == 2:
+            return f(init, xs[1])
+        else:
+            return lax.scan(f, init, xs[1:])
+
     @classmethod
     @functools.partial(jax.jit, static_argnums=(0, 7, 8))
     def _correlation2(cls, n, ix, iy, pnt, gamma, w, debug, repeat):
@@ -673,8 +686,11 @@ class BART(_BARTBase):
         # base case of the recursion, no dependence on points apart from the
         # case when they are equal
         if pnt.size // repeat == 1:
-            for pnt in jnp.split(pnt, repeat):
+            def loop(carry, pnt):
+                anyn0, gamma = carry
                 gamma = jnp.where(anyn0, 1 - (1 - gamma) * pnt[0], 1)
+                return (anyn0, gamma), None
+            (_, gamma), _ = cls._scan_but_first(loop, (anyn0, gamma), pnt.reshape(repeat, -1))
             return gamma
         
         # normalization for axes weights
@@ -684,11 +700,14 @@ class BART(_BARTBase):
         if pnt.size // repeat == 2 and not debug:
             n0 = jnp.abs(ix - iy)
             sum_term = jnp.where(n, w / n, 0) @ n0
-            for pnt in jnp.split(pnt, repeat): # TODO jax loop
+            def loop(carry, pnt):
+                anyn0, Wn, sum_term, gamma = carry
                 Q = 1 - pnt[1] + gamma * pnt[1]
                 P0 = pnt[0]
                 result = 1 - P0 + Q * (P0 - P0 / Wn * sum_term)
                 gamma = jnp.where(anyn0, result, 1)
+                return (anyn0, Wn, sum_term, gamma), None
+            (_, _, _, gamma), _ = cls._scan_but_first(loop, (anyn0, Wn, sum_term, gamma), pnt.reshape(repeat, -1))
             return gamma
     
         # convert to alternative format
@@ -730,11 +749,14 @@ class BART(_BARTBase):
             terms = terms1 - terms2 - terms3
             sumi = wn @ terms
 
-            for pnt in jnp.split(pnt, repeat): # TODO jax loop
-                Q = 1 - pnt[2] + gamma * pnt[2]
-                sump = (1 - pnt[1]) * S + pnt[1] * Q * sumi
-                result = 1 - pnt[0] + pnt[0] * inv_Wn * sump
+            def loop(carry, pnt):
+                anyn0, inv_Wn, S, sumi, gamma = carry
+                Q = 1 + pnt[2] * (gamma - 1)
+                sump = S + pnt[1] * (Q * sumi - S)
+                result = 1 + pnt[0] * (inv_Wn * sump - 1)
                 gamma = jnp.where(anyn0, result, 1)
+                return (anyn0, inv_Wn, S, sumi, gamma), None
+            (_, _, _, _, gamma), _ = cls._scan_but_first(loop, (anyn0, inv_Wn, S, sumi, gamma), pnt.reshape(repeat, -1))
             return gamma
 
         # convert to alternative format

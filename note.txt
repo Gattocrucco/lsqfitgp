@@ -3966,12 +3966,12 @@ To do:
   - commit (DONE)
   - branch (DONE)
   - use checkify in bart (DONE)
-  - measure overhead
-  - check that the first-call times are compilation + compiled run
-  - if reasonable, implement it in empbayes_fit
-  - doing no vs. 9 resets makes compilation time go from 300ms to 250ms, so it's
-    not the bottleneck compared to the checks, although that may change with
-    derivatives
+  - measure overhead (DONE)
+  - check that the first-call times are compilation + compiled run (DROPPED)
+  - if reasonable, implement it in empbayes_fit (DROPPED)
+
+doing no vs. 9 resets makes compilation time go from 300ms to 250ms, so it's not
+the bottleneck compared to the checks, although that may change with derivatives
 
 ..........
 
@@ -3996,3 +3996,368 @@ idea.
 
 With skipifabstract back, and keeping splits unfolded, compilation time is
 620ms.
+
+..........
+
+To do:
+  - do timings (compilation and run) with reverse derivatives, with and without
+    reset (DONE)
+  - try to optimize compilation and run times
+
+With m = 2, d = 10:
+
+    Compiled calculation:
+    52.3 ms ± 143 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+    595 ms ± 808 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    321 ms ± 1.17 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time with derivative:
+    2.01 s ± 4.98 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+With m = 2, d = 1:
+
+    Compiled calculation:
+    45.7 ms ± 368 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+    404 ms ± 10.3 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    162 ms ± 640 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+    594 ms ± 2.12 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+So derivatives exacerbate the effect of resetting multiple times, both on
+compilation and execution time.
+
+With m = 1, d = 1:
+
+    Compiled calculation:
+    9.97 ms ± 275 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+    208 ms ± 3.78 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    17 ms ± 57.2 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    Compilation time with derivative:
+    357 ms ± 2.64 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+With m = 1, d = 10:
+
+    Compiled calculation:
+    13.2 ms ± 735 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+    364 ms ± 4.56 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    120 ms ± 928 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+    1.54 s ± 3.63 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+m = 0, d = 1:
+
+    Compiled calculation:
+    800 µs ± 12.9 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+    Compilation time:
+    167 ms ± 1.07 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compiled calculation with derivative:
+    2.44 ms ± 26.1 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    Compilation time with derivative:
+    272 ms ± 6.32 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+m = 0, d = 10:
+
+    Compiled calculation:
+    831 µs ± 65.3 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+    242 ms ± 1.33 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    28.1 ms ± 177 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+    611 ms ± 4.57 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+First try: use scan instead of loop.
+
+m = 0, d = 10:
+
+    Compiled calculation:
+    3.1 ms ± 18.1 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    Compilation time:
+    193 ms ± 582 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compiled calculation with derivative:
+    32.5 ms ± 588 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+    382 ms ± 1.98 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+So I have reduced the compilation times, but the running time increases.
+
+m = 1, d = 10:
+
+    Compiled calculation:
+    15.4 ms ± 65.3 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+    238 ms ± 1.23 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    141 ms ± 1.66 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+    604 ms ± 8.59 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+Here the running time increase is smaller, about +15%.
+
+m = 2, d = 10:
+
+    Compiled calculation:
+    52.1 ms ± 405 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+    434 ms ± 1.8 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    327 ms ± 2.59 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time with derivative:
+    910 ms ± 5.39 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+Here the running time changes negligibly, but the compilation time improves
+quite a bit.
+
+I have to check if there are regressions with d = 1.
+
+m = 0, d = 1:
+
+    Compiled calculation:
+    911 µs ± 38.5 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+    Compilation time:
+    184 ms ± 4.68 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    2.77 ms ± 62.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    Compilation time with derivative:
+    323 ms ± 1.71 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+m = 1, d = 1:
+
+    Compiled calculation:
+    10.3 ms ± 723 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+    219 ms ± 1.45 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    20 ms ± 459 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+    471 ms ± 6.52 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+m = 2, d = 1:
+
+    Compiled calculation:
+    45.8 ms ± 322 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+    418 ms ± 2.77 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+    163 ms ± 516 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+    736 ms ± 4.23 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+Conclusion: there's some regression but I'd say not enough to justify keeping a
+double implementation.
+
+I try using a custom scan that unrolls the first iteration, and the second too
+if there are only two iterations total.
+
+@@@@@ m = 0, d = 1 @@@@@
+
+    Compiled calculation:
+808 µs ± 13.4 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+    Compilation time:
+169 ms ± 768 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compiled calculation with derivative:
+2.35 ms ± 38.5 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    Compilation time with derivative:
+269 ms ± 1.41 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 0, d = 2 @@@@@
+
+    Compiled calculation:
+797 µs ± 15.4 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+    Compilation time:
+179 ms ± 539 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compiled calculation with derivative:
+3.9 ms ± 43.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    Compilation time with derivative:
+312 ms ± 4.26 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 0, d = 10 @@@@@
+
+    Compiled calculation:
+2.91 ms ± 64.4 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+201 ms ± 1.26 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+32.2 ms ± 718 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+427 ms ± 4.99 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 1, d = 1 @@@@@
+
+    Compiled calculation:
+10.1 ms ± 206 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+205 ms ± 1.74 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+16.8 ms ± 174 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    Compilation time with derivative:
+358 ms ± 2.86 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 1, d = 2 @@@@@
+
+    Compiled calculation:
+10.3 ms ± 251 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+223 ms ± 1.52 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+25.6 ms ± 379 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+479 ms ± 1.59 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 1, d = 10 @@@@@
+
+    Compiled calculation:
+14.9 ms ± 56.4 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+257 ms ± 1.63 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+131 ms ± 766 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+696 ms ± 4.65 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 2, d = 1 @@@@@
+
+    Compiled calculation:
+45.2 ms ± 346 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+395 ms ± 1.49 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+158 ms ± 355 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+593 ms ± 3.2 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 2, d = 2 @@@@@
+
+    Compiled calculation:
+45.2 ms ± 274 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+421 ms ± 4.39 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+168 ms ± 359 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+744 ms ± 3.14 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 2, d = 10 @@@@@
+
+    Compiled calculation:
+51 ms ± 401 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+456 ms ± 3.82 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+313 ms ± 4.54 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time with derivative:
+1.03 s ± 3.3 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+I improved the compilation times. Currently on m=2 compiling with the derivative
+is about 2x compiling without, I don't think I can do better than this.
+
+Yet I don't like that computing the derivative takes 3x the runtime at d=1, and
+6x at d=10.
+
+First obvious optimization: for m=2, I can use d=5 in practice, since
+convergence is faster.
+
+@@@@@ m = 2, d = 3 @@@@@
+
+    Compiled calculation:
+48.4 ms ± 1.53 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+475 ms ± 19.3 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+187 ms ± 325 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+1 s ± 4.8 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 2, d = 5 @@@@@
+
+    Compiled calculation:
+48.1 ms ± 167 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+457 ms ± 2.63 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+230 ms ± 2.35 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time with derivative:
+1.01 s ± 4.19 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+d=5 gets me 310ms -> 230ms.
+
+But is there a way to optimize the expressions for the reverse mode derivative
+calculation?
+
+The derivatives pass through pnt, so maybe I could gather pnt as much as
+possible.
+
+@@@@@ m = 2, d = 1 @@@@@
+
+    Compiled calculation:
+45.1 ms ± 204 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+398 ms ± 2.25 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+160 ms ± 188 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+582 ms ± 5.3 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 2, d = 2 @@@@@
+
+    Compiled calculation:
+46.1 ms ± 143 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+431 ms ± 7.96 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+168 ms ± 1.36 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+708 ms ± 6.22 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+@@@@@ m = 2, d = 10 @@@@@
+
+    Compiled calculation:
+51.4 ms ± 340 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+456 ms ± 2.59 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+274 ms ± 2.83 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time with derivative:
+945 ms ± 2.83 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+Result: execution without derivative might be slightly slower, execution with
+derivative does 313(5) -> 274(3).
+
+I check that returning only the derivative does not change the times:
+
+@@@@@ m = 2, d = 10 @@@@@
+
+    Compiled calculation:
+52 ms ± 583 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+454 ms ± 4.42 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+273 ms ± 2.37 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time with derivative:
+948 ms ± 2.67 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+=> not changed.
+
+I'ts still 5x the time at d=10, 3x at d=1. I thought I could get away with much
+less since the expensive part of the calculation does not involve the derived
+variables at all.
+
+Forward derivative:
+
+@@@@@ m = 2, d = 10 @@@@@
+
+    Compiled calculation:
+51.5 ms ± 663 µs per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compilation time:
+456 ms ± 2.74 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Compiled calculation with derivative:
+63.3 ms ± 590 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time with derivative:
+539 ms ± 11.2 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
