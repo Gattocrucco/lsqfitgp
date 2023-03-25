@@ -189,11 +189,6 @@ def _BARTBase(x, y,
     if indices:
         ix = BART._check_x(x)
         iy = BART._check_x(y)
-        assert jnp.issubdtype(ix.dtype, jnp.integer)
-        assert jnp.issubdtype(iy.dtype, jnp.integer)
-        with _patch_jax.skipifabstract():
-            assert jnp.all((0 <= ix) & (ix <= splits[0]))
-            assert jnp.all((0 <= iy) & (iy <= splits[0]))
     else:
         ix = BART.indices_from_coord(x, splits)
         iy = BART.indices_from_coord(y, splits)
@@ -365,11 +360,15 @@ class BART(_BARTBase):
         assert jnp.issubdtype(splitsbetween_or_index1.dtype, jnp.integer)
         assert jnp.issubdtype(splitsafter_or_index2.dtype, jnp.integer)
         
-        # check splitting indices are nonnegative
+        # check splitting indices
         with _patch_jax.skipifabstract():
-            assert jnp.all(splitsbefore_or_totalsplits >= 0)
-            assert jnp.all(splitsbetween_or_index1 >= 0)
-            assert jnp.all(splitsafter_or_index2 >= 0)
+            assert jnp.all(splitsbefore_or_totalsplits >= 0), 'splitting counts must be nonnegative'
+            if altinput:
+                assert jnp.all((0 <= splitsbetween_or_index1) & (splitsbetween_or_index1 <= splitsbefore_or_totalsplits)), 'splitting index must be in [0, n]'
+                assert jnp.all((0 <= splitsafter_or_index2) & (splitsafter_or_index2 <= splitsbefore_or_totalsplits)), 'splitting index must be in [0, n]'
+            else:
+                assert jnp.all(splitsbetween_or_index1 >= 0), 'splitting counts must be nonnegative'
+                assert jnp.all(splitsafter_or_index2 >= 0), 'splitting counts must be nonnegative'
         
         # get splitting probabilities
         if pnt is None:
@@ -377,8 +376,8 @@ class BART(_BARTBase):
             alpha = jnp.asarray(alpha)
             beta = jnp.asarray(beta)
             with _patch_jax.skipifabstract():
-                assert jnp.all((0 <= alpha) & (alpha <= 1))
-                assert jnp.all(beta >= 0)
+                assert jnp.all((0 <= alpha) & (alpha <= 1)), 'alpha must be in [0, 1]'
+                assert jnp.all(beta >= 0), 'beta must be in [0, inf)'
             d = jnp.arange(maxd + 1)
             alpha = alpha[..., None]
             beta = beta[..., None]
@@ -405,9 +404,9 @@ class BART(_BARTBase):
         
         # check values are in range
         with _patch_jax.skipifabstract():
-            assert jnp.all((0 <= gamma) & (gamma <= 1))
-            assert jnp.all((0 <= pnt) & (pnt <= 1))
-            assert jnp.all(weights >= 0)
+            assert jnp.all((0 <= gamma) & (gamma <= 1)), 'gamma must be in [0, 1]'
+            assert jnp.all((0 <= pnt) & (pnt <= 1)), 'pnt must be in [0, 1]'
+            assert jnp.all(weights >= 0), 'weights must be in [0, inf)'
 
         # set first splitting probability to 1 to remove flat baseline (keep
         # last!)
@@ -498,8 +497,8 @@ class BART(_BARTBase):
             s = s[:, None]
         assert l.size == s.shape[1]
         with _patch_jax.skipifabstract():
-            assert jnp.all((0 <= l) & (l <= s.shape[0]))
-            assert jnp.all(jnp.sort(s, axis=0) == s)
+            assert jnp.all((0 <= l) & (l <= s.shape[0])), 'length out of bounds'
+            assert jnp.all(jnp.sort(s, axis=0) == s), 'unsorted splitting points'
         return l, s
     
     @staticmethod

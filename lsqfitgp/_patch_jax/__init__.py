@@ -118,13 +118,16 @@ class skipifabstract:
     # but %timeit suggests it isn't
 
     ENSURE_COMPILE_TIME_EVAL = True
+    ENABLED = True
     
     def __enter__(self):
-        if self.ENSURE_COMPILE_TIME_EVAL:
+        if self.ENSURE_COMPILE_TIME_EVAL and self.ENABLED:
             self.mgr = jax.ensure_compile_time_eval()
             self.mgr.__enter__()
     
     def __exit__(self, exc_type, exc_value, tb):
+        if not self.ENABLED:
+            return
         exit = None
         if self.ENSURE_COMPILE_TIME_EVAL:
             exit = self.mgr.__exit__(exc_type, exc_value, tb)

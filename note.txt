@@ -3962,10 +3962,10 @@ checkify. This requires modifying empbayes_fit to apply checkify.
 Question: what's the overhead of checkify? I hope it's small compared to jit.
 
 To do:
-  - undo the commenting out of skipifabstract
-  - commit
-  - branch
-  - use checkify in bart
+  - undo the commenting out of skipifabstract (DONE)
+  - commit (DONE)
+  - branch (DONE)
+  - use checkify in bart (DONE)
   - measure overhead
   - check that the first-call times are compilation + compiled run
   - if reasonable, implement it in empbayes_fit
@@ -3980,3 +3980,19 @@ the leak problems are solved, if not: pull, branch tag v0.14, and make a release
 0.14.1 with jax,jaxlib<=0.4.6 in the requirements.
 
 ..........
+
+Overhead: it's damn slow, but I think it's the splits check, since the splitting
+points are a folded-in constant. I'll try checkify without checks.
+
+=> checkify without checks hangs. Why?? I tried it on a simple function with
+just one check, it did not hang but I could see the user check was still
+constructed into the error object, although it did not throw, so user checks can
+not be really disabled.
+
+Putting splits as external argument, the checkify+compilation time is 760ms.
+
+I consider the attempt failed. I guess using stuff in jax.experimental is a bad
+idea.
+
+With skipifabstract back, and keeping splits unfolded, compilation time is
+620ms.
