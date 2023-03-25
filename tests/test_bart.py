@@ -332,21 +332,27 @@ def test_i32():
     assert c2.dtype == np.float64
     np.testing.assert_array_max_ulp(c1, c2, 0)
 
-@mdmark
+@mark.parametrize('md,reset', [
+    (0, None),
+    (1, None),
+    (2, None), (2, [1]),
+    (3, None), (3, [1, 2]),
+    (4, None), (4, [2]),
+])
 @umark
 @bmark
 @amark
 @smark
-def test_altinput(sb, sbw, sa, w, a, b, u, md):
+def test_altinput(sb, sbw, sa, w, a, b, u, md, reset):
     """ two alternative implementations give the same result """
-    c1 = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
+    c1 = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, reset=reset, weights=w)
     n = sb + sbw + sa
     ix = sb
     iy = sb + sbw
     ix, iy = np.broadcast_arrays(ix, iy)
     swap = gen.integers(0, 2, size=ix.shape, dtype=bool)
     ix, iy = np.where(swap, iy, ix), np.where(swap, ix, iy)
-    c2 = lgp.BART.correlation(n, ix, iy, alpha=a, beta=b, gamma=u, maxd=md, weights=w, altinput=True)
+    c2 = lgp.BART.correlation(n, ix, iy, alpha=a, beta=b, gamma=u, maxd=md, reset=reset, weights=w, altinput=True)
     util.assert_allclose(c1, c2, rtol=1e-16, atol=2e-15)
 
 def test_index_input():
@@ -356,8 +362,7 @@ def test_index_input():
     X = asstruct(gen.standard_normal((n, p)))
     splits = lgp.BART.splits_from_coord(X)
     x, y = asstruct(gen.standard_normal((2, n, p)))
-    x, y = x[:, None], y[None, :]
-    assert x.ndim == y.ndim == 2
+    x, y = np.ix_(x, y)
     ix = asstruct(lgp.BART.indices_from_coord(x, splits))
     iy = asstruct(lgp.BART.indices_from_coord(y, splits))
     c1 = lgp.BART(splits=splits)(x, y)

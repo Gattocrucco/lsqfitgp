@@ -116,13 +116,18 @@ class skipifabstract:
     """
     # I feared this would be slow because of the slow jax exception handling,
     # but %timeit suggests it isn't
+
+    ENSURE_COMPILE_TIME_EVAL = True
     
     def __enter__(self):
-        self.mgr = jax.ensure_compile_time_eval()
-        self.mgr.__enter__()
+        if self.ENSURE_COMPILE_TIME_EVAL:
+            self.mgr = jax.ensure_compile_time_eval()
+            self.mgr.__enter__()
     
     def __exit__(self, exc_type, exc_value, tb):
-        exit = self.mgr.__exit__(exc_type, exc_value, tb)
+        exit = None
+        if self.ENSURE_COMPILE_TIME_EVAL:
+            exit = self.mgr.__exit__(exc_type, exc_value, tb)
         if exit or exc_type in (jax.errors.ConcretizationTypeError, jax.errors.TracerArrayConversionError):
             return True
         

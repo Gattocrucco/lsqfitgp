@@ -313,6 +313,16 @@ class StructuredArray:
 
         return cls._array(None, dtype, d)
 
+        # TODO this breaks jax.jit(...).lower(...).compile()(...) because
+        # apparently `lower` saves the pytree def after a step of dummyfication,
+        # so the shape and dtype bases of the StructuredArray are () and object.
+        # JAX expects pytrees to have a structure which does not depend on what
+        # they store. => Quick hack: preserve the shape and dtype
+        # unconditionally, i.e., tree_unflatten can produce malformed
+        # StructuredArrays. The dictionary will contain whatever JAX puts into
+        # it. => Quicker hack: it seems to me that jax always uses None as
+        # dummy, so I could detect if all childrens are None or StructuredArray.
+
     def __repr__(self):
         # code from gvar https://github.com/gplepage/gvar
         # bufferdict.pyx:BufferDict:__str__

@@ -3803,8 +3803,8 @@ term as separate calculations on ix and iy that get combined only at the end.
 To do next:
   - commit (DONE)
   - install the current version in the bart repo and re-run the bakeoff (DONE)
-  - compute Wnplus and Wnminus with the max-min trick
-  - optimize recursion restart by moving the base cases in the internal function
+  - compute Wnplus and Wnminus with the max-min trick => was not useful (DONE)
+  - optimize recursion restart by moving the base cases in the internal function (DONE)
   - implement the CrossKernel.outer mechanism to avoid recomputing digamma
 
 DISASTER! Since in the recursion reset gamma gets shape n^2, some of my
@@ -3906,4 +3906,77 @@ To be continued: I have to call directly BART.correlation to pass array gamma.
 .........
 
 To do: modify skipifabstract to not enter ensure_compile_time_eval, and see if
-that solves the leaked tracers problems.
+that solves the leaked tracers problems. => Nope it does not. Maybe the creation
+of the tracing error report is sufficient to leak tracers? But
+playground/jax/14776 does not fail. Maybe it's sufficient under more convoluted
+conditions?
+
+2023-03-25
+==========
+
+Compilation with small inputs is faster than compilation with large inputs.
+Maybe it's the checks under skipifabstract?
+
+=> It's 700ms to compile & evaluate (vs. 50ms to evaluate after compilation,
+vs. 0.5ms to compile & evaluate on small inputs.) If I avoid using
+ensure_compile_time_eval under skipifabstract, then it raises to 830ms.
+Unexpected! I thought it was the forced early evaluation that was taking time,
+instead it seems to be at least somewhat the jax tracing exception mechanism.
+Maybe I should disable checks altogether under jit?
+
+I commented out all usages of skipifabstract in _bart.py, and I obtain
+
+    New implementation:
+    50.2 ms ± 501 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Compilation time
+    139 ms ± 480 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    Full calculation with compilation:
+    436 ms ± 3.25 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+(The 0.5ms was fake, it was caching the compiled function, it was actually
+200ms.)
+
+So it's quite lower, but still 140+50 << 440. What's taking so much time to
+compile for the larger arrays?
+
+Idea: use jax functionality to lower the function without evaluating it. Result:
+
+    New implementation:
+    49.8 ms ± 372 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    lower+compile time on token inputs:
+    134 ms ± 500 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+    lower+compile time on full inputs:
+    309 ms ± 4.28 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    Full calculation with compilation:
+    355 ms ± 1.91 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+So it's taking 2x time on the larger inputs. Is it doing operations on them? Or
+it's just the added complication?
+
+After some playing, I'm confident it's genuine compilation times which vary
+depending on the shapes, and not calculations depending on the data.
+
+Conclusions: doing the checks under skipifabstract is slow. I should try out
+checkify. This requires modifying empbayes_fit to apply checkify.
+
+Question: what's the overhead of checkify? I hope it's small compared to jit.
+
+To do:
+  - undo the commenting out of skipifabstract
+  - commit
+  - branch
+  - use checkify in bart
+  - measure overhead
+  - check that the first-call times are compilation + compiled run
+  - if reasonable, implement it in empbayes_fit
+  - doing no vs. 9 resets makes compilation time go from 300ms to 250ms, so it's
+    not the bottleneck compared to the checks, although that may change with
+    derivatives
+
+..........
+
+jax 0.4.7 will remove the old jit implementation. When it comes out, check if
+the leak problems are solved, if not: pull, branch tag v0.14, and make a release
+0.14.1 with jax,jaxlib<=0.4.6 in the requirements.
+
+..........

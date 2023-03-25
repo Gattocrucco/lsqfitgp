@@ -444,7 +444,7 @@ class BART(_BARTBase):
                 one = jnp.ones_like(head)
                 probs = jnp.concatenate(sum(reversed([
                     [head if i == 0 else one, p]
-                    for i, p in enumerate(jnp.split(probs[..., 1:], repeat))
+                    for i, p in enumerate(jnp.split(probs[..., 1:], repeat, axis=-1))
                 ]), start=[]), axis=-1)
             else:
                 repeat = None

@@ -697,6 +697,14 @@ expect with multiplications is that if the mean is zero (as I'm doing) then it
 won't work well because the linearization is crap. I should really support mean
 functions at some point.
 
+#### Replace `BufferDict` with pytrees
+
+BufferDicts would still be supported automatically because they are pytrees. The
+interface breaking change would happen with covariance matrices: they would be
+represented as dict-of-dicts instead of a dict with tuple keys.
+
+Useful functions: `jax.flatten_util.ravel_tree`, `jax.tree_util.tree_transpose`.
+
 ### Discrete likelihoods
 
 I'd like to avoid introducing a different likelihood and Laplace and EP. In the
