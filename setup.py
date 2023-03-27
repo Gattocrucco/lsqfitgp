@@ -50,8 +50,8 @@ setuptools.setup(
     install_requires=[
         'numpy>=1.20', # first version with broadcast_shapes
         'scipy>=1.5', # minimum required by jax
-        'jax>=0.4.1<=0.4.6', # 0.4.1 first supporting type dispatching on jax arrays
-        'jaxlib>=0.4.1<=0.4.6', # 0.4.6 last supporting old jit implementation, the new one triggers a leaked tracer exception in linalg operations
+        'jax>=0.4.1,<=0.4.6', # 0.4.1 first supporting type dispatching on jax arrays
+        'jaxlib>=0.4.1,<=0.4.6', # 0.4.6 last supporting old jit implementation, the new one triggers a leaked tracer exception in linalg operations
         'gvar>=11.10.1', # first supporting gvar.gvar(x, cov) with readonly cov
     ]
 )
