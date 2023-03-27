@@ -3977,7 +3977,7 @@ the bottleneck compared to the checks, although that may change with derivatives
 
 jax 0.4.7 will remove the old jit implementation. When it comes out, check if
 the leak problems are solved, if not: pull, branch tag v0.14, and make a release
-0.14.1 with jax,jaxlib<=0.4.6 in the requirements.
+0.14.1 with jax,jaxlib<=0.4.6 in the requirements. => They are not solved.
 
 ..........
 

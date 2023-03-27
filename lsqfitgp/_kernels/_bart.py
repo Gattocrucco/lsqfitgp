@@ -763,7 +763,7 @@ class BART(_BARTBase):
         nminus = minxy
         nplus = n - maxxy
         p = len(nminus)
-        del ix, iy
+        del ix, iy, maxxy, minxy
 
         val = (0., nminus, n0, nplus)
         def loop(i, val):

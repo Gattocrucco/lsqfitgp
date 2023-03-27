@@ -35,6 +35,7 @@ from . import _GP
 from . import _linalg
 from . import _patch_jax
 from . import _patch_gvar
+from . import _array
 
 __all__ = [
     'empbayes_fit',
@@ -307,7 +308,9 @@ class empbayes_fit(Logger):
             if firstcall:
                 # works under jit since the first call is tracing
                 firstcall.pop()
-                self.log(f'{ymean.size} datapoints')
+                xdtype = gp._get_x_dtype()
+                nd = '?' if xdtype is None else str(_array._nd(xdtype))
+                self.log(f'{ymean.size} datapoints, {nd} covariates')
                     
             return timer.partial(1/2 * (
                 decomp.logdet()
@@ -317,6 +320,7 @@ class empbayes_fit(Logger):
             ))
 
         jactr = jax.jacfwd if forward else jax.jacrev
+        self.log(f'{"forward" if forward else "reverse"}-mode autodiff (if used)', 2)
         fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jactr))
         jac = dojit(jactr(fun))
 

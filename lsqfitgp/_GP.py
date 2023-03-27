@@ -691,13 +691,17 @@ class GP:
             # array data type.
             if gx.dtype.names is None:
                 if not deriv.implicit:
-                    raise ValueError('x has not fields but derivative has')
+                    raise ValueError('x has no fields but derivative has')
             else:
                 for dim in deriv:
                     if dim not in gx.dtype.names:
                         raise ValueError(f'deriv field {dim!r} not in x')
             
             self._elements[key] = self._Points(gx, deriv, proc)
+
+    def _get_x_dtype(self):
+        """ Get the data type of x points """
+        return getattr(self, '_dtype', None)
         
     def addtransf(self, tensors, key, *, axes=1):
         """

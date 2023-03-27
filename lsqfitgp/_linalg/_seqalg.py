@@ -60,6 +60,21 @@ class SequentialOperation(_pytree.AutoPyTree, metaclass=abc.ABCMeta):
         pass
 
 def sequential_algorithm(n, ops):
+    """
+    Define and execute a sequential algorithm on matrices.
+
+    Parameters
+    ----------
+    n : int
+        Number of steps of the algorithm.
+    ops : list of SequentialOperation
+        Instantiated `SequentialOperation`s that represent the algorithm.
+
+    Return
+    ------
+    results : tuple
+        The sequence of final outputs of each operation in `ops`.
+    """
     for i, op in enumerate(ops):
         inputs = op.inputs
         if any(j >= i for j in inputs):
@@ -71,7 +86,7 @@ def sequential_algorithm(n, ops):
             args = (ops[j].iter_out(i) for j in op.inputs)
             op.iter(i, *args)
         return ops
-    ops = lax.fori_loop(1, n, body_fun, ops)
+    ops = lax.fori_loop(1, n, body_fun, ops) # TODO convert to lax.scan and unroll?
     return tuple(op.finalize() for op in ops)
     
 class Producer(SequentialOperation):
@@ -88,11 +103,9 @@ class Consumer(SequentialOperation):
 class SingleInput(SequentialOperation):
     
     def __init__(self, input):
-        self.input = input
+        self.inputs = (input,)
         
-    @property
-    def inputs(self):
-        return (self.input,)
+    inputs = None
 
 class Stack(Consumer, SingleInput):
     """input = an operation producing arrays"""
