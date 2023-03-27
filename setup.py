@@ -1,6 +1,6 @@
 # lsqfitgp/setup.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -49,9 +49,9 @@ setuptools.setup(
     python_requires='>=3.8', # first version with functools.cached_property
     install_requires=[
         'numpy>=1.20', # first version with broadcast_shapes
-        'scipy>=1.5', # minimum required by jax 0.3.17
-        'jax>=0.4.1', # first supporting type dispatching on jax arrays
-        'jaxlib>=0.4.1',
+        'scipy>=1.5', # minimum required by jax
+        'jax>=0.4.1<=0.4.6', # 0.4.1 first supporting type dispatching on jax arrays
+        'jaxlib>=0.4.1<=0.4.6', # 0.4.6 last supporting old jit implementation, the new one triggers a leaked tracer exception in linalg operations
         'gvar>=11.10.1', # first supporting gvar.gvar(x, cov) with readonly cov
     ]
 )
