@@ -52,7 +52,7 @@ import jax
 # TODO this breaks down if jax_enable_x64=False. I have to write the operations
 # on 64 bit integers in terms of operations on 32 bit integers, and always
 # manipulate arrays with 2x uint32. I bet I can find such translations on the
-# internet. I can make an inteface for something that switches automatically
+# internet. I can make an interface for something that switches automatically
 # between the two modes.
 
 # Compression function for Merkle-Damgard construction.

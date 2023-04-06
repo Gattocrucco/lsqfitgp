@@ -32,14 +32,15 @@ requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Development Status :: 4 - Beta",
-    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
     'numpy>=1.20', # first version with broadcast_shapes
     'scipy>=1.10.1', # first to solve a lbfgs bug (to be confirmed)
-    'jax>=0.4.6', # first with optimized vectorize
-    'jaxlib>=0.4.6',
+    'jax==0.4.6', # first with optimized vectorize (for BART), last to support old jit implementation
+    'jaxlib==0.4.6',
     'gvar>=11.10.1', # first supporting gvar.gvar(x, cov) with readonly cov
 ]
 dynamic = ["version"]

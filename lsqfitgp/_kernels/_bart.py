@@ -217,6 +217,7 @@ def _BARTBase(x, y,
     # - make gamma='auto' depend on maxd and reset with a dictionary, error
     #   if not specified
     # - use as default, for the time being, maxd=4, reset=2, gamma=0.95?
+    # - do not require to specify splitting points if using indices
 
 class BART(_BARTBase):
     
@@ -783,7 +784,10 @@ class BART(_BARTBase):
                 nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
                 nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
             
-                sumn += cls._correlation(nminus, n0, nplus, pnt[1:], gamma, w, debug)
+                n = nminus + n0 + nplus
+                ix = nminus
+                iy = nminus + n0
+                sumn += cls._correlation2(n, ix, iy, pnt[1:], gamma, w, debug, None)
             
                 nminus = nminus.at[i].set(nminusi)
                 nplus = nplus.at[i].set(nplusi)

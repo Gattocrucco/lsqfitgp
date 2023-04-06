@@ -2868,20 +2868,21 @@ large matrices, since optimization requires taking it into account):
     ginv_quad(A) => A'K⁻A (for the posterior covariance)
         I want the pseudoinverse for the mean because the data may not be
         in the span and I want to project it orthogonally, while for the
-        covariance I expect B and K to come from a pos def matrix so they are
+        covariance I expect A and K to come from a pos def matrix so they are
         coherent
     ginv_diagquad(A) => diag(A'K⁻A) (for the posterior variance)
     minus_log_normal_density(
         r: 1d array,      # the residuals (data - prior mean)
-        dr_vjp: callable, # x -> x_i ∂r_i/∂p_j,   gradient and fishvec
-        dK_vjp: callable, # x -> x_ij ∂K_ij/∂p_k, gradient and fishvec
+        dr_vjp: callable, # x -> x_i ∂r_i/∂p_j,   gradrev and fishvec
+        dK_vjp: callable, # x -> x_ij ∂K_ij/∂p_k, gradrev and fishvec
         dr_jvp: callable, # x -> ∂r_i/∂r_j x_j,  fishvec
         dr_jvp: callable, # x -> ∂K_ij/∂p_k x_k, fishvec
-        dr: 2d array,     # ∂r_i/∂p_j,  fisher
-        dK: 3d array,     # ∂K_ij/∂p_k, fisher
+        dr: 2d array,     # ∂r_i/∂p_j,  gradfwd and fisher
+        dK: 3d array,     # ∂K_ij/∂p_k, gradfwd and fisher
         vec: 1d array,    # input vector of fishvec, same size as params
         value: bool,
-        gradient: bool,
+        gradrev: bool,
+        gradfwd: bool,
         fisher: bool,
         fishvec: bool,
     )
@@ -2891,7 +2892,8 @@ large matrices, since optimization requires taking it into account):
                  + 1/2 log pdet K
                  + 1/2 tr(I-KK⁺) log ε
                  + 1/2 r'(K⁺+(I-KK⁺)/ε)r
-            gradient: 1/2 tr(K⁺dK)
+            gradrev,
+            gradfwd: 1/2 tr(K⁺dK)
                     + r'(K⁺+(I-KK⁺)/ε) dr
                     - 1/2 r'(K⁺+2(I-KK⁺)/ε)dKK⁺r
             fisher: 1/2 tr(K⁺dK(K⁺+2(I-KK⁺)/ε)d'K)
@@ -2901,11 +2903,19 @@ large matrices, since optimization requires taking it into account):
         There should be options for omitting the pieces with ε. I also need a
         way to make densities with different values of ε comparable with each
         other (may not be possible, if it is, it probably requires a history of
-        ranks and ε).
+        ranks and ε). gradfwd forms K⁺ explicitly to compute tr(K⁺dK) for
+        efficiency.
     correlate(x)
         Zx where K = ZZ'.
     back_correlate(X):
         Z'X, this is used by Sandwich and Woodbury.
+
+Since I also want to compute the Student density, I could split
+minus_log_normal_density's return value into logdet and quad. The gradient
+splits nicely between the two terms, but I have to redo the calculation of the
+Fisher matrix for the Student distribution. Alternatively, I could use the the
+Normal Fisher. => See Lange et al. (1989, app. B). => I think I can split the
+gradient and Fisher matrix too.
     
 ............
 
@@ -3675,7 +3685,7 @@ Optimize the BART kernel:
 
   - Write a script to benchmark the two implementations at fixed maxd (DONE)
 
-  - Optimize the alternate implementation
+  - Optimize the alternate implementation (DONE)
 
 ........
 
@@ -4361,3 +4371,11 @@ Forward derivative:
 63.3 ms ± 590 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
     Compilation time with derivative:
 539 ms ± 11.2 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+2023-04-03
+==========
+
+Right now the gradient of the likelihood in forward is O(n^3d) because I do
+K⁺∂K/∂θ and then take the trace. It would be O(n^3 + n^2d) if instead I first
+formed K⁺ and then contracted both indices at once. I'm marking this in the
+sketch of the new linalg system.
