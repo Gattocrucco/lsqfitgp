@@ -47,13 +47,20 @@ def _BARTBase(x, y,
     intercept=True,
     weights=None,
     reset=None,
-    altimpl=False,
     indices=False):
     """
     BART kernel.
+
+    Good default parameters: `gamma=0.95`; `maxd=4, reset=2` if not fitting the
+    hyperparameters (`alpha` and `beta`), `maxd=10, reset=[2,4,6,8]` otherwise.
+    Derivatives are faster with forward autodiff.
     
     Parameters
     ----------
+    x, y : arrays
+        Input points. The array type can be structured, in which case every leaf
+        field represents a dimension; or unstructured, which specifies a single
+        dimension.
     alpha, beta : scalar
         The parameters of the branching probability.
     maxd : int
@@ -84,6 +91,10 @@ def _BARTBase(x, y,
         function value at a reset depth is evaluated on the initial inputs for
         all recursion paths, instead of the modified input handed down by the
         recursion. Default none.
+    indices : bool
+        If False (default), the inputs `x`, `y` represent coordinate values.
+        If True, they are taken to be already the indices of the points in the
+        splitting grid, as can be obtained with :meth:`BART.indices_from_coord`.
     
     Methods
     -------
@@ -192,31 +203,17 @@ def _BARTBase(x, y,
     else:
         ix = BART._indices_from_coord(x, splits)
         iy = BART._indices_from_coord(y, splits)
-    if altimpl:
-        arg1 = splits[0]
-        arg2 = ix
-        arg3 = iy
-    else:
-        l = jnp.minimum(ix, iy)
-        r = jnp.maximum(ix, iy)
-        arg1 = l
-        arg2 = r - l
-        arg3 = splits[0] - r
     return BART.correlation(
-        arg1, arg2, arg3,
+        splits[0], ix, iy,
         pnt=pnt, alpha=alpha, beta=beta, gamma=gamma, maxd=maxd,
-        intercept=intercept, weights=weights, reset=reset, altinput=altimpl,
+        intercept=intercept, weights=weights, reset=reset, altinput=True,
     )
     
     # TODO
-    # - interpolate (is linear interp pos def? => I think it can be seen as
-    #   the covariance of the interpolation) => it is slow for high p
     # - approximate as stationary w.r.t. indices (is it pos def?)
-    # - allow index input
     # - default gamma='auto'? => wait for better gamma
     # - make gamma='auto' depend on maxd and reset with a dictionary, error
     #   if not specified
-    # - use as default, for the time being, maxd=4, reset=2, gamma=0.95?
     # - do not require to specify splitting points if using indices
 
 class BART(_BARTBase):
@@ -347,7 +344,7 @@ class BART(_BARTBase):
             If True, take as input the indices in the splitting bins of the
             points instead of the counts of splitting points separating them,
             and use a different implementation optimized for that case. Default
-            False.
+            False. The :class:`BART` kernel uses `altinput=True`.
         Other parameters :
             See :class:`BART`.
 
@@ -524,7 +521,8 @@ class BART(_BARTBase):
 
     @classmethod
     @functools.partial(jax.jit, static_argnums=(0, 7))
-    def _correlation(cls, nminus, n0, nplus, pnt, gamma, w, debug):
+    def _correlation_old(cls, nminus, n0, nplus, pnt, gamma, w, debug):
+        """ old version, kept around for cross-checking """
 
         assert nminus.shape == n0.shape == nplus.shape == w.shape
         assert nminus.ndim == 1 and nminus.size >= 0
@@ -599,7 +597,7 @@ class BART(_BARTBase):
                 nminus = nminus.at[jnp.where(k < nminusi, i, i + p)].set(k)
                 nplus = nplus.at[jnp.where(k >= nminusi, i, i + p)].set(k - nminusi)
             
-                sumn += cls._correlation(nminus, n0, nplus, pnt[1:], gamma, w, debug)
+                sumn += cls._correlation_old(nminus, n0, nplus, pnt[1:], gamma, w, debug)
             
                 nminus = nminus.at[i].set(nminusi)
                 nplus = nplus.at[i].set(nplusi)
@@ -623,6 +621,9 @@ class BART(_BARTBase):
 
     @staticmethod
     def _scan_but_first(f, init, xs):
+        """ lax.scan, but execute separately the first cycle. The point is that
+        I use it when the first cycle works on smaller arrays due to
+        broadcasting. """
         assert isinstance(xs, jnp.ndarray)
         assert len(xs) > 0
         init, out = f(init, xs[0])
@@ -636,7 +637,7 @@ class BART(_BARTBase):
 
     @classmethod
     @functools.partial(jax.jit, static_argnums=(0, 7, 8))
-    def _correlation2(cls, n, ix, iy, pnt, gamma, w, debug, repeat):
+    def _correlation(cls, n, ix, iy, pnt, gamma, w, debug, repeat):
         # this implementation is optimized assuming that the shapes are as
         # follows:
         #   n     (p,)
@@ -767,7 +768,7 @@ class BART(_BARTBase):
             (_, _, _, _, gamma), _ = cls._scan_but_first(loop, (anyn0, inv_Wn, S, sumi, gamma), pnt.reshape(repeat, -1))
             return gamma
 
-        # convert to alternative format
+        # finish conversion to alternative format
         nminus = minxy
         nplus = n - maxxy
         p = len(nminus)
@@ -794,7 +795,7 @@ class BART(_BARTBase):
                 n = nminus + n0 + nplus
                 ix = nminus
                 iy = nminus + n0
-                sumn += cls._correlation2(n, ix, iy, pnt[1:], gamma, w, debug, None)
+                sumn += cls._correlation(n, ix, iy, pnt[1:], gamma, w, debug, None)
             
                 nminus = nminus.at[i].set(nminusi)
                 nplus = nplus.at[i].set(nplusi)
@@ -819,5 +820,8 @@ class BART(_BARTBase):
     @classmethod
     @functools.partial(jnp.vectorize, excluded=(0, 7, 8, 9), signature='(p),(p),(p),(d),(),(p)->()')
     def _correlation_vectorized(cls, nminus_or_n, n0_or_ix, nplus_or_iy, pnt, gamma, w, debug, altinput, repeat):
-        func = (lambda *args: cls._correlation2(*args, repeat)) if altinput else cls._correlation
+        if altinput:
+            func = lambda *args: cls._correlation(*args, repeat)
+        else:
+            func = cls._correlation_old
         return func(nminus_or_n, n0_or_ix, nplus_or_iy, pnt, gamma, w, bool(debug))
