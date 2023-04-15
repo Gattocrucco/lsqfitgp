@@ -105,7 +105,7 @@ class SingleInput(SequentialOperation):
     def __init__(self, input):
         self.inputs = (input,)
         
-    inputs = None
+    inputs = NotImplemented
 
 class Stack(Consumer, SingleInput):
     """input = an operation producing arrays"""
@@ -126,7 +126,7 @@ class MatMulIterByFull(Consumer, SingleInput):
     def __init__(self, input, b):
         """input = an operation producing pieces of left operand (a)
         b = right operand"""
-        self.input = input
+        self.inputs = (input,)
         b = jnp.asarray(b)
         assert b.ndim in (1, 2)
         vec = b.ndim < 2

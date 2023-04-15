@@ -1,5 +1,5 @@
 numpy==1.20
-scipy==1.10.1
+scipy==1.5
 gvar==11.10.1
 lsqfit<12
 jax==0.4.6

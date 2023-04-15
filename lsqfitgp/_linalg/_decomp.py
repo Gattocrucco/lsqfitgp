@@ -203,7 +203,8 @@ class Decomposition(metaclass=abc.ABCMeta):
         """
         Compute tr(K⁺b).
         """
-        return jnp.trace(self.solve(b))
+        # return jnp.trace(self.solve(b))
+        return jnp.einsum('ij,ji', self.inv(), b)
     
     @abc.abstractmethod
     def correlate(self, b, *, transpose=False): # pragma: no cover
@@ -434,7 +435,7 @@ class DecompAutoDiffBase(DecompPyTree):
         
         cls.__init__ = __init__
         
-        for name in 'solve', 'quad', 'logdet':
+        for name in 'solve', 'quad', 'logdet', 'tracesolve':
             meth = getattr(cls, name)
             if not hasattr(meth, '_autodiff'):
                 newmeth = getattr(cls, '_make_' + name)(meth)
@@ -541,6 +542,8 @@ class DecompAutoDiffBase(DecompPyTree):
                 # oldquad
             else:
                 return quad_autodiff(self, self.matrix(), b, c)
+
+        quad._autodiff = quad_autodiff
         
         return quad
     
@@ -557,8 +560,8 @@ class DecompAutoDiffBase(DecompPyTree):
             K, = primals
             K_dot, = tangents
             primal = logdet_autodiff(self, K)
-            tangent = jnp.trace(self.solve._autodiff(self, K, K_dot))
-            # TODO define the derivative of tracesolve to use it here
+            # tangent = jnp.trace(self.solve._autodiff(self, K, K_dot))
+            tangent = self.tracesolve._autodiff(self, K, K_dot)
             return primal, tangent
         
         def logdet(self):
@@ -568,6 +571,33 @@ class DecompAutoDiffBase(DecompPyTree):
                 return logdet_autodiff(self, self.matrix())
         
         return logdet
+
+    @staticmethod
+    def _make_tracesolve(oldtracesolve):
+
+        @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
+        def tracesolve_autodiff(self, K, b):
+            return oldtracesolve(self, b)
+                        
+        @tracesolve_autodiff.defjvp
+        def tracesolve_jvp(self, primals, tangents):
+            assert not self.direct_autodiff
+            K, b = primals
+            K_dot, b_dot = tangents
+            primal = tracesolve_autodiff(self, K, b)
+            tangent_K = -tracesolve_autodiff(self, K, self.quad._autodiff(self, K, K_dot, b))
+            tangent_b = tracesolve_autodiff(self, K, b_dot)
+            return primal, tangent_K + tangent_b
+        
+        def tracesolve(self, b):
+            if self.direct_autodiff:
+                return oldtracesolve(self, b)
+            else:
+                return tracesolve_autodiff(self, self.matrix(), b)
+
+        tracesolve._autodiff = tracesolve_autodiff
+        
+        return tracesolve
 
 class DecompAutoDiff(DecompAutoDiffBase):
     """ Specialization of DecompAutoDiffBase for classes which take as

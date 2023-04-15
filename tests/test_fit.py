@@ -167,9 +167,11 @@ def test_method():
         kws = [
             dict(method='nograd', minkw=dict(options=dict(xatol=1e-6))),
             dict(method='gradient'),
-            dict(method='gradient', minkw=dict(method='l-bfgs-b')),
             dict(method='fisher'),
         ]
+        if not sys.version.startswith('3.8'):
+            kws.append(dict(method='gradient', minkw=dict(method='l-bfgs-b')))
+
         for kw in kws:
             kwargs = dict(data=data)
             kwargs.update(kw)

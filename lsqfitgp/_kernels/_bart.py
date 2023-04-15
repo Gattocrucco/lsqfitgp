@@ -29,8 +29,8 @@ from .. import _patch_jax
 from .. import _array
 from .._Kernel import kernel
 
-def _bart_maxdim(splits=None, **_):
-    splits = BART._check_splits(splits)
+def _bart_maxdim(splits=None, indices=False, **_):
+    splits = BART._check_splits(splits, indices)
     return splits[0].size
 
 @kernel(maxdim=_bart_maxdim, derivable=False, batchbytes=10e6)
@@ -181,7 +181,7 @@ def _BARTBase(x, y,
         Ann. Appl. Stat. 4(1), 266-298, (March 2010).
     """
 
-    splits = BART._check_splits(splits)
+    splits = BART._check_splits(splits, indices)
     if not x.dtype.names:
         x = x[..., None]
     if not y.dtype.names:
@@ -190,8 +190,8 @@ def _BARTBase(x, y,
         ix = BART._check_x(x)
         iy = BART._check_x(y)
     else:
-        ix = BART.indices_from_coord(x, splits)
-        iy = BART.indices_from_coord(y, splits)
+        ix = BART._indices_from_coord(x, splits)
+        iy = BART._indices_from_coord(y, splits)
     if altimpl:
         arg1 = splits[0]
         arg2 = ix
@@ -296,10 +296,14 @@ class BART(_BARTBase):
             i > 0 means between split i - 1 and split i.
         
         """
+        splits = cls._check_splits(splits, False)
+        return cls._indices_from_coord(x, splits)
+
+    @classmethod
+    def _indices_from_coord(cls, x, checked_splits):
         x = cls._check_x(x)
-        splits = cls._check_splits(splits)
-        assert x.shape[-1] == splits[0].size
-        return cls._searchsorted_vectorized(splits[1], x)
+        assert x.shape[-1] == checked_splits[0].size
+        return cls._searchsorted_vectorized(checked_splits[1], x)
     
     @classmethod
     def correlation(cls,
@@ -489,17 +493,20 @@ class BART(_BARTBase):
         return x
 
     @staticmethod
-    def _check_splits(splits):
+    def _check_splits(splits, indices):
         l, s = splits
         l = jnp.asarray(l)
-        s = jnp.asarray(s)
-        assert l.ndim == 1 and 1 <= s.ndim <= 2
-        if s.ndim == 1:
-            s = s[:, None]
-        assert l.size == s.shape[1]
+        assert l.ndim == 1
+        if not indices:
+            s = jnp.asarray(s)
+            assert 1 <= s.ndim <= 2
+            if s.ndim == 1:
+                s = s[:, None]
+            assert l.size == s.shape[1]
         with _patch_jax.skipifabstract():
             assert jnp.all((0 <= l) & (l <= s.shape[0])), 'length out of bounds'
-            assert jnp.all(jnp.sort(s, axis=0) == s), 'unsorted splitting points'
+            if not indices:
+                assert jnp.all(jnp.sort(s, axis=0) == s), 'unsorted splitting points'
         return l, s
     
     @staticmethod

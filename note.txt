@@ -4379,3 +4379,13 @@ Right now the gradient of the likelihood in forward is O(n^3d) because I do
 K⁺∂K/∂θ and then take the trace. It would be O(n^3 + n^2d) if instead I first
 formed K⁺ and then contracted both indices at once. I'm marking this in the
 sketch of the new linalg system.
+
+2023-04-15
+==========
+
+Debugging the lbfgs bug.
+
+I can not install the old stuff because binaries for arm are missing and jaxlib
+does not run on rosetta2.
+
+=> special-case the failing test

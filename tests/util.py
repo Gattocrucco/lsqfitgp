@@ -1,3 +1,4 @@
+import sys
 import functools
 import warnings
 
@@ -8,6 +9,7 @@ import gvar
 import pytest
 from scipy import linalg
 
+sys.path.insert(0, '.')
 import lsqfitgp as lgp
 
 def jaxtonumpy(x):

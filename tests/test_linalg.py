@@ -35,7 +35,7 @@ import pytest
 
 import util
 
-sys.path = ['.'] + sys.path
+sys.path.insert(0, '.')
 from lsqfitgp import _linalg, _kernels
 
 TRYAGAIN = True

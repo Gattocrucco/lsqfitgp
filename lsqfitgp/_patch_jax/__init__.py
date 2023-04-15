@@ -21,7 +21,7 @@
 # leaked tracers, but I can't fix it and maybe it's a jax bug. Wait till next
 # release to see what happens. => maybe it's
 # https://github.com/google/jax/issues/14776, "jax.ensure_compile_time_eval puts
-# the trace stack in a bad state"? => still not working in 0.4.6
+# the trace stack in a bad state"? => still not working in 0.4.8
 import os
 os.environ['JAX_JIT_PJIT_API_MERGE'] = '0'
 
