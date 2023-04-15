@@ -4389,3 +4389,13 @@ I can not install the old stuff because binaries for arm are missing and jaxlib
 does not run on rosetta2.
 
 => special-case the failing test
+
+........
+
+Todo next: try to reproduce the failing gvar installation locally (in a fresh
+venv, without using cached wheels) and fix it. Installing first numpy separately
+did not work on CI.
+
+Installing from tests-requirements.txt does not trigger the problem locally.
+
+Installing lsqfitgp does not trigger the problem locally.
