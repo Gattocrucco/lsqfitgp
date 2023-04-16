@@ -1,6 +1,6 @@
-# lsqfitgp/__init__.py
+# lsqfitgp/tests/test_copula_beta.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,22 +17,27 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Module to fit Gaussian processes
+"""Test the copula.beta module"""
 
-See the manual at https://gattocrucco.github.io/lsqfitgp/docs
-"""
+import sys
 
-__version__ = '0.15'
+from jax import test_util
+from scipy import stats
+import pytest
+import numpy as np
 
-from . import _patch_jax # keep first due to pre-import jax configs
-from . import _patch_gvar
+sys.path.insert(0, '.')
+from lsqfitgp.copula import _beta
 
-from ._GP import *
-from ._Kernel import *
-from ._kernels import *
-from ._array import *
-from ._fit import *
-from ._Deriv import *
-from ._fastraniter import *
-from . import copula
+def test_grad():
+    test_util.check_grads(lambda y: _beta.betaincinv(2.5, 1.3, y), (0.3,), 2)
+
+@pytest.mark.xfail
+def test_grad_ab():
+    test_util.check_grads(_beta.betaincinv, (2.5, 1.3, 0.3), 1)
+
+def test_ppf():
+    q = 0.43
+    a = 3.6
+    b = 2.1
+    np.testing.assert_allclose(stats.beta.ppf(q, a, b), _beta.beta.ppf(q, a, b), rtol=1e-6)

@@ -28,8 +28,6 @@ import textwrap
 examples = pathlib.Path('../examples').glob('*.py')
 examples = list(sorted(examples))
 
-pattern = re.compile(r'(?s)"""(.+)"""')
-
 shortindex = ''
 longindex = ''
 
@@ -44,7 +42,7 @@ for example in examples:
     # get description from docstring
     with open(example, 'r') as stream:
         text = stream.read()
-    if match := pattern.search(text):
+    if match := re.search(r'(?s)"""(.+?)"""', text):
         descr = match.group(1)
         descr = ': ' + textwrap.indent(textwrap.dedent(descr), 4 * ' ').strip()
     else:

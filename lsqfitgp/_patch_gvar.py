@@ -28,6 +28,8 @@ from jax import tree_util
 import numpy
 from scipy import linalg
 
+from . import _patch_jax
+
 gvar_ufuncs = [
     'sin',
     'cos',
@@ -256,3 +258,25 @@ def _head(col, head):
 def _join(cols):
     split = (col.split('\n') for col in cols)
     return '\n'.join(''.join(lines) for lines in zip(*split))
+
+def add_gvar_support(func):
+    """ Wraps a jax-traceable ufunc to support gvars """
+    
+    dfdx = _patch_jax.elementwise_grad(func)
+    
+    def gvar_function(x):
+        m = gvar.mean(x)
+        return gvar.gvar_function(x, func(m), dfdx(m))
+    
+    gvar_function_vectorized = numpy.vectorize(gvar_function)
+
+    @functools.wraps(func)
+    def decorated_func(x):
+        if isinstance(x, gvar.GVar):
+            return gvar_function(x)
+        elif getattr(x, 'dtype', None) == object:
+            return gvar_function_vectorized(x)
+        else:
+            return func(x)
+    
+    return decorated_func

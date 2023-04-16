@@ -212,12 +212,11 @@ class empbayes_fit(Logger):
                 Use the Fisher information in the MAP, plus the prior precision,
                 as precision matrix.
             'minhess'
-                Use the hessian returned by the minimizer as precision matrix,
-                may be an estimate.
-            'auto' (default)
-                Use the minimizer hessian if applicable, Fisher otherwise.
+                Use the hessian estimate of the minimizer as precision matrix.
             'none'
                 Do not estimate the covariance matrix.
+            'auto' (default)
+                'minhess' if applicable, 'none' otherwise.
         fix : scalar, array or dictionary of scalars/arrays
             A set of booleans, with the same format as `hyperprior`, indicating
             which hyperparameters are kept fixed to their initial value.
@@ -521,10 +520,10 @@ class empbayes_fit(Logger):
         # TODO reimplement the timing system with host_callback.id_tap. It
         # should preserve the order because id_tap takes inputs and outputs. I
         # must take care to make all callbacks happen at runtime instead of
-        # having some of them at runtime. I tried once but failed. Currently
-        # host_callback is experimental, maybe wait until it isn't. => I think
-        # it fails because it's asynchronous and there is only one device. Maybe
-        # host_callback.call would work?
+        # having some of them at compile time. I tried once but failed.
+        # Currently host_callback is experimental, maybe wait until it isn't. =>
+        # I think it fails because it's asynchronous and there is only one
+        # device. Maybe host_callback.call would work?
 
     class _CountCalls:
         """ wrap a callable to count calls """
@@ -759,10 +758,7 @@ class empbayes_fit(Logger):
             if hasattr(minimizer_result, 'hess_inv') or hasattr(minimizer_result, 'hess'):
                 covariance = 'minhess'
             else:
-                covariance = 'fisher'
-            # TODO maybe fisher should not be the default since it can be very
-            # slow right now, in particular with 'nograd' it could be unexpected
-            # that a derivative is computed
+                covariance = 'none'
 
         if covariance == 'fisher':
             self.log('use fisher plus prior precision as precision', 2)
@@ -808,6 +804,7 @@ class empbayes_fit(Logger):
         return bfgs.get_matrix()
 
     class _Callback:
+        """ Iteration callback for scipy.optimize.minimize """
         
         def __init__(self, this, functions, timer, unflat):
             self.it = 0
@@ -887,15 +884,16 @@ class empbayes_fit(Logger):
                 return f'{hour}h{minute:02d}m'
             elif minute:
                 return f'{minute}m{second:02.0f}s'
-            elif second >= 0.1:
+            elif second >= 0.0995:
                 return f'{second:#.2g}'.rstrip('.') + 's'
-            elif second >= 0.0001:
+            elif second >= 0.0000995:
                 return f'{second * 1e3:#.2g}'.rstrip('.') + 'ms'
             else:
                 return f'{second * 1e6:.0f}μs'
 
         @classmethod
         def fmttimes(cls, times):
+            """ times = dict label -> seconds """
             return ', '.join(f'{k} {cls.fmttime(v)}' for k, v in times.items())
 
         def estimate_firstcall_overhead(self):
