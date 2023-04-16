@@ -59,6 +59,7 @@
 <li class="toctree-l2"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">8. Fitting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="copula.html">10. Copula factories</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
@@ -198,12 +199,11 @@ hyperparameters:</p>
 <dt>‘fisher’</dt><dd><p>Use the Fisher information in the MAP, plus the prior precision,
 as precision matrix.</p>
 </dd>
-<dt>‘minhess’</dt><dd><p>Use the hessian returned by the minimizer as precision matrix,
-may be an estimate.</p>
-</dd>
-<dt>‘auto’ (default)</dt><dd><p>Use the minimizer hessian if applicable, Fisher otherwise.</p>
+<dt>‘minhess’</dt><dd><p>Use the hessian estimate of the minimizer as precision matrix.</p>
 </dd>
 <dt>‘none’</dt><dd><p>Do not estimate the covariance matrix.</p>
+</dd>
+<dt>‘auto’ (default)</dt><dd><p>‘minhess’ if applicable, ‘none’ otherwise.</p>
 </dd>
 </dl>
 </dd>
