@@ -53,7 +53,8 @@ class CopulaBaseTest:
         cls.copcls = getattr(lgp.copula, cls.__name__[4:].lower())
         cls.params = params
     
-    @staticmethod
+    # don't make this a staticmethod because it wouldn't be callable at class
+    # definition time in old python versions
     def clean(meth):
         @functools.wraps(meth)
         def newmeth(self, *args, **kw):
