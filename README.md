@@ -5,7 +5,7 @@
 Python module for manipulating Gaussian processes. Features:
 
   * Use [gvar](https://github.com/gplepage/gvar) to keep track transparently of
-    correlations between prior, data and posterior.
+    dependencies between prior, data and posterior.
   * Fit a latent Gaussian process in a nonlinear model with
     [lsqfit](https://github.com/gplepage/lsqfit).
   * [JAX](https://github.com/google/jax)-friendly.
@@ -13,10 +13,12 @@ Python module for manipulating Gaussian processes. Features:
     dimensions.
   * Apply arbitrary linear transformations to the process, finite and
     infinite.
-  * Use dictionaries to manipulate hyperparameters and hyperpriors. Use
-    `gvar.BufferDict` to transparently apply transformations.
+  * Use dictionaries to manipulate hyperparameters and their priors. Use
+    `gvar.BufferDict` to transparently apply transformations to implement
+    Gaussian copulas.
   * Get a covariance matrix for the optimized hyperparameters.
-  * Many covariance functions.
+  * Many covariance functions, including one for BART (Bayesian Additive
+    Regression Trees).
   
 See [this report](https://www.giacomopetrillo.com/scuola/gppdf.pdf) for the
 theory behind lsqfitgp.
@@ -26,6 +28,7 @@ theory behind lsqfitgp.
 Python >= 3.8 required. Then:
 
 ```
+$ pip install 'pip<23.1' # temporary hack for problems in the dependencies
 $ pip install lsqfitgp
 ```
 
@@ -61,9 +64,8 @@ Clone the repository, create a virtual environment and install the requirements:
 ```sh
 $ git clone https://github.com/Gattocrucco/lsqfitgp.git
 $ cd lsqfitgp
-$ python -m venv myenv
-$ . myenv/bin/activate
-(myenv) $ pip install -r requirements.txt
+$ make resetenv
+$ . pyenv/bin/activate
 ```
 
 The `Makefile` in the root directory contains targets to build the
@@ -72,8 +74,7 @@ arguments to show the available targets:
 
 ```sh
 $ make
-available targets: upload release tests examples docscode docs covreport
-release = tests examples docscode docs (in order)
+available targets: [...]
 $ make tests # or make examples, or ...
 ```
 
