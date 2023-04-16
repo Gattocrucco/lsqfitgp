@@ -153,15 +153,16 @@ an explicit mean vector and covariance matrix instead of <code class="xref py py
 <p>Once you have solved eventual <code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code>-related issues, if you have at least
 some hundreds of datapoints the next bottleneck is probably in
 <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code></a>. Making it faster is quick: select a solver different
-from the default one when initializing the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object, like
-<code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol')</span></code>. And don’t forget to disable the positivity
-check: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol',</span> <span class="pre">checkpos=False)</span></code>. The positivity check
-takes <span class="math notranslate nohighlight">\(O((n+m)^3)\)</span>, so it’s guaranteed to become the slower step at some
-point.</p>
-<p>If you have written a custom kernel, it may become a bottleneck. For example
-the letter counting kernel in <a class="reference internal" href="customs.html#customs"><span class="std std-ref">A custom kernel: text classification</span></a> was very slow. A quick way to get
-a 2x improvement is disabling the symmetry check in <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span>
-<span class="pre">checksym=False)</span></code>.</p>
+from the default one when initializing the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object, like <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span>
+<span class="pre">solver='chol')</span></code>. And don’t forget to disable the <span class="math notranslate nohighlight">\(O((n+m)^2)\)</span> positivity
+check: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span> <span class="pre">solver='chol',</span> <span class="pre">checkpos=False)</span></code>.</p>
+<p>If you have written a custom kernel, it may become a bottleneck. For example the
+letter counting kernel in <a class="reference internal" href="customs.html#customs"><span class="std std-ref">A custom kernel: text classification</span></a> was very slow. A quick way to get a 2x
+improvement is computing only half of the covariance matrix: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span>
+<span class="pre">checksym=False,</span> <span class="pre">halfmatrix=True)</span></code>. Note however that in some cases this may
+cause a large perfomance hit, so by default the full covariance matrix is
+computed even if <code class="docutils literal notranslate"><span class="pre">checksym=False</span></code> (but the cross covariance matrices are not
+computed twice).</p>
 </section>
 <section id="the-jax-compiler">
 <h2><span class="section-number">14.2. </span>The JAX compiler<a class="headerlink" href="#the-jax-compiler" title="Permalink to this heading">¶</a></h2>

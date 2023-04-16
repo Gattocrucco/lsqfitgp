@@ -121,7 +121,7 @@
 <span id="gp"></span><h1><span class="section-number">6. </span>Gaussian process class<a class="headerlink" href="#gaussian-process-class" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.GP">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkfinite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posepsfac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">GP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eigcut+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksym</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkfinite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checklin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posepsfac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halfmatrix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.GP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Object that represents a Gaussian process over arbitrary input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -146,6 +146,12 @@ given transformation is linear on a random input tensor.</p>
 </dd>
 <dt><strong>posepsfac</strong><span class="classifier">number</span></dt><dd><p>The threshold used to check if the prior covariance matrix is positive
 definite is multiplied by this factor (default 1).</p>
+</dd>
+<dt><strong>halfmatrix</strong><span class="classifier">bool</span></dt><dd><p>If True and <cite>checksym=False</cite>, compute only half of the covariance
+matrices by unrolling their lower triangular part as flat arrays. This
+may actually be a large performance hit if the input arrays have large
+item size or if the implementation of the kernel takes advantage of
+non-broadcasted inputs, so it is False by default.</p>
 </dd>
 <dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the solver, see
 <a class="reference internal" href="#lsqfitgp.GP.decompose" title="lsqfitgp.GP.decompose"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decompose()</span></code></a>.</p>
@@ -492,10 +498,7 @@ array, you have to specify its dictionary key with the <cite>key</cite> paramete
 Otherwise, you can directly pass a dictionary for <cite>x</cite>.</p>
 <p>To specify that on the given <cite>x</cite> a derivative of the process instead of
 the process itself should be evaluated, use the parameter <cite>deriv</cite>.</p>
-<p><cite>addx</cite> never copies the input arrays if they are numpy arrays, so if
-you change their contents before doing something with the GP, the
-change will be reflected on the result. However, after the GP has
-computed internally its covariance matrix, the x are ignored.</p>
+<p><cite>addx</cite> may or may not copy the input arrays.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">

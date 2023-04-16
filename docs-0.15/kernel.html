@@ -138,7 +138,7 @@ simpler and more functional way using the decorators <a class="reference interna
 <a class="reference internal" href="kerneldec.html#lsqfitgp.stationarykernel" title="lsqfitgp.stationarykernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">stationarykernel()</span></code></a> and <a class="reference internal" href="kerneldec.html#lsqfitgp.isotropickernel" title="lsqfitgp.isotropickernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">isotropickernel()</span></code></a>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Kernel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sys.maxsize</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">sys.maxsize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batchbytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for objects representing covariance kernels.</p>
 <p>A Kernel object is callable, the signature is obj(x, y). Kernel objects
 can be summed and multiplied between them and with scalars, or raised
@@ -179,6 +179,8 @@ dictionary under the attribute <cite>initargs</cite>. Default False.</p>
 callable, it is called with the same keyword arguments as the
 kernel. Default sys.maxsize.</p>
 </dd>
+<dt><strong>batchbytes</strong><span class="classifier">number, optional</span></dt><dd><p>If specified, apply <cite>batch(batchbytes)</cite> to the kernel.</p>
+</dd>
 <dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to <cite>kernel</cite>.</p>
 </dd>
 </dl>
@@ -212,8 +214,35 @@ unknown.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.Kernel.taylor" title="lsqfitgp.Kernel.taylor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">taylor</span></code></a>(dox, doy)</p></td>
 <td><p>Compute the Taylor series of the kernel.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.Kernel.batch" title="lsqfitgp.Kernel.batch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code></a>(maxnbytes)</p></td>
+<td><p>Return a batched version of the kernel.</p></td>
+</tr>
 </tbody>
 </table>
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.Kernel.batch">
+<span class="sig-name descname"><span class="pre">batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">maxnbytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel.batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a batched version of the kernel.</p>
+<p>The batched kernel processes its inputs in chunks to try to limit memory
+usage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>maxnbytes</strong><span class="classifier">number</span></dt><dd><p>The maximum number of input bytes per chunk, counted after
+broadcasting the inputs (actual broadcasting may not occur if not
+induced by the operations in the kernel).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>batched_kernel</strong><span class="classifier">CrossKernel</span></dt><dd><p>The same kernel but with batched computations.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.Kernel.diff">
 <span class="sig-name descname"><span class="pre">diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xderiv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yderiv</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel.diff" title="Permalink to this definition">¶</a></dt>
@@ -303,11 +332,6 @@ otherwise a Kernel-like one.</p>
 </dd>
 </dl>
 </dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="lsqfitgp.Kernel.side">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">side</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Kernel.side" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.Kernel.taylor">
