@@ -118,7 +118,7 @@ print('latent sdev =', k_sigma_mu / fit.p['k'], '(large -> conservative extrapol
 print('error sdev =', gvar.sqrt(fit.p['sigma2']))
 print(f'data total sdev = {np.std(y):.3f}')
 
-# Extract men predictions from GP at hyperparameters MAP
+# Extract mean predictions from GP at hyperparameters MAP
 
 gp = makegp(fit.pmean, **gpkw)
 yhat_mean, yhat_cov = gp.predfromdata(info, 'test', raw=True)

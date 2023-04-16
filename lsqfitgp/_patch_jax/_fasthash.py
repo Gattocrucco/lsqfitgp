@@ -55,6 +55,8 @@ import jax
 # internet. I can make an interface for something that switches automatically
 # between the two modes.
 
+# TODO move to _special
+
 # Compression function for Merkle-Damgard construction.
 # This function is generated using the framework provided.
 def mix(h):

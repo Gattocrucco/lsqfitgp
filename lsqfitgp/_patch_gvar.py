@@ -169,6 +169,16 @@ def bufferdict_unflatten(skeleton, children):
 # register BufferDict as a pytree
 tree_util.register_pytree_node(gvar.BufferDict, bufferdict_flatten, bufferdict_unflatten)
 
+# TODO the current implementation of BufferDict as pytree is not really
+# consistent with how JAX handles trees, because JAX expects to be allowed to
+# put arbitrary objects in the leaves; in particular, internally it sometimes
+# creates dummy trees filled with None. Maybe the current impl is fine with
+# this; _buf gets set to None, and assuming the BufferDict is never really
+# used in that crooked state, everything goes fine. The thing that this breaks
+# is a subsequent flattening of the dummy, I think JAX never does this. (The
+# reason for switching to buf-as-leaf in place of dict-values-as-leaves is that
+# the latter breaks tracing.)
+
 def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
     """
     

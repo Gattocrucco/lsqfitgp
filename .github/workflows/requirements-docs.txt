@@ -8,3 +8,4 @@ jaxlib==0.4.6
 sphinx
 numpydoc
 coverage
+polars

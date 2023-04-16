@@ -4401,3 +4401,50 @@ Installing from tests-requirements.txt does not trigger the problem locally.
 Installing lsqfitgp does not trigger the problem locally.
 
 => It's pip 23.1, I pinned it and it's fixed.
+
+2023-04-16
+==========
+
+Release notes for v0.15:
+
+This release mostly features further improvements to the BART kernel. According to the benchmarks I am going to show at EUROCIM 2023, GP regression with this kernel and hyperparameter tuning beats the original cross-validated BART MCMC both in statistical and computational performance. Following the ACIC challenge 2022 results, this implies that it's probably SoTA on the standard causal inference in decounfounded observational study setting, although that is still to be verified.
+
+### BART
+  * Strongly optimized implementation, both on memory usage and running time.
+  * Computation is batched by default to avoid creating large intermediate matrices when there are many covariates.
+  * Good choices for technical parameters are documented.
+  * `BART.correlation` also accepts total splits and indices w.r.t. the grid instead of split count separations.
+  * Example script with full BART inference.
+
+### Hyperparameters fit (`empbayes_fit`)
+  * New parameters:
+      - `covariance` to set how to estimate the posterior covariance matrix
+      - `fix` to fix some hyperparameters to the initial values
+      - `mlkw` to pass additional keyword arguments to `GP.marginal_likelihood`
+      - `forward` to use forward autodiff for the likelihood gradient; it uses a partially reverse autodiff calculation to avoid the $(n^3d)$ complexity of full-forward mode
+  * Removed the `'hessian'` and `'hessmod'` values of parameter `method`. Use `'fisher'` instead. **<-- BREAKING CHANGE**
+  * New attributes:
+      - `prior`: the prior on the hyperparameters, as gvars
+      - `initial`: the starting values for the MAP search
+      - `fix`: the mask indicating locked hyperparameters
+      - `gpfactory`: the `gpfactory` argument
+  * Additional logging: per task timing and function calls count.
+  * Copula factories for the Beta and Inverse Gamma distributions, in the submodule `copula`.
+
+### `StructuredArray`
+  * New function `unstructured_to_structured` to create a `StructuredArray` from an unstructured array.
+  * Arrays are now read-only. Setting the fields requires a JAX-like syntax with `.at[field].set(value)`. **<-- BREAKING CHANGE**
+  * Added methods `squeeze` and `astype`, although the latter refuses to change the type.
+  * Pytree unflattening tries to infer shape and dtype if the leaves are not compatible with the original structure. The inference is incomplete and ambiguous. **<-- BREAKING CHANGE**
+  * Implemented numpy functions `ix`, `empty_like`, and `empty`.
+
+### Kernels
+  * New `CrossKernel` parameter `batchbytes` to batch the calculation, and corresponding method `batch`. Requires jax-traceability of the kernel implementation.
+  * The `Decaying` kernel gets an explicit real exponent to indicate infinite divisibility.
+
+### GP
+  * By default, even if `checksym=False`, the full covariance matrix is computed for diagonal blocks, unless the additional new option `halfmatrix=True` is set. **<-- BREAKING CHANGE**
+
+### Dependencies
+  * Pinned jax and jaxlib to 0.4.6. Earlier versions severly break the optimization of the BART kernel, while later versions break the `jit` option in `empbayes_fit`. Sorry for this pin, I do know that dependency pins in libraries are evil. **<-- BREAKING CHANGE**
+  * Tested on Python 3.11
