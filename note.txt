@@ -4399,3 +4399,5 @@ did not work on CI.
 Installing from tests-requirements.txt does not trigger the problem locally.
 
 Installing lsqfitgp does not trigger the problem locally.
+
+=> It's pip 23.1, I pinned it and it's fixed.

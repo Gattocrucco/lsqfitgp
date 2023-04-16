@@ -29,14 +29,19 @@ TARGETS = upload release $(RELEASE_TARGETS) covreport resetenv
 all:
 	@echo "available targets: $(TARGETS)"
 	@echo "release = $(RELEASE_TARGETS) (in order)"
+	@echo
+	@echo "Setup instructions:"
+	@echo " 1) $$ make resetenv"
+	@echo " 2) $$ . pyenv/bin/activate"
+	@echo
 	@echo "Release instructions:"
-	@echo "1) push and check CI completes"
-	@echo "2) $$ make release"
-	@echo "3) $$ make upload"
-	@echo "4) publish the github release"
-	@echo "5) bump version number"
-	@echo "6) switch to branch gh-pages and pull"
-	@echo "7) add new version to index, commit and push"
+	@echo " 1) push and check CI completes"
+	@echo " 2) $$ make release"
+	@echo " 3) $$ make upload"
+	@echo " 4) publish the github release"
+	@echo " 5) bump version number"
+	@echo " 6) switch to branch gh-pages and pull"
+	@echo " 7) add new version to index, commit and push"
 
 upload:
 	python3 -m twine upload dist/*
@@ -88,3 +93,11 @@ docs: gendocs
 covreport:
 	coverage combine
 	coverage html
+
+resetenv:
+	test -d pyenv && rm -fr pyenv || test -
+	python3 -m venv pyenv
+	pyenv/bin/python3 -m pip install --upgrade 'pip<23.1' # pip 23.1 breaks gvar
+	pyenv/bin/python3 -m pip install -r requirements.txt
+	@echo
+	@echo 'Now type ". pyenv/bin/activate"'
