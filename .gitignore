@@ -4,6 +4,7 @@ pyenv*
 *.sublime-workspace
 playground
 tests/fast-hash/main
+*.dSYM
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
