@@ -162,9 +162,9 @@ reference to the original array for that field is lost.</p>
 <h2><span class="section-number">7.2. </span>Functions<a class="headerlink" href="#functions" title="Permalink to this heading">¶</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.asarray">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">asarray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.asarray" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">asarray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.asarray" title="Permalink to this definition">¶</a></dt>
 <dd><p>Version of numpy.asarray that works with StructuredArray and JAX arrays.
-If x is not a numpy array, returns a JAX array if possible.</p>
+If x is not an array already, returns a JAX array if possible.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -176,15 +176,125 @@ If x is not a numpy array, returns a JAX array if possible.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.broadcast_arrays">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">broadcast_arrays</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">arrays</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.broadcast_arrays" title="Permalink to this definition">¶</a></dt>
-<dd><p>Version of numpy.broadcast_arrays that works with StructuredArray and JAX
-arrays.</p>
+<dd><p>Implementation of numpy.broadcast_arrays
+for lgp.StructuredArray.</p>
+<p>Broadcast any number of arrays against each other.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>`*args`</strong><span class="classifier">array_likes</span></dt><dd><p>The arrays to broadcast.</p>
+</dd>
+<dt><strong>subok</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, then sub-classes will be passed-through, otherwise
+the returned arrays will be forced to be a base-class array (default).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl>
+<dt><strong>broadcasted</strong><span class="classifier">list of arrays</span></dt><dd><p>These arrays are views on the original arrays.  They are typically
+not contiguous.  Furthermore, more than one element of a
+broadcasted array may refer to a single memory location. If you need
+to write to the arrays, make copies first. While you can set the
+<code class="docutils literal notranslate"><span class="pre">writable</span></code> flag True, writing to a single output value may end up
+changing more than one location in the output array.</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 1.17: </span>The output is currently marked so that if written to, a deprecation
+warning will be emitted. A future version will set the
+<code class="docutils literal notranslate"><span class="pre">writable</span></code> flag False so writing to it will raise an error.</p>
+</div>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.broadcast" title="lsqfitgp.broadcast"><code class="xref py py-obj docutils literal notranslate"><span class="pre">broadcast</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="#lsqfitgp.broadcast_to" title="lsqfitgp.broadcast_to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">broadcast_to</span></code></a></dt><dd></dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">broadcast_shapes</span></code></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">4</span><span class="p">],[</span><span class="mi">5</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">broadcast_arrays</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="go">[array([[1, 2, 3],</span>
+<span class="go">       [1, 2, 3]]), array([[4, 4, 4],</span>
+<span class="go">       [5, 5, 5]])]</span>
+</pre></div>
+</div>
+<p>Here is a useful idiom for getting contiguous copies instead of
+non-contiguous views.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_arrays</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)]</span>
+<span class="go">[array([[1, 2, 3],</span>
+<span class="go">       [1, 2, 3]]), array([[4, 4, 4],</span>
+<span class="go">       [5, 5, 5]])]</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.broadcast_to">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">broadcast_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.broadcast_to" title="Permalink to this definition">¶</a></dt>
-<dd><p>Version of numpy.broadcast_to that works with StructuredArray and JAX
-arrays.</p>
+<dd><p>Implementation of numpy.broadcast_to
+for lgp.StructuredArray.
+Broadcast an array to a new shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>array</strong><span class="classifier">array_like</span></dt><dd><p>The array to broadcast.</p>
+</dd>
+<dt><strong>shape</strong><span class="classifier">tuple or int</span></dt><dd><p>The shape of the desired array. A single integer <code class="docutils literal notranslate"><span class="pre">i</span></code> is interpreted
+as <code class="docutils literal notranslate"><span class="pre">(i,)</span></code>.</p>
+</dd>
+<dt><strong>subok</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, then sub-classes will be passed-through, otherwise
+the returned array will be forced to be a base-class array (default).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>broadcast</strong><span class="classifier">array</span></dt><dd><p>A readonly view on the original array with the given shape. It is
+typically not contiguous. Furthermore, more than one element of a
+broadcasted array may refer to a single memory location.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>ValueError</dt><dd><p>If the array is not compatible with the new shape according to NumPy’s
+broadcasting rules.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.broadcast" title="lsqfitgp.broadcast"><code class="xref py py-obj docutils literal notranslate"><span class="pre">broadcast</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="#lsqfitgp.broadcast_arrays" title="lsqfitgp.broadcast_arrays"><code class="xref py py-obj docutils literal notranslate"><span class="pre">broadcast_arrays</span></code></a></dt><dd></dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">broadcast_shapes</span></code></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Notes</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 1.10.0.</span></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="go">array([[1, 2, 3],</span>
+<span class="go">       [1, 2, 3],</span>
+<span class="go">       [1, 2, 3]])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.unstructured_to_structured">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">unstructured_to_structured</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">casting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'unsafe'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.unstructured_to_structured" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like numpy.lib.recfunctions.unstructured_to_structured, but outputs a
+StructuredArray.</p>
 </dd></dl>
 
 </section>

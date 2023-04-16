@@ -146,7 +146,8 @@ the argument(s) for <cite>GP.marginal_likelihood</cite>.</p>
 <dt><strong>raises</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), raise an error when the minimization fails.
 Otherwise, use the last point of the minimization as result.</p>
 </dd>
-<dt><strong>minkw</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments passed to <cite>scipy.optimize.minimize</cite>.</p>
+<dt><strong>minkw</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments passed to <cite>scipy.optimize.minimize</cite>, overwrites
+values specified by <cite>empbayes_fit</cite>.</p>
 </dd>
 <dt><strong>gpfactorykw</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments passed to <cite>gpfactory</cite>, and also to <cite>data</cite> if it
 is a callable.</p>
@@ -160,14 +161,8 @@ False.</p>
 </dd>
 <dt>‘gradient’</dt><dd><p>Use a gradient-only method (default).</p>
 </dd>
-<dt>‘hessian’</dt><dd><p>Use a Newton method with the Hessian.</p>
-</dd>
 <dt>‘fisher’</dt><dd><p>Use a Newton method with the Fisher information matrix plus
 the hyperprior precision matrix.</p>
-</dd>
-<dt>‘hessmod’</dt><dd><p>Use a Newton method with a modified Hessian where the
-second derivatives of the prior covariance matrix w.r.t. the
-hyperparameters are assumed to be zero.</p>
 </dd>
 </dl>
 </dd>
@@ -185,22 +180,21 @@ terminal:</p>
 <dl class="simple">
 <dt>0</dt><dd><p>No logging (default).</p>
 </dd>
-<dt>1</dt><dd><p>Report starting point and result.</p>
+<dt>1</dt><dd><p>Minimal report.</p>
 </dd>
-<dt>2</dt><dd><p>More detailed report.</p>
+<dt>2</dt><dd><p>Detailed report.</p>
 </dd>
 <dt>3</dt><dd><p>Log each iteration.</p>
 </dd>
 <dt>4</dt><dd><p>More detailed iteration log.</p>
+</dd>
+<dt>5</dt><dd><p>Print the current parameter values at each iteration.</p>
 </dd>
 </dl>
 </dd>
 <dt><strong>covariance</strong><span class="classifier">str</span></dt><dd><p>Method to estimate the posterior covariance matrix of the
 hyperparameters:</p>
 <dl class="simple">
-<dt>‘hess’</dt><dd><p>Use the hessian of the log posterior in the MAP as precision
-matrix.</p>
-</dd>
 <dt>‘fisher’</dt><dd><p>Use the Fisher information in the MAP, plus the prior precision,
 as precision matrix.</p>
 </dd>
@@ -250,6 +244,8 @@ parameters were kept fixed to the values in <cite>initial</cite>.</p>
 <dt><strong>minresult</strong><span class="classifier">scipy.optimize.OptimizeResult</span></dt><dd><p>The result object returned by <cite>scipy.optimize.minimize</cite>.</p>
 </dd>
 <dt><strong>minargs</strong><span class="classifier">dict</span></dt><dd><p>The arguments passed to <cite>scipy.optimize.minimize</cite>.</p>
+</dd>
+<dt><strong>gpfactory</strong><span class="classifier">callable</span></dt><dd><p>The <cite>gpfactory</cite> argument.</p>
 </dd>
 </dl>
 </dd>

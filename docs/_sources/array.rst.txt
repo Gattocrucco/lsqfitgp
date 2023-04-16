@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/array.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -40,3 +40,4 @@ Functions
 .. autofunction:: broadcast
 .. autofunction:: broadcast_arrays
 .. autofunction:: broadcast_to
+.. autofunction:: unstructured_to_structured
