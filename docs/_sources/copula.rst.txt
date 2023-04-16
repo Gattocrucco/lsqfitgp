@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/reference.rst
+.. lsqfitgp/docs/copula.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -17,26 +17,12 @@
 .. You should have received a copy of the GNU General Public License
 .. along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-Reference manual
+.. currentmodule:: lsqfitgp.copula
+
+Copula factories
 ================
 
-This is a concise report of all the functionality of :mod:`lsqfitgp`. Most of
-this information can also be accessed with the Python help system directly from
-a shell with ``import lsqfitgp; help(lsqfitgp)``.
-
-.. toctree::
-    :maxdepth: 1
-    :numbered:
-
-    kernelsref.rst
-    kernel.rst
-    kerneldec.rst
-    kernelop.rst
-    deriv.rst
-    gp.rst
-    array.rst
-    fit.rst
-    raniter.rst
-    copula.rst
-
-.. TODO decompositions reference under "Linear Algebra"
+.. autoclass:: CopulaFactory
+    :members:
+.. autoclass:: beta
+.. autoclass:: invgamma
