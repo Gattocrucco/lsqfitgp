@@ -51,8 +51,8 @@ def _BARTBase(x, y,
     """
     BART kernel.
 
-    Good default parameters: `gamma=0.95`; `maxd=4, reset=2` if not fitting the
-    hyperparameters (`alpha` and `beta`), `maxd=10, reset=[2,4,6,8]` otherwise.
+    Good default parameters: ``gamma=0.95``; ``maxd=4, reset=2`` if not fitting the
+    hyperparameters (``alpha`` and ``beta``), ``maxd=10, reset=[2,4,6,8]`` otherwise.
     Derivatives are faster with forward autodiff.
     
     Parameters
@@ -78,7 +78,7 @@ def _BARTBase(x, y,
         (upper bound).
     pnt : (maxd + 1,) array, optional
         Nontermination probabilities at depths 0...maxd. If specified,
-        `alpha`, `beta` and `maxd` are ignored.
+        ``alpha``, ``beta`` and ``maxd`` are ignored.
     intercept : bool
         The correlation is in [1 - alpha, 1] (or [1 - pnt[0], 1] when using
         pnt). If intercept=False, it is rescaled to [0, 1]. Default True.
@@ -92,9 +92,9 @@ def _BARTBase(x, y,
         all recursion paths, instead of the modified input handed down by the
         recursion. Default none.
     indices : bool
-        If False (default), the inputs `x`, `y` represent coordinate values.
+        If False (default), the inputs ``x``, ``y`` represent coordinate values.
         If True, they are taken to be already the indices of the points in the
-        splitting grid, as can be obtained with :meth:`BART.indices_from_coord`.
+        splitting grid, as can be obtained with `BART.indices_from_coord`.
     
     Methods
     -------
@@ -236,7 +236,7 @@ class BART(_BARTBase):
         Returns
         -------
         length : int (p,) array
-            The number of splitting points along each of `p` dimensions.
+            The number of splitting points along each of ``p`` dimensions.
         splits : (n, p) array
             Each column contains the sorted splitting points along a dimension.
             The splitting points are the midpoints between consecutive values
@@ -285,9 +285,9 @@ class BART(_BARTBase):
         Returns
         -------
         ix : int array
-            An array with the same shape as `x`, unless `x` is a structured
-            array, in which case the last axis of `ix` is the flattened version
-            of the structured type. `ix` contains indices mapping `x` to
+            An array with the same shape as ``x``, unless ``x`` is a structured
+            array, in which case the last axis of ``ix`` is the flattened version
+            of the structured type. ``ix`` contains indices mapping ``x`` to
             positions between splitting points along each coordinate, with the
             following convention: index 0 means before the first split, index
             i > 0 means between split i - 1 and split i.
@@ -321,32 +321,32 @@ class BART(_BARTBase):
         """
         Compute the BART prior correlation between two points.
 
-        Apart from arguments `maxd`, `debug` and `reset`, this method is fully
+        Apart from arguments ``maxd``, ``debug`` and ``reset``, this method is fully
         vectorized.
     
         Parameters
         ----------
         splitsbefore_or_totalsplits : int (p,) array
             The number of splitting points less than the two points, separately
-            along each coordinate, or the total number of splits if `altinput`.
+            along each coordinate, or the total number of splits if ``altinput``.
         splitsbetween_or_index1 : int (p,) array
             The number of splitting points between the two points, separately
             along each coordinate, or the index in the splitting bins of the
-            first point if `altinput`, where 0 means to the left of the leftmost
+            first point if ``altinput``, where 0 means to the left of the leftmost
             splitting point.
         splitsafter_or_index2 : int (p,) array
             The number of splitting points greater than the two points,
             separately along each coordinate, or the index in the splitting bins
-            of the second point if `altinput`.
+            of the second point if ``altinput``.
         debug : bool
             If True, disable shortcuts in the tree recursion. Default False.
         altinput : bool
             If True, take as input the indices in the splitting bins of the
             points instead of the counts of splitting points separating them,
             and use a different implementation optimized for that case. Default
-            False. The :class:`BART` kernel uses `altinput=True`.
+            False. The `BART` kernel uses ``altinput=True``.
         Other parameters :
-            See :class:`BART`.
+            See `BART`.
 
         Returns
         -------

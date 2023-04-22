@@ -730,10 +730,10 @@ def test_empty():
     assert y.shape == x.shape
     assert y.dtype == x.dtype
 
-    shape = (8,)
+    shape = 8
     y = np.empty_like(x, shape=shape)
     assert isinstance(y, lgp.StructuredArray)
-    assert y.shape == shape
+    assert y.shape == (shape,)
     assert y.dtype == x.dtype
 
     dtype = np.dtype('f,2d')

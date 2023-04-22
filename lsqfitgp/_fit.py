@@ -148,15 +148,15 @@ class empbayes_fit(Logger):
             hyperparameters.
         gpfactory : callable
             A function with signature gpfactory(hyperparams) -> GP object. The
-            argument `hyperparams` has the same structure of the empbayes_fit
-            argument `hyperprior`. gpfactory must be JAX-friendly, i.e.,
+            argument ``hyperparams`` has the same structure of the empbayes_fit
+            argument ``hyperprior``. gpfactory must be JAX-friendly, i.e.,
             use jax.numpy and jax.scipy instead of plain numpy/scipy and avoid
             assignments to arrays.
         data : dict, tuple or callable
             Dictionary of data that is passed to `GP.marginal_likelihood` on
-            the GP object returned by `gpfactory`. If a tuple, it contains the
+            the GP object returned by ``gpfactory``. If a tuple, it contains the
             first two arguments to `GP.marginal_likelihood`. If a callable, it
-            is called with the same arguments of `gpfactory` and must return
+            is called with the same arguments of ``gpfactory`` and must return
             the argument(s) for `GP.marginal_likelihood`.
         raises : bool, optional
             If True (default), raise an error when the minimization fails.
@@ -165,8 +165,8 @@ class empbayes_fit(Logger):
             Keyword arguments passed to `scipy.optimize.minimize`, overwrites
             values specified by `empbayes_fit`.
         gpfactorykw : dict, optional
-            Keyword arguments passed to `gpfactory`, and also to `data` if it
-            is a callable.
+            Keyword arguments passed to ``gpfactory``, and also to ``data`` if
+            it is a callable.
         jit : bool
             If True, use jax's jit to compile the minimization target. Default
             False.
@@ -182,7 +182,7 @@ class empbayes_fit(Logger):
                 the hyperprior precision matrix.
         initial : str, scalar, array, dictionary of scalars/arrays
             Starting point for the minimization, matching the format of
-            `hyperprior`, or one of the following options:
+            ``hyperprior``, or one of the following options:
             
             'priormean'
                 Start from the hyperprior mean (default).
@@ -218,9 +218,9 @@ class empbayes_fit(Logger):
             'auto' (default)
                 'minhess' if applicable, 'none' otherwise.
         fix : scalar, array or dictionary of scalars/arrays
-            A set of booleans, with the same format as `hyperprior`, indicating
+            A set of booleans, with the same format as ``hyperprior``, indicating
             which hyperparameters are kept fixed to their initial value.
-            Scalars and arrays are broadcasted to the shape of `hyperprior`.
+            Scalars and arrays are broadcasted to the shape of ``hyperprior``.
             If a dictionary, missing keys are treated as False.
         mlkw : dict
             Additional arguments passed to `GP.marginal_likelihood`.
@@ -236,25 +236,25 @@ class empbayes_fit(Logger):
         prior : scalar, array or dictionary of scalars/arrays
             A copy of the hyperprior.
         initial : scalar, array or dictionary of scalars/arrays
-            Starting point of the minimization, with the same format as `p`.
+            Starting point of the minimization, with the same format as ``p``.
         fix : scalar, array or dictionary of scalars/arrays
-            A set of booleans, with the same format as `p`, indicating which
-            parameters were kept fixed to the values in `initial`.
+            A set of booleans, with the same format as ``p``, indicating which
+            parameters were kept fixed to the values in ``initial``.
         pmean : scalar, array or dictionary of scalars/arrays
-            Mean of `p`.
+            Mean of ``p``.
         pcov : scalar, array or dictionary of scalars/arrays
-            Covariance matrix of `p`.
+            Covariance matrix of ``p``.
         minresult : scipy.optimize.OptimizeResult
             The result object returned by `scipy.optimize.minimize`.
         minargs : dict
             The arguments passed to `scipy.optimize.minimize`.
         gpfactory : callable
-            The `gpfactory` argument.
+            The ``gpfactory`` argument.
 
         Raises
         ------
         RuntimeError
-            The minimization failed and `raises` is True.
+            The minimization failed and ``raises`` is True.
     
         """
 

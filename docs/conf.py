@@ -1,6 +1,6 @@
 # lsqfitgp/docs/conf.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -109,3 +109,5 @@ autodoc_preserve_defaults = True
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
+
+default_role = 'py:obj'

@@ -39,7 +39,7 @@ def Maternp(r2, p=None):
         p \\in \\mathbb N,
         x = \\sqrt{2\\nu} r
     
-    The degree of derivability is `p`.
+    The degree of derivability is :math:`p`.
 
     Reference: Rasmussen and Williams (2006, p. 85).
     """
@@ -117,7 +117,7 @@ def Bessel(r2, nu=0):
         \\quad s = 2 + \\nu / 2,
         \\quad \\nu \\ge 0,
     
-    where `s` is a crude estimate of the half width at half maximum of
+    where :math:`s` is a crude estimate of the half width at half maximum of
     :math:`J_\\nu`. Can be used in up to :math:`2(\\lfloor\\nu\\rfloor + 1)`
     dimensions and derived up to :math:`\\lfloor\\nu/2\\rfloor` times.
     

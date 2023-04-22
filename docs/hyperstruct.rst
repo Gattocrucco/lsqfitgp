@@ -169,4 +169,4 @@ It seems to work. Let's plot some samples::
 .. image:: hyperstruct2.png
 
 For better tidiness we should have put subtracting the delay from the time
-array for cats into the function `makepoints`.
+array for cats into the function ``makepoints``.

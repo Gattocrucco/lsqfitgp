@@ -44,7 +44,7 @@ def MA(delta, w=None, norm=False):
         y_i &= \\sum_{k=0}^{n-1} w_k \\epsilon_{i-k}, \\\\
         \\operatorname{Cov}[\\epsilon_i,\\epsilon_j] &= \\delta_{ij}.
     
-    If `norm` is True, the variance is normalized to 1, which amounts to
+    If ``norm=True``, the variance is normalized to 1, which amounts to
     normalizing :math:`\\mathbf w` to unit length.
     
     """
@@ -71,7 +71,7 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     Discrete autoregressive kernel.
         
     You have to specify one and only one of the sets of parameters
-    `phi+maxlag`, `gamma+maxlag`, `slnr+lnc`.
+    ``phi+maxlag``, ``gamma+maxlag``, ``slnr+lnc``.
 
     Parameters
     ----------
@@ -91,7 +91,7 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
         polynomial (:math:`\\log z = \\log|z| + i\\arg z`), where each root
         also stands for its paired conjugate.
     
-        In `slnr` and `lnc`, the multiplicity of a root is expressed by
+        In ``slnr`` and ``lnc``, the multiplicity of a root is expressed by
         repeating the root in the array (not necessarily next to each other).
         Only exact repetition counts; very close yet distinct roots are treated
         as separate and lead to numerical instability, in particular complex
@@ -102,7 +102,7 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     norm : bool
         If True, normalize the autocovariance to be 1 at lag 0. If False
         (default), normalize such that the variance of the generating noise is
-        1, or use the user-provided normalization if `gamma` is specified.
+        1, or use the user-provided normalization if ``gamma`` is specified.
     
     Notes
     -----
@@ -115,7 +115,7 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     where :math:`\\epsilon_i` is white noise, i.e.,
     :math:`\\operatorname{Cov}[\\epsilon_i, \\epsilon_j] = \\delta_{ij}`. The
     length :math:`p` of the vector of coefficients :math:`\\boldsymbol\\phi`
-    is the `order` of the process.
+    is the "order" of the process.
     
     The covariance function can be expressed in two ways. First as the same
     recursion defining the process:
@@ -124,7 +124,7 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
         \\gamma_m = \\sum_{k=1}^p \\phi_k \\gamma_{m-k} + \\delta_{m0},
     
     where :math:`\\gamma_m \\equiv \\operatorname{Cov}[y_i, y_{i+m}]`. This is
-    called `Yule-Walker equation`. Second, as a linear combination of mixed
+    called "Yule-Walker equation." Second, as a linear combination of mixed
     power-exponentials:
     
     .. math::
@@ -133,7 +133,7 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
                     a_{jl} |m|^{l-1} x_j^{-|m|},
     
     where :math:`x_j` and :math:`\\mu_j` are the (complex) roots and
-    corresponding multiplicities of the `characteristic polynomial`
+    corresponding multiplicities of the "characteristic polynomial"
     
     .. math::
         P(x) = 1 - \\sum_{k=1}^p \\phi_k x^k,
@@ -143,18 +143,18 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     
     There are three alternative parametrization for this kernel.
     
-    If you specify `phi`, the first terms of the covariance are computed
-    solving the Yule-Walker equation, and then evolved up to `maxlag`. It
+    If you specify ``phi``, the first terms of the covariance are computed
+    solving the Yule-Walker equation, and then evolved up to ``maxlag``. It
     is necessary to specify `maxlag` instead of letting the code figure it out
     from the actual inputs for technical reasons.
     
-    Likewise, if you specify `gamma`, the coefficients are obtained with
+    Likewise, if you specify ``gamma``, the coefficients are obtained with
     Yule-Walker and then used to evolve the covariance. The only difference is
-    that the normalization can be different: starting from `phi`, the variance
+    that the normalization can be different: starting from ``phi``, the variance
     of the generating noise :math:`\\epsilon` is fixed to 1, while giving
-    `gamma` directly implies an arbitrary value.
+    ``gamma`` directly implies an arbitrary value.
     
-    Instead, if you specify the roots with `slnr` and `lnc`, the coefficients
+    Instead, if you specify the roots with ``slnr`` and ``lnc``, the coefficients
     are obtained from the polynomial defined in terms of the roots, and then
     the amplitudes :math:`a_{jl}` are computed by solving a linear system with
     the covariance (from YW) as RHS. Finally, the full covariance function is

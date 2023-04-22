@@ -45,8 +45,8 @@ def raniter(mean, cov, n=None, eps=None):
     mean : scalar, array, or dictionary of scalars/arrays
         The mean of the Gaussian distribution.
     cov : scalar, array, or dictionary of scalars/arrays
-        The covariance matrix. If `mean` is a dictionary, `cov` must be a
-        dictionary with pair of keys from `mean` as keys.
+        The covariance matrix. If ``mean`` is a dictionary, ``cov`` must be a
+        dictionary with pair of keys from ``mean`` as keys.
     n : int, optional
         The maximum number of iterations. Default unlimited.
     eps : float, optional
@@ -57,7 +57,7 @@ def raniter(mean, cov, n=None, eps=None):
     Yields
     ------
     samp : scalar, array, or dictionary of scalars/arrays
-        The random sample in the same format of `mean`.
+        The random sample in the same format of ``mean``.
     
     Examples
     --------
@@ -110,6 +110,6 @@ def raniter(mean, cov, n=None, eps=None):
 
 def sample(*args, **kw):
     """
-    Shortcut for `next(raniter(*args, **kw))`.
+    Shortcut for ``next(raniter(*args, **kw))``.
     """
     return next(raniter(*args, n=1, **kw))

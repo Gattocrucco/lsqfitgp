@@ -154,7 +154,7 @@ class Decomposition(metaclass=abc.ABCMeta):
     def quad(self, b, c=None):
         """
         Compute the quadratic form b'K⁺b if c is not specified, else b'K⁺c.
-        `c` can be an array of gvars.
+        ``c`` can be an array of gvars.
         """
         if c is None:
             return _transpose(b) @ self.solve(b)

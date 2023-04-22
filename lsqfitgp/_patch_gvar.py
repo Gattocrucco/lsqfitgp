@@ -199,7 +199,7 @@ def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
         Number of decimal places. If not specified (default), keep two error
         digits.
     keys : sequence, optional
-        If `gs` are dictionaries, a subset of keys to be extracted from each
+        If ``gs`` are dictionaries, a subset of keys to be extracted from each
         dictionary. Ignored if they are arrays.
     
     Examples

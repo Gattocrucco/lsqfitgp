@@ -464,7 +464,7 @@ def unstructured_to_structured(arr,
     align=False, # TODO maybe align is totally inapplicable even with numpy arrays? What does it mean?
     copy=False,
     casting='unsafe'):
-    """ Like numpy.lib.recfunctions.unstructured_to_structured, but outputs a
+    """ Like `numpy.lib.recfunctions.unstructured_to_structured`, but outputs a
     StructuredArray. """
     arr = asarray(arr)
     if not arr.ndim:
@@ -572,12 +572,17 @@ def _structured_to_unstructured_recursive(idx, arr, out, *strides):
 
 @StructuredArray._implements(numpy.empty_like)
 def _empty_like(prototype, dtype=None, *, shape=None):
-    shape = prototype.shape if shape is None else tuple(shape)
-    dtype = prototype.dtype if dtype is None else numpy.dtype(dtype)
+    shape = prototype.shape if shape is None else shape
+    dtype = prototype.dtype if dtype is None else dtype
     return _empty(shape, dtype)
 
 @StructuredArray._implements(numpy.empty)
 def _empty(shape, dtype=float):
+    if hasattr(shape, '__len__'):
+        shape = tuple(shape)
+    else:
+        shape = (int(shape),)
+    dtype = numpy.dtype(dtype)
     arrays = {}
     for i, name in enumerate(dtype.names):
         dtbase = dtype[i].base

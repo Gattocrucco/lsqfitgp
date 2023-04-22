@@ -40,8 +40,8 @@ def Wendland(r, k=0, alpha=1):
         \\quad k &\\in \\mathbb N,\\ \\nu = k + \\alpha,\\ \\alpha \\ge 1.
     
     An isotropic kernel with finite support. The covariance is nonzero only
-    when the distance between the points is less than 1. Parameter `k` in (0,
-    1, 2, 3) sets the differentiability, while the maximum dimensionality the
+    when the distance between the points is less than 1. Parameter :math:`k \\in \\{0,
+    1, 2, 3\\}` sets the differentiability, while the maximum dimensionality the
     kernel can be used in is :math:`\\lfloor 2\\alpha-1 \\rfloor`. Default is
     :math:`k = 0` (non derivable), :math:`\\alpha = 1` (can be used only in
     1D).

@@ -55,8 +55,8 @@ def FracBrownian(x, y, H=1/2, K=1):
             (|x|^{2H} + |y|^{2H})^K - |x-y|^{2HK}
         \\big), \\quad H, K \\in (0, 1]
     
-    For `H` = 1/2 (default) it is the Wiener kernel. For `H` in (0, 1/2) the
-    increments are anticorrelated (strong oscillation), for `H` in (1/2, 1]
+    For :math:`H = 1/2` (default) it is the Wiener kernel. For :math:`H \\in (0, 1/2)` the
+    increments are anticorrelated (strong oscillation), for :math:`H \\in (1/2, 1]`
     the increments are correlated (tends to keep a slope).
     
     Reference: Houdré and Villa (2003).
@@ -127,7 +127,7 @@ def OrnsteinUhlenbeck(x, y):
     It is a random walk plus a negative feedback term that keeps the
     asymptotical variance constant. It is asymptotically stationary; often the
     name "Ornstein-Uhlenbeck" is given to the stationary part only, which here
-    is provided as :class:`Expon`.
+    is provided as `Expon`.
     
     """
     

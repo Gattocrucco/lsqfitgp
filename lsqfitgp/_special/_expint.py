@@ -101,7 +101,7 @@ def expn_asymp_coefgen(s, e, n):
 
 def expn_asymp(n, z, nt):
     """
-    Compute E_n(z) for large |z|, |arg z| < 3/2 π. `nt` is the number of terms
+    Compute E_n(z) for large |z|, |arg z| < 3/2 π. ``nt`` is the number of terms
     used in the asymptotic series.
     """
     

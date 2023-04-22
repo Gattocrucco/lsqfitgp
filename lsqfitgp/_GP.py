@@ -113,7 +113,7 @@ class GP:
         default process of the GP object. It can be left unspecified.
     solver : str
         The algorithm used to decompose the prior covariance matrix. See
-        :meth:`~GP.decompose` for the available solvers. Default is `eigcut+`.
+        `decompose` for the available solvers. Default is ``'eigcut+'``.
     checkpos : bool
         If True (default), raise a `LinAlgError` if the prior covariance matrix
         turns out non positive within numerical error.
@@ -130,14 +130,13 @@ class GP:
         The threshold used to check if the prior covariance matrix is positive
         definite is multiplied by this factor (default 1).
     halfmatrix : bool
-        If True and `checksym=False`, compute only half of the covariance
+        If True and ``checksym=False``, compute only half of the covariance
         matrices by unrolling their lower triangular part as flat arrays. This
         may actually be a large performance hit if the input arrays have large
         item size or if the implementation of the kernel takes advantage of
         non-broadcasted inputs, so it is False by default.
     **kw
-        Additional keyword arguments are passed to the solver, see
-        :meth:`~GP.decompose`.
+        Additional keyword arguments are passed to the solver, see `decompose`.
 
     """
     
@@ -449,7 +448,7 @@ class GP:
         Parameters
         ----------
         transf : callable
-            A function with signature `transf(callable, callable, ...) -> callable`.
+            A function with signature ``transf(callable, callable, ...) -> callable``.
         keys : sequence
             The keys of the processes to be passed to the transformation.
         key : hashable
@@ -600,12 +599,12 @@ class GP:
         
         Add points where the Gaussian process is evaluated.
         
-        The GP object keeps the various x arrays in a dictionary. If `x` is an
-        array, you have to specify its dictionary key with the `key` parameter.
-        Otherwise, you can directly pass a dictionary for `x`.
+        The GP object keeps the various x arrays in a dictionary. If ``x`` is an
+        array, you have to specify its dictionary key with the ``key`` parameter.
+        Otherwise, you can directly pass a dictionary for ``x``.
         
-        To specify that on the given `x` a derivative of the process instead of
-        the process itself should be evaluated, use the parameter `deriv`.
+        To specify that on the given ``x`` a derivative of the process instead of
+        the process itself should be evaluated, use the parameter ``deriv``.
         
         `addx` may or may not copy the input arrays.
         
@@ -614,11 +613,11 @@ class GP:
         x : array or dictionary of arrays
             The points to be added.
         key : hashable
-            If `x` is an array, the dictionary key under which `x` is added.
-            Can not be specified if `x` is a dictionary.
+            If ``x`` is an array, the dictionary key under which ``x`` is added.
+            Can not be specified if ``x`` is a dictionary.
         deriv : Deriv-like
-            Derivative specification. A :class:`Deriv` object or something that
-            can be converted to :class:`Deriv`.
+            Derivative specification. A `Deriv` object or something that
+            can be converted to `Deriv`.
         proc : hashable
             The process to be evaluated on the points. If not specified, use
             the default process.
@@ -658,12 +657,6 @@ class GP:
             # Convert to JAX array, numpy array or StructuredArray.
             # convert eagerly to jax to avoid problems with tracing.
             gx = _array._asarray_jaxifpossible(gx)
-
-            # Check it is not empty.
-            if not gx.size:
-                raise ValueError('x[{!r}] is empty'.format(key))
-                # TODO it would be elegant to support empty arrays, but how
-                # many things would break down from here?
 
             # Check dtype is compatible with previous arrays.
             # TODO since we never concatenate arrays we could allow a less
@@ -720,7 +713,7 @@ class GP:
             A new key under which the transformation is placed.
         axes : int
             Number of axes to be summed over for matrix multiplication,
-            referring to trailing axes for tensors in `tensors`, and to
+            referring to trailing axes for tensors in ` tensors``, and to
             heading axes for process points. Default 1.
         
         Notes
@@ -806,7 +799,7 @@ class GP:
         Parameters
         ----------
         transf : callable
-            A function with signature `f(array1, array2, ...) -> array` which
+            A function with signature ``f(array1, array2, ...) -> array`` which
             computes the linear transformation. The function must be
             jax-traceable, i.e., use jax.numpy instead of numpy.
         keys : sequence
@@ -823,7 +816,7 @@ class GP:
         ------
         RuntimeError :
             The transformation seems not to be linear. To disable the linearity
-            check, initialize the GP with `checklin=False`.
+            check, initialize the GP with ``checklin=False``.
         
         """
         
@@ -908,28 +901,28 @@ class GP:
         ----------
         covblocks : array or dictionary of arrays
             If an array: a covariance matrix (or tensor) to be added under key
-            `key`. If a dictionary: a mapping from pairs of keys to the
+            ``key``. If a dictionary: a mapping from pairs of keys to the
             corresponding covariance matrix blocks. A missing off-diagonal
             block in the dictionary is interpreted as a matrix of zeros,
             unless the corresponding transposed block is specified.
         key : hashable
-            If `covblocks` is an array, the dictionary key under which
-            `covblocks` is added. Can not be specified if `covblocks` is a
+            If ``covblocks`` is an array, the dictionary key under which
+            ``covblocks`` is added. Can not be specified if ``covblocks`` is a
             dictionary.
         decomps : Decomposition or dict of Decompositions
             Pre-computed decompositions of (not necessarily all) diagonal
-            blocks, as produced by :meth:`~GP.decompose`. The keys are single
-            GP keys and not pairs like in `covblocks`.
+            blocks, as produced by `decompose`. The keys are single
+            GP keys and not pairs like in ``covblocks``.
         
         Raises
         ------
         KeyError :
             A key is already used in the GP.
         ValueError :
-            `covblocks` and/or `key` and `decomps` are malformed or
+            ``covblocks`` and/or ``key`` and ``decomps`` are malformed or
             inconsistent.
         TypeError :
-            Wrong type of `covblocks` or `decomps`.
+            Wrong type of ``covblocks`` or ``decomps``.
         
         """
         
@@ -1248,7 +1241,7 @@ class GP:
     
     def _solver(self, keys, ycov=None, *, covtransf=None, **kw):
         """
-        Return a decomposition of the covariance matrix of the keys in `keys`
+        Return a decomposition of the covariance matrix of the keys in ``keys``
         plus the matrix ycov. Keyword arguments are passed to the decomposition.
         """
         
@@ -1423,7 +1416,7 @@ class GP:
         objects returned by different calls to `prior`.
         
         Calling without arguments returns the complete prior as a dictionary.
-        If you specify `key`, only the array for the requested key is returned.
+        If you specify ``key``, only the array for the requested key is returned.
         
         Parameters
         ----------
@@ -1523,7 +1516,7 @@ class GP:
     def _slices(self, keylist):
         """
         Return list of slices for the positions of flattened arrays
-        corresponding to keys in `keylist` into their concatenation.
+        corresponding to keys in ``keylist`` into their concatenation.
         """
         sizes = [self._elements[key].size for key in keylist]
         stops = numpy.pad(numpy.cumsum(sizes), (1, 0))
@@ -1543,7 +1536,7 @@ class GP:
         of arrays. They are properly correlated with gvars returned by
         `prior` and with the input data/fit.
         
-        The input is a dictionary of arrays, `given`, with keys corresponding
+        The input is a dictionary of arrays, ``given``, with keys corresponding
         to the keys in the GP as added by `addx` or `addtransf`.
         
         Parameters
@@ -1554,12 +1547,12 @@ class GP:
             being equivalent to zero-uncertainty gvars.
         key : None, key or list of keys, optional
             If None, compute the posterior for all points in the GP (also those
-            used in `given`). Otherwise only those specified by key.
+            used in ``given``). Otherwise only those specified by key.
         givencov : dictionary of arrays, optional
-            Covariance matrix of `given`. If not specified, the covariance
-            is extracted from `given` with `gvar.evalcov(given)`.
+            Covariance matrix of ``given``. If not specified, the covariance
+            is extracted from ``given`` with ``gvar.evalcov(given)``.
         fromdata : bool
-            Mandatory. Specify if the contents of `given` are data or already
+            Mandatory. Specify if the contents of ``given`` are data or already
             a posterior.
         raw : bool, optional
             If True, instead of returning a collection of gvars, return
@@ -1582,11 +1575,11 @@ class GP:
         If raw=True:
         
         pmean : array or dictionary of arrays
-            The mean of the posterior. Equivalent to `gvar.mean(posterior)`.
+            The mean of the posterior. Equivalent to ``gvar.mean(posterior)``.
         pcov : 2D array or dictionary of 2D arrays
-            The covariance matrix of the posterior. If `pmean` is a dictionary,
-            the keys of `pcov` are pairs of keys of `pmean`. Equivalent to
-            `gvar.evalcov(posterior)`.
+            The covariance matrix of the posterior. If ``pmean`` is a dictionary,
+            the keys of ``pcov`` are pairs of keys of ``pmean``. Equivalent to
+            ``gvar.evalcov(posterior)``.
         
         """
 
@@ -1715,13 +1708,13 @@ class GP:
         
     def predfromfit(self, *args, **kw):
         """
-        Like `pred` with `fromdata=False`.
+        Like `pred` with ``fromdata=False``.
         """
         return self.pred(*args, fromdata=False, **kw)
     
     def predfromdata(self, *args, **kw):
         """
-        Like `pred` with `fromdata=True`.
+        Like `pred` with ``fromdata=True``.
         """
         return self.pred(*args, fromdata=True, **kw)
     
@@ -1777,19 +1770,19 @@ class GP:
         Compute the logarithm of the probability of the data.
         
         The probability is computed under the Gaussian prior and Gaussian error
-        model. It is also called marginal likelihood. If `y` is the data and
-        `g` is the Gaussian process, this is
+        model. It is also called marginal likelihood. If :math:`y` is the data
+        and :math:`g` is the Gaussian process, this is
         
         .. math::
             \\log \\int p(y|g) p(g) \\mathrm{d} g.
         
-        Unlike `pred()`, you can't compute this with a fit result instead of
+        Unlike `pred`, you can't compute this with a fit result instead of
         data. If you used the Gaussian process as latent variable in a fit,
         use the whole fit to compute the marginal likelihood. E.g. `lsqfit`
         always computes the logGBF (it's the same thing).
         
-        The input is an array or dictionary of arrays, `given`. The contents of
-        `given` represent the input data.
+        The input is an array or dictionary of arrays, ``given``. The contents of
+        ``given`` represent the input data.
                 
         Parameters
         ----------
@@ -1798,8 +1791,8 @@ class GP:
             contain either gvars or normal numbers, the latter being
             equivalent to zero-uncertainty gvars.
         givencov : dictionary of arrays, optional
-            Covariance matrix of `given`. If not specified, the covariance
-            is extracted from `given` with `gvar.evalcov(given)`.
+            Covariance matrix of ``given``. If not specified, the covariance
+            is extracted from ``given`` with ``gvar.evalcov(given)``.
         separate : bool
             If True, return separately the logdet term and the residuals term.
             Default False.
@@ -1872,7 +1865,7 @@ class GP:
                 Remove small eigenvalues.
             'lanczos'
                 Reduce the rank of the matrix. The complexity is O(n^2 r) where
-                `n` is the matrix size and `r` the required rank, while the
+                n is the matrix size and r the required rank, while the
                 other algorithms are O(n^3). Slow for small sizes.
             'lobpcg'
                 Like 'lanczos' but using the LOBPCG algorithm, faster but less

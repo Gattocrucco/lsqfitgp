@@ -35,4 +35,6 @@ from ._array import *
 from ._fit import *
 from ._Deriv import *
 from ._fastraniter import *
+
 from . import copula
+from . import bayestree

@@ -144,7 +144,7 @@ def NNKernel(x, y, sigma0=1):
     Kernel which is equivalent to a neural network with one infinite hidden
     layer with Gaussian priors on the weights and error function response. In
     other words, you can think of the process as a superposition of sigmoids
-    where `sigma0` sets the dispersion of the centers of the sigmoids.
+    where ``sigma0`` sets the dispersion of the centers of the sigmoids.
     
     Reference: Rasmussen and Williams (2006, p. 90).
     """
@@ -174,11 +174,11 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     Kernel which in some sense is like a Gaussian kernel where the scale
     changes at every point. The scale is computed by the parameter `scalefun`
     which must be a callable taking the x array and returning a scale for each
-    point. By default `scalefun` returns 1 so it is a Gaussian kernel.
+    point. By default ``scalefun`` returns 1 so it is a Gaussian kernel.
     
-    Consider that the default parameter `scale` acts before `scalefun`, so
-    for example if `scalefun(x) = x` then `scale` has no effect. You should
-    include all rescalings in `scalefun` to avoid surprises.
+    Consider that the default parameter ``scale`` acts before ``scalefun``, so
+    for example if ``scalefun(x) = x`` then ``scale`` has no effect. You should
+    include all rescalings in ``scalefun`` to avoid surprises.
     
     Reference: Rasmussen and Williams (2006, p. 93).
     """
@@ -205,8 +205,8 @@ def Periodic(delta, outerscale=1):
         \\right)
     
     A Gaussian kernel over a transformed periodic space. It represents a
-    periodic process. The usual `scale` parameter sets the period, with the
-    default `scale` = 1 giving a period of 2π, while the `outerscale` parameter
+    periodic process. The usual ``scale`` parameter sets the period, with the
+    default ``scale=1`` giving a period of 2π, while the ``outerscale`` parameter
     sets the length scale of the correlations.
     
     Reference: Rasmussen and Williams (2006, p. 92).
@@ -223,7 +223,7 @@ def Categorical(x, y, cov=None):
     .. math::
         k(x, y) = \\texttt{cov}[x, y]
     
-    A kernel over integers from 0 to N-1. The parameter `cov` is the covariance
+    A kernel over integers from 0 to N-1. The parameter ``cov`` is the covariance
     matrix of the values.
     """
         
@@ -246,13 +246,13 @@ def Rescaling(x, y, stdfun=None):
     .. math::
         k(x, y) = \\texttt{stdfun}(x) \\texttt{stdfun}(y)
     
-    A totally correlated kernel with arbitrary variance. Parameter `stdfun`
-    must be a function that takes `x` or `y` and computes the standard
+    A totally correlated kernel with arbitrary variance. Parameter ``stdfun``
+    must be a function that takes ``x`` or ``y`` and computes the standard
     deviation at the point. It can yield negative values; points with the same
-    sign of `fun` will be totally correlated, points with different sign will
+    sign of ``fun`` will be totally correlated, points with different sign will
     be totally anticorrelated. Use this kernel to modulate the variance of
-    other kernels. By default `stdfun` returns a constant, so it is equivalent
-    to :class:`Constant`.
+    other kernels. By default ``stdfun`` returns a constant, so it is equivalent
+    to `Constant`.
     
     """
     if stdfun is None:

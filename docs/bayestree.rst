@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/deriv.rst
+.. lsqfitgp/docs/bayestree.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -19,9 +19,11 @@
 
 .. currentmodule:: lsqfitgp
 
-.. _derivspec:
+BART
+====
 
-Derivative specification
-========================
+This submodule contains a class to set up a Gaussian process regression with the
+`BART` kernel. See the :ref:`bart <bart>` and :ref:`barteasy <barteasy>`
+examples.
 
-.. autoclass:: Deriv
+.. autoclass:: lsqfitgp.bayestree.bart

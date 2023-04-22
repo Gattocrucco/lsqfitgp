@@ -53,9 +53,9 @@ class Deriv:
         Raises
         ------
         TypeError
-            If `*args` is not of the specified form.
+            If ``*args`` is not of the specified form.
         ValueError
-            If `*args` ends with an integer or if there are consecutive
+            If ``*args`` ends with an integer or if there are consecutive
             integers.
         
         Attributes

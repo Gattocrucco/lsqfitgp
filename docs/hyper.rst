@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/hyper.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -24,12 +24,12 @@
 Hyperparameters
 ===============
 
-In the previous examples we often had to tweak the `scale` parameter of the
+In the previous examples we often had to tweak the ``scale`` parameter of the
 kernel to make it work. Whenever you're tweaking a parameter, it would be nice
 if the tweaking was done automatically. I would add: it would be nice to get
 a statistical uncertainty on the optimal parameter value.
 
-It is not possible to use what we have seen up to now to fit the `scale`
+It is not possible to use what we have seen up to now to fit the ``scale``
 parameter, because that parameter goes into the definition of the kernel, and
 the kernel completely specifies the Gaussian process. A different scale would
 mean a different kernel and so a different Gaussian process.
@@ -46,7 +46,7 @@ because it's something that you do not want to fit, or it is something that you
 want to call parameters but you already called parameters something else so you
 need another fancy name.
 
-Enough chatter already, let's fit this damn `scale` parameter::
+Enough chatter already, let's fit this damn ``scale`` parameter::
 
     import numpy as np
     import lsqfitgp as lgp
@@ -71,12 +71,12 @@ As usual, it's easier done than said! The code is short but introduces a bunch
 of new things, let's go through it. 
 
 First, we encapsulated creating the :class:`GP` object and adding points in
-the function :func:`makegp`, that takes as sole argument a dictionary of
+the function ``makegp``, that takes as sole argument a dictionary of
 hyperparameters.
 
 Then we specified a "hyperprior" for the hyperparameters (if you want to fit
 something you need a prior on it, there's no way out of this). The function
-:func:`makegp` extracts a key ``'scale'`` from the dictionary, but in the
+``makegp`` extracts a key ``'scale'`` from the dictionary, but in the
 hyperprior we used ``'log(scale)'``. This is a general feature of :mod:`gvar`,
 that it can automatically apply the inverse of the transformation specified in
 the key. It doesn't magically work with any function, by default only the
@@ -90,7 +90,7 @@ explore negative values too, and we would get a loud error from :class:`Kernel`.
 
 Finally, we give everything to the class :class:`empbayes_fit`: the hyperprior,
 the gp-creating function, and a dictionary of data like we would pass to
-:meth:`~GP.predfromdata`. The attribute `p` is a dictionary containing the fit
+:meth:`~GP.predfromdata`. The attribute ``p`` is a dictionary containing the fit
 result for the hyperparameters.
 
 Now that we have found the optimal scale, we can use it to create a gp object
@@ -142,7 +142,7 @@ constant::
 
 .. note::
 
-   The function `makegp` must be jax-friendly. This means that operations that
+   The function ``makegp`` must be jax-friendly. This means that operations that
    involve hyperparameters must always be functional, i.e., you can not first
    create an array and later assign values to it. Also, if you explicitly use
    numpy functions, you have to do ``from jax import numpy`` instead of

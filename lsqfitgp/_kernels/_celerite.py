@@ -42,7 +42,7 @@ def Celerite(delta, gamma=1, B=0):
     
     This is the covariance function of an AR(2) process with complex roots. The
     parameters must satisfy the condition :math:`|B| \\le \\gamma`. For
-    :math:`B = \\gamma` it is equivalent to the :class:`Harmonic` kernel with
+    :math:`B = \\gamma` it is equivalent to the `Harmonic` kernel with
     :math:`\\eta Q = 1/B, Q > 1`, and it is derivable.
     
     Reference: Daniel Foreman-Mackey, Eric Agol, Sivaram Ambikasaran, and Ruth
@@ -76,14 +76,14 @@ def Harmonic(delta, Q=1):
     
     .. math::   f''(x) + 2/Q f'(x) + f(x) = w(x),
     
-    where `w` is white noise.
+    where :math:`w` is white noise.
     
-    The parameter `Q` is the quality factor, i.e., the ratio between the energy
+    The parameter :math:`Q` is the quality factor, i.e., the ratio between the energy
     stored in the oscillator and the energy lost in each cycle due to damping.
     The angular frequency is 1, i.e., the period is 2π. The process is derivable
     one time.
     
-    In 1D, for `Q` = 1 (default) and `scale` = sqrt(1/3), it is the Matérn 3/2
+    In 1D, for :math:`Q = 1` (default) and ``scale=sqrt(1/3)``, it is the Matérn 3/2
     kernel.
     
     Reference: Daniel Foreman-Mackey, Eric Agol, Sivaram Ambikasaran, and Ruth

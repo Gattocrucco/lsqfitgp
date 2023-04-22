@@ -130,7 +130,7 @@ class CrossKernel:
     def _newkernel_from(core, kernels):
         """
         Make a new kernel object which is the result of an operation on the
-        kernels in `kernels`, with implementation callable `core`.
+        kernels in ``kernels``, with implementation callable ``core``.
         """
         assert kernels
         classes = (IsotropicKernel, *map(type, kernels))
@@ -171,42 +171,42 @@ class CrossKernel:
         Parameters
         ----------
         kernel : callable
-            A function with signature ``kernel(x, y)``, where `x` and `y` are
+            A function with signature ``kernel(x, y)``, where ``x`` and ``y`` are
             two broadcastable numpy arrays, which computes the covariance of
             f(x) with f(y) where f is the Gaussian process.
         dim : None or str
-            When the input arrays are structured arrays, if `dim` is None the
+            When the input arrays are structured arrays, if ``dim`` is None the
             kernel will operate on all fields, i.e., it will be passed the whole
-            arrays. If `dim` is a string, `kernel` will see only the arrays for
-            the field named `dim`. If `dim` is a string and the array is not
+            arrays. If ``dim`` is a string, ``kernel`` will see only the arrays for
+            the field named ``dim``. If ``dim`` is a string and the array is not
             structured, an exception is raised. If the field for name `dim` has
-            a nontrivial shape, the array passed to `kernel` is still
-            structured but has only field `dim`.
+            a nontrivial shape, the array passed to ``kernel`` is still
+            structured but has only field ``dim``.
         loc, scale : scalar
-            The inputs to `kernel` are transformed as (x - loc) / scale.
+            The inputs to ``kernel`` are transformed as (x - loc) / scale.
         forcekron : bool
-            If True, when calling `kernel`, if `x` and `y` are structured
-            arrays, i.e., if they represent multidimensional input, `kernel` is
+            If True, when calling ``kernel``, if ``x`` and ``y`` are structured
+            arrays, i.e., if they represent multidimensional input, ``kernel`` is
             invoked separately for each dimension, and the result is the
-            product. Default False. The selection indicated by `dim` limits the
-            dimensions over which `forcekron` applies.
+            product. Default False. The selection indicated by ``dim`` limits the
+            dimensions over which ``forcekron`` applies.
         derivable : bool, int, None, or callable
             Specifies how many times the kernel can be derived, only for error
             checking purposes. True means infinitely many times derivable. If
-            callable, it is called with the same keyword arguments as `kernel`.
+            callable, it is called with the same keyword arguments as ``kernel``.
             If None (default) it means that the degree of derivability is
             unknown.
         saveargs : bool
             If True, save the all the initialization arguments in a
-            dictionary under the attribute `initargs`. Default False.
+            dictionary under the attribute ``initargs``. Default False.
         maxdim : int, callable or None
             The maximum input dimensionality accepted by the kernel. If
             callable, it is called with the same keyword arguments as the
             kernel. Default sys.maxsize.
         batchbytes : number, optional
-            If specified, apply `batch(batchbytes)` to the kernel.
+            If specified, apply ``batch(batchbytes)`` to the kernel.
         **kw
-            Additional keyword arguments are passed to `kernel`.
+            Additional keyword arguments are passed to ``kernel``.
         
         Methods
         -------
@@ -509,7 +509,7 @@ class CrossKernel:
         
         Return a Kernel-like object that computes the derivatives of this
         kernel. The derivatives are computed automatically with JAX. If
-        `xderiv` and `yderiv` are trivial, this is a no-op.
+        ``xderiv`` and ``yderiv`` are trivial, this is a no-op.
         
         .. math::
             h(x, y) = \\frac{\\partial^n}{\\partial x^n}
@@ -519,7 +519,7 @@ class CrossKernel:
         Parameters
         ----------
         xderiv, yderiv : Deriv-like
-            A :class:`Deriv` object or something that can be converted to a
+            A `Deriv` object or something that can be converted to a
             Deriv object.
         
         Returns
@@ -531,7 +531,7 @@ class CrossKernel:
         Raises
         ------
         RuntimeError
-            The derivative orders are greater than the `derivative` attribute.
+            The derivative orders are greater than the ``derivative`` attribute.
             
         """
                 
@@ -677,7 +677,7 @@ class CrossKernel:
                 & \\text{if $k$ is odd}
             \\end{cases}
         
-        The period `T` is implicit in the definition of the kernel.
+        The period :math:`T` is implicit in the definition of the kernel.
         
         Parameters
         ----------
@@ -706,7 +706,7 @@ class CrossKernel:
                 \\frac{\\partial^k}{\\partial x^k} k(x, y)
             \\right|_{x_0}
         
-        The expansion point `x0` is implicit in the definition of the kernel.
+        The expansion point :math:`x0` is implicit in the definition of the kernel.
         
         Parameters
         ----------
@@ -750,12 +750,12 @@ class StationaryKernel(Kernel):
     def __new__(cls, kernel, *, input='signed', scale=None, **kw):
         """
         
-        Subclass of :class:`Kernel` for isotropic kernels.
+        Subclass of `Kernel` for isotropic kernels.
     
         Parameters
         ----------
         kernel : callable
-            A function taking one argument `delta` which is the difference
+            A function taking one argument ``delta`` which is the difference
             between x and y, plus optionally keyword arguments.
         input : {'signed', 'soft', 'hard'}
             If 'signed' (default), `kernel` is passed the bare difference. If
@@ -763,9 +763,9 @@ class StationaryKernel(Kernel):
             and the difference of equal points is a small number instead of
             zero. If 'hard', the absolute value.
         scale : scalar
-            The difference is divided by `scale`.
+            The difference is divided by ``scale``.
         **kw
-            Additional keyword arguments are passed to the :class:`Kernel` init.
+            Additional keyword arguments are passed to the `Kernel` init.
                 
         """
         
@@ -819,18 +819,18 @@ class IsotropicKernel(StationaryKernel):
         Parameters
         ----------
         kernel : callable
-            A function taking one argument `r2` which is the squared distance
+            A function taking one argument ``r2`` which is the squared distance
             between x and y, plus optionally keyword arguments.
         input : {'squared', 'hard', 'soft', 'raw'}
-            If 'squared' (default), `kernel` is passed the squared distance.
+            If 'squared' (default), ``kernel`` is passed the squared distance.
             If 'hard', it is passed the distance (not squared). If 'soft', it
             is passed the distance, and the distance of equal points is a small
             number instead of zero. If 'raw', the kernel is passed both points
             separately like non-stationary kernels.
         scale : scalar
-            The distance is divided by `scale`.
+            The distance is divided by ``scale``.
         **kw
-            Additional keyword arguments are passed to the :class:`Kernel` init.
+            Additional keyword arguments are passed to the `Kernel` init.
         
         Notes
         -----
@@ -935,7 +935,7 @@ def _kerneldecoratorimpl(cls, *args, **kw):
 def kernel(*args, **kw):
     """
     
-    Decorator to convert a function to a subclass of :class:`Kernel`. Example::
+    Decorator to convert a function to a subclass of `Kernel`. Example::
     
         @kernel(loc=10) # the default loc will be 10
         def MyKernel(x, y, cippa=1, lippa=42):
@@ -947,7 +947,7 @@ def kernel(*args, **kw):
 def stationarykernel(*args, **kw):
     """
     
-    Decorator to convert a function to a subclass of :class:`StationaryKernel`.
+    Decorator to convert a function to a subclass of `StationaryKernel`.
     Example::
     
         @stationarykernel(input='soft')
@@ -963,7 +963,7 @@ def stationarykernel(*args, **kw):
 def isotropickernel(*args, **kw):
     """
     
-    Decorator to convert a function to a subclass of :class:`IsotropicKernel`.
+    Decorator to convert a function to a subclass of `IsotropicKernel`.
     Example::
     
         @isotropickernel(derivable=True)
@@ -994,9 +994,9 @@ def where(condfun, kernel1, kernel2, dim=None):
     kernel2 : Kernel
         Kernel used where condfun yields False.
     dim : str or None
-        If specified, when the input arrays are structured, `condfun` is
-        applied only to the field `dim`. If the field has a shape, the
-        array passed to `condfun` still has `dim` as explicit field.
+        If specified, when the input arrays are structured, ``condfun`` is
+        applied only to the field ``dim``. If the field has a shape, the
+        array passed to ``condfun`` still has ``dim`` as explicit field.
     
     Returns
     -------
