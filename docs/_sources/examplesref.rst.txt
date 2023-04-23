@@ -12,7 +12,7 @@ repository. The links point to the file preview on github.
 
 Short index
 -----------
-a_ b_ bart_ c_ d_ dft_ doubleint_ e_ even_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ pdf9_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
+a_ b_ bart_ barteasy_ c_ d_ dft_ doubleint_ e_ even_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ pdf9_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
 
 Long index
 ----------
@@ -39,6 +39,10 @@ Long index
 .. _bart:
 
   * `bart.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/bart.py>`_: Example usage of the BART kernel to replace the standard MCMC BART algorithm.
+
+.. _barteasy:
+
+  * `barteasy.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/barteasy.py>`_: BART with the simplified subpackage.
 
 .. _c:
 

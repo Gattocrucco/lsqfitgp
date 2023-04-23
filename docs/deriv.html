@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>5. Derivative specification &#8212; lsqfitgp 0.15 documentation</title>
+    <title>5. Derivative specification &#8212; lsqfitgp 0.16 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -27,7 +27,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">lsqfitgp 0.15</a></h1>
+<h1 class="logo"><a href="index.html">lsqfitgp 0.16</a></h1>
 
 
 
@@ -60,6 +60,7 @@
 <li class="toctree-l2"><a class="reference internal" href="fit.html">8. Fitting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="copula.html">10. Copula factories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayestree.html">11. BART</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
@@ -118,7 +119,7 @@
           <div class="body" role="main">
             
   <section id="derivative-specification">
-<span id="deriv"></span><h1><span class="section-number">5. </span>Derivative specification<a class="headerlink" href="#derivative-specification" title="Permalink to this heading">¶</a></h1>
+<span id="derivspec"></span><h1><span class="section-number">5. </span>Derivative specification<a class="headerlink" href="#derivative-specification" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Deriv">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.Deriv" title="Permalink to this definition">¶</a></dt>
@@ -136,9 +137,9 @@ Deriv([‘a’, 2, ‘b’, ‘c’]).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt>TypeError</dt><dd><p>If <cite>*args</cite> is not of the specified form.</p>
+<dt>TypeError</dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">*args</span></code> is not of the specified form.</p>
 </dd>
-<dt>ValueError</dt><dd><p>If <cite>*args</cite> ends with an integer or if there are consecutive
+<dt>ValueError</dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">*args</span></code> ends with an integer or if there are consecutive
 integers.</p>
 </dd>
 </dl>

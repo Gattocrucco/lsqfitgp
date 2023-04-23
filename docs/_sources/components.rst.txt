@@ -83,7 +83,7 @@ field. We can do that by using a :class:`Rescaling` that acts on ``'comp'``::
     
     gp = lgp.GP(kernel)
 
-The boolean operation in the `stdfun` argument returns 0 or 1, and since
+The boolean operation in the ``stdfun`` argument returns 0 or 1, and since
 `stdfun` is called on both arguments of the kernel, each component is nonzero
 only when acting on two points which have the same ``'comp'``.
 
@@ -185,7 +185,7 @@ on the sum as before::
 This version of the code was shorter and less redundant than the one we started
 with, but it's not very intuitive. We still have to take care manually of
 indicating which component we are using by setting appropriately the ``'comp'``
-field in the `x` arrays each time, and each time, for each set of points we
+field in the ``x`` arrays each time, and each time, for each set of points we
 want to consider, we have to sum the two components after evaluating them
 separately. There is another set of methods in :class:`GP` designed to make
 this kind of thing quicker. Let's see. We start by creating a :class:`GP`

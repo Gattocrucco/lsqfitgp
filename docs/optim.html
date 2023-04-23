@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>14. Optimization &#8212; lsqfitgp 0.15 documentation</title>
+    <title>14. Optimization &#8212; lsqfitgp 0.16 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -28,7 +28,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">lsqfitgp 0.15</a></h1>
+<h1 class="logo"><a href="index.html">lsqfitgp 0.16</a></h1>
 
 
 
@@ -131,7 +131,7 @@
 <blockquote>
 <div><ul class="simple">
 <li><p>Compute the prior covariance matrix using the kernel. This is <span class="math notranslate nohighlight">\(O((n +
-m)^2)\)</span> where <cite>n</cite> is the number of datapoints and <cite>m</cite> the number of
+m)^2)\)</span> where <code class="xref py py-obj docutils literal notranslate"><span class="pre">n</span></code> is the number of datapoints and <code class="xref py py-obj docutils literal notranslate"><span class="pre">m</span></code> the number of
 additional points where the posterior is computed.</p></li>
 <li><p>Decompose the prior covariance matrix. This is <span class="math notranslate nohighlight">\(O(n^3)\)</span>.</p></li>
 <li><p>Take random samples from the posterior. This is <span class="math notranslate nohighlight">\(O(m^3)\)</span>.</p></li>
@@ -249,7 +249,7 @@ object and does some computations to check how a “good fit” it is for the gi
 data.</p>
 <p>From the point of view of computational efficiency this means that, apart from
 taking posterior samples, the other techniques explained in the previous
-sections also apply here. In particular, when the number of datapoints <cite>n</cite>
+sections also apply here. In particular, when the number of datapoints <code class="xref py py-obj docutils literal notranslate"><span class="pre">n</span></code>
 starts to be in the hundreds, to speed up the fit do:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;chol&#39;</span><span class="p">,</span> <span class="n">checkpos</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>

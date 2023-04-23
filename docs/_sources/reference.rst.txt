@@ -38,5 +38,6 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     fit.rst
     raniter.rst
     copula.rst
+    bayestree.rst
 
 .. TODO decompositions reference under "Linear Algebra"
