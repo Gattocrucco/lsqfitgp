@@ -77,7 +77,7 @@
             <a id="nextFileLink" class="nav" href="d_ce6a546d8af20c9e___init___py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.2.3">coverage.py v7.2.3</a>,
-            created at 2023-04-16 18:36 +0000
+            created at 2023-04-23 11:15 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"/>
@@ -224,7 +224,7 @@
     <p class="run"><span class="n"><a id="t130" href="#t130">130</a></span><span class="t">    <span class="key">def</span> <span class="nam">_newkernel_from</span><span class="op">(</span><span class="nam">core</span><span class="op">,</span> <span class="nam">kernels</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs130" /><span class="r"><label for="ctxs130" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
     <p class="pln"><span class="n"><a id="t131" href="#t131">131</a></span><span class="t">        <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t132" href="#t132">132</a></span><span class="t"><span class="str">        Make a new kernel object which is the result of an operation on the</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t133" href="#t133">133</a></span><span class="t"><span class="str">        kernels in `kernels`, with implementation callable `core`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t133" href="#t133">133</a></span><span class="t"><span class="str">        kernels in ``kernels``, with implementation callable ``core``.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t134" href="#t134">134</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t135" href="#t135">135</a></span><span class="t">        <span class="key">assert</span> <span class="nam">kernels</span>&nbsp;</span><input type="checkbox" id="ctxs135" /><span class="r"><label for="ctxs135" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
     <p class="run"><span class="n"><a id="t136" href="#t136">136</a></span><span class="t">        <span class="nam">classes</span> <span class="op">=</span> <span class="op">(</span><span class="nam">IsotropicKernel</span><span class="op">,</span> <span class="op">*</span><span class="nam">map</span><span class="op">(</span><span class="nam">type</span><span class="op">,</span> <span class="nam">kernels</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs136" /><span class="r"><label for="ctxs136" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
@@ -265,42 +265,42 @@
     <p class="pln"><span class="n"><a id="t171" href="#t171">171</a></span><span class="t"><span class="str">        Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t172" href="#t172">172</a></span><span class="t"><span class="str">        ----------</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t173" href="#t173">173</a></span><span class="t"><span class="str">        kernel : callable</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t174" href="#t174">174</a></span><span class="t"><span class="str">            A function with signature ``kernel(x, y)``, where `x` and `y` are</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t174" href="#t174">174</a></span><span class="t"><span class="str">            A function with signature ``kernel(x, y)``, where ``x`` and ``y`` are</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t175" href="#t175">175</a></span><span class="t"><span class="str">            two broadcastable numpy arrays, which computes the covariance of</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t176" href="#t176">176</a></span><span class="t"><span class="str">            f(x) with f(y) where f is the Gaussian process.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t177" href="#t177">177</a></span><span class="t"><span class="str">        dim : None or str</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t178" href="#t178">178</a></span><span class="t"><span class="str">            When the input arrays are structured arrays, if `dim` is None the</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t178" href="#t178">178</a></span><span class="t"><span class="str">            When the input arrays are structured arrays, if ``dim`` is None the</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t179" href="#t179">179</a></span><span class="t"><span class="str">            kernel will operate on all fields, i.e., it will be passed the whole</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t180" href="#t180">180</a></span><span class="t"><span class="str">            arrays. If `dim` is a string, `kernel` will see only the arrays for</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t181" href="#t181">181</a></span><span class="t"><span class="str">            the field named `dim`. If `dim` is a string and the array is not</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t180" href="#t180">180</a></span><span class="t"><span class="str">            arrays. If ``dim`` is a string, ``kernel`` will see only the arrays for</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t181" href="#t181">181</a></span><span class="t"><span class="str">            the field named ``dim``. If ``dim`` is a string and the array is not</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t182" href="#t182">182</a></span><span class="t"><span class="str">            structured, an exception is raised. If the field for name `dim` has</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t183" href="#t183">183</a></span><span class="t"><span class="str">            a nontrivial shape, the array passed to `kernel` is still</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t184" href="#t184">184</a></span><span class="t"><span class="str">            structured but has only field `dim`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t183" href="#t183">183</a></span><span class="t"><span class="str">            a nontrivial shape, the array passed to ``kernel`` is still</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t184" href="#t184">184</a></span><span class="t"><span class="str">            structured but has only field ``dim``.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t185" href="#t185">185</a></span><span class="t"><span class="str">        loc, scale : scalar</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t186" href="#t186">186</a></span><span class="t"><span class="str">            The inputs to `kernel` are transformed as (x - loc) / scale.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t186" href="#t186">186</a></span><span class="t"><span class="str">            The inputs to ``kernel`` are transformed as (x - loc) / scale.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t187" href="#t187">187</a></span><span class="t"><span class="str">        forcekron : bool</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t188" href="#t188">188</a></span><span class="t"><span class="str">            If True, when calling `kernel`, if `x` and `y` are structured</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t189" href="#t189">189</a></span><span class="t"><span class="str">            arrays, i.e., if they represent multidimensional input, `kernel` is</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t188" href="#t188">188</a></span><span class="t"><span class="str">            If True, when calling ``kernel``, if ``x`` and ``y`` are structured</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t189" href="#t189">189</a></span><span class="t"><span class="str">            arrays, i.e., if they represent multidimensional input, ``kernel`` is</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t190" href="#t190">190</a></span><span class="t"><span class="str">            invoked separately for each dimension, and the result is the</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t191" href="#t191">191</a></span><span class="t"><span class="str">            product. Default False. The selection indicated by `dim` limits the</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t192" href="#t192">192</a></span><span class="t"><span class="str">            dimensions over which `forcekron` applies.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t191" href="#t191">191</a></span><span class="t"><span class="str">            product. Default False. The selection indicated by ``dim`` limits the</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t192" href="#t192">192</a></span><span class="t"><span class="str">            dimensions over which ``forcekron`` applies.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t193" href="#t193">193</a></span><span class="t"><span class="str">        derivable : bool, int, None, or callable</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t194" href="#t194">194</a></span><span class="t"><span class="str">            Specifies how many times the kernel can be derived, only for error</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t195" href="#t195">195</a></span><span class="t"><span class="str">            checking purposes. True means infinitely many times derivable. If</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t196" href="#t196">196</a></span><span class="t"><span class="str">            callable, it is called with the same keyword arguments as `kernel`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t196" href="#t196">196</a></span><span class="t"><span class="str">            callable, it is called with the same keyword arguments as ``kernel``.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t197" href="#t197">197</a></span><span class="t"><span class="str">            If None (default) it means that the degree of derivability is</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t198" href="#t198">198</a></span><span class="t"><span class="str">            unknown.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t199" href="#t199">199</a></span><span class="t"><span class="str">        saveargs : bool</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t200" href="#t200">200</a></span><span class="t"><span class="str">            If True, save the all the initialization arguments in a</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t201" href="#t201">201</a></span><span class="t"><span class="str">            dictionary under the attribute `initargs`. Default False.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t201" href="#t201">201</a></span><span class="t"><span class="str">            dictionary under the attribute ``initargs``. Default False.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t202" href="#t202">202</a></span><span class="t"><span class="str">        maxdim : int, callable or None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t203" href="#t203">203</a></span><span class="t"><span class="str">            The maximum input dimensionality accepted by the kernel. If</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t204" href="#t204">204</a></span><span class="t"><span class="str">            callable, it is called with the same keyword arguments as the</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t205" href="#t205">205</a></span><span class="t"><span class="str">            kernel. Default sys.maxsize.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t206" href="#t206">206</a></span><span class="t"><span class="str">        batchbytes : number, optional</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t207" href="#t207">207</a></span><span class="t"><span class="str">            If specified, apply `batch(batchbytes)` to the kernel.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t207" href="#t207">207</a></span><span class="t"><span class="str">            If specified, apply ``batch(batchbytes)`` to the kernel.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t208" href="#t208">208</a></span><span class="t"><span class="str">        **kw</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t209" href="#t209">209</a></span><span class="t"><span class="str">            Additional keyword arguments are passed to `kernel`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t209" href="#t209">209</a></span><span class="t"><span class="str">            Additional keyword arguments are passed to ``kernel``.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t210" href="#t210">210</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t211" href="#t211">211</a></span><span class="t"><span class="str">        Methods</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t212" href="#t212">212</a></span><span class="t"><span class="str">        -------</span>&nbsp;</span><span class="r"></span></p>
@@ -603,7 +603,7 @@
     <p class="pln"><span class="n"><a id="t509" href="#t509">509</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t510" href="#t510">510</a></span><span class="t"><span class="str">        Return a Kernel-like object that computes the derivatives of this</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t511" href="#t511">511</a></span><span class="t"><span class="str">        kernel. The derivatives are computed automatically with JAX. If</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t512" href="#t512">512</a></span><span class="t"><span class="str">        `xderiv` and `yderiv` are trivial, this is a no-op.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t512" href="#t512">512</a></span><span class="t"><span class="str">        ``xderiv`` and ``yderiv`` are trivial, this is a no-op.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t513" href="#t513">513</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t514" href="#t514">514</a></span><span class="t"><span class="str">        .. math::</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t515" href="#t515">515</a></span><span class="t"><span class="str">            h(x, y) = \\frac{\\partial^n}{\\partial x^n}</span>&nbsp;</span><span class="r"></span></p>
@@ -613,7 +613,7 @@
     <p class="pln"><span class="n"><a id="t519" href="#t519">519</a></span><span class="t"><span class="str">        Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t520" href="#t520">520</a></span><span class="t"><span class="str">        ----------</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t521" href="#t521">521</a></span><span class="t"><span class="str">        xderiv, yderiv : Deriv-like</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t522" href="#t522">522</a></span><span class="t"><span class="str">            A :class:`Deriv` object or something that can be converted to a</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t522" href="#t522">522</a></span><span class="t"><span class="str">            A `Deriv` object or something that can be converted to a</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t523" href="#t523">523</a></span><span class="t"><span class="str">            Deriv object.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t524" href="#t524">524</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t525" href="#t525">525</a></span><span class="t"><span class="str">        Returns</span>&nbsp;</span><span class="r"></span></p>
@@ -625,7 +625,7 @@
     <p class="pln"><span class="n"><a id="t531" href="#t531">531</a></span><span class="t"><span class="str">        Raises</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t532" href="#t532">532</a></span><span class="t"><span class="str">        ------</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t533" href="#t533">533</a></span><span class="t"><span class="str">        RuntimeError</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t534" href="#t534">534</a></span><span class="t"><span class="str">            The derivative orders are greater than the `derivative` attribute.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t534" href="#t534">534</a></span><span class="t"><span class="str">            The derivative orders are greater than the ``derivative`` attribute.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t535" href="#t535">535</a></span><span class="t"><span class="str">            </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t536" href="#t536">536</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t537" href="#t537">537</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -771,7 +771,7 @@
     <p class="pln"><span class="n"><a id="t677" href="#t677">677</a></span><span class="t"><span class="str">                &amp; \\text{if $k$ is odd}</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t678" href="#t678">678</a></span><span class="t"><span class="str">            \\end{cases}</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t679" href="#t679">679</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t680" href="#t680">680</a></span><span class="t"><span class="str">        The period `T` is implicit in the definition of the kernel.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t680" href="#t680">680</a></span><span class="t"><span class="str">        The period :math:`T` is implicit in the definition of the kernel.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t681" href="#t681">681</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t682" href="#t682">682</a></span><span class="t"><span class="str">        Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t683" href="#t683">683</a></span><span class="t"><span class="str">        ----------</span>&nbsp;</span><span class="r"></span></p>
@@ -800,7 +800,7 @@
     <p class="pln"><span class="n"><a id="t706" href="#t706">706</a></span><span class="t"><span class="str">                \\frac{\\partial^k}{\\partial x^k} k(x, y)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t707" href="#t707">707</a></span><span class="t"><span class="str">            \\right|_{x_0}</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t708" href="#t708">708</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t709" href="#t709">709</a></span><span class="t"><span class="str">        The expansion point `x0` is implicit in the definition of the kernel.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t709" href="#t709">709</a></span><span class="t"><span class="str">        The expansion point :math:`x0` is implicit in the definition of the kernel.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t710" href="#t710">710</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t711" href="#t711">711</a></span><span class="t"><span class="str">        Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t712" href="#t712">712</a></span><span class="t"><span class="str">        ----------</span>&nbsp;</span><span class="r"></span></p>
@@ -844,12 +844,12 @@
     <p class="run"><span class="n"><a id="t750" href="#t750">750</a></span><span class="t">    <span class="key">def</span> <span class="nam">__new__</span><span class="op">(</span><span class="nam">cls</span><span class="op">,</span> <span class="nam">kernel</span><span class="op">,</span> <span class="op">*</span><span class="op">,</span> <span class="nam">input</span><span class="op">=</span><span class="str">'signed'</span><span class="op">,</span> <span class="nam">scale</span><span class="op">=</span><span class="key">None</span><span class="op">,</span> <span class="op">**</span><span class="nam">kw</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs750" /><span class="r"><label for="ctxs750" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
     <p class="pln"><span class="n"><a id="t751" href="#t751">751</a></span><span class="t">        <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t752" href="#t752">752</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t753" href="#t753">753</a></span><span class="t"><span class="str">        Subclass of :class:`Kernel` for isotropic kernels.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t753" href="#t753">753</a></span><span class="t"><span class="str">        Subclass of `Kernel` for isotropic kernels.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t754" href="#t754">754</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t755" href="#t755">755</a></span><span class="t"><span class="str">        Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t756" href="#t756">756</a></span><span class="t"><span class="str">        ----------</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t757" href="#t757">757</a></span><span class="t"><span class="str">        kernel : callable</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t758" href="#t758">758</a></span><span class="t"><span class="str">            A function taking one argument `delta` which is the difference</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t758" href="#t758">758</a></span><span class="t"><span class="str">            A function taking one argument ``delta`` which is the difference</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t759" href="#t759">759</a></span><span class="t"><span class="str">            between x and y, plus optionally keyword arguments.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t760" href="#t760">760</a></span><span class="t"><span class="str">        input : {'signed', 'soft', 'hard'}</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t761" href="#t761">761</a></span><span class="t"><span class="str">            If 'signed' (default), `kernel` is passed the bare difference. If</span>&nbsp;</span><span class="r"></span></p>
@@ -857,9 +857,9 @@
     <p class="pln"><span class="n"><a id="t763" href="#t763">763</a></span><span class="t"><span class="str">            and the difference of equal points is a small number instead of</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t764" href="#t764">764</a></span><span class="t"><span class="str">            zero. If 'hard', the absolute value.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t765" href="#t765">765</a></span><span class="t"><span class="str">        scale : scalar</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t766" href="#t766">766</a></span><span class="t"><span class="str">            The difference is divided by `scale`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t766" href="#t766">766</a></span><span class="t"><span class="str">            The difference is divided by ``scale``.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t767" href="#t767">767</a></span><span class="t"><span class="str">        **kw</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t768" href="#t768">768</a></span><span class="t"><span class="str">            Additional keyword arguments are passed to the :class:`Kernel` init.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t768" href="#t768">768</a></span><span class="t"><span class="str">            Additional keyword arguments are passed to the `Kernel` init.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t769" href="#t769">769</a></span><span class="t"><span class="str">                </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t770" href="#t770">770</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t771" href="#t771">771</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -913,18 +913,18 @@
     <p class="pln"><span class="n"><a id="t819" href="#t819">819</a></span><span class="t"><span class="str">        Parameters</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t820" href="#t820">820</a></span><span class="t"><span class="str">        ----------</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t821" href="#t821">821</a></span><span class="t"><span class="str">        kernel : callable</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t822" href="#t822">822</a></span><span class="t"><span class="str">            A function taking one argument `r2` which is the squared distance</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t822" href="#t822">822</a></span><span class="t"><span class="str">            A function taking one argument ``r2`` which is the squared distance</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t823" href="#t823">823</a></span><span class="t"><span class="str">            between x and y, plus optionally keyword arguments.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t824" href="#t824">824</a></span><span class="t"><span class="str">        input : {'squared', 'hard', 'soft', 'raw'}</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t825" href="#t825">825</a></span><span class="t"><span class="str">            If 'squared' (default), `kernel` is passed the squared distance.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t825" href="#t825">825</a></span><span class="t"><span class="str">            If 'squared' (default), ``kernel`` is passed the squared distance.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t826" href="#t826">826</a></span><span class="t"><span class="str">            If 'hard', it is passed the distance (not squared). If 'soft', it</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t827" href="#t827">827</a></span><span class="t"><span class="str">            is passed the distance, and the distance of equal points is a small</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t828" href="#t828">828</a></span><span class="t"><span class="str">            number instead of zero. If 'raw', the kernel is passed both points</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t829" href="#t829">829</a></span><span class="t"><span class="str">            separately like non-stationary kernels.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t830" href="#t830">830</a></span><span class="t"><span class="str">        scale : scalar</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t831" href="#t831">831</a></span><span class="t"><span class="str">            The distance is divided by `scale`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t831" href="#t831">831</a></span><span class="t"><span class="str">            The distance is divided by ``scale``.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t832" href="#t832">832</a></span><span class="t"><span class="str">        **kw</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t833" href="#t833">833</a></span><span class="t"><span class="str">            Additional keyword arguments are passed to the :class:`Kernel` init.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t833" href="#t833">833</a></span><span class="t"><span class="str">            Additional keyword arguments are passed to the `Kernel` init.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t834" href="#t834">834</a></span><span class="t"><span class="str">        </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t835" href="#t835">835</a></span><span class="t"><span class="str">        Notes</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t836" href="#t836">836</a></span><span class="t"><span class="str">        -----</span>&nbsp;</span><span class="r"></span></p>
@@ -1029,7 +1029,7 @@
     <p class="run"><span class="n"><a id="t935" href="#t935">935</a></span><span class="t"><span class="key">def</span> <span class="nam">kernel</span><span class="op">(</span><span class="op">*</span><span class="nam">args</span><span class="op">,</span> <span class="op">**</span><span class="nam">kw</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs935" /><span class="r"><label for="ctxs935" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
     <p class="pln"><span class="n"><a id="t936" href="#t936">936</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t937" href="#t937">937</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t938" href="#t938">938</a></span><span class="t"><span class="str">    Decorator to convert a function to a subclass of :class:`Kernel`. Example::</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t938" href="#t938">938</a></span><span class="t"><span class="str">    Decorator to convert a function to a subclass of `Kernel`. Example::</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t939" href="#t939">939</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t940" href="#t940">940</a></span><span class="t"><span class="str">        @kernel(loc=10) # the default loc will be 10</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t941" href="#t941">941</a></span><span class="t"><span class="str">        def MyKernel(x, y, cippa=1, lippa=42):</span>&nbsp;</span><span class="r"></span></p>
@@ -1041,7 +1041,7 @@
     <p class="run"><span class="n"><a id="t947" href="#t947">947</a></span><span class="t"><span class="key">def</span> <span class="nam">stationarykernel</span><span class="op">(</span><span class="op">*</span><span class="nam">args</span><span class="op">,</span> <span class="op">**</span><span class="nam">kw</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs947" /><span class="r"><label for="ctxs947" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
     <p class="pln"><span class="n"><a id="t948" href="#t948">948</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t949" href="#t949">949</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t950" href="#t950">950</a></span><span class="t"><span class="str">    Decorator to convert a function to a subclass of :class:`StationaryKernel`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t950" href="#t950">950</a></span><span class="t"><span class="str">    Decorator to convert a function to a subclass of `StationaryKernel`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t951" href="#t951">951</a></span><span class="t"><span class="str">    Example::</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t952" href="#t952">952</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t953" href="#t953">953</a></span><span class="t"><span class="str">        @stationarykernel(input='soft')</span>&nbsp;</span><span class="r"></span></p>
@@ -1057,7 +1057,7 @@
     <p class="run"><span class="n"><a id="t963" href="#t963">963</a></span><span class="t"><span class="key">def</span> <span class="nam">isotropickernel</span><span class="op">(</span><span class="op">*</span><span class="nam">args</span><span class="op">,</span> <span class="op">**</span><span class="nam">kw</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs963" /><span class="r"><label for="ctxs963" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
     <p class="pln"><span class="n"><a id="t964" href="#t964">964</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t965" href="#t965">965</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t966" href="#t966">966</a></span><span class="t"><span class="str">    Decorator to convert a function to a subclass of :class:`IsotropicKernel`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t966" href="#t966">966</a></span><span class="t"><span class="str">    Decorator to convert a function to a subclass of `IsotropicKernel`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t967" href="#t967">967</a></span><span class="t"><span class="str">    Example::</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t968" href="#t968">968</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t969" href="#t969">969</a></span><span class="t"><span class="str">        @isotropickernel(derivable=True)</span>&nbsp;</span><span class="r"></span></p>
@@ -1088,9 +1088,9 @@
     <p class="pln"><span class="n"><a id="t994" href="#t994">994</a></span><span class="t"><span class="str">    kernel2 : Kernel</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t995" href="#t995">995</a></span><span class="t"><span class="str">        Kernel used where condfun yields False.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t996" href="#t996">996</a></span><span class="t"><span class="str">    dim : str or None</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t997" href="#t997">997</a></span><span class="t"><span class="str">        If specified, when the input arrays are structured, `condfun` is</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t998" href="#t998">998</a></span><span class="t"><span class="str">        applied only to the field `dim`. If the field has a shape, the</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t999" href="#t999">999</a></span><span class="t"><span class="str">        array passed to `condfun` still has `dim` as explicit field.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t997" href="#t997">997</a></span><span class="t"><span class="str">        If specified, when the input arrays are structured, ``condfun`` is</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t998" href="#t998">998</a></span><span class="t"><span class="str">        applied only to the field ``dim``. If the field has a shape, the</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t999" href="#t999">999</a></span><span class="t"><span class="str">        array passed to ``condfun`` still has ``dim`` as explicit field.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1000" href="#t1000">1000</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1001" href="#t1001">1001</a></span><span class="t"><span class="str">    Returns</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1002" href="#t1002">1002</a></span><span class="t"><span class="str">    -------</span>&nbsp;</span><span class="r"></span></p>
@@ -1159,7 +1159,7 @@
             <a id="nextFileLink" class="nav" href="d_ce6a546d8af20c9e___init___py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.2.3">coverage.py v7.2.3</a>,
-            created at 2023-04-16 18:36 +0000
+            created at 2023-04-23 11:15 +0000
         </p>
     </div>
 </footer>
