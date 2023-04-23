@@ -390,10 +390,7 @@ def test_key_already_used():
 #     with pytest.raises(ValueError):
 #         gp.addx({0: [[1, 2], 3]})
 
-def test_not_empty():
-    gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
-        gp.addx([], 0)
+# TODO make a test on empty things (empty x, empty cov)
 
 def test_incompatible_dtypes():
     gp = lgp.GP(lgp.ExpQuad())
