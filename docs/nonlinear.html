@@ -124,16 +124,16 @@
             
   <section id="nonlinear-models">
 <span id="nonlinear"></span><h1><span class="section-number">13. </span>Nonlinear models<a class="headerlink" href="#nonlinear-models" title="Permalink to this heading">¶</a></h1>
-<p>Using <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> we can define a Gaussian process. Using
-<a class="reference internal" href="gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addlintransf()</span></code></a> we can represent finite linear transformations of the
-process, and we can take derivatives with <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addx()</span></code></a>. This means that we
+<p>Using <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a> we can define a Gaussian process. Using
+<a class="reference internal" href="gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.addlintransf</span></code></a> we can represent finite linear transformations of the
+process, and we can take derivatives with <a class="reference internal" href="gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.addx</span></code></a>. This means that we
 can only do linear operations on the process before putting the data in.</p>
 <p>A common non-linear operation is putting a boundary on the possible data
 values. Gaussian distributions don’t play nicely with boundaries—they are
 defined on <span class="math notranslate nohighlight">\((-\infty,\infty)\)</span>—so it is necessary to map the Gaussian
 process space to an interval with a nonlinear function.</p>
-<p><a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> is designed to work with the general purpose fitting module
-<code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfit</span></code> (after which it takes the name) for this kind of situations. If
+<p><a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> is designed to work with the general purpose fitting module
+<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#module-lsqfit" title="(in lsqfit v13.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfit</span></code></a> (after which it takes the name) for this kind of situations. If
 you want to know more, it has a <a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/index.html">good documentation</a>.</p>
 <p>Let’s see how to fit some data that is constrained in (-1, 1). To map the
 Gaussian process space to the data space, we’ll use a hyperbolic tangent.
@@ -165,10 +165,10 @@ sampling from it. To see this intuitively, consider that in the latter case the
 fake data would not satisfy the requirement of being bounded within (-1, 1).</p>
 <p>Now we’ll add errors to the data. If data does not have errors, there’s not
 really a problem to start with: you can map the data to <span class="math notranslate nohighlight">\((-\infty,
-\infty)\)</span> with <code class="xref py py-func docutils literal notranslate"><span class="pre">np.arctanh()</span></code>, do the Gaussian process fit, take some
-samples, map the samples back with <code class="xref py py-func docutils literal notranslate"><span class="pre">np.tanh()</span></code>.</p>
+\infty)\)</span> with <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.arctanh.html#numpy.arctanh" title="(in NumPy v1.24)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">arctanh</span></code></a>, do the Gaussian process fit, take some
+samples, map the samples back with <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.tanh.html#numpy.tanh" title="(in NumPy v1.24)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tanh</span></code></a>.</p>
 <p>You may do that even with errors, either at first order using
-<code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.arctanh()</span></code>, or by transforming the errors manually yourself. However,
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.arctanh</span></code>, or by transforming the errors manually yourself. However,
 in that way you would be doing a fit with Gaussian errors on the transformed
 data. What we will do is a fit with Gaussian errors on the data itself. Another
 case we won’t explore in which just transforming the data before the fit is not
@@ -186,7 +186,7 @@ prediction:</p>
 </pre></div>
 </div>
 <p>Now we define the prior and model function following the requirements of
-<code class="xref py py-class docutils literal notranslate"><span class="pre">lsqfit.nonlinear_fit</span></code> and run the fit:</p>
+<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#lsqfit.nonlinear_fit" title="(in lsqfit v13.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">lsqfit.nonlinear_fit</span></code></a> and run the fit:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfit</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="p">{</span>
@@ -249,8 +249,8 @@ prediction:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gpplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromfit</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;gproc&#39;</span><span class="p">]},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>This time we use <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromfit" title="lsqfitgp.GP.predfromfit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromfit()</span></code></a> instead of the usual
-<a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code></a>. This method takes into account that the distribution
+<p>This time we use <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromfit" title="lsqfitgp.GP.predfromfit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.predfromfit</span></code></a> instead of the usual
+<a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.predfromdata</span></code></a>. This method takes into account that the distribution
 represented by <code class="docutils literal notranslate"><span class="pre">fit.p['gproc']</span></code> is not the uncertainty of some datapoints,
 but is already the distribution of some points of our process. We want to
 “extend” <code class="docutils literal notranslate"><span class="pre">fit.p['gproc']</span></code>, not condition on it.</p>
@@ -320,7 +320,7 @@ fine: this is because we did the fit in the data space.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.2.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
