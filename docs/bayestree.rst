@@ -17,13 +17,13 @@
 .. You should have received a copy of the GNU General Public License
 .. along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-.. currentmodule:: lsqfitgp
+.. currentmodule:: lsqfitgp.bayestree
 
 BART
 ====
 
 This submodule contains a class to set up a Gaussian process regression with the
-`BART` kernel. See the :ref:`bart <bart>` and :ref:`barteasy <barteasy>`
-examples.
+`~lsqfitgp.BART` kernel. See the :ref:`bart <bart>` and :ref:`barteasy
+<barteasy>` examples.
 
-.. autoclass:: lsqfitgp.bayestree.bart
+.. autoclass:: bart

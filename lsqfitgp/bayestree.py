@@ -47,17 +47,17 @@ class bart:
 
         Parameters
         ----------
-        x_train : (n, p) or dataframe
+        x_train : (n, p) array or dataframe
             Observed covariates.
-        y_train : (n,)
+        y_train : (n,) array
             Observed outcomes.
-        x_test : (n*, p) or dataframe, optional
+        x_test : (n*, p) array or dataframe, optional
             Covariates of outcomes to be imputed.
         fitkw : dict
-            Additional arguments passed to `empbayes_fit`, overrides the
-            defaults.
+            Additional arguments passed to `~lsqfitgp.empbayes_fit`, overrides
+            the defaults.
         kernelkw : dict
-            Additional arguments passed to `BART`, overrides the
+            Additional arguments passed to `~lsqfitgp.BART`, overrides the
             defaults.
         
         Attributes
@@ -75,7 +75,7 @@ class bart:
             The posterior variance of the latent regression function at the
             covariates of imputed outcomes.
         sigma : gvar
-            The error term standard deviation marginal MAP.
+            The error term standard deviation.
         alpha : gvar
             The numerator of the tree spawn probability (named ``base`` in
             BayesTree and BART).
@@ -100,7 +100,7 @@ class bart:
 
         See also
         --------
-        BART
+        lsqfitgp.BART
         
         """        
         # convert covariate matrices to StructuredArray
