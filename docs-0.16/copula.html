@@ -125,19 +125,25 @@
 <dt class="sig sig-object py" id="lsqfitgp.copula.CopulaFactory">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">CopulaFactory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.copula.CopulaFactory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Abstract base class for copula factories.</p>
-<p>Class to represent transformations in gvar BufferDicts, i.e., Gaussian
+<p>Class to represent transformations in <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>, i.e., Gaussian
 copulas.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>The unique name assigned to the transformation using
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution()</span></code>.</p>
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v11.11.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution</span></code></a>.</p>
 </dd>
 <dt><strong>*params</strong><span class="classifier">scalars</span></dt><dd><p>The parameters of the distribution.</p>
 </dd>
 </dl>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.uniform" title="(in gvar v11.11.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.uniform</span></code></a></dt><dd></dd>
+</dl>
+</div>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">copula</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">BufferDict</span><span class="p">({</span>
 <span class="gp">... </span>    <span class="s1">&#39;transf(x)&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="s1">&#39;transf&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
@@ -198,7 +204,7 @@ with the desired marginal distribution. Jax-traceable.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.2.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

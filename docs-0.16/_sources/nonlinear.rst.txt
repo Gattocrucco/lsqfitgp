@@ -24,9 +24,9 @@
 Nonlinear models
 ================
 
-Using :class:`GP` we can define a Gaussian process. Using
-:meth:`GP.addlintransf` we can represent finite linear transformations of the
-process, and we can take derivatives with :meth:`GP.addx`. This means that we
+Using `GP` we can define a Gaussian process. Using
+`GP.addlintransf` we can represent finite linear transformations of the
+process, and we can take derivatives with `GP.addx`. This means that we
 can only do linear operations on the process before putting the data in.
 
 A common non-linear operation is putting a boundary on the possible data
@@ -34,8 +34,8 @@ values. Gaussian distributions don't play nicely with boundaries---they are
 defined on :math:`(-\infty,\infty)`---so it is necessary to map the Gaussian
 process space to an interval with a nonlinear function.
 
-:mod:`lsqfitgp` is designed to work with the general purpose fitting module
-:mod:`lsqfit` (after which it takes the name) for this kind of situations. If
+`lsqfitgp` is designed to work with the general purpose fitting module
+`lsqfit` (after which it takes the name) for this kind of situations. If
 you want to know more, it has a `good documentation
 <https://lsqfit.readthedocs.io/en/latest/index.html>`_.
 
@@ -71,11 +71,11 @@ fake data would not satisfy the requirement of being bounded within (-1, 1).
 
 Now we'll add errors to the data. If data does not have errors, there's not
 really a problem to start with: you can map the data to :math:`(-\infty,
-\infty)` with :func:`np.arctanh`, do the Gaussian process fit, take some
-samples, map the samples back with :func:`np.tanh`.
+\infty)` with `~numpy.arctanh`, do the Gaussian process fit, take some
+samples, map the samples back with `~numpy.tanh`.
 
 You may do that even with errors, either at first order using
-:func:`gvar.arctanh`, or by transforming the errors manually yourself. However,
+`gvar.arctanh`, or by transforming the errors manually yourself. However,
 in that way you would be doing a fit with Gaussian errors on the transformed
 data. What we will do is a fit with Gaussian errors on the data itself. Another
 case we won't explore in which just transforming the data before the fit is not
@@ -156,8 +156,8 @@ Let's plot everything. First we compute the posterior on the ``xplot`` points::
 
     gpplot = gp.predfromfit({'data': fit.p['gproc']}, 'plot')
 
-This time we use :meth:`GP.predfromfit` instead of the usual
-:meth:`GP.predfromdata`. This method takes into account that the distribution
+This time we use `GP.predfromfit` instead of the usual
+`GP.predfromdata`. This method takes into account that the distribution
 represented by ``fit.p['gproc']`` is not the uncertainty of some datapoints,
 but is already the distribution of some points of our process. We want to
 "extend" ``fit.p['gproc']``, not condition on it.

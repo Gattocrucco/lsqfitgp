@@ -121,8 +121,7 @@
   <section id="bart">
 <h1><span class="section-number">11. </span>BART<a class="headerlink" href="#bart" title="Permalink to this heading">¶</a></h1>
 <p>This submodule contains a class to set up a Gaussian process regression with the
-<a class="reference internal" href="kernelsref.html#lsqfitgp.BART" title="lsqfitgp.BART"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART</span></code></a> kernel. See the <a class="reference internal" href="examplesref.html#bart"><span class="std std-ref">bart</span></a> and <a class="reference internal" href="examplesref.html#barteasy"><span class="std std-ref">barteasy</span></a>
-examples.</p>
+<a class="reference internal" href="kernelsref.html#lsqfitgp.BART" title="lsqfitgp.BART"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART</span></code></a> kernel. See the <a class="reference internal" href="examplesref.html#bart"><span class="std std-ref">bart</span></a> and <a class="reference internal" href="examplesref.html#barteasy"><span class="std std-ref">barteasy</span></a> examples.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.bayestree.bart">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.bayestree.</span></span><span class="sig-name descname"><span class="pre">bart</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_train</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_test</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernelkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsqfitgp.bayestree.bart" title="Permalink to this definition">¶</a></dt>
@@ -133,16 +132,16 @@ optimized to their marginal MAP.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>x_train</strong><span class="classifier">(n, p) or dataframe</span></dt><dd><p>Observed covariates.</p>
+<dt><strong>x_train</strong><span class="classifier">(n, p) array or dataframe</span></dt><dd><p>Observed covariates.</p>
 </dd>
-<dt><strong>y_train</strong><span class="classifier">(n,)</span></dt><dd><p>Observed outcomes.</p>
+<dt><strong>y_train</strong><span class="classifier">(n,) array</span></dt><dd><p>Observed outcomes.</p>
 </dd>
-<dt><strong>x_test</strong><span class="classifier">(n*, p) or dataframe, optional</span></dt><dd><p>Covariates of outcomes to be imputed.</p>
+<dt><strong>x_test</strong><span class="classifier">(n*, p) array or dataframe, optional</span></dt><dd><p>Covariates of outcomes to be imputed.</p>
 </dd>
-<dt><strong>fitkw</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">empbayes_fit</span></code>, overrides the
-defaults.</p>
+<dt><strong>fitkw</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a>, overrides
+the defaults.</p>
 </dd>
-<dt><strong>kernelkw</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">BART</span></code>, overrides the
+<dt><strong>kernelkw</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <a class="reference internal" href="kernelsref.html#lsqfitgp.BART" title="lsqfitgp.BART"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART</span></code></a>, overrides the
 defaults.</p>
 </dd>
 </dl>
@@ -151,7 +150,7 @@ defaults.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART</span></code></dt><dd></dd>
+<dt><a class="reference internal" href="kernelsref.html#lsqfitgp.BART" title="lsqfitgp.BART"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp.BART</span></code></a></dt><dd></dd>
 </dl>
 </div>
 <p class="rubric">Notes</p>
@@ -173,7 +172,7 @@ covariates of imputed outcomes.</p>
 <dt><strong>yhat_test_var</strong><span class="classifier">(n*,) array</span></dt><dd><p>The posterior variance of the latent regression function at the
 covariates of imputed outcomes.</p>
 </dd>
-<dt><strong>sigma</strong><span class="classifier">gvar</span></dt><dd><p>The error term standard deviation marginal MAP.</p>
+<dt><strong>sigma</strong><span class="classifier">gvar</span></dt><dd><p>The error term standard deviation.</p>
 </dd>
 <dt><strong>alpha</strong><span class="classifier">gvar</span></dt><dd><p>The numerator of the tree spawn probability (named <code class="docutils literal notranslate"><span class="pre">base</span></code> in
 BayesTree and BART).</p>
@@ -223,7 +222,7 @@ hyperparameters MAP. Its keys are ‘trainmean’ and ‘testmean’.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.2.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

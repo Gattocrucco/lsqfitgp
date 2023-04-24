@@ -638,7 +638,7 @@ and <span class="math notranslate nohighlight">\(g\)</span> is the Gaussian proc
 \[\log \int p(y|g) p(g) \mathrm{d} g.\]</div>
 <p>Unlike <a class="reference internal" href="#lsqfitgp.GP.pred" title="lsqfitgp.GP.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>, you can’t compute this with a fit result instead of
 data. If you used the Gaussian process as latent variable in a fit,
-use the whole fit to compute the marginal likelihood. E.g. <code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfit</span></code>
+use the whole fit to compute the marginal likelihood. E.g. <a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#module-lsqfit" title="(in lsqfit v13.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfit</span></code></a>
 always computes the logGBF (it’s the same thing).</p>
 <p>The input is an array or dictionary of arrays, <code class="docutils literal notranslate"><span class="pre">given</span></code>. The contents of
 <code class="docutils literal notranslate"><span class="pre">given</span></code> represent the input data.</p>
@@ -709,7 +709,7 @@ a posterior.</p>
 <dt><strong>raw</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, instead of returning a collection of gvars, return
 the mean and the covariance. When the mean is a dictionary, the
 covariance is a dictionary whose keys are pairs of keys of the
-mean (the same format used by <code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.evalcov</span></code>). Default False.</p>
+mean (the same format used by <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.evalcov" title="(in gvar v11.11.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.evalcov</span></code></a>). Default False.</p>
 </dd>
 <dt><strong>keepcorr</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), the returned gvars are correlated with the
 prior and the data/fit. If False, they have the correct covariance
@@ -763,7 +763,7 @@ If you specify <code class="docutils literal notranslate"><span class="pre">key<
 for all keys.</p>
 </dd>
 <dt><strong>raw</strong><span class="classifier">bool</span></dt><dd><p>If True, instead of returning a collection of gvars return
-their covariance matrix as would be returned by <code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.evalcov</span></code>.
+their covariance matrix as would be returned by <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.evalcov" title="(in gvar v11.11.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.evalcov</span></code></a>.
 Default False.</p>
 </dd>
 </dl>
@@ -811,7 +811,7 @@ Default False.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.2.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
