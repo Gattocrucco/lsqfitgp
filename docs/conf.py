@@ -64,6 +64,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'numpydoc',
+    'sphinx.ext.intersphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -111,3 +112,10 @@ numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
 
 default_role = 'py:obj'
+
+intersphinx_mapping = dict(
+    gvar=('https://gvar.readthedocs.io/en/latest', None),
+    lsqfit=('https://lsqfit.readthedocs.io/en/latest', None),
+    scipy=('https://docs.scipy.org/doc/scipy/reference', None),
+    numpy=('https://numpy.org/doc/stable', None),
+)

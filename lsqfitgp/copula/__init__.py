@@ -35,14 +35,14 @@ class CopulaFactory(metaclass=abc.ABCMeta):
     """
     Abstract base class for copula factories.
 
-    Class to represent transformations in gvar BufferDicts, i.e., Gaussian
+    Class to represent transformations in `gvar.BufferDict`, i.e., Gaussian
     copulas.
 
     Parameters
     ----------
     name : str
         The unique name assigned to the transformation using
-        :meth:`gvar.BufferDict.add_distribution`.
+        `gvar.BufferDict.add_distribution`.
     *params : scalars
         The parameters of the distribution.
 
@@ -56,6 +56,10 @@ class CopulaFactory(metaclass=abc.ABCMeta):
     0.50(40)
     >>> copula['y']
     0.36(18)
+
+    See also
+    --------
+    gvar.BufferDict.uniform
     """
     
     def __init_subclass__(cls, **_):
