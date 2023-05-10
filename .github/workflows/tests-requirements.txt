@@ -1,6 +1,6 @@
 numpy
 scipy
-gvar<11.11.3
+gvar!=11.11.3
 lsqfit
 jax==0.4.6
 jaxlib==0.4.6
