@@ -762,6 +762,8 @@ iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
 For Poisson I can take the square root. How good is it? Ref. Casella-Berger,
 pag. 563, ex. 11.1-11.
 
+Maybe this appears as "linear probability modeling" in the literature?
+
 ### gvar improvements
 
 #### `BufferDict` distribution namespaces

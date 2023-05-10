@@ -4448,3 +4448,9 @@ This release mostly features further improvements to the BART kernel. According 
 ### Dependencies
   * Pinned jax and jaxlib to 0.4.6. Earlier versions severly break the optimization of the BART kernel, while later versions break the `jit` option in `empbayes_fit`. Sorry for this pin, I do know that dependency pins in libraries are evil. **<-- BREAKING CHANGE**
   * Tested on Python 3.11
+
+2023-04-24
+==========
+
+The source distribution is including docs/, examples/, playground/, pyenv/. I
+have to remove them somehow.

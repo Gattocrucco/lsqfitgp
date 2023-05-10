@@ -41,7 +41,8 @@ dependencies = [
     'scipy>=1.5', # oldest supported by jax
     'jax==0.4.6', # first with optimized vectorize (for BART), last to support old jit implementation
     'jaxlib==0.4.6',
-    'gvar>=11.10.1', # first supporting gvar.gvar(x, cov) with readonly cov
+    'gvar>=11.10.1,<11.11.3', # 11.10.1 first supporting gvar.gvar(x, cov) with readonly cov, 11.11.3 gives problems to lsqfit
+
 ]
 dynamic = ["version"]
 
