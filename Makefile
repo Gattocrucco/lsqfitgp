@@ -89,15 +89,19 @@ docscode:
 
 docs: gendocs
 	make -C docs html
+	@echo
+	@echo "Now open docs/_build/html/index.html"
 
 covreport:
 	coverage combine
 	coverage html
+	@echo
+	@echo "Now open htmlcov/index.html"
 
 resetenv:
 	test -d pyenv && rm -fr pyenv || test -
 	python3 -m venv pyenv
-	pyenv/bin/python3 -m pip install --upgrade 'pip<23.1' # pip 23.1 breaks gvar
+	pyenv/bin/python3 -m pip install --upgrade 'pip<23.1' # pip 23.1 breaks lsqfit
 	pyenv/bin/python3 -m pip install -r requirements.txt
 	@echo
 	@echo 'Now type ". pyenv/bin/activate"'
