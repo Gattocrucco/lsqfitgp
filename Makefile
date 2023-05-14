@@ -101,7 +101,7 @@ covreport:
 resetenv:
 	test -d pyenv && rm -fr pyenv || test -
 	python3 -m venv pyenv
-	pyenv/bin/python3 -m pip install --upgrade 'pip<23.1' # pip 23.1 breaks lsqfit
+	pyenv/bin/python3 -m pip install --upgrade pip
 	pyenv/bin/python3 -m pip install -r requirements.txt
 	@echo
 	@echo 'Now type ". pyenv/bin/activate"'

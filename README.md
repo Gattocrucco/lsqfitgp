@@ -28,7 +28,6 @@ theory behind lsqfitgp.
 Python >= 3.8 required. Then:
 
 ```
-$ pip install 'pip<23.1' # temporary hack for problems in the dependencies
 $ pip install lsqfitgp
 ```
 

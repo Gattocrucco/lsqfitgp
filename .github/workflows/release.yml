@@ -40,7 +40,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Update pip
-      run: python -m pip install --upgrade 'pip<23.1' # 23.1 breaks gvar
+      run: python -m pip install --upgrade pip
     - name: Install lsqfitgp
       run: python -m pip install lsqfitgp
     - name: Try to import lsqfitgp
