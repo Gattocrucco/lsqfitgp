@@ -47,15 +47,15 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Update pip
-      run: python -m pip install --upgrade pip
     - name: Install dependencies
       if: matrix.python-version == '3.11'
       run: |
+        python -m pip install --upgrade pip
         pip install -r .github/workflows/tests-requirements.txt
     - name: Install outdated dependencies
       if: matrix.python-version == '3.8'
       run: |
+        python -m pip install --upgrade 'pip<23.1' # for old gvar/lsqfit versions
         pip install -r .github/workflows/tests-requirements-old.txt
     - name: Run unit tests
       run: make COVERAGE_SUFFIX=-${{ matrix.os }}-py${{ matrix.python-version }} tests
