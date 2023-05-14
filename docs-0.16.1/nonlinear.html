@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>13. Nonlinear models &#8212; lsqfitgp 0.16.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -132,7 +132,7 @@ values. Gaussian distributions don’t play nicely with boundaries—they are
 defined on <span class="math notranslate nohighlight">\((-\infty,\infty)\)</span>—so it is necessary to map the Gaussian
 process space to an interval with a nonlinear function.</p>
 <p><a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> is designed to work with the general purpose fitting module
-<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#module-lsqfit" title="(in lsqfit v13.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfit</span></code></a> (after which it takes the name) for this kind of situations. If
+<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#module-lsqfit" title="(in lsqfit v13.0.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfit</span></code></a> (after which it takes the name) for this kind of situations. If
 you want to know more, it has a <a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/index.html">good documentation</a>.</p>
 <p>Let’s see how to fit some data that is constrained in (-1, 1). To map the
 Gaussian process space to the data space, we’ll use a hyperbolic tangent.
@@ -185,7 +185,7 @@ prediction:</p>
 </pre></div>
 </div>
 <p>Now we define the prior and model function following the requirements of
-<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#lsqfit.nonlinear_fit" title="(in lsqfit v13.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">lsqfit.nonlinear_fit</span></code></a> and run the fit:</p>
+<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#lsqfit.nonlinear_fit" title="(in lsqfit v13.0.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">lsqfit.nonlinear_fit</span></code></a> and run the fit:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfit</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="p">{</span>
@@ -319,7 +319,7 @@ fine: this is because we did the fit in the data space.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

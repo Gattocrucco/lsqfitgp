@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>4. Taking derivatives &#8212; lsqfitgp 0.16.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -162,7 +162,7 @@ from the prior:</p>
 <img alt="_images/derivatives1.png" src="_images/derivatives1.png" />
 <p>This time we used <a class="reference internal" href="gp.html#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prior()</span></code></a> without arguments, i.e., we did not specify
 if we wanted <code class="docutils literal notranslate"><span class="pre">'foo'</span></code> or <code class="docutils literal notranslate"><span class="pre">'bar'</span></code>. If you print <code class="docutils literal notranslate"><span class="pre">sample</span></code>, you will see it
-is a dictionary-like object, a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>:</p>
+is a dictionary-like object, a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">sample</span><span class="p">))</span>
 </pre></div>
 </div>
@@ -187,7 +187,7 @@ is a dictionary-like object, a <a class="reference external" href="https://gvar.
 <span class="p">})</span>
 </pre></div>
 </div>
-<p>In general <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.2)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>, and so also <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>, can work with arrays or
+<p>In general <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.10)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>, and so also <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>, can work with arrays or
 dictionaries of arrays/scalars. This comes in handy to carry around all the
 numbers in one object without forgetting the names of things.</p>
 <p>Looking at the plot, the points where the derivative is zero seem to
@@ -277,7 +277,7 @@ what happens if you change the scale, and then try modifying it.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

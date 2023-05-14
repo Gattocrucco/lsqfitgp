@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>2. First example: a sine &#8212; lsqfitgp 0.16.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
@@ -130,7 +130,7 @@ First, import the modules:</p>
 <span class="kn">import</span> <span class="nn">gvar</span>
 </pre></div>
 </div>
-<p>I suppose you know about <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.24)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a>, but you may not know about <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.2)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>.
+<p>I suppose you know about <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.24)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a>, but you may not know about <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.10)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>.
 It is a module for automatic linear correlation tracking. We will se how to use
 it in the example, if you want to know more <a class="reference external" href="https://gvar.readthedocs.io/en/latest/">it has a good documentation</a>.</p>
 <p>Now we generate some fake data. Let’s make a sine:</p>
@@ -220,10 +220,10 @@ second is the label of the points on which we want the estimate.</p>
 <img alt="_images/sine1.png" src="_images/sine1.png" />
 <p>Notice that, to plot <code class="docutils literal notranslate"><span class="pre">ypred</span></code>, we did <code class="docutils literal notranslate"><span class="pre">ypred_mean</span> <span class="pre">=</span> <span class="pre">gvar.mean(ypred)</span></code>. This
 is because the output of <a class="reference internal" href="gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a> is not an array of numbers,
-but an array of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v11.11.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gvar.GVar</span></code></a> objects. <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables represent
-Gaussian distributions; <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.mean" title="(in gvar v11.11.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.mean()</span></code></a> extracts the mean of the
+but an array of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v11.11.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gvar.GVar</span></code></a> objects. <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables represent
+Gaussian distributions; <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.mean" title="(in gvar v11.11.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.mean()</span></code></a> extracts the mean of the
 distribution. Let’s make an error band for the fit by computing the standard
-deviations with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sdev" title="(in gvar v11.11.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sdev()</span></code></a>:</p>
+deviations with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sdev" title="(in gvar v11.11.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sdev()</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ypred_sdev</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">ypred</span><span class="p">)</span>
 <span class="n">bottom</span> <span class="o">=</span> <span class="n">ypred_mean</span> <span class="o">-</span> <span class="n">ypred_sdev</span>
 <span class="n">top</span> <span class="o">=</span> <span class="n">ypred_mean</span> <span class="o">+</span> <span class="n">ypred_sdev</span>
@@ -258,7 +258,7 @@ probably a sine; as soon as we move out from the datapoints, the fit gives up
 and just returns the prior.</p>
 <p>Instead of trying to interpret what functions the fit result is representing,
 we can write a code to sample some plausible functions from the posterior
-distribution. <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.2)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a> has a function for doing that, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v11.11.2)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>:</p>
+distribution. <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.10)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a> has a function for doing that, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v11.11.10)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ypred_sample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">ypred</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xpred</span><span class="p">,</span> <span class="n">ypred_sample</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
@@ -373,7 +373,7 @@ available ones are listed in the <a class="reference internal" href="kernelsref.
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
