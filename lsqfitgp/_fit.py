@@ -250,6 +250,8 @@ class empbayes_fit(Logger):
             The arguments passed to `scipy.optimize.minimize`.
         gpfactory : callable
             The ``gpfactory`` argument.
+        gpfactorykw : dict
+            The ``gpfactorykw`` argument.
 
         Raises
         ------
@@ -449,6 +451,7 @@ class empbayes_fit(Logger):
         self.minresult = result
         self.minargs = minargs
         self.gpfactory = gpfactory
+        self.gpfactorykw = gpfactorykw
 
         if verbosity >= 2:
             self.log(_patch_gvar.tabulate_together(

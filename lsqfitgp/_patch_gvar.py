@@ -290,3 +290,9 @@ def add_gvar_support(func):
             return func(x)
     
     return decorated_func
+
+    # TODO make public? => To make it public, I need it to support arbitrary
+    # arguments, with some configuration (imitate vectorize), and pick a name
+    # that makes it clear it convert ufuncs from jax to gvar. => Maybe I should
+    # make a more general version starting from the code in GP that propagates
+    # gvars through lintransf.

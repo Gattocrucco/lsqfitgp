@@ -29,6 +29,7 @@ import jax
 from jax import numpy as jnp
 
 from .. import _patch_gvar
+from .. import _patch_jax
 from . import _beta, _invgamma
 
 class CopulaFactory(metaclass=abc.ABCMeta):
@@ -128,7 +129,7 @@ class invgamma(CopulaFactory):
     @classmethod
     def invfcn(cls, x, alpha, beta):
         x = jnp.asarray(x)
-        x = x.astype(jnp.sin(jnp.empty(0, x.dtype)).dtype)
+        x = x.astype(_patch_jax.float_type(x))
         boundary = 37 if x.dtype == jnp.float64 else 12
         return jnp.piecewise(x, 
             [x < -boundary, x > 0],

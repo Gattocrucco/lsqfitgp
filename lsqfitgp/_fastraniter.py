@@ -30,9 +30,9 @@ __all__ = [
     'sample',
 ]
 
-# TODO add options to use a numpy random generator object or a jax random key
+# TODO support jax tracing and jax random sampling
 
-def raniter(mean, cov, n=None, eps=None):
+def raniter(mean, cov, n=None, eps=None, rng=None):
     """
     
     Take random samples from a multivariate Gaussian.
@@ -53,6 +53,8 @@ def raniter(mean, cov, n=None, eps=None):
         Used to correct the eigenvalues of the covariance matrix to handle
         non-positivity due to roundoff, relative to the largest eigenvalue.
         Default is number of variables times floating point epsilon.
+    rng : numpy.random.Generator, optional
+        A random number generator.
     
     Yields
     ------
@@ -93,11 +95,15 @@ def raniter(mean, cov, n=None, eps=None):
     except np.linalg.LinAlgError:
         warnings.warn('covariance matrix not positive definite with eps={}'.format(eps))
         covdec = _linalg.EigCutFullRank(squarecov, epsrel=0)
+
+    # get random number generator
+    if rng is None:
+        rng = np.random.default_rng()
     
     # take samples
     iterable = itertools.count() if n is None else range(n)
     for _ in iterable:
-        iidsamp = np.random.randn(covdec.m)
+        iidsamp = rng.standard_normal(covdec.m)
         samp = flatmean + covdec.correlate(iidsamp)
 
         # pack the samples with the original shape
