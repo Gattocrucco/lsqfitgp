@@ -121,6 +121,7 @@ class empbayes_fit(Logger):
         hyperprior,
         gpfactory,
         data,
+        *,
         raises=True,
         minkw={},
         gpfactorykw={},
@@ -166,7 +167,8 @@ class empbayes_fit(Logger):
             values specified by `empbayes_fit`.
         gpfactorykw : dict, optional
             Keyword arguments passed to ``gpfactory``, and also to ``data`` if
-            it is a callable.
+            it is a callable. If ``jit``, ``gpfactorykw`` crosses a JAX jit
+            boundary, so it must contain objects understandable by JAX.
         jit : bool
             If True, use jax's jit to compile the minimization target. Default
             False.
@@ -218,10 +220,10 @@ class empbayes_fit(Logger):
             'auto' (default)
                 'minhess' if applicable, 'none' otherwise.
         fix : scalar, array or dictionary of scalars/arrays
-            A set of booleans, with the same format as ``hyperprior``, indicating
-            which hyperparameters are kept fixed to their initial value.
-            Scalars and arrays are broadcasted to the shape of ``hyperprior``.
-            If a dictionary, missing keys are treated as False.
+            A set of booleans, with the same format as ``hyperprior``,
+            indicating which hyperparameters are kept fixed to their initial
+            value. Scalars and arrays are broadcasted to the shape of
+            ``hyperprior``. If a dictionary, missing keys are treated as False.
         mlkw : dict
             Additional arguments passed to `GP.marginal_likelihood`.
         forward : bool
@@ -265,6 +267,7 @@ class empbayes_fit(Logger):
         # options, I hope that changing termination tolerances does the trick.
 
         Logger.__init__(self, verbosity)
+        del verbosity
         self.log('**** call lsqfitgp.empbayes_fit ****')
     
         assert callable(gpfactory)
@@ -276,126 +279,18 @@ class empbayes_fit(Logger):
         # analyze data
         data, cachedargs = self._parse_data(data)
 
-        def make(p):
-            
-            hp = hpunflat(p)
-            gp = gpfactory(hp, **gpfactorykw)
-            assert isinstance(gp, _GP.GP)
-            
-            if cachedargs:
-                args = cachedargs
-            else:
-                args = data(hp, **gpfactorykw)
-                if not isinstance(args, tuple):
-                    args = (args,)
+        # define functions
+        timer, functions = self._prepare_functions(
+            gpfactory=gpfactory, gpfactorykw=gpfactorykw, data=data,
+            cachedargs=cachedargs, hpunflat=hpunflat, mlkw=mlkw, jit=jit,
+            forward=forward,
+        )
+        del gpfactory, gpfactorykw, data, cachedargs, mlkw, forward
 
-            return gp, args
-        
-        def dojit(f):
-            return jax.jit(f) if jit else f
-        if jit:
-            self.log('compile functions with jax jit', 2)
-        
-        timer = self._Timer()
-        firstcall = [None]
-        
-        @dojit
-        def fun(p):
-            p = timer.start(p)
-            gp, args = make(p)
-            decomp, ymean = gp._prior_decomp(*args, covtransf=timer.partial, **mlkw)
-            decomp = timer.partial(decomp)
-
-            if firstcall:
-                # works under jit since the first call is tracing
-                firstcall.pop()
-                xdtype = gp._get_x_dtype()
-                nd = '?' if xdtype is None else str(_array._nd(xdtype))
-                self.log(f'{ymean.size} datapoints, {nd} covariates')
-                    
-            return timer.partial(1/2 * (
-                decomp.logdet()
-                + decomp.n * jnp.log(2 * jnp.pi)
-                + decomp.quad(ymean)
-                + p @ p
-            ))
-
-        jactr = jax.jacfwd if forward else jax.jacrev
-        self.log(f'{"forward" if forward else "reverse"}-mode autodiff (if used)', 2)
-        fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jactr))
-        jac = dojit(jactr(fun))
-
-        if not callable(data):
-            
-            @jax.jacfwd
-            @jax.jacfwd
-            # can't change inner jac to rev due to jax issue #10994
-            # (stop_hessian)
-            def fisher(p):
-                p = timer.start(p)
-                gp, args = make(p)
-                decomp, _ = gp._prior_decomp(*args, stop_hessian=True, covtransf=timer.partial, **mlkw)
-                return -1/2 * decomp.logdet()
-            
-            def fisherprec(p):
-                f = fisher(p)
-                return timer.partial(f + jnp.eye(len(f), dtype=f.dtype))
-        
-        else:
-            
-            # Must take into account that the data can depend on the        
-            # hyperparameters. The statistical meaning is that the prior mean
-            # depends on the hyperparameters.
-            
-            @functools.partial(jax.jacfwd, has_aux=True)
-            # can't change jac to rev due to jax issue #10994 (stop_hessian)
-            def grad_logdet_and_aux(p):
-                p = timer.start(p)
-                gp, args = make(p)
-                decomp, ymean = gp._prior_decomp(*args, stop_hessian=True, covtransf=timer.partial, **mlkw)
-                return -1/2 * decomp.logdet(), (decomp, ymean)
-            
-            @functools.partial(jax.jacfwd, has_aux=True)
-            def fisher_and_jac_and_aux(p):
-                gld, (decomp, ymean) = grad_logdet_and_aux(p)
-                return (gld, ymean), decomp
-            
-            @dojit
-            def fisherprec(p):
-                (F, J), decomp = fisher_and_jac_and_aux(p)
-                result = F + jnp.eye(len(F), dtype=F.dtype) + decomp.quad(J)
-                return timer.partial(result)
-        
-        # wrap functions to count number of calls
-        fun = self._CountCalls(fun)
-        fun_and_jac = self._CountCalls(fun_and_jac)
-        jac = self._CountCalls(jac)
-        fisherprec = self._CountCalls(fisherprec)
-        
         # prepare minimizer arguments
-        if self.SEPARATE_JAC:
-            minargs = dict(fun=fun, jac=jac, x0=hpinitial)
-        else:
-            minargs = dict(fun=fun_and_jac, jac=True, x0=hpinitial)
-        if method == 'nograd':
-            minargs.update(fun=fun, jac=None, method='nelder-mead')
-        elif method == 'gradient':
-            minargs.update(method='bfgs')
-        elif method == 'fisher':
-            minargs.update(hess=fisherprec, method='dogleg')
-            # dogleg requires positive definiteness
-            # TODO use trust-constr because it has more options?
-        else:
-            raise KeyError(method)
-        self.log(f'method {method!r}', 2)
+        minargs = self._prepare_minargs(method, functions, hpinitial)
 
         # set up callback to time and log iterations
-        functions = {
-            'fun': fun,
-            'jac': jac,
-            'fun&jac': fun_and_jac,
-            'fisher': fisherprec,
-        }
         callback = self._Callback(self, functions, timer, hpunflat)
         minargs.update(callback=callback)
 
@@ -406,54 +301,31 @@ class empbayes_fit(Logger):
         # add user arguments and minimize
         minargs.update(minkw)
         self.log(f'minimizer method {minargs["method"]!r}', 2)
-        start = time.time()
+        total = time.time()
         result = optimize.minimize(**minargs)
-        end = time.time()
+        total = time.time() - total
 
         # log total timings and function calls
-        total = end - start
-        times = callback.fmttimes({
-            'gp&cov': timer.totals[0],
-            'decomp': timer.totals[1],
-            'likelihood': timer.totals[2],
-            'other': total - sum(timer.totals.values()),
-        })
-        calls = self._CountCalls.fmtcalls('total', functions)
-        self.log('', 4)
-        self.log(f'total time: {callback.fmttime(total)}')
-        if jit:
-            overhead = callback.estimate_firstcall_overhead()
-            if overhead is not None:
-                self.log(f'estimated compilation time: {callback.fmttime(overhead)}', 2)
-        self.log(f'partials: {times}', 2)
-        self.log(f'calls: {calls}')
+        self._log_totals(total, timer, callback, jit, functions)
         
         # check the minimization was successful
-        if result.success:
-            self.log(f'minimization succeeded: {result.message}')
-        else:
-            msg = f'minimization failed: {result.message}'
-            if raises:
-                raise RuntimeError(msg)
-            elif verbosity == 0:
-                warnings.warn(msg)
-            else:
-                self.log(msg)
+        self._check_success(result, raises)
         
         # compute posterior covariance of the hyperparameters
-        cov = self._posterior_covariance(method, covariance, result, fisherprec)    
+        cov = self._posterior_covariance(method, covariance, result, functions['fisher'])    
         
+        # join posterior mean and covariance matrix
         uresult = gvar.gvar(result.x, cov)
         
+        # set attributes
         self.p = gvar.gvar(hpunflat(uresult))
         self.pmean = gvar.mean(self.p)
         self.pcov = gvar.evalcov(self.p)
         self.minresult = result
         self.minargs = minargs
-        self.gpfactory = gpfactory
-        self.gpfactorykw = gpfactorykw
 
-        if verbosity >= 2:
+        # tabulate hyperparameter prior and posterior
+        if self._verbosity >= 2:
             self.log(_patch_gvar.tabulate_together(
                 self.prior, self.p,
                 headers=['param', 'prior', 'posterior'],
@@ -461,6 +333,7 @@ class empbayes_fit(Logger):
             # can use for the callback as well. Maybe import TextMatrix from
             # miscpy.
             # TODO print the transformed parameters
+        
         self.log('**** exit lsqfitgp.empbayes_fit ****')
 
         # TODO would it be meaningful to add correlation of the fit result with
@@ -527,6 +400,8 @@ class empbayes_fit(Logger):
         # Currently host_callback is experimental, maybe wait until it isn't. =>
         # I think it fails because it's asynchronous and there is only one
         # device. Maybe host_callback.call would work?
+
+        # TODO dictionary argument jitkw
 
     class _CountCalls:
         """ wrap a callable to count calls """
@@ -754,6 +629,176 @@ class empbayes_fit(Logger):
             cachedargs = (data,)
         
         return data, cachedargs
+
+    def _prepare_functions(self, *, gpfactory, gpfactorykw, data, cachedargs,
+        hpunflat, mlkw, jit, forward):
+
+        def make(p, **kw):
+            """ create GP object and extract arguments for conditioning """
+            hp = hpunflat(p)
+            gp = gpfactory(hp, **kw)
+            assert gp.__class__.__name__ == 'GP'
+                # avoid isinstance because it breaks under reloading
+            
+            if cachedargs:
+                args = cachedargs
+            else:
+                args = data(hp, **kw)
+                if not isinstance(args, tuple):
+                    args = (args,)
+
+            return gp, args
+        
+        def dojit(f):
+            return jax.jit(f) if jit else f
+        if jit:
+            self.log('compile functions with jax jit', 2)
+        
+        timer = self._Timer()
+        firstcall = [None]
+        
+        @dojit
+        def fun(p, **kw):
+            """ minus log posterior on the hyperparameters """
+            p = timer.start(p)
+            gp, args = make(p, **kw)
+            decomp, ymean = gp._prior_decomp(*args, covtransf=timer.partial, **mlkw)
+            decomp = timer.partial(decomp)
+
+            if firstcall:
+                # works under jit since the first call is tracing
+                firstcall.pop()
+                xdtype = gp._get_x_dtype()
+                nd = '?' if xdtype is None else _array._nd(xdtype)
+                self.log(f'{ymean.size} datapoints, {nd} covariates')
+                    
+            return timer.partial(1/2 * (
+                decomp.logdet()
+                + decomp.n * jnp.log(2 * jnp.pi)
+                + decomp.quad(ymean)
+                + p @ p
+            ))
+
+        if forward:
+            jactr = jax.jacfwd
+            modename = 'forward'
+        else:
+            jactr = jax.jacrev
+            modename = 'reverse'
+        self.log(f'{modename}-mode autodiff (if used)', 2)
+        
+        fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jactr))
+        jac = dojit(jactr(fun))
+
+        if not callable(data):
+            
+            @jax.jacfwd
+            @jax.jacfwd
+            # can't change inner jac to rev due to jax issue #10994
+            # (stop_hessian)
+            def fisher(p, **kw):
+                p = timer.start(p)
+                gp, args = make(p, **kw)
+                decomp, _ = gp._prior_decomp(*args, stop_hessian=True, covtransf=timer.partial, **mlkw)
+                return -1/2 * decomp.logdet()
+            
+            @dojit
+            def fisherprec(p, **kw):
+                f = fisher(p, **kw)
+                return timer.partial(f + jnp.eye(len(f), dtype=f.dtype))
+        
+        else:
+            
+            # Must take into account that the data can depend on the        
+            # hyperparameters. The statistical meaning is that the prior mean
+            # depends on the hyperparameters.
+            
+            @functools.partial(jax.jacfwd, has_aux=True)
+            # can't change jac to rev due to jax issue #10994 (stop_hessian)
+            def grad_logdet_and_aux(p, **kw):
+                p = timer.start(p)
+                gp, args = make(p, **kw)
+                decomp, ymean = gp._prior_decomp(*args, stop_hessian=True, covtransf=timer.partial, **mlkw)
+                return -1/2 * decomp.logdet(), (decomp, ymean)
+            
+            @functools.partial(jax.jacfwd, has_aux=True)
+            def fisher_and_jac_and_aux(p, **kw):
+                gld, (decomp, ymean) = grad_logdet_and_aux(p, **kw)
+                return (gld, ymean), decomp
+            
+            @dojit
+            def fisherprec(p, **kw):
+                (F, J), decomp = fisher_and_jac_and_aux(p, **kw)
+                result = F + jnp.eye(len(F), dtype=F.dtype) + decomp.quad(J)
+                return timer.partial(result)
+
+        # define wrapper to collect call stats and pass user args
+        def wrap(func):
+            @functools.wraps(func)
+            def wrapped(p):
+                return func(p, **gpfactorykw)
+            return self._CountCalls(wrapped)
+        
+        # wrap functions and put them in a dictionary
+        functions = {
+            'fun': wrap(fun),
+            'jac': wrap(jac),
+            'fun&jac': wrap(fun_and_jac),
+            'fisher': wrap(fisherprec),
+        }
+
+        # set attributes
+        self.gpfactory = gpfactory
+        self.gpfactorykw = gpfactorykw
+
+        return timer, functions
+
+    def _prepare_minargs(self, method, functions, hpinitial):
+        if self.SEPARATE_JAC:
+            minargs = dict(fun=functions['fun'], jac=functions['jac'], x0=hpinitial)
+        else:
+            minargs = dict(fun=functions['fun&jac'], jac=True, x0=hpinitial)
+        if method == 'nograd':
+            minargs.update(fun=functions['fun'], jac=None, method='nelder-mead')
+        elif method == 'gradient':
+            minargs.update(method='bfgs')
+        elif method == 'fisher':
+            minargs.update(hess=functions['fisher'], method='dogleg')
+            # dogleg requires positive definiteness
+            # TODO use trust-constr because it has more options?
+        else:
+            raise KeyError(method)
+        self.log(f'method {method!r}', 2)
+        return minargs
+
+    def _log_totals(self, total, timer, callback, jit, functions):
+        times = callback.fmttimes({
+            'gp&cov': timer.totals[0],
+            'decomp': timer.totals[1],
+            'likelihood': timer.totals[2],
+            'other': total - sum(timer.totals.values()),
+        })
+        calls = self._CountCalls.fmtcalls('total', functions)
+        self.log('', 4)
+        self.log(f'total time: {callback.fmttime(total)}')
+        if jit:
+            overhead = callback.estimate_firstcall_overhead()
+            if overhead is not None:
+                self.log(f'estimated compilation time: {callback.fmttime(overhead)}', 2)
+        self.log(f'partials: {times}', 2)
+        self.log(f'calls: {calls}')
+
+    def _check_success(self, result, raises):
+        if result.success:
+            self.log(f'minimization succeeded: {result.message}')
+        else:
+            msg = f'minimization failed: {result.message}'
+            if raises:
+                raise RuntimeError(msg)
+            elif self._verbosity == 0:
+                warnings.warn(msg)
+            else:
+                self.log(msg)
 
     def _posterior_covariance(self, method, covariance, minimizer_result, fisher_func):
         

@@ -179,7 +179,6 @@ class bart:
         self.info = info
 
         # set private attributes
-        self._gpkw = gpkw
         self._splits = splits
         self._ystd = y_train.std()
 
@@ -215,7 +214,7 @@ class bart:
             hp = _fastraniter.sample(self.fit.pmean, self.fit.pcov, rng=rng)
 
         # create GP object
-        gp = self.fit.gpfactory(hp, **self._gpkw)
+        gp = self.fit.gpfactory(hp, **self.fit.gpfactorykw)
 
         # add test points
         if x_test is not None:
@@ -223,7 +222,7 @@ class bart:
             # convert covariates to indices
             x_test = self._to_structured(x_test)
             i_test = self._toindices(x_test, self._splits)
-            assert i_test.dtype == self._gpkw['i_train'].dtype
+            assert i_test.dtype == self.fit.gpfactorykw['i_train'].dtype
 
             # check weights
             if weights is not None:
