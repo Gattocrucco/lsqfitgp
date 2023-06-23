@@ -21,16 +21,17 @@
 BART with the simplified subpackage.
 """
 
+import pathlib
+
 import lsqfitgp as lgp
 import numpy as np
-from numpy.lib import recfunctions
 import polars as pl
 import gvar
-from jax import numpy as jnp
+from matplotlib import pyplot as plt
 
 # Load and preprocess data
 
-datafile = 'examples/bart-data.txt'
+datafile = pathlib.Path('examples') / 'bart-data.txt'
 
 columns = """
     Sex
@@ -45,26 +46,41 @@ columns = """
 """
 columns = [x for x in [x.strip() for x in columns.split('\n')] if x]
 
-df = pl.read_csv(datafile, new_columns=columns, has_header=False, dtypes={
-    'Sex': pl.Categorical,
-    'Rings': pl.Float64,
-}).to_dummies(columns='Sex')
+df = (pl
+    .read_csv(datafile, new_columns=columns, has_header=False)
+    .to_dummies(columns='Sex')
+)
 
-df = df[:500] # drop most data to keep the script fast
+n = 500
+df = df[:2 * n] # drop most data to keep the script fast
 
 X = df.drop('Rings')
-y = df['Rings']
+y = df['Rings'].cast(pl.Float64)
+
+X_data = X[:n]
+y_data = y[:n]
+X_test = X[n:]
+y_test = y[n:]
 
 # Fit BART
 
-bart = lgp.bayestree.bart(X, y)
-fit = bart.fit
-
-# Print hyperparameters report
-
+bart = lgp.bayestree.bart(X_data, y_data)
 print()
-print(f'alpha = {bart.alpha} (0 -> intercept only, 1 -> any)')
-print(f'beta = {bart.beta} (0 -> any, ∞ -> no interactions)')
-print(f'latent sdev = {bart.meansdev} (large -> conservative extrapolation)')
-print(f'error sdev = {bart.sigma}')
-print(f'data total sdev = {y.std():.1f}')
+print(bart)
+
+# Compute predictions
+
+gp = bart.gp(x_test=X_test)
+yhat_mean, yhat_cov = gp.predfromdata(bart.info, 'test', raw=True)
+yhat_mean += bart.mu
+
+# Compare predictions with truth
+
+fig, ax = plt.subplots(num='barteasy', clear=True)
+ax.errorbar(yhat_mean, y_test, xerr=np.sqrt(np.diag(yhat_cov)), fmt='.')
+ax.plot(y_test, y_test, 'k-')
+ax.set(
+    ylabel='truth',
+    xlabel='prediction',
+)
+fig.show()

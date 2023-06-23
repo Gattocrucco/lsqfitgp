@@ -16,3 +16,4 @@ pandas
 polars
 pyarrow
 build
+statsmodels

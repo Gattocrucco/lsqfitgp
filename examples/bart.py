@@ -18,8 +18,10 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Example usage of the BART kernel to replace the standard MCMC BART algorithm.
+Example usage of the BART kernel to replace the standard BART MCMC algorithm.
 """
+
+import pathlib
 
 import lsqfitgp as lgp
 import numpy as np
@@ -30,7 +32,7 @@ from jax import numpy as jnp
 
 # Load and preprocess data
 
-datafile = 'examples/bart-data.txt'
+datafile = pathlib.Path('examples') / 'bart-data.txt'
 
 columns = """
     Sex

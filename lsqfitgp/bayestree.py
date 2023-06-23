@@ -274,7 +274,7 @@ class bart:
         return _array.unstructured_to_structured(ix, names=x.dtype.names)
 
     def __repr__(self):
-        weights = self.fit.gpfactorykw['weights']
+        weights = numpy.array(self.fit.gpfactorykw['weights'])
         avgsigma = numpy.sqrt(numpy.mean(self.sigma ** 2 / weights))
         return f"""BART fit:
 alpha = {self.alpha} (0 -> intercept only, 1 -> any)

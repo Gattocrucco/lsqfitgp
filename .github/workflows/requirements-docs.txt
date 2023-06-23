@@ -9,3 +9,5 @@ sphinx
 numpydoc
 coverage
 polars
+pandas
+statsmodels
