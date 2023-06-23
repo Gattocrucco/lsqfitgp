@@ -65,7 +65,7 @@ class bart:
             The prior mean.
         sigma : gvar
             The error term standard deviation. If there are weights, the sdev
-            for each unit is obtained dividing ``sigma`` by the weight.
+            for each unit is obtained dividing ``sigma`` by sqrt(weight).
         alpha : gvar
             The numerator of the tree spawn probability (named ``base`` in
             BayesTree and BART).
@@ -274,9 +274,12 @@ class bart:
         return _array.unstructured_to_structured(ix, names=x.dtype.names)
 
     def __repr__(self):
-        return """BART fit:
+        weights = self.fit.gpfactorykw['weights']
+        avgsigma = numpy.sqrt(numpy.mean(self.sigma ** 2 / weights))
+        return f"""BART fit:
 alpha = {self.alpha} (0 -> intercept only, 1 -> any)
 beta = {self.beta} (0 -> any, ∞ -> no interactions)
 latent sdev = {self.meansdev} (large -> conservative extrapolation)
 data total sdev = {self._ystd:.3g}
-error sdev (weight scale) = {self.sigma}"""
+error sdev (avg weighted) = {avgsigma}
+error sdev (unweighted) = {self.sigma}"""
