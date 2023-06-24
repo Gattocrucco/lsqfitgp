@@ -1,7 +1,5 @@
 numpy==1.20
 scipy==1.5
-gvar==11.11
-lsqfit==13
 jax==0.4.6
 jaxlib==0.4.6
 pytest
