@@ -21,7 +21,7 @@ import itertools
 import warnings
 
 import gvar
-import numpy as np
+import numpy
 
 from . import _linalg
 
@@ -53,8 +53,9 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
         Used to correct the eigenvalues of the covariance matrix to handle
         non-positivity due to roundoff, relative to the largest eigenvalue.
         Default is number of variables times floating point epsilon.
-    rng : numpy.random.Generator, optional
-        A random number generator.
+    rng : seed or random generator, optional
+        ``rng`` is passed through `numpy.random.default_rng` to produce a random
+        number generator.
     
     Yields
     ------
@@ -76,7 +77,7 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
         if not hasattr(mean, 'buf'):
             mean = gvar.BufferDict(mean)
         flatmean = mean.buf
-        squarecov = np.empty((len(flatmean), len(flatmean)))
+        squarecov = numpy.empty((len(flatmean), len(flatmean)))
         for k1 in mean:
             slic1 = mean.slice(k1)
             for k2 in mean:
@@ -84,21 +85,20 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
                 sqshape = (slic1.stop - slic1.start, slic2.stop - slic2.start)
                 squarecov[slic1, slic2] = cov[k1, k2].reshape(sqshape)
     else: # an array or scalar
-        mean = np.array(mean, copy=False)
-        cov = np.array(cov, copy=False)
+        mean = numpy.array(mean, copy=False)
+        cov = numpy.array(cov, copy=False)
         flatmean = mean.reshape(-1)
         squarecov = cov.reshape(len(flatmean), len(flatmean))
 
     # decompose the covariance matrix
     try:
         covdec = _linalg.Chol(squarecov, epsrel='auto' if eps is None else eps)
-    except np.linalg.LinAlgError:
+    except numpy.linalg.LinAlgError:
         warnings.warn('covariance matrix not positive definite with eps={}'.format(eps))
         covdec = _linalg.EigCutFullRank(squarecov, epsrel=0)
 
     # get random number generator
-    if rng is None:
-        rng = np.random.default_rng()
+    rng = numpy.random.default_rng(rng)
     
     # take samples
     iterable = itertools.count() if n is None else range(n)

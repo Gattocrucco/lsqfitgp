@@ -4454,3 +4454,19 @@ This release mostly features further improvements to the BART kernel. According 
 
 The source distribution is including docs/, examples/, playground/, pyenv/. I
 have to remove them somehow.
+
+2023-06-23
+==========
+
+CI failures:
+ - tests/test_raniter.py::test_raniter_packing (I think it's about missing seed)
+ - old tests: gvar and lsqfit do not install, probably fixed by pinning pip
+
+2023-06-24
+==========
+
+pip is already pinned. What? Maybe they backported something? I'll try locally.
+
+Locally, gvar 11.10.1 -> 11.11 works, lsqfit <12 -> 13 works too. But locally
+it's using setup.py install, while online it's trying to build a wheel
+apparently => use the option --no-use-pep517.

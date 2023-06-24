@@ -66,18 +66,18 @@ def test_raniter_randomness():
     assert stats.chi2(n).cdf(q) > 1e-5
 
 def test_raniter_packing():
-    mean, cov = make_mean_cov(3 + 4)
-    dmean = {'a': mean[:3], 'b': mean[3:]}
+    n = 3
+    mean, cov = make_mean_cov(n + 4)
+    dmean = {'a': mean[:n], 'b': mean[n:]}
     dcov = {
-        ('a', 'a'): cov[:3, :3],
-        ('a', 'b'): cov[:3, 3:],
-        ('b', 'a'): cov[3:, :3],
-        ('b', 'b'): cov[3:, 3:]
+        ('a', 'a'): cov[:n, :n],
+        ('a', 'b'): cov[:n, n:],
+        ('b', 'a'): cov[n:, :n],
+        ('b', 'b'): cov[n:, n:]
     }
-    np.random.seed(0)
-    s1 = next(lgp.raniter(mean, cov))
-    np.random.seed(0)
-    s2 = next(lgp.raniter(dmean, dcov))
+    seed = 202306241059
+    s1 = next(lgp.raniter(mean, cov, rng=seed))
+    s2 = next(lgp.raniter(dmean, dcov, rng=seed))
     assert np.array_equal(s1, s2.buf)
 
 def test_raniter_warning():
