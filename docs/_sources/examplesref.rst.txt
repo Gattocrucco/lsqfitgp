@@ -12,7 +12,7 @@ repository. The links point to the file preview on github.
 
 Short index
 -----------
-a_ b_ bart_ barteasy_ c_ d_ dft_ doubleint_ e_ even_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ pdf9_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
+a_ acic_ b_ bart_ barteasy_ c_ d_ dft_ doubleint_ e_ even_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ p_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ pdf9_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
 
 Long index
 ----------
@@ -26,6 +26,19 @@ Long index
     
     .. image:: ../examples/plot/a.png
 
+.. _acic:
+
+  * `acic.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/acic.py>`_: Analyze a dataset from the ACIC 2022 Data Challenge using the BART kernel.
+
+    Website: https://acic2022.mathematica.org
+
+    Article: Dan R.C. Thal and Mariel M. Finucane, "Causal Methods Madness: Lessons
+    Learned from the 2022 ACIC Competition to Estimate Health Policy Impacts,"
+    Observational Studies, Volume 9, Issue 3, 2023, pp. 3-27,
+    https://doi.org/10.1353/obs.2023.0023
+    
+    .. image:: ../examples/plot/acic.png
+
 .. _b:
 
   * `b.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/b.py>`_: EXAMPLE B.
@@ -38,11 +51,13 @@ Long index
 
 .. _bart:
 
-  * `bart.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/bart.py>`_: Example usage of the BART kernel to replace the standard MCMC BART algorithm.
+  * `bart.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/bart.py>`_: Example usage of the BART kernel to replace the standard BART MCMC algorithm.
 
 .. _barteasy:
 
   * `barteasy.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/barteasy.py>`_: BART with the simplified subpackage.
+    
+    .. image:: ../examples/plot/barteasy.png
 
 .. _c:
 

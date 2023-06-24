@@ -33,8 +33,8 @@ There are three main computational steps when doing a Gaussian process fit with
 :class:`GP`:
 
   * Compute the prior covariance matrix using the kernel. This is :math:`O((n +
-    m)^2)` where `n` is the number of datapoints and `m` the number of
-    additional points where the posterior is computed.
+    m)^2)` where :math:`n` is the number of datapoints and :math:`m` the number
+    of additional points where the posterior is computed.
     
   * Decompose the prior covariance matrix. This is :math:`O(n^3)`.
   
