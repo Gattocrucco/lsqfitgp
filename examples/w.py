@@ -1,6 +1,6 @@
 # lsqfitgp/examples/w.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -59,7 +59,7 @@ addcomps('pred', time_pred)
 
 print('generate data...')
 prior = gp.prior(['data', 'datashort', 'datalong'])
-data = next(gvar.raniter(prior))
+data = gvar.sample(prior)
 
 print('prediction...')
 pred = gp.predfromdata({'data': data['data']}, ['pred', 'predshort', 'predlong'])
@@ -70,7 +70,7 @@ sdev = gvar.sdev(pred)
 samples = list(gvar.raniter(pred, 1))
 
 print('figure...')
-fig, axs = plt.subplots(3, 1, num='w', clear=True, figsize=[6, 7])
+fig, axs = plt.subplots(3, 1, num='w', clear=True, figsize=[6, 7], layout='constrained')
 
 for ax, comp in zip(axs, ['', 'short', 'long']):
     key = 'pred' + comp
@@ -84,5 +84,8 @@ for ax, comp in zip(axs, ['', 'short', 'long']):
     
     ax.plot(time, data['data' + comp], '.k')
 
-fig.tight_layout()
+axs[0].set_ylabel('A + B')
+axs[1].set_ylabel('A')
+axs[2].set_ylabel('B')
+
 fig.show()
