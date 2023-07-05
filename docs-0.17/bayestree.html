@@ -155,7 +155,8 @@ defaults.</p>
 <p class="rubric">Notes</p>
 <p>The tree splitting grid is set using quantiles of the observed
 covariates. This corresponds to settings <code class="docutils literal notranslate"><span class="pre">usequants=True</span></code>,
-<code class="docutils literal notranslate"><span class="pre">numcut=inf</span></code> in the R packages BayesTree and BART.</p>
+<code class="docutils literal notranslate"><span class="pre">numcut=inf</span></code> in the R packages BayesTree and BART. Use the
+<code class="docutils literal notranslate"><span class="pre">kernelkw</span></code> parameter to customize the grid.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Attributes<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -174,9 +175,6 @@ BayesTree and BART).</p>
 </dd>
 <dt><strong>fit</strong><span class="classifier">empbayes_fit</span></dt><dd><p>The hyperparameters fit object.</p>
 </dd>
-<dt><strong>info</strong><span class="classifier">dict</span></dt><dd><p>The dictionary to be passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.predfromdata</span></code> to represent
-<code class="docutils literal notranslate"><span class="pre">y_train</span></code>.</p>
-</dd>
 </dl>
 </dd>
 </dl>
@@ -185,6 +183,12 @@ BayesTree and BART).</p>
 <tbody>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code>(*[, hp, x_test, weights, rng])</p></td>
 <td><p>Create a Gaussian process with the fitted hyperparameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code>(*[, hp, rng])</p></td>
+<td><p>Get the data to be passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.pred</span></code> on a GP object returned by <code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code>(*[, hp, error, format, x_test, ...])</p></td>
+<td><p>Predict the outcome at given locations.</p></td>
 </tr>
 </tbody>
 </table>

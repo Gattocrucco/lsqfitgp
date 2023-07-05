@@ -147,7 +147,7 @@ the argument(s) for <a class="reference internal" href="gp.html#lsqfitgp.GP.marg
 <dt><strong>raises</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), raise an error when the minimization fails.
 Otherwise, use the last point of the minimization as result.</p>
 </dd>
-<dt><strong>minkw</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.10.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>, overwrites
+<dt><strong>minkw</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>, overwrites
 values specified by <a class="reference internal" href="#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a>.</p>
 </dd>
 <dt><strong>gpfactorykw</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments passed to <code class="docutils literal notranslate"><span class="pre">gpfactory</span></code>, and also to <code class="docutils literal notranslate"><span class="pre">data</span></code> if
@@ -242,13 +242,15 @@ parameters were kept fixed to the values in <code class="docutils literal notran
 </dd>
 <dt><strong>pcov</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>Covariance matrix of <code class="docutils literal notranslate"><span class="pre">p</span></code>.</p>
 </dd>
-<dt><strong>minresult</strong><span class="classifier">scipy.optimize.OptimizeResult</span></dt><dd><p>The result object returned by <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.10.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>.</p>
+<dt><strong>minresult</strong><span class="classifier">scipy.optimize.OptimizeResult</span></dt><dd><p>The result object returned by <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>.</p>
 </dd>
-<dt><strong>minargs</strong><span class="classifier">dict</span></dt><dd><p>The arguments passed to <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.10.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>.</p>
+<dt><strong>minargs</strong><span class="classifier">dict</span></dt><dd><p>The arguments passed to <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>.</p>
 </dd>
 <dt><strong>gpfactory</strong><span class="classifier">callable</span></dt><dd><p>The <code class="docutils literal notranslate"><span class="pre">gpfactory</span></code> argument.</p>
 </dd>
 <dt><strong>gpfactorykw</strong><span class="classifier">dict</span></dt><dd><p>The <code class="docutils literal notranslate"><span class="pre">gpfactorykw</span></code> argument.</p>
+</dd>
+<dt><strong>data</strong><span class="classifier">dict, tuple or callable</span></dt><dd><p>The <code class="docutils literal notranslate"><span class="pre">data</span></code> argument.</p>
 </dd>
 </dl>
 </dd>
