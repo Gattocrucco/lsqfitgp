@@ -76,20 +76,23 @@ class bart:
             The prior standard deviation of the latent regression function.
         fit : empbayes_fit
             The hyperparameters fit object.
-        info : dict
-            The dictionary to be passed to `GP.predfromdata` to represent
-            ``y_train``.
 
         Methods
         -------
         gp :
             Create a GP object.
+        data :
+            Creates the dictionary to be passed to `GP.pred` to represent
+            ``y_train``.
+        pred :
+            Evaluate the regression function at given locations.
 
         Notes
         -----
         The tree splitting grid is set using quantiles of the observed
         covariates. This corresponds to settings ``usequants=True``,
-        ``numcut=inf`` in the R packages BayesTree and BART.
+        ``numcut=inf`` in the R packages BayesTree and BART. Use the
+        ``kernelkw`` parameter to customize the grid.
 
         See also
         --------
@@ -133,6 +136,8 @@ class bart:
                 # denominator of prior sdev
             'log(sigma2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
                 # i.i.d. error variance, scaled with weights
+            'mu': gvar.gvar(mu_mu, k_sigma_mu),
+                # mean of the GP
         }
 
         # GP factory
@@ -152,8 +157,11 @@ class bart:
             
             return gp
 
+        # data factory
+        def info(hp, **_):
+            return {'train': y_train - hp['mu']}
+
         # fit hyperparameters
-        info = {'train': y_train - mu_mu}
         gpkw = dict(i_train=i_train, weights=weights, splits=splits)
         options = dict(
             verbosity=3,
@@ -172,15 +180,24 @@ class bart:
         self.alpha = fit.p['alpha']
         self.beta = fit.p['beta']
         self.meansdev = k_sigma_mu / fit.p['k']
+        self.mu = fit.p['mu']
 
         # set public attributes
         self.fit = fit
-        self.mu = mu_mu.item()
-        self.info = info
 
         # set private attributes
         self._splits = splits
         self._ystd = y_train.std()
+
+    def _gethp(self, hp, rng):
+        if not isinstance(hp, str):
+            return hp
+        elif hp == 'map':
+            return self.fit.pmean
+        elif hp == 'sample':
+            return _fastraniter.sample(self.fit.pmean, self.fit.pcov, rng=rng)
+        else:
+            raise KeyError(hp)
 
     def gp(self, *, hp='map', x_test=None, weights=None, rng=None):
         """
@@ -204,14 +221,12 @@ class bart:
         gp : GP
             A centered Gaussian process object. To add the mean, use the ``mu``
             attribute of the `bart` object. The keys of the GP are '*mean',
-            '*noise', '*' where the "*" stands either for 'train' or 'test'.
+            '*noise', and '*', where the "*" stands either for 'train' or
+            'test'.
         """
 
         # determine hyperparameters
-        if hp == 'map':
-            hp = self.fit.pmean
-        elif hp == 'sample':
-            hp = _fastraniter.sample(self.fit.pmean, self.fit.pcov, rng=rng)
+        hp = self._gethp(hp, rng)
 
         # create GP object
         gp = self.fit.gpfactory(hp, **self.fit.gpfactorykw)
@@ -237,6 +252,88 @@ class bart:
             gp.addtransf({'testmean': 1, 'testnoise': 1}, 'test')
 
         return gp
+
+    def data(self, *, hp='map', rng=None):
+        """
+        Get the data to be passed to `GP.pred` on a GP object returned by `gp`.
+
+        Parameters
+        ----------
+        hp : str or dict
+            The hyperparameters to use. If ``'map'``, use the marginal maximum a
+            posteriori. If ``'sample'``, sample hyperparameters from the
+            posterior. If a dict, use the given hyperparameters.
+        rng : numpy.random.Generator, optional
+            Random number generator, used if ``hp == 'sample'``.
+
+        Return
+        ------
+        data : dict
+            A dictionary representing ``y_train`` in the format required by the
+            `GP.pred` method.
+        """
+
+        hp = self._gethp(hp, rng)
+        return self.fit.data(hp, **self.fit.gpfactorykw)
+
+    def pred(self, *, hp='map', error=False, format='matrices', x_test=None,
+        weights=None, rng=None):
+        """
+        Predict the outcome at given locations.
+
+        Parameters
+        ----------
+        hp : str or dict
+            The hyperparameters to use. If ``'map'``, use the marginal maximum a
+            posteriori. If ``'sample'``, sample hyperparameters from the
+            posterior. If a dict, use the given hyperparameters.
+        error : bool
+            If ``False`` (default), make a prediction for the latent mean. If
+            ``True``, add the error term.     
+        format : {'matrices', 'gvar'}
+            If 'matrices' (default), return the mean and covariance matrix
+            separately. If 'gvar', return an array of `GVar`s.
+        x_test : array or dataframe, optional
+            Covariates for the locations where the prediction is computed. If
+            not specified, predict at the data covariates.
+        weights : array, optional
+            Weights for the error variance on the test points.
+        rng : numpy.random.Generator, optional
+            Random number generator, used if ``hp == 'sample'``.
+
+        Return
+        ------
+        If ``format`` is 'matrices' (default):
+
+        mean, cov : arrays
+            The mean and covariance matrix of the Normal posterior distribution
+            over the regression function at the specified locations.
+
+        If ``format`` is 'gvar':
+
+        out : array of `GVar`
+            The same distribution represented as an array of `GVar` objects.
+        """
+        
+        hp = self._gethp(hp, rng)
+        gp = self.gp(hp=hp, x_test=x_test, weights=weights)
+        data = self.data(hp=hp)
+
+        if x_test is None:
+            label = 'train'
+        else:
+            label = 'test'
+        if not error:
+            label += 'mean'
+
+        if format == 'gvar':
+            out = gp.predfromdata(data, label, keepcorr=False)
+            return out + hp['mu']
+        elif format == 'matrices':
+            outmean, outcov = gp.predfromdata(data, label, raw=True)
+            return outmean + hp['mu'], outcov
+        else:
+            raise KeyError(format)
 
     @classmethod
     def _to_structured(cls, x):
@@ -279,6 +376,7 @@ class bart:
         return f"""BART fit:
 alpha = {self.alpha} (0 -> intercept only, 1 -> any)
 beta = {self.beta} (0 -> any, ∞ -> no interactions)
+mean = {self.mu}
 latent sdev = {self.meansdev} (large -> conservative extrapolation)
 data total sdev = {self._ystd:.3g}
 error sdev (avg weighted) = {avgsigma}

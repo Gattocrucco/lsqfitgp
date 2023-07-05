@@ -26,7 +26,7 @@ name = "lsqfitgp"
 authors = [
   { name="Giacomo Petrillo", email="info@giacomopetrillo.com" },
 ]
-description = "Gaussian processes in nonlinear least-squares fits"
+description = "A general purpose Gaussian process regression module"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [

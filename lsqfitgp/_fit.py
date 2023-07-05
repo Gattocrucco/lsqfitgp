@@ -254,6 +254,8 @@ class empbayes_fit(Logger):
             The ``gpfactory`` argument.
         gpfactorykw : dict
             The ``gpfactorykw`` argument.
+        data : dict, tuple or callable
+            The ``data`` argument.
 
         Raises
         ------
@@ -608,6 +610,7 @@ class empbayes_fit(Logger):
     
     def _parse_data(self, data):
         
+        self.data = data
         if isinstance(data, tuple) and len(data) == 1:
             data, = data
 
@@ -639,6 +642,7 @@ class empbayes_fit(Logger):
             gp = gpfactory(hp, **kw)
             assert gp.__class__.__name__ == 'GP'
                 # avoid isinstance because it breaks under reloading
+                # TODO maybe replace with custom isinstance?
             
             if cachedargs:
                 args = cachedargs
@@ -712,6 +716,9 @@ class empbayes_fit(Logger):
             # Must take into account that the data can depend on the        
             # hyperparameters. The statistical meaning is that the prior mean
             # depends on the hyperparameters.
+
+            # TODO unittest that this works properly also in the case that the
+            # data covariance matrix depends on the hypers.
             
             @functools.partial(jax.jacfwd, has_aux=True)
             # can't change jac to rev due to jax issue #10994 (stop_hessian)

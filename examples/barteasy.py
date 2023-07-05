@@ -44,15 +44,14 @@ columns = """
     Shell weight
     Rings
 """
-columns = [x for x in [x.strip() for x in columns.split('\n')] if x]
+columns = list(filter(None, map(lambda x: x.strip(), columns.split('\n'))))
 
+n = 500
 df = (pl
     .read_csv(datafile, new_columns=columns, has_header=False)
     .to_dummies(columns='Sex')
+    .sample(2 * n, seed=20230605) # drop most data to keep the script fast
 )
-
-n = 500
-df = df[:2 * n] # drop most data to keep the script fast
 
 X = df.drop('Rings')
 y = df['Rings'].cast(pl.Float64)
@@ -70,9 +69,7 @@ print(bart)
 
 # Compute predictions
 
-gp = bart.gp(x_test=X_test)
-yhat_mean, yhat_cov = gp.predfromdata(bart.info, 'test', raw=True)
-yhat_mean += bart.mu
+yhat_mean, yhat_cov = bart.pred(x_test=X_test, error=True)
 
 # Compare predictions with truth
 

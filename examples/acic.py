@@ -33,7 +33,12 @@ df_py = pl.read_csv(datapath / 'track2_20220404' / 'practice_year' / f'acic_prac
 df = df_p.join(df_py, on='id.practice')
 
 # drop data to keep the script fast
-df = df.filter(pl.col('id.practice').is_in(pl.col('id.practice').unique().sample(250, seed=20230623)))
+df = (df
+    .filter((pl
+        .col('id.practice')
+        .is_in(pl.col('id.practice').unique().sample(250, seed=20230623))
+    ))
+)
 
 # compute effect as if Z was randomized, i.e., without adjustment
 print('least squares fit...')
@@ -87,9 +92,7 @@ print(fit_treatment)
 
 # compute propensity score using the probit integral:
 # P(z) = int dx Phi(x) N(x; mu, sigma) = Phi(mu / sqrt(1 + sigma^2))
-gp = fit_treatment.gp(x_test=X, weights=npatients_obs)
-mu, Sigma = gp.predfromdata(fit_treatment.info, 'test', raw=True)
-mu += fit_treatment.mu
+mu, Sigma = fit_treatment.pred(x_test=X, weights=npatients_obs, error=True)
 sigma2 = np.diag(Sigma)
 ps = stats.norm.cdf(mu / np.sqrt(1 + sigma2))
 
@@ -106,8 +109,7 @@ print(fit_outcome_ps)
 def compute_satt(fit, Xmis):
 
     # create GP at MAP hyperparameters and get imputed outcomes for the treated
-    gp = fit.gp(x_test=Xmis, weights=npatients_mis)
-    ymis = fit.mu + gp.predfromdata(fit.info, 'test', keepcorr=False)
+    ymis = fit.pred(x_test=Xmis, weights=npatients_mis, error=True, format='gvar')
 
     # compute effects on the treated
     yobs = y[z]
