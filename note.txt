@@ -4470,3 +4470,36 @@ pip is already pinned. What? Maybe they backported something? I'll try locally.
 Locally, gvar 11.10.1 -> 11.11 works, lsqfit <12 -> 13 works too. But locally
 it's using setup.py install, while online it's trying to build a wheel
 apparently => use the option --no-use-pep517.
+
+2023-07-05
+==========
+
+If I cycle over all datasets in playground/acic2022/track2.py, then I'll fill
+the RAM with the gvar global covariance matrix. switch_gvar keeps a full
+history, I have to clear gvar._GVAR_LIST. (Maybe open an issue, a minimal
+interface would be switch_gvar(keep_history: bool). => DONE)
+
+=> Answer by Lepage:
+1) use switch_gvar and restore_gvar in pairs
+2) gvar.gvar = gvar.gvar_factory()
+
+I prefer 1, looks less hacky, can be packaged in a context manager.
+
+2023-07-07
+==========
+
+Possible next things to do on acic:
+- regress together treatment and outcome
+- sample hyperparameters (DONE)
+- cycle over all datasets
+- check heterogeneous effects
+
+2023-07-10
+==========
+
+Sampling hyperparameters is very slow, 5.6s per prediction. I guess it's mostly
+compilation time, the batcher+kernel probably gets compiled thrice, one for each
+covariance matrix block.
+
+I should jit a cached prediction function in bayestree.bart. => Success! 6
+predictions/s.

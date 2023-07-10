@@ -104,7 +104,7 @@ def assert_equal_dict_shapes(a, b):
         assert k in a
 
 def test_raniter_shape_dict():
-    mean, cov = make_mean_cov_dict((2, 5), (13,))
+    mean, cov = make_mean_cov_dict((), (2, 5), (13,))
     sample = lgp.sample(mean, cov)
     assert_equal_dict_shapes(sample, mean)
 

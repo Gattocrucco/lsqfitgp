@@ -22,8 +22,9 @@
 BART
 ====
 
-This submodule contains a class to set up a Gaussian process regression with the
-`~lsqfitgp.BART` kernel. See the :ref:`bart <bart>` and :ref:`barteasy
-<barteasy>` examples.
+The `bayestree` submodule contains a class to set up a Gaussian process
+regression with the `~lsqfitgp.BART` kernel. See the :ref:`bart <bart>`,
+:ref:`barteasy <barteasy>` and :ref:`acic <acic>` examples.
 
 .. autoclass:: bart
+    :members:

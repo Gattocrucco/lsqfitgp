@@ -17,8 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+
 import numpy
 from jax import numpy as jnp
+import jax
 import gvar
 
 from . import copula
@@ -61,7 +64,7 @@ class bart:
         
         Attributes
         ----------
-        mu : scalar
+        mean : scalar
             The prior mean.
         sigma : gvar
             The error term standard deviation. If there are weights, the sdev
@@ -136,7 +139,7 @@ class bart:
                 # denominator of prior sdev
             'log(sigma2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
                 # i.i.d. error variance, scaled with weights
-            'mu': gvar.gvar(mu_mu, k_sigma_mu),
+            'mean': gvar.gvar(mu_mu, k_sigma_mu),
                 # mean of the GP
         }
 
@@ -159,7 +162,7 @@ class bart:
 
         # data factory
         def info(hp, **_):
-            return {'train': y_train - hp['mu']}
+            return {'train': y_train - hp['mean']}
 
         # fit hyperparameters
         gpkw = dict(i_train=i_train, weights=weights, splits=splits)
@@ -180,7 +183,7 @@ class bart:
         self.alpha = fit.p['alpha']
         self.beta = fit.p['beta']
         self.meansdev = k_sigma_mu / fit.p['k']
-        self.mu = fit.p['mu']
+        self.mean = fit.p['mean']
 
         # set public attributes
         self.fit = fit
@@ -219,17 +222,19 @@ class bart:
         Return
         ------
         gp : GP
-            A centered Gaussian process object. To add the mean, use the ``mu``
-            attribute of the `bart` object. The keys of the GP are '*mean',
-            '*noise', and '*', where the "*" stands either for 'train' or
-            'test'.
+            A centered Gaussian process object. To add the mean, use the
+            ``mean`` attribute of the `bart` object. The keys of the GP are
+            '*mean', '*noise', and '*', where the "*" stands either for 'train'
+            or 'test'.
         """
 
-        # determine hyperparameters
         hp = self._gethp(hp, rng)
+        return self._gp(hp, x_test, weights, self.fit.gpfactorykw)
+
+    def _gp(self, hp, x_test, weights, gpfactorykw):
 
         # create GP object
-        gp = self.fit.gpfactory(hp, **self.fit.gpfactorykw)
+        gp = self.fit.gpfactory(hp, **gpfactorykw)
 
         # add test points
         if x_test is not None:
@@ -237,7 +242,7 @@ class bart:
             # convert covariates to indices
             x_test = self._to_structured(x_test)
             i_test = self._toindices(x_test, self._splits)
-            assert i_test.dtype == self.fit.gpfactorykw['i_train'].dtype
+            assert i_test.dtype == gpfactorykw['i_train'].dtype
 
             # check weights
             if weights is not None:
@@ -316,24 +321,34 @@ class bart:
         """
         
         hp = self._gethp(hp, rng)
-        gp = self.gp(hp=hp, x_test=x_test, weights=weights)
-        data = self.data(hp=hp)
-
-        if x_test is None:
-            label = 'train'
-        else:
-            label = 'test'
-        if not error:
-            label += 'mean'
+        if x_test is not None:
+            x_test = self._to_structured(x_test)
+        mean, cov = self._pred(hp, x_test, weights, self.fit.gpfactorykw, bool(error))
 
         if format == 'gvar':
-            out = gp.predfromdata(data, label, keepcorr=False)
-            return out + hp['mu']
+            return gvar.gvar(mean, cov, fast=True)
         elif format == 'matrices':
-            outmean, outcov = gp.predfromdata(data, label, raw=True)
-            return outmean + hp['mu'], outcov
+            return mean, cov
         else:
             raise KeyError(format)
+
+    @functools.cached_property
+    def _pred(self):
+        
+        @functools.partial(jax.jit, static_argnums=(4,))
+        def _pred(hp, x_test, weights, gpfactorykw, error):
+            gp = self._gp(hp, x_test, weights, gpfactorykw)
+            data = self.fit.data(hp, **gpfactorykw)
+            if x_test is None:
+                label = 'train'
+            else:
+                label = 'test'
+            if not error:
+                label += 'mean'
+            outmean, outcov = gp.predfromdata(data, label, raw=True)
+            return outmean + hp['mean'], outcov
+
+        return _pred
 
     @classmethod
     def _to_structured(cls, x):
@@ -376,7 +391,7 @@ class bart:
         return f"""BART fit:
 alpha = {self.alpha} (0 -> intercept only, 1 -> any)
 beta = {self.beta} (0 -> any, ∞ -> no interactions)
-mean = {self.mu}
+mean = {self.mean}
 latent sdev = {self.meansdev} (large -> conservative extrapolation)
 data total sdev = {self._ystd:.3g}
 error sdev (avg weighted) = {avgsigma}

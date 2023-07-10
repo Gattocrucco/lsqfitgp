@@ -8,6 +8,7 @@ import gvar
 from scipy import stats
 import statsmodels.formula.api as smf
 from matplotlib import pyplot as plt
+import tqdm
 
 """
 
@@ -25,6 +26,8 @@ https://doi.org/10.1353/obs.2023.0023
 # config
 dataset = 1
 datapath = pathlib.Path('examples') / 'acic'
+nsamples = 100
+bartkw = dict(fitkw=dict(verbosity=0))
 
 # load data
 print('load data...')
@@ -58,7 +61,8 @@ posttreatment = df.filter(pl.col('post') == 1)
 for year in [1, 2]:
     posttreatment = posttreatment.join(
         df.filter(pl.col('year') == year).select([
-            c for c in df.columns if c.startswith('V') or c in ['Y', 'id.practice']
+            c for c in df.columns
+            if c.startswith('V') or c in ['Y', 'id.practice']
         ]), on='id.practice', suffix=f'_year{year}',
     )
 
@@ -77,7 +81,7 @@ npatients_mis = posttreatment.filter(pl.col('Z') == 1)['n.patients'].to_numpy()
 
 # fit outcome using BART as GP
 print('\nfit outcome (w/o PS)...')
-fit_outcome = lgp.bayestree.bart(Xobs, y, weights=npatients_obs)
+fit_outcome = lgp.bayestree.bart(Xobs, y, weights=npatients_obs, **bartkw)
 print(fit_outcome)
 
 # fit treatment with linear probability modeling on the probit scale
@@ -87,7 +91,7 @@ z = Xobs['Z'].cast(pl.Boolean).to_numpy()
 p = 1 / len(z)
 z_prob = np.where(z, 1 - p, p)
 z_continuous = stats.norm.ppf(z_prob)
-fit_treatment = lgp.bayestree.bart(X, z_continuous, weights=npatients_obs)
+fit_treatment = lgp.bayestree.bart(X, z_continuous, weights=npatients_obs, **bartkw)
 print(fit_treatment)
 
 # compute propensity score using the probit integral:
@@ -103,44 +107,84 @@ Xmis_ps = (Xobs_ps
     .filter(pl.col('Z') == 1)
     .with_columns(Z=1 - pl.col('Z'))
 )
-fit_outcome_ps = lgp.bayestree.bart(Xobs_ps, y, weights=npatients_obs)
+fit_outcome_ps = lgp.bayestree.bart(Xobs_ps, y, weights=npatients_obs, **bartkw)
 print(fit_outcome_ps)
 
-def compute_satt(fit, Xmis):
+# define groups of units for conditional SATT
+strata = (df
+    .filter((pl.col('Z') == 1) & (pl.col('post') == 1))
+    .select([f'X{i}' for i in range(1, 6)] + ['year'])
+    .rename({'year': 'Yearly'})
+    .with_row_count('index')
+)
 
-    # create GP at MAP hyperparameters and get imputed outcomes for the treated
-    ymis = fit.pred(x_test=Xmis, weights=npatients_mis, error=True, format='gvar')
+class SwitchGVar:
+    """ Creating new primary gvars fills up memory permanently. This context
+    manager keeps the gvars created within its context in a separate pool that
+    is freed when all such gvars are deleted. They can not be mixed in
+    operations with other gvars created outside of the context. """
+
+    def __enter__(self):
+        gvar.switch_gvar()
+
+    def __exit__(self, *_):
+        gvar.restore_gvar()
+
+def compute_satt(fit, Xmis, *, rng=None):
+
+    # create GP at MAP/sampled hypers and get imputed outcomes for the treated
+    kw = dict(x_test=Xmis, weights=npatients_mis, error=True, format='gvar')
+    if rng is not None:
+        with SwitchGVar():
+            ymis = fit.pred(**kw, hp='sample', rng=rng)
+    else:
+        ymis = fit.pred(**kw)
 
     # compute effects on the treated
     yobs = y[z]
     n = npatients_obs[z]
     effect = yobs - ymis
-    strata = (df
-        .filter((pl.col('Z') == 1) & (pl.col('post') == 1))
-        .select([f'X{i}' for i in range(1, 6)] + ['year'])
-        .rename({'year': 'Yearly'})
-        .with_row_count('index')
-    )
     satt = {}
     satt['Overall'] = np.average(effect, weights=n)
     for variable in strata.columns:
         if variable == 'index':
             continue
-        subdict = {}
         for level, stratum in strata.groupby(variable):
             indices = stratum['index'].to_numpy()
-            subdict[level] = np.average(effect[indices], weights=n[indices])
-        satt[variable] = {k: subdict[k] for k in sorted(subdict)}
+            key = f'{variable}={level}'
+            satt[key] = np.average(effect[indices], weights=n[indices])
 
+    if rng is not None:
+        satt = lgp.sample(gvar.mean(satt), gvar.evalcov(satt), rng=rng)
+
+    satt = {k: satt[k] for k in sorted(satt)}
     return satt
 
+print('\ncompute satt...')
+
+# compute the SATT at marginal MAP hyperparameters
 satt = compute_satt(fit_outcome, Xmis)
 satt_ps = compute_satt(fit_outcome_ps, Xmis_ps)
 
+# compute the SATT sampling the hyperparameters with the Laplace approx
+rng = np.random.default_rng(202307081315)
+satt_ps_samples = {}
+for _ in tqdm.tqdm(range(nsamples)):
+    satt_sample = compute_satt(fit_outcome_ps, Xmis_ps, rng=rng)
+    for k, v in satt_sample.items():
+        satt_ps_samples.setdefault(k, []).append(v)
+satt_ps_samples_quantiles = {}
+satt_ps_samples_meanstd = {}
+for k, samples in satt_ps_samples.items():
+    cl = np.diff(stats.norm.cdf([-1, 1])).item()
+    satt_ps_samples_quantiles[k] = np.quantile(samples, [(1 - cl) / 2, 0.5, (1 + cl) / 2])
+    satt_ps_samples_meanstd[k] = gvar.gvar(np.mean(samples), np.std(samples))
+
 # print results
 print(f'\nATE (unadjusted) = {ate_unadjusted}')
-print(f'\nSATT (no PS) =\n{pprint.pformat(satt)}')
-print(f'\nSATT (w/ PS) =\n{pprint.pformat(satt_ps)}')
+print(f'\nSATT (no PS, MAP) =\n{pprint.pformat(satt)}')
+print(f'\nSATT (w/ PS, MAP) =\n{pprint.pformat(satt_ps)}')
+print(f'\nSATT (w/ PS, Laplace) =\n{pprint.pformat(satt_ps_samples_meanstd)}')
 
 # load actual true effect
 df_results = (pl
@@ -154,44 +198,56 @@ df_results = (pl
     ))
 )
 
-# show truth
+# collect and show truth
 satt_true = {}
 for variable, group in df_results.groupby('variable'):
     if len(group) > 1:
         for row in group.iter_rows(named=True):
             level = row['level']
-            if level.isnumeric():
-                level = int(level)
-            satt_true.setdefault(variable, {})[level] = row['SATT']
+            satt_true[f'{variable}={level}'] = row['SATT']
     else:
         satt_true[variable] = group['SATT'][0]
 print(f'\nSATT (truth) =\n{pprint.pformat(satt_true)}')
 
 # plot comparison with truth
 fig, ax = plt.subplots(num='acic', clear=True, layout='constrained')
-labels = []
-tick = 0
-for variable, estimate in satt_ps.items():
-    truth = satt_true[variable]
-    if isinstance(estimate, dict):
-        for level, estimate in estimate.items():
-            truth = satt_true[variable][level]
-            artist_estimate = ax.errorbar(gvar.mean(estimate), tick,
-                xerr=gvar.sdev(estimate), fmt='.k', capsize=3,
-                label='Estimate ($\\pm$1 sd)')
-            artist_truth, = ax.plot(truth, tick, 'rx', label='Truth')
-            labels.append(f'{variable}={level}')
-            tick -= 1
-    else:
-        ax.errorbar(gvar.mean(estimate), tick, xerr=gvar.sdev(estimate), fmt='.k', capsize=3)
-        ax.plot(truth, tick, 'rx')
-        labels.append(f'{variable}')
+
+estimates = {
+    'w/o PS, MAP': satt,
+    'w/ PS, MAP': satt_ps,
+    'w/ PS, Laplace': satt_ps_samples_quantiles,
+}
+artist_estimate = [None] * len(estimates)
+
+for i, (label, satt_dict) in enumerate(estimates.items()):
+    tick = 0
+    for stratum, estimate in satt_dict.items():
+        width = 0.4
+        shift = -width / 2 + width * i / (len(estimates) - 1)
+        if isinstance(estimate, np.ndarray):
+            x = estimate[1]
+            xerr = np.reshape([
+                estimate[1] - estimate[0],
+                estimate[2] - estimate[1]
+            ], (2, 1))
+        else:
+            x = gvar.mean(estimate)
+            xerr = gvar.sdev(estimate)
+        artist_estimate[i] = ax.errorbar(x, tick - shift, xerr=xerr, fmt='.',
+            capsize=3, color=f'C{i}', label=label)
+        artist_truth, = ax.plot(satt_true[stratum], tick, 'kx', label='Truth')
         tick -= 1
+
 ax.set(
     xlabel='SATT',
     ylabel='Stratum',
     yticks=np.arange(0, tick, -1),
-    yticklabels=labels,
+    yticklabels=list(satt),
+    title='SATT posterior (0.16, 0.50, 0.84 quantiles)',
 )
-ax.legend(handles=[artist_estimate, artist_truth], loc='upper right')
+ax.legend(
+    handles=[artist_truth, *artist_estimate],
+    loc='upper right',
+)
+
 fig.show()

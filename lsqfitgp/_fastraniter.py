@@ -32,6 +32,13 @@ __all__ = [
 
 # TODO support jax tracing and jax random sampling
 
+def _toslice(s):
+    if isinstance(s, slice):
+        return s
+    if isinstance(s, int):
+        return slice(s, s + 1)
+    raise TypeError(f'cannot convert {s!r} to slice')
+
 def raniter(mean, cov, n=None, eps=None, rng=None):
     """
     
@@ -79,9 +86,9 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
         flatmean = mean.buf
         squarecov = numpy.empty((len(flatmean), len(flatmean)))
         for k1 in mean:
-            slic1 = mean.slice(k1)
+            slic1 = _toslice(mean.slice(k1))
             for k2 in mean:
-                slic2 = mean.slice(k2)
+                slic2 = _toslice(mean.slice(k2))
                 sqshape = (slic1.stop - slic1.start, slic2.stop - slic2.start)
                 squarecov[slic1, slic2] = cov[k1, k2].reshape(sqshape)
     else: # an array or scalar
