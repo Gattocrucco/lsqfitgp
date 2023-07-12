@@ -17,3 +17,4 @@ polars
 pyarrow
 build
 statsmodels
+tqdm

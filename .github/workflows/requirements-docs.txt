@@ -12,3 +12,4 @@ polars
 pandas
 statsmodels
 pyarrow
+tqdm
