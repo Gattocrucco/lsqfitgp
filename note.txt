@@ -4493,6 +4493,8 @@ Possible next things to do on acic:
 - sample hyperparameters (DONE)
 - cycle over all datasets
 - check heterogeneous effects
+- add other summary covariates by reading the per-patient files
+- fit covariate weights
 
 2023-07-10
 ==========
@@ -4503,3 +4505,59 @@ covariance matrix block.
 
 I should jit a cached prediction function in bayestree.bart. => Success! 6
 predictions/s.
+
+Sampling the hyperparameters does not make a relevant difference on dataset
+0001.
+
+2023-07-11
+==========
+
+I want to regress together treatment and outcome.
+
+1) Map treatment to continuous values as in ps fit (reuse script variables)
+   (DONE)
+3) Implement separate hyperparameters (mean, var, error var) in bayestree.bart
+   by passing arrays of integer indicators for each
+4) Concatenate continuous treatment with outcome
+4a) Concatenate covariates with themselves
+4b) Add a binary covariate that marks treatment (0) / outcome (1)
+4c) Convert Z to ternary
+5) Run the regression
+6) Separate the results in ps + outcome
+7) Compare ps with the one from the standalone treatment fit
+8) Impute the missing outcomes and compute SATT as usual
+
+How do I deal with the Z covariate? I can't use it because it's an outcome of
+the regression. I need to transform it to a ternary covariate:
+
+    Binary Z   Outcome indicator   Ternary Z
+    0          0                   1
+    0          1                   0
+    1          0                   1
+    1          1                   2
+
+Ternary Z determines Outcome indicator. Should I drop the latter? Adding it
+makes propensity score and outcome slighly less correlated a priori.
+
+2023-07-17
+==========
+
+I want to make a release to use the latest bart interface improvements in code I
+hand out for lectures.
+
+Release notes for v0.17:
+
+### BART with `lsqfitgp.bayestree.bart`
+ * Example on the ACIC data challenge
+ * Error weights
+ * New methods `bart.gp()`, `bart.data()`, `bart.pred()`
+ * All methods can sample hyperparameters with Laplace
+ * The prior mean is a free hyperparameter
+ * The prior on the error variance is scaled with the data, in particular `bart` now works well with non-standardized data
+
+### `raniter`
+ * Accept user provided random number generator
+ * Solved bug with scalar elements in dictionaries
+
+### `empbayes_fit`
+ * The arguments in `gpfactorykw` are now passed through a function call instead of being closed over. This implies that, if `jit=True`, large arrays can be passed efficiently without being hardcoded in the compiled code, and that arguments not understood by JAX can not be passed through `gpfactorykw`.
