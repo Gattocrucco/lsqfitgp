@@ -4495,6 +4495,7 @@ Possible next things to do on acic:
 - check heterogeneous effects
 - add other summary covariates by reading the per-patient files
 - fit covariate weights
+- sample hyperparameters for ps
 
 2023-07-10
 ==========
@@ -4539,6 +4540,9 @@ the regression. I need to transform it to a ternary covariate:
 Ternary Z determines Outcome indicator. Should I drop the latter? Adding it
 makes propensity score and outcome slighly less correlated a priori.
 
+=> This plan does not make much sense now that I noticed my way of regressing
+the propensity score is crap.
+
 2023-07-17
 ==========
 
@@ -4561,3 +4565,38 @@ Release notes for v0.17:
 
 ### `empbayes_fit`
  * The arguments in `gpfactorykw` are now passed through a function call instead of being closed over. This implies that, if `jit=True`, large arrays can be passed efficiently without being hardcoded in the compiled code, and that arguments not understood by JAX can not be passed through `gpfactorykw`.
+
+2023-07-18
+==========
+
+Urgent: fix the usage of weights in examples/acic for the treatment fit,
+currently it overfits badly.
+
+......... on it .........
+
+I used the weights as usual in a regression, as denominators under the error
+variance. However this does not map to a meaningful probability when the
+regression function is squeezed through the probit.
+
+These weights are unit counts. The most obvious choice would be to map the
+discrete Z to 1 / N. However, the continuous Z represents the probability that Z
+was indeed 1, so this is not the correct usage: I'm as sure as any other Z about
+its value, what changes is how much information it gives about other outcomes.
+So I have to apply the weight to the standard deviation, but in a different way
+than usual.
+
+On second thought, using weights for the treatment regression does not make
+sense. The treatment was assigned at the hospital level. I should use the number
+of patients as covariate, both in the treatment and outcome regression.
+
+=> Correct, but not sufficient to fix the overfitting. The problem seems to be
+that the error sdev of the treatment fit gets optimized to a very small value,
+0.07.
+
+Fitting a similar dataset with dbarts.bart2 with proper probit works.
+
+(Note: dataset 12 upsets the treatment fit)
+
+=> I thought about it and I may have understood the reason. Since I pass
+discrete z_continuous values, the error variance is correctly inferred to be
+very small.

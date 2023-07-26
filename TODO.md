@@ -759,10 +759,22 @@ l'opinione umana, è p(x,i|p_H(x,i))=p_H(x,i). Quindi la macchina prende il suo
 posteriore sulle p_H e calcola p(x,i) marginalizzato. Se il GP ha gli
 iperparametri diventa più complicato perché marginalizzare p_H non si riesce.
 
+Maybe this appears as "linear probability modeling" in the literature?
+
+=> After trying this out in a more realistic context, I can say this does not
+work well in practice. It tends to either overfit or underfit. The problem is
+that if the error variance is large, then you can't get extreme probabilities,
+while if it's small, then you get overfitting. So in the well-separated text
+classification example it works because overfitting is fine. Maybe add a note in
+that page explaining that the technique does not generalize well beyond easy
+tasks. More importantly, I now have to actually implement non-Gaussian
+likelihoods. Methods: Laplace, EP, Polya-Gamma. Reading Rasmussen, Laplace does
+not seem to work well, I should consider only EP instead. Maybe Polya-Gamma is
+better though. I should think about integrating this in the homemade replacement
+to lsqfit.
+
 For Poisson I can take the square root. How good is it? Ref. Casella-Berger,
 pag. 563, ex. 11.1-11.
-
-Maybe this appears as "linear probability modeling" in the literature?
 
 ### gvar improvements
 

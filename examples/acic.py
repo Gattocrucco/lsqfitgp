@@ -70,7 +70,7 @@ for year in [1, 2]:
 y = posttreatment['Y'].to_numpy()
 npatients_obs = posttreatment['n.patients'].to_numpy() # to scale error variance
 Xobs = (posttreatment
-    .drop(['Y', 'id.practice', 'post', 'n.patients'])
+    .drop(['Y', 'id.practice', 'post'])
     .to_dummies(columns=['X2', 'X4'])
 )
 Xmis = (Xobs
@@ -91,12 +91,12 @@ z = Xobs['Z'].cast(pl.Boolean).to_numpy()
 p = 1 / len(z)
 z_prob = np.where(z, 1 - p, p)
 z_continuous = stats.norm.ppf(z_prob)
-fit_treatment = lgp.bayestree.bart(X, z_continuous, weights=npatients_obs, **bartkw)
+fit_treatment = lgp.bayestree.bart(X, z_continuous, **bartkw)
 print(fit_treatment)
 
 # compute propensity score using the probit integral:
 # P(z) = int dx Phi(x) N(x; mu, sigma) = Phi(mu / sqrt(1 + sigma^2))
-mu, Sigma = fit_treatment.pred(x_test=X, weights=npatients_obs, error=True)
+mu, Sigma = fit_treatment.pred(x_test=X, error=True)
 sigma2 = np.diag(Sigma)
 ps = stats.norm.cdf(mu / np.sqrt(1 + sigma2))
 
@@ -176,8 +176,10 @@ for _ in tqdm.tqdm(range(nsamples)):
 satt_ps_samples_quantiles = {}
 satt_ps_samples_meanstd = {}
 for k, samples in satt_ps_samples.items():
-    cl = np.diff(stats.norm.cdf([-1, 1])).item()
-    satt_ps_samples_quantiles[k] = np.quantile(samples, [(1 - cl) / 2, 0.5, (1 + cl) / 2])
+    cl1 = np.diff(stats.norm.cdf([-1, 1])).item()
+    cl2 = np.diff(stats.norm.cdf([-2, 2])).item()
+    q = [(1 - cl2) / 2, (1 - cl1) / 2, 0.5, (1 + cl1) / 2, (1 + cl2) / 2]
+    satt_ps_samples_quantiles[k] = np.quantile(samples, q)
     satt_ps_samples_meanstd[k] = gvar.gvar(np.mean(samples), np.std(samples))
 
 # print results
@@ -225,16 +227,23 @@ for i, (label, satt_dict) in enumerate(estimates.items()):
         width = 0.4
         shift = -width / 2 + width * i / (len(estimates) - 1)
         if isinstance(estimate, np.ndarray):
-            x = estimate[1]
-            xerr = np.reshape([
-                estimate[1] - estimate[0],
-                estimate[2] - estimate[1]
+            x = estimate[2]
+            xerr1 = np.reshape([
+                estimate[3] - estimate[2],
+                estimate[4] - estimate[3]
+            ], (2, 1))
+            xerr2 = np.reshape([
+                estimate[4] - estimate[2],
+                estimate[2] - estimate[0],
             ], (2, 1))
         else:
             x = gvar.mean(estimate)
-            xerr = gvar.sdev(estimate)
-        artist_estimate[i] = ax.errorbar(x, tick - shift, xerr=xerr, fmt='.',
-            capsize=3, color=f'C{i}', label=label)
+            xerr1 = gvar.sdev(estimate)
+            xerr2 = 2 * xerr1
+        args = (x, tick - shift)
+        kw = dict(fmt='.', capsize=3, color=f'C{i}')
+        ax.errorbar(*args, xerr=xerr2, elinewidth=1, capthick=1, **kw)
+        artist_estimate[i] = ax.errorbar(*args, xerr=xerr1, elinewidth=2, capthick=2, **kw, label=label)
         artist_truth, = ax.plot(satt_true[stratum], tick, 'kx', label='Truth')
         tick -= 1
 
@@ -243,7 +252,7 @@ ax.set(
     ylabel='Stratum',
     yticks=np.arange(0, tick, -1),
     yticklabels=list(satt),
-    title='SATT posterior (0.16, 0.50, 0.84 quantiles)',
+    title='SATT posterior (0.05, 0.16, 0.50, 0.84, 0.95 quantiles)',
 )
 ax.legend(
     handles=[artist_truth, *artist_estimate],
