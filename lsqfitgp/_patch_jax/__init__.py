@@ -17,14 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-# TODO disable this jax 0.4.4 feature because it makes empbayes_fit fail due to
-# leaked tracers, but I can't fix it and maybe it's a jax bug. Wait till next
-# release to see what happens. => maybe it's
-# https://github.com/google/jax/issues/14776, "jax.ensure_compile_time_eval puts
-# the trace stack in a bad state"? => still not working in 0.4.10
-import os
-os.environ['JAX_JIT_PJIT_API_MERGE'] = '0'
-
 from jax.config import config
 config.update("jax_enable_x64", True)
 

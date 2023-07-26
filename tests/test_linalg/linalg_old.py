@@ -1038,85 +1038,6 @@ def test_solve_triangular():
                 lhs = (A @ x).reshape(-1, B.shape[-1])
                 util.assert_close_matrices(lhs, B.reshape(lhs.shape), rtol=1e-12)
 
-@util.tryagain
-def test_toeplitz_gershgorin():
-    t = rng.standard_normal(100)
-    m = linalg.toeplitz(t)
-    b1 = _linalg._decomp._gershgorin_eigval_bound(m)
-    b2 = _linalg._toeplitz.eigv_bound(t)
-    util.assert_close_matrices(b2, b1, rtol=1e-15)
-
-def check_toeplitz():
-    mod = _linalg._toeplitz
-    for n in [10, 2, 1]:
-        x = np.linspace(0, 3, n)
-        t = np.pi * np.exp(-1/2 * x ** 2)
-        m = linalg.toeplitz(t)
-    
-        l1 = mod.chol(t)
-        l2 = linalg.cholesky(m, lower=True)
-        util.assert_close_matrices(l1, l2, rtol=1e-10)
-    
-        b = rng.standard_normal((len(t), 30))
-        lb1 = mod.chol_matmul(t, b)
-        lb2 = l2 @ b
-        util.assert_close_matrices(lb1, lb2, rtol=1e-10)
-
-        ld1 = mod.logdet(t)
-        _, ld2 = np.linalg.slogdet(m)
-        util.assert_close_matrices(ld1, ld2, rtol=1e-9)
-    
-        ilb1 = mod.chol_solve(t, b)
-        ilb2 = linalg.solve_triangular(l2, b, lower=True)
-        util.assert_close_matrices(ilb1, ilb2, rtol=1e-8)
-    
-        imb1 = mod.solve(t, b)
-        imb2 = np.linalg.solve(m, b)
-        util.assert_close_matrices(imb1, imb2, rtol=1e-8)
-
-@util.tryagain
-def test_toeplitz_nojit():
-    with jax.disable_jit():
-        check_toeplitz()
-
-@util.tryagain
-def test_toeplitz():
-    check_toeplitz()
-
-@util.tryagain
-def test_toeplitz_chol_solve_numpy():
-    shapes = [
-        [(), ()],
-        [(10,), (1,)],
-        [(1, 2), (3, 1)],
-        [(1, 4), (4,)],
-        [(3,), (1, 3)],
-    ]
-    for tshape, bshape in shapes:
-        for n in [0, 1, 2, 10]:
-            x = np.linspace(0, 3, n)
-            gamma = rng.uniform(0, 2, tshape + (1,))
-            t = np.pi * np.exp(-1/2 * x ** gamma)
-            m = np.empty(tshape + (n, n))
-            for i in np.ndindex(*tshape):
-                m[i] = linalg.toeplitz(t[i])
-            l = np.linalg.cholesky(m)
-            for shape in [(), (1,), (2,), (10,)]:
-                if bshape and not shape:
-                    continue
-                b = rng.standard_normal((*bshape, n, *shape))
-                ilb = _linalg._toeplitz.chol_solve_numpy(t, b, diageps=1e-12)
-                lhs, rhs = np.broadcast_arrays(l @ ilb, b)
-                lhs = lhs.reshape(-1 if lhs.size else 0, lhs.shape[-1])
-                rhs = rhs.reshape(lhs.shape)
-                util.assert_close_matrices(lhs, rhs, rtol=1e-7)
-    with pytest.raises(np.linalg.LinAlgError):
-        _linalg._toeplitz.chol_solve_numpy([-1], [1])
-    with pytest.raises(np.linalg.LinAlgError):
-        _linalg._toeplitz.chol_solve_numpy([1, 2], [1, 1])
-    with pytest.raises(np.linalg.LinAlgError):
-        _linalg._toeplitz.chol_solve_numpy([1, 0.5, 2], [1, 1, 1])
-
 @mark.parametrize('mode', ['reduced', 'full'])
 def test_rq(mode):
     for n in DecompTestBase.sizes:
@@ -1136,10 +1057,6 @@ def test_degenerate(decomp):
     a = linalg.block_diag(np.eye(5), 0)
     d = decomp(a)
     util.assert_close_matrices(d.quad(a), a, rtol=1e-14)
-
-def test_acausal_alg():
-    with pytest.raises(ValueError):
-        _linalg._seqalg.sequential_algorithm(2, [_linalg._seqalg.Stack(0)])
 
 #### XFAILS ####
 # keep last to avoid hiding them in wrappings

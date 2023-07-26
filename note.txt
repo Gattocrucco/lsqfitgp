@@ -3381,8 +3381,8 @@ No, I can't see it.
 
 => tested in playground/pinv/pchol, does not seem to work well. Anyway, PSTRF
 does pivoted cholesky in 2x time and is rank revealing. => I think there's a
-simple pinv formula for a block singular matrix like the pivoted cholesky
-factor, I could do clean pinv with 2x cholesky time.
+simple pinv formula for a block-triangular singular matrix like the pivoted
+cholesky factor, I could do clean pinv with 2x cholesky time.
 
 2023-03-15
 ==========
