@@ -3,8 +3,8 @@ scipy
 matplotlib
 gvar!=11.11.3
 lsqfit
-jax==0.4.6
-jaxlib==0.4.6
+jax
+jaxlib
 sphinx
 numpydoc
 coverage

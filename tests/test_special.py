@@ -402,4 +402,5 @@ def test_kvp():
     test_util.check_grads(lambda z: _special.kv(3.2, z), (1.5,), 2)
 
 # TODO these tests currently take 4 min out of 17 total. I guess the bottleneck
-# is mpmath. I should produce and commit a cache of values.
+# is mpmath. I should produce and commit a cache of values. Maybe the "cache"
+# fixture from pytest is appropriate?

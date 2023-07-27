@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_decomp.py
 #
-# Copyright (c) 2023 Giacomo Petrillo
+# Copyright (c) 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -108,6 +108,10 @@ To compute a Fisher-vector product when there are many parameters, do
 
 """
 
+# TODO to automatize this further, I could take in a function that generates K
+# (or its pieces) and the arguments to the function. But how would this play
+# together with passing decomposition objects as pieces?
+
 import abc
 
 import numpy
@@ -173,25 +177,36 @@ class Decomposition(abc.ABC):
         fishvec=False, # bool
         ):
         """
-        Compute the minus log of the normal density of residuals.
+        Compute minus log a Normal density and its derivatives, with covariance
+        matrix K.
 
-        If a derivative is not specified, it is assumed to be zero.
+        If an input derivative is not specified, it is assumed to be zero.
 
         Parameters
         ----------
-        r: 1d array      # the residuals (data - prior mean)
-        dr_vjp: callable # x -> x_i ∂r_i/∂p_j,   gradrev and fishvec
-        dK_vjp: callable # x -> x_ij ∂K_ij/∂p_k, gradrev and fishvec
-        dr_jvp: callable # x -> ∂r_i/∂r_j x_j,  fishvec
-        dK_jvp: callable # x -> ∂K_ij/∂p_k x_k, fishvec
-        dr: 2d array     # ∂r_i/∂p_j,  gradfwd and fisher
-        dK: 3d array     # ∂K_ij/∂p_k, gradfwd and fisher
-        vec: 1d array    # input vector of fishvec, same size as params
+        r: 1d array
+            The residuals (value - mean)
+        dr_vjp: callable
+            x -> x_i ∂r_i/∂p_j, for gradrev and fishvec
+        dK_vjp: callable
+            x -> x_ij ∂K_ij/∂p_k, for gradrev and fishvec
+        dr_jvp: callable
+            x -> ∂r_i/∂r_j x_j, for fishvec
+        dK_jvp: callable
+            x -> ∂K_ij/∂p_k x_k, for fishvec
+        dr: 2d array
+            ∂r_i/∂p_j for gradfwd and fisher
+        dK: 3d array
+            ∂K_ij/∂p_k, for gradfwd and fisher
+        vec: 1d array
+            input vector of fishvec, same size as params
         value: bool
         gradrev: bool
         gradfwd: bool
         fisher: bool
         fishvec: bool
+            These parameters indicate which of the return values to compute.
+            Default all False.
 
         Returns
         -------
@@ -207,7 +222,7 @@ class Decomposition(abc.ABC):
         fisher: 1/2 tr(K⁺dK(K⁺+2(I-KK⁺)/ε)d'K)
               - 2 tr(K⁺dK(I-KK⁺)d'KK⁺)
               + dr'(K⁺+(I-KK⁺)/ε)d'r
-        fishvec: fisher matrix times vec
+        fishvec: fisher matrix @ vec
         """
         pass
 
@@ -305,6 +320,7 @@ class Chol(Decomposition):
                 # and report minor index like scipy
                 raise numpy.linalg.LinAlgError('cholesky decomposition not finite, probably matrix not pos def numerically')
         self._L = L * s[:, None]
+        self._eps = eps * jnp.min(s * s)
 
     def pinv_bilinear(self, A, r):
         # = A'K⁻¹r
@@ -469,7 +485,7 @@ class Chol(Decomposition):
             #             = dr_vjp(L'⁻¹L⁻¹ dr_jvp(v))
             out['fishvec'] = 0
             if not (dK_jvp is None and dK_vjp is None):
-                dKv = K_jvp(v)
+                dKv = K_jvp(vec)
                 invL_dKv = jlinalg.solve_triangular(L, dKv, lower=True)
                 invK_dKv = jlinalg.solve_triangular(L.T, invL_dKv, lower=False)
                 invL_dKv_invK = jlinalg.solve_triangular(L, invK_dKv.T, lower=True)
@@ -486,3 +502,9 @@ class Chol(Decomposition):
             out['fishvec'] = None
 
         return tuple(out.values())
+
+        # TODO compute once shared factors
+
+    # TODO a method make_derivs that takes in the boolean arguments, a function
+    # to generate K, and its arguments, and spits out a dictionary with the
+    # required derivatives for minus_log_normal_density filled in

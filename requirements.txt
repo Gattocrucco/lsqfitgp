@@ -3,8 +3,8 @@ scipy
 matplotlib
 gvar
 lsqfit
-jax==0.4.6
-jaxlib==0.4.6
+jax
+jaxlib
 sphinx
 numpydoc
 pytest

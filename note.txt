@@ -4600,3 +4600,26 @@ Fitting a similar dataset with dbarts.bart2 with proper probit works.
 => I thought about it and I may have understood the reason. Since I pass
 discrete z_continuous values, the error variance is correctly inferred to be
 very small.
+
+2023-07-27
+==========
+
+I want to write a deterministic p.s.d. matrix generator with the following
+properties:
+
+ 1) Depends on one continuous parameter with a smooth formula
+ 2) Specified rank
+ 3) Image well-conditioned
+ 4) Both the spectrum and the null space depend on the parameter
+ 5) Random orientation
+
+I can start from ToeplitzBase.mat. Let s be the parameter. Determine the
+eigenvalues with
+
+    where(arange(n) < rank, 1 + eps + cos(s + arange(n))), 0)
+
+Look at a distribution to check this formula makes sensible spectra. Then
+generate a random nxn orthogonal matrix. Then select a pair of indices at
+random, and build a rotation on that submatrix with angle s. Apply the two
+transformations to the diagonal matrix. Of course, draw the random properties
+once and for all: unit test classes are re-instantiated for each test.
