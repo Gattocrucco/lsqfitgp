@@ -1,4 +1,4 @@
-# lsqfitgp/tests/linalg/test_seqalg.py
+# lsqfitgp/tests/conftest.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #
@@ -17,14 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-
 import pytest
+import gvar
 
-sys.path.insert(0, '.')
-from lsqfitgp import _linalg
-from lsqfitgp._linalg import _seqalg
-
-def test_acausal_alg():
-    with pytest.raises(ValueError):
-        _seqalg.sequential_algorithm(2, [_seqalg.Stack(0)])
+@pytest.fixture(autouse=True)
+def clean_gvar_env():
+    yield gvar.switch_gvar()
+    gvar.restore_gvar()

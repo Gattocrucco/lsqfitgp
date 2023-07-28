@@ -35,7 +35,7 @@ Guidelines and requirements:
     Block)
 
   - Does not mess up jax in any way
-  
+
   - Caches decompositions
 
   - Favors optimizing together the likelihood and its derivatives
@@ -113,10 +113,13 @@ To compute a Fisher-vector product when there are many parameters, do
 # together with passing decomposition objects as pieces?
 
 import abc
+import functools
 
 import numpy
+import jax
 from jax import numpy as jnp
 from jax.scipy import linalg as jlinalg
+from jax import lax
 
 from .. import _patch_jax
 
@@ -161,20 +164,20 @@ class Decomposition(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def minus_log_normal_density(self, *,
-        r,             # 1d array, the residuals (data - prior mean)
-        dr_vjp=None,   # callable, x -> x_i ∂r_i/∂p_j,   gradrev and fishvec
-        dK_vjp=None,   # callable, x -> x_ij ∂K_ij/∂p_k, gradrev and fishvec
-        dr_jvp=None,   # callable, x -> ∂r_i/∂r_j x_j,  fishvec
-        dK_jvp=None,   # callable, x -> ∂K_ij/∂p_k x_k, fishvec
-        dr=None,       # 2d array, ∂r_i/∂p_j,  gradfwd and fisher
-        dK=None,       # 3d array, ∂K_ij/∂p_k, gradfwd and fisher
-        vec=None,      # 1d array, input vector of fishvec, same size as params
-        value=False,   # bool
-        gradrev=False, # bool
-        gradfwd=False, # bool
-        fisher=False,  # bool
-        fishvec=False, # bool
+    def minus_log_normal_density(self,
+        r,
+        *,
+        dr_vjp=None,
+        dK_vjp=None,
+        dr_jvp=None,
+        dK_jvp=None,
+        dr=None,
+        dK=None,
+        value=False,
+        gradrev=False,
+        gradfwd=False,
+        fisher=False,
+        fishvec=False,
         ):
         """
         Compute minus log a Normal density and its derivatives, with covariance
@@ -190,16 +193,14 @@ class Decomposition(abc.ABC):
             x -> x_i ∂r_i/∂p_j, for gradrev and fishvec
         dK_vjp: callable
             x -> x_ij ∂K_ij/∂p_k, for gradrev and fishvec
-        dr_jvp: callable
-            x -> ∂r_i/∂r_j x_j, for fishvec
-        dK_jvp: callable
-            x -> ∂K_ij/∂p_k x_k, for fishvec
+        dr_jvp_vec: 1d array
+            ∂r_i/∂r_j vec_j, for fishvec
+        dK_jvp_vec: 2d array
+            ∂K_ij/∂p_k vec_k, for fishvec
         dr: 2d array
             ∂r_i/∂p_j for gradfwd and fisher
         dK: 3d array
             ∂K_ij/∂p_k, for gradfwd and fisher
-        vec: 1d array
-            input vector of fishvec, same size as params
         value: bool
         gradrev: bool
         gradfwd: bool
@@ -237,7 +238,7 @@ class Decomposition(abc.ABC):
             maxeigv = eigval_bound(K)
         self._eps = epsrel * maxeigv + epsabs
         return self._eps
-    
+
     @property
     def eps(self):
         """
@@ -245,7 +246,7 @@ class Decomposition(abc.ABC):
         """
         return self._eps
 
-def solve_triangular(a, b, lower=False):
+def solve_triangular_python(a, b, *, lower=False):
     """
     Pure python implementation of scipy.linalg.solve_triangular for when
     a or b are object arrays.
@@ -253,14 +254,14 @@ def solve_triangular(a, b, lower=False):
     # TODO maybe commit this to gvar.linalg
     a = numpy.asarray(a)
     x = numpy.copy(b)
-    
+
     vec = x.ndim < 2
     if vec:
         x = x[:, None]
 
     n = a.shape[-1]
     assert x.shape[-2] == n
-    
+
     if not lower:
         a = a[..., ::-1, ::-1]
         x = x[..., ::-1, :]
@@ -269,13 +270,51 @@ def solve_triangular(a, b, lower=False):
     for i in range(1, n):
         x[..., i:, :] -= x[..., None, i - 1, :] * a[..., i:, i - 1, None]
         x[..., i, :] /= a[..., i, i, None]
-    
+
     if not lower:
         x = x[..., ::-1, :]
-    
+
     if vec:
         x = numpy.squeeze(x, -1)
     return x
+
+def solve_triangular_batched(a, b, *, lower=False):
+    """ Version of jax.scipy.linalg.solve_triangular that batches matmul-like """
+    a = jnp.asarray(a)
+    b = jnp.asarray(b)
+    vec = b.ndim < 2
+    if vec:
+        b = b[:, None]
+
+    batch_shape = jnp.broadcast_shapes(a.shape[:-2], b.shape[:-2])
+    a_shape = batch_shape + a.shape[-2:]
+    b_shape = batch_shape + b.shape[-2:]
+    result = lax.linalg.triangular_solve(
+        jnp.broadcast_to(a, a_shape), jnp.broadcast_to(b, b_shape),
+        left_side=True, lower=lower,
+    )
+    assert result.shape == b_shape
+
+    if vec:
+        result = result.squeeze(-1)
+    return result
+
+def solve_batched(a, b, **kw):
+    """ Version of jax.scipy.linalg.solve that batches matmul-like """
+    a = jnp.asarray(a)
+    b = jnp.asarray(b)
+    vec = b.ndim < 2
+    if vec:
+        b = b[:, None]
+
+    @functools.partial(jnp.vectorize, signature='(i,j),(j,k)->(i,k)')
+    def solve_batched(a, b):
+        return jlinalg.solve(a, b, **kw)
+    result = solve_batched(a, b)
+
+    if vec:
+        result = result.squeeze(-1)
+    return result
 
 def eigval_bound(K):
     """
@@ -332,7 +371,7 @@ class Chol(Decomposition):
 
     def pinv_bilinear_robj(self, A, r):
         # = A'K⁻¹r = A'L'⁻¹L⁻¹r = (L⁻¹A)'(L⁻¹r)
-        invLr = solve_triangular(self._L, r, lower=True)
+        invLr = solve_triangular_python(self._L, r, lower=True)
         invLA = jlinalg.solve_triangular(self._L, A, lower=True)
         return numpy.asarray(invLA).T @ invLr
 
@@ -356,24 +395,24 @@ class Chol(Decomposition):
         # = L'X
         return self._L.T @ X
 
-    def minus_log_normal_density(self, *,
-        r,             # 1d array, the residuals (data - prior mean)
-        dr_vjp=None,   # callable, x -> x_i ∂r_i/∂p_j,   gradrev and fishvec
-        dK_vjp=None,   # callable, x -> x_ij ∂K_ij/∂p_k, gradrev and fishvec
-        dr_jvp=None,   # callable, x -> ∂r_i/∂r_j x_j,  fishvec
-        dK_jvp=None,   # callable, x -> ∂K_ij/∂p_k x_k, fishvec
-        dr=None,       # 2d array, ∂r_i/∂p_j,  gradfwd and fisher
-        dK=None,       # 3d array, ∂K_ij/∂p_k, gradfwd and fisher
-        vec=None,      # 1d array, input vector of fishvec, same size as params
-        value=False,   # bool
-        gradrev=False, # bool
-        gradfwd=False, # bool
-        fisher=False,  # bool
-        fishvec=False, # bool
-        ):
+    def minus_log_normal_density(self,
+        r,               # 1d array, the residuals (data - prior mean)
+        *,
+        dr_vjp=None,     # callable, x -> x_i ∂r_i/∂p_j,   gradrev and fishvec
+        dK_vjp=None,     # callable, x -> x_ij ∂K_ij/∂p_k, gradrev and fishvec
+        dr_jvp_vec=None, # 1d array, ∂r_i/∂r_j v_j,  fishvec
+        dK_jvp_vec=None, # 2d array, ∂K_ij/∂p_k v_k, fishvec
+        dr=None,         # 2d array, ∂r_i/∂p_j,  gradfwd and fisher
+        dK=None,         # 3d array, ∂K_ij/∂p_k, gradfwd and fisher
+        value=False,
+        gradrev=False,
+        gradfwd=False,
+        fisher=False,
+        fishvec=False,
+    ):
 
         L = self._L
-        
+
         out = {}
 
         if value:
@@ -460,10 +499,10 @@ class Chol(Decomposition):
             #                = (L⁻¹dr_k)_i (L⁻¹dr_q)_i
             out['fisher'] = 0
             if dK is not None:
-                invL_dK = jlinalg.solve_triangular(L,
+                invL_dK = solve_triangular_batched(L,
                     jnp.moveaxis(dK, 2, 0),
                     lower=True) # kim: L⁻¹_il dK_lmk
-                invL_dK_invL = jlinalg.solve_triangular(L,
+                invL_dK_invL = solve_triangular_batched(L,
                     jnp.swapaxes(invL_dK, 1, 2),
                     lower=True) # kji: L⁻¹_jm (L⁻¹_il dK_lmk)
                 tr_invK_dK_invK_dK = jnp.einsum('kij,qij->kq', invL_dK_invL, invL_dK_invL)
@@ -484,17 +523,15 @@ class Chol(Decomposition):
             #             = dr_vjp(K⁻¹dr_jvp(v)) =
             #             = dr_vjp(L'⁻¹L⁻¹ dr_jvp(v))
             out['fishvec'] = 0
-            if not (dK_jvp is None and dK_vjp is None):
-                dKv = K_jvp(vec)
-                invL_dKv = jlinalg.solve_triangular(L, dKv, lower=True)
+            if not (dK_jvp_vec is None and dK_vjp is None):
+                invL_dKv = jlinalg.solve_triangular(L, dK_jvp_vec, lower=True)
                 invK_dKv = jlinalg.solve_triangular(L.T, invL_dKv, lower=False)
                 invL_dKv_invK = jlinalg.solve_triangular(L, invK_dKv.T, lower=True)
                 invK_dKv_invK = jlinalg.solve_triangular(L.T, invL_dKv_invK, lower=False)
-                tr_invK_dK_invK_dK_v = K_vjp(invK_dKv_invK)
+                tr_invK_dK_invK_dK_v = dK_vjp(invK_dKv_invK)
                 out['fishvec'] += 1/2 * tr_invK_dK_invK_dK_v
-            if not (dr_vjp is None and dr_vjp is None):
-                drv = dr_jvp(v)
-                invL_drv = jlinalg.solve_triangular(L, drv, lower=True)
+            if not (dr_jvp_vec is None and dr_vjp is None):
+                invL_drv = jlinalg.solve_triangular(L, dr_jvp_vec, lower=True)
                 invK_drv = jlinalg.solve_triangular(L.T, invL_drv, lower=False)
                 dr_invK_drv_v = dr_vjp(invK_drv)
                 out['fishvec'] += dr_invK_drv_v
@@ -505,6 +542,68 @@ class Chol(Decomposition):
 
         # TODO compute once shared factors
 
-    # TODO a method make_derivs that takes in the boolean arguments, a function
-    # to generate K, and its arguments, and spits out a dictionary with the
-    # required derivatives for minus_log_normal_density filled in
+    @classmethod
+    def make_derivs(cls,
+        K_fun, r_fun, primal,
+        *,
+        args=(),
+        kw={},
+        vec=None,
+        value=False,
+        gradrev=False,
+        gradfwd=False,
+        fisher=False,
+        fishvec=False,
+    ):
+        """
+        Prepares arguments for `minus_log_normal_density`.
+
+        Parameters
+        ----------
+        K_fun, r_fun : callable
+            Functions with signature ``f(primal, *args, **kw)`` that produce the
+            `K` init argument and the `r` `minus_log_normal_density` argument.
+        primal : 1d array
+            The first argument to `K_fun` and `r_fun`.
+        args : tuple
+            Additional positional arguments to `K_fun` and `r_fun`.
+        kw : dict
+            Keyword arguments to `K_fun` and `r_fun`.
+        vec : 1d array
+            A tangent vector to compute the jacobian-vector products.
+        value, gradrev, gradfwd, fisher, fishvec : bool
+            Arguments to `minus_log_normal_density`, used to determine which
+            derivatives are needed.
+
+        Returns
+        -------
+        K : 2d array
+            Output of `K_fun`.
+        r : 1d array
+            Output of `r_fun`.
+        out : dict
+            Dictionary with derivative arguments to `minus_log_normal_density`.
+        """
+
+        partial = lambda f: lambda x: f(x, *args, **kw)
+        K_fun = partial(K_fun)
+        r_fun = partial(r_fun)
+
+        out = {}
+
+        if gradrev or fishvec:
+            K, dK_vjp = jax.vjp(K_fun, primal)
+            r, dr_vjp = jax.vjp(r_fun, primal)
+            out['dK_vjp'] = lambda x: dK_vjp(x)[0]
+            out['dr_vjp'] = lambda x: dr_vjp(x)[0]
+        else:
+            K = K_fun(primal)
+            r = r_fun(primal)
+        if fishvec:
+            _, out['dK_jvp_vec'] = jax.jvp(K_fun, (primal,), (vec,))
+            _, out['dr_jvp_vec'] = jax.jvp(r_fun, (primal,), (vec,))
+        if gradfwd or fisher:
+            out['dK'] = jax.jacfwd(K_fun)(primal)
+            out['dr'] = jax.jacfwd(r_fun)(primal)
+
+        return K, r, out

@@ -1,4 +1,4 @@
-# lsqfitgp/tests/test_linalg/test_toeplitz.py
+# lsqfitgp/tests/linalg/test_toeplitz.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #

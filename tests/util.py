@@ -117,7 +117,37 @@ def tryagain(fun, rep=2, method=False):
     meta['newfun'] = newfun
     return newfun
 
-def assert_close_matrices(actual, desired, *, rtol=0, atol=0):
+def assert_close_matrices(actual, desired, *, rtol=0, atol=0, tozero=False):
+    """
+    Check if two matrices are similar.
+
+    Scalars and vectors are intepreted as 1x1 and Nx1 matrices, but the two
+    arrays must have the same shape beforehand.
+
+    The closeness condition is:
+
+        ||actual - desired|| <= atol + rtol * ||desired||,
+
+    where the norm is the matrix 2-norm, i.e., the maximum (in absolute value)
+    singular value. The tolerances are 0 by default.
+
+    Parameters
+    ----------
+    actual, desired : array_like
+        The two matrices to be compared. Must be scalars, vectors, or 2d arrays.
+    rtol, atol : scalar
+        Relative and absolute tolerances for the comparison.
+    tozero : bool
+        Default False. If True, use the following codition instead:
+
+            ||actual|| <= atol + rtol * ||desired||
+
+    Raises
+    ------
+    AssertionError :
+        If the condition is not satisfied.
+    """
+
     actual = np.asarray(actual)
     desired = np.asarray(desired)
     assert actual.shape == desired.shape
@@ -126,14 +156,23 @@ def assert_close_matrices(actual, desired, *, rtol=0, atol=0):
     actual = np.atleast_1d(actual)
     desired = np.atleast_1d(desired)
     
+    if tozero:
+        expr = 'actual'
+        ref = 'zero'
+    else:
+        expr = 'actual - desired'
+        ref = 'desired'
+
     dnorm = linalg.norm(desired, 2)
-    adnorm = linalg.norm(actual - desired, 2)
+    adnorm = linalg.norm(eval(expr), 2)
     ratio = adnorm / dnorm if dnorm else np.nan
+
     msg = f"""\
-matrices actual and desired are not close in 2-norm
+matrices actual and {ref} are not close in 2-norm
 norm(desired) = {dnorm:.2g}
-norm(actual - desired) = {adnorm:.2g}  (atol = {atol:.2g})
+norm({expr}) = {adnorm:.2g}  (atol = {atol:.2g})
 ratio = {ratio:.2g}  (rtol = {rtol:.2g})"""
+
     assert adnorm <= atol + rtol * dnorm, msg
 
 def _assert_similar_gvars(g, h, rtol, atol):
@@ -147,11 +186,11 @@ def assert_similar_gvars(*gs, rtol=0, atol=0):
         for g in gs[1:]:
             _assert_similar_gvars(g, gs[0], rtol, atol)
 
-def assert_same_gvars(g, h, *, atol=0):
-    z = g - h
-    z = np.reshape(z, -1)
-    assert_allclose(gvar.mean(z), np.zeros(z.shape), rtol=0, atol=atol)
-    assert_close_matrices(gvar.evalcov(z), np.zeros(2 * z.shape), rtol=0, atol=atol)
+def assert_same_gvars(actual, desired, *, rtol=0, atol=0):
+    z = np.reshape(actual - desired, -1)
+    kw = dict(tozero=True, rtol=rtol, atol=atol)
+    assert_close_matrices(gvar.mean(z), gvar.mean(desired), **kw)
+    assert_close_matrices(gvar.evalcov(z), gvar.evalcov(desired), **kw)
 
 def assert_close_decomps(actual, desired, *, rtol=0, atol=0):
     assert actual.n == desired.n
