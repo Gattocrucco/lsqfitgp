@@ -134,6 +134,11 @@ class Decomposition(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def ginv_linear(self, X):
+        """ Compute K⁻X """
+        pass
+
+    @abc.abstractmethod
     def pinv_bilinear(self, A, r):
         """Compute A'K⁺r."""
         pass
@@ -245,6 +250,11 @@ class Decomposition(abc.ABC):
         The threshold below which eigenvalues are too small to be determined.
         """
         return self._eps
+
+    @property
+    @abc.abstractmethod
+    def n(self):
+        pass
 
 def solve_triangular_python(a, b, *, lower=False):
     """
@@ -361,16 +371,21 @@ class Chol(Decomposition):
         self._L = L * s[:, None]
         self._eps = eps * jnp.min(s * s)
 
-    def pinv_bilinear(self, A, r):
-        # = A'K⁻¹r
+    def ginv_linear(self, X):
+        # = K⁻¹X
         # K⁻¹ = L'⁻¹L⁻¹
-        # A'K⁻¹r = A'L'⁻¹L⁻¹r = (L⁻¹A)'(L⁻¹r)
+        # K⁻¹X = L'⁻¹(L⁻¹X)
+        invLX = jlinalg.solve_triangular(self._L, X, lower=True)
+        return jlinalg.solve_triangular(self._L.T, invLX, lower=False)
+
+    def pinv_bilinear(self, A, r):
+        # = A'K⁻¹r = A'L'⁻¹L⁻¹r = (L⁻¹A)'(L⁻¹r)
         invLr = jlinalg.solve_triangular(self._L, r, lower=True)
         invLA = jlinalg.solve_triangular(self._L, A, lower=True)
         return invLA.T @ invLr
 
     def pinv_bilinear_robj(self, A, r):
-        # = A'K⁻¹r = A'L'⁻¹L⁻¹r = (L⁻¹A)'(L⁻¹r)
+        # = A'K⁻¹r
         invLr = solve_triangular_python(self._L, r, lower=True)
         invLA = jlinalg.solve_triangular(self._L, A, lower=True)
         return numpy.asarray(invLA).T @ invLr
@@ -607,3 +622,7 @@ class Chol(Decomposition):
             out['dr'] = jax.jacfwd(r_fun)(primal)
 
         return K, r, out
+
+    @property
+    def n(self):
+        return len(self._L)

@@ -188,14 +188,20 @@ def assert_similar_gvars(*gs, rtol=0, atol=0):
 
 def assert_same_gvars(actual, desired, *, rtol=0, atol=0):
     z = np.reshape(actual - desired, -1)
+    desired = np.reshape(desired, -1)
     kw = dict(tozero=True, rtol=rtol, atol=atol)
     assert_close_matrices(gvar.mean(z), gvar.mean(desired), **kw)
     assert_close_matrices(gvar.evalcov(z), gvar.evalcov(desired), **kw)
 
 def assert_close_decomps(actual, desired, *, rtol=0, atol=0):
     assert actual.n == desired.n
-    assert_close_matrices(desired.solve(actual.matrix()), np.eye(desired.n), rtol=rtol, atol=atol)
-    assert_close_matrices(actual.solve(desired.matrix()), np.eye(desired.n), rtol=rtol, atol=atol)
+    def compare(a, b):
+        I = np.eye(a.n)
+        Z = a.correlate(I)
+        zzbz = a.correlate(b.ginv_quad(Z)) # ZZ'K⁻Z
+        assert_close_matrices(zzbz, Z, rtol=rtol, atol=atol)
+    compare(actual, desired)
+    compare(desired, actual)
 
 def assert_allclose(actual, desired, *, rtol=0, atol=0, equal_nan=False, **kw):
     """ change the default arguments of np.testing.assert_allclose """

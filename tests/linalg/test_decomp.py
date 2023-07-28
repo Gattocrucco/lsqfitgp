@@ -80,22 +80,6 @@ class TestChol:
             util.assert_allclose(transf @ transf.T, np.eye(n), atol=1e-14)
         return (transf * eigvals) @ transf.T
 
-    def nodepath(self, node):
-        """ Take a pytest node, walk up its ancestors collecting all node
-        names, return concatenated names """
-        names = []
-        while node is not None:
-            names.append(node.name)
-            node = node.parent
-        return '::'.join(reversed(names))
-
-    @pytest.fixture
-    def rng(self, request):
-        """ A random generator with a deterministic per-test seed"""
-        path = self.nodepath(request.node)
-        seed = np.array([path], np.bytes_).view(np.uint8)
-        return np.random.default_rng(seed)
-
     @pytest.fixture(params=[1, 2, 10])
     def n(self, request):
         """ Size of the test matrix """
@@ -158,6 +142,11 @@ class TestChol:
         """ Decomposition of K """
         return _linalg.Chol(K)
 
+    def test_ginv_linear(self, n, K, A, decomp):
+        result = decomp.ginv_linear(A)
+        expected = jlinalg.solve(K, A, assume_a='pos')
+        util.assert_close_matrices(result, expected, rtol=1e-11)
+
     def test_pinv_bilinear_direct(self, n, K, A, r, decomp):
         result = decomp.pinv_bilinear(A, r)
         K_reg = K + np.eye(n) * decomp.eps
@@ -217,12 +206,12 @@ class TestChol:
         util.assert_close_matrices(result, expected, rtol=1e-14)
 
     def test_normal_nothing(self, decomp, r):
-        result = decomp.minus_log_normal_density(r=r)
+        result = decomp.minus_log_normal_density(r)
         expected = 5 * (None,)
         assert result == expected
 
     def test_normal_value(self, n, K, decomp, r):
-        result, _, _, _, _ = decomp.minus_log_normal_density(r=r, value=True)
+        result, _, _, _, _ = decomp.minus_log_normal_density(r, value=True)
         expected = 1/2 * (
             n * np.log(2 * np.pi) +
             np.sum(np.log(linalg.eigvalsh(K))) +

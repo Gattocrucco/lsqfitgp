@@ -113,7 +113,7 @@ class GP:
         default process of the GP object. It can be left unspecified.
     solver : str
         The algorithm used to decompose the prior covariance matrix. See
-        `decompose` for the available solvers. Default is ``'eigcut+'``.
+        `decompose` for the available solvers. Default is ``'chol'``.
     checkpos : bool
         If True (default), raise a `LinAlgError` if the prior covariance matrix
         turns out non positive within numerical error.
@@ -319,7 +319,7 @@ class GP:
     def __init__(self,
         covfun=None,
         *,
-        solver='eigcut+',
+        solver='chol',
         checkpos=True,
         checksym=True,
         checkfinite=True,
@@ -1261,35 +1261,35 @@ class GP:
             # internally frozenset.
         
         # Compute decomposition.
-        if isinstance(ycov, _linalg.Decomposition):
-            ancestors = []
-            transfs = []
-            for key in keys:
-                elem = self._elements[key]
-                nest = False
-                if isinstance(elem, self._LinTransf):
-                    size = sum(self._elements[k].size for k in elem.keys)
-                    if size < elem.size:
-                        nest = True
-                        ancestors += list(elem.keys)
-                        transfs.append(jnp.concatenate(elem.matrices(self), 1))
-                if not nest:
-                    ancestors.append(key)
-                    transfs.append(jnp.eye(elem.size))
-            transf = jlinalg.block_diag(*transfs)
-            cov = self._assemblecovblocks(ancestors)
-            if covtransf:
-                ycov, transf, cov = covtransf((ycov, transf, cov))
-            covdec = self._decompclass(cov, **kw)
-            # TODO obtain covdec from _solver recursively, to use cache?
-            decomp = _linalg.Woodbury2(ycov, transf, covdec, self._decompclass, sign=1, **kw)
-        else:
-            Kxx = self._assemblecovblocks(keys)
-            if ycov is not None:
-                Kxx = Kxx + ycov
-            if covtransf:
-                Kxx = covtransf(Kxx)
-            decomp = self._decompclass(Kxx, **kw)
+        # if isinstance(ycov, _linalg.Decomposition):
+        #     ancestors = []
+        #     transfs = []
+        #     for key in keys:
+        #         elem = self._elements[key]
+        #         nest = False
+        #         if isinstance(elem, self._LinTransf):
+        #             size = sum(self._elements[k].size for k in elem.keys)
+        #             if size < elem.size:
+        #                 nest = True
+        #                 ancestors += list(elem.keys)
+        #                 transfs.append(jnp.concatenate(elem.matrices(self), 1))
+        #         if not nest:
+        #             ancestors.append(key)
+        #             transfs.append(jnp.eye(elem.size))
+        #     transf = jlinalg.block_diag(*transfs)
+        #     cov = self._assemblecovblocks(ancestors)
+        #     if covtransf:
+        #         ycov, transf, cov = covtransf((ycov, transf, cov))
+        #     covdec = self._decompclass(cov, **kw)
+        #     # TODO obtain covdec from _solver recursively, to use cache?
+        #     decomp = _linalg.Woodbury2(ycov, transf, covdec, self._decompclass, sign=1, **kw)
+        # else:
+        Kxx = self._assemblecovblocks(keys)
+        if ycov is not None:
+            Kxx = Kxx + ycov
+        if covtransf:
+            Kxx = covtransf(Kxx)
+        decomp = self._decompclass(Kxx, **kw)
         
         # Cache decomposition.
         if ycov is None:
@@ -1644,18 +1644,18 @@ class GP:
             else:
                 solver = self._solver(inkeys)
 
-            mean = solver.quad(Kxxs, ymean)
-            cov = Kxsxs - solver.quad(Kxxs)
+            mean = solver.pinv_bilinear(Kxxs, ymean)
+            cov = Kxsxs - solver.ginv_quad(Kxxs)
             
             if not fromdata:
-                # complete formula:
-                # A = Kxx^-1 @ Kxxs
-                # cov = Kxsxs - A.T @ (Kxx - ycov) @ A
+                # cov = Kxsxs - Kxsx Kxx^-1 (Kxx - ycov) Kxx^-1 Kxxs =
+                #     = Kxsxs - Kxsx Kxx^-1 Kxxs + Kxsx Kxx^-1 ycov Kxx^-1 Kxxs
                 if ycov is not None:
-                    if isinstance(ycov, _linalg.Decomposition):
-                        ycov = ycov.matrix()
-                    A = solver.solve(Kxxs)
-                    cov = cov + A.T @ ycov @ A
+                    # if isinstance(ycov, _linalg.Decomposition): # for woodbury, currently un-implemented
+                    #     ycov = ycov.matrix()
+                    A = solver.ginv_linear(Kxxs)
+                    # TODO do I need K⁺ here or is K⁻ fine?
+                    cov += A.T @ ycov @ A
             
         else: # (keepcorr and not raw)        
             yplist = [numpy.reshape(self._prior(key), -1) for key in inkeys]
@@ -1664,13 +1664,13 @@ class GP:
             ysp = self._concatenate(ysplist)
             
             if y.dtype != object and ycov is not None:
-                if isinstance(ycov, _linalg.Decomposition):
-                    ycov = ycov.matrix()
+                # if isinstance(ycov, _linalg.Decomposition): # for woodbury, currently un-implemented
+                #     ycov = ycov.matrix()
                 y = gvar.gvar(y, ycov)
             else:
                 y = numpy.asarray(y) # because y - yp fails if y is a jax array
             mat = ycov if fromdata else None
-            flatout = ysp + self._solver(inkeys, mat).quad(Kxxs, y - yp)
+            flatout = ysp + self._solver(inkeys, mat).pinv_bilinear_robj(Kxxs, y - yp)
         
         if raw and not strip:
             meandict = {
@@ -1734,9 +1734,10 @@ class GP:
         self._check_ymean(ymean)
         
         # Get covariance matrix.
-        if isinstance(ycovblocks, _linalg.Decomposition):
-            ycov = ycovblocks
-        elif ycovblocks is not None:
+        # if isinstance(ycovblocks, _linalg.Decomposition): # for woodbury, currently un-implemented
+        #     ycov = ycovblocks
+        # elif ...
+        if ycovblocks is not None:
             ycov = jnp.block(ycovblocks)
             if y.dtype == object:
                 warnings.warn(f'covariance matrix may have been specified both explicitly and with gvars; the explicit one will be used')
@@ -1764,7 +1765,7 @@ class GP:
             if self._checksym and not jnp.allclose(ycov, ycov.T):
                 raise ValueError('covariance matrix of `given` is not symmetric')
 
-    def marginal_likelihood(self, given, givencov=None, *, separate=False, **kw):
+    def marginal_likelihood(self, given, givencov=None, **kw):
         """
         
         Compute the logarithm of the probability of the data.
@@ -1781,8 +1782,8 @@ class GP:
         use the whole fit to compute the marginal likelihood. E.g. `lsqfit`
         always computes the logGBF (it's the same thing).
         
-        The input is an array or dictionary of arrays, ``given``. The contents of
-        ``given`` represent the input data.
+        The input is an array or dictionary of arrays, ``given``. The contents
+        of ``given`` represent the input data.
                 
         Parameters
         ----------
@@ -1793,51 +1794,26 @@ class GP:
         givencov : dictionary of arrays, optional
             Covariance matrix of ``given``. If not specified, the covariance
             is extracted from ``given`` with ``gvar.evalcov(given)``.
-        separate : bool
-            If True, return separately the logdet term and the residuals term.
-            Default False.
         **kw :
             Additional keyword arguments are passed to the matrix decomposition.
         
         Returns
         -------
-        If ``separate == False`` (default):
-        
         logp : scalar
             The logarithm of the marginal likelihood.
-        
-        If ``separate == True``:
-            
-        logdet : scalar
-            The term of the marginal likelihood containing the logarithm of
-            the determinant of the prior covariance matrix, without the -1/2
-            factor.
-        residuals : array or dictionary of arrays
-            A vector whose squared 2-norm multiplied by -1/2 gives the other
-            term of the marginal likelihood.
         """
         decomp, ymean = self._prior_decomp(given, givencov, **kw)
-        logdet = decomp.logdet() + decomp.n * jnp.log(2 * jnp.pi)
-        if separate:
-            residuals = decomp.decorrelate(ymean)
-            return logdet, residuals
-        else:
-            return -1/2 * (decomp.quad(ymean) + logdet)
+        mll, _, _, _, _ = decomp.minus_log_normal_density(ymean, value=True)
+        return -mll
     
     @staticmethod
     def _getdecomp(solver):
         return {
-            'eigcut+': _linalg.EigCutFullRank,
-            'eigcut-': _linalg.EigCutLowRank,
-            'svdcut+': _linalg.SVDCutFullRank,
-            'svdcut-': _linalg.SVDCutLowRank,
-            'lanczos': _linalg.Lanczos,
-            'lobpcg': _linalg.LOBPCG,
-            'chol'   : _linalg.Chol,
+            'chol': _linalg.Chol,
         }[solver]
     
     @classmethod
-    def decompose(cls, posdefmatrix, solver='eigcut+', **kw):
+    def decompose(cls, posdefmatrix, solver='chol', **kw):
         """
         Decompose a nonnegative definite matrix.
         
@@ -1854,31 +1830,13 @@ class GP:
         solver : str
             Algorithm used to decompose the matrix.
 
-            'eigcut+' (default)
-                Promote small (or negative) eigenvalues to a minimum value.
-            'eigcut-'
-                Remove small (or negative) eigenvalues.
-            'svdcut+'
-                Promote small eigenvalues to a minimum value, keeping their
-                sign.
-            'svdcut-'
-                Remove small eigenvalues.
-            'lanczos'
-                Reduce the rank of the matrix. The complexity is O(n^2 r) where
-                n is the matrix size and r the required rank, while the
-                other algorithms are O(n^3). Slow for small sizes.
-            'lobpcg'
-                Like 'lanczos' but using the LOBPCG algorithm, faster but less
-                accurate.
             'chol'
                 Cholesky decomposition after regularizing the matrix with a
-                Gershgorin estimate of the maximum eigenvalue. The fastest of
-                the O(n^3) algorithms.
+                Gershgorin estimate of the maximum eigenvalue.
         **kw :
             Additional options.
 
             epsrel, epsabs : positive float or 'auto'
-                For solvers 'eigcut+', 'eigcut-', 'svdcut+', 'svdcut-', 'chol'.
                 Specify the threshold for considering small the eigenvalues:
                 
                     eps = epsrel * maximum_eigenvalue + epsabs
@@ -1886,18 +1844,6 @@ class GP:
                 epsrel='auto' sets epsrel = matrix_size * float_epsilon, 
                 while epsabs='auto' sets epsabs = float_epsilon. Default is
                 epsrel='auto', epsabs=0.
-            rank : positive integer
-                For the 'lanczos' and 'lobpcg' solvers, the target rank. It
-                should be much smaller than the matrix size for the method to
-                be convenient.
-            direct_autodiff : bool
-                If True, let JAX compute derivatives tracing through the code
-                instead of using custom derivatives for the various operations.
-                Default False.
-            stop_hessian : bool
-                If True, when computing second derivatives, pretend that the
-                matrix has zero second derivatives w.r.t. the inputs. Does not
-                work in reverse mode. Default False.
         
         Returns
         -------
@@ -1905,39 +1851,31 @@ class GP:
             An object representing the decomposition of the matrix. The
             available methods and properties are (K being the matrix):
         
-            n
-                The size of the matrix.
-            matrix()
-                Return K.
-            inv()
-                Compute K⁺.
-            solve(b)
-                Compute K⁺b.
-            quad(b[, c])
-                Compute b'K⁺b or b'K⁺c.
-            diagquad(b)
-                Compute the diagonal of b'K⁺b.
-            logdet()
-                Compute log(det(K)).
-            tracesolve(b)
-                Compute tr(K⁺b).
-            correlate(b[, transpose=True])
-                Compute Ab or A'b such that K = AA', with A n x m.
-            decorrelate(b[, transpose=True])
-                Compute A⁺b or A⁺'b with A as above.
-            m
-                The inner size of A.
+            pinv_bilinear(A, r)
+                Compute A'K⁺r.
+            pinv_bilinear_robj(A, r)
+                Compute A'K⁺r, and r can be an array of arbitrary objects.
+            ginv_quad(A)
+                Compute A'K⁻A.
+            ginv_diagquad(A)
+                Compute diag(A'K⁻A).
+            correlate(x)
+                Compute Zx such that K = ZZ'.
+            back_correlate(X)
+                Compute Z'X.
+            minus_log_normal_density(r, ...)
+                Compute a Normal density and its derivatives.
             eps
                 The threshold below which eigenvalues are not calculable.
+            n
+                Number of rows/columns of the matrix.
         
         Notes
         -----
-        The decomposition operations are JAX-traceable and differentiable (with
-        some exceptions). Since intermediate values are stored in the
-        decomposition object, it is necessary to trace a function that includes
-        both the call to `decompose` and to one of the methods listed above.
-        The decomposition object can be passed as input/output in jax-traceable
-        functions.
+        The decomposition operations are JAX-traceable, but they are not meant
+        to be differentiated. The method `minus_log_normal_density` provides
+        required derivatives with a custom implementation, given the derivatives
+        of the inputs.
         
         """
         m = jnp.asarray(posdefmatrix)

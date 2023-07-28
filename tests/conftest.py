@@ -19,8 +19,25 @@
 
 import pytest
 import gvar
+import numpy as np
 
 @pytest.fixture(autouse=True)
 def clean_gvar_env():
     yield gvar.switch_gvar()
     gvar.restore_gvar()
+
+def nodepath(node):
+    """ Take a pytest node, walk up its ancestors collecting all node
+    names, return concatenated names """
+    names = []
+    while node is not None:
+        names.append(node.name)
+        node = node.parent
+    return '::'.join(reversed(names))
+
+@pytest.fixture
+def rng(request):
+    """ A random generator with a deterministic per-test seed"""
+    path = nodepath(request.node)
+    seed = np.array([path], np.bytes_).view(np.uint8)
+    return np.random.default_rng(seed)
