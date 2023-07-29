@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import itertools
 import time
 
@@ -26,9 +25,8 @@ import gvar
 from pytest import mark
 import pytest
 
-sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
-import util
+from . import util
 
 seed = np.random.SeedSequence(202302281256)
 s, seed = seed.spawn(2)

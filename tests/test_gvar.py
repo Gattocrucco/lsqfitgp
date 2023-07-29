@@ -17,16 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-
 import numpy as np
 import gvar
 from jax import tree_util
 import jax
 
-sys.path.insert(0, '.')
 from lsqfitgp import _patch_gvar
-import util
+from . import util
 
 def check_jacobian(nprim, shape, pnz=1):
     z, s = np.random.randn(2, nprim)

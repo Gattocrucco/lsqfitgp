@@ -19,7 +19,6 @@
 
 """ Test the copula module """
 
-import sys
 import functools
 
 import numpy as np
@@ -27,7 +26,6 @@ import gvar
 import jax
 import pytest
 
-sys.path.insert(0, '.')
 import lsqfitgp as lgp
 
 class JaxConfig:

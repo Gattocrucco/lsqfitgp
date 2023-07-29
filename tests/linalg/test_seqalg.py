@@ -17,11 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-
 import pytest
 
-sys.path.insert(0, '.')
 from lsqfitgp import _linalg
 from lsqfitgp._linalg import _seqalg
 

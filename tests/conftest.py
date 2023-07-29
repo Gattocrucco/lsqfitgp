@@ -23,6 +23,9 @@ import numpy as np
 
 @pytest.fixture(autouse=True)
 def clean_gvar_env():
+    """ Create a new hidden global covariance matrix for primary gvars, restore
+    the previous one during teardown. Otherwise the global covariance matrix
+    grows arbitrarily. """
     yield gvar.switch_gvar()
     gvar.restore_gvar()
 
@@ -37,7 +40,7 @@ def nodepath(node):
 
 @pytest.fixture
 def rng(request):
-    """ A random generator with a deterministic per-test seed"""
+    """ A random generator with a deterministic per-test seed """
     path = nodepath(request.node)
     seed = np.array([path], np.bytes_).view(np.uint8)
     return np.random.default_rng(seed)

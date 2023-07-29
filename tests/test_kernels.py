@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import inspect
 import abc
 import re
@@ -28,11 +27,10 @@ from scipy import linalg
 from jax import test_util
 import jax
 
-sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
 from lsqfitgp import _kernels, _Kernel
 
-import util
+from . import util
 
 # Make list of Kernel concrete subclasses.
 kernels = []

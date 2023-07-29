@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import itertools
 
 import numpy as np
@@ -28,10 +27,9 @@ import pytest
 import pandas as pd
 import polars as pl
 
-sys.path.insert(0, '.')
 import lsqfitgp as lgp
 from lsqfitgp import _array
-import util
+from . import util
 
 rng = np.random.default_rng(202301231524)
 

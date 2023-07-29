@@ -19,14 +19,11 @@
 
 """ Test the copula.invgamma module """
 
-import sys
-
 from jax import test_util
 from scipy import stats
 import pytest
 import numpy as np
 
-sys.path.insert(0, '.')
 from lsqfitgp.copula import _invgamma
 
 def test_grad():

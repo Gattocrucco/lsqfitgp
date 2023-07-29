@@ -57,7 +57,7 @@ EXAMPLESPY = COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) $(PY) --context=
 DOCSPY = cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) $(PY) --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX)
 
 tests:
-	$(TESTSPY) -m pytest -rfEX
+	$(TESTSPY) -m pytest tests -rfEX
 	# TODO put lsqfitgp in src/ and use tox to test in installation environment
 
 # I did not manage to make parallel pytest (pytest -n<processes>) work with

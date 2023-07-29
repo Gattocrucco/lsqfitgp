@@ -17,18 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-
 import numpy as np
 from jax import numpy as jnp
 import gvar
 from scipy import stats
 import pytest
 
-sys.path.insert(0, '.')
 import lsqfitgp as lgp
 
-import util
+from . import util
 
 def test_manyargs():
     with pytest.raises(ValueError):

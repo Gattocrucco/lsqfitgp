@@ -17,14 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-
 import numpy as np
 from scipy import stats
 import pytest
 import gvar
 
-sys.path = ['.'] + sys.path
 import lsqfitgp as lgp
 
 def make_mean_cov(n):

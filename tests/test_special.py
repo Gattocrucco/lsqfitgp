@@ -19,8 +19,6 @@
 
 # TODO maybe use sympy as reference, since it's better maintained than mpmath
 
-import sys
-
 import jax
 from jax import test_util
 import numpy as np
@@ -29,9 +27,8 @@ import pytest
 from pytest import mark
 import mpmath
 
-sys.path.insert(0, '.')
 from lsqfitgp import _special, _patch_jax
-import util
+from . import util
 
 gen = np.random.default_rng(202207201419)
 

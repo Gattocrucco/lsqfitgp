@@ -17,8 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-
 import numpy as np
 import gvar
 import jax
@@ -26,10 +24,9 @@ from jax import lax
 from jax import numpy as jnp
 from pytest import mark
 
-sys.path.insert(0, '.')
 from lsqfitgp import _patch_jax
 import lsqfitgp as lgp
-import util
+from . import util
 
 rng = np.random.default_rng(202303031632)
 

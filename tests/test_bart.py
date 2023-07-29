@@ -17,16 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-
 import numpy as np
 import pytest
 from pytest import mark
 
-sys.path.insert(0, '.')
 import lsqfitgp as lgp
 
-import util
+from . import util
 
 gen = np.random.default_rng(202207191826)
 
