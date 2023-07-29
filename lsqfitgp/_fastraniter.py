@@ -101,8 +101,9 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
     try:
         covdec = _linalg.Chol(squarecov, epsrel='auto' if eps is None else eps)
     except numpy.linalg.LinAlgError:
-        warnings.warn('covariance matrix not positive definite with eps={}'.format(eps))
-        covdec = _linalg.EigCutFullRank(squarecov, epsrel=0)
+        raise numpy.linalg.LinAlgError('covariance matrix not positive definite with eps={}'.format(eps))
+        # TODO when I implement a pseudoinverse or something that does not fail
+        # like diagonalization, issue a warning and use the other decomposition
 
     # get random number generator
     rng = numpy.random.default_rng(rng)

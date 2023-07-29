@@ -79,7 +79,8 @@ def test_raniter_packing():
 
 def test_raniter_warning():
     cov = np.array([1, 1.1, 1.1, 1]).reshape(2, 2)
-    with pytest.warns(UserWarning, match='positive definite'):
+    # with pytest.warns(UserWarning, match='positive definite'):
+    with pytest.raises(np.linalg.LinAlgError):
         next(lgp.raniter(np.zeros(len(cov)), cov))
     with pytest.warns(None) as record:
         next(lgp.raniter(np.zeros(len(cov)), cov, eps=0.1))

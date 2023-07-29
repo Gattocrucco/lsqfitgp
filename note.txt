@@ -4630,4 +4630,10 @@ once and for all: unit test classes are re-instantiated for each test.
 ==========
 
 I completed Cholesky with the new decomposition interface. Next steps: use it in
-GP (DONE), then in empbayes_fit.
+GP (DONE), then in empbayes_fit (DONE).
+
+2023-07-29
+==========
+
+Seems to solve the tracing problems. Next: optimize the likelihood calculation
+and the derivatives.

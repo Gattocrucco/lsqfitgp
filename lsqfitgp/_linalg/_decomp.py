@@ -265,6 +265,13 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
     @property
     @abc.abstractmethod
     def n(self):
+        """ Number of rows/columns of the matrix """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def m(self):
+        """ Number of columns of Z """
         pass
 
     def ginv(self):
@@ -649,3 +656,5 @@ class Chol(Decomposition):
     @property
     def n(self):
         return len(self._L)
+
+    m = n
