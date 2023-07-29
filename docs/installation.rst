@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/installation.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -35,9 +35,7 @@ Then, install :mod:`lsqfitgp` by running this command in a shell:
 Windows
 -------
 
-I've seen that people may have problems installing the dependency :mod:`gvar`
-on Windows. This page may help:
-`<https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_. Another problematic
-dependency is JAX, which is still not officially supported on Windows. This
-other page provides pre-built wheels:
-`<https://github.com/cloudhan/jax-windows-builder>`_.
+I've seen that people may have problems installing the dependency :mod:`gvar` on
+Windows. This page may help: `<https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
+Another problematic dependency is JAX, whose Windows support is experimental. I
+do not test `lsqfitgp` on Windows.

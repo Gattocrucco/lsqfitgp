@@ -23,6 +23,7 @@ from jax import lax
 import numpy
 
 from .. import _linalg
+from .._linalg import _toeplitz
 from .. import _patch_jax
 from .._Kernel import stationarykernel
 
@@ -203,7 +204,7 @@ def _yule_walker(gamma):
     t = gamma[:-1]
     b = gamma[1:]
     if t.size:
-        return _linalg._toeplitz.solve(t, b)
+        return _toeplitz.solve(t, b)
     else:
         return jnp.empty(0)
 

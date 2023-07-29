@@ -1851,6 +1851,12 @@ class GP:
             An object representing the decomposition of the matrix. The
             available methods and properties are (K being the matrix):
         
+            matrix():
+                Return K.
+            ginv():
+                Compute K⁻.
+            ginv_linear(X):
+                Compute K⁻X.
             pinv_bilinear(A, r)
                 Compute A'K⁺r.
             pinv_bilinear_robj(A, r)
@@ -1860,15 +1866,19 @@ class GP:
             ginv_diagquad(A)
                 Compute diag(A'K⁻A).
             correlate(x)
-                Compute Zx such that K = ZZ'.
+                Compute Zx such that K = ZZ', Z can be rectangular.
             back_correlate(X)
                 Compute Z'X.
+            pinv_correlate(x):
+                Compute Z⁺x.
             minus_log_normal_density(r, ...)
                 Compute a Normal density and its derivatives.
             eps
                 The threshold below which eigenvalues are not calculable.
             n
-                Number of rows/columns of the matrix.
+                Number of rows/columns of K.
+            m
+                Number of columns of Z.
         
         Notes
         -----

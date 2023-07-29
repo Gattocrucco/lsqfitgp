@@ -371,3 +371,9 @@ Output::
    {'caesar': 0.729684638(16), 'milton': -1.268445800(24)}
 
 This time both means are close to ±1.
+
+.. note::
+
+   The technique of using -1 and +1 to map a binary variable to continuous
+   values for regression works fine in this simple example but is in general
+   poor.
