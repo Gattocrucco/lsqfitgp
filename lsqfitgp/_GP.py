@@ -1260,7 +1260,7 @@ class GP:
             # decompcache a dict subclass that accepts tuples of keys but uses
             # internally frozenset.
         
-        # Compute decomposition.
+        # Compute decomposition. # woodbury, currently un-implemented
         # if isinstance(ycov, _linalg.Decomposition):
         #     ancestors = []
         #     transfs = []

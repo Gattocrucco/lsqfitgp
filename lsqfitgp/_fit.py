@@ -41,6 +41,9 @@ __all__ = [
     'empbayes_fit',
 ]
 
+# TODO the following token_ thing functionality may be provided by jax in the
+# future, follow the developments
+
 @functools.singledispatch
 def token_getter(x):
     return x
@@ -59,7 +62,6 @@ def _(x):
 def _(x, token):
     x = jnp.asarray(x)
     return x.at[x.ndim * (0,)].set(token) if x.size else token
-
 
 def token_map_leaf(func, x):
     if isinstance(x, (jnp.ndarray, numpy.ndarray)):
@@ -405,6 +407,8 @@ class empbayes_fit(Logger):
 
         # TODO dictionary argument jitkw
 
+        # TODO make jit=True default?
+
     class _CountCalls:
         """ wrap a callable to count calls """
         
@@ -456,7 +460,7 @@ class empbayes_fit(Logger):
         def _start(self, token):
             self.stamp = time.time()
             self.counter = 0
-            assert not self._last_start
+            assert not self._last_start # forbid consecutive start() calls
             self._last_start = True
             return token
 
@@ -489,14 +493,14 @@ class empbayes_fit(Logger):
         freehp = flathp[~flatfix]
         mean = gvar.mean(freehp)
         cov = gvar.evalcov(freehp) # TODO use evalcov_blocks
-        dec = _linalg.EigCutFullRank(cov)
+        dec = _linalg.Chol(cov)
         assert dec.n == freehp.size
         self.log(f'{freehp.size}/{flathp.size} free hyperparameters', 2)
         
         # determine starting point for minimization
         initial = self._parse_initial(hyperprior, initial, dec)
         flatinitial = self._flatview(initial)
-        x0 = dec.decorrelate(flatinitial[~flatfix] - mean)
+        x0 = dec.pinv_correlate(flatinitial[~flatfix] - mean)
         # TODO for initial = 'priormean', x0 is zero, skip decorrelate
         # for initial = 'priorsample', x0 is iid normal, but I have to sync
         # it with the user-exposed unflattened initial in _parse_initial
@@ -595,7 +599,7 @@ class empbayes_fit(Logger):
             if dec.n < hyperprior.size:
                 flathp = self._flatview(hyperprior)
                 cov = gvar.evalcov(flathp) # TODO use evalcov_blocks
-                fulldec = _linalg.EigCutFullRank(cov)
+                fulldec = _linalg.Chol(cov)
             else:
                 fulldec = dec
             iid = numpy.random.randn(fulldec.m)
@@ -636,14 +640,23 @@ class empbayes_fit(Logger):
     def _prepare_functions(self, *, gpfactory, gpfactorykw, data, cachedargs,
         hpunflat, mlkw, jit, forward):
 
-        def make(p, **kw):
-            """ create GP object and extract arguments for conditioning """
+        timer = self._Timer()
+        firstcall = [None]
+        
+        def make_decomp(p, **kw):
+            """ decomposition of the prior covariance and data """
+
+            # start timer
+            p = timer.start(p)
+
+            # create GP object
             hp = hpunflat(p)
             gp = gpfactory(hp, **kw)
             assert gp.__class__.__name__ == 'GP'
                 # avoid isinstance because it breaks under reloading
                 # TODO maybe replace with custom isinstance?
             
+            # extract data
             if cachedargs:
                 args = cachedargs
             else:
@@ -651,120 +664,129 @@ class empbayes_fit(Logger):
                 if not isinstance(args, tuple):
                     args = (args,)
 
-            return gp, args
+            # decompose covariance matrix and flatten data
+            decomp, r = gp._prior_decomp(*args, covtransf=timer.partial, **mlkw)
+            r = r.astype(float)
         
-        def dojit(f):
-            return jax.jit(f) if jit else f
-        if jit:
-            self.log('compile functions with jax jit', 2)
-        
-        timer = self._Timer()
-        firstcall = [None]
-        
-        @dojit
-        def fun(p, **kw):
-            """ minus log posterior on the hyperparameters """
-            p = timer.start(p)
-            gp, args = make(p, **kw)
-            decomp, ymean = gp._prior_decomp(*args, covtransf=timer.partial, **mlkw)
-            decomp = timer.partial(decomp)
-
+            # log number of datapoints
             if firstcall:
+                # it is convenient to do here because the data is flattened.
                 # works under jit since the first call is tracing
                 firstcall.pop()
                 xdtype = gp._get_x_dtype()
                 nd = '?' if xdtype is None else _array._nd(xdtype)
-                self.log(f'{ymean.size} datapoints, {nd} covariates')
-                    
-            return timer.partial(1/2 * (
-                decomp.logdet()
-                + decomp.n * jnp.log(2 * jnp.pi)
-                + decomp.quad(ymean)
-                + p @ p
-            ))
+                self.log(f'{r.size} datapoints, {nd} covariates')
 
-        if forward:
-            jactr = jax.jacfwd
-            modename = 'forward'
-        else:
-            jactr = jax.jacrev
-            modename = 'reverse'
-        self.log(f'{modename}-mode autodiff (if used)', 2)
-        
-        fun_and_jac = dojit(_patch_jax.value_and_ops(fun, jactr))
-        jac = dojit(jactr(fun))
+            # split timer and return decomposition
+            return timer.partial(decomp), r
 
-        if not callable(data):
-            
-            @jax.jacfwd
-            @jax.jacfwd
-            # can't change inner jac to rev due to jax issue #10994
-            # (stop_hessian)
-            def fisher(p, **kw):
-                p = timer.start(p)
-                gp, args = make(p, **kw)
-                decomp, _ = gp._prior_decomp(*args, stop_hessian=True, covtransf=timer.partial, **mlkw)
-                return -1/2 * decomp.logdet()
-            
-            @dojit
-            def fisherprec(p, **kw):
-                f = fisher(p, **kw)
-                return timer.partial(f + jnp.eye(len(f), dtype=f.dtype))
-        
-        else:
-            
-            # Must take into account that the data can depend on the        
-            # hyperparameters. The statistical meaning is that the prior mean
-            # depends on the hyperparameters.
-
-            # TODO unittest that this works properly also in the case that the
-            # data covariance matrix depends on the hypers.
-            
-            @functools.partial(jax.jacfwd, has_aux=True)
-            # can't change jac to rev due to jax issue #10994 (stop_hessian)
-            def grad_logdet_and_aux(p, **kw):
-                p = timer.start(p)
-                gp, args = make(p, **kw)
-                decomp, ymean = gp._prior_decomp(*args, stop_hessian=True, covtransf=timer.partial, **mlkw)
-                return -1/2 * decomp.logdet(), (decomp, ymean)
-            
-            @functools.partial(jax.jacfwd, has_aux=True)
-            def fisher_and_jac_and_aux(p, **kw):
-                gld, (decomp, ymean) = grad_logdet_and_aux(p, **kw)
-                return (gld, ymean), decomp
-            
-            @dojit
-            def fisherprec(p, **kw):
-                (F, J), decomp = fisher_and_jac_and_aux(p, **kw)
-                result = F + jnp.eye(len(F), dtype=F.dtype) + decomp.quad(J)
-                return timer.partial(result)
-
-        # define wrapper to collect call stats and pass user args
+        # define wrapper to collect call stats, pass user args, compile
         def wrap(func):
+            if jit:
+                func = jax.jit(func)
             @functools.wraps(func)
             def wrapped(p):
                 return func(p, **gpfactorykw)
             return self._CountCalls(wrapped)
+        if jit:
+            self.log('compile functions with jax jit', 2)        
         
-        # wrap functions and put them in a dictionary
-        functions = {
-            'fun': wrap(fun),
-            'jac': wrap(jac),
-            'fun&jac': wrap(fun_and_jac),
-            'fisher': wrap(fisherprec),
-        }
+        # log derivation method
+        modename = 'forward' if forward else 'reverse'
+        self.log(f'{modename}-mode autodiff (if used)', 2)
 
+        # TODO time the derivatives separately?
+
+        def prior(p):
+            # the prior is a normal with identity covariance matrix because p is
+            # transformed to make it so
+            return 1/2 * (len(p) * jnp.log(2 * jnp.pi) + p @ p)
+
+        def grad_prior(p):
+            return p
+
+        def fisher_prior(p):
+            return jnp.eye(len(p))
+
+        @wrap
+        def fun(p, **kw):
+            """ minus log posterior on the hyperparameters (not normalized) """
+            decomp, r = make_decomp(p, **kw)
+            cond, _, _, _, _ = decomp.minus_log_normal_density(r, value=True)
+            post = cond + prior(p)
+            return timer.partial(post)
+
+        def make_decomp_tee(p, **kw):
+            decomp, r = make_decomp(p, **kw)
+            return (decomp.matrix(), r), (decomp, r)
+
+        def make_gradfwd_fisher_args(p, **kw):
+            (dK, dr), (decomp, r) = jax.jacfwd(make_decomp_tee, has_aux=True)(p, **kw)
+            lkw = dict(dK=dK, dr=dr)
+            return decomp, r, lkw
+
+        def make_jac_args(p, **kw):
+            if forward:
+                decomp, r, lkw = make_gradfwd_fisher_args(p, **kw)
+                lkw.update(gradfwd=True)
+            else:
+                def make_decomp_K(p):
+                    (K, _), aux = make_decomp_tee(p, **kw)
+                    return K, aux
+                def make_decomp_r(p):
+                    (_, r), _ = make_decomp_tee(p, **kw)
+                    return r
+                _, dK_vjp, (decomp, r) = jax.vjp(make_decomp_K, p, has_aux=True)
+                _, dr_vjp = jax.vjp(make_decomp_r, p)
+                unpack = lambda f: lambda x: f(x)[0]
+                dK_vjp = unpack(dK_vjp)
+                dr_vjp = unpack(dr_vjp)
+                # TODO apply vjp twice using aux to get separate vjps in one pass
+                lkw = dict(gradrev=True, dK_vjp=dK_vjp, dr_vjp=dr_vjp)
+            return decomp, r, lkw
+
+        @wrap
+        def fun_and_jac(p, **kw):
+            """ fun and its gradient """
+            decomp, r, lkw = make_jac_args(p, **kw)
+            cond, gradrev, gradfwd, _, _ = decomp.minus_log_normal_density(r, value=True, **lkw)
+            post = cond + prior(p)
+            grad_cond = gradfwd if forward else gradrev
+            grad_post = grad_cond + grad_prior(p)
+            return timer.partial((post, grad_post))
+        
+        @wrap
+        def jac(p, **kw):
+            """ gradient of fun """
+            decomp, r, lkw = make_jac_args(p, **kw)
+            _, gradrev, gradfwd, _, _ = decomp.minus_log_normal_density(r, **lkw)
+            grad_cond = gradfwd if forward else gradrev
+            grad_post = grad_cond + grad_prior(p)
+            return timer.partial(grad_post)
+
+        @wrap
+        def fisher(p, **kw):
+            """ fisher matrix """
+            decomp, r, lkw = make_gradfwd_fisher_args(p, **kw)
+            _, _, _, fisher_cond, _ = decomp.minus_log_normal_density(r, fisher=True, **lkw)
+            fisher_post = fisher_cond + fisher_prior(p)
+            return timer.partial(fisher_post)
+        
         # set attributes
         self.gpfactory = gpfactory
         self.gpfactorykw = gpfactorykw
 
-        return timer, functions
+        return timer, {
+            'fun': fun,
+            'jac': jac,
+            'fun&jac': fun_and_jac,
+            'fisher': fisher,
+        }
 
     def _prepare_minargs(self, method, functions, hpinitial):
+        minargs = dict(fun=functions['fun&jac'], jac=True, x0=hpinitial)
         if self.SEPARATE_JAC:
-            minargs = dict(fun=functions['fun'], jac=functions['jac'], x0=hpinitial)
-        else:
-            minargs = dict(fun=functions['fun&jac'], jac=True, x0=hpinitial)
+            minargs.update(fun=functions['fun'], jac=functions['jac'])
         if method == 'nograd':
             minargs.update(fun=functions['fun'], jac=None, method='nelder-mead')
         elif method == 'gradient':
@@ -777,6 +799,8 @@ class empbayes_fit(Logger):
             raise KeyError(method)
         self.log(f'method {method!r}', 2)
         return minargs
+
+        # TODO add method with fisher matvec instead of fisher matrix
 
     def _log_totals(self, total, timer, callback, jit, functions):
         times = callback.fmttimes({
@@ -838,7 +862,7 @@ class empbayes_fit(Logger):
                     cov = hessinv
             elif hasattr(minimizer_result, 'hess'):
                 self.log('use minimizer hessian as precision', 2)
-                cov = _linalg.EigCutFullRank(minimizer_result.hess).inv()
+                cov = _linalg.Chol(minimizer_result.hess).ginv()
             else:
                 raise RuntimeError('the minimizer did not return an estimate of the hessian')
 

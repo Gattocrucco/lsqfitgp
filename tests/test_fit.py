@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+
 import numpy as np
 from jax import numpy as jnp
 import gvar
@@ -24,7 +26,6 @@ from scipy import stats
 import pytest
 
 import lsqfitgp as lgp
-
 from . import util
 
 def flat(g):
@@ -184,11 +185,18 @@ def test_checks():
         lgp.empbayes_fit(gvar.gvar(0, 1), lambda: None, lambda: None, method='cippa')
     with pytest.raises(RuntimeError) as err:
         def makegp(x):
-            gp = lgp.GP(lgp.ExpQuad(), checkfinite=False, checksym=False, checkpos=False)
-            gp.addx(x * np.nan, 0)
+            gp = lgp.GP(lgp.ExpQuad())
+            gp.addx(x, 'x')
             return gp
-        lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {0: 0})
+        lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0.}, minkw=dict(options=dict(maxiter=0)))
     assert 'minimization failed: ' in str(err.value)
+
+def test_int_data():
+    def makegp(x):
+        gp = lgp.GP(lgp.ExpQuad())
+        gp.addx(x, 'x')
+        return gp
+    lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0})
 
 def test_data():
     

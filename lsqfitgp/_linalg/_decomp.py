@@ -122,15 +122,21 @@ from jax.scipy import linalg as jlinalg
 from jax import lax
 
 from .. import _patch_jax
+from . import _pytree
 
-class Decomposition(abc.ABC):
+class Decomposition(_pytree.AutoPyTree, abc.ABC):
     """
     Abstract base class for decompositions of positive semidefinite matrices.
     """
 
     @abc.abstractmethod
     def __init__(self, *args, **kw):
-        """Decompose the input matrix."""
+        """ Decompose the input matrix """
+        pass
+
+    @abc.abstractmethod
+    def matrix(self):
+        """ The input matrix """
         pass
 
     @abc.abstractmethod
@@ -160,12 +166,17 @@ class Decomposition(abc.ABC):
 
     @abc.abstractmethod
     def correlate(self, x):
-        """Compute Zx where K = ZZ'."""
+        """ Compute Zx where K = ZZ' """
         pass
 
     @abc.abstractmethod
     def back_correlate(self, X):
-        """Compute Z'X."""
+        """ Compute Z'X """
+        pass
+
+    @abc.abstractmethod
+    def pinv_correlate(self, x):
+        """ Compute Z⁺x """
         pass
 
     @abc.abstractmethod
@@ -255,6 +266,10 @@ class Decomposition(abc.ABC):
     @abc.abstractmethod
     def n(self):
         pass
+
+    def ginv(self):
+        """ Compute K⁻ """
+        return self.ginv_quad(jnp.eye(self.n))
 
 def solve_triangular_python(a, b, *, lower=False):
     """
@@ -358,6 +373,7 @@ class Chol(Decomposition):
     def __init__(self, K, *, epsrel='auto', epsabs=0):
         # K <- K + Iε
         # K = LL'
+        self._K = K
         s = diag_scale_pow2(K)
         K = K / s / s[:, None]
         eps = self._parseeps(K, epsrel, epsabs)
@@ -370,6 +386,9 @@ class Chol(Decomposition):
                 raise numpy.linalg.LinAlgError('cholesky decomposition not finite, probably matrix not pos def numerically')
         self._L = L * s[:, None]
         self._eps = eps * jnp.min(s * s)
+
+    def matrix(self):
+        return self._K
 
     def ginv_linear(self, X):
         # = K⁻¹X
@@ -409,6 +428,10 @@ class Chol(Decomposition):
     def back_correlate(self, X):
         # = L'X
         return self._L.T @ X
+
+    def pinv_correlate(self, x):
+        # = L⁻¹x
+        return jlinalg.solve_triangular(self._L, x, lower=True)
 
     def minus_log_normal_density(self,
         r,               # 1d array, the residuals (data - prior mean)

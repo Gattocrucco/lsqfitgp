@@ -195,10 +195,15 @@ class TestChol:
         util.assert_close_matrices(result, expected, rtol=1e-14)
 
     def test_back_correlate(self, n, K, decomp):
-        ZT = decomp.back_correlate(np.eye(n))
-        result = ZT.T @ ZT
+        Zt = decomp.back_correlate(np.eye(n))
+        result = Zt.T @ Zt
         expected = K
         util.assert_close_matrices(result, expected, rtol=1e-14)
+
+    def test_pinv_correlate(self, n, K, decomp):
+        result = decomp.pinv_correlate(K) # = Z⁺K = Z⁺ZZ' = Z'
+        expected = decomp.back_correlate(np.eye(n)) # = Z'I = Z'
+        util.assert_close_matrices(result, expected, rtol=1e-13)
 
     def test_correlate_back_correlate(self, n, K, decomp, r):
         result = decomp.correlate(decomp.back_correlate(r))
