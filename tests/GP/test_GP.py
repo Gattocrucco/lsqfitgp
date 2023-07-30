@@ -1,4 +1,4 @@
-# lsqfitgp/tests/test_GP.py
+# lsqfitgp/tests/GP/test_GP.py
 #
 # Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
@@ -28,7 +28,7 @@ import gvar
 import jax
 
 import lsqfitgp as lgp
-from . import util
+from .. import util
 
 def test_prior_raw_shape():
     gp = lgp.GP(lgp.ExpQuad())

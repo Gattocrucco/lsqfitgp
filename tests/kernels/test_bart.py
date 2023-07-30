@@ -1,4 +1,4 @@
-# lsqfitgp/tests/test_bart.py
+# lsqfitgp/tests/kernels/test_bart.py
 #
 # Copyright (c) 2022, 2023, Giacomo Petrillo
 #
@@ -23,7 +23,7 @@ from pytest import mark
 
 import lsqfitgp as lgp
 
-from . import util
+from .. import util
 
 rng = np.random.default_rng(202307302223)
 

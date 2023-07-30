@@ -1,4 +1,4 @@
-# lsqfitgp/tests/test_kernels.py
+# lsqfitgp/tests/kernels/test_kernels.py
 #
 # Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
@@ -30,7 +30,7 @@ import jax
 import lsqfitgp as lgp
 from lsqfitgp import _kernels, _Kernel
 
-from . import util
+from .. import util
 
 # Make list of Kernel concrete subclasses.
 kernels = []

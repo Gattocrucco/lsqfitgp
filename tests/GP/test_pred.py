@@ -1,4 +1,4 @@
-# lsqfitgp/tests/test_pred.py
+# lsqfitgp/tests/GP/test_pred.py
 #
 # Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
@@ -26,7 +26,7 @@ from pytest import mark
 import pytest
 
 import lsqfitgp as lgp
-from . import util
+from .. import util
 
 # TODO
 # - add gpkw for setting checksym, checkpos, solvers

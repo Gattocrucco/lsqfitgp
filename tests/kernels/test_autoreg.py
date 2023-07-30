@@ -1,4 +1,4 @@
-# lsqfitgp/tests/test_autoreg.py
+# lsqfitgp/tests/kernels/test_autoreg.py
 #
 # Copyright (c) 2022, 2023, Giacomo Petrillo
 #
@@ -23,7 +23,7 @@ from scipy import linalg
 import pytest
 
 import lsqfitgp as lgp
-from . import util
+from .. import util
 
 def gen_ar_acf(p, rng):
     if p:

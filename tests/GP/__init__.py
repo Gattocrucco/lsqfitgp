@@ -1,4 +1,4 @@
-# lsqfitgp/tests/linalg/test_seqalg.py
+# lsqfitgp/tests/GP/__init__.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #
@@ -16,11 +16,3 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
-
-import pytest
-
-from lsqfitgp._linalg import _seqalg
-
-def test_acausal_alg():
-    with pytest.raises(ValueError):
-        _seqalg.sequential_algorithm(2, [_seqalg.Stack(0)])
