@@ -4635,5 +4635,18 @@ GP (DONE), then in empbayes_fit (DONE).
 2023-07-29
 ==========
 
-Seems to solve the tracing problems. Next: optimize the likelihood calculation
-and the derivatives.
+Seems to solve the tracing problems. Next:
+- solve new bugs due to the jax 0.4.14 update (DONE)
+- optimize the likelihood calculation in _decomp.py
+- optimize the derivatives in _fit.py
+- use the rng fixture for random generators in all tests
+- try to use pytest's cache for test_special.py
+
+..........
+
+Idea for the next release title: "dear lord deliver us from pins", which ChatGPT
+refines to "Our code, hallowed be thy dependencies, but deliver us from pins."
+After a bit more of ChatGPTing, it's "Our code, hallowed be thy dependencies,
+but deliver us from pins and torment," such that "pins" possibly makes you
+recall "pain." I'm not confident this works on English speakers since I'm not
+one myself.

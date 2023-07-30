@@ -123,7 +123,16 @@ class skipifabstract:
         exit = None
         if self.ENSURE_COMPILE_TIME_EVAL:
             exit = self.mgr.__exit__(exc_type, exc_value, tb)
-        if exit or exc_type in (jax.errors.ConcretizationTypeError, jax.errors.TracerArrayConversionError):
+        ignorable_error = (
+            exc_type is not None
+            and issubclass(exc_type, (
+                jax.errors.ConcretizationTypeError,
+                jax.errors.TracerArrayConversionError,
+                    # why isn't this a subclass of the former like
+                    # TracerBoolConversionError?
+            ))
+        )
+        if exit or ignorable_error:
             return True
         
         weird_cond = exc_type is IndexError and (
