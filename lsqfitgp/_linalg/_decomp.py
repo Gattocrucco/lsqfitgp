@@ -460,6 +460,19 @@ class Chol(Decomposition):
 
         out = {}
 
+        # compute shared factors
+        grad = (
+            (gradrev and (dK_vjp is not None or dr_vjp is not None))
+            or (gradfwd and (dK is not None or dr is not None))
+        )
+        if value or grad:
+            invLr = jlinalg.solve_triangular(L, r, lower=True)
+        if grad:
+            invKr = jlinalg.solve_triangular(L.T, invLr, lower=False)
+        if (gradrev and dK_vjp is not None) or (gradfwd and dK is not None):
+            invL = jlinalg.solve_triangular(L, jnp.eye(len(L)), lower=True)
+            invK = invL.T @ invL
+
         if value:
             # = 1/2 n log 2π
             #   + 1/2 log det K
@@ -470,7 +483,6 @@ class Chol(Decomposition):
             #       = (∏_i L_ii)²
             # r'K⁻¹r = r'L'⁻¹L⁻¹r =
             #        = (L⁻¹r)'(L⁻¹r)
-            invLr = jlinalg.solve_triangular(L, r, lower=True)
             out['value'] = 1/2 * (
                 len(L) * jnp.log(2 * jnp.pi) +
                 2 * jnp.sum(jnp.log(jnp.diag(L))) +
@@ -493,12 +505,7 @@ class Chol(Decomposition):
             #             = (K⁻¹r)_j dK_jl (K⁻¹r)_l =
             #             = dK_vjp((K⁻¹r) ⊗ (K⁻¹r))
             out['gradrev'] = 0
-            if dK_vjp is not None or dr_vjp is not None:
-                invLr = jlinalg.solve_triangular(L, r, lower=True)
-                invKr = jlinalg.solve_triangular(L.T, invLr, lower=False)
             if dK_vjp is not None:
-                invL = jlinalg.solve_triangular(L, jnp.eye(len(L)), lower=True)
-                invK = invL.T @ invL
                 tr_invK_dK = dK_vjp(invK)
                 r_invK_dK_invK_r = dK_vjp(jnp.outer(invKr, invKr))
                 out['gradrev'] += 1/2 * (tr_invK_dK - r_invK_dK_invK_r)
@@ -517,12 +524,7 @@ class Chol(Decomposition):
             # (r'K⁻¹dKK⁻¹r)_k = r_i K⁻¹_ij dK_jlk K⁻¹_lm r_m =
             #                 = (K⁻¹r)_j dK_jlk (K⁻¹r)_l
             out['gradfwd'] = 0
-            if dK is not None or dr is not None:
-                invLr = jlinalg.solve_triangular(L, r, lower=True)
-                invKr = jlinalg.solve_triangular(L.T, invLr, lower=False)
             if dK is not None:
-                invL = jlinalg.solve_triangular(L, jnp.eye(len(L)), lower=True)
-                invK = invL.T @ invL
                 tr_invK_dK = jnp.einsum('ij,ijk->k', invK, dK)
                 r_invK_dK_invK_r = jnp.einsum('i,ijk,j->k', invKr, dK, invKr)
                 out['gradfwd'] += 1/2 * (tr_invK_dK - r_invK_dK_invK_r)
@@ -584,8 +586,6 @@ class Chol(Decomposition):
             out['fishvec'] = None
 
         return tuple(out.values())
-
-        # TODO compute once shared factors
 
     @classmethod
     def make_derivs(cls,
