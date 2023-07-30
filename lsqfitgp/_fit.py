@@ -666,7 +666,7 @@ class empbayes_fit(Logger):
 
             # decompose covariance matrix and flatten data
             decomp, r = gp._prior_decomp(*args, covtransf=timer.partial, **mlkw)
-            r = r.astype(float)
+            r = r.astype(float) # int data upsets jax
         
             # log number of datapoints
             if firstcall:
@@ -684,10 +684,8 @@ class empbayes_fit(Logger):
         def wrap(func):
             if jit:
                 func = jax.jit(func)
-            @functools.wraps(func)
-            def wrapped(p):
-                return func(p, **gpfactorykw)
-            return self._CountCalls(wrapped)
+            func = functools.partial(func, **gpfactorykw)
+            return self._CountCalls(func)
         if jit:
             self.log('compile functions with jax jit', 2)        
         
@@ -716,13 +714,26 @@ class empbayes_fit(Logger):
             post = cond + prior(p)
             return timer.partial(post)
 
-        def make_decomp_tee(p, **kw):
-            decomp, r = make_decomp(p, **kw)
-            return (decomp.matrix(), r), (decomp, r)
-
         def make_gradfwd_fisher_args(p, **kw):
-            (dK, dr), (decomp, r) = jax.jacfwd(make_decomp_tee, has_aux=True)(p, **kw)
+            def make_decomp_tee(p):
+                decomp, r = make_decomp(p, **kw)
+                return (decomp.matrix(), r), (decomp, r)
+            (dK, dr), (decomp, r) = jax.jacfwd(make_decomp_tee, has_aux=True)(p)
             lkw = dict(dK=dK, dr=dr)
+            return decomp, r, lkw
+
+        def make_gradrev_args(p, **kw):
+            def make_decomp_r(p):
+                def make_decomp_K(p):
+                    decomp, r = make_decomp(p, **kw)
+                    return decomp.matrix(), (decomp, r)
+                _, dK_vjp, (decomp, r) = jax.vjp(make_decomp_K, p, has_aux=True)
+                return r, (decomp, r, dK_vjp)
+            _, dr_vjp, (decomp, r, dK_vjp) = jax.vjp(make_decomp_r, p, has_aux=True)
+            unpack = lambda f: lambda x: f(x)[0]
+            dK_vjp = unpack(dK_vjp)
+            dr_vjp = unpack(dr_vjp)
+            lkw = dict(dK_vjp=dK_vjp, dr_vjp=dr_vjp)
             return decomp, r, lkw
 
         def make_jac_args(p, **kw):
@@ -730,19 +741,8 @@ class empbayes_fit(Logger):
                 decomp, r, lkw = make_gradfwd_fisher_args(p, **kw)
                 lkw.update(gradfwd=True)
             else:
-                def make_decomp_K(p):
-                    (K, _), aux = make_decomp_tee(p, **kw)
-                    return K, aux
-                def make_decomp_r(p):
-                    (_, r), _ = make_decomp_tee(p, **kw)
-                    return r
-                _, dK_vjp, (decomp, r) = jax.vjp(make_decomp_K, p, has_aux=True)
-                _, dr_vjp = jax.vjp(make_decomp_r, p)
-                unpack = lambda f: lambda x: f(x)[0]
-                dK_vjp = unpack(dK_vjp)
-                dr_vjp = unpack(dr_vjp)
-                # TODO apply vjp twice using aux to get separate vjps in one pass
-                lkw = dict(gradrev=True, dK_vjp=dK_vjp, dr_vjp=dr_vjp)
+                decomp, r, lkw = make_gradrev_args(p, **kw)
+                lkw.update(gradrev=True)
             return decomp, r, lkw
 
         @wrap
