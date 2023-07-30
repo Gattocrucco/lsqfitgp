@@ -31,8 +31,6 @@ import lsqfitgp as lgp
 from lsqfitgp import _array
 from . import util
 
-rng = np.random.default_rng(202301231524)
-
 def test_ellipsis():
     x = np.empty((2, 3), dtype=[('a', float, 4)])
     y = lgp.StructuredArray(x)
@@ -65,7 +63,7 @@ def fill_array_at_random(x, rng):
     else:
         raise NotImplementedError
 
-def random_array(shape, dtype, rng=rng):
+def random_array(shape, dtype, rng):
     x = np.empty(shape, dtype)
     fill_array_at_random(x, rng)
     return x
@@ -95,7 +93,7 @@ def crosscheck_operation(op, *arrays, **kw):
 
         util.assert_equal(res1, res2)
 
-def test_broadcast_to():
+def test_broadcast_to(rng):
     op = np.broadcast_to # uses __array_function__
     dtypes = [
         [('f0', float)],
@@ -124,10 +122,10 @@ def test_broadcast_to():
         lambda s: (4,) + tuple(3 if i == 1 else i for i in s),
     ]
     for dtype, shape, transf in itertools.product(dtypes, shapes, transfs):
-        array = random_array(shape, dtype)
+        array = random_array(shape, dtype, rng)
         crosscheck_operation(op, array, shape=transf(shape))
 
-def test_broadcast_arrays():
+def test_broadcast_arrays(rng):
     op = np.broadcast_arrays # uses __array_function__
     dtypes = [
         [('f0', float)],
@@ -156,11 +154,11 @@ def test_broadcast_arrays():
         lambda s: (4,) + tuple(3 if i == 1 else i for i in s),
     ]
     for dtype, shape, transf in itertools.product(dtypes, shapes, transfs):
-        array1 = random_array(shape, dtype)
-        array2 = random_array(transf(shape), dtype)
+        array1 = random_array(shape, dtype, rng)
+        array2 = random_array(transf(shape), dtype, rng)
         crosscheck_operation(op, array1, array2)
 
-def test_broadcast():
+def test_broadcast(rng):
     def op(array1, array2):
         return lgp.broadcast(array1, array2).shape
     dtypes = [
@@ -190,11 +188,11 @@ def test_broadcast():
         lambda s: (4,) + tuple(3 if i == 1 else i for i in s),
     ]
     for dtype, shape, transf in itertools.product(dtypes, shapes, transfs):
-        array1 = random_array(shape, dtype)
-        array2 = random_array(transf(shape), dtype)
+        array1 = random_array(shape, dtype, rng)
+        array2 = random_array(transf(shape), dtype, rng)
         crosscheck_operation(op, array1, array2)
 
-def test_asarray():
+def test_asarray(rng):
     def op(array):
         return lgp.asarray(array)
     dtypes = [
@@ -216,10 +214,10 @@ def test_asarray():
         (2, 3, 4),
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
-        array = random_array(shape, dtype)
+        array = random_array(shape, dtype, rng)
         crosscheck_operation(op, array)
 
-def test_multiindex():
+def test_multiindex(rng):
     def op(a):
         names = list(a.dtype.names)
         return a[names], a[names[:2]], a[names[-2:]], a[names[:1]]
@@ -242,7 +240,7 @@ def test_multiindex():
         (2, 3, 4),
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
-        array = random_array(shape, dtype)
+        array = random_array(shape, dtype, rng)
         crosscheck_operation(op, array)
 
 def array_meta_hash(a):
@@ -251,7 +249,7 @@ def array_meta_hash(a):
     type_hash = len(d) + d.itemsize + sum(d[i].num for i in range(len(d))) + d.num
     return shape_hash + type_hash
 
-def test_setfield():
+def test_setfield(rng):
     def op(a):
         name = a.dtype.names[0]
         a0 = a[name]
@@ -281,10 +279,10 @@ def test_setfield():
         (2, 3, 4),
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
-        array = random_array(shape, dtype)
+        array = random_array(shape, dtype, rng)
         crosscheck_operation(op, array)
 
-def test_tree():
+def test_tree(rng):
     dtypes = [
         [('f0', float)],
         'f,f',
@@ -304,14 +302,14 @@ def test_tree():
         (2, 3, 4),
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
-        array1 = random_array(shape, dtype)
+        array1 = random_array(shape, dtype, rng)
         array = lgp.StructuredArray(array1)
         children, aux_data = tree_util.tree_flatten(array)
         array = tree_util.tree_unflatten(aux_data, children)
         array2 = np.asarray(array)
         util.assert_equal(array1, array2)
 
-def test_tree_reshaped():
+def test_tree_reshaped(rng):
     dtypes = [
         [('f0', float)],
         'f,5f',
@@ -332,7 +330,7 @@ def test_tree_reshaped():
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
         
-        basearray = random_array(shape, dtype)
+        basearray = random_array(shape, dtype, rng)
         
         slices = tuple(slice(rng.integers(size + 1)) for size in shape)
         array1 = basearray[slices]
@@ -368,7 +366,7 @@ def test_tree_reshaped():
             
             util.assert_equal(array1, array2)
 
-def test_reshape():
+def test_reshape(rng):
     def op1(array, shape):
         return array.reshape(shape)
     def op2(array, shape):
@@ -404,7 +402,7 @@ def test_reshape():
         lambda s: (-1,) + s[2:],
     ]
     for dtype, shape, transf in itertools.product(dtypes, shapes, transfs):
-        array = random_array(shape, dtype)
+        array = random_array(shape, dtype, rng)
         newshape = transf(shape)
         if -1 in newshape and (not shape or 0 in shape):
             continue
@@ -479,18 +477,18 @@ StructuredArray({
     s = "StructuredArray({})"
     assert repr(y) == s
 
-def test_set_subfield():
-    y = random_array(5, [('a', [('b', float)])])
+def test_set_subfield(rng):
+    y = random_array(5, [('a', [('b', float)])], rng)
     x = lgp.StructuredArray(y)
     a = x['a']
-    x = x.at['a'].set(random_array(a.shape, a.dtype))
+    x = x.at['a'].set(random_array(a.shape, a.dtype, rng))
     b = x['a']['b']
-    newb = random_array(b.shape, b.dtype)
+    newb = random_array(b.shape, b.dtype, rng)
     x1 = x.at['a'].set(x['a'].at['b'].set(newb))
     x2 = x.at['a']['b'].set(newb)
     util.assert_equal(np.array(x1), np.array(x2))
 
-def test_squeeze():
+def test_squeeze(rng):
     dtypes = [
         [('f0', float)],
         'f,f',
@@ -513,7 +511,7 @@ def test_squeeze():
         (2, 3, 4, 1),
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
-        array = random_array(shape, dtype)
+        array = random_array(shape, dtype, rng)
         crosscheck_operation(np.squeeze, array)
 
     shapes = [
@@ -523,7 +521,7 @@ def test_squeeze():
         (1, 3, 7),
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
-        array = random_array(shape, dtype)
+        array = random_array(shape, dtype, rng)
         crosscheck_operation(lambda a: a.squeeze(axis=0), array)
         crosscheck_operation(lambda a: a.squeeze(axis=(0,)), array)
     
@@ -533,14 +531,14 @@ def test_squeeze():
         (1, 3, 1, 7),
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
-        array = random_array(shape, dtype)
+        array = random_array(shape, dtype, rng)
         crosscheck_operation(lambda a: a.squeeze(axis=(0, 2)), array)
         crosscheck_operation(lambda a: a.squeeze(axis=(2, 0)), array)
 
 @pytest.mark.parametrize('cls', [pl.DataFrame, pd.DataFrame])
-def test_dataframe(cls):
+def test_dataframe(cls, rng):
     """ test DataFrame -> StructuredArray, both with Pandas and Polars """
-    a = random_array(10, 'f4,f8,i1,i2,i4,i8,u1,u2,u4,u8,?,U16,S16')
+    a = random_array(10, 'f4,f8,i1,i2,i4,i8,u1,u2,u4,u8,?,U16,S16', rng)
     df = cls(pd.DataFrame.from_records(a))
     s = lgp.StructuredArray.from_dataframe(df)
     a2 = np.array(s)
@@ -550,37 +548,37 @@ def test_not_handled():
     with pytest.raises(TypeError):
         np.concatenate([lgp.StructuredArray(np.zeros(1, 'd,d'))])
 
-def test_asjax():
+def test_asjax(rng):
     
-    x = random_array(4, float)
+    x = random_array(4, float, rng)
     assert isinstance(x, np.ndarray)
     x = _array._asarray_jaxifpossible(x)
     assert isinstance(x, jnp.ndarray)
 
-    x = random_array(5, 'S5')
+    x = random_array(5, 'S5', rng)
     x = _array._asarray_jaxifpossible(x)
     assert isinstance(x, np.ndarray)
 
-    x = random_array(2, 'd,U10')
+    x = random_array(2, 'd,U10', rng)
     x = _array._asarray_jaxifpossible(x)
     assert isinstance(x['f0'], jnp.ndarray)
     assert isinstance(x['f1'], np.ndarray)
 
-def test_shortkey():
-    x = random_array((2, 3), 'd,d')
+def test_shortkey(rng):
+    x = random_array((2, 3), 'd,d', rng)
     x = lgp.StructuredArray(x)
     elem = x[0]
     assert elem.shape == (3,)
     assert elem.dtype == 'd,d'
 
-def test_longkey():
-    x = random_array((2, 3), '5d,5d')
+def test_longkey(rng):
+    x = random_array((2, 3), '5d,5d', rng)
     x = lgp.StructuredArray(x)
     with pytest.raises(IndexError):
         elem = x[0, 1, 2]
 
-def test_unflatten_dummy():
-    x = random_array((2, 3), 'f,d,?')
+def test_unflatten_dummy(rng):
+    x = random_array((2, 3), 'f,d,?', rng)
     x = lgp.StructuredArray(x)
     _, aux = tree_util.tree_flatten(x)
     children = (8., False, None)
@@ -588,8 +586,8 @@ def test_unflatten_dummy():
     assert y.shape == ()
     assert y.dtype == [('f0', float), ('f1', bool), ('f2', object)]
 
-def test_incompatible_shapes():
-    x = random_array((2, 3), 'f,2d,?')
+def test_incompatible_shapes(rng):
+    x = random_array((2, 3), 'f,2d,?', rng)
     x = lgp.StructuredArray(x)
     _, aux = tree_util.tree_flatten(x)
     children = (8., False, None)
@@ -597,10 +595,10 @@ def test_incompatible_shapes():
     assert y.shape == ()
     assert y.dtype == [('f0', float), ('f1', bool), ('f2', object)]
 
-def test_ix():
-    x = lgp.StructuredArray(random_array(8, 'f,2d,?'))
-    y = lgp.StructuredArray(random_array(3, 'i,i'))
-    z = random_array(7, 'd')
+def test_ix(rng):
+    x = lgp.StructuredArray(random_array(8, 'f,2d,?', rng))
+    y = lgp.StructuredArray(random_array(3, 'i,i', rng))
+    z = random_array(7, 'd', rng)
 
     x1, = np.ix_(x)
     assert isinstance(x1, lgp.StructuredArray)
@@ -631,7 +629,7 @@ def test_ix():
     util.assert_equal(z1.squeeze(), z)
     util.assert_equal(x1.squeeze(), x)
 
-def test_structured_to_unstructured():
+def test_structured_to_unstructured(rng):
     dtypes = [
         [('a', float)],
         'f,f',
@@ -658,10 +656,10 @@ def test_structured_to_unstructured():
         (7, 11),
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
-        array = random_array(shape, dtype)
+        array = random_array(shape, dtype, rng)
         crosscheck_operation(recfunctions.structured_to_unstructured, array)
 
-def test_unstructured_to_structured():
+def test_unstructured_to_structured(rng):
     dtypes = [
         [('a', float)],
         'f,f',
@@ -688,14 +686,14 @@ def test_unstructured_to_structured():
         (7, 11),
     ]
     for dtype, shape in itertools.product(dtypes, shapes):
-        x = random_array(shape, dtype)
+        x = random_array(shape, dtype, rng)
         y = recfunctions.structured_to_unstructured(x)
         z = lgp.unstructured_to_structured(y, x.dtype)
         assert isinstance(z, lgp.StructuredArray)
         util.assert_equal(x, z)
 
-def test_unstructured_to_structured_2():
-    x = random_array((8, 9), float)
+def test_unstructured_to_structured_2(rng):
+    x = random_array((8, 9), float, rng)
     y = lgp.unstructured_to_structured(x)
     assert isinstance(y, lgp.StructuredArray)
     assert y.shape == (8,)
@@ -705,7 +703,7 @@ def test_unstructured_to_structured_2():
     x[0, 0] = 100000
     assert y['f0'][0] == 100000
 
-    x = random_array((), float)
+    x = random_array((), float, rng)
     with pytest.raises(ValueError):
         y = lgp.unstructured_to_structured(x)
 

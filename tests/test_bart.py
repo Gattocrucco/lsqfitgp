@@ -25,14 +25,14 @@ import lsqfitgp as lgp
 
 from . import util
 
-gen = np.random.default_rng(202207191826)
+rng = np.random.default_rng(202307302223)
 
 plist = [1, 5]
 smark = mark.parametrize('sb,sbw,sa,w', sum([[
-    (*gen.integers(0, 4, (3, p)), gen.integers(1, 10, p)),
-    (*np.zeros((3, p), int), gen.integers(1, 10, p)),
-    (np.zeros(p, int), np.pad([1], (0, p - 1)), np.zeros(p, int), gen.integers(1, 10, p)),
-    (gen.integers(0, 10, p), (np.arange(p) == gen.integers(p)).astype(int), gen.integers(0, 10, p), gen.integers(1, 10, p)),
+    (*rng.integers(0, 4, (3, p)), rng.integers(1, 10, p)),
+    (*np.zeros((3, p), int), rng.integers(1, 10, p)),
+    (np.zeros(p, int), np.pad([1], (0, p - 1)), np.zeros(p, int), rng.integers(1, 10, p)),
+    (rng.integers(0, 10, p), (np.arange(p) == rng.integers(p)).astype(int), rng.integers(0, 10, p), rng.integers(1, 10, p)),
 ] for p in plist], []))
 amark = mark.parametrize('a', [
     pytest.param(np.array([0, 1])[:, None], id='a01'),
@@ -108,15 +108,15 @@ def test_incr_alpha(sb, sbw, sa, w, a, b, u, md):
 @amark
 @mark.parametrize('sb,sbw,sa,w', sum([[
     # n^0 = 0
-    (gen.integers(0, 10, p), np.zeros(p, int), gen.integers(0, 10, p), gen.integers(1, 10, p)),
-    (*np.zeros((3, p), int), gen.integers(1, 10, p)),
+    (rng.integers(0, 10, p), np.zeros(p, int), rng.integers(0, 10, p), rng.integers(1, 10, p)),
+    (*np.zeros((3, p), int), rng.integers(1, 10, p)),
 ] for p in plist], []) + sum([[ 
     # w = 0
-    (*gen.integers(0, 4, (3, p)), np.zeros(p)),
+    (*rng.integers(0, 4, (3, p)), np.zeros(p)),
 ] for p in plist], []) + sum([[
     # wi = 0 or ni = 0
-    np.concatenate([gen.integers(0, 4, (3, p)), gen.integers(1, 10, (1, p))]) *
-    (gen.integers(0, 2, p).astype(bool) ^ np.array([0, 0, 0, 1], bool)[:, None]),
+    np.concatenate([rng.integers(0, 4, (3, p)), rng.integers(1, 10, (1, p))]) *
+    (rng.integers(0, 2, p).astype(bool) ^ np.array([0, 0, 0, 1], bool)[:, None]),
 ] for p in plist], []) + [
     # p = 0
     (*np.empty((3, 0), int), np.empty(0)),
@@ -137,9 +137,9 @@ def test_corr_1(sb, sbw, sa, w, a, b, u, md):
 @bmark
 @amark
 @smark
-def test_swap_ab(sb, sbw, sa, w, a, b, u, md):
+def test_swap_ab(sb, sbw, sa, w, a, b, u, md, rng):
     """invariant under swapping of nplus and nminus"""
-    swap = gen.integers(0, 2, sb.size)
+    swap = rng.integers(0, 2, sb.size)
     s1 = np.where(swap, sa, sb)
     s2 = np.where(swap, sb, sa)
     c = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
@@ -151,9 +151,9 @@ def test_swap_ab(sb, sbw, sa, w, a, b, u, md):
 @bmark
 @amark
 @smark
-def test_perm_dims(sb, sbw, sa, w, a, b, u, md):
+def test_perm_dims(sb, sbw, sa, w, a, b, u, md, rng):
     """invariant under reordering of the dimensions"""
-    perm = gen.permutation(sb.size)
+    perm = rng.permutation(sb.size)
     c = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
     cp = lgp.BART.correlation(sb[perm], sbw[perm], sa[perm], alpha=a, beta=b, gamma=u, maxd=md, weights=w[perm])
     np.testing.assert_array_max_ulp(c, cp, 64)
@@ -163,16 +163,16 @@ def test_perm_dims(sb, sbw, sa, w, a, b, u, md):
 @bmark
 @amark
 @mark.parametrize('sb,sbw,sa,w', sum([[
-    (*gen.integers(0, 10, (3, p)), gen.integers(1, 10, p)),
+    (*rng.integers(0, 10, (3, p)), rng.integers(1, 10, p)),
 ] for p in plist], []))
-def test_incr_n0(sb, sbw, sa, w, a, b, u, md):
+def test_incr_n0(sb, sbw, sa, w, a, b, u, md, rng):
     """correlation decreases as n0 increases at fixed ntot"""
     c = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
 
     ntot = sb + sbw + sa
-    which = gen.permuted(np.eye(sb.size)[0]).astype(bool)
+    which = rng.permuted(np.eye(sb.size)[0]).astype(bool)
     dn = np.where(which & (sb + sa), 1, 0)
-    lr = gen.integers(0, 2, sb.size).astype(bool)
+    lr = rng.integers(0, 2, sb.size).astype(bool)
     lr ^= lr & ~sb.astype(bool) | ~lr & ~sa.astype(bool)
     # lr sb sa
     # 0  *  0   1
@@ -194,20 +194,20 @@ def values(mark):
 
 @mark.parametrize('sb,sbw,sa,w,a,b,md', [
     # n^0 = 0
-    (gen.integers(0, 10, p), np.zeros(p, int), gen.integers(0, 10, p), gen.integers(1, 10, p), a, b, d)
+    (rng.integers(0, 10, p), np.zeros(p, int), rng.integers(0, 10, p), rng.integers(1, 10, p), a, b, d)
     for p in plist
     for a in values(amark)
     for b in values(bmark)
     for d in range(0, mdmark.args[1].stop)
 ] + [
     # alpha = 0
-    (gen.integers(0, 10, p), gen.integers(1, 10, p), gen.integers(0, 10, p), gen.integers(1, 10, p), 0, b, d)
+    (rng.integers(0, 10, p), rng.integers(1, 10, p), rng.integers(0, 10, p), rng.integers(1, 10, p), 0, b, d)
     for p in plist
     for b in values(bmark)
     for d in range(0, mdmark.args[1].stop)
 ] + [
     # beta = inf
-    (gen.integers(0, 10, p), gen.integers(1, 10, p), gen.integers(0, 10, p), gen.integers(1, 10, p), a, np.inf, d)
+    (rng.integers(0, 10, p), rng.integers(1, 10, p), rng.integers(0, 10, p), rng.integers(1, 10, p), a, np.inf, d)
     for p in plist
     for a in values(amark)
     for d in range(1, mdmark.args[1].stop)
@@ -252,11 +252,11 @@ def test_nzero(sb, sbw, sa, w, a, b, u, md):
 @bmark
 @amark
 @smark
-def test_wzero(sb, sbw, sa, w, a, b, u, md):
+def test_wzero(sb, sbw, sa, w, a, b, u, md, rng):
     """adding zeros to weights with random n does not change the result"""
     kw = dict(alpha=a, beta=b, gamma=u, maxd=md)
     c = lgp.BART.correlation(sb, sbw, sa, weights=w, **kw)
-    z = lambda x, f=5, p=4: np.concatenate([x, gen.integers(f + 1, size=p)])
+    z = lambda x, f=5, p=4: np.concatenate([x, rng.integers(f + 1, size=p)])
     c0 = lgp.BART.correlation(z(sb), z(sbw), z(sa), weights=z(w, 0), **kw)
     np.testing.assert_array_max_ulp(c, c0, 4)
 
@@ -340,25 +340,25 @@ def test_i32():
 @bmark
 @amark
 @smark
-def test_altinput(sb, sbw, sa, w, a, b, u, md, reset):
+def test_altinput(sb, sbw, sa, w, a, b, u, md, reset, rng):
     """ two alternative implementations give the same result """
     c1 = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, reset=reset, weights=w)
     n = sb + sbw + sa
     ix = sb
     iy = sb + sbw
     ix, iy = np.broadcast_arrays(ix, iy)
-    swap = gen.integers(0, 2, size=ix.shape, dtype=bool)
+    swap = rng.integers(0, 2, size=ix.shape, dtype=bool)
     ix, iy = np.where(swap, iy, ix), np.where(swap, ix, iy)
     c2 = lgp.BART.correlation(n, ix, iy, alpha=a, beta=b, gamma=u, maxd=md, reset=reset, weights=w, altinput=True)
     util.assert_allclose(c1, c2, rtol=1e-16, atol=2e-15)
 
-def test_index_input():
+def test_index_input(rng):
     """ passing coordinates or directly indices gives the same result """
     n, p = 100, 10
     asstruct = lambda x: np.asarray(x).view([('f0', x.dtype, p)]).squeeze(-1)
-    X = asstruct(gen.standard_normal((n, p)))
+    X = asstruct(rng.standard_normal((n, p)))
     splits = lgp.BART.splits_from_coord(X)
-    x, y = asstruct(gen.standard_normal((2, n, p)))
+    x, y = asstruct(rng.standard_normal((2, n, p)))
     x, y = np.ix_(x, y)
     ix = asstruct(lgp.BART.indices_from_coord(x, splits))
     iy = asstruct(lgp.BART.indices_from_coord(y, splits))

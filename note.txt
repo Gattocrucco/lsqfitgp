@@ -4639,7 +4639,7 @@ Seems to solve the tracing problems. Next:
 - solve new bugs due to the jax 0.4.14 update (DONE)
 - optimize the likelihood calculation in _decomp.py (DONE)
 - optimize the derivatives in _fit.py (DONE)
-- use the rng fixture for random generators in all tests
+- use the rng fixture for random generators in all tests (DONE)
 - try to use pytest's cache for test_special.py
 
 ..........

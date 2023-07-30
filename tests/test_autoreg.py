@@ -25,50 +25,48 @@ import pytest
 import lsqfitgp as lgp
 from . import util
 
-gen = np.random.default_rng(202207202302)
-
-def gen_ar_acf(p):
+def gen_ar_acf(p, rng):
     if p:
-        mod = gen.uniform(1.1, 10, p)
-        phase = gen.uniform(0, 2 * np.pi, p)
+        mod = rng.uniform(1.1, 10, p)
+        phase = rng.uniform(0, 2 * np.pi, p)
         root = mod * np.exp(1j * phase)
-        ampl = np.abs(gen.standard_normal(p))
+        ampl = np.abs(rng.standard_normal(p))
         tau = np.arange(p + 1)
         return np.sum(ampl * root ** -tau[:, None], axis=1).real
     else:
-        return np.abs(gen.standard_normal(1))
+        return np.abs(rng.standard_normal(1))
 
 plist = [0, 1, 2, 10, 30, 100]
 
-def test_gen_ar_acf():
+def test_gen_ar_acf(rng):
     for p in plist:
-        acf = gen_ar_acf(p)
+        acf = gen_ar_acf(p, rng)
         assert acf.ndim == 1 and acf.size == 1 + p
         mat = linalg.toeplitz(acf)
         w = linalg.eigvalsh(mat)
         assert np.min(w) >= -np.max(w) * len(mat) * np.finfo(float).eps
 
-def test_yule_walker_inv():
+def test_yule_walker_inv(rng):
     for p in plist:
-        acf = gen_ar_acf(p)
+        acf = gen_ar_acf(p, rng)
         phi = lgp.AR.phi_from_gamma(acf)
         acf2 = lgp.AR.gamma_from_phi(phi)
         acf /= acf[0]
         acf2 /= acf2[0]
         util.assert_allclose(acf2, acf, rtol=1e-12)
 
-def test_yule_walker_inv_extend():
+def test_yule_walker_inv_extend(rng):
     for p in plist:
-        acf = gen_ar_acf(p)
+        acf = gen_ar_acf(p, rng)
         phi = lgp.AR.phi_from_gamma(acf)
         acf2 = lgp.AR.gamma_from_phi(phi)
         phi3 = np.pad(phi, (0, 1 + p))
         acf3 = lgp.AR.gamma_from_phi(phi3)
         util.assert_allclose(acf3[:len(acf2)], acf2, rtol=1e-14)
 
-def test_yule_walker_inv_evolve():
+def test_yule_walker_inv_evolve(rng):
     for p in plist:
-        acf = gen_ar_acf(p)
+        acf = gen_ar_acf(p, rng)
         phi = lgp._kernels.AR.phi_from_gamma(acf)
         phi2 = np.pad(phi, (0, 1 + p))
         acf2 = lgp.AR.gamma_from_phi(phi2)
@@ -79,9 +77,9 @@ def test_yule_walker_inv_0():
     acf = lgp._kernels.AR.gamma_from_phi(np.empty(0))
     util.assert_allclose(acf, [1], rtol=1e-15)
 
-def test_yule_walker_inv_1():
+def test_yule_walker_inv_1(rng):
     bound = 1 - 1e-8
-    phi = gen.uniform(-bound, bound)
+    phi = rng.uniform(-bound, bound)
     acf = lgp.AR.gamma_from_phi([phi])
     acf2 = 1 / ((1 - phi) * (1 + phi)) * phi ** np.arange(2)
     util.assert_allclose(acf, acf2, rtol=1e-15)
@@ -147,7 +145,7 @@ def test_ar1():
 #         lgp.AR.phi_from_roots(l * [-0.] + (p - l) * [0], [])
 #         for l in range(p + 1)
 #     ])
-#     a = np.abs(gen.standard_normal(p + 1))
+#     a = np.abs(rng.standard_normal(p + 1))
 #     phi = np.sum(a[:, None] * vertices, 0) / np.sum(a)
     # TODO formula for the correlation?
 

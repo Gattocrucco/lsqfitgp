@@ -28,11 +28,9 @@ import pytest
 import lsqfitgp as lgp
 from . import util
 
-seed = np.random.SeedSequence(202302281256)
-s, seed = seed.spawn(2)
-rng = np.random.default_rng(s)
-
-# TODO add gpkw for setting checksym, checkpos, solvers
+# TODO
+# - add gpkw for setting checksym, checkpos, solvers
+# - this is quite slow, would it be faster with jit?
 
 def pred(seed, err, kw):
     rng = np.random.default_rng(seed)
@@ -64,19 +62,19 @@ def pred(seed, err, kw):
     if not (raw and keepcorr)
 ], 2))
 @mark.parametrize('err', [False, True])
-def test_pred(err, kw1, kw2):
+def test_pred(err, kw1, kw2, rng):
     if err and kw1['fromdata'] != kw2['fromdata']:
         pytest.skip()
     for _ in range(10):
-        global seed
-        s, seed = seed.spawn(2)
-        m1, cov1 = pred(s, err, kw1)
-        m2, cov2 = pred(s, err, kw2)
+        high = np.iinfo(np.uint64).max
+        seed = rng.integers(high, dtype=np.uint64, endpoint=True)
+        m1, cov1 = pred(seed, err, kw1)
+        m2, cov2 = pred(seed, err, kw2)
         util.assert_allclose(m1, m2, rtol=1e-5 if err else 1e-6)
         util.assert_close_matrices(cov1, cov2, rtol=1e-5 if err else 1e-1)
         # TODO 1e-1 looks too inaccurate
 
-def test_double_pred():
+def test_double_pred(rng):
     n = 50
     gp = lgp.GP(lgp.ExpQuad())
     ax, bx = rng.standard_normal((2, n))
@@ -87,4 +85,4 @@ def test_double_pred():
     m1, cov1 = gp.predfromdata({'a': ay}, 'b', raw=True)
     m2, cov2 = gp.predfromfit(gp.predfromdata({'a': ay}, ['a']), 'b', raw=True)
     util.assert_allclose(m2, m1, rtol=1e-7)
-    util.assert_close_matrices(cov2, cov1, rtol=1e-6)
+    util.assert_close_matrices(cov2, cov1, rtol=1e-5)

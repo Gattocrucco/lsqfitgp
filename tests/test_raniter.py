@@ -24,16 +24,16 @@ import gvar
 
 import lsqfitgp as lgp
 
-def make_mean_cov(n):
-    mean = np.random.randn(n)
-    a = np.random.randn(n, n)
+def make_mean_cov(rng, n):
+    mean = rng.standard_normal(n)
+    a = rng.standard_normal((n, n))
     cov = a.T @ a
     return mean, cov
 
-def make_mean_cov_dict(*shapes):
+def make_mean_cov_dict(rng, *shapes):
     sizes = [np.prod(tuple(s), dtype=int) for s in shapes]
     totsize = sum(sizes)
-    mean, cov = make_mean_cov(totsize)
+    mean, cov = make_mean_cov(rng, totsize)
     cumsize = np.cumsum(np.pad(sizes, (1, 0)))
     mean = {
         i: mean[cumsize[i]:cumsize[i + 1]].reshape(shapes[i])
@@ -49,10 +49,10 @@ def make_mean_cov_dict(*shapes):
     }
     return mean, cov
 
-def test_raniter_randomness():
+def test_raniter_randomness(rng):
     n = 40
-    mean, cov = make_mean_cov(n)
-    samples = list(lgp.raniter(mean, cov, 10 * n))
+    mean, cov = make_mean_cov(rng, n)
+    samples = list(lgp.raniter(mean, cov, 10 * n, rng=rng))
     smean = np.mean(samples, axis=0)
     scov = np.cov(samples, rowvar=False, ddof=1)
     w, v = np.linalg.eigh(scov / len(samples))
@@ -62,9 +62,9 @@ def test_raniter_randomness():
     assert stats.chi2(n).sf(q) > 1e-5
     assert stats.chi2(n).cdf(q) > 1e-5
 
-def test_raniter_packing():
+def test_raniter_packing(rng):
     n = 3
-    mean, cov = make_mean_cov(n + 4)
+    mean, cov = make_mean_cov(rng, n + 4)
     dmean = {'a': mean[:n], 'b': mean[n:]}
     dcov = {
         ('a', 'a'): cov[:n, :n],
@@ -72,27 +72,28 @@ def test_raniter_packing():
         ('b', 'a'): cov[n:, :n],
         ('b', 'b'): cov[n:, n:]
     }
-    seed = 202306241059
+    high = np.iinfo(np.uint64).max
+    seed = rng.integers(high, dtype=np.uint64, endpoint=True)
     s1 = next(lgp.raniter(mean, cov, rng=seed))
     s2 = next(lgp.raniter(dmean, dcov, rng=seed))
     assert np.array_equal(s1, s2.buf)
 
-def test_raniter_warning():
+def test_raniter_warning(rng):
     cov = np.array([1, 1.1, 1.1, 1]).reshape(2, 2)
     # with pytest.warns(UserWarning, match='positive definite'):
     with pytest.raises(np.linalg.LinAlgError):
-        next(lgp.raniter(np.zeros(len(cov)), cov))
+        lgp.sample(np.zeros(len(cov)), cov, rng=rng)
     with pytest.warns(None) as record:
-        next(lgp.raniter(np.zeros(len(cov)), cov, eps=0.1))
+        lgp.sample(np.zeros(len(cov)), cov, eps=0.1, rng=rng)
     assert len(record) == 0
 
-def test_raniter_shape():
+def test_raniter_shape(rng):
     shape = (2, 5)
     size = np.prod(shape)
-    mean, cov = make_mean_cov(size)
+    mean, cov = make_mean_cov(rng, size)
     mean = mean.reshape(shape)
     cov = cov.reshape(2 * shape)
-    sample = lgp.sample(mean, cov)
+    sample = lgp.sample(mean, cov, rng=rng)
     assert sample.shape == shape
 
 def assert_equal_dict_shapes(a, b):
@@ -101,12 +102,12 @@ def assert_equal_dict_shapes(a, b):
     for k in b:
         assert k in a
 
-def test_raniter_shape_dict():
-    mean, cov = make_mean_cov_dict((), (2, 5), (13,))
-    sample = lgp.sample(mean, cov)
+def test_raniter_shape_dict(rng):
+    mean, cov = make_mean_cov_dict(rng, (), (2, 5), (13,))
+    sample = lgp.sample(mean, cov, rng=rng)
     assert_equal_dict_shapes(sample, mean)
 
-def test_raniter_bd():
-    mean, cov = make_mean_cov_dict((1,))
+def test_raniter_bd(rng):
+    mean, cov = make_mean_cov_dict(rng, (1,))
     mean = gvar.BufferDict(mean)
-    sample = lgp.sample(mean, cov)
+    sample = lgp.sample(mean, cov, rng=rng)

@@ -28,8 +28,6 @@ from lsqfitgp import _patch_jax
 import lsqfitgp as lgp
 from . import util
 
-rng = np.random.default_rng(202303031632)
-
 def test_elementwise_grad_1():
     def f(x):
         return 2 * x
@@ -85,7 +83,7 @@ def test_elementwise_grad_6():
     util.assert_equal(y, y2)
 
 @mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
-def test_batcher(maxnbytes):
+def test_batcher(maxnbytes, rng):
     def func(x, y):
         return x * y
     batched = _patch_jax.batchufunc(func, maxnbytes=maxnbytes)
@@ -96,7 +94,7 @@ def test_batcher(maxnbytes):
     util.assert_equal(p1, p2)
 
 @mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
-def test_batcher_structured(maxnbytes):
+def test_batcher_structured(maxnbytes, rng):
     def func(x, y):
         return jnp.sum(x['x'] * y['x'], axis=-1)
     batched = _patch_jax.batchufunc(func, maxnbytes=maxnbytes)
@@ -184,13 +182,13 @@ def test_hash():
         assert h64 == hash64
         assert h32 == hash32
 
-def genint(dtype, size=()):
+def genint(rng, dtype, size=()):
     """ generate integers spanning full type range """
     return rng.integers(np.iinfo(dtype).min, np.iinfo(dtype).max, endpoint=True, dtype=dtype, size=size)
 
-def test_hash_bitflip():
+def test_hash_bitflip(rng):
     """ check a single bit flip in the input changes 50% of the hash bits """
-    buf = genint('u1', 43)
+    buf = genint(rng, 'u1', 43)
     
     bufmod = buf.copy()
     i = rng.integers(buf.size)
@@ -199,7 +197,7 @@ def test_hash_bitflip():
 
     assert np.sum(lax.population_count(buf ^ bufmod)) == 1
 
-    seed = genint('u8')
+    seed = genint(rng, 'u8')
     h = _patch_jax.fasthash64(buf, seed)
     hmod = _patch_jax.fasthash64(bufmod, seed)
     diff = h ^ hmod
@@ -210,7 +208,7 @@ def test_hash_bitflip():
     std = np.sqrt(prob_flip * (1 - prob_flip) / total_bits)
     assert abs(frac_flipped - prob_flip) <= 3 * std
 
-def test_hash_numpy():
+def test_hash_numpy(rng):
     """ check numpy arrays do not break the hash """
-    buf = genint('u1', 2)
+    buf = genint(rng, 'u1', 2)
     _patch_jax.fasthash64(buf, 12345)

@@ -1,4 +1,4 @@
-# lsqfitgp/tests/test_copula_invgamma.py
+# lsqfitgp/tests/copula/test_invgamma.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #

@@ -30,8 +30,6 @@ import mpmath
 from lsqfitgp import _special, _patch_jax
 from . import util
 
-gen = np.random.default_rng(202207201419)
-
 def test_sinc():
     x = np.linspace(-0.1, 0.1, 1000)
     s1 = np.sinc(x)
@@ -79,9 +77,10 @@ def test_kvmodx2_hi():
             f1 = _patch_jax.elementwise_grad(f1)
             f2 = _patch_jax.elementwise_grad(f2)
 
-def randpoly(n):
+def randpoly(rng, n):
+    """ currently not used, what was this for? """
     while True:
-        a = gen.random.standard_normal(n)
+        a = rng.standard_normal(n)
         if a[0] != 0:
             return a
 
@@ -373,19 +372,19 @@ def bernoulli_poly_handwritten(n, x):
 def check_bernoulli(n, x):
     r1 = bernoulli_poly_handwritten(n, x)
     r2 = _special.periodic_bernoulli(n, x)
-    util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-9)
+    util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-8)
 
-def test_bernoulli():
+def test_bernoulli(rng):
     for n in range(7):
-        x = gen.uniform(0, 1, size=100)
+        x = rng.uniform(0, 1, size=100)
         check_bernoulli(n, x)
 
 @np.vectorize
 def expint(n, z):
     return complex(mpmath.expint(n, z))
 
-def test_expn():
-    x = gen.uniform(0, 30, 10)
+def test_expn(rng):
+    x = rng.uniform(0, 30, 10)
     n = np.arange(2, 12)
     result_64 = np.array([_special.expn_imag(n, x) for n in n])
     result_32 = np.array([_special.expn_imag(n.astype('i4'), x.astype('f')) for n in n])

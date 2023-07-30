@@ -75,11 +75,11 @@ class KernelTestBase(KernelTestABC):
     def kwargs_list(self):
         return [dict()]
     
-    def random_x(self, **kw):
-        return np.random.uniform(-5, 5, size=100)
+    def random_x(self, rng, **kw):
+        return rng.uniform(-5, 5, size=100)
     
-    def random_x_nd(self, ndim, **kw):
-        xs = [self.random_x(**kw) for _ in range(ndim)]
+    def random_x_nd(self, rng, ndim, **kw):
+        xs = [self.random_x(rng, **kw) for _ in range(ndim)]
         x = np.empty(len(xs[0]), dtype=ndim * [('', xs[0].dtype)])
         for i in range(ndim):
             x[x.dtype.names[i]] = xs[i]
@@ -103,10 +103,10 @@ class KernelTestBase(KernelTestABC):
     def test_public(self):
         assert self.kernel_class in vars(lgp).values()
     
-    def positive(self, deriv, nd=False):
+    def positive(self, rng, deriv, nd=False):
         donesomething = False
         for kw in self.kwargs_list:
-            x = self.random_x_nd(2, **kw) if nd else self.random_x(**kw)
+            x = self.random_x_nd(rng, 2, **kw) if nd else self.random_x(rng, **kw)
             kernel = self.kernel_class(**kw)
             if kernel.derivable < deriv:
                 continue
@@ -121,30 +121,30 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
     
-    def test_positive(self):
-        self.positive(0)
+    def test_positive(self, rng):
+        self.positive(rng, 0)
     
-    def test_positive_deriv(self):
-        self.positive(1)
+    def test_positive_deriv(self, rng):
+        self.positive(rng, 1)
     
-    def test_positive_deriv2(self):
-        self.positive(2)
+    def test_positive_deriv2(self, rng):
+        self.positive(rng, 2)
     
-    def test_positive_nd(self):
-        self.positive(0, True)
+    def test_positive_nd(self, rng):
+        self.positive(rng, 0, True)
     
-    def test_positive_deriv_nd(self):
-        self.positive(1, True)
+    def test_positive_deriv_nd(self, rng):
+        self.positive(rng, 1, True)
     
-    def test_positive_deriv2_nd(self):
-        self.positive(2, True)
+    def test_positive_deriv2_nd(self, rng):
+        self.positive(rng, 2, True)
     
-    def symmetric_offdiagonal(self, xderiv, yderiv):
+    def symmetric_offdiagonal(self, rng, xderiv, yderiv):
         donesomething = False
         for kw in self.kwargs_list:
-            x = self.random_x(**kw)[None, :]
+            x = self.random_x(rng, **kw)[None, :]
             if xderiv == yderiv:
-                y = self.random_x(**kw)[:, None]
+                y = self.random_x(rng, **kw)[:, None]
             else:
                 y = x.T
             kernel = self.kernel_class(**kw)
@@ -157,35 +157,35 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
 
-    def test_symmetric_00(self):
-        self.symmetric_offdiagonal(0, 0)
+    def test_symmetric_00(self, rng):
+        self.symmetric_offdiagonal(rng, 0, 0)
     
-    def test_symmetric_10(self):
-        self.symmetric_offdiagonal(1, 0)
+    def test_symmetric_10(self, rng):
+        self.symmetric_offdiagonal(rng, 1, 0)
     
-    def test_symmetric_11(self):
-        self.symmetric_offdiagonal(1, 1)
+    def test_symmetric_11(self, rng):
+        self.symmetric_offdiagonal(rng, 1, 1)
     
-    def test_symmetric_20(self):
-        self.symmetric_offdiagonal(2, 0)
+    def test_symmetric_20(self, rng):
+        self.symmetric_offdiagonal(rng, 2, 0)
     
-    def test_symmetric_21(self):
-        self.symmetric_offdiagonal(2, 1)
+    def test_symmetric_21(self, rng):
+        self.symmetric_offdiagonal(rng, 2, 1)
     
-    def test_symmetric_22(self):
-        self.symmetric_offdiagonal(2, 2)
+    def test_symmetric_22(self, rng):
+        self.symmetric_offdiagonal(rng, 2, 2)
     
     # TODO test higher derivatives?
     
-    def jit(self, deriv=0, nd=False):
+    def jit(self, rng, deriv=0, nd=False):
         donesomething = False
         for kw in self.kwargs_list:
             if nd:
-                x = self.random_x_nd(2, **kw)
+                x = self.random_x_nd(rng, 2, **kw)
                 x = lgp.StructuredArray(x)
                 dtype = np.result_type(*(x[name].dtype for name in x.dtype.names))
             else:
-                x = self.random_x(**kw)
+                x = self.random_x(rng, **kw)
                 dtype = x.dtype
             if not np.issubdtype(dtype, np.number) and not dtype == bool:
                 continue
@@ -207,42 +207,42 @@ class KernelTestBase(KernelTestABC):
     
     # TODO test vmap
     
-    def test_jit(self):
-        self.jit()
+    def test_jit(self, rng):
+        self.jit(rng)
     
-    def test_jit_deriv(self):
-        self.jit(1)
+    def test_jit_deriv(self, rng):
+        self.jit(rng, 1)
     
-    def test_jit_deriv2(self):
-        self.jit(2)
+    def test_jit_deriv2(self, rng):
+        self.jit(rng, 2)
     
-    def test_jit_nd(self):
-        self.jit(0, True)
+    def test_jit_nd(self, rng):
+        self.jit(rng, 0, True)
     
-    def test_jit_deriv_nd(self):
-        self.jit(1, True)
+    def test_jit_deriv_nd(self, rng):
+        self.jit(rng, 1, True)
     
-    def test_jit_deriv2_nd(self):
-        self.jit(2, True)
+    def test_jit_deriv2_nd(self, rng):
+        self.jit(rng, 2, True)
 
-    def test_normalized(self):
+    def test_normalized(self, rng):
         kernel = self.kernel_class
         if issubclass(kernel, _Kernel.StationaryKernel):
             for kw in self.kwargs_list:
-                x = self.random_x(**kw)
+                x = self.random_x(rng, **kw)
                 var = kernel(**kw)(x, x)
                 util.assert_allclose(var, 1, rtol=1e-14, atol=1e-15)
         else:
             pytest.skip()
     
-    def check_continuous_at_zero(self, deriv):
+    def check_continuous_at_zero(self, rng, deriv):
         kernel = self.kernel_class
         if not issubclass(kernel, _Kernel.StationaryKernel):
             pytest.skip()
         
         donesomething = False
         for kw in self.kwargs_list:
-            t = self.random_x(**kw).dtype
+            t = self.random_x(rng, **kw).dtype
             if not np.issubdtype(t, np.inexact):
                 pytest.skip()
             k = kernel(**kw)
@@ -272,32 +272,32 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
         
-    def test_continuous_at_zero_0(self):
-        self.check_continuous_at_zero(0)
+    def test_continuous_at_zero_0(self, rng):
+        self.check_continuous_at_zero(rng, 0)
 
-    def test_continuous_at_zero_1(self):
-        self.check_continuous_at_zero(1)
+    def test_continuous_at_zero_1(self, rng):
+        self.check_continuous_at_zero(rng, 1)
 
-    def test_continuous_at_zero_2(self):
-        self.check_continuous_at_zero(2)
+    def test_continuous_at_zero_2(self, rng):
+        self.check_continuous_at_zero(rng, 2)
 
-    def test_stationary(self):
+    def test_stationary(self, rng):
         kernel = self.kernel_class
         if issubclass(kernel, _Kernel.StationaryKernel):
             for kw in self.kwargs_list:
-                x = self.random_x(**kw)
+                x = self.random_x(rng, **kw)
                 var = kernel(**kw)(x, x)
                 util.assert_allclose(var, var[0])
         else:
             pytest.skip()
 
-    def test_double_diff_scalar_first(self):
+    def test_double_diff_scalar_first(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 1:
                 continue
-            x = self.random_x(**kw)
+            x = self.random_x(rng, **kw)
             r1 = kernel.diff(1, 1)(x[None, :], x[:, None])
             r2 = kernel.diff(1, 0).diff(0, 1)(x[None, :], x[:, None])
             util.assert_allclose(r1, r2)
@@ -305,13 +305,13 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
     
-    def test_double_diff_scalar_second(self):
+    def test_double_diff_scalar_second(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 2:
                 continue
-            x = self.random_x(**kw)
+            x = self.random_x(rng, **kw)
             r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
             r2 = kernel.diff(1, 1).diff(1, 1)(x[None, :], x[:, None])
             util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-9)
@@ -319,13 +319,13 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
     
-    def test_double_diff_scalar_second_chopped(self):
+    def test_double_diff_scalar_second_chopped(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             if kernel.derivable < 2:
                 continue
-            x = self.random_x(**kw)
+            x = self.random_x(rng, **kw)
             r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
             r2 = kernel.diff(2, 0).diff(0, 2)(x[None, :], x[:, None])
             util.assert_allclose(r1, r2)
@@ -333,7 +333,7 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
     
-    def test_double_diff_nd_first(self):
+    def test_double_diff_nd_first(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
@@ -341,7 +341,7 @@ class KernelTestBase(KernelTestABC):
                 continue
             if kernel.maxdim < 2:
                 continue
-            x = self.random_x_nd(2, **kw)[None, :]
+            x = self.random_x_nd(rng, 2, **kw)[None, :]
             r1 = kernel.diff('f0', 'f0')(x, x.T)
             r2 = kernel.diff('f0', 0).diff(0, 'f0')(x, x.T)
             util.assert_allclose(r1, r2)
@@ -349,7 +349,7 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
 
-    def test_double_diff_nd_second(self):
+    def test_double_diff_nd_second(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
@@ -357,7 +357,7 @@ class KernelTestBase(KernelTestABC):
                 continue
             if kernel.maxdim < 2:
                 continue
-            x = self.random_x_nd(2, **kw)[None, :]
+            x = self.random_x_nd(rng, 2, **kw)[None, :]
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f0').diff('f1', 'f1')(x, x.T)
             util.assert_allclose(r1, r2)
@@ -365,7 +365,7 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
 
-    def test_double_diff_nd_second_chopped(self):
+    def test_double_diff_nd_second_chopped(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
@@ -373,7 +373,7 @@ class KernelTestBase(KernelTestABC):
                 continue
             if kernel.maxdim < 2:
                 continue
-            x = self.random_x_nd(2, **kw)[None, :]
+            x = self.random_x_nd(rng, 2, **kw)[None, :]
             r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
             r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x, x.T)
             util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-12)
@@ -381,10 +381,10 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
     
-    def test_implicit_fields(self):
+    def test_implicit_fields(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
-            x1 = self.random_x_nd(2, **kw)[:, None]
+            x1 = self.random_x_nd(rng, 2, **kw)[:, None]
             x2 = self.make_x_nd_implicit(x1)
             covfun = self.kernel_class(**kw)
             if covfun.maxdim < 2:
@@ -396,7 +396,7 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
     
-    def test_loc_scale_nd(self):
+    def test_loc_scale_nd(self, rng):
         kernel = self.kernel_class
         loc = -2  # < 0
         scale = 3 # > abs(loc)
@@ -404,10 +404,10 @@ class KernelTestBase(KernelTestABC):
         for kw in self.kwargs_list:
             # TODO maybe put loc and scale in kw and let random_x adapt the
             # domain to loc and scale
-            x = self.random_x(**kw)
+            x = self.random_x(rng, **kw)
             if not np.issubdtype(x.dtype, np.inexact):
                 continue
-            x1 = self.random_x_nd(2, **kw)[:, None]
+            x1 = self.random_x_nd(rng, 2, **kw)[:, None]
             x2 = self.make_x_nd_implicit(x1)
             x2['f0'] -= loc
             x2['f0'] /= scale
@@ -431,10 +431,10 @@ class KernelTestBase(KernelTestABC):
             with pytest.raises(ValueError):
                 self.kernel_class(**kw)
     
-    def test_dim(self):
+    def test_dim(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
-            x1 = self.random_x_nd(2, **kw)[:, None]
+            x1 = self.random_x_nd(rng, 2, **kw)[:, None]
             x2 = x1['f0']
             # dtype = x1.dtype.fields['f0'][0]
             # x3 = np.empty(x1.shape, [('f0', dtype, (1,))])
@@ -467,14 +467,14 @@ class KernelTestBase(KernelTestABC):
             with pytest.raises(TypeError):
                 kernel = [0] + kernel
     
-    def test_pow(self):
+    def test_pow(self, rng):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             with pytest.raises(TypeError):
                 kernel = kernel ** kernel
             k1 = kernel ** 2
             k2 = kernel * kernel
-            x = self.random_x(**kw)[:, None]
+            x = self.random_x(rng, **kw)[:, None]
             c1 = k1(x, x.T)
             c2 = k2(x, x.T)
             util.assert_equal(c1, c2)
@@ -504,12 +504,12 @@ class KernelTestBase(KernelTestABC):
         else:
             pytest.skip()
     
-    def test_soft_input(self):
+    def test_soft_input(self, rng):
         kernel = self.kernel_class
         donesomething = False
         if issubclass(kernel, _Kernel.StationaryKernel) and not issubclass(kernel, _Kernel.IsotropicKernel):
             for kw in self.kwargs_list:
-                x1 = self.random_x(**kw)
+                x1 = self.random_x(rng, **kw)
                 if not np.issubdtype(x1.dtype, np.inexact):
                     continue
                 x2 = x1 - 1 / np.pi
@@ -525,7 +525,7 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
     
-    def test_where(self):
+    def test_where(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
@@ -533,7 +533,7 @@ class KernelTestBase(KernelTestABC):
             if kernel.maxdim < 2:
                 continue
             
-            x = self.random_x_nd(2, **kw)
+            x = self.random_x_nd(rng, 2, **kw)
             x0 = x['f0'][0]
             cond = lambda x: x < x0
             k1 = _Kernel.where(cond, kernel, 2 * kernel, dim='f0')
@@ -552,7 +552,7 @@ class KernelTestBase(KernelTestABC):
             util.assert_equal(c3, c4)
             util.assert_equal(c1, c3)
             
-            x = self.random_x(**kw)
+            x = self.random_x(rng, **kw)
             with pytest.raises(ValueError):
                 k1(x, x)
             
@@ -560,11 +560,11 @@ class KernelTestBase(KernelTestABC):
         if not donesomething:
             pytest.skip()
     
-    def test_rescale_swap(self):
+    def test_rescale_swap(self, rng):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
-            x = self.random_x(**kw)[:, None]
-            y = self.random_x(**kw)[None, :]
+            x = self.random_x(rng, **kw)[:, None]
+            y = self.random_x(rng, **kw)[None, :]
             x0 = x[0]
             f = lambda x: np.where(x < x0, -1, 1)
             k1 = kernel.rescale(f, None)
@@ -573,14 +573,14 @@ class KernelTestBase(KernelTestABC):
             c2 = k2(y, x)
             util.assert_equal(c1, c2)
     
-    def test_fourier_swap(self):
+    def test_fourier_swap(self, rng):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
             try:
                 kernel.fourier(True, None)
             except NotImplementedError:
                 pytest.skip()
-            x = self.random_x(**kw)[:, None]
+            x = self.random_x(rng, **kw)[:, None]
             k = np.arange(1, 11)[None, :]
             k1 = kernel.fourier(True, None)
             k2 = kernel.fourier(None, True)
@@ -588,11 +588,11 @@ class KernelTestBase(KernelTestABC):
             c2 = k2(x, k)
             util.assert_equal(c1, c2)
 
-    def test_xtransf_swap(self):
+    def test_xtransf_swap(self, rng):
         for kw in self.kwargs_list:
             kernel = self.kernel_class(**kw)
-            x = self.random_x(**kw)
-            y = self.random_x(**kw)[None, :]
+            x = self.random_x(rng, **kw)
+            y = self.random_x(rng, **kw)[None, :]
             xt = np.arange(len(x))
             f = lambda xt: x[xt]
             xt = xt[:, None]
@@ -623,18 +623,18 @@ class KernelTestBase(KernelTestABC):
             with pytest.warns(UserWarning):
                 kernel.diff(d, None)
     
-    def test_diff_errors(self):
+    def test_diff_errors(self, rng):
         donesomething = False
         for kw in self.kwargs_list:
             kw = dict(kw)
             kw.update(derivable=True)
             kernel = self.kernel_class(**kw)
             
-            x = self.random_x(**kw)
+            x = self.random_x(rng, **kw)
             with pytest.raises(ValueError):
                 kernel.diff('f0', 'f0')(x, x)
             
-            x = self.random_x_nd(2, **kw)
+            x = self.random_x_nd(rng, 2, **kw)
             with pytest.raises(ValueError):
                 kernel.diff('a', 'a')(x, x)
             
@@ -680,7 +680,7 @@ class KernelTestBase(KernelTestABC):
         if kwargs_list is not None:
             subclass.kwargs_list = property(lambda self: kwargs_list)
         if random_x_fun is not None:
-            subclass.random_x = lambda self, **kw: random_x_fun(**kw)
+            subclass.random_x = lambda self, *args, **kw: random_x_fun(*args, **kw)
         if eps is not None:
             subclass.eps = eps
         return subclass
@@ -688,9 +688,9 @@ class KernelTestBase(KernelTestABC):
 def matrix_square(A):
     return A.T @ A
 
-def random_nd(size, ndim):
+def random_nd(rng, size, ndim):
     out = np.empty(size, dtype=[('xyz', float, (ndim,))])
-    out['xyz'] = np.random.uniform(-5, 5, size=(size, ndim))
+    out['xyz'] = rng.uniform(-5, 5, size=(size, ndim))
     return out
 
 lipsum = """
@@ -720,9 +720,11 @@ faucibus dolor auctor.
 
 lipsum_words = np.array(list(set(re.split(r'\s|[,.]', lipsum.lower()))))
 
-def bow_rand(**kw):
-    return np.array([' '.join(np.random.choice(lipsum_words, 10)) for _ in range(30)])
-        
+def bow_rand(rng, **kw):
+    return np.array([' '.join(rng.choice(lipsum_words, 10)) for _ in range(30)])
+
+rng = np.random.default_rng(202307302242)
+
 # Define a concrete subclass of KernelTestBase for each kernel.
 test_kwargs = {
     _kernels.Matern: dict(kwargs_list=
@@ -737,17 +739,17 @@ test_kwargs = {
     _kernels.Wendland: dict(kwargs_list=[
         dict(k=k, alpha=a) for k in range(4) for a in np.linspace(1, 4, 10)
     ], eps=1e3 * np.finfo(float).eps),
-    _kernels.Wiener: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
-    _kernels.WienerIntegral: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
+    _kernels.Wiener: dict(random_x_fun=lambda rng, **kw: rng.uniform(0, 10, size=100)),
+    _kernels.WienerIntegral: dict(random_x_fun=lambda rng, **kw: rng.uniform(0, 10, size=100)),
     _kernels.FracBrownian: dict(
-        random_x_fun=lambda **kw: np.random.uniform(-10, 10, size=100),
+        random_x_fun=lambda rng, **kw: rng.uniform(-10, 10, size=100),
         kwargs_list=[dict(H=H, K=K) for H in [0.1, 0.5, 1] for K in [0.1, 0.5, 1]],
     ),
-    _kernels.BrownianBridge: dict(random_x_fun=lambda **kw: np.random.uniform(0, 1, size=100)),
-    _kernels.OrnsteinUhlenbeck: dict(random_x_fun=lambda **kw: np.random.uniform(0, 10, size=100)),
+    _kernels.BrownianBridge: dict(random_x_fun=lambda rng, **kw: rng.uniform(0, 1, size=100)),
+    _kernels.OrnsteinUhlenbeck: dict(random_x_fun=lambda rng, **kw: rng.uniform(0, 10, size=100)),
     _kernels.Categorical: dict(kwargs_list=[
-        dict(cov=matrix_square(np.random.randn(10, 10)))
-    ], random_x_fun=lambda **kw: np.random.randint(10, size=100)),
+        dict(cov=matrix_square(rng.standard_normal((10, 10))))
+    ], random_x_fun=lambda rng, **kw: rng.integers(10, size=100)),
     _kernels.NNKernel: dict(eps=4 * np.finfo(float).eps),
     _kernels.Zeta: dict(kwargs_list=[
         dict(nu=v) for v in [0, 0.1, 1, 1.5, 4.9, 1000]
@@ -766,19 +768,19 @@ test_kwargs = {
     _kernels.Cauchy: dict(kwargs_list=[dict(alpha=a, beta=b) for a in [0.001, 0.5, 0.999, 1, 1.001, 1.5, 1.999, 2] for b in [0.001, 0.5, 1, 1.5, 2, 4, 8]]),
     _kernels.CausalExpQuad: dict(kwargs_list=[dict(alpha=a) for a in [0, 1, 2]]),
     _kernels.Decaying: dict(
-        random_x_fun=lambda **_: np.random.uniform(0, 5, size=100),
+        random_x_fun=lambda rng, **_: rng.uniform(0, 5, size=100),
         kwargs_list=[dict(alpha=a) for a in [0, .5, 1, 2]],
     ),
     _kernels.StationaryFracBrownian: dict(kwargs_list=[dict(H=H) for H in [0.1, 0.5, 1]]),
     _kernels.Circular: dict(kwargs_list=[dict(c=c, tau=t) for c, t in [(0.1, 4), (0.5, 4), (0.5, 8)]]),
     _kernels.MA: dict(
-        random_x_fun=lambda **_: np.random.randint(0, 100, 100),
+        random_x_fun=lambda rng, **_: rng.integers(0, 100, 100),
         kwargs_list=[dict(w=w) for w in [
-            [], [0], [1], [1, 1], [1, -1], [2, 1], [1, 2, 3, 4, 5], np.random.randn(30),
+            [], [0], [1], [1, 1], [1, -1], [2, 1], [1, 2, 3, 4, 5], rng.standard_normal(30),
         ]],
     ),
     _kernels.AR: dict(
-        random_x_fun=lambda **_: np.random.randint(0, 100, 100),
+        random_x_fun=lambda rng, **_: rng.integers(0, 100, 100),
         kwargs_list=[dict(phi=phi, maxlag=100) for phi in [
             [], [0], [-0.5], [0.5], [0.9], [-0.9], [0.5, 0], [0, 0.5], 3 * [0] + [0.5],
         ]] + [dict(gamma=gamma, maxlag=100) for gamma in [
@@ -801,7 +803,7 @@ test_kwargs = {
     _kernels.Color: dict(kwargs_list=[dict(n=n) for n in [2, 3, 4, 5, 6, 20]]),
     _kernels.BART: dict(kwargs_list=[
         dict(
-            splits=_kernels.BART.splits_from_coord(np.random.randn(10, 1)),
+            splits=_kernels.BART.splits_from_coord(rng.standard_normal((10, 1))),
             alpha=a,
             beta=b,
             maxd=d,
@@ -820,13 +822,13 @@ for kernel in kernels:
     newclass = KernelTestBase.make_subclass(kernel, **factory_kw)
     exec('{} = newclass'.format(newclass.__name__))
 
-def check_matern_half_integer(deriv):
+def check_matern_half_integer(rng, deriv):
     """
     Check that the formula for half integer nu gives the same result of the
     formula for real nu.
     """
     for p in range(10):
-        x = 3 * np.random.randn(100)[None, :]
+        x = 3 * rng.standard_normal((1, 100))
         y = x.T
         k = _kernels.Matern(nu=p + 1/2)
         d = min(k.derivable, deriv)
@@ -834,42 +836,42 @@ def check_matern_half_integer(deriv):
         r2 = _kernels.Maternp(p=p).diff(d, d)(x, y)
         util.assert_allclose(r1, r2, rtol=1e-9, atol=1e-16)
 
-def test_matern_half_integer_0():
-    check_matern_half_integer(0)
+def test_matern_half_integer_0(rng):
+    check_matern_half_integer(rng, 0)
 
-def test_matern_half_integer_1():
-    check_matern_half_integer(1)
+def test_matern_half_integer_1(rng):
+    check_matern_half_integer(rng, 1)
 
-def test_matern_half_integer_2():
-    check_matern_half_integer(2)
+def test_matern_half_integer_2(rng):
+    check_matern_half_integer(rng, 2)
     
-def test_wiener_integral():
+def test_wiener_integral(rng):
     """
     Test that the derivative of the Wiener integral is the Wiener.
     """
-    x, y = np.abs(np.random.randn(2, 100))
+    x, y = np.abs(rng.standard_normal((2, 100)))
     r1 = _kernels.Wiener()(x, y)
     r2 = _kernels.WienerIntegral().diff(1, 1)(x, y)
     util.assert_allclose(r1, r2)
 
-def test_celerite_harmonic():
+def test_celerite_harmonic(rng):
     """
     Check that the Celerite kernel is equivalent to the Harmonic kernel when
     B == gamma.
     """
-    x = np.random.uniform(-1, 1, size=100)
-    Q = np.random.uniform(1.1, 3)
+    x = rng.uniform(-1, 1, size=100)
+    Q = rng.uniform(1.1, 3)
     eta = np.sqrt(1 - 1 / Q**2)
     B = 1 / (eta * Q)
     r1 = _kernels.Celerite(gamma=B, B=B)(x[:, None], x[None, :])
     r2 = _kernels.Harmonic(Q=Q, scale=eta)(x[:, None], x[None, :])
     util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-15)
 
-def check_harmonic_continuous(deriv, Q0, Qderiv=False):
+def check_harmonic_continuous(rng, deriv, Q0, Qderiv=False):
     eps = 1e-10
     Q0 = float(Q0)
     Qs = [(1 - eps) * Q0, Q0, (1 + eps) * Q0]
-    x = np.random.randn(100)
+    x = rng.standard_normal(100)
     results = []
     for Q in Qs:
         kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).diff(deriv, deriv)(x[None, :], x[:, None])
@@ -880,22 +882,22 @@ def check_harmonic_continuous(deriv, Q0, Qderiv=False):
     util.assert_allclose(results[0], results[1], atol=1e-5)
     util.assert_allclose(results[1], results[2], atol=1e-5)
 
-def test_harmonic_continuous_12():
-    check_harmonic_continuous(0, 1/2)
-def test_harmonic_continuous_1():
-    check_harmonic_continuous(0, 1)
-def test_harmonic_deriv_continuous_12():
-    check_harmonic_continuous(1, 1/2)
-def test_harmonic_deriv_continuous_1():
-    check_harmonic_continuous(1, 1)
-def test_harmonic_derivQ_continuous_12():
-    check_harmonic_continuous(0, 1/2, True)
-def test_harmonic_derivQ_continuous_1():
-    check_harmonic_continuous(0, 1, True)
-def test_harmonic_deriv_derivQ_continuous_12():
-    check_harmonic_continuous(1, 1/2, True)
-def test_harmonic_deriv_derivQ_continuous_1():
-    check_harmonic_continuous(1, 1, True)
+def test_harmonic_continuous_12(rng):
+    check_harmonic_continuous(rng, 0, 1/2)
+def test_harmonic_continuous_1(rng):
+    check_harmonic_continuous(rng, 0, 1)
+def test_harmonic_deriv_continuous_12(rng):
+    check_harmonic_continuous(rng, 1, 1/2)
+def test_harmonic_deriv_continuous_1(rng):
+    check_harmonic_continuous(rng, 1, 1)
+def test_harmonic_derivQ_continuous_12(rng):
+    check_harmonic_continuous(rng, 0, 1/2, True)
+def test_harmonic_derivQ_continuous_1(rng):
+    check_harmonic_continuous(rng, 0, 1, True)
+def test_harmonic_deriv_derivQ_continuous_12(rng):
+    check_harmonic_continuous(rng, 1, 1/2, True)
+def test_harmonic_deriv_derivQ_continuous_1(rng):
+    check_harmonic_continuous(rng, 1, 1, True)
 
 def test_nonfloat_eps():
     x = np.arange(20)

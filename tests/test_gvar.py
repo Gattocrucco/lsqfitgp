@@ -25,25 +25,25 @@ import jax
 from lsqfitgp import _patch_gvar
 from . import util
 
-def check_jacobian(nprim, shape, pnz=1):
-    z, s = np.random.randn(2, nprim)
+def check_jacobian(nprim, shape, rng, *, pnz=1):
+    z, s = rng.standard_normal((2, nprim))
     x = gvar.gvar(z, np.abs(s))
-    t = np.random.randn(*shape, nprim)
-    t[np.random.binomial(1, 1 - pnz, t.shape).astype(bool)] = 0
+    t = rng.standard_normal((*shape, nprim))
+    t[rng.binomial(1, 1 - pnz, t.shape).astype(bool)] = 0
     y = t @ x
     jac, indices = _patch_gvar.jacobian(y)
     y2 = _patch_gvar.from_jacobian(gvar.mean(y), jac, indices)
     util.assert_same_gvars(y, y2, atol=1e-16)
 
-def test_jacobian():
-    check_jacobian(10, (5,))
-    check_jacobian(10, (2, 3))
-    check_jacobian(0, (5,))
-    check_jacobian(10, (0,))
-    check_jacobian(10, ())
-    check_jacobian(0, ())
-    check_jacobian(10, (5,), 0)
-    check_jacobian(100, (5,), 0.5)
+def test_jacobian(rng):
+    check_jacobian(10, (5,), rng)
+    check_jacobian(10, (2, 3), rng)
+    check_jacobian(0, (5,), rng)
+    check_jacobian(10, (0,), rng)
+    check_jacobian(10, (), rng)
+    check_jacobian(0, (), rng)
+    check_jacobian(10, (5,), rng, pnz=0)
+    check_jacobian(100, (5,), rng, pnz=0.5)
 
 def test_bdtree():
     x = gvar.BufferDict(a=[1, 2], b=[3, 4])
