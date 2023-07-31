@@ -47,8 +47,8 @@ upload:
 	python3 -m twine upload dist/*
 
 release: $(RELEASE_TARGETS)
-	test -d build && rm -r build || test -
-	test -d dist && rm -r dist || test -
+	## test -d build && rm -r build || test -
+	## test -d dist && rm -r dist || test -
 	python3 -m build
 
 PY = MPLBACKEND=agg coverage run
@@ -57,7 +57,7 @@ EXAMPLESPY = COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) $(PY) --context=
 DOCSPY = cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) $(PY) --rcfile=../.coveragerc --context=docs$(COVERAGE_SUFFIX)
 
 tests:
-	$(TESTSPY) -m pytest tests -rfEX
+	$(TESTSPY) -m pytest tests
 	## TODO put lsqfitgp in src/ and use tox to test in installation environment
 
 # I did not manage to make parallel pytest (pytest -n<processes>) work with
@@ -104,5 +104,6 @@ resetenv:
 	python3 -m venv pyenv
 	pyenv/bin/python3 -m pip install --upgrade pip
 	pyenv/bin/python3 -m pip install -r requirements.txt
+	pyenv/bin/python3 -m pip install --editable .
 	@echo
 	@echo 'Now type ". pyenv/bin/activate"'

@@ -4693,7 +4693,8 @@ Now the total pytest dry running time is < 2s.
 Since I'm doing maintenance, I could finish it before starting again on the main
 work. Things to do:
 
- - use the src/ layout
- - avoid packaging extraneous python source files in the source distribution
+ - use the src/ layout (DONE)
+ - avoid packaging extraneous python source files in the source distribution 
+   (DONE)
  - use tox for the tests
  - make a release to remove the jax pin

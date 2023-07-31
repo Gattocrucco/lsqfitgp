@@ -8,5 +8,4 @@ pytest
 coverage
 mpmath
 pandas
-polars
-pyarrow
+polars[pyarrow]

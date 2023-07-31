@@ -13,8 +13,7 @@ twine
 ipython
 mpmath
 pandas
-polars
-pyarrow
+polars[pyarrow]
 build
 statsmodels
 tqdm

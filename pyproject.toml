@@ -49,8 +49,7 @@ dynamic = ["version"]
 version = {attr = "lsqfitgp.__version__"}
 
 [tool.setuptools.packages.find]
-where = ["."]
-exclude = ["pyenv*", "playground*", "examples*", "tests*", "docs*"]
+where = ["src"]
 namespaces = false
 
 [project.urls]
