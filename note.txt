@@ -4642,7 +4642,7 @@ Seems to solve the tracing problems. Next:
 - use the rng fixture for random generators in all tests (DONE)
 - try to use pytest's cache for test_special.py (DONE)
 - try to speed up test_pred.py (DONE)
-- profile the loading of test_kernels.py
+- profile the loading of test_kernels.py (DONE)
 
 ..........
 
@@ -4656,7 +4656,7 @@ one myself.
 2023-07-31
 ==========
 
-`pytest --lf` runs only the tests that failed in the alst invocation.
+`pytest --lf` runs only the tests that failed in the last invocation.
 
 ..........
 
@@ -4679,3 +4679,11 @@ pre-made caching systems for this? => No, it doesn't.
   that uses the cache with a identifier based on the function name
 
 => DONE
+
+........
+
+The profiler says that most of the loading time of test_kernels is jax
+compilation. Sorting by cumtime, it's all in creating the BART hyperparameters
+list, calling BART.splits_from_coord. => Fixed by jitting the method.
+
+Now the total pytest dry running time is < 2s.

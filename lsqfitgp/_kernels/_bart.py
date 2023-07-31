@@ -246,6 +246,21 @@ class BART(_BARTBase):
         
         """
         x = cls._check_x(x)
+        return cls._splits_from_coord(x)
+        
+        # TODO options like BayesTree, i.e., use an evenly spaced range
+        # instead of quantilizing, and set a maximum number of splits. Use the
+        # same parameter names as BayesTree::bart, but change the defaults.
+
+    @staticmethod
+    @jax.jit
+    def _splits_from_coord(x):
+        """
+        Jitted implementation of splits_from_coord. Applying jit avoids the
+        recompilation in lax.scan each time the method is called, and
+        splits_from_coord can not be jitted directly because x could be a numpy
+        structured array.
+        """
         x = x.reshape(-1, x.shape[-1]) if x.size else x.reshape(1, x.shape[-1])
         if jnp.issubdtype(x.dtype, jnp.inexact):
             info = jnp.finfo
@@ -259,10 +274,6 @@ class BART(_BARTBase):
             return _, (l, m)
         _, (length, midpoints) = lax.scan(loop, None, x.T)
         return length, midpoints.T
-        
-        # TODO options like BayesTree, i.e., use an evenly spaced range
-        # instead of quantilizing, and set a maximum number of splits. Use the
-        # same parameter names as BayesTree::bart, but change the defaults.
     
     @classmethod
     def indices_from_coord(cls, x, splits):
