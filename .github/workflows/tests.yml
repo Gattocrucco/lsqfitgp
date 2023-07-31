@@ -33,12 +33,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest] # TODO test on Windows
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.11"]
         include:
           - os: ubuntu-20.04
             python-version: "3.8"
           - os: macos-11
+            python-version: "3.8"
+          - os: windows-2019
             python-version: "3.8"
     steps:
       - name: Checkout repository
