@@ -1,4 +1,4 @@
-# lsqfitgp/tests/test_jax.py
+# lsqfitgp/tests/test_special.py
 #
 # Copyright (c) 2022, 2023, Giacomo Petrillo
 #
@@ -29,6 +29,30 @@ import mpmath
 
 from lsqfitgp import _special, _patch_jax
 from . import util
+from . import cache
+
+class vectorize_cached:
+    """ decorator that adds vectorization and per-element persistent caching """
+
+    _cachedict = None
+
+    @classmethod
+    def save_if_used(cls):
+        if cls._cachedict is not None:
+            cls._cachedict.save()
+    
+    def __new__(cls, func):
+        if cls._cachedict is None:
+            suffix = 'json' if cache.USE_JSON else 'pickle'
+            cls._cachedict = cache.DiskCacheDict(f'tests/test_special_cache.{suffix}.gz')
+        func = cache.diskcachefunc(cls._cachedict)(func)
+        return np.vectorize(func)
+
+@pytest.fixture(autouse=True, scope='module')
+def save_cache():
+    """ save decorator cache after running the tests in this module """
+    yield
+    vectorize_cached.save_if_used()
 
 def test_sinc():
     x = np.linspace(-0.1, 0.1, 1000)
@@ -107,7 +131,9 @@ def test_expm1x():
     np.testing.assert_array_max_ulp(y, y2.astype('f'), 4)
     test_util.check_grads(_special.expm1x, (x,), 2)
 
-zeta = np.vectorize(lambda *args: float(mpmath.zeta(*args)))
+@vectorize_cached
+def zeta(*args):
+    return float(mpmath.zeta(*args))
 
 def test_hurwitz_zeta():
     s = np.linspace(-10, 0, 100)[:, None]
@@ -133,7 +159,7 @@ def test_gamma():
     g2 = _special.gamma(x)
     np.testing.assert_array_max_ulp(g2, g1, 1500)
 
-def _periodic_zeta_mpmath(x, s):
+def _periodic_zeta(x, s):
     with mpmath.workdps(32):
         arg = mpmath.exp(2j * mpmath.pi * x)
         return complex(mpmath.polylog(s, arg))
@@ -142,16 +168,16 @@ def _periodic_zeta_mpmath(x, s):
         #    have a small imaginary part which changes the result significantly
         # 2) polylog is inaccurate for s near an integer (mpmath issue #634)
 
-def _zeta_mpmath(s):
+def _zeta(s):
     return complex(mpmath.zeta(s))
 
-@np.vectorize
+@vectorize_cached
 def periodic_zeta(x, s):
     if int(x) == x:
-        return _zeta_mpmath(s)
+        return _zeta(s)
         # patch for mpmath.polylog(s, 1) != zeta(s)
     else:
-        return _periodic_zeta_mpmath(x, s)
+        return _periodic_zeta(x, s)
 
 @mark.parametrize('i', [
     pytest.param(False, id='real'),
@@ -208,6 +234,11 @@ def test_periodic_zeta_deriv(i):
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
 
+@vectorize_cached
+def zeta_zero(s):
+    with mpmath.workdps(40):
+        return float(mpmath.zeta(s) - mpmath.zeta(0))
+
 @mark.parametrize('s', [
     pytest.param((1 - 1e-15) * np.linspace(-1, 1, 101), id='widerange'),
     pytest.param(0.5 * np.linspace(-1, 1, 101), id='medrange'),
@@ -215,10 +246,17 @@ def test_periodic_zeta_deriv(i):
     pytest.param(1e-14 * np.linspace(-1, 1, 101), id='tinyrange'),
 ])
 def test_zeta_zero(s):
-    with mpmath.workdps(40):
-        z1 = np.array([float(mpmath.zeta(s) - mpmath.zeta(0)) for s in s])
+    z1 = zeta_zero(s)
     z2 = _special.zeta_zero(s)
     np.testing.assert_array_max_ulp(z1, z2, 2)
+
+@vectorize_cached
+def gamma_incr(x, e):
+    with mpmath.workdps(40):
+        x = mpmath.mpf(float(x))
+        e = mpmath.mpf(float(e))
+        denom = mpmath.gamma(x) * mpmath.gamma(1 + e)
+        return float(mpmath.gamma(x + e) / denom - 1)
 
 @mark.parametrize('s', [
     pytest.param(1, id='pos'),
@@ -235,18 +273,17 @@ def test_zeta_zero(s):
 ])
 def test_gamma_incr(x, e, s):
     x = np.reshape(x, (-1, 1))
-    @np.vectorize
-    def func(x, e):
-        with mpmath.workdps(40):
-            x = mpmath.mpf(float(x))
-            e = mpmath.mpf(float(e))
-            denom = mpmath.gamma(x) * mpmath.gamma(1 + e)
-            return float(mpmath.gamma(x + e) / denom - 1)
     e = e * s
     e = np.where(x == 1, np.abs(e), e)
-    g1 = func(x, e)
+    g1 = gamma_incr(x, e)
     g2 = _special.gamma_incr(x, e)
     np.testing.assert_array_max_ulp(g2, g1, 7)
+
+@vectorize_cached
+def gammaln1(x):
+    with mpmath.workdps(40):
+        x = mpmath.mpf(float(x))
+        return float(mpmath.loggamma(1 + x))
 
 @mark.parametrize('s', [
     pytest.param(1, id='pos'),
@@ -258,15 +295,23 @@ def test_gamma_incr(x, e, s):
     pytest.param(1e-14 * np.linspace(0, 1, 51), id='tinyrange'),
 ])
 def test_gammaln1(x, s):
-    @np.vectorize
-    def func(x):
-        with mpmath.workdps(40):
-            x = mpmath.mpf(float(x))
-            return float(mpmath.loggamma(1 + x))
     x = x * s
-    g1 = func(x)
+    g1 = gammaln1(x)
     g2 = _special.gammaln1(x)
     np.testing.assert_array_max_ulp(g2, g1, 2)
+
+@vectorize_cached
+def zeta_series_power_diff(x, q, a):
+    with mpmath.workdps(40):
+        x = mpmath.mpf(float(x))
+        q = mpmath.mpf(float(q))
+        a = mpmath.mpf(float(a))
+        num = mpmath.gamma(1 + q - a)
+        denom = mpmath.gamma(1 - a) * mpmath.gamma(1 + q)
+        zeta = mpmath.zeta(a)
+        term = 2 * num / denom * zeta * x ** q
+        power = x ** (q - a)
+        return float(power + term)
 
 @mark.parametrize('s', [
     pytest.param(1, id='pos'),
@@ -294,19 +339,7 @@ def test_power_diff(x, q, a, s):
     x = np.reshape(x, (-1, 1, 1))
     q = np.reshape(q, (-1, 1))
     a = a * s # don't use inplace *= since arguments are not copied
-    @np.vectorize
-    def func(x, q, a):
-        with mpmath.workdps(40):
-            x = mpmath.mpf(float(x))
-            q = mpmath.mpf(float(q))
-            a = mpmath.mpf(float(a))
-            num = mpmath.gamma(1 + q - a)
-            denom = mpmath.gamma(1 - a) * mpmath.gamma(1 + q)
-            zeta = mpmath.zeta(a)
-            term = 2 * num / denom * zeta * x ** q
-            power = x ** (q - a)
-            return float(power + term)
-    p1 = func(x, q, a)
+    p1 = zeta_series_power_diff(x, q, a)
     p2 = _special.zeta_series_power_diff(x, q, a)
     if np.all(q <= 1) and np.any(x):
         tol = 20 * np.max(np.abs(p1), 0) * np.finfo(float).eps
@@ -319,16 +352,17 @@ def test_power_diff(x, q, a, s):
         cp2 = np.where(cond, tol, p2)
         np.testing.assert_array_max_ulp(cp2, cp1, 22)
 
+@vectorize_cached
+def zeta_zeros(s):
+    with mpmath.workdps(20):
+        return float(mpmath.diff(mpmath.zeta, s))
+
 @mark.parametrize('s', [
     pytest.param(-2, id='-2'),
     pytest.param(-np.arange(4, 11, 2), id='small'),
     pytest.param(-np.arange(12, 101, 2), id='large'),
 ])
 def test_zeta_zeros(s):
-    @np.vectorize
-    def func(s):
-        with mpmath.workdps(20):
-            return float(mpmath.diff(mpmath.zeta, s))
     def handwritten(s):
         pi = 2 * (2 * np.pi) ** (s - 1)
         n = np.around(s)
@@ -338,23 +372,24 @@ def test_zeta_zeros(s):
         zeta = _special.zeta(1 - s)
         return pi * cos * gamma * zeta
     z0 = handwritten(s)
-    z1 = func(s)
+    z1 = zeta_zeros(s)
     ulp = 25 if np.all(s >= -10) else 1113
     np.testing.assert_array_max_ulp(z0, z1, ulp)
     eps = 1e-30
     z2 = _special.zeta(eps, s) / eps
     np.testing.assert_array_max_ulp(z2, z1, ulp)
 
+@vectorize_cached
+def zeta_split(s, n):
+    with mpmath.workdps(32):
+        n = mpmath.mpmathify(n)
+        s = mpmath.mpmathify(s)
+        return float(mpmath.zeta(s + n)) if n + s != 1 else np.inf
+
 def test_zeta():
     n = np.arange(-10, 60)[:, None]
     s = np.linspace(-0.5, 0.5, 101)
-    @np.vectorize
-    def func(s, n):
-        with mpmath.workdps(32):
-            n = mpmath.mpmathify(n)
-            s = mpmath.mpmathify(s)
-            return float(mpmath.zeta(s + n)) if n + s != 1 else np.inf
-    z1 = func(s, n)
+    z1 = zeta_split(s, n)
     z2 = _special.zeta(s, n)
     np.testing.assert_array_max_ulp(z2, z1, 72)
 
@@ -379,7 +414,7 @@ def test_bernoulli(rng):
         x = rng.uniform(0, 1, size=100)
         check_bernoulli(n, x)
 
-@np.vectorize
+@vectorize_cached
 def expint(n, z):
     return complex(mpmath.expint(n, z))
 
@@ -396,7 +431,3 @@ def test_expn(rng):
 
 def test_kvp():
     test_util.check_grads(lambda z: _special.kv(3.2, z), (1.5,), 2)
-
-# TODO these tests currently take 4 min out of 17 total. I guess the bottleneck
-# is mpmath. I should produce and commit a cache of values. Maybe the "cache"
-# fixture from pytest is appropriate?

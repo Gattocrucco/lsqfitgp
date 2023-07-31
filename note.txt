@@ -4640,7 +4640,7 @@ Seems to solve the tracing problems. Next:
 - optimize the likelihood calculation in _decomp.py (DONE)
 - optimize the derivatives in _fit.py (DONE)
 - use the rng fixture for random generators in all tests (DONE)
-- try to use pytest's cache for test_special.py
+- try to use pytest's cache for test_special.py (DONE)
 - try to speed up test_pred.py
 - profile the loading of test_kernels.py
 
@@ -4652,3 +4652,30 @@ After a bit more of ChatGPTing, it's "Our code, hallowed be thy dependencies,
 but deliver us from pins and torment," such that "pins" possibly makes you
 recall "pain." I'm not confident this works on English speakers since I'm not
 one myself.
+
+2023-07-31
+==========
+
+`pytest --lf` runs only the tests that failed in the alst invocation.
+
+..........
+
+The pytest cache is not appropriate to commit because it's mixed in with the
+information on failed tests. I have to design a small caching system from
+scratch.
+
+The end result I want is functions I call to output basic python values, that
+behind the scenes check if the result is in cache. Maybe python has other
+pre-made caching systems for this? => No, it doesn't.
+
+- make a file tests/cache.py
+- define a class DiskCachedDict
+- it takes a file path on init
+- it behaves like a dict, but loads values from disk on init, and writes them
+  back on del
+- define a class DiskCachedCallable
+- takes a DiskCachedDict on init
+- it's __call__ is a decorator that takes in a function and spits out a function
+  that uses the cache with a identifier based on the function name
+
+=> DONE
