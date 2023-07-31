@@ -4641,6 +4641,8 @@ Seems to solve the tracing problems. Next:
 - optimize the derivatives in _fit.py (DONE)
 - use the rng fixture for random generators in all tests (DONE)
 - try to use pytest's cache for test_special.py
+- try to speed up test_pred.py
+- profile the loading of test_kernels.py
 
 ..........
 

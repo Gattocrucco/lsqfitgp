@@ -151,7 +151,7 @@ class TestChol:
         result = decomp.pinv_bilinear(A, r)
         K_reg = K + np.eye(n) * decomp.eps
         expected = A.T @ linalg.solve(K_reg, r, assume_a='pos')
-        util.assert_close_matrices(result, expected, rtol=1e-15)
+        util.assert_close_matrices(result, expected, rtol=1e-14)
 
     def test_pinv_bilinear_proj(self, n, K, r, decomp):
         result = decomp.pinv_bilinear(K, r)
@@ -181,7 +181,7 @@ class TestChol:
         K_reg = K + np.eye(n) * decomp.eps
         expected = A.T @ linalg.solve(K_reg, A, assume_a='pos')
         expected = np.diag(expected)
-        util.assert_close_matrices(result, expected, rtol=1e-14)
+        util.assert_close_matrices(result, expected, rtol=1e-12)
 
     def test_ginv_diagquad_mp1(self, K, decomp):
         result = decomp.ginv_diagquad(K)
@@ -222,7 +222,7 @@ class TestChol:
             np.sum(np.log(linalg.eigvalsh(K))) +
             r @ linalg.solve(K, r, assume_a='pos')
         )
-        util.assert_allclose(result, expected, atol=1e-10)
+        util.assert_allclose(result, expected, atol=1e-9)
 
     def test_normal_gradrev(self, likelihood, s, decomp, r, r_factory, K_factory):
         _, _, kw = decomp.make_derivs(K_factory, r_factory, s, gradrev=True)

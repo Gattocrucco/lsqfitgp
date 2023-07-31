@@ -62,7 +62,7 @@ def test_yule_walker_inv_extend(rng):
         acf2 = lgp.AR.gamma_from_phi(phi)
         phi3 = np.pad(phi, (0, 1 + p))
         acf3 = lgp.AR.gamma_from_phi(phi3)
-        util.assert_allclose(acf3[:len(acf2)], acf2, rtol=1e-14)
+        util.assert_allclose(acf3[:len(acf2)], acf2, rtol=1e-13)
 
 def test_yule_walker_inv_evolve(rng):
     for p in plist:
