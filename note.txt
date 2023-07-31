@@ -4680,10 +4680,20 @@ pre-made caching systems for this? => No, it doesn't.
 
 => DONE
 
-........
+.........
 
 The profiler says that most of the loading time of test_kernels is jax
 compilation. Sorting by cumtime, it's all in creating the BART hyperparameters
 list, calling BART.splits_from_coord. => Fixed by jitting the method.
 
 Now the total pytest dry running time is < 2s.
+
+.........
+
+Since I'm doing maintenance, I could finish it before starting again on the main
+work. Things to do:
+
+ - use the src/ layout
+ - avoid packaging extraneous python source files in the source distribution
+ - use tox for the tests
+ - make a release to remove the jax pin
