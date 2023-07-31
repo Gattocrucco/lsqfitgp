@@ -75,10 +75,10 @@ examples: $(EXAMPLES)
 $(EXAMPLES):
 	$(EXAMPLESPY) examples/runexamples.py $@
 
-docs/kernelsref.rst: docs/kernelsref.py lsqfitgp/_kernels/*.py lsqfitgp/_patch_jax/*.py lsqfitgp/_special/*.py
+docs/kernelsref.rst: docs/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_patch_jax/*.py src/lsqfitgp/_special/*.py
 	$(DOCSPY) $(notdir $<)
 
-docs/examplesref.rst: docs/examplesref.py lsqfitgp/*.py lsqfitgp/*/*.py
+docs/examplesref.rst: docs/examplesref.py src/lsqfitgp/*.py src/lsqfitgp/*/*.py
 	$(DOCSPY) $(notdir $<)
 
 GENDOCS := $(addsuffix .rst, $(basename $(wildcard docs/*ref.py)))

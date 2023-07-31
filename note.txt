@@ -4697,4 +4697,5 @@ work. Things to do:
  - avoid packaging extraneous python source files in the source distribution 
    (DONE)
  - use tox for the tests
+ - reintroduce pdf9.py by dropping woodbury
  - make a release to remove the jax pin

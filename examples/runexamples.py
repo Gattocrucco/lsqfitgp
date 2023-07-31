@@ -28,23 +28,26 @@ import numpy as np
 from matplotlib import pyplot as plt
 import gvar
 
-sys.path.insert(0, '..') # to import lsqfitgp if run from examples/
-sys.path.insert(0, '.')
-
 warnings.filterwarnings('ignore', r'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure\.')
 
+class SwitchGVar:
+    __enter__ = lambda _: gvar.switch_gvar()
+    __exit__ = lambda *_: gvar.restore_gvar()
+
 for file in sys.argv[1:]:
+
+    # load source file
     print('\nrunexamples.py: running {}...'.format(file))
     with open(file, 'r') as stream:
         code = stream.read()
     
-    # reset working environment
-    plt.close('all')
-    np.random.seed(0)
-    gvar.switch_gvar()
-
-    globals_dict = {}
-    exec(code, globals_dict)
+    # reset working environment and run
+    with SwitchGVar():
+        plt.close('all')
+        np.random.seed(0)
+        gvar.ranseed(0)
+        globals_dict = {}
+        exec(code, globals_dict)
     
     # save figures
     nums = plt.get_fignums()

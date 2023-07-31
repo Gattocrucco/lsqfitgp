@@ -64,7 +64,7 @@ class bart:
         
         Attributes
         ----------
-        mean : scalar
+        mean : gvar
             The prior mean.
         sigma : gvar
             The error term standard deviation. If there are weights, the sdev
@@ -306,8 +306,8 @@ class bart:
         rng : numpy.random.Generator, optional
             Random number generator, used if ``hp == 'sample'``.
 
-        Return
-        ------
+        Returns
+        -------
         If ``format`` is 'matrices' (default):
 
         mean, cov : arrays

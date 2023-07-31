@@ -1,6 +1,6 @@
 # lsqfitgp/docs/runcode.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -24,40 +24,43 @@ after the code block"""
 import re
 import sys
 import textwrap
-import warnings
 
 import numpy as np
 from matplotlib import pyplot as plt
 import gvar
-
-from pygments import highlight
-from pygments.lexers import PythonLexer
-from pygments.formatters import TerminalFormatter
+import pygments
+from pygments import lexers, formatters
 
 def pyprint(text):
-    print(highlight(text, PythonLexer(), TerminalFormatter()))
+    print(pygments.highlight(text, lexers.PythonLexer(), formatters.TerminalFormatter()))
 
-sys.path.insert(0, '..')
+class SwitchGVar:
+    __enter__ = lambda _: gvar.switch_gvar()
+    __exit__ = lambda *_: gvar.restore_gvar()
 
 pattern = re.compile(r'::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
 
 def runcode(file):
+
+    # read source
     with open(file, 'r') as stream:
         text = stream.read()
     
     # reset working environment
     plt.close('all')
-    gvar.switch_gvar()
     np.random.seed(0)
+    gvar.ranseed(0)
     globals_dict = {}
-    
-    for match in pattern.finditer(text):
-        codeblock = match.group(1)
-        print(58 * '-' + '\n')
-        code = textwrap.dedent(codeblock).strip()
-        printcode = '\n'.join(f' {i + 1:2d}  ' + l for i, l in enumerate(code.split('\n')))
-        pyprint(printcode)
-        exec(code, globals_dict)
+    with SwitchGVar():
+
+        # run code
+        for match in pattern.finditer(text):
+            codeblock = match.group(1)
+            print(58 * '-' + '\n')
+            code = textwrap.dedent(codeblock).strip()
+            printcode = '\n'.join(f' {i + 1:2d}  ' + l for i, l in enumerate(code.split('\n')))
+            pyprint(printcode)
+            exec(code, globals_dict)
 
 for file in sys.argv[1:]:
     s = f'*  running {file}  *'

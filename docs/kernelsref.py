@@ -22,12 +22,9 @@
 outputfile = 'kernelsref.rst'
 
 import inspect
-import sys
 
 import numpy as np
 from matplotlib import pyplot as plt
-
-sys.path = ['.', '..'] + sys.path
 import lsqfitgp as lgp
 
 classes = (lgp.IsotropicKernel, lgp.StationaryKernel, lgp.Kernel     )
