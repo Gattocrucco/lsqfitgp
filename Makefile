@@ -63,31 +63,26 @@ tests:
 # coverage
 
 EXAMPLES = $(wildcard examples/*.py)
-EXAMPLES := $(filter-out examples/runexamples.py, $(EXAMPLES))
-EXAMPLES := $(filter-out examples/pdf7.py, $(EXAMPLES))
-EXAMPLES := $(filter-out examples/pdf8.py, $(EXAMPLES))
-EXAMPLES := $(filter-out examples/pdf9.py, $(EXAMPLES))
+EXAMPLES := $(filter-out examples/runexamples.py, $(EXAMPLES)) # runner script
+EXAMPLES := $(filter-out examples/pdf7.py, $(EXAMPLES)) # slow
+EXAMPLES := $(filter-out examples/pdf8.py, $(EXAMPLES)) # slow
+EXAMPLES := $(filter-out examples/pdf9.py, $(EXAMPLES)) # slow	
 .PHONY: $(EXAMPLES)
-
 examples: $(EXAMPLES)
-
-$(EXAMPLES):
-	$(EXAMPLESPY) examples/runexamples.py $@
-
-docs/kernelsref.rst: docs/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_patch_jax/*.py src/lsqfitgp/_special/*.py
-	$(DOCSPY) $(notdir $<)
-
-docs/examplesref.rst: docs/examplesref.py src/lsqfitgp/*.py src/lsqfitgp/*/*.py
-	$(DOCSPY) $(notdir $<)
-
-GENDOCS := $(addsuffix .rst, $(basename $(wildcard docs/*ref.py)))
-.PHONY: gendocs
-gendocs: $(GENDOCS)
+	$(EXAMPLESPY) examples/runexamples.py $(EXAMPLES)
 
 docscode:
 	$(DOCSPY) runcode.py *.rst
 
-docs: gendocs
+docs/kernelsref.rst: docs/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_patch_jax/*.py src/lsqfitgp/_special/*.py
+	$(DOCSPY) --append $(notdir $<)
+
+docs/examplesref.rst: docs/examplesref.py src/lsqfitgp/*.py src/lsqfitgp/*/*.py
+	$(DOCSPY) --append $(notdir $<)
+
+GENDOCS := $(addsuffix .rst, $(basename $(wildcard docs/*ref.py)))
+
+docs: $(GENDOCS)
 	make -C docs html
 	@echo
 	@echo "Now open docs/_build/html/index.html"

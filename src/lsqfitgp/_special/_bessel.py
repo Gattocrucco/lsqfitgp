@@ -43,6 +43,7 @@ kvp = _patch_jax.makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1
 # to implement special functions in jax with numba
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
+@jax.jit
 def jvmodx2(nu, x2):
     x = jnp.sqrt(x2)
     normal = (x / 2) ** -nu * jv(nu, x)
@@ -67,6 +68,7 @@ def jvmodx2_jvp(nu, primals, tangents):
     return jvmodx2(nu, x2), -x2t * jvmodx2(nu + 1, x2) / 4
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 2))
+@functools.partial(jax.jit, static_argnums=(2,))
 def kvmodx2(nu, x2, norm_offset=0):
     x = jnp.sqrt(x2)
     normal = 2 / _gamma.gamma(nu + norm_offset) * (x / 2) ** nu * kv(nu, x)
@@ -97,6 +99,7 @@ def kvmodx2_jvp(nu, norm_offset, primals, tangents):
     return primal, tangent
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(1,))
+@functools.partial(jax.jit, static_argnums=(1,))
 def kvmodx2_hi(x2, p):
     # nu = p + 1/2, p integer >= 0
     x = jnp.sqrt(x2)

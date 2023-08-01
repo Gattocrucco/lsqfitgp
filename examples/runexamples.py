@@ -23,6 +23,7 @@ in the same directory of each corresponding script."""
 import sys
 import os
 import warnings
+import gc
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -47,6 +48,7 @@ for file in sys.argv[1:]:
         np.random.seed(0)
         gvar.ranseed(0)
         globals_dict = {}
+        gc.collect()
         exec(code, globals_dict)
     
     # save figures

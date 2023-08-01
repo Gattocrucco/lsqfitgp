@@ -2,12 +2,15 @@
 
 Like pdf2, but with correct integral constraints and naming this time"""
 
+import warnings
+
 import lsqfitgp as lgp
 import numpy as np
 from matplotlib import pyplot as plt
 import gvar
 
 np.random.seed(20220416)
+warnings.filterwarnings('ignore', r'total derivative orders \(\d+, \d+\) greater than kernel minimum \(\d+, \d+\)')
 
 #### COMPONENTS ####
 

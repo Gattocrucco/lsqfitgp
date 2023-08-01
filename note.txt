@@ -4795,3 +4795,11 @@ location.
 
 Coverage says that the source spec can be a importable module name, so I can
 just remove the path from .coveragerc.
+
+............
+
+Why does the examples not count for coverage? Maybe it's exec?
+
+I think I got it. Running only one example, the code I expect to find covered
+is covered. coverage does not accumulate coverage, it overwrites COVERAGE_FILE
+at each invocation.

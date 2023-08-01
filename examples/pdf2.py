@@ -3,12 +3,15 @@
 The difference from pdf1.py is that we define the transformation on processes
 instead of on their finite realizations"""
 
+import warnings
+
 import lsqfitgp as lgp
 import numpy as np
 from matplotlib import pyplot as plt
 import gvar
 
 np.random.seed(20220416)
+warnings.filterwarnings('ignore', r'total derivative orders \(\d+, \d+\) greater than kernel minimum \(\d+, \d+\)')
 
 #### DEFINE MODEL ####
 # for each gluon:
