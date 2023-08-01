@@ -46,6 +46,7 @@ jobs:
             experimental: true
           # do not run outdated tests on windows because only recent jax
           # versions support windows
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -149,7 +150,7 @@ jobs:
         run: |
           pwd
           ls -a
-          ls lsqfitgp
+          ls src/lsqfitgp
       - name: Print coverage debug
         run: |
           coverage debug config

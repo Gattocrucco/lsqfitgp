@@ -1,7 +1,7 @@
 [run]
 branch=True
 source =
-    lsqfitgp
+    src/lsqfitgp
 
 [report]
 show_missing=True
@@ -11,6 +11,6 @@ show_contexts=True
 
 [paths]
 github =
-    /home/runner/work/lsqfitgp/lsqfitgp/lsqfitgp/
-    /Users/runner/work/lsqfitgp/lsqfitgp/lsqfitgp/
-    D:\a\lsqfitgp\lsqfitgp\lsqfitgp\
+    /home/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/
+    /Users/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/
+    D:\a\lsqfitgp\lsqfitgp\src\lsqfitgp\
