@@ -166,6 +166,7 @@ def test_method():
             dict(method='nograd', minkw=dict(options=dict(xatol=1e-6))),
             dict(method='gradient'),
             dict(method='fisher'),
+            dict(method='fisher', minkw=dict(method='trust-constr')),
         ]
         if not sys.version.startswith('3.8'):
             kws.append(dict(method='gradient', minkw=dict(method='l-bfgs-b')))

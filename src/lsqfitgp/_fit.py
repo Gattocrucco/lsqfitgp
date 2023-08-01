@@ -307,16 +307,16 @@ class empbayes_fit(Logger):
         self.log(f'minimizer method {minargs["method"]!r}', 2)
         total = time.time()
         result = optimize.minimize(**minargs)
-        total = time.time() - total
 
-        # log total timings and function calls
-        self._log_totals(total, timer, callback, jit, functions)
-        
         # check the minimization was successful
         self._check_success(result, raises)
         
         # compute posterior covariance of the hyperparameters
         cov = self._posterior_covariance(method, covariance, result, functions['fisher'])    
+        
+        # log total timings and function calls
+        total = time.time() - total
+        self._log_totals(total, timer, callback, jit, functions)
         
         # join posterior mean and covariance matrix
         uresult = gvar.gvar(result.x, cov)
@@ -793,8 +793,9 @@ class empbayes_fit(Logger):
             minargs.update(method='bfgs')
         elif method == 'fisher':
             minargs.update(hess=functions['fisher'], method='dogleg')
-            # dogleg requires positive definiteness
-            # TODO use trust-constr because it has more options?
+            # dogleg requires positive definiteness, fisher is p.s.d.
+            # trust-constr has more options, but it seems to be slower than
+            # dogleg, so I keep dogleg as default
         else:
             raise KeyError(method)
         self.log(f'method {method!r}', 2)
@@ -803,21 +804,30 @@ class empbayes_fit(Logger):
         # TODO add method with fisher matvec instead of fisher matrix
 
     def _log_totals(self, total, timer, callback, jit, functions):
-        times = callback.fmttimes({
+        times = {
             'gp&cov': timer.totals[0],
             'decomp': timer.totals[1],
             'likelihood': timer.totals[2],
+            'jit': None, # set now and delete later to keep it before 'other'
             'other': total - sum(timer.totals.values()),
-        })
-        calls = self._CountCalls.fmtcalls('total', functions)
-        self.log('', 4)
-        self.log(f'total time: {callback.fmttime(total)}')
+        }
         if jit:
             overhead = callback.estimate_firstcall_overhead()
-            if overhead is not None:
-                self.log(f'estimated compilation time: {callback.fmttime(overhead)}', 2)
-        self.log(f'partials: {times}', 2)
+            # TODO this estimation ignores the jit compilation of the function
+            # used to compute the precision matrix, to be precise I should
+            # manually split the jit into compilation + evaluation or hook into
+            # it somehow. Maybe the jit object keeps a compilation wall time
+            # stat?
+        if jit and overhead is not None:
+            times['jit'] = overhead
+            times['other'] -= overhead
+        else:
+            del times['jit']
+        self.log('', 4)
+        calls = self._CountCalls.fmtcalls('total', functions)
         self.log(f'calls: {calls}')
+        self.log(f'total time: {callback.fmttime(total)}')
+        self.log(f'partials: {callback.fmttimes(times)}', 2)
 
     def _check_success(self, result, raises):
         if result.success:
@@ -845,7 +855,7 @@ class empbayes_fit(Logger):
                 prec = minimizer_result.hess
             else:
                 prec = fisher_func(minimizer_result.x)
-            cov = _linalg.EigCutFullRank(prec).inv()
+            cov = _linalg.Chol(prec).ginv()
 
         elif covariance == 'minhess':
             if hasattr(minimizer_result, 'hess_inv'):
@@ -895,7 +905,15 @@ class empbayes_fit(Logger):
             self.tail_overhead = 0
             self.tail_overhead_iter = 0
 
-        def __call__(self, p):
+        def __call__(self, intermediate_result, arg2=None):
+            
+            if isinstance(intermediate_result, optimize.OptimizeResult):
+                p = intermediate_result.x
+            elif isinstance(intermediate_result, numpy.ndarray):
+                p = intermediate_result
+            else:
+                raise TypeError(type(intermediate_result))
+
             self.it += 1
             now = time.time()
             duration = now - self.stamp

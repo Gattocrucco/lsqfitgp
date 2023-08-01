@@ -407,8 +407,10 @@ class GP:
         for k, func in ops.items():
             if k not in self._procs:
                 raise KeyError(f'process key {k!r} not in GP object')
-            if not jnp.isscalar(func) and not callable(func):
+            if jnp.ndim(func) > 0 and not callable(func):
                 raise TypeError(f'object of type {type(func)!r} for key {k!r} is neither scalar nor callable')
+                # do not use jnp.isscalar because it returns False for
+                # strongly typed 0-dim arrays
         
         if key in self._procs:
             raise KeyError(f'process key {key!r} already used in GP')

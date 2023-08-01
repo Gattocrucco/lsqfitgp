@@ -219,8 +219,8 @@ class bart:
         rng : numpy.random.Generator, optional
             Random number generator, used if ``hp == 'sample'``.
 
-        Return
-        ------
+        Returns
+        -------
         gp : GP
             A centered Gaussian process object. To add the mean, use the
             ``mean`` attribute of the `bart` object. The keys of the GP are
@@ -271,8 +271,8 @@ class bart:
         rng : numpy.random.Generator, optional
             Random number generator, used if ``hp == 'sample'``.
 
-        Return
-        ------
+        Returns
+        -------
         data : dict
             A dictionary representing ``y_train`` in the format required by the
             `GP.pred` method.
