@@ -28,7 +28,7 @@ def object_hook(obj):
 def key_to_str(key):
     # I'm hoping that the json-encoded string does not change from the oldest
     # python version I support onwards.
-    return json.dumps(key, cls=JSONEncoder)
+    return json.dumps(key, cls=JSONEncoder).replace('9.999999999999999e-101', '1e-100')
 
 if USE_JSON:
 

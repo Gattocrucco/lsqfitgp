@@ -4781,7 +4781,7 @@ I try running offline.
 .   
 .   Some tests in test_special.py look slow too. Maybe jitting the special functions
 .   would be useful? => adding jax.jit in _bessel.py below custom_jvp makes the
-.   tests fail with concretization errors, I'll look into it another time
+.   tests fail with concretization errors, I'll look into it another time (DONE)
 .   
 ...........
 
@@ -4802,4 +4802,49 @@ Why does the examples not count for coverage? Maybe it's exec?
 
 I think I got it. Running only one example, the code I expect to find covered
 is covered. coverage does not accumulate coverage, it overwrites COVERAGE_FILE
-at each invocation.
+at each invocation. => fixed
+
+............
+
+New problem: tests (ubuntu-latest) fails with
+
+FAILED tests/test_special.py::test_power_diff[qzero-xnearzero-medrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qzero-xnearzero-shortrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qzero-xnearzero-tinyrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qone-xnearzero-medrange-pos] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qone-xnearzero-medrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qone-xnearzero-shortrange-pos] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qone-xnearzero-shortrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qone-xnearzero-tinyrange-pos] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qone-xnearzero-tinyrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qeven-xnearzero-medrange-pos] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qeven-xnearzero-medrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qeven-xnearzero-shortrange-pos] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qeven-xnearzero-shortrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qeven-xnearzero-tinyrange-pos] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qeven-xnearzero-tinyrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qodd-xnearzero-medrange-pos] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qodd-xnearzero-medrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qodd-xnearzero-shortrange-pos] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qodd-xnearzero-shortrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qodd-xnearzero-tinyrange-pos] - TypeError: 'mappingproxy' object does not support item assignment
+FAILED tests/test_special.py::test_power_diff[qodd-xnearzero-tinyrange-neg] - TypeError: 'mappingproxy' object does not support item assignment
+
+It'all non-skipped xnearzero variants (22/24). Locally it works. On all other CI
+environments it works. 
+
+Example missing key: 
+    
+    key = '["zeta_series_power_diff", [9.999999999999999e-101, 3, -4e-16], {}]'
+
+Maybe it was saved as 1e-100?
+
+=> Yes, looks like it is and is saved as 1e-100, but for some reason on
+ubuntu-22 now it gets written as 9.999999999999999e-101.
+
+Searching in the log, I am sure it's always the 9.999999999999999e-101 that's
+causing problems.
+
+So the keys on file contain 1e-100, while the decorator sees
+9.999999999999999e-101. I have to convert any 9.999999999999999e-101 that
+appears in the json key to 1e-100.
