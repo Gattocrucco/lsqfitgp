@@ -40,8 +40,8 @@ jobs:
             python-version: "3.8"
           - os: macos-11
             python-version: "3.8"
-          - os: windows-2019
-            python-version: "3.8"
+          # do not run outdated tests on windows because only recent jax
+          # versions support windows
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3

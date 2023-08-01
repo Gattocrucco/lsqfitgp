@@ -44,8 +44,8 @@ class vectorize_cached:
     def __new__(cls, func):
         if cls._cachedict is None:
             suffix = 'json' if cache.USE_JSON else 'pickle'
-            cls._cachedict = cache.DiskCacheDict(f'tests/test_special_cache.{suffix}.gz')
-        func = cache.diskcachefunc(cls._cachedict)(func)
+            cls._cachedict = cache.CommittedDict(f'tests/test_special_cache.{suffix}.gz')
+        func = cache.cache(cls._cachedict)(func)
         return np.vectorize(func)
 
 @pytest.fixture(autouse=True, scope='module')

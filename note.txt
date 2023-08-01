@@ -4699,3 +4699,40 @@ work. Things to do:
  - use tox for the tests
  - reintroduce pdf9.py by dropping woodbury
  - make a release to remove the jax pin
+
+=> tox is too much work right now so I'm skipping it
+
+I'm trying to add Windows instead. First error: can not load the test_special
+pickle cache because it requires to instantiate a PosixPath. Where the heck is a
+PosixPath hidden in the pickle??
+
+Alternative plans:
+ 1) Understand where the PosixPath come out from and get rid of it
+ 2) Fix the json cache backend and use it in place of pickle
+
+2023-08-01
+==========
+
+I profiled the test suite, result sorted by cumtime. Saved it
+playground/testprofile-2023-07-31.txt.
+
+............
+
+Othe plan:
+ 3) Hack pathlib.PosixPath temporarily
+
+..........
+
+I chose (2), json. It was easier than expected: gzip.open supports text mode, it
+just isn't the default.
+
+New problem: opening and saving the cache is not idempotent. This is a problem
+because it is committed. I have to change the logic, and I should also set
+things up to detect if the cache keys are corrupted due to changes in json
+encoding.
+
+Solution:
+ - rename DiskCacheDict to CommittedDict
+ - if the file exists, CommittedDict ignores a writing request, printing a
+   message, and refuses to set new keys
+ - if the file does not exists, works like now
