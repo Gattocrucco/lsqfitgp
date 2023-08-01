@@ -4736,3 +4736,28 @@ Solution:
  - if the file exists, CommittedDict ignores a writing request, printing a
    message, and refuses to set new keys
  - if the file does not exists, works like now
+
+..........
+
+The new cache loaded on Windows. The next major hitch is that jax crashed during
+the kernels tests. I can't do much about it, so the convenient thing to do would
+be to let the windows test run each time without stopping the workflow from
+completing, and notice when they stop crashing.
+
+Workflow jobs have an `if:` field that sets condition for running. The default
+is `success()` which is true if required jobs were successful. I try to write my
+own expression:
+
+    if: success() || (failure() && (only windows failed))
+
+    if: success() || (needs.tests.important_failures is empty),
+    then in the tests job I use outputs: with an if to mark failures somehow?
+
+Ok I can't wrap my head around how to do this quickly. I'd probably have to
+define a conditional step in test that outputs the matrix info, and then write
+an unwieldy expression to check only windows failed.
+
+=> Found it! use continue-on-error with a matrix switch.
+
+It fails because experimental is not defined apart from windows. I have to make
+the expression evaluate to true if experimental is the empty string.

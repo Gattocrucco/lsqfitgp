@@ -30,16 +30,20 @@ jobs:
   tests:
 
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental != '' }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.11"]
         include:
           - os: ubuntu-20.04
             python-version: "3.8"
           - os: macos-11
             python-version: "3.8"
+          - os: windows-latest
+            python-version: "3.11"
+            experimental: true
           # do not run outdated tests on windows because only recent jax
           # versions support windows
     steps:
