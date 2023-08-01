@@ -249,8 +249,10 @@ def test_no_proc():
 def test_invalid_factor():
     gp = lgp.GP()
     gp.addproc(lgp.ExpQuad(), 'a')
+    gp.addproctransf({'a': 0.}, 'b')
+    gp.addproctransf({'a': np.array(0.)}, 'c')
     with pytest.raises(TypeError):
-        gp.addproctransf({'a': None}, 'b')
+        gp.addproctransf({'a': None}, 'd')
 
 def test_existing_proc():
     gp = lgp.GP()

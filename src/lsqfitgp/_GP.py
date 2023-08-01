@@ -22,6 +22,7 @@ import functools
 import sys
 import abc
 import warnings
+import numbers
 
 import gvar
 import numpy
@@ -403,15 +404,22 @@ class GP:
             parameter.
         
         """
+
+        def is_numerical_scalar(x):
+            return (
+                isinstance(x, numbers.Number) or
+                (isinstance(x, (numpy.ndarray, jnp.ndarray)) and x.ndim == 0)
+            )
+            # do not use jnp.isscalar because it returns False for strongly
+            # typed 0-dim arrays; do not use jnp.ndim(•) == 0 because it accepts
+            # non-numerical types
         
         for k, func in ops.items():
             if k not in self._procs:
                 raise KeyError(f'process key {k!r} not in GP object')
-            if jnp.ndim(func) > 0 and not callable(func):
+            if not is_numerical_scalar(func) and not callable(func):
                 raise TypeError(f'object of type {type(func)!r} for key {k!r} is neither scalar nor callable')
-                # do not use jnp.isscalar because it returns False for
-                # strongly typed 0-dim arrays
-        
+
         if key in self._procs:
             raise KeyError(f'process key {key!r} already used in GP')
         
@@ -1619,9 +1627,10 @@ class GP:
         
         Kxxs = self._assemblecovblocks(inkeys, outkeys)
         
-        if isinstance(ycovblocks, _linalg.Decomposition):
-            ycov = ycovblocks
-        elif ycovblocks is not None:
+        # if isinstance(ycovblocks, _linalg.Decomposition): # woodbury, currently un-implemented
+        #     ycov = ycovblocks
+        # elif ...
+        if ycovblocks is not None:
             ycov = jnp.block(ycovblocks)
         elif (fromdata or raw or not keepcorr) and y.dtype == object:
             ycov = gvar.evalcov(gvar.gvar(y))

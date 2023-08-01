@@ -28,6 +28,8 @@ import pytest
 import lsqfitgp as lgp
 from . import util
 
+FITKW = dict(jit=True)
+
 def flat(g):
     """convert dictionary or array to 1D array"""
     if hasattr(g, 'buf'):
@@ -67,7 +69,7 @@ def check_fit(hyperprior, gpfactory, alpha=1e-5):
     data = gvar.sample(gp.prior())
         
     # run fit
-    fit = lgp.empbayes_fit(hyperprior, gpfactory, data, raises=False)
+    fit = lgp.empbayes_fit(hyperprior, gpfactory, data, raises=False, **FITKW)
     
     # check fit result against hyperparameters
     chisq_test(fit.p - truehp, alpha)
@@ -137,9 +139,9 @@ def test_flat():
     trueprior = truegp.prior()
     data = gvar.sample(trueprior)
     kw = dict(raises=False)
-    fit1 = lgp.empbayes_fit(hp, gpfactory1, data, **kw)
-    fit2 = lgp.empbayes_fit(hp.buf, gpfactory2, data, **kw)
-    fit3 = lgp.empbayes_fit(hp.buf[0], gpfactory3, data, **kw)
+    fit1 = lgp.empbayes_fit(hp, gpfactory1, data, **kw, **FITKW)
+    fit2 = lgp.empbayes_fit(hp.buf, gpfactory2, data, **kw, **FITKW)
+    fit3 = lgp.empbayes_fit(hp.buf[0], gpfactory3, data, **kw, **FITKW)
     util.assert_similar_gvars(fit1.p.buf[0], fit2.p[0], fit3.p)
 
 @util.tryagain
@@ -175,7 +177,7 @@ def test_method():
             kwargs = dict(data=data)
             kwargs.update(kw)
             kwargs.setdefault('minkw', {}).update(x0=truehp.buf)
-            fit = lgp.empbayes_fit(hp, gpfactory, **kwargs)
+            fit = lgp.empbayes_fit(hp, gpfactory, **kwargs, **FITKW)
             fits.append(fit)
         p = fits[0].minresult.x
         for fit in fits[1:]:
@@ -183,13 +185,13 @@ def test_method():
 
 def test_checks():
     with pytest.raises(KeyError):
-        lgp.empbayes_fit(gvar.gvar(0, 1), lambda: None, lambda: None, method='cippa')
+        lgp.empbayes_fit(gvar.gvar(0, 1), lambda: None, lambda: None, method='cippa', **FITKW)
     with pytest.raises(RuntimeError) as err:
         def makegp(x):
             gp = lgp.GP(lgp.ExpQuad())
             gp.addx(x, 'x')
             return gp
-        lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0.}, minkw=dict(options=dict(maxiter=0)))
+        lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0.}, minkw=dict(options=dict(maxiter=0)), **FITKW)
     assert 'minimization failed: ' in str(err.value)
 
 def test_int_data():
@@ -197,7 +199,7 @@ def test_int_data():
         gp = lgp.GP(lgp.ExpQuad())
         gp.addx(x, 'x')
         return gp
-    lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0})
+    lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0}, **FITKW)
 
 def test_data():
     
@@ -246,7 +248,7 @@ def test_data():
     for datasets in datas:
         fits = []
         for data in datasets:
-            fit = lgp.empbayes_fit(hp, gpfactory, data)
+            fit = lgp.empbayes_fit(hp, gpfactory, data, **FITKW)
             fits.append(fit)
 
         p = fits[0].minresult.x
