@@ -40,6 +40,12 @@ There are three main computational steps when doing a Gaussian process fit with
   
   * Take random samples from the posterior. This is :math:`O(m^3)`.
 
+Additionally, by default `GP` checks that the prior covariance matrix is
+symmetric and positive semidefinite. This has complexity :math:`O((n + m)^2)`,
+and the positivity check is somewhat slow. To disable the check, write ``GP(...,
+checkpos=False, checksym=False)``. The check is disabled anyway when using the
+jax compiler, addressed in the next section.
+
 Since usually :math:`m \gg n` because the plot is done on a finely spaced grid,
 the typical bottleneck is taking the samples, i.e., calling :func:`gvar.sample`
 (or :func:`gvar.raniter`). This problem can be bypassed by plotting only the
@@ -55,20 +61,21 @@ code to know where the bottleneck actually is. Python has the module
 you opt out of gvars, you can use :func:`lsqfitgp.raniter` to draw samples from
 an explicit mean vector and covariance matrix instead of :func:`gvar.raniter`.
 
-Once you have solved eventual :mod:`gvar`-related issues, if you have at least
-some hundreds of datapoints the next bottleneck is probably in
-:meth:`GP.predfromdata`. Making it faster is quick: select a solver different
-from the default one when initializing the :class:`GP` object, like ``GP(kernel,
-solver='chol')``. And don't forget to disable the :math:`O((n+m)^2)` positivity
-check: ``GP(kernel, solver='chol', checkpos=False)``.
+.. .. Uncomment and adapt when I reintroduce different solvers
+.. Once you have solved eventual :mod:`gvar`-related issues, if you have at least
+.. some hundreds of datapoints the next bottleneck is probably in
+.. :meth:`GP.predfromdata`. Making it faster is quick: select a solver different
+.. from the default one when initializing the :class:`GP` object, like ``GP(kernel,
+.. solver='chol')``. And don't forget to disable the :math:`O((n+m)^2)` positivity
+.. check: ``GP(kernel, solver='chol', checkpos=False)``.
 
 If you have written a custom kernel, it may become a bottleneck. For example the
 letter counting kernel in :ref:`customs` was very slow. A quick way to get a 2x
 improvement is computing only half of the covariance matrix: ``GP(kernel,
 checksym=False, halfmatrix=True)``. Note however that in some cases this may
-cause a large perfomance hit, so by default the full covariance matrix is
-computed even if ``checksym=False`` (but the cross covariance matrices are not
-computed twice).
+cause a large perfomance hit (for example in the `BART` kernel), so by default
+the full covariance matrix is computed even if ``checksym=False`` (but the cross
+covariance matrices are not computed twice).
 
 The JAX compiler
 ----------------
@@ -116,36 +123,36 @@ Example::
 
 And the winner is::
 
-   doinference took   5.651 ms on average
-   doinference took   0.074 ms on average
+   doinference took   6.701 ms on average
+   doinference took   0.018 ms on average
 
-The compiled version is 70 times faster. The difference is so stark because we
+The compiled version is 400 times faster. The difference is so stark because we
 used only 10 datapoints, so most of the time is spent in routing overhead
 instead of actual computations. Repeating with 1000 datapoints, the advantage
-should be limited::
+should be milder::
 
     data = jnp.zeros(1000)
     benchmark(doinference, data)
     benchmark(doinference_compiled, data)
 
-Indeed::
+Indeed, it's 20x faster, lower but still high::
 
-   doinference took 356.814 ms on average
-   doinference took 187.924 ms on average
+   doinference took 554.387 ms on average
+   doinference took  26.828 ms on average
 
-With many datapoints we said that changing the :class:`GP` options is the
-important tweak. Let's check::
+We said that using the :class:`GP` options ``checkpos=False, checksym=False``
+makes it faster, and that they are disabled anyway under jit. Let's check::
 
-    kw = dict(solver='chol', checkpos=False, checksym=False)
-    benchmark(doinference, data, **kw)
-    benchmark(doinference_compiled, data, **kw)
+    benchmark(doinference, data, checkpos=False, checksym=False)
+    benchmark(doinference_compiled, data, checkpos=False, checksym=False)
 
 Result::
 
-   doinference took  54.725 ms on average
-   doinference took  16.106 ms on average
+   doinference took  65.561 ms on average
+   doinference took  23.917 ms on average
 
-As expected.
+As expected, the compiled version is not affected, while the original one gains
+a lot of speed: now the advantage is just 3x.
 
 Fitting hyperparameters
 -----------------------
@@ -161,8 +168,15 @@ taking posterior samples, the other techniques explained in the previous
 sections also apply here. In particular, when the number of datapoints `n`
 starts to be in the hundreds, to speed up the fit do::
 
-   GP(kernel, solver='chol', checkpos=False)
+   GP(..., checksym=False, checkpos=False)
 
 when you create the :class:`GP` object in the factory function.
 :class:`empbayes_fit` applies the jit for you if passed the ``jit=True``
 option, so you don't have to deal with it yourself.
+
+Another way to improve the performance is by tweaking the minimization method.
+The main setting is the ``method`` argument, which picks a sensible preset for
+the underlying routine `scipy.optimize.minimize`. Then, additional
+configurations can be specified through the ``minkw`` argument; to use it, it
+may be useful to look at the full argument list passed to `minimize`, which is
+provided after the fit in the attribute ``minargs``.
