@@ -120,7 +120,7 @@ def tryagain(fun, rep=2, method=False):
             try:
                 x = job()
                 if i > 0:
-                    warnings.warn(f'Test {name} failed {i} times with exception {exc.__class__.__name__}: ' + ", ".join(exc.args))
+                    warnings.warn(f'Test {name} failed {i} times with last exception {exc.__class__.__name__}(' + ', '.join(map(str, exc.args)) + ')')
                 return x
             except Exception as e:
                 exc = e
