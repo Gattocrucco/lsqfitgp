@@ -4920,30 +4920,21 @@ Release notes for v0.18:
 
 # Our code, hallowed be thy dependencies, but deliver us from pins and torment
 
-Recent version of `lsqfitgp` would impose version 0.4.6 of `jax` and `jaxlib`
-due to incompatibilities with newer releases. This limitation is now gone.
-Thanks to the experimental Windows support added to `jax`, `lsqfitgp` can be
-`pip install`ed on Windows. The unit tests currently have some failures and
-crash midway, so I guess it's not fully usable.
+Recent version of `lsqfitgp` would impose version 0.4.6 of `jax` and `jaxlib` due to incompatibilities with newer releases. This limitation is now gone. Thanks to the experimental Windows support added to `jax`, `lsqfitgp` can be `pip install`ed on Windows. The unit tests currently have some failures and crash midway, so I guess it's not fully usable.
 
 ### New decomposition system
 
-The covariance matrix decomposition system has been scrapped and rewritten.
-Consequences:
+The covariance matrix decomposition system has been scrapped and rewritten. Consequences:
 
-  * All solvers but `'chol'` are gone, they were never useful in practice
-    anyway. I may add new solvers in the future. As such, it is not necessary
-    to specify `GP(... solver='chol')` to speed up the fit.
-  * It is not possible to pass a decomposition in place of `givencov` to use
-    the Woodbury matrix formula.
-  * Operations with decompositions can not be differentiated; instead, there is
-    a method that computes the Normal density and its derivatives with custom
-    code. This is faster because it avoids redundant calculations.
-  * `GP.marginal_likelihood` loses the `separate` option.
-  * `lsqfitgp.raniter` will fail if the matrix is not p.s.d. instead of issuing
-    a warning and then working around the problem.
-  * The `'fisher'` method in `empbayes_fit` now works decently enough that it
-    can be used in practice, same for `covariance='fisher'`.
+  * All solvers but `'chol'` are gone, they were never useful in practice anyway. I may add new solvers in the future. As such, it is not necessary to specify `GP(... solver='chol')` to speed up the fit.
+
+  * It is not possible to pass a decomposition in place of `givencov` to use the Woodbury matrix formula.
+
+  * Operations with decompositions can not be differentiated; instead, there is a method that computes the Normal density and its derivatives with custom code. This is faster because it avoids redundant calculations.
+
+  * `GP.marginal_likelihood` loses the `separate` option. * `lsqfitgp.raniter` will fail if the matrix is not p.s.d. instead of issuing a warning and then working around the problem.
+
+  * The `'fisher'` method in `empbayes_fit` now works decently enough that it can be used in practice, same for `covariance='fisher'`.
 
 ### Bugs fixed
 
