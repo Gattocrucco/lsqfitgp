@@ -171,8 +171,8 @@ starts to be in the hundreds, to speed up the fit do::
    GP(..., checksym=False, checkpos=False)
 
 when you create the :class:`GP` object in the factory function.
-:class:`empbayes_fit` applies the jit for you if passed the ``jit=True``
-option, so you don't have to deal with it yourself.
+:class:`empbayes_fit` applies the jit for you by default, so you don't have to
+deal with it yourself.
 
 Another way to improve the performance is by tweaking the minimization method.
 The main setting is the ``method`` argument, which picks a sensible preset for

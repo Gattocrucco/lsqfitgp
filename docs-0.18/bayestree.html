@@ -208,6 +208,13 @@ posterior. If a dict, use the given hyperparameters.</p>
 </dd>
 </dl>
 </dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">dict</span></dt><dd><p>A dictionary representing <code class="docutils literal notranslate"><span class="pre">y_train</span></code> in the format required by the
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.pred</span></code> method.</p>
+</dd>
+</dl>
+</dd>
 </dl>
 </dd></dl>
 
@@ -227,6 +234,15 @@ posterior. If a dict, use the given hyperparameters.</p>
 <dt><strong>weights</strong><span class="classifier">array, optional</span></dt><dd><p>Weights for the error variance on the test points.</p>
 </dd>
 <dt><strong>rng</strong><span class="classifier">numpy.random.Generator, optional</span></dt><dd><p>Random number generator, used if <code class="docutils literal notranslate"><span class="pre">hp</span> <span class="pre">==</span> <span class="pre">'sample'</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>gp</strong><span class="classifier">GP</span></dt><dd><p>A centered Gaussian process object. To add the mean, use the
+<code class="docutils literal notranslate"><span class="pre">mean</span></code> attribute of the <a class="reference internal" href="#lsqfitgp.bayestree.bart" title="lsqfitgp.bayestree.bart"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bart</span></code></a> object. The keys of the GP are
+‘<em>mean’, ‘*noise’, and ‘</em>’, where the “*” stands either for ‘train’
+or ‘test’.</p>
 </dd>
 </dl>
 </dd>
@@ -303,7 +319,7 @@ over the regression function at the specified locations.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
