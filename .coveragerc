@@ -10,7 +10,23 @@ show_missing=True
 show_contexts=True
 
 [paths]
+
+# the first path in each list must be the source directory in the machine that's
+# generating the coverage report
+
 github =
     /home/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/
     /Users/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/
     D:\a\lsqfitgp\lsqfitgp\src\lsqfitgp\
+    /Library/Frameworks/Python.framework/Versions/*/lib/python*/site-packages/lsqfitgp/
+    /Users/runner/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/
+    /opt/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/
+
+local =
+    src/lsqfitgp/
+    /home/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/
+    /Users/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/
+    D:\a\lsqfitgp\lsqfitgp\src\lsqfitgp\
+    /Library/Frameworks/Python.framework/Versions/*/lib/python*/site-packages/lsqfitgp/
+    /Users/runner/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/
+    /opt/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/

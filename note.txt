@@ -4952,3 +4952,27 @@ Consequences:
 .........
 
 Note: make a jax issue about the tracing errors hierarchy.
+
+.........
+
+CI ok but for coverage report. It says
+
+    No source for code: '/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/lsqfitgp/_Deriv.py'.
+
+The "print coverage debug" item is un-uncollapsible. I download the coverage
+data and look at it locally.
+
+=> The problem, as I expected, is that lsqfitgp is not installed in the coverage
+report part, so the sources are not found in the same place.
+
+Possible solutions:
+- Install lsqfitgp in the coverage report part and add installation paths to
+  .coveragerc. This is feasible if I can use glob syntax for the paths, since
+  Python's minor version appear in the installation directory.
+- Use an editable install, locally this makes coverage locate the source files
+  in the source directory instead of the installation path.
+
+The second option looks quicker and more robust. => coverage supports globbing.
+
+I test it locally with the CI files. Right now, the online error is reproduced.
+I add the paths with the glob patterns.
