@@ -11,7 +11,7 @@
 <header>
     <div class="content">
         <h1>Coverage report:
-            <span class="pc_cov">0%</span>
+            <span class="pc_cov">95%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -26,6 +26,8 @@
                         <kbd>s</kbd>
                         <kbd>m</kbd>
                         <kbd>x</kbd>
+                        <kbd>b</kbd>
+                        <kbd>p</kbd>
                         <kbd>c</kbd>
                         &nbsp; change column sorting
                     </p>
@@ -45,7 +47,7 @@
         </form>
         <p class="text">
             <a class="nav" href="https://coverage.readthedocs.io/en/7.2.7">coverage.py v7.2.7</a>,
-            created at 2023-08-01 16:16 +0000
+            created at 2023-08-02 18:49 +0000
         </p>
     </div>
 </header>
@@ -57,6 +59,8 @@
                 <th aria-sort="none" data-default-sort-order="descending" data-shortcut="s">statements</th>
                 <th aria-sort="none" data-default-sort-order="descending" data-shortcut="m">missing</th>
                 <th aria-sort="none" data-default-sort-order="descending" data-shortcut="x">excluded</th>
+                <th aria-sort="none" data-default-sort-order="descending" data-shortcut="b">branches</th>
+                <th aria-sort="none" data-default-sort-order="descending" data-shortcut="p">partial</th>
                 <th class="right" aria-sort="none" data-shortcut="c">coverage</th>
             </tr>
         </thead>
@@ -64,291 +68,373 @@
             <tr class="file">
                 <td class="name left"><a href="d_49ebfa484e5917b9__Deriv_py.html">src/lsqfitgp/_Deriv.py</a></td>
                 <td>64</td>
-                <td>64</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 64">0%</td>
+                <td>0</td>
+                <td>38</td>
+                <td>0</td>
+                <td class="right" data-ratio="102 102">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_49ebfa484e5917b9__GP_py.html">src/lsqfitgp/_GP.py</a></td>
-                <td>767</td>
-                <td>767</td>
+                <td>768</td>
+                <td>0</td>
                 <td>21</td>
-                <td class="right" data-ratio="0 767">0%</td>
+                <td>439</td>
+                <td>0</td>
+                <td class="right" data-ratio="1207 1207">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_49ebfa484e5917b9__Kernel_py.html">src/lsqfitgp/_Kernel.py</a></td>
                 <td>428</td>
-                <td>428</td>
+                <td>0</td>
                 <td>2</td>
-                <td class="right" data-ratio="0 428">0%</td>
+                <td>269</td>
+                <td>1</td>
+                <td class="right" data-ratio="696 697">99%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_49ebfa484e5917b9___init___py.html">src/lsqfitgp/__init__.py</a></td>
                 <td>13</td>
-                <td>13</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 13">0%</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td class="right" data-ratio="13 13">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_49ebfa484e5917b9__array_py.html">src/lsqfitgp/_array.py</a></td>
                 <td>324</td>
-                <td>324</td>
+                <td>7</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 324">0%</td>
+                <td>185</td>
+                <td>5</td>
+                <td class="right" data-ratio="495 509">97%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_49ebfa484e5917b9__fastraniter_py.html">src/lsqfitgp/_fastraniter.py</a></td>
                 <td>43</td>
-                <td>43</td>
+                <td>1</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 43">0%</td>
+                <td>16</td>
+                <td>1</td>
+                <td class="right" data-ratio="57 59">97%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_49ebfa484e5917b9__fit_py.html">src/lsqfitgp/_fit.py</a></td>
-                <td>524</td>
-                <td>524</td>
+                <td>531</td>
+                <td>84</td>
                 <td>4</td>
-                <td class="right" data-ratio="0 524">0%</td>
+                <td>206</td>
+                <td>22</td>
+                <td class="right" data-ratio="599 737">81%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700___init___py.html">src/lsqfitgp/_kernels/__init__.py</a></td>
                 <td>9</td>
-                <td>9</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 9">0%</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td class="right" data-ratio="9 9">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700__arma_py.html">src/lsqfitgp/_kernels/_arma.py</a></td>
                 <td>228</td>
-                <td>228</td>
+                <td>4</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 228">0%</td>
+                <td>68</td>
+                <td>3</td>
+                <td class="right" data-ratio="289 296">98%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700__bart_py.html">src/lsqfitgp/_kernels/_bart.py</a></td>
                 <td>356</td>
-                <td>356</td>
+                <td>1</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 356">0%</td>
+                <td>128</td>
+                <td>1</td>
+                <td class="right" data-ratio="482 484">99%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700__basic_py.html">src/lsqfitgp/_kernels/_basic.py</a></td>
                 <td>115</td>
-                <td>115</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 115">0%</td>
+                <td>0</td>
+                <td>71</td>
+                <td>0</td>
+                <td class="right" data-ratio="186 186">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700__celerite_py.html">src/lsqfitgp/_kernels/_celerite.py</a></td>
                 <td>46</td>
-                <td>46</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 46">0%</td>
+                <td>0</td>
+                <td>20</td>
+                <td>0</td>
+                <td class="right" data-ratio="66 66">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700__matern_py.html">src/lsqfitgp/_kernels/_matern.py</a></td>
                 <td>33</td>
-                <td>33</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 33">0%</td>
+                <td>0</td>
+                <td>18</td>
+                <td>0</td>
+                <td class="right" data-ratio="51 51">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700__randomwalk_py.html">src/lsqfitgp/_kernels/_randomwalk.py</a></td>
                 <td>63</td>
-                <td>63</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 63">0%</td>
+                <td>0</td>
+                <td>32</td>
+                <td>0</td>
+                <td class="right" data-ratio="95 95">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700__spectral_py.html">src/lsqfitgp/_kernels/_spectral.py</a></td>
                 <td>23</td>
-                <td>23</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 23">0%</td>
+                <td>0</td>
+                <td>8</td>
+                <td>0</td>
+                <td class="right" data-ratio="31 31">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700__wendland_py.html">src/lsqfitgp/_kernels/_wendland.py</a></td>
                 <td>34</td>
-                <td>34</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 34">0%</td>
+                <td>0</td>
+                <td>20</td>
+                <td>0</td>
+                <td class="right" data-ratio="54 54">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_b56e1da9a1c7e700__zeta_py.html">src/lsqfitgp/_kernels/_zeta.py</a></td>
                 <td>41</td>
-                <td>41</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 41">0%</td>
+                <td>0</td>
+                <td>14</td>
+                <td>0</td>
+                <td class="right" data-ratio="55 55">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_3733a28afd9468e6___init___py.html">src/lsqfitgp/_linalg/__init__.py</a></td>
                 <td>2</td>
-                <td>2</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 2">0%</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td class="right" data-ratio="2 2">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_3733a28afd9468e6__decomp_py.html">src/lsqfitgp/_linalg/_decomp.py</a></td>
                 <td>249</td>
-                <td>249</td>
+                <td>26</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 249">0%</td>
+                <td>118</td>
+                <td>18</td>
+                <td class="right" data-ratio="319 367">87%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_3733a28afd9468e6__pytree_py.html">src/lsqfitgp/_linalg/_pytree.py</a></td>
                 <td>29</td>
-                <td>29</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 29">0%</td>
+                <td>0</td>
+                <td>14</td>
+                <td>0</td>
+                <td class="right" data-ratio="43 43">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_3733a28afd9468e6__seqalg_py.html">src/lsqfitgp/_linalg/_seqalg.py</a></td>
                 <td>120</td>
-                <td>120</td>
+                <td>1</td>
                 <td>21</td>
-                <td class="right" data-ratio="0 120">0%</td>
+                <td>23</td>
+                <td>1</td>
+                <td class="right" data-ratio="141 143">99%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_3733a28afd9468e6__stdcplx_py.html">src/lsqfitgp/_linalg/_stdcplx.py</a></td>
                 <td>26</td>
-                <td>26</td>
                 <td>13</td>
-                <td class="right" data-ratio="0 26">0%</td>
+                <td>13</td>
+                <td>4</td>
+                <td>0</td>
+                <td class="right" data-ratio="13 30">43%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_3733a28afd9468e6__toeplitz_py.html">src/lsqfitgp/_linalg/_toeplitz.py</a></td>
                 <td>136</td>
-                <td>136</td>
+                <td>6</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 136">0%</td>
+                <td>30</td>
+                <td>0</td>
+                <td class="right" data-ratio="160 166">96%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_49ebfa484e5917b9__patch_gvar_py.html">src/lsqfitgp/_patch_gvar.py</a></td>
                 <td>132</td>
-                <td>132</td>
+                <td>11</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 132">0%</td>
+                <td>68</td>
+                <td>8</td>
+                <td class="right" data-ratio="169 200">84%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_aee8c50f4b29c944___init___py.html">src/lsqfitgp/_patch_jax/__init__.py</a></td>
                 <td>100</td>
-                <td>100</td>
+                <td>27</td>
                 <td>2</td>
-                <td class="right" data-ratio="0 100">0%</td>
+                <td>40</td>
+                <td>3</td>
+                <td class="right" data-ratio="100 140">71%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_aee8c50f4b29c944__batcher_py.html">src/lsqfitgp/_patch_jax/_batcher.py</a></td>
                 <td>60</td>
-                <td>60</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 60">0%</td>
+                <td>0</td>
+                <td>39</td>
+                <td>0</td>
+                <td class="right" data-ratio="99 99">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_aee8c50f4b29c944__fasthash_py.html">src/lsqfitgp/_patch_jax/_fasthash.py</a></td>
                 <td>44</td>
-                <td>44</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 44">0%</td>
+                <td>0</td>
+                <td>4</td>
+                <td>0</td>
+                <td class="right" data-ratio="48 48">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_688a275cf279a7c1___init___py.html">src/lsqfitgp/_special/__init__.py</a></td>
                 <td>8</td>
-                <td>8</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 8">0%</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td class="right" data-ratio="8 8">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_688a275cf279a7c1__bernoulli_py.html">src/lsqfitgp/_special/_bernoulli.py</a></td>
                 <td>37</td>
-                <td>37</td>
+                <td>14</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 37">0%</td>
+                <td>6</td>
+                <td>0</td>
+                <td class="right" data-ratio="29 43">67%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_688a275cf279a7c1__bessel_py.html">src/lsqfitgp/_special/_bessel.py</a></td>
-                <td>55</td>
-                <td>55</td>
+                <td>58</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 55">0%</td>
+                <td>0</td>
+                <td>40</td>
+                <td>0</td>
+                <td class="right" data-ratio="98 98">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_688a275cf279a7c1__exp_py.html">src/lsqfitgp/_special/_exp.py</a></td>
                 <td>16</td>
-                <td>16</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 16">0%</td>
+                <td>0</td>
+                <td>8</td>
+                <td>0</td>
+                <td class="right" data-ratio="24 24">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_688a275cf279a7c1__expint_py.html">src/lsqfitgp/_special/_expint.py</a></td>
                 <td>101</td>
-                <td>101</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 101">0%</td>
+                <td>0</td>
+                <td>14</td>
+                <td>0</td>
+                <td class="right" data-ratio="115 115">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_688a275cf279a7c1__gamma_py.html">src/lsqfitgp/_special/_gamma.py</a></td>
                 <td>23</td>
-                <td>23</td>
+                <td>0</td>
                 <td>5</td>
-                <td class="right" data-ratio="0 23">0%</td>
+                <td>0</td>
+                <td>0</td>
+                <td class="right" data-ratio="23 23">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_688a275cf279a7c1__sinc_py.html">src/lsqfitgp/_special/_sinc.py</a></td>
                 <td>10</td>
-                <td>10</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 10">0%</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td class="right" data-ratio="10 10">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_688a275cf279a7c1__taylor_py.html">src/lsqfitgp/_special/_taylor.py</a></td>
                 <td>15</td>
-                <td>15</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 15">0%</td>
+                <td>0</td>
+                <td>4</td>
+                <td>0</td>
+                <td class="right" data-ratio="19 19">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_688a275cf279a7c1__zeta_py.html">src/lsqfitgp/_special/_zeta.py</a></td>
                 <td>141</td>
-                <td>141</td>
+                <td>0</td>
                 <td>6</td>
-                <td class="right" data-ratio="0 141">0%</td>
+                <td>18</td>
+                <td>0</td>
+                <td class="right" data-ratio="159 159">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_49ebfa484e5917b9_bayestree_py.html">src/lsqfitgp/bayestree.py</a></td>
                 <td>135</td>
-                <td>135</td>
+                <td>11</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 135">0%</td>
+                <td>44</td>
+                <td>9</td>
+                <td class="right" data-ratio="159 179">89%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_e15a3b40fcce7df8___init___py.html">src/lsqfitgp/copula/__init__.py</a></td>
                 <td>54</td>
-                <td>54</td>
+                <td>2</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 54">0%</td>
+                <td>24</td>
+                <td>0</td>
+                <td class="right" data-ratio="76 78">97%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_e15a3b40fcce7df8__beta_py.html">src/lsqfitgp/copula/_beta.py</a></td>
                 <td>28</td>
-                <td>28</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 28">0%</td>
+                <td>0</td>
+                <td>6</td>
+                <td>0</td>
+                <td class="right" data-ratio="34 34">100%</td>
             </tr>
             <tr class="file">
                 <td class="name left"><a href="d_e15a3b40fcce7df8__invgamma_py.html">src/lsqfitgp/copula/_invgamma.py</a></td>
                 <td>73</td>
-                <td>73</td>
                 <td>0</td>
-                <td class="right" data-ratio="0 73">0%</td>
+                <td>0</td>
+                <td>18</td>
+                <td>0</td>
+                <td class="right" data-ratio="91 91">100%</td>
             </tr>
         </tbody>
         <tfoot>
             <tr class="total">
                 <td class="name left">Total</td>
-                <td>4705</td>
-                <td>4705</td>
+                <td>4716</td>
+                <td>208</td>
                 <td>74</td>
-                <td class="right" data-ratio="0 4705">0%</td>
+                <td>2054</td>
+                <td>72</td>
+                <td class="right" data-ratio="6426 6770">95%</td>
             </tr>
         </tfoot>
     </table>
@@ -360,7 +446,7 @@
     <div class="content">
         <p>
             <a class="nav" href="https://coverage.readthedocs.io/en/7.2.7">coverage.py v7.2.7</a>,
-            created at 2023-08-01 16:16 +0000
+            created at 2023-08-02 18:49 +0000
         </p>
     </div>
     <aside class="hidden">

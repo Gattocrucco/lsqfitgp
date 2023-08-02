@@ -2,9 +2,19 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/lsqfitgp/_special/__init__.py: 0%</title>
+    <title>Coverage for src/lsqfitgp/_special/__init__.py: 100%</title>
     <link rel="icon" sizes="32x32" href="favicon_32.png">
     <link rel="stylesheet" href="style.css" type="text/css">
+    <script type="text/javascript">
+        contexts = {
+  "a": "docs-macos-latest-py3.11",
+  "b": "examples-macos-latest-py3.11",
+  "c": "tests-macos-11-py3.8",
+  "d": "tests-macos-latest-py3.11",
+  "e": "tests-ubuntu-20.04-py3.8",
+  "f": "tests-ubuntu-latest-py3.11"
+}
+    </script>
     <script type="text/javascript" src="coverage_html.js" defer></script>
 </head>
 <body class="pyfile">
@@ -12,7 +22,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src/lsqfitgp/_special/__init__.py</b>:
-            <span class="pc_cov">0%</span>
+            <span class="pc_cov">100%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -26,6 +36,7 @@
                         <kbd>r</kbd>
                         <kbd>m</kbd>
                         <kbd>x</kbd>
+                        <kbd>p</kbd>
                         &nbsp; toggle line displays
                     </p>
                     <p>
@@ -55,9 +66,10 @@
         </aside>
         <h2>
             <span class="text">8 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">0<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">8<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">8<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
+            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
         </h2>
         <p class="text">
             <a id="prevFileLink" class="nav" href="d_aee8c50f4b29c944__fasthash_py.html">&#xab; prev</a> &nbsp; &nbsp;
@@ -65,7 +77,7 @@
             <a id="nextFileLink" class="nav" href="d_688a275cf279a7c1__bernoulli_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.2.7">coverage.py v7.2.7</a>,
-            created at 2023-08-01 16:16 +0000
+            created at 2023-08-02 18:49 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"/>
@@ -99,14 +111,14 @@
     <p class="pln"><span class="n"><a id="t17" href="#t17">17</a></span><span class="t"><span class="com"># You should have received a copy of the GNU General Public License</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t"><span class="com"># along with lsqfitgp.  If not, see &lt;http://www.gnu.org/licenses/>.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_bernoulli</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_bessel</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_exp</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_expint</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_gamma</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_sinc</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_taylor</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t27" href="#t27">27</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_zeta</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_bernoulli</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><input type="checkbox" id="ctxs20" /><span class="r"><label for="ctxs20" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_bessel</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><input type="checkbox" id="ctxs21" /><span class="r"><label for="ctxs21" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_exp</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><input type="checkbox" id="ctxs22" /><span class="r"><label for="ctxs22" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_expint</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><input type="checkbox" id="ctxs23" /><span class="r"><label for="ctxs23" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_gamma</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><input type="checkbox" id="ctxs24" /><span class="r"><label for="ctxs24" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_sinc</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><input type="checkbox" id="ctxs25" /><span class="r"><label for="ctxs25" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_taylor</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><input type="checkbox" id="ctxs26" /><span class="r"><label for="ctxs26" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t27" href="#t27">27</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">_zeta</span> <span class="key">import</span> <span class="op">*</span>&nbsp;</span><input type="checkbox" id="ctxs27" /><span class="r"><label for="ctxs27" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
 </main>
 <footer>
     <div class="content">
@@ -116,7 +128,7 @@
             <a id="nextFileLink" class="nav" href="d_688a275cf279a7c1__bernoulli_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.2.7">coverage.py v7.2.7</a>,
-            created at 2023-08-01 16:16 +0000
+            created at 2023-08-02 18:49 +0000
         </p>
     </div>
 </footer>

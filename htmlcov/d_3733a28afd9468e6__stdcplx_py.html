@@ -2,9 +2,19 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/lsqfitgp/_linalg/_stdcplx.py: 0%</title>
+    <title>Coverage for src/lsqfitgp/_linalg/_stdcplx.py: 43%</title>
     <link rel="icon" sizes="32x32" href="favicon_32.png">
     <link rel="stylesheet" href="style.css" type="text/css">
+    <script type="text/javascript">
+        contexts = {
+  "a": "docs-macos-latest-py3.11",
+  "b": "examples-macos-latest-py3.11",
+  "c": "tests-macos-11-py3.8",
+  "d": "tests-macos-latest-py3.11",
+  "e": "tests-ubuntu-20.04-py3.8",
+  "f": "tests-ubuntu-latest-py3.11"
+}
+    </script>
     <script type="text/javascript" src="coverage_html.js" defer></script>
 </head>
 <body class="pyfile">
@@ -12,7 +22,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src/lsqfitgp/_linalg/_stdcplx.py</b>:
-            <span class="pc_cov">0%</span>
+            <span class="pc_cov">43%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -26,6 +36,7 @@
                         <kbd>r</kbd>
                         <kbd>m</kbd>
                         <kbd>x</kbd>
+                        <kbd>p</kbd>
                         &nbsp; toggle line displays
                     </p>
                     <p>
@@ -55,9 +66,10 @@
         </aside>
         <h2>
             <span class="text">26 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">0<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">26<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">13<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">13<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">13<span class="text"> excluded</span></button>
+            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
         </h2>
         <p class="text">
             <a id="prevFileLink" class="nav" href="d_3733a28afd9468e6__seqalg_py.html">&#xab; prev</a> &nbsp; &nbsp;
@@ -65,7 +77,7 @@
             <a id="nextFileLink" class="nav" href="d_3733a28afd9468e6__toeplitz_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.2.7">coverage.py v7.2.7</a>,
-            created at 2023-08-01 16:16 +0000
+            created at 2023-08-02 18:49 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"/>
@@ -99,29 +111,29 @@
     <p class="pln"><span class="n"><a id="t17" href="#t17">17</a></span><span class="t"><span class="com"># You should have received a copy of the GNU General Public License</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t"><span class="com"># along with lsqfitgp.  If not, see &lt;http://www.gnu.org/licenses/>.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t"><span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t"><span class="str">"""</span>&nbsp;</span><input type="checkbox" id="ctxs20" /><span class="r"><label for="ctxs20" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t"><span class="str">Module to estimate the time taken by standard linear algebra operations.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t"><span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t"><span class="com"># TODO maybe I can replace this with jax compilation introspection, which</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t"><span class="com"># provides flops estimates. See https://jax.readthedocs.io/en/latest/aot.html</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t27" href="#t27">27</a></span><span class="t"><span class="key">import</span> <span class="nam">timeit</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t"><span class="key">import</span> <span class="nam">inspect</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t27" href="#t27">27</a></span><span class="t"><span class="key">import</span> <span class="nam">timeit</span>&nbsp;</span><input type="checkbox" id="ctxs27" /><span class="r"><label for="ctxs27" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t"><span class="key">import</span> <span class="nam">inspect</span>&nbsp;</span><input type="checkbox" id="ctxs28" /><span class="r"><label for="ctxs28" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t"><span class="key">from</span> <span class="nam">jax</span> <span class="key">import</span> <span class="nam">random</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="key">from</span> <span class="nam">jax</span> <span class="key">import</span> <span class="nam">numpy</span> <span class="key">as</span> <span class="nam">jnp</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t"><span class="key">from</span> <span class="nam">jax</span><span class="op">.</span><span class="nam">scipy</span> <span class="key">import</span> <span class="nam">linalg</span> <span class="key">as</span> <span class="nam">jlinalg</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t"><span class="key">from</span> <span class="nam">scipy</span> <span class="key">import</span> <span class="nam">sparse</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t"><span class="key">from</span> <span class="nam">jax</span> <span class="key">import</span> <span class="nam">random</span>&nbsp;</span><input type="checkbox" id="ctxs30" /><span class="r"><label for="ctxs30" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="key">from</span> <span class="nam">jax</span> <span class="key">import</span> <span class="nam">numpy</span> <span class="key">as</span> <span class="nam">jnp</span>&nbsp;</span><input type="checkbox" id="ctxs31" /><span class="r"><label for="ctxs31" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t"><span class="key">from</span> <span class="nam">jax</span><span class="op">.</span><span class="nam">scipy</span> <span class="key">import</span> <span class="nam">linalg</span> <span class="key">as</span> <span class="nam">jlinalg</span>&nbsp;</span><input type="checkbox" id="ctxs32" /><span class="r"><label for="ctxs32" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t"><span class="key">from</span> <span class="nam">scipy</span> <span class="key">import</span> <span class="nam">sparse</span>&nbsp;</span><input type="checkbox" id="ctxs33" /><span class="r"><label for="ctxs33" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t"><span class="key">def</span> <span class="nam">benchmark</span><span class="op">(</span><span class="nam">func</span><span class="op">,</span> <span class="op">*</span><span class="nam">args</span><span class="op">,</span> <span class="op">**</span><span class="nam">kwargs</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t"><span class="key">def</span> <span class="nam">benchmark</span><span class="op">(</span><span class="nam">func</span><span class="op">,</span> <span class="op">*</span><span class="nam">args</span><span class="op">,</span> <span class="op">**</span><span class="nam">kwargs</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs35" /><span class="r"><label for="ctxs35" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="mis show_mis"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t">    <span class="nam">timer</span> <span class="op">=</span> <span class="nam">timeit</span><span class="op">.</span><span class="nam">Timer</span><span class="op">(</span><span class="str">'func(*args, **kwargs)'</span><span class="op">,</span> <span class="nam">globals</span><span class="op">=</span><span class="nam">locals</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t">    <span class="nam">n</span><span class="op">,</span> <span class="nam">_</span> <span class="op">=</span> <span class="nam">timer</span><span class="op">.</span><span class="nam">autorange</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t38" href="#t38">38</a></span><span class="t">    <span class="nam">times</span> <span class="op">=</span> <span class="nam">timer</span><span class="op">.</span><span class="nam">repeat</span><span class="op">(</span><span class="num">5</span><span class="op">,</span> <span class="nam">n</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t39" href="#t39">39</a></span><span class="t">    <span class="nam">time</span> <span class="op">=</span> <span class="nam">min</span><span class="op">(</span><span class="nam">times</span><span class="op">)</span> <span class="op">/</span> <span class="nam">n</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t40" href="#t40">40</a></span><span class="t">    <span class="key">return</span> <span class="nam">time</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t41" href="#t41">41</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t42" href="#t42">42</a></span><span class="t"><span class="nam">ops</span> <span class="op">=</span> <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t42" href="#t42">42</a></span><span class="t"><span class="nam">ops</span> <span class="op">=</span> <span class="op">{</span>&nbsp;</span><input type="checkbox" id="ctxs42" /><span class="r"><label for="ctxs42" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t43" href="#t43">43</a></span><span class="t">    <span class="str">'chol'</span><span class="op">:</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t44" href="#t44">44</a></span><span class="t">        <span class="key">lambda</span> <span class="nam">x</span><span class="op">:</span> <span class="nam">jnp</span><span class="op">.</span><span class="nam">linalg</span><span class="op">.</span><span class="nam">cholesky</span><span class="op">(</span><span class="nam">x</span><span class="op">)</span><span class="op">,</span> <span class="com"># function performing the operation</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t45" href="#t45">45</a></span><span class="t">        <span class="key">lambda</span> <span class="nam">s</span><span class="op">:</span> <span class="nam">s</span><span class="op">[</span><span class="num">0</span><span class="op">]</span> <span class="op">**</span> <span class="num">3</span><span class="op">,</span> <span class="com"># complexity in terms of arguments' shapes</span>&nbsp;</span><span class="r"></span></p>
@@ -156,7 +168,7 @@
     <p class="pln"><span class="n"><a id="t74" href="#t74">74</a></span><span class="t">    <span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t75" href="#t75">75</a></span><span class="t"><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t76" href="#t76">76</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="exc show_exc"><span class="n"><a id="t77" href="#t77">77</a></span><span class="t"><span class="key">def</span> <span class="nam">gen_ops_factors</span><span class="op">(</span><span class="nam">n</span><span class="op">)</span><span class="op">:</span> <span class="com"># pragma: no cover</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t77" href="#t77">77</a></span><span class="t"><span class="key">def</span> <span class="nam">gen_ops_factors</span><span class="op">(</span><span class="nam">n</span><span class="op">)</span><span class="op">:</span> <span class="com"># pragma: no cover</span>&nbsp;</span><input type="checkbox" id="ctxs77" /><span class="r"><label for="ctxs77" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="exc show_exc"><span class="n"><a id="t78" href="#t78">78</a></span><span class="t">    <span class="nam">key</span> <span class="op">=</span> <span class="nam">random</span><span class="op">.</span><span class="nam">PRNGKey</span><span class="op">(</span><span class="num">202208101236</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t79" href="#t79">79</a></span><span class="t">    <span class="nam">factors</span> <span class="op">=</span> <span class="op">{</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t80" href="#t80">80</a></span><span class="t">    <span class="key">for</span> <span class="nam">op</span><span class="op">,</span> <span class="op">(</span><span class="nam">job</span><span class="op">,</span> <span class="nam">est</span><span class="op">)</span> <span class="key">in</span> <span class="nam">ops</span><span class="op">.</span><span class="nam">items</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -170,7 +182,7 @@
     <p class="exc show_exc"><span class="n"><a id="t88" href="#t88">88</a></span><span class="t">        <span class="nam">factors</span><span class="op">[</span><span class="nam">op</span><span class="op">]</span> <span class="op">=</span> <span class="nam">time</span> <span class="op">/</span> <span class="nam">est</span><span class="op">(</span><span class="op">*</span><span class="op">(</span><span class="nam">a</span><span class="op">.</span><span class="nam">shape</span> <span class="key">for</span> <span class="nam">a</span> <span class="key">in</span> <span class="nam">args</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t89" href="#t89">89</a></span><span class="t">    <span class="key">return</span> <span class="nam">factors</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t90" href="#t90">90</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t91" href="#t91">91</a></span><span class="t"><span class="nam">ops_factors</span> <span class="op">=</span> <span class="op">{</span><span class="str">'chol'</span><span class="op">:</span> <span class="num">6.03470915928483e-12</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t91" href="#t91">91</a></span><span class="t"><span class="nam">ops_factors</span> <span class="op">=</span> <span class="op">{</span><span class="str">'chol'</span><span class="op">:</span> <span class="num">6.03470915928483e-12</span><span class="op">,</span>&nbsp;</span><input type="checkbox" id="ctxs91" /><span class="r"><label for="ctxs91" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t92" href="#t92">92</a></span><span class="t"> <span class="str">'eigh'</span><span class="op">:</span> <span class="num">1.824986875290051e-10</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t93" href="#t93">93</a></span><span class="t"> <span class="str">'qr-red'</span><span class="op">:</span> <span class="num">1.1241237493231893e-10</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t94" href="#t94">94</a></span><span class="t"> <span class="str">'qr-full'</span><span class="op">:</span> <span class="num">1.2058762495871633e-10</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -179,7 +191,7 @@
     <p class="pln"><span class="n"><a id="t97" href="#t97">97</a></span><span class="t"> <span class="str">'solve_triangular'</span><span class="op">:</span> <span class="num">4.1634716559201486e-12</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t98" href="#t98">98</a></span><span class="t"> <span class="str">'matmul'</span><span class="op">:</span> <span class="num">5.6301691802218555e-12</span><span class="op">}</span> <span class="com"># = gen_ops_factors(1000)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t99" href="#t99">99</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t100" href="#t100">100</a></span><span class="t"><span class="nam">ops_consts</span> <span class="op">=</span> <span class="op">{</span><span class="str">'chol'</span><span class="op">:</span> <span class="num">1.810961455339566e-06</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t100" href="#t100">100</a></span><span class="t"><span class="nam">ops_consts</span> <span class="op">=</span> <span class="op">{</span><span class="str">'chol'</span><span class="op">:</span> <span class="num">1.810961455339566e-06</span><span class="op">,</span>&nbsp;</span><input type="checkbox" id="ctxs100" /><span class="r"><label for="ctxs100" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t101" href="#t101">101</a></span><span class="t"> <span class="str">'eigh'</span><span class="op">:</span> <span class="num">2.390482500195503e-06</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t102" href="#t102">102</a></span><span class="t"> <span class="str">'qr-red'</span><span class="op">:</span> <span class="num">2.6676162518560884e-06</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t103" href="#t103">103</a></span><span class="t"> <span class="str">'qr-full'</span><span class="op">:</span> <span class="num">2.6932845800183714e-06</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -188,7 +200,7 @@
     <p class="pln"><span class="n"><a id="t106" href="#t106">106</a></span><span class="t"> <span class="str">'solve_triangular'</span><span class="op">:</span> <span class="num">2.170706249307841e-06</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t107" href="#t107">107</a></span><span class="t"> <span class="str">'matmul'</span><span class="op">:</span> <span class="num">1.718031665077433e-06</span><span class="op">}</span> <span class="com"># = gen_ops_factors(1)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t108" href="#t108">108</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t109" href="#t109">109</a></span><span class="t"><span class="key">def</span> <span class="nam">predtime</span><span class="op">(</span><span class="nam">op</span><span class="op">,</span> <span class="nam">shapes</span><span class="op">,</span> <span class="nam">types</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t109" href="#t109">109</a></span><span class="t"><span class="key">def</span> <span class="nam">predtime</span><span class="op">(</span><span class="nam">op</span><span class="op">,</span> <span class="nam">shapes</span><span class="op">,</span> <span class="nam">types</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs109" /><span class="r"><label for="ctxs109" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t110" href="#t110">110</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t111" href="#t111">111</a></span><span class="t"><span class="str">    Estimate the time taken by a linear algebra operation.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t112" href="#t112">112</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
@@ -216,7 +228,7 @@
     <p class="mis show_mis"><span class="n"><a id="t134" href="#t134">134</a></span><span class="t">        <span class="nam">factor</span> <span class="op">*=</span> <span class="num">2</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t135" href="#t135">135</a></span><span class="t">    <span class="key">return</span> <span class="nam">const</span> <span class="op">+</span> <span class="nam">factor</span> <span class="op">*</span> <span class="nam">est</span><span class="op">(</span><span class="op">*</span><span class="nam">shapes</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t136" href="#t136">136</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t137" href="#t137">137</a></span><span class="t"><span class="key">def</span> <span class="nam">listops</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t137" href="#t137">137</a></span><span class="t"><span class="key">def</span> <span class="nam">listops</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs137" /><span class="r"><label for="ctxs137" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t138" href="#t138">138</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t139" href="#t139">139</a></span><span class="t"><span class="str">    List available linear algebra operations.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t140" href="#t140">140</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
@@ -241,7 +253,7 @@
             <a id="nextFileLink" class="nav" href="d_3733a28afd9468e6__toeplitz_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.2.7">coverage.py v7.2.7</a>,
-            created at 2023-08-01 16:16 +0000
+            created at 2023-08-02 18:49 +0000
         </p>
     </div>
 </footer>
