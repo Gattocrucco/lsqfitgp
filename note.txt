@@ -4848,3 +4848,66 @@ causing problems.
 So the keys on file contain 1e-100, while the decorator sees
 9.999999999999999e-101. I have to convert any 9.999999999999999e-101 that
 appears in the json key to 1e-100.
+
+2023-08-02
+==========
+
+The missing key was always the same only because the order is fixed and the test
+stops on the first error. Now the missing key is another number. It's
+
+    cache          1.1006941712522216e-96
+    ubuntu-latest  1.1006941712522214e-96
+
+I'd like to patch this without re-committing the >1 MB cache again. A solution
+would be to write all floats in the keys with 14 digits, while in the items I'd
+prefer to retain full precision.
+
+Plan:
+- upon loading the cache, parse all keys back from json, re-serialize them
+- change the key serializer to use 14 digits for floats
+
+Problem: python's json does not allow to change the float format. I have to
+change everything to make it more sensible.
+
+The central question is wether the inputs are actually changing or if it's just
+the representation. Python specifies that floats are printed with enough digits
+that their exact original value can be reconstructed, and I checked that the two
+representations above lead to different floats. So maybe numpy on ubuntu is
+generating slightly different values out of np.logspace(), they would take that
+freedom since it should not be so important.
+
+So my caching system has to be tolerant of actually different input values.
+
+Another desideratum I didn't take into account is that it should not be
+necessary to recommit a large cache each time I change one bit of the test
+module.
+
+Solution: the cache should be provided as a per-test fixture. The cache object
+writes a file per test in a directory, using the (sanitized) test name as file
+name. => better: it represents the path as a directory. Example usage:
+
+    in file tests/cippa/lippa.py:
+
+        def test_ciao(cached):
+            x = cached('f1', f, *args1)
+            y = cached('f2', f, *args2)
+            assert x == y
+
+    this creates the following files:
+
+        tests
+            cache
+                cippa
+                    lippa.pickle
+
+    lippa.pickle contains:
+
+        {'f1': x, 'f2': y}
+
+So the cache object never tries to look at the arguments. It's the caller
+responsibility to give unique names.
+
+As it works now, if the file lippa.pickle exists, the cache refuses to write new
+keys into it.
+
+=> DONE, using json for portability

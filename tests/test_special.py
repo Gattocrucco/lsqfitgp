@@ -29,30 +29,6 @@ import mpmath
 
 from lsqfitgp import _special, _patch_jax
 from . import util
-from . import cache
-
-class vectorize_cached:
-    """ decorator that adds vectorization and per-element persistent caching """
-
-    _cachedict = None
-
-    @classmethod
-    def save_if_used(cls):
-        if cls._cachedict is not None:
-            cls._cachedict.save()
-    
-    def __new__(cls, func):
-        if cls._cachedict is None:
-            suffix = 'json' if cache.USE_JSON else 'pickle'
-            cls._cachedict = cache.CommittedDict(f'tests/test_special_cache.{suffix}.gz')
-        func = cache.cache(cls._cachedict)(func)
-        return np.vectorize(func)
-
-@pytest.fixture(autouse=True, scope='module')
-def save_cache():
-    """ save decorator cache after running the tests in this module """
-    yield
-    vectorize_cached.save_if_used()
 
 def test_sinc():
     x = np.linspace(-0.1, 0.1, 1000)
@@ -131,14 +107,14 @@ def test_expm1x():
     np.testing.assert_array_max_ulp(y, y2.astype('f'), 4)
     test_util.check_grads(_special.expm1x, (x,), 2)
 
-@vectorize_cached
+@np.vectorize
 def zeta(*args):
     return float(mpmath.zeta(*args))
 
-def test_hurwitz_zeta():
+def test_hurwitz_zeta(cached):
     s = np.linspace(-10, 0, 100)[:, None]
     a = np.linspace(0, 1, 100)
-    z1 = zeta(s, a)
+    z1 = cached('z1', zeta, s, a)
     z2 = _special.hurwitz_zeta(s, a)
     eps = np.finfo(float).eps
     tol = 350 * eps * np.max(np.abs(z1), 1)
@@ -171,7 +147,7 @@ def _periodic_zeta(x, s):
 def _zeta(s):
     return complex(mpmath.zeta(s))
 
-@vectorize_cached
+@np.vectorize
 def periodic_zeta(x, s):
     if int(x) == x:
         return _zeta(s)
@@ -198,7 +174,7 @@ def periodic_zeta(x, s):
     pytest.param(np.arange(2, 15, 2), id='even'),
     pytest.param(np.arange(3, 15, 2), id='odd'),
 ])
-def test_periodic_zeta(s, d, sgn, i):
+def test_periodic_zeta(s, d, sgn, i, cached):
     if d == 0 and sgn < 0:
         pytest.skip()
 
@@ -208,7 +184,7 @@ def test_periodic_zeta(s, d, sgn, i):
     if np.any(s <= 1):
         pytest.skip()
     
-    z1 = periodic_zeta(x, s)
+    z1 = cached('z1', periodic_zeta, x, s)
     z1 = z1.imag if i else z1.real
     z2 = _special.periodic_zeta(x, s, i)
     
@@ -221,11 +197,11 @@ def test_periodic_zeta(s, d, sgn, i):
     pytest.param(False, id='real'),
     pytest.param(True, id='imag'),
 ])
-def test_periodic_zeta_deriv(i):
+def test_periodic_zeta_deriv(i, cached):
     x = np.linspace(-1, 2, 52)
     s = np.linspace(2.01, 16, 20)[:, None]
 
-    z1 = 2j * np.pi * periodic_zeta(x, s - 1)
+    z1 = 2j * np.pi * cached('z1', periodic_zeta, x, s - 1)
     z1 = z1.imag if i else z1.real
     z2 = _patch_jax.elementwise_grad(_special.periodic_zeta)(x, s, i)
     
@@ -234,7 +210,7 @@ def test_periodic_zeta_deriv(i):
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
 
-@vectorize_cached
+@np.vectorize
 def zeta_zero(s):
     with mpmath.workdps(40):
         return float(mpmath.zeta(s) - mpmath.zeta(0))
@@ -245,12 +221,12 @@ def zeta_zero(s):
     pytest.param(1e-8 * np.linspace(-1, 1, 101), id='shortrange'),
     pytest.param(1e-14 * np.linspace(-1, 1, 101), id='tinyrange'),
 ])
-def test_zeta_zero(s):
-    z1 = zeta_zero(s)
+def test_zeta_zero(s, cached):
+    z1 = cached('z1', zeta_zero, s)
     z2 = _special.zeta_zero(s)
     np.testing.assert_array_max_ulp(z1, z2, 2)
 
-@vectorize_cached
+@np.vectorize
 def gamma_incr(x, e):
     with mpmath.workdps(40):
         x = mpmath.mpf(float(x))
@@ -271,15 +247,15 @@ def gamma_incr(x, e):
     pytest.param(2, id='2'),
     pytest.param(np.arange(3, 15), id='farpole'),
 ])
-def test_gamma_incr(x, e, s):
+def test_gamma_incr(x, e, s, cached):
     x = np.reshape(x, (-1, 1))
     e = e * s
     e = np.where(x == 1, np.abs(e), e)
-    g1 = gamma_incr(x, e)
+    g1 = cached('g1', gamma_incr, x, e)
     g2 = _special.gamma_incr(x, e)
     np.testing.assert_array_max_ulp(g2, g1, 7)
 
-@vectorize_cached
+@np.vectorize
 def gammaln1(x):
     with mpmath.workdps(40):
         x = mpmath.mpf(float(x))
@@ -294,13 +270,13 @@ def gammaln1(x):
     pytest.param(1e-8 * np.linspace(0, 1, 51), id='shortrange'),
     pytest.param(1e-14 * np.linspace(0, 1, 51), id='tinyrange'),
 ])
-def test_gammaln1(x, s):
+def test_gammaln1(x, s, cached):
     x = x * s
-    g1 = gammaln1(x)
+    g1 = cached('g1', gammaln1, x)
     g2 = _special.gammaln1(x)
     np.testing.assert_array_max_ulp(g2, g1, 2)
 
-@vectorize_cached
+@np.vectorize
 def zeta_series_power_diff(x, q, a):
     with mpmath.workdps(40):
         x = mpmath.mpf(float(x))
@@ -333,13 +309,13 @@ def zeta_series_power_diff(x, q, a):
     pytest.param(np.arange(2, 11, 2), id='qeven'),
     pytest.param(np.arange(3, 11, 2), id='qodd'),
 ])
-def test_power_diff(x, q, a, s):
+def test_power_diff(x, q, a, s, cached):
     if np.any(q == 0) and np.any(s > 0):
         pytest.skip()
     x = np.reshape(x, (-1, 1, 1))
     q = np.reshape(q, (-1, 1))
     a = a * s # don't use inplace *= since arguments are not copied
-    p1 = zeta_series_power_diff(x, q, a)
+    p1 = cached('p1', zeta_series_power_diff, x, q, a)
     p2 = _special.zeta_series_power_diff(x, q, a)
     if np.all(q <= 1) and np.any(x):
         tol = 20 * np.max(np.abs(p1), 0) * np.finfo(float).eps
@@ -352,7 +328,7 @@ def test_power_diff(x, q, a, s):
         cp2 = np.where(cond, tol, p2)
         np.testing.assert_array_max_ulp(cp2, cp1, 22)
 
-@vectorize_cached
+@np.vectorize
 def zeta_zeros(s):
     with mpmath.workdps(20):
         return float(mpmath.diff(mpmath.zeta, s))
@@ -362,7 +338,7 @@ def zeta_zeros(s):
     pytest.param(-np.arange(4, 11, 2), id='small'),
     pytest.param(-np.arange(12, 101, 2), id='large'),
 ])
-def test_zeta_zeros(s):
+def test_zeta_zeros(s, cached):
     def handwritten(s):
         pi = 2 * (2 * np.pi) ** (s - 1)
         n = np.around(s)
@@ -372,24 +348,24 @@ def test_zeta_zeros(s):
         zeta = _special.zeta(1 - s)
         return pi * cos * gamma * zeta
     z0 = handwritten(s)
-    z1 = zeta_zeros(s)
+    z1 = cached('z1', zeta_zeros, s)
     ulp = 25 if np.all(s >= -10) else 1113
     np.testing.assert_array_max_ulp(z0, z1, ulp)
     eps = 1e-30
     z2 = _special.zeta(eps, s) / eps
     np.testing.assert_array_max_ulp(z2, z1, ulp)
 
-@vectorize_cached
+@np.vectorize
 def zeta_split(s, n):
     with mpmath.workdps(32):
         n = mpmath.mpmathify(n)
         s = mpmath.mpmathify(s)
         return float(mpmath.zeta(s + n)) if n + s != 1 else np.inf
 
-def test_zeta():
+def test_zeta(cached):
     n = np.arange(-10, 60)[:, None]
     s = np.linspace(-0.5, 0.5, 101)
-    z1 = zeta_split(s, n)
+    z1 = cached('z1', zeta_split, s, n)
     z2 = _special.zeta(s, n)
     np.testing.assert_array_max_ulp(z2, z1, 72)
 
@@ -414,18 +390,18 @@ def test_bernoulli(rng):
         x = rng.uniform(0, 1, size=100)
         check_bernoulli(n, x)
 
-@vectorize_cached
+@np.vectorize
 def expint(n, z):
     return complex(mpmath.expint(n, z))
 
-def test_expn(rng):
+def test_expn(rng, cached):
     x = rng.uniform(0, 30, 10)
     n = np.arange(2, 12)
     result_64 = np.array([_special.expn_imag(n, x) for n in n])
     result_32 = np.array([_special.expn_imag(n.astype('i4'), x.astype('f')) for n in n])
     assert result_64.dtype == 'complex128'
     assert result_32.dtype == 'complex64'
-    sol = expint(n[:, None], -1j * x)
+    sol = cached('sol', expint, n[:, None], -1j * x)
     util.assert_allclose(result_64, sol, rtol=1e-7) # TODO quite bad
     util.assert_allclose(result_32, sol, atol=0.01) # TODO very bad!!
 
