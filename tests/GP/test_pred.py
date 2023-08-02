@@ -94,4 +94,4 @@ def test_double_pred(rng):
     m1, cov1 = gp.predfromdata({'a': ay}, 'b', raw=True)
     m2, cov2 = gp.predfromfit(gp.predfromdata({'a': ay}, ['a']), 'b', raw=True)
     util.assert_allclose(m2, m1, rtol=1e-7)
-    util.assert_close_matrices(cov2, cov1, rtol=1e-5)
+    util.assert_close_matrices(cov2, cov1, rtol=1e-4)

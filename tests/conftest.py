@@ -34,23 +34,10 @@ def clean_gvar_env():
     gvar.restore_gvar()
 
 @pytest.fixture
-def nodepath(request):
-    """ List of the node names of the current test """
-    node = request.node
-    names = []
-    while node is not None:
-        names.append(node.name)
-        node = node.parent
-    names = names[::-1]
-    assert names[0] == 'lsqfitgp'
-    assert names[1].startswith('tests')
-    return names
-
-@pytest.fixture
-def rng(nodepath):
+def rng(request):
     """ A random generator with a deterministic per-test seed """
-    path = '::'.join(nodepath)
-    seed = np.array([path], np.bytes_).view(np.uint8)
+    nodeid = request.node.nodeid
+    seed = np.array([nodeid], np.bytes_).view(np.uint8)
     return np.random.default_rng(seed)
 
 class JSONEncoder(json.JSONEncoder):
@@ -76,7 +63,21 @@ def object_hook(obj):
     return obj
 
 @pytest.fixture
-def cached(nodepath):
+def testpath(request):
+    """
+    - relative Path of the file where the test is defined
+    - dotted name of the test, including classes and parametrization
+    """
+    path = request.node.path
+    root = request.session.path
+    path = path.relative_to(root)
+    name = request.node.location[2]
+    assert path.parts[0] == 'tests'
+    assert path.suffix == '.py'
+    return path, name
+
+@pytest.fixture
+def cached(testpath):
     """
     A function that caches the result of a function call in a file.
 
@@ -99,22 +100,13 @@ def cached(nodepath):
     >>>     assert lippa == turlipu
     """
 
-    # root cache directory
+    # determine cache file location
     file = pathlib.Path('tests') / 'cached'
-
-    # drop tests prefix from first path component
-    comp = pathlib.Path(nodepath[1])
-    assert comp.parts[0] == 'tests'
-    for name in comp.parts[1:]:
-        file = file.joinpath(name)
-
-    # add all other path components
-    for name in nodepath[2:-1]:
-        comp = pathlib.Path(name)
-        file = file.joinpath(comp)
-
-    # drop module extension, add test name and extension
-    file = file.with_suffix('').joinpath(nodepath[-1]).with_suffix('.json.gz')
+    path, name = testpath
+    assert path.parts[0] == 'tests'
+    for part in path.parts[1:]:
+        file = file.joinpath(part)
+    file = file.with_suffix('').joinpath(name).with_suffix('.json.gz')
 
     # if the file exists, load the cache and consider it immutable
     if file.exists():

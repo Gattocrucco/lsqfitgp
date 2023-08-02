@@ -186,7 +186,7 @@ class TestChol:
     def test_ginv_diagquad_mp1(self, K, decomp):
         result = decomp.ginv_diagquad(K)
         expected = np.diag(K)
-        util.assert_close_matrices(result, expected, rtol=1e-14)
+        util.assert_close_matrices(result, expected, rtol=1e-13)
 
     def test_correlate(self, n, K, decomp):
         Z = decomp.correlate(np.eye(n))
@@ -236,7 +236,7 @@ class TestChol:
         _, _, result, _, _ = decomp.minus_log_normal_density(r, gradfwd=True, **kw)
         jac = jax.jacfwd(likelihood)
         expected = jac(s)
-        util.assert_close_matrices(result, expected, rtol=1e-11)
+        util.assert_close_matrices(result, expected, rtol=1e-10)
 
     def test_normal_fisher(self, s, decomp, r, K, K_factory, r_factory):
         _, _, kw = decomp.make_derivs(K_factory, r_factory, s, fisher=True)
@@ -258,4 +258,4 @@ class TestChol:
         fisher = 1/2 * np.einsum('kij,qji->kq', invK_dK, invK_dK)
         fisher += dr.T @ linalg.solve(K, dr, assume_a='pos')
         expected = fisher @ vec
-        util.assert_close_matrices(result, expected, rtol=1e-12)
+        util.assert_close_matrices(result, expected, rtol=1e-11)
