@@ -127,7 +127,7 @@ class empbayes_fit(Logger):
         raises=True,
         minkw={},
         gpfactorykw={},
-        jit=False,
+        jit=True,
         method='gradient',
         initial='priormean',
         verbosity=0,
@@ -172,8 +172,7 @@ class empbayes_fit(Logger):
             it is a callable. If ``jit``, ``gpfactorykw`` crosses a JAX jit
             boundary, so it must contain objects understandable by JAX.
         jit : bool
-            If True, use jax's jit to compile the minimization target. Default
-            False.
+            If True (default), use jax's jit to compile the minimization target.
         method : str
             Minimization strategy. Options:
         
@@ -406,8 +405,6 @@ class empbayes_fit(Logger):
         # device. Maybe host_callback.call would work?
 
         # TODO dictionary argument jitkw
-
-        # TODO make jit=True default?
 
     class _CountCalls:
         """ wrap a callable to count calls """

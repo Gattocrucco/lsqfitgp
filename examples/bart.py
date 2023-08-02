@@ -103,7 +103,6 @@ gpkw = dict(i_train=X_indices, i_test=X_indices, splits=splits)
 options = dict(
     verbosity=3,
     raises=False,
-    jit=True,
     minkw=dict(method='l-bfgs-b', options=dict(maxls=4, maxiter=100)),
     mlkw=dict(epsrel=0),
     forward=True,

@@ -28,7 +28,7 @@ import pytest
 import lsqfitgp as lgp
 from . import util
 
-FITKW = dict(jit=True)
+FITKW = dict()
 
 def flat(g):
     """convert dictionary or array to 1D array"""

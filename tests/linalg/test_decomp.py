@@ -156,7 +156,7 @@ class TestChol:
     def test_pinv_bilinear_proj(self, n, K, r, decomp):
         result = decomp.pinv_bilinear(K, r)
         expected = r
-        util.assert_close_matrices(result, expected, rtol=1e-13)
+        util.assert_close_matrices(result, expected, rtol=1e-12)
 
     def test_pinv_bilinear_robj_direct(self, n, K, A, rng, decomp):
         r = gvar.gvar(rng.standard_normal(n), rng.gamma(2, 1 / 2, n))

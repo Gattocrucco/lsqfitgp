@@ -71,7 +71,7 @@ hyperprior = gvar.BufferDict({
     'delay': gvar.gvar(5, 20)
 })
 
-fit = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, jit=True, verbosity=2)
+fit = lgp.empbayes_fit(hyperprior, makegp, {'A': data}, raises=False, verbosity=2)
 
 print(f'time scale = {fit.p["time_scale"]}')
 corr = lgp.ExpQuad(scale=gvar.mean(fit.p['label_scale']))(0, 1)

@@ -297,7 +297,6 @@ information = gvar.gvar(dict(datalatent=data, **constraints))
 fitkw = dict(
     gpfactorykw=makegpkw,
     raises=False,
-    jit=True,
     verbosity=3,
     minkw=dict(method='l-bfgs-b'),
     forward=True,
