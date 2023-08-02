@@ -253,8 +253,8 @@ starts to be in the hundreds, to speed up the fit do:</p>
 </pre></div>
 </div>
 <p>when you create the <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object in the factory function.
-<a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> applies the jit for you if passed the <code class="docutils literal notranslate"><span class="pre">jit=True</span></code>
-option, so you don’t have to deal with it yourself.</p>
+<a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> applies the jit for you by default, so you don’t have to
+deal with it yourself.</p>
 <p>Another way to improve the performance is by tweaking the minimization method.
 The main setting is the <code class="docutils literal notranslate"><span class="pre">method</span></code> argument, which picks a sensible preset for
 the underlying routine <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>. Then, additional
@@ -290,7 +290,7 @@ provided after the fit in the attribute <code class="docutils literal notranslat
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
