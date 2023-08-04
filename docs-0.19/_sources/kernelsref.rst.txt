@@ -1,0 +1,285 @@
+.. file generated automatically by lsqfitgp/docs/kernelsref.py
+
+.. currentmodule:: lsqfitgp
+
+.. _kernels:
+
+Kernels reference
+=================
+
+This is a list of all the specific kernels implemented in :mod:`lsqfitgp`.
+
+Kernels are reported with a simplified signature where the positional arguments
+are `r` or `r2` if the kernel is isotropic, `delta` if it is stationary, or
+`x`, `y` for generic kernels, and with only the keyword arguments specific to
+the kernel. All kernels also understand the general keyword arguments of
+:class:`Kernel` (or their specific superclass), while there are no positional
+arguments when instantiating the kernel and the call signature of instances is
+always `x`, `y`.
+
+Example: the kernel :class:`GammaExp` is listed as ``GammaExp(r, gamma=1)``.
+This means you could use it this way::
+
+    import lsqfitgp as lgp
+    import numpy as np
+    kernel = lgp.GammaExp(loc=0.3, scale=2, gamma=1.4)
+    x = np.random.randn(100)
+    covmat = kernel(x[:, None], x[None, :])
+
+On multidimensional input, isotropic kernels will compute the euclidean
+distance. In general non-isotropic kernels will act separately on each
+dimension, i.e., :math:`k(x_1,y_1,x_2,y_2) = k(x_1,y_1) k(x_2,y_2)`, apart from
+kernels defined in terms of the dot product.
+
+For all isotropic and stationary (i.e., depending only on :math:`x - y`)
+kernels :math:`k(x, x) = 1`, and the typical lengthscale is approximately 1 for
+default values of the keyword parameters, apart from some specific cases like
+:class:`Constant`.
+
+.. warning::
+
+   You may encounter problems with second derivatives for
+   :class:`CausalExpQuad`, :class:`FracBrownian`, :class:`NNKernel`, and with
+   first derivatives too for :class:`Wendland` (but only in more than one
+   dimension). :class:`Color` stops working for :math:`n > 20`.
+
+Index
+-----
+
+Isotropic kernels
+^^^^^^^^^^^^^^^^^
+  * :class:`Bessel`
+  * :class:`Cauchy`
+  * :class:`CausalExpQuad`
+  * :class:`Constant`
+  * :class:`ExpQuad`
+  * :class:`GammaExp`
+  * :class:`Log`
+  * :class:`Matern`
+  * :class:`Maternp`
+  * :class:`Wendland`
+  * :class:`White`
+
+Stationary kernels
+^^^^^^^^^^^^^^^^^^
+  * :class:`AR`
+  * :class:`Celerite`
+  * :class:`Circular`
+  * :class:`Color`
+  * :class:`Cos`
+  * :class:`Expon`
+  * :class:`Harmonic`
+  * :class:`HoleEffect`
+  * :class:`MA`
+  * :class:`Periodic`
+  * :class:`Pink`
+  * :class:`Sinc`
+  * :class:`StationaryFracBrownian`
+  * :class:`Zeta`
+
+Other kernels
+^^^^^^^^^^^^^
+  * :class:`BART`
+  * :class:`BagOfWords`
+  * :class:`BrownianBridge`
+  * :class:`Categorical`
+  * :class:`Decaying`
+  * :class:`FracBrownian`
+  * :class:`Gibbs`
+  * :class:`Linear`
+  * :class:`NNKernel`
+  * :class:`OrnsteinUhlenbeck`
+  * :class:`Rescaling`
+  * :class:`Taylor`
+  * :class:`Wiener`
+  * :class:`WienerIntegral`
+
+Documentation
+-------------
+.. autoclass:: AR(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=False)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-AR.png
+.. image:: kernelsref-AR-samples.png
+.. autoclass:: BART(x, y, alpha=0.95, beta=2, maxd=2, gamma=1, splits=None, pnt=None, intercept=True, weights=None, reset=None, indices=False)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-BART.png
+.. image:: kernelsref-BART-samples.png
+.. autoclass:: BagOfWords(x, y)
+    :members:
+    :class-doc-from: class
+.. autoclass:: Bessel(r2, nu=0)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Bessel.png
+.. image:: kernelsref-Bessel-samples.png
+.. autoclass:: BrownianBridge(x, y)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-BrownianBridge.png
+.. image:: kernelsref-BrownianBridge-samples.png
+.. autoclass:: Categorical(x, y, cov=None)
+    :members:
+    :class-doc-from: class
+.. autoclass:: Cauchy(r2, alpha=2, beta=2)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Cauchy.png
+.. image:: kernelsref-Cauchy-samples.png
+.. autoclass:: CausalExpQuad(r, alpha=1)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-CausalExpQuad.png
+.. image:: kernelsref-CausalExpQuad-samples.png
+.. autoclass:: Celerite(delta, gamma=1, B=0)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Celerite.png
+.. image:: kernelsref-Celerite-samples.png
+.. autoclass:: Circular(delta, tau=4, c=0.5)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Circular.png
+.. image:: kernelsref-Circular-samples.png
+.. autoclass:: Color(delta, n=2)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Color.png
+.. image:: kernelsref-Color-samples.png
+.. autoclass:: Constant(x, y)
+    :members:
+    :class-doc-from: class
+.. autoclass:: Cos(delta)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Cos.png
+.. image:: kernelsref-Cos-samples.png
+.. autoclass:: Decaying(x, y, alpha=1)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Decaying.png
+.. image:: kernelsref-Decaying-samples.png
+.. autoclass:: ExpQuad(r2)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-ExpQuad.png
+.. image:: kernelsref-ExpQuad-samples.png
+.. autoclass:: Expon(delta)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Expon.png
+.. image:: kernelsref-Expon-samples.png
+.. autoclass:: FracBrownian(x, y, H=0.5, K=1)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-FracBrownian.png
+.. image:: kernelsref-FracBrownian-samples.png
+.. autoclass:: GammaExp(r2, gamma=1)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-GammaExp.png
+.. image:: kernelsref-GammaExp-samples.png
+.. autoclass:: Gibbs(x, y, scalefun=<function <lambda> at 0x12a0394e0>)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Gibbs.png
+.. image:: kernelsref-Gibbs-samples.png
+.. autoclass:: Harmonic(delta, Q=1)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Harmonic.png
+.. image:: kernelsref-Harmonic-samples.png
+.. autoclass:: HoleEffect(delta)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-HoleEffect.png
+.. image:: kernelsref-HoleEffect-samples.png
+.. autoclass:: Linear(x, y)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Linear.png
+.. image:: kernelsref-Linear-samples.png
+.. autoclass:: Log(r)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Log.png
+.. image:: kernelsref-Log-samples.png
+.. autoclass:: MA(delta, w=None, norm=False)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-MA.png
+.. image:: kernelsref-MA-samples.png
+.. autoclass:: Matern(r2, nu=None)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Matern.png
+.. image:: kernelsref-Matern-samples.png
+.. autoclass:: Maternp(r2, p=None)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Maternp.png
+.. image:: kernelsref-Maternp-samples.png
+.. autoclass:: NNKernel(x, y, sigma0=1)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-NNKernel.png
+.. image:: kernelsref-NNKernel-samples.png
+.. autoclass:: OrnsteinUhlenbeck(x, y)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-OrnsteinUhlenbeck.png
+.. image:: kernelsref-OrnsteinUhlenbeck-samples.png
+.. autoclass:: Periodic(delta, outerscale=1)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Periodic.png
+.. image:: kernelsref-Periodic-samples.png
+.. autoclass:: Pink(delta, dw=1)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Pink.png
+.. image:: kernelsref-Pink-samples.png
+.. autoclass:: Rescaling(x, y, stdfun=None)
+    :members:
+    :class-doc-from: class
+.. autoclass:: Sinc(delta)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Sinc.png
+.. image:: kernelsref-Sinc-samples.png
+.. autoclass:: StationaryFracBrownian(delta, H=0.5)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-StationaryFracBrownian.png
+.. image:: kernelsref-StationaryFracBrownian-samples.png
+.. autoclass:: Taylor(x, y)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Taylor.png
+.. image:: kernelsref-Taylor-samples.png
+.. autoclass:: Wendland(r, k=0, alpha=1)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Wendland.png
+.. image:: kernelsref-Wendland-samples.png
+.. autoclass:: White(x, y)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-White.png
+.. image:: kernelsref-White-samples.png
+.. autoclass:: Wiener(x, y)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Wiener.png
+.. image:: kernelsref-Wiener-samples.png
+.. autoclass:: WienerIntegral(x, y)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-WienerIntegral.png
+.. image:: kernelsref-WienerIntegral-samples.png
+.. autoclass:: Zeta(delta, nu=None)
+    :members:
+    :class-doc-from: class
+.. image:: kernelsref-Zeta.png
+.. image:: kernelsref-Zeta-samples.png
