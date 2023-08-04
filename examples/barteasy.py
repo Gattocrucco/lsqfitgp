@@ -44,7 +44,7 @@ columns = """
     Shell weight
     Rings
 """
-columns = list(filter(None, map(lambda x: x.strip(), columns.split('\n'))))
+columns = list(filter(None, map(str.strip, columns.split('\n'))))
 
 n = 500
 df = (pl
@@ -70,11 +70,12 @@ print(bart)
 # Compute predictions
 
 yhat_mean, yhat_cov = bart.pred(x_test=X_test, error=True)
+yhat_std = np.sqrt(np.diag(yhat_cov))
 
 # Compare predictions with truth
 
 fig, ax = plt.subplots(num='barteasy', clear=True)
-ax.errorbar(yhat_mean, y_test, xerr=np.sqrt(np.diag(yhat_cov)), fmt='.')
+ax.errorbar(yhat_mean, y_test, xerr=yhat_std, fmt='.')
 ax.plot(y_test, y_test, 'k-')
 ax.set(
     ylabel='truth',

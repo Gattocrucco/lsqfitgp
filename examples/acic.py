@@ -1,3 +1,4 @@
+import contextlib
 import pprint
 import pathlib
 
@@ -5,8 +6,9 @@ import polars as pl
 import lsqfitgp as lgp
 import numpy as np
 import gvar
-from scipy import stats
+from scipy import stats, special
 import statsmodels.formula.api as smf
+import statsmodels.api as sm
 from matplotlib import pyplot as plt
 import tqdm
 
@@ -31,8 +33,9 @@ bartkw = dict(fitkw=dict(verbosity=0))
 
 # load data
 print('load data...')
-df_p = pl.read_csv(datapath / 'track2_20220404' / 'practice' / f'acic_practice_{dataset:04d}.csv')
-df_py = pl.read_csv(datapath / 'track2_20220404' / 'practice_year' / f'acic_practice_year_{dataset:04d}.csv')
+prefix = datapath / 'track2_20220404'
+df_p = pl.read_csv(prefix / 'practice' / f'acic_practice_{dataset:04d}.csv')
+df_py = pl.read_csv(prefix / 'practice_year' / f'acic_practice_year_{dataset:04d}.csv')
 df = df_p.join(df_py, on='id.practice')
 
 # drop data to keep the script fast
@@ -84,21 +87,14 @@ print('\nfit outcome (w/o PS)...')
 fit_outcome = lgp.bayestree.bart(Xobs, y, weights=npatients_obs, **bartkw)
 print(fit_outcome)
 
-# fit treatment with linear probability modeling on the probit scale
+# fit treatment with a GLM
 print('\nfit treatment...')
-X = Xobs.drop('Z')
+X = Xobs.drop('Z').select(pl.lit(1).alias('Intercept'), pl.col('*'))
 z = Xobs['Z'].cast(pl.Boolean).to_numpy()
-p = 1 / len(z)
-z_prob = np.where(z, 1 - p, p)
-z_continuous = stats.norm.ppf(z_prob)
-fit_treatment = lgp.bayestree.bart(X, z_continuous, **bartkw)
-print(fit_treatment)
-
-# compute propensity score using the probit integral:
-# P(z) = int dx Phi(x) N(x; mu, sigma) = Phi(mu / sqrt(1 + sigma^2))
-mu, Sigma = fit_treatment.pred(x_test=X, error=True)
-sigma2 = np.diag(Sigma)
-ps = stats.norm.cdf(mu / np.sqrt(1 + sigma2))
+model = sm.GLM(z, X.to_pandas(), family=sm.families.Binomial())
+result = model.fit()
+print(result.summary())
+ps = result.predict()
 
 # fit outcome with propensity score as covariate
 print('\nfit outcome (w/ PS)...')
@@ -107,7 +103,10 @@ Xmis_ps = (Xobs_ps
     .filter(pl.col('Z') == 1)
     .with_columns(Z=1 - pl.col('Z'))
 )
-fit_outcome_ps = lgp.bayestree.bart(Xobs_ps, y, weights=npatients_obs, **bartkw)
+fit_outcome_ps = lgp.bayestree.bart(Xobs_ps, y,
+    weights=npatients_obs,
+    kernelkw=dict(weights=np.where(np.array(Xobs_ps.columns) == 'ps', 39, 1)),
+    **bartkw)
 print(fit_outcome_ps)
 
 # define groups of units for conditional SATT
@@ -118,16 +117,15 @@ strata = (df
     .with_row_count('index')
 )
 
-class SwitchGVar:
+@contextlib.contextmanager
+def switchgvar():
     """ Creating new primary gvars fills up memory permanently. This context
     manager keeps the gvars created within its context in a separate pool that
     is freed when all such gvars are deleted. They can not be mixed in
     operations with other gvars created outside of the context. """
-
-    def __enter__(self):
-        gvar.switch_gvar()
-
-    def __exit__(self, *_):
+    try:
+        yield gvar.switch_gvar()
+    finally:
         gvar.restore_gvar()
 
 def compute_satt(fit, Xmis, *, rng=None):
@@ -135,7 +133,7 @@ def compute_satt(fit, Xmis, *, rng=None):
     # create GP at MAP/sampled hypers and get imputed outcomes for the treated
     kw = dict(x_test=Xmis, weights=npatients_mis, error=True, format='gvar')
     if rng is not None:
-        with SwitchGVar():
+        with switchgvar():
             ymis = fit.pred(**kw, hp='sample', rng=rng)
     else:
         ymis = fit.pred(**kw)
@@ -211,9 +209,35 @@ for variable, group in df_results.groupby('variable'):
         satt_true[variable] = group['SATT'][0]
 print(f'\nSATT (truth) =\n{pprint.pformat(satt_true)}')
 
-# plot comparison with truth
-fig, ax = plt.subplots(num='acic', clear=True, layout='constrained')
+# create figure
+fig, axs = plt.subplots(2, 1,
+    num='acic',
+    clear=True,
+    layout='constrained',
+    figsize=[6.4, 8],
+    height_ratios=[2, 1],
+)
+ax_satt, ax_ps = axs
 
+# plot propensity score distribution
+ps_by_group = (Xobs_ps
+    .select('Z', pl.col('ps').rank('dense'))
+    .groupby('Z')
+    .all()
+    .sort('Z')
+    .get_column('ps')
+    .to_numpy()
+    .tolist()
+)
+ax_ps.hist(ps_by_group, bins='auto', histtype='barstacked', label=['Z=0', 'Z=1'])
+ax_ps.set(
+    title='Propensity score distribution',
+    xlabel='rank(propensity score)',
+    ylabel='Bin count',
+)
+ax_ps.legend()
+
+# plot comparison with truth
 estimates = {
     'w/o PS, MAP': satt,
     'w/ PS, MAP': satt_ps,
@@ -242,19 +266,19 @@ for i, (label, satt_dict) in enumerate(estimates.items()):
             xerr2 = 2 * xerr1
         args = (x, tick - shift)
         kw = dict(fmt='.', capsize=3, color=f'C{i}')
-        ax.errorbar(*args, xerr=xerr2, elinewidth=1, capthick=1, **kw)
-        artist_estimate[i] = ax.errorbar(*args, xerr=xerr1, elinewidth=2, capthick=2, **kw, label=label)
-        artist_truth, = ax.plot(satt_true[stratum], tick, 'kx', label='Truth')
+        ax_satt.errorbar(*args, xerr=xerr2, elinewidth=1, capthick=1, **kw)
+        artist_estimate[i] = ax_satt.errorbar(*args, xerr=xerr1, elinewidth=2, capthick=2, **kw, label=label)
+        artist_truth, = ax_satt.plot(satt_true[stratum], tick, 'kx', label='Truth')
         tick -= 1
 
-ax.set(
+ax_satt.set(
     xlabel='SATT',
     ylabel='Stratum',
     yticks=np.arange(0, tick, -1),
     yticklabels=list(satt),
     title='SATT posterior (0.05, 0.16, 0.50, 0.84, 0.95 quantiles)',
 )
-ax.legend(
+ax_satt.legend(
     handles=[artist_truth, *artist_estimate],
     loc='upper right',
 )

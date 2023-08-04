@@ -228,7 +228,8 @@ class empbayes_fit(Logger):
         mlkw : dict
             Additional arguments passed to `GP.marginal_likelihood`.
         forward : bool
-            Use forward instead of backward (default) derivatives.
+            Use forward instead of backward (default) derivatives. Typically,
+            forward is faster with a small number of parameters.
     
         Attributes
         ----------
@@ -264,10 +265,6 @@ class empbayes_fit(Logger):
             The minimization failed and ``raises`` is True.
     
         """
-
-        # TODO parameter float32: bool to use short float type. I think that
-        # scipy's optimize may break down with short floats with default
-        # options, I hope that changing termination tolerances does the trick.
 
         Logger.__init__(self, verbosity)
         del verbosity
@@ -360,7 +357,7 @@ class empbayes_fit(Logger):
         
         # TODO empbayes_fit(autoeps=True) tries to double epsabs until the
         # minimization succedes, with some maximum number of tries.
-        # autoeps=dict(maxrepeat=5, increaseby=2, initial=1e-16,
+        # autoeps=dict(maxrepeat=5, increasefactor=2, initial=1e-16,
         # startfromzero=True) allows to configure the algorithm.
 
         # TODO empbayes_fit(maxiter=100) sets the maximum number of minimization
@@ -368,7 +365,8 @@ class empbayes_fit(Logger):
         # to configure it more finely. The calls limits are cumulative on all
         # functions (need to make a class counter in _CountCalls), I can
         # probably implement them by returning nan when the limit is surpassed,
-        # I hope the minimizer stops immediately on nan (test this).
+        # I hope the minimizer stops immediately on nan (test this). => Callback
+        # can raise StopIteration.
 
         # TODO can I approximate the hessian with only function values and no
         # gradient, i.e., when using nelder-mead? => See Hare (2022), although I
@@ -387,14 +385,8 @@ class empbayes_fit(Logger):
 
         # TODO look into jaxopt: it has improved a lot since the last time I saw
         # it. In particular, it implements l-bfgs and has a "do not stop on
-        # failed line search" option. And it probably supports float32.
-
-        # TODO I could provide the option to use BFGS to estimate the covariance
-        # independently of the minimizer, using the last n iterations (not all
-        # the evaluations, just the iterations, to skip difficult line
-        # searches.) covariance='bfgs(10)'. I still need, in any case, an
-        # automatic policy of this sort for covariance='hessinv' when the linear
-        # search fails.
+        # failed line search" option. And it probably supports float32, although
+        # a skim of the docs suggests it does not work well.
 
         # TODO reimplement the timing system with host_callback.id_tap. It
         # should preserve the order because id_tap takes inputs and outputs. I
@@ -402,9 +394,29 @@ class empbayes_fit(Logger):
         # having some of them at compile time. I tried once but failed.
         # Currently host_callback is experimental, maybe wait until it isn't. =>
         # I think it fails because it's asynchronous and there is only one
-        # device. Maybe host_callback.call would work?
+        # device. Maybe host_callback.call would work? => I think they are
+        # developing something like my token machinery.
 
-        # TODO dictionary argument jitkw
+        # TODO dictionary argument jitkw, arguments passed to jax.jit?
+
+        # TODO parameter float32: bool to use short float type. I think that
+        # scipy's optimize may break down with short floats with default
+        # options, I hope that changing termination tolerances does the trick.
+
+        # TODO make separate_jac a parameter
+
+        # TODO add options in _CountCalls to track inputs and/or outputs to some
+        # maximum buffer length, activate it if the method (after applying user
+        # options, lowercasing, and inferring minimize's default) is l-bfgs-b
+        # and the covariance is minhess or auto, to the order specified in the
+        # arguments to l-bfgs-b (after defaults inference if missing) (add tests
+        # in test_fit to check that the defaults stay as inferred), to be used
+        # if l-bfgs-b returns a crooked hessian. --- Alternative: if covariance
+        # = 'auto', it could be appropriate to use fisher per definition. ---
+        # Alternative: add option covariance = 'lbfgs(<order>)' that does this
+        # for any method, although this would require computing the gradients
+        # afterwards if the gradient was not used. These alternatives are not
+        # mutually exclusive.
 
     class _CountCalls:
         """ wrap a callable to count calls """

@@ -4698,7 +4698,7 @@ work. Things to do:
    (DONE)
  - use tox for the tests
  - reintroduce pdf9.py by dropping woodbury (DONE)
- - make a release to remove the jax pin
+ - make a release to remove the jax pin (DONE)
 
 => tox is too much work right now so I'm skipping it
 
@@ -4967,3 +4967,138 @@ The second option looks quicker and more robust. => coverage supports globbing.
 
 I test it locally with the CI files. Right now, the online error is reproduced.
 I add the paths with the glob patterns.
+
+.........
+
+Next thing to do: get back to applications.
+
+I have to fix the treatment fit in the acic example. The short way is using
+something from statsmodels instead of bart. The long way is implementing a
+logistic regression, or more in general a glm.
+
+2023-08-03
+==========
+
+First use statsmodels, such that at least it is not total crap, then read
+Rasmussen's chapter on binary classification.
+
+I fit the treatment with a standard logistic regression. The end result for the
+SATT is poorer than with the total overfit I had before. I understand how this
+happens, but I need to try to understand what is the proper statistical way of
+putting down everything.
+
+With complete overfit, I get ps = Z. So when I impute the missing potential
+outcomes, there's perfect overlap on the variable ps. BART reasons in terms of
+observed range of the variable, so observed and imputed outcomes are maximally
+separated along ps. The non-interacting component w.r.t. ps is minimally
+observed. This increases the posterior variance.
+
+The question then is why shouldn't this be the correct way of making the
+inference. The answer is that this won't work out of sample; I don't notice it
+here because I'm only estimating in-sample statistics. Does it makes sense
+though to use Z_obs in place of PS when I only care about in-sample? You know
+it won't generalize, but.
+
+So, for the sake of methodology and giving good examples, I want to make the
+fit work with an actual externally valid PS instead of Z.
+
+First thing: look at the PS distribution by treatment group. To make a maximally
+informative plot, I have to make the representation agree with the way BART
+processes the PS. So use the rank.
+
+Result: they seem decently separated. I expect I could recover the performance
+of the in-sample trick by tuning the BART prior.
+
+First idea: increase the weight of PS. Maybe by 5? => The posterior variance
+increases, but by a very small amount. I should go extreme and put half the
+weight on ps. => It doesn't work. The difference is minimal. I don't really
+understand how these weights influence the result.
+
+Fit with uniform weights:
+
+    alpha = 0.80(20) (0 -> intercept only, 1 -> any)
+    beta = 0.92(72) (0 -> any, ∞ -> no interactions)
+    mean = 1169(193)
+    latent sdev = 250(78) (large -> conservative extrapolation)
+    data total sdev = 223
+    error sdev (avg weighted) = 115.9(7.1)
+    error sdev (unweighted) = 2236(137)
+
+Fit with half the weight on ps:
+
+    alpha = 0.76(23) (0 -> intercept only, 1 -> any)
+    beta = 2.5(1.3) (0 -> any, ∞ -> no interactions)
+    mean = 1203(276)
+    latent sdev = 354(74) (large -> conservative extrapolation)
+    data total sdev = 223
+    error sdev (avg weighted) = 123.1(6.0)
+    error sdev (unweighted) = 2376(116)
+
+So putting the weight on ps did:
+  - increase beta
+  - increase mean variance
+  - increase error variance
+
+2023-08-04
+==========
+
+The variance increase, I guess, is because the fit is poorer. The increased beta
+means that it's using less interactions. I think the story is that the weights
+apply recursively, so it's not like having 50% of the total variance on f_ps(ps)
+and 50% on the other functions, all the other variables prefer to interact with
+ps at any order, this constraint makes it less amenable to use interactions to
+explain the data, and so interactions drop.
+
+What I really want is something like bcf, with two barts, one on ps and the
+other not, with similar variances. This is not like putting ≈50% of the internal
+bart weight on ps.
+
+Plan:
+ - skim the bcf paper (DONE)
+    - automatic coding version of bcf
+        Equation 5.6, section 5.3, page 980:
+
+            y_i = μ(x_i) + τ̃(x_i) b_z_i + ϵ_i,
+            b_0 ~ N(0, 1/2),
+            b_1 ~ N(0, 1/2).
+
+            "Our experiments below all use this parameterization, and it is the
+            default implementation in our software package."
+
+        Problem with this model: I have to do Laplace on b_z, because they are
+        multiplied by τ̃, but since their prior is symmetric and τ̃'s prior is
+        even, there will be two posterior modes with swapped bs and opposite τ̃.
+        I would expect this to affect their MCMC inference too, but maybe the
+        modes are well separated enough that you randomly get stuck in one and
+        don't care otherwise. Maybe it would be fine for me as well?
+
+        I think it's worthwhile to find a well-identified alternative.
+
+        The extract the variable scale of τ, leaving τ̃, and put into the b
+        terms. I guess this is convenient to implement a Gibbs sampler. I don't
+        have this design constraint, so I can directly put a parameter in [0, 1]
+        that shifts the levels of z:
+
+            y_i = μ(x_i) + τ(x_i) (z_i - z_0) + ϵ_i,
+            z_0 ~ Beta(a, b).
+
+        So if z_0 = 0/1, μ is the control/treatment response surface, while τ is
+        always the treatment - control effect. If z_0 = 1/2, then μ is the mean
+        of the treatment and response surfaces.
+    - log-transform the outcome
+        I wasn't doing this, obvious mistake. My outcomes are all positive. I
+        should look at the distribution of Y and decide on a transformation,
+        my a priori guess is log.
+    - specific choices for the prior distribution and hyperparameters
+        Hypers of μ:
+            scale: half-Cauchy with prior median = 2 std(y)
+            alpha = 0.95
+            beta = 2
+        Hypers of τ:
+            scale: half-Normal with prior median = std(y)
+            alpha = 0.25
+            beta = 3
+ - skim kokandakar 2022 to see if they do something important differently
+ - search on google scholar if there has been new developments
+ - implement bcf as a new class in lsqfitgp.bayestree
+ - see if it does better than bart+ps on acic's dataset 0001
