@@ -5128,3 +5128,7 @@ https://github.com/marketplace/actions/mirror-repository
 - configure ci to run only on the original repo
     - use the condition ${{ github.repository == "Gattocrucco/lsqfitgp" }}
     - put the condition in jobs.<job>.if
+
+=> I dropped it because it is not functional. I would like an official mirroring
+system that clearly flags the other repo as alias, to put eventually my repo
+under the repo list of an organization without relinquishing possession.
