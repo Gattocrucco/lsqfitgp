@@ -166,6 +166,6 @@ def linkcode_resolve(domain, info):
 
     prefix = 'https://github.com/Gattocrucco/lsqfitgp/blob'
     version = 'master' if 'dev' in release else f'v{release}'
-    root = pathlib.Path().absolute().parent # parent because we are in docs/
+    root = pathlib.Path(lsqfitgp.__file__).parent
     path = pathlib.Path(fn).relative_to(root).as_posix()
-    return f'{prefix}/{version}/{path}{linespec}'
+    return f'{prefix}/{version}/src/lsqfitgp/{path}{linespec}'

@@ -5099,7 +5099,9 @@ Plan:
             alpha = 0.25
             beta = 3
  - skim kokandakar 2022 to see if they do something important differently
-    - package flexBCF, I failed to install it, opened an issue
+    - package flexBCF
+        - I failed to install it, opened an issue => fixed
+        - I fail to load it, opened an issue
     - they use as covariate the CBPS of Imai and Ratkovic (2014)
     - they use Linero's variable selection scheme
     - 
