@@ -5098,13 +5098,20 @@ Plan:
             scale: half-Normal with prior median = std(y)
             alpha = 0.25
             beta = 3
- - skim kokandakar 2022 to see if they do something important differently
+ - skim kokandakar 2022 to see if they do something important differently (DONE)
     - package flexBCF
         - I failed to install it, opened an issue => fixed
         - I fail to load it, opened an issue
     - they use as covariate the CBPS of Imai and Ratkovic (2014)
+        The CBPS tries to enforce covariate balancing irrespective of treatment
+        model well-specification. The abstract says this is good for matching
+        and weighting. Since I'm doing a nonparametric regression with all the
+        covariates included, I expect that the CBPS would not give me an
+        advantage, also considering that the implementation does a logistic
+        linear regression.
     - they use Linero's variable selection scheme
-    - 
+        They say it did not help.
+    - does not one-hot encode categorical covariates
  - search on google scholar if there has been new developments
  - implement bcf as a new class in lsqfitgp.bayestree
  - see if it does better than bart+ps on acic's dataset 0001
