@@ -26,12 +26,23 @@ import numpy as np
 
 from lsqfitgp.copula import _beta
 
-def test_grad():
-    test_util.check_grads(lambda y: _beta.betaincinv(2.5, 1.3, y), (0.3,), 2)
+@pytest.fixture
+def aby():
+    return 2.5, 1.3, 0.3
+
+def test_grad(aby):
+    a, b, y = aby
+    test_util.check_grads(lambda y: _beta.betaincinv(a, b, y), (y,), 2)
 
 @pytest.mark.xfail
-def test_grad_ab():
-    test_util.check_grads(_beta.betaincinv, (2.5, 1.3, 0.3), 1)
+def test_grad_ab(aby):
+    test_util.check_grads(_beta.betaincinv, aby, 1)
+
+def test_dtype(aby):
+    assert _beta.betaincinv(*aby).dtype == np.float64
+    assert _beta.betaincinv(*map(np.float32, aby)).dtype == np.float32
+    assert _beta.betaincinv(*map(lambda x: np.ceil(x).astype(np.int64), aby)).dtype == np.float64
+    assert _beta.betaincinv(*map(lambda x: np.ceil(x).astype(np.int32), aby)).dtype == np.float32
 
 def test_ppf():
     q = 0.43
