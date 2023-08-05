@@ -35,13 +35,14 @@ all:
 	@echo " 2) $$ . pyenv/bin/activate"
 	@echo
 	@echo "Release instructions:"
-	@echo " 1) push and check CI completes"
-	@echo " 2) $$ make release"
-	@echo " 3) $$ make upload"
-	@echo " 4) publish the github release"
-	@echo " 5) bump version number"
-	@echo " 6) switch to branch gh-pages and pull"
-	@echo " 7) add new version to index, commit and push"
+	@echo " 1) remove .devN suffix from version"
+	@echo " 2) push and check CI completes"
+	@echo " 3) $$ make release"
+	@echo " 4) $$ make upload"
+	@echo " 5) publish the github release"
+	@echo " 6) bump version number and add .dev0 suffix"
+	@echo " 7) switch to branch gh-pages and pull"
+	@echo " 8) add new version to index, commit and push"
 
 upload:
 	python3 -m twine upload dist/*

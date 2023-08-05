@@ -23,6 +23,10 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import sys
+import inspect
+import pathlib
+
 # -- Project information -----------------------------------------------------
 
 project = 'lsqfitgp'
@@ -40,7 +44,8 @@ copyright = year + ', ' + author
 import lsqfitgp
 release = lsqfitgp.__version__
 version = release
-project += ' ' + version
+if 'dev' not in version:
+    project += ' ' + version
 
 # -- General configuration ---------------------------------------------------
 
@@ -53,6 +58,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'numpydoc',
     'sphinx.ext.intersphinx',
+    # 'sphinx.ext.viewcode', # local version of linkcode
+    'sphinx.ext.linkcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -93,8 +100,9 @@ master_doc = 'index'
 
 # -- Other options -------------------------------------------------
 
-autoclass_content = 'both'
-autodoc_preserve_defaults = True
+autoclass_content = 'both' # concatenate the class and __init__ docstrings
+autodoc_preserve_defaults = True # default arguments are printed as in source
+                                 # instead of being evaluated
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
@@ -104,6 +112,60 @@ default_role = 'py:obj'
 intersphinx_mapping = dict(
     gvar=('https://gvar.readthedocs.io/en/latest', None),
     lsqfit=('https://lsqfit.readthedocs.io/en/latest', None),
-    scipy=('https://docs.scipy.org/doc/scipy/reference', None),
+    scipy=('https://docs.scipy.org/doc/scipy', None),
     numpy=('https://numpy.org/doc/stable', None),
 )
+
+def linkcode_resolve(domain, info):
+    """
+    Determine the URL corresponding to Python object, for extension linkcode
+
+    Adapted from scipy/doc/release/conf.py
+    """
+    if domain != 'py':
+        return None
+
+    modname = info['module']
+    fullname = info['fullname']
+
+    submod = sys.modules.get(modname)
+    if submod is None:
+        return None
+
+    obj = submod
+    for part in fullname.split('.'):
+        try:
+            obj = getattr(obj, part)
+        except Exception:
+            return None
+
+    # Use the original function object if it is wrapped.
+    obj = getattr(obj, "__wrapped__", obj)
+    
+    try:
+        fn = inspect.getsourcefile(obj)
+    except Exception:
+        fn = None
+    if not fn:
+        try:
+            fn = inspect.getsourcefile(sys.modules[obj.__module__])
+        except Exception:
+            fn = None
+    if not fn:
+        return None
+
+    try:
+        source, lineno = inspect.getsourcelines(obj)
+    except Exception:
+        lineno = None
+
+    if lineno:
+        linespec = f'#L{lineno}-L{lineno + len(source) - 1}'
+    else:
+        linespec = ''
+
+    prefix = 'https://github.com/Gattocrucco/lsqfitgp/blob'
+    version = 'master' if 'dev' in release else f'v{release}'
+    root = pathlib.Path().absolute().parent # parent because we are in docs/
+    path = pathlib.Path(fn).relative_to(root).as_posix()
+    return f'{prefix}/{version}/{path}{linespec}'
