@@ -1,4 +1,4 @@
-# lsqfitgp/tests.yml
+# lsqfitgp/workflows/tests.yml
 #
 # Copyright (c) 2022, 2023, Giacomo Petrillo
 #
@@ -29,6 +29,7 @@ jobs:
   
   tests:
 
+    if: github.repository == 'Gattocrucco/lsqfitgp'
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental != '' }}
     strategy:

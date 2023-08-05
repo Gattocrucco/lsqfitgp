@@ -1,6 +1,6 @@
-# lsqfitgp/workflows/release.yml
+# lsqfitgp/workflows/mirror.yml
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,31 +17,21 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-name: release
+name: mirror
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
 
 jobs:
-  
-  tests:
-
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: ["3.11", "3.8"]
+  mirror:
+    if: github.repository == 'Gattocrucco/lsqfitgp'
+    # runs-on: ubuntu-latest
     steps:
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Update pip
-      run: python -m pip install --upgrade pip
-    - name: Install lsqfitgp
-      run: python -m pip install lsqfitgp
-    - name: Try to import lsqfitgp
-      run: python -c 'import lsqfitgp;print(lsqfitgp.__version__)'
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: yesolutions/mirror-action@v0.7.0
+        with:
+          REMOTE: 'ssh://git@gitlab.com/Gattocrucco/lsqfitgp-mirror.git'
+          # GIT_SSH_PRIVATE_KEY: ${{ secrets.GIT_SSH_PRIVATE_KEY }}
+          # GIT_SSH_KNOWN_HOSTS: ${{ secrets.GIT_SSH_KNOWN_HOSTS }}

@@ -5099,6 +5099,23 @@ Plan:
             alpha = 0.25
             beta = 3
  - skim kokandakar 2022 to see if they do something important differently
+    - package flexBCF, I failed to install it, opened an issue
+    - they use as covariate the CBPS of Imai and Ratkovic (2014)
+    - they use Linero's variable selection scheme
+    - 
  - search on google scholar if there has been new developments
  - implement bcf as a new class in lsqfitgp.bayestree
  - see if it does better than bart+ps on acic's dataset 0001
+
+2023-08-05
+==========
+
+I'm trying to set up a mirror. Apparently, I can not do this with a pre-packaged
+option in github, I need to configure an action to push automatically to the
+mirror repo.
+
+- use the mirror-repository action
+https://github.com/marketplace/actions/mirror-repository
+- configure ci to run only on the original repo
+    - use the condition ${{ github.repository == "Gattocrucco/lsqfitgp" }}
+    - put the condition in jobs.<job>.if
