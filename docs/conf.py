@@ -114,6 +114,7 @@ intersphinx_mapping = dict(
     lsqfit=('https://lsqfit.readthedocs.io/en/latest', None),
     scipy=('https://docs.scipy.org/doc/scipy', None),
     numpy=('https://numpy.org/doc/stable', None),
+    jax=('https://jax.readthedocs.io/en/latest/', None),
 )
 
 def linkcode_resolve(domain, info):

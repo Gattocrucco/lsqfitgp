@@ -596,3 +596,52 @@ def _empty(shape, dtype=float):
                 y = numpy.empty(dtshape, dtbase)
         arrays[name] = y
     return StructuredArray._array(shape, dtype, arrays)
+
+@StructuredArray._implements(numpy.concatenate)
+def _concatenate(arrays, axis=0, dtype=None, casting='same_kind'):
+
+    # checks arrays is a non-empty sequence
+    arrays = list(arrays)
+    if not arrays:
+        raise ValueError('need at least one array to concatenate')
+
+    # parse axis argument
+    if axis is None:
+        axis = 0
+        arrays = [a.reshape(-1) for a in arrays]
+    else:
+        ndim = arrays[0].ndim
+        assert all(a.ndim == ndim for a in arrays)
+        assert -ndim <= axis < ndim
+        axis %= ndim
+        shape = arrays[0].shape
+        assert all(a.shape[:axis] == shape[:axis] for a in arrays)
+        assert all(a.shape[axis + 1:] == shape[axis + 1:] for a in arrays)
+
+    dtype = numpy.result_type(*(a.dtype for a in arrays))
+    assert all(numpy.can_cast(a.dtype, dtype, casting) for a in arrays)
+    shape = (
+        *arrays[0].shape[:axis],
+        sum(a.shape[axis] for a in arrays),
+        *arrays[0].shape[axis + 1:],
+    )
+
+    out = _concatenate_recursive(arrays, axis, dtype, shape, casting)
+    assert out.shape == shape and out.dtype == dtype
+    return out
+
+def _concatenate_recursive(arrays, axis, dtype, shape, casting):
+    cat = {}
+    for name in dtype.names:
+        subarrays = [a[name] for a in arrays]
+        base = dtype[name].base
+        if base.names is not None:
+            subshape = shape + dtype[name].shape
+            y = _concatenate_recursive(subarrays, axis, base, subshape, casting)
+        else:
+            try:
+                y = jnp.concatenate(subarrays, axis=axis, dtype=base)
+            except TypeError:
+                y = numpy.concatenate(subarrays, axis=axis, dtype=base, casting=casting)
+        cat[name] = y
+    return StructuredArray._array(shape, dtype, cat)

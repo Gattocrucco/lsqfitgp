@@ -5102,6 +5102,9 @@ Plan:
     - package flexBCF
         - I failed to install it, opened an issue => fixed
         - I fail to load it, opened an issue
+            This time the author could not fix it. Things to do:
+                - try to install directly from source
+                - reinstall the latest version of R and try again
     - they use as covariate the CBPS of Imai and Ratkovic (2014)
         The CBPS tries to enforce covariate balancing irrespective of treatment
         model well-specification. The abstract says this is good for matching
@@ -5112,7 +5115,60 @@ Plan:
     - they use Linero's variable selection scheme
         They say it did not help.
     - does not one-hot encode categorical covariates
+        I think I understand why it does not work. If I split values in
+        dimensions, BART never considers the hypothesis that similar
+        coefficients for a bunch of values might mean that it's the same
+        coefficient. It outright won't search for sparsity in that way. Like an
+        ordinary Bayesian linear regression wouldn't.
+
+        Since this seems an overwhelmingly general problem, I wonder what he's
+        going to do to fix it in the cited article. The first thing that comes
+        to my mind is enconding the values in binary, so each indicator splits
+        in half the values space. The no interaction part, the larger in BART,
+        then assumes that the means in hierarchical groups are related in the
+        same way across groups the same size.
+
+        Example with 8 values:
+
+            1   2   3   4   5   6   7   8
+
+        A: 1234 vs 5678
+        B: 12 vs 34, 56 vs 78
+        C: 1 vs 2, 3 vs 4, 5 vs 6, 7 vs 8
+
+        This does look somewhat sensible.
+
+        The natural next question is why shouldn't one do this across
+        covariates. Answer: concatenating the binary encoding of each covariate
+        is already the binary encoding of all the covariates. It's not exactly
+        like fixing the splits at binary cutpoints for a regression tree,
+        because here I can decide to split immediately on any bit, while with a
+        tree I'd have to split in order.
+
+        Using BART with binary covariates in general is a bit weird because the
+        point of BART is that it is happy to follow any shape along each
+        covariate, but does not like interactions between them. With binary
+        covariates, there's no shape, and the game is all on the interactions.
+
+        Also, my approximations to compute the covariance function may be too
+        rough here, since they rely on sticking to depth 2 and repeating it
+        forever. I don't know.
+
+        What they propose in Deshpande (2023): arbitrary decision rules. In
+        particular, throw a coin for each level of the covariate to put it to
+        the left or right. This is invariant under permutation, which is
+        desirable.
+
+        Since their prior seems so generic, where's the catch? When you let the
+        model do anything, the difficulty must move somewhere else. I see two
+        possibilities: 1) that prior is restricting hypotheses in some other
+        way, 2) controlling the MCMC will be nasty. For (1), it could be that
+        they fix the typical size of the groupings, while BART splits only along
+        a fixed order, but with uniformly random size.
  - search on google scholar if there has been new developments
+    I only found two new articles searching "Bayesian causal forest", and one
+    is not accessible. The other is Caron et al. (2022). However, that article
+    just adds in the sparsity method of Linero. Nothing new then.
  - implement bcf as a new class in lsqfitgp.bayestree
  - see if it does better than bart+ps on acic's dataset 0001
 

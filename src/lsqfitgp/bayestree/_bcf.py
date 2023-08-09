@@ -1,4 +1,4 @@
-# lsqfitgp/bayestree.py
+# lsqfitgp/bayestree/_bcf.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #
@@ -24,26 +24,29 @@ from jax import numpy as jnp
 import jax
 import gvar
 
-from . import copula
-from . import _kernels
-from . import _fit
-from . import _array
-from . import _GP
-from . import _fastraniter
+from .. import copula
+from .. import _kernels
+from .. import _fit
+from .. import _array
+from .. import _GP
+from .. import _fastraniter
 
-class bart:
+class bcf:
     
-    def __init__(self,
-        x_train,
-        y_train,
-        *,
+    def __init__(self, *,
+        y,
+        z,
+        x_control,
+        x_moderate=None,
+        pihat,
+        include_pi='control',
         weights=None,
         fitkw={},
         kernelkw={},
         marginalize_mean=True,
     ):
         """
-        Nonparametric Bayesian regression with a GP version of BART.
+        Nonparametric Bayesian regression with a GP version of BCF.
 
         Evaluate a Gaussian process regression with a kernel which accurately
         approximates the infinite trees limit of BART. The hyperparameters are
@@ -144,43 +147,65 @@ class bart:
         """
 
         # convert covariates to StructuredArray
-        x_train = self._to_structured(x_train)
+        x_control = self._to_structured(x_control)
+        if x_moderate is not None:
+            x_moderate = self._to_structured(x_moderate)
     
-        # convert outcomes to 1d array
-        if hasattr(y_train, 'to_numpy'):
-            y_train = y_train.to_numpy()
-            y_train = y_train.squeeze() # for dataframes
-        y_train = jnp.asarray(y_train)
-        assert y_train.shape == x_train.shape
+        # convert outcomes and treatment to 1d arrays
+        y = self._to_vector(y)
+        z = self._to_vector(z)
 
         # check weights
-        self._no_weights = weights is None
-        if self._no_weights:
-            weights = jnp.ones_like(y_train)
-        assert weights.shape == y_train.shape
+        if weights is not None:
+            weights = self._to_vector(weights)
+
+        # check shapes match
+        assert y.shape == z.shape == x_control.shape == x_moderate.shape == weights.shape
     
-        # prior mean and variance
-        ymin = jnp.min(y_train)
-        ymax = jnp.max(y_train)
+        # splitting points
+        if x_moderate is None:
+            x_all = x_control
+        else:
+            x_all = numpy.concatenate([x_control, x_moderate])
+        splits = _kernels.BART.splits_from_coord(x_all)
+
+        # indices w.r.t. splitting grid
+        i_control = self._toindices(x_control, splits)
+        if x_moderate is None:
+            i_moderate = i_control
+        else:
+            i_moderate = self._toindices(x_moderate, splits)
+
+        # data-dependent prior parameters
+        ymin = jnp.min(y)
+        ymax = jnp.max(y)
         mu_mu = (ymax + ymin) / 2
         k_sigma_mu = (ymax - ymin) / 2
-        
-        # splitting points and indices
-        splits = _kernels.BART.splits_from_coord(x_train)
-        i_train = self._toindices(x_train, splits)
+        squares = (y - y.mean()) ** 2
+        if weights is not None:
+            squares *= weights
+        sigma2_priormean = numpy.mean(squares)
 
+        # define transformations
+        copula.beta('__bayestree__B', 2, 1)
+        copula.invgamma('__bayestree__IG', 1, 1)
+
+        # TODO continue adapting the code from here, with the following:
+        # TODO define copula.uniform for the z_0 parameter
+        # TODO define copula.halfcauchy for the control scale
+        # TODO define copula.halfnormal for the moderate scale
+        
         # prior on hyperparams
-        sigma2_priormean = numpy.mean((y_train - y_train.mean()) ** 2 * weights)
         hyperprior = {
-            '__bayestree__B(alpha)': copula.beta('__bayestree__B', 2, 1),
+            '__bayestree__B(alpha)': gvar.gvar(numpy.zeros(2), numpy.ones(2)),
                 # base of tree gen prob
-            '__bayestree__IG(beta)': copula.invgamma('__bayestree__IG', 1, 1),
+            '__bayestree__IG(beta)': gvar.gvar(numpy.zeros(2), numpy.ones(2)),
                 # exponent of tree gen prob
             'log(k)': gvar.gvar(numpy.log(2), 2),
                 # denominator of prior sdev
             'log(sigma2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
                 # i.i.d. error variance, scaled with weights
-            'mean': gvar.gvar(mu_mu, k_sigma_mu),
+            'mean': gvar.gvar(numpy.repeat(mu_mu, 2), numpy.repeat(k_sigma_mu, 2)),
                 # mean of the GP
         }
         if marginalize_mean:
@@ -423,6 +448,13 @@ class bart:
         cls._walk_dtype(x.dtype, check_numerical)
 
         return x
+
+    @classmethod
+    def _to_vector(cls, x):
+        if hasattr(x, 'to_numpy'):
+            x = x.to_numpy()
+            x = x.squeeze() # for dataframes
+        return jnp.asarray(x)
 
     @classmethod
     def _walk_dtype(cls, dtype, task, path=None):

@@ -86,6 +86,10 @@ Add an example with regression + gp
 
 Link gppdf report in the introduction page
 
+I should move the doc index, covreport link, and development instructions to the
+installation section of the manual, and remove the index from pages and trim the
+readme.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
@@ -94,8 +98,6 @@ Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
 Check that float32 is respected.
 
 Test recursive dtype support
-
-In general add extensive tests for StructuredArray.
 
 The minimum derivability warnings are annoying because there are a lot of them
 when doing nontrivial things, maybe I should put a warnings filter in GP.pred
@@ -114,26 +116,17 @@ samples smooth, but the result is very sensitive on the choice of cut, and the
 samples change shape macroscopically. From this I guess that the problem is
 that important eigenvectors of the posterior covariance matrix are not smooth.
 
-Does pred works with empty given? It should allow it and behave like prior.
+Does pred works with empty given? It should allow it and behave like prior. I
+should take the occasion of the new linalg system to allow 0x0 matrices.
 
-According to the coverage report, empbayes_fit.__init__ is not executed while
-running examples. This is wrong because, for example, pdf4.py uses it. What's
-up?
-
-Currently the positivity check is done only on the first call to predfromdata,
-on all non-transformed blocks. This means that if I add other blocks afterward
-they are not checked. Maybe a more coherent behaviour would be to check all
-blocks involved in the conditioning, on every conditioning.
-
-Add jit tests to test_GP
-
-gvar #27 is closed with 11.10.1, go through the code to remove the array
-copies, and increase the minimum supported gvar version
+Add jit tests to test_GP. Not just for error conditions, also nontrivial
+successful computations with pred. Maybe do this in test_pred.
 
 Use `jax.experimental.checkify` instead of `_patch_jax.skipifabstract`, then
 handle checking in `empbayes_fit`, with options to check errors or not (default
 checks everything and raises mid-minimization). Maybe wait for `checkify` to
-become non-experimental?
+become non-experimental? => I tried using checkify and it was a disaster,
+definitely wait for improvements.
 
 ## Implementation details
 

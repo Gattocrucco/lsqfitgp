@@ -749,3 +749,39 @@ def test_nd():
     assert nd([
         ('a', 'f,2f', (3, 4)),
     ]) == (1 + 2) * 3 * 4
+
+def test_concatenate(rng):
+    dtypes = [
+        [('a', float)],
+        'f,f',
+        'S25,U10,?',
+        [('a', 'f,f')],
+        [('a', float, 2)],
+        [('a', float, (2, 3))],
+        [('a', 'f,f', 3)],
+        [('a', 'f,f', 3), ('b', 'f,f', 3)],
+        [('a', 'f,f', (3, 5))],
+        [('a', 'f,13f', (3, 5))],
+        [('a', [('aa', 'f,2f', 3)], 5), ('b', object)],
+        [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
+    ]
+    shapes = [
+        (),
+        (0,),
+        (1,),
+        (1, 0),
+        (0, 1),
+        (7,),
+        (7, 11),
+    ]
+    for dtype, shape in itertools.product(dtypes, shapes):
+        axis = rng.integers(0, len(shape) + 1)
+        narrays = rng.integers(1, 5)
+        lengths = rng.integers(0, 5, narrays)
+        arrays = [
+            random_array(shape[:axis] + (length,) + shape[axis:], dtype, rng)
+            for length in lengths
+        ]
+        def func(*args, **kw):
+            return np.concatenate(args, axis=axis, **kw)
+        crosscheck_operation(func, *arrays)
