@@ -159,6 +159,8 @@ class bcf:
         if weights is not None:
             weights = self._to_vector(weights)
 
+        # TODO use pihat and include_pi
+
         # check shapes match
         assert y.shape == z.shape == x_control.shape == x_moderate.shape == weights.shape
     
@@ -172,13 +174,14 @@ class bcf:
         # indices w.r.t. splitting grid
         i_control = self._toindices(x_control, splits)
         if x_moderate is None:
-            i_moderate = i_control
-        else:
             i_moderate = self._toindices(x_moderate, splits)
+        else:
+            i_moderate = None
 
         # data-dependent prior parameters
         ymin = jnp.min(y)
         ymax = jnp.max(y)
+        ystd = jnp.std(y)
         mu_mu = (ymax + ymin) / 2
         k_sigma_mu = (ymax - ymin) / 2
         squares = (y - y.mean()) ** 2
@@ -186,14 +189,12 @@ class bcf:
             squares *= weights
         sigma2_priormean = numpy.mean(squares)
 
-        # define transformations
+        # define transformations for Gaussian copula
         copula.beta('__bayestree__B', 2, 1)
         copula.invgamma('__bayestree__IG', 1, 1)
-
-        # TODO continue adapting the code from here, with the following:
-        # TODO define copula.uniform for the z_0 parameter
-        # TODO define copula.halfcauchy for the control scale
-        # TODO define copula.halfnormal for the moderate scale
+        copula.uniform('__bayestree__U', 0, 1)
+        copula.halfcauchy('__bayestree__HC', 1 / stats.halfcauchy.ppf(0.5))
+        copula.halfnorm('__bayestree__HN', 1 / stats.halfnorm.ppf(0.5))
         
         # prior on hyperparams
         hyperprior = {
@@ -201,47 +202,63 @@ class bcf:
                 # base of tree gen prob
             '__bayestree__IG(beta)': gvar.gvar(numpy.zeros(2), numpy.ones(2)),
                 # exponent of tree gen prob
-            'log(k)': gvar.gvar(numpy.log(2), 2),
-                # denominator of prior sdev
+            '__bayestree__U(z0)': gvar.gvar(0, 1),
+                # treatment coding
+            '__bayestree__HC(scale_control)': gvar.gvar(0, 1),
+            '__bayestree__HN(scale_moderate)': gvar.gvar(0, 1),
             'log(sigma2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
                 # i.i.d. error variance, scaled with weights
-            'mean': gvar.gvar(numpy.repeat(mu_mu, 2), numpy.repeat(k_sigma_mu, 2)),
+            'mean': gvar.gvar(mu_mu, k_sigma_mu),
                 # mean of the GP
         }
         if marginalize_mean:
             hyperprior.pop('mean')
 
         # GP factory
-        def makegp(hp, *, i_train, weights, splits, **_):
-            kw = dict(
-                alpha=hp['alpha'], beta=hp['beta'],
-                maxd=10, reset=[2, 4, 6, 8], gamma=0.95,
-            )
-            kw.update(kernelkw)
-            kernel = _kernels.BART(splits=splits, indices=True, **kw)
-            kernel *= (k_sigma_mu / hp['k']) ** 2
+        def makegp(hp, *, z, i_control, i_moderate, weights, splits, ystd, **_):
             
-            gp = _GP.GP(kernel, checkpos=False, checksym=False, solver='chol')
-            gp.addx(i_train, 'trainmean')
-            gp.addcov(jnp.diag(hp['sigma2'] / weights), 'trainnoise')
-            pieces = {'trainmean': 1, 'trainnoise': 1}
+            kw = dict(maxd=10, reset=[2, 4, 6, 8], gamma=0.95, splits=splits)
+            kw.update(kernelkw, indices=True)
+                # TODO maybe I should pass kernelkw as argument
+
+            kernel_control = _kernels.BART(alpha=hp['alpha'][0], beta=hp['beta'][0], dim='control', **kw)
+            kernel_control *= (hp['scale_control'] * 2 * ystd) ** 2
             if 'mean' not in hp:
-                gp.addcov(k_sigma_mu ** 2, 'mean')
-                pieces.update({'mean': 1})
-            gp.addtransf(pieces, 'train')
+                kernel_control += k_sigma_mu ** 2 * _kernels.Constant()
+            
+            kernel_moderate = _kernels.BART(alpha=hp['alpha'][1], beta=hp['beta'][1], dim='moderate', **kw)
+            kernel_moderate *= (hp['scale_moderate'] * ystd) ** 2
+
+            gp = _GP.GP(checkpos=False, checksym=False, solver='chol')
+            gp.addproc(kernel_control, 'control')
+            gp.addproc(kernel_moderate, 'moderate')
+            gp.addproclintransf(
+                lambda mu, tau: lambda x: mu(x) + tau(x) * (x['z'] - hp['z0']),
+                ['control', 'moderate'],
+            )
+            
+            x = self._join_points(z, i_control, i_moderate)
+            gp.addx(x, 'trainmean')
+            errcov = self._error_cov(hp, weights, x)
+            gp.addcov(errcov, 'trainnoise')
+            gp.addtransf({'trainmean': 1, 'trainnoise': 1}, 'train')
             
             return gp
 
         # data factory
-        def info(hp, *, mu_mu, **_):
-            return {'train': y_train - hp.get('mean', mu_mu)}
+        def info(hp, *, y, mu_mu, **_):
+            return {'train': y - hp.get('mean', mu_mu)}
 
         # fit hyperparameters
         gpkw = dict(
-            i_train=i_train,
+            z=z,
+            i_control=i_control,
+            i_moderate=i_moderate,
             weights=weights,
             splits=splits,
+            ystd=ystd,
             mu_mu=mu_mu,
+            y=y,
         )
         options = dict(
             verbosity=3,
@@ -255,17 +272,34 @@ class bcf:
         fit = _fit.empbayes_fit(hyperprior, makegp, info, **options)
         
         # extract hyperparameters from minimization result
+        self.z0 = fit.p['z0']
         self.sigma = gvar.sqrt(fit.p['sigma2'])
         self.alpha = fit.p['alpha']
         self.beta = fit.p['beta']
-        self.meansdev = k_sigma_mu / fit.p['k']
+        self.scale = numpy.array([
+            fit.p['scale_control'] * 2 * ystd,
+            fit.p['scale_moderate'] * ystd,
+        ])
         self.mean = fit.p.get('mean', mu_mu)
 
-        # set public attributes
+        # save fit object
         self.fit = fit
 
-        # set private attributes
-        self._ystd = y_train.std()
+    def _join_points(self, z, i_control, i_moderate):
+        """ join covariates into a single StructuredArray """
+        return _array.StructuredArray.from_dict(dict(
+            z=z,
+            control=i_control,
+            moderate=i_control if i_moderate is None else i_moderate,
+        ))
+
+    def _error_cov(self, hp, weights, x):
+        """ fill error covariance matrix """
+        if weights is None:
+            error_var = jnp.broadcast_to(hp['sigma2'], len(x))
+        else:
+            error_var = hp['sigma2'] / weights
+        return jnp.diag(error_var)
 
     def _gethp(self, hp, rng):
         if not isinstance(hp, str):
@@ -277,7 +311,7 @@ class bcf:
         else:
             raise KeyError(hp)
 
-    def gp(self, *, hp='map', x_test=None, weights=None, rng=None):
+    def gp(self, *, hp='map', z=None, x_control=None, x_moderate=None, weights=None, rng=None):
         """
         Create a Gaussian process with the fitted hyperparameters.
 
@@ -304,37 +338,54 @@ class bcf:
         """
 
         hp = self._gethp(hp, rng)
-        return self._gp(hp, x_test, weights, self.fit.gpfactorykw)
+        return self._gp(hp, z, x_control, x_moderate, weights, self.fit.gpfactorykw)
 
-    def _gp(self, hp, x_test, weights, gpfactorykw):
+    def _gp(self, hp, z, x_control, x_moderate, weights, gpfactorykw):
 
         # create GP object
         gp = self.fit.gpfactory(hp, **gpfactorykw)
 
         # add test points
-        if x_test is not None:
+        if z is not None:
+
+            # check presence/absence of arguments is coherent
+            self._check_coherent_covariates(z, x_control, x_moderate)
 
             # convert covariates to indices
-            x_test = self._to_structured(x_test)
-            i_test = self._toindices(x_test, gpfactorykw['splits'])
-            assert i_test.dtype == gpfactorykw['i_train'].dtype
+            x_control = self._to_structured(x_control)
+            i_control = self._toindices(x_control, gpfactorykw['splits'])
+            assert i_control.dtype == gpfactorykw['i_control'].dtype
+            if test_moderate:
+                x_moderate = self._to_structured(x_moderate)
+                i_moderate = self._toindices(x_moderate, gpfactorykw['splits'])
+                assert i_moderate.dtype == gpfactorykw['i_moderate'].dtype
+            else:
+                i_moderate = None
 
             # check weights
             if weights is not None:
                 weights = jnp.asarray(weights)
-                assert weights.shape == i_test.shape
-            else:
-                weights = jnp.ones(i_test.shape)
+                assert weights.shape == i_control.shape
 
             # add test points
-            gp.addx(i_test, 'testmean')
-            gp.addcov(jnp.diag(hp['sigma2'] / weights), 'testnoise')
-            pieces = {'testmean': 1, 'testnoise': 1}
-            if 'mean' not in hp:
-                pieces.update({'mean': 1})
-            gp.addtransf(pieces, 'test')
+            x = self._join_points(z, i_control, i_moderate)
+            gp.addx(x, 'testmean')
+            errcov = self._error_cov(hp, weights, x)
+            gp.addcov(errcov, 'testnoise')
+            gp.addtransf({'testmean': 1, 'testnoise': 1}, 'test')
 
         return gp
+
+    def _check_coherent_covariates(self, z, x_control, x_moderate):
+        if z is None:
+            assert x_control is None and x_moderate is None
+        else:
+            assert x_control is not None
+            train_moderate = self.fit.gpfactorykw['i_moderate']
+            if x_moderate is None:
+                assert train_moderate is None
+            else:
+                assert train_moderate is not None
 
     def data(self, *, hp='map', rng=None):
         """
@@ -359,8 +410,8 @@ class bcf:
         hp = self._gethp(hp, rng)
         return self.fit.data(hp, **self.fit.gpfactorykw)
 
-    def pred(self, *, hp='map', error=False, format='matrices', x_test=None,
-        weights=None, rng=None):
+    def pred(self, *, hp='map', error=False, format='matrices', z=None,
+        x_control=None, x_moderate=None, weights=None, rng=None):
         """
         Predict the outcome at given locations.
 
@@ -398,11 +449,20 @@ class bcf:
             The same distribution represented as an array of `GVar` objects.
         """
         
+        # get hyperparameters
         hp = self._gethp(hp, rng)
-        if x_test is not None:
-            x_test = self._to_structured(x_test)
-        mean, cov = self._pred(hp, x_test, weights, self.fit.gpfactorykw, bool(error))
+        
+        # check and process covariates
+        self._check_coherent_covariates(z, x_control, x_moderate)
+        if z is not None:
+            x_control = self._to_structured(x_control)
+            if x_moderate is not None:
+                x_moderate = self._to_structured(x_moderate)
+        
+        # GP regression
+        mean, cov = self._pred(hp, z, x_control, x_moderate, weights, self.fit.gpfactorykw, bool(error))
 
+        # pack output
         if format == 'gvar':
             return gvar.gvar(mean, cov, fast=True)
         elif format == 'matrices':
@@ -413,11 +473,11 @@ class bcf:
     @functools.cached_property
     def _pred(self):
         
-        @functools.partial(jax.jit, static_argnums=(4,))
-        def _pred(hp, x_test, weights, gpfactorykw, error):
-            gp = self._gp(hp, x_test, weights, gpfactorykw)
+        @functools.partial(jax.jit, static_argnums=(6,))
+        def _pred(hp, z, x_control, x_moderate, weights, gpfactorykw, error):
+            gp = self._gp(hp, z, x_control, x_moderate, weights, gpfactorykw)
             data = self.fit.data(hp, **gpfactorykw)
-            if x_test is None:
+            if z is None:
                 label = 'train'
             else:
                 label = 'test'
@@ -425,6 +485,9 @@ class bcf:
                 label += 'mean'
             outmean, outcov = gp.predfromdata(data, label, raw=True)
             return outmean + hp.get('mean', gpfactorykw['mu_mu']), outcov
+
+        # TODO make everything pure and jit this per class instead of per
+        # instance
 
         return _pred
 
@@ -472,17 +535,20 @@ class bcf:
 
     def __repr__(self):
         out = f"""BART fit:
+[control param, moderate param]
 alpha = {self.alpha} (0 -> intercept only, 1 -> any)
 beta = {self.beta} (0 -> any, ∞ -> no interactions)
+z0 = {self.z0} (control model applies at z = z0)
 mean = {self.mean}
-latent sdev = {self.meansdev} (large -> conservative extrapolation)
-data total sdev = {self._ystd:.3g}"""
+latent sdev = {self.scale} (large -> conservative extrapolation)
+data total sdev = {self.fit.gpfactorykw['ystd']:.3g}"""
 
-        if self._no_weights:
+        weights = self.fit.gpfactorykw['weights']
+        if weights is None:
             out += f"""
 error sdev = {self.sigma}"""
         else:
-            weights = numpy.array(self.fit.gpfactorykw['weights'])
+            weights = numpy.array(weights) # to avoid jax taking over the ops
             avgsigma = numpy.sqrt(numpy.mean(self.sigma ** 2 / weights))
             out += f"""
 error sdev (avg weighted) = {avgsigma}

@@ -136,14 +136,6 @@ class StructuredArray:
         
         return out
     
-    @property
-    def size(self):
-        return numpy.prod(self.shape, dtype=int)
-    
-    @property
-    def ndim(self):
-        return len(self.shape)
-    
     def __new__(cls, array):
         if isinstance(array, cls):
             return array
@@ -156,15 +148,33 @@ class StructuredArray:
     @classmethod
     def from_dataframe(cls, df):
         """
-        Make a Structured array from a DataFrame. Data is not copied.
+        Make a StructuredArray from a DataFrame. Data is not copied.
         """
         d = {
             col: cls._readonlyview_wrapifstructured(df[col].to_numpy())
             for col in df.columns
         }
-        dtype = numpy.dtype([(name, value.dtype) for name, value in d.items()])
-        return cls._array((len(df),), dtype, d)
+        return cls._array(None, None, d)
         # TODO support polars structured dtypes
+
+    @classmethod
+    def from_dict(cls, mapping):
+        """
+        Make a StructuredArray from a dictionary of arrays. Data is not copied.
+        """
+        d = {
+            name: cls._readonlyview_wrapifstructured(value)
+            for name, value in mapping.items()
+        }
+        return cls._array(None, None, d)
+    
+    @property
+    def size(self):
+        return numpy.prod(self.shape, dtype=int)
+    
+    @property
+    def ndim(self):
+        return len(self.shape)
     
     def __getitem__(self, key):
         if isinstance(key, str):
@@ -377,8 +387,8 @@ class StructuredArray:
         def decorator(func):
             cls._handled_functions[np_function] = func
             func.__doc__ = textwrap.dedent(f"""\
-            Implementation of {np_function.__module__}.{np_function.__name__}
-            for lgp.StructuredArray.
+            Implementation of `{np_function.__module__}.{np_function.__name__}`
+            for `StructuredArray`.
             """) + textwrap.dedent(np_function.__doc__)
             return func
         return decorator

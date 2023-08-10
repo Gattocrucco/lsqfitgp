@@ -546,7 +546,7 @@ def test_dataframe(cls, rng):
 
 def test_not_handled():
     with pytest.raises(TypeError):
-        np.concatenate([lgp.StructuredArray(np.zeros(1, 'd,d'))])
+        np.add(lgp.StructuredArray(np.zeros(1, 'd,d')), 0)
 
 def test_asjax(rng):
     
@@ -785,3 +785,5 @@ def test_concatenate(rng):
         def func(*args, **kw):
             return np.concatenate(args, axis=axis, **kw)
         crosscheck_operation(func, *arrays)
+
+# TODO test from_dict

@@ -20,51 +20,42 @@
 """ Test the copula module """
 
 import functools
+import contextlib
 
 import numpy as np
 import gvar
 import jax
 import pytest
-
 import lsqfitgp as lgp
 
-class JaxConfig:
-    
-    def __init__(self, **opts):
-        self.opts = opts
-    
-    def __enter__(self):
-        self.prev = {k: jax.config.read(k) for k in self.opts}
-        for k, v in self.opts.items():
-            jax.config.update(k, v)
-    
-    def __exit__(self, *_):
-        for k, v in self.prev.items():
+@contextlib.contextmanager
+def jaxconfig(**opts):
+    prev = {k: jax.config.read(k) for k in opts}
+    for k, v in opts.items():
+        jax.config.update(k, v)
+    try:
+        yield
+    finally:
+        for k, v in prev.items():
             jax.config.update(k, v)
 
 class CopulaBaseTest:
+    """
+    Base class for tests of a CopulaFactory subclass
+    """
     
-    name = 'lgp.copula.estdistr'
+    @pytest.fixture
+    def name(self, request):
+        return request.node.nodeid
     
     def __init_subclass__(cls, params):
         assert cls.__name__.startswith('Test')
         cls.copcls = getattr(lgp.copula, cls.__name__[4:].lower())
         cls.params = params
-    
-    # don't make this a staticmethod because it wouldn't be callable at class
-    # definition time in old python versions
-    def clean(meth):
-        @functools.wraps(meth)
-        def newmeth(self, *args, **kw):
-            if gvar.BufferDict.has_distribution(self.name):
-                gvar.BufferDict.del_distribution(self.name)
-            return meth(self, *args, **kw)
-        return newmeth
-    
-    @clean
-    def test_invfcn(self):
-        self.copcls(self.name, *self.params)
-        invfcn = gvar.BufferDict.invfcn[self.name]
+        
+    def test_invfcn(self, name):
+        self.copcls(name, *self.params)
+        invfcn = gvar.BufferDict.invfcn[name]
         x = gvar.gvar(0.1, 1.2)
         y = invfcn(x)
         deriv = jax.grad(invfcn)(x.mean)
@@ -73,22 +64,22 @@ class CopulaBaseTest:
         np.testing.assert_allclose(y.mean, ymean, rtol=1e-6)
         np.testing.assert_allclose(y.sdev, ysdev, rtol=1e-6)
     
-    @clean
-    def test_overwrite(self):
-        gvar.BufferDict.add_distribution(self.name, gvar.exp)
+    def test_overwrite(self, name):
+        gvar.BufferDict.add_distribution(name, gvar.exp)
         with pytest.raises(ValueError):
-            self.copcls(self.name, *self.params)
-        gvar.BufferDict.del_distribution(self.name)
-        self.copcls(self.name, *self.params)
-        self.copcls(self.name, *self.params)
+            self.copcls(name, *self.params)
+        gvar.BufferDict.del_distribution(name)
+        self.copcls(name, *self.params)
+        self.copcls(name, *self.params)
+
+    def test_nan_params(self, name):
         with pytest.raises(ValueError):
-            self.copcls(self.name, *(np.nan,) * len(self.params))
+            self.copcls(name, *(np.nan,) * len(self.params))
     
-    @clean
-    def test_bufferdict_gvar(self):
-        key = f'{self.name}(x)'
+    def test_bufferdict_gvar(self, name):
+        key = f'{name}(x)'
         b = gvar.BufferDict({
-            key: self.copcls(self.name, *self.params)
+            key: self.copcls(name, *self.params)
         })
         x = b['x']
         xmean = self.copcls.invfcn(b[key].mean, *self.params)
@@ -96,10 +87,9 @@ class CopulaBaseTest:
         np.testing.assert_allclose(x.mean, xmean, rtol=1e-6)
         np.testing.assert_allclose(x.sdev, xsdev, rtol=1e-6)
 
-    @clean
-    def test_bufferdict(self):
-        key = f'{self.name}(x)'
-        self.copcls(self.name, *self.params)
+    def test_bufferdict(self, name):
+        key = f'{name}(x)'
+        self.copcls(name, *self.params)
         b = gvar.BufferDict({
             key: 0
         })
@@ -107,8 +97,18 @@ class CopulaBaseTest:
         x2 = self.copcls.invfcn(b[key], *self.params)
         np.testing.assert_allclose(x, x2, rtol=1e-6)
 
+    # TODO a test for the correctness of the distribution: sample from the
+    # standard normal, transform with invfcn, check with the kolmogorov-smirnov
+    # test using the cdf from scipy; overwrite the cdf with an optional method
+
+    # TODO check continuity in zero, since it is a common cutpoint to switch
+    # from Normal cdf to sf
+
 class TestInvGamma(CopulaBaseTest, params=(1.2, 2.3)): pass
 class TestBeta(CopulaBaseTest, params=(1.2, 2.3)): pass
+class TestUniform(CopulaBaseTest, params=(-0.5, 2)): pass
+class TestHalfCauchy(CopulaBaseTest, params=(0.7,)): pass
+class TestHalfNorm(CopulaBaseTest, params=(1.3,)): pass
 
 def test_invgamma_divergence():
     y = lgp.copula.invgamma.invfcn(10., 1, 1)
@@ -118,12 +118,12 @@ def test_invgamma_zero():
     params = (1.2, 2.3)
     y = lgp.copula.invgamma.invfcn(-100, *params)
     assert y > 0
-    with JaxConfig(jax_enable_x64=False):
+    with jaxconfig(jax_enable_x64=False):
         y1 = lgp.copula.invgamma.invfcn(-12 * (1 + np.finfo(np.float32).eps), *params)
         y2 = lgp.copula.invgamma.invfcn(-12 * (1 - np.finfo(np.float32).eps), *params)
         assert y1 > 0 and y2 > 0
         np.testing.assert_allclose(y1, y2, atol=0, rtol=2e-4)
-    with JaxConfig(jax_enable_x64=True):
+    with jaxconfig(jax_enable_x64=True):
         y1 = lgp.copula.invgamma.invfcn(-37 * (1 + np.finfo(np.float64).eps), *params)
         y2 = lgp.copula.invgamma.invfcn(-37 * (1 - np.finfo(np.float64).eps), *params)
         assert y1 > 0 and y2 > 0

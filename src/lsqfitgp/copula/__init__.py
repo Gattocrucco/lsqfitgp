@@ -23,7 +23,7 @@ import abc
 import functools
 
 import gvar
-from jax.scipy import stats as jstats, special as jspecial
+from jax.scipy import special as jspecial
 import numpy
 import jax
 from jax import numpy as jnp
@@ -31,6 +31,11 @@ from jax import numpy as jnp
 from .. import _patch_gvar
 from .. import _patch_jax
 from . import _beta, _invgamma
+
+def normcdf(x):
+    x = jnp.asarray(x)
+    x = x.astype(_patch_jax.float_type(x))
+    return jspecial.ndtr(x)
 
 class CopulaFactory(metaclass=abc.ABCMeta):
     """
@@ -91,6 +96,12 @@ class CopulaFactory(metaclass=abc.ABCMeta):
             gvar.BufferDict.add_distribution(name, invfcn)
             cls.params[name] = params
         return gvar.gvar(0, 1)
+
+    @classmethod
+    def _assert(cls, cond, message='invalid parameters'):
+        """ method to raise an exception for invalid distribution parameters """
+        if not cond:
+            raise ValueError(f'{cls.__name__} distribution: {message}')
     
 class beta(CopulaFactory):
     """
@@ -98,11 +109,12 @@ class beta(CopulaFactory):
     """
     
     def __new__(cls, name, alpha, beta):
+        cls._assert(alpha > 0 and beta > 0)
         return super().__new__(cls, name, alpha, beta)
     
     @staticmethod
     def invfcn(x, alpha, beta):
-        return _beta.beta.ppf(jstats.norm.cdf(x), a=alpha, b=beta)
+        return _beta.beta.ppf(normcdf(x), a=alpha, b=beta)
 
 class invgamma(CopulaFactory):
     """
@@ -110,6 +122,7 @@ class invgamma(CopulaFactory):
     """
     
     def __new__(cls, name, alpha, beta):
+        cls._assert(alpha > 0 and beta > 0)
         return super().__new__(cls, name, alpha, beta)
 
     @staticmethod
@@ -131,11 +144,87 @@ class invgamma(CopulaFactory):
         x = jnp.asarray(x)
         x = x.astype(_patch_jax.float_type(x))
         boundary = 37 if x.dtype == jnp.float64 else 12
-        return jnp.piecewise(x, 
+        return beta * jnp.piecewise(x, 
             [x < -boundary, x > 0],
             [
-                lambda x: beta * cls._invgamma_ppf_norm_cdf_large_negative_x_2(x, a=alpha),
-                lambda x: _invgamma.invgamma.isf(jstats.norm.cdf(-x), a=alpha, scale=beta),
-                lambda x: _invgamma.invgamma.ppf(jstats.norm.cdf(x), a=alpha, scale=beta),
+                lambda x: cls._invgamma_ppf_norm_cdf_large_negative_x_2(x, a=alpha),
+                lambda x: _invgamma.invgamma.isf(normcdf(-x), a=alpha),
+                lambda x: _invgamma.invgamma.ppf(normcdf(x), a=alpha),
             ],
+        )
+
+class uniform(CopulaFactory):
+    """
+    https://en.wikipedia.org/wiki/Continuous_uniform_distribution
+    """
+    
+    def __new__(cls, name, a, b):
+        cls._assert(a <= b)
+        return super().__new__(cls, name, a, b)
+    
+    @staticmethod
+    def invfcn(x, a, b):
+        return a + (b - a) * normcdf(x)
+
+class halfcauchy(CopulaFactory):
+    """
+    https://en.wikipedia.org/wiki/Cauchy_distribution
+
+    `scipy.stats.halfcauchy`
+    """
+    
+    def __new__(cls, name, gamma):
+        cls._assert(gamma > 0)
+        return super().__new__(cls, name, gamma)
+
+    @staticmethod
+    def _ppf(p):
+        return jnp.tan(jnp.pi * p / 2)
+    
+    @staticmethod
+    def _isf(p):
+        return 1 / jnp.tan(jnp.pi * p / 2)
+    
+    @classmethod
+    def invfcn(cls, x, gamma):
+        return gamma * jnp.where(x < 0,
+            cls._ppf(normcdf(x)),
+            cls._isf(normcdf(-x)),
+        )
+
+# TODO jax.scipy.stats.norm.sf is implemented as 1 - cdf(x) instead
+# of cdf(-x), defeating the purpose of numerical accuracy, open an
+# issue and PR to fix it
+
+class halfnorm(CopulaFactory):
+    """
+    https://en.wikipedia.org/wiki/Half-normal_distribution
+    """
+    
+    def __new__(cls, name, sigma):
+        cls._assert(sigma > 0)
+        return super().__new__(cls, name, sigma)
+
+    @staticmethod
+    def _ppf(p):
+        # F(x) = 2 Φ(x) - 1
+        # -->  F⁻¹(p) = Φ⁻¹((1 + p) / 2)
+        return jspecial.ndtri((1 + p) / 2)
+
+    @staticmethod
+    def _isf(p):
+        # Φ(-x) = 1 - Φ(x)
+        # -->  Φ⁻¹(1 - p) = -Φ⁻¹(p)
+        # S(x) = 1 - F(x)
+        # -->  S⁻¹(p) = F⁻¹(1 - p)
+        #             = Φ⁻¹((2 - p) / 2)
+        #             = Φ⁻¹(1 - p / 2)
+        #             = -Φ⁻¹(p / 2)
+        return -jspecial.ndtri(p / 2)
+
+    @classmethod
+    def invfcn(cls, x, sigma):
+        return sigma * jnp.where(x < 0,
+            cls._ppf(normcdf(x)),
+            cls._isf(normcdf(-x)),
         )
