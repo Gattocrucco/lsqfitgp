@@ -386,10 +386,15 @@ class StructuredArray:
         """ Register an __array_function__ implementation """
         def decorator(func):
             cls._handled_functions[np_function] = func
-            func.__doc__ = textwrap.dedent(f"""\
-            Implementation of `{np_function.__module__}.{np_function.__name__}`
-            for `StructuredArray`.
-            """) + textwrap.dedent(np_function.__doc__)
+            newdoc = f"""\
+Implementation of `{np_function.__module__}.{np_function.__name__}` for `StructuredArray`.
+
+"""
+            if func.__doc__:
+                newdoc += textwrap.dedent(func.__doc__) + '\n'
+            newdoc += 'Original docstring below:\n\n'
+            newdoc += textwrap.dedent(np_function.__doc__)
+            func.__doc__ = newdoc
             return func
         return decorator
 
@@ -655,3 +660,16 @@ def _concatenate_recursive(arrays, axis, dtype, shape, casting):
                 y = numpy.concatenate(subarrays, axis=axis, dtype=base, casting=casting)
         cat[name] = y
     return StructuredArray._array(shape, dtype, cat)
+
+@StructuredArray._implements(recfunctions.append_fields)
+def _append_fields(base, names, data):
+    if isinstance(name, str):
+        names = [names]
+        data = [data]
+    assert len(names) == len(data)
+    arrays = base._dict.copy()
+    arrays.update(zip(names, data))
+    dtype = numpy.dtype(base.dtype.descr + [
+        (name, array.dtype) for name, array in zip(names, data)
+    ])
+    return StructuredArray._array(base.shape, dtype, arrays)

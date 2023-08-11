@@ -787,3 +787,4 @@ def test_concatenate(rng):
         crosscheck_operation(func, *arrays)
 
 # TODO test from_dict
+# TODO test append_fields

@@ -31,6 +31,8 @@ from .. import _array
 from .. import _GP
 from .. import _fastraniter
 
+# TODO adapt docstrings
+
 class bcf:
     
     def __init__(self, *,
@@ -151,18 +153,23 @@ class bcf:
         if x_moderate is not None:
             x_moderate = self._to_structured(x_moderate)
     
-        # convert outcomes and treatment to 1d arrays
+        # convert outcomes, treatment, propensity score, weights to 1d arrays
         y = self._to_vector(y)
         z = self._to_vector(z)
-
-        # check weights
+        pihat = self._to_vector(pihat)
         if weights is not None:
             weights = self._to_vector(weights)
 
-        # TODO use pihat and include_pi
-
         # check shapes match
-        assert y.shape == z.shape == x_control.shape == x_moderate.shape == weights.shape
+        assert y.shape == z.shape == x_control.shape == x_moderate.shape == weights.shape == pihat.shape
+
+        # add propensity score to covariates
+        if include_pi not in ('control', 'moderate', 'both'):
+            raise KeyError(f'invalid value include_pi={include_pi!r}')
+        if include_pi == 'control' or include_pi == 'both':
+            x_control = recfunctions.append_fields(x_control, '__bayestree__pihat', pihat)
+        if include_pi == 'moderate' or include_pi == 'both':
+            x_moderate = recfunctions.append_fields(x_moderate, '__bayestree__pihat', pihat)
     
         # splitting points
         if x_moderate is None:
@@ -195,7 +202,7 @@ class bcf:
         copula.uniform('__bayestree__U', 0, 1)
         copula.halfcauchy('__bayestree__HC', 1 / stats.halfcauchy.ppf(0.5))
         copula.halfnorm('__bayestree__HN', 1 / stats.halfnorm.ppf(0.5))
-        
+
         # prior on hyperparams
         hyperprior = {
             '__bayestree__B(alpha)': gvar.gvar(numpy.zeros(2), numpy.ones(2)),
@@ -534,7 +541,7 @@ class bcf:
         return _array.unstructured_to_structured(ix, names=x.dtype.names)
 
     def __repr__(self):
-        out = f"""BART fit:
+        out = f"""BCF fit:
 [control param, moderate param]
 alpha = {self.alpha} (0 -> intercept only, 1 -> any)
 beta = {self.beta} (0 -> any, ∞ -> no interactions)
