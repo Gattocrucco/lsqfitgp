@@ -168,9 +168,7 @@ class uniform(CopulaFactory):
 
 class halfcauchy(CopulaFactory):
     """
-    https://en.wikipedia.org/wiki/Cauchy_distribution
-
-    `scipy.stats.halfcauchy`
+    https://en.wikipedia.org/wiki/Cauchy_distribution, `scipy.stats.halfcauchy`
     """
     
     def __new__(cls, name, gamma):

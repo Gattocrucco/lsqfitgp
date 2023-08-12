@@ -51,9 +51,9 @@ def _BARTBase(x, y,
     """
     BART kernel.
 
-    Good default parameters: ``gamma=0.95``; ``maxd=4, reset=2`` if not fitting the
-    hyperparameters (``alpha`` and ``beta``), ``maxd=10, reset=[2,4,6,8]`` otherwise.
-    Derivatives are faster with forward autodiff.
+    Good default parameters: ``gamma=0.95``; ``maxd=4, reset=2`` if not fitting
+    the hyperparameters (``alpha`` and ``beta``), ``maxd=10, reset=[2,4,6,8]``
+    otherwise. Derivatives are faster with forward autodiff.
     
     Parameters
     ----------

@@ -31,8 +31,6 @@ from .. import _array
 from .. import _GP
 from .. import _fastraniter
 
-# TODO adapt docstrings
-
 class bcf:
     
     def __init__(self, *,
@@ -47,19 +45,32 @@ class bcf:
         kernelkw={},
         marginalize_mean=True,
     ):
-        """
+        r"""
         Nonparametric Bayesian regression with a GP version of BCF.
 
-        Evaluate a Gaussian process regression with a kernel which accurately
-        approximates the infinite trees limit of BART. The hyperparameters are
-        optimized to their marginal MAP.
+        BCF (Bayesian Causal Forest) is a regression method for observational
+        causal inference studies introduced in [1]_ based on a pair of BART
+        models.
+
+        This class evaluates a Gaussian process regression with a kernel which
+        accurately approximates BCF in the infinite trees limit of each BART
+        model. The hyperparameters are optimized to their marginal MAP.
 
         Parameters
         ----------
-        x_train : (n, p) array or dataframe
-            Observed covariates.
-        y_train : (n,) array
-            Observed outcomes.
+        y : (n,) array
+            Outcome.
+        z : (n,) array
+            Binary treatment status: 0 control group, 1 treatment group.
+        x_control : (n, p) array or dataframe
+            Covariates for the control model.
+        x_moderate : (n, q) array or dataframe, optional
+            Covariates for the effect model. If not specified, use `x_control`.
+        pihat : (n,) array
+            Estimated propensity score, i.e., P(Z=1|X).
+        include_pi : {'control', 'moderate', 'both'}, optional
+            Whether to include the propensity score in the control model, the
+            effect model, or both. Default is ``'control'``.
         weights : (n,) array
             Weights used to rescale the error variance (as 1 / weight).
         fitkw : dict
@@ -76,34 +87,42 @@ class bcf:
         The regression model is:
 
         .. math::
-            y_i &= \\mu + \\lambda f(\\mathbf x_i) + \\varepsilon_i, \\\\
-            \\varepsilon_i &\\overset{\\mathrm{i.i.d.}}{\\sim}
-                N(0, \\sigma^2 / w_i), \\\\
-            \\mu &\\sim N(
-                (\\max(\\mathbf y) + \\min(\\mathbf y)) / 2,
-                (\\max(\\mathbf y) - \\min(\\mathbf y))^2 / 4
-            ), \\\\
-            \\log \\sigma^2 &\\sim N(
-                \\log(\\overline{w(y - \\bar y)^2}),
+            y_i &= m + \lambda_\mu \mu(\mathbf x^\mu_i)
+                     + \lambda_\tau \tau(\mathbf x^\tau_i) (z_i - z_0)
+                     + \varepsilon_i, \\
+            \varepsilon_i &\sim
+                N(0, \sigma^2 / w_i), \\
+            m &\sim N(
+                (\max(\mathbf y) + \min(\mathbf y)) / 2,
+                (\max(\mathbf y) - \min(\mathbf y))^2 / 4
+            ), \\
+            \log \sigma^2 &\sim N(
+                \log(\overline{w(y - \bar y)^2}),
                 4
-            ), \\\\
-            \\log \\lambda &\\sim N(
-                \\log ((\\max(\\mathbf y) - \\min(\\mathbf y)) / 4),
-                4
-            ), \\\\
-            f &\\sim \\mathrm{GP}(
+            ), \\
+            \lambda_\mu &\sim \mathrm{HalfCauchy}(2\,\mathrm{std}(\mathbf y)), \\
+            \lambda_\tau &\sim \mathrm{HalfNormal}(1.48\,\mathrm{std}(\mathbf y)), \\
+            \mu &\sim \mathrm{GP}(
                 0,
-                \\mathrm{BART}(\\alpha,\\beta)
-            ), \\\\
-            \\alpha &\\sim \\mathrm{B}(2, 1), \\\\
-            \\beta &\\sim \\mathrm{IG}(1, 1).
+                \mathrm{BART}(\alpha_\mu,\beta_\mu)
+            ), \\
+            \tau &\sim \mathrm{GP}(
+                0,
+                \mathrm{BART}(\alpha_\tau,\beta_\tau)
+            ), \\
+            \alpha_\mu, \alpha_\tau &\sim \mathrm{B}(2, 1), \\
+            \beta_\mu, \beta_\tau &\sim \mathrm{IG}(1, 1), \\
+            z_0 &\sim U(0, 1),
 
-        To make the inference, :math:`(f, \\boldsymbol\\varepsilon, \\mu)` are
-        marginalized analytically, and the marginal posterior mode of
-        :math:`(\\sigma, \\lambda, \\alpha, \\beta)` is found by numerical
-        minimization, after transforming them to express their prior as a
-        Gaussian copula. Their marginal posterior covariance matrix is estimated
-        with an approximation of the hessian inverse. See
+        where :math:`\mu` and :math:`\tau` are, respectively, the "control"
+        and "moderate" models.
+
+        To make the inference, :math:`(\mu, \tau, \boldsymbol\varepsilon, m)`
+        are marginalized analytically, and the marginal posterior mode of
+        :math:`(\sigma, \lambda_*, \alpha_*, \beta_*, z_0)` is found by
+        numerical minimization, after transforming them to express their prior
+        as a Gaussian copula. Their marginal posterior covariance matrix is
+        estimated with an approximation of the hessian inverse. See
         `~lsqfitgp.empbayes_fit` and use the parameter ``fitkw`` to customize
         this procedure.
 
@@ -115,20 +134,23 @@ class bcf:
         Attributes
         ----------
         mean : gvar
-            The prior mean :math:`\\mu`.
+            The prior mean :math:`m`.
         sigma : float or gvar
-            The error term standard deviation :math:`\\sigma`. If there are
+            The error term standard deviation :math:`\sigma`. If there are
             weights, the sdev for each unit is obtained dividing ``sigma`` by
             sqrt(weight).
-        alpha : gvar
-            The numerator of the tree spawn probability :math:`\\alpha` (named
-            ``base`` in BayesTree and BART).
-        beta : gvar
-            The depth exponent of the tree spawn probability :math:`\\beta`
-            (named ``power`` in BayesTree and BART).
-        meansdev : gvar
-            The prior standard deviation :math:`\\lambda` of the latent
-            regression function.
+        alpha : pair of gvar
+            The numerator of the tree spawn probability :math:`\alpha_*` (named
+            ``base`` in bcf), respectively for control and moderate models.
+        beta : pair of gvar
+            The depth exponent of the tree spawn probability :math:`\beta`
+            (named ``power`` in bcf), respectively for control and moderate
+            models.
+        scale : gvar
+            The prior standard deviation :math:`\lambda_*` of the control and
+            moderate models.
+        z0 : gvar
+            The treatment coding parameter.
         fit : empbayes_fit
             The hyperparameters fit object.
 
@@ -137,8 +159,7 @@ class bcf:
         gp :
             Create a GP object.
         data :
-            Creates the dictionary to be passed to `GP.pred` to represent
-            ``y_train``.
+            Creates the dictionary to be passed to `GP.pred` to represent ``y``.
         pred :
             Evaluate the regression function at given locations.
 
@@ -146,30 +167,32 @@ class bcf:
         --------
         lsqfitgp.BART
         
+        References
+        ----------
+        .. [1] P. Richard Hahn, Jared S. Murray, Carlos M. Carvalho "Bayesian
+            Regression Tree Models for Causal Inference: Regularization,
+            Confounding, and Heterogeneous Effects (with Discussion)," Bayesian
+            Analysis, Bayesian Anal. 15(3), 965-1056, (September 2020)
         """
 
         # convert covariates to StructuredArray
         x_control = self._to_structured(x_control)
         if x_moderate is not None:
             x_moderate = self._to_structured(x_moderate)
+            assert x_moderate.shape == x_control.shape
     
         # convert outcomes, treatment, propensity score, weights to 1d arrays
         y = self._to_vector(y)
         z = self._to_vector(z)
         pihat = self._to_vector(pihat)
+        assert y.shape == z.shape == pihat.shape == x_control.shape
         if weights is not None:
             weights = self._to_vector(weights)
-
-        # check shapes match
-        assert y.shape == z.shape == x_control.shape == x_moderate.shape == weights.shape == pihat.shape
+            assert weights.shape == x_control.shape
 
         # add propensity score to covariates
-        if include_pi not in ('control', 'moderate', 'both'):
-            raise KeyError(f'invalid value include_pi={include_pi!r}')
-        if include_pi == 'control' or include_pi == 'both':
-            x_control = recfunctions.append_fields(x_control, '__bayestree__pihat', pihat)
-        if include_pi == 'moderate' or include_pi == 'both':
-            x_moderate = recfunctions.append_fields(x_moderate, '__bayestree__pihat', pihat)
+        self._set_include_pi(include_pi)
+        x_control, x_moderate = self._append_pihat(x_control, x_moderate, pihat)
     
         # splitting points
         if x_moderate is None:
@@ -308,6 +331,20 @@ class bcf:
             error_var = hp['sigma2'] / weights
         return jnp.diag(error_var)
 
+    def _set_include_pi(self, include_pi):
+        if include_pi not in ('control', 'moderate', 'both'):
+            raise KeyError(f'invalid value include_pi={include_pi!r}')
+        self._include_pi = include_pi
+
+    def _append_pihat(self, x_control, x_moderate, pihat):
+        ip = self._include_pi
+        name = '__bayestree__pihat'
+        if ip == 'control' or ip == 'both':
+            x_control = recfunctions.append_fields(x_control, name, pihat)
+        if x_moderate is not None and (ip == 'moderate' or ip == 'both'):
+            x_moderate = recfunctions.append_fields(x_moderate, name, pihat)
+        return x_control, x_moderate
+
     def _gethp(self, hp, rng):
         if not isinstance(hp, str):
             return hp
@@ -318,7 +355,7 @@ class bcf:
         else:
             raise KeyError(hp)
 
-    def gp(self, *, hp='map', z=None, x_control=None, x_moderate=None, weights=None, rng=None):
+    def gp(self, *, hp='map', z=None, x_control=None, x_moderate=None, pihat=None, weights=None, rng=None):
         """
         Create a Gaussian process with the fitted hyperparameters.
 
@@ -328,8 +365,16 @@ class bcf:
             The hyperparameters to use. If ``'map'``, use the marginal maximum a
             posteriori. If ``'sample'``, sample hyperparameters from the
             posterior. If a dict, use the given hyperparameters.
-        x_test : array or dataframe, optional
-            Additional covariates for "test points".
+        z : (m,) array, optional
+            Treatment status at test points. If specified, also `x_control`,
+            `pihat`, and `x_moderate` (if and only if it was used at
+            initialization) must be specified.
+        x_control : (m, p) array or dataframe, optional
+            Control model covariates at test points.
+        x_moderate : (m, q) array or dataframe, optional
+            Moderating model covariates at test points.
+        pihat : (m,) array, optional
+            Estimated propensity score at test points.
         weights : array, optional
             Weights for the error variance on the test points.
         rng : numpy.random.Generator, optional
@@ -345,9 +390,14 @@ class bcf:
         """
 
         hp = self._gethp(hp, rng)
-        return self._gp(hp, z, x_control, x_moderate, weights, self.fit.gpfactorykw)
+        return self._gp(hp, z, x_control, x_moderate, pihat, weights, self.fit.gpfactorykw)
 
-    def _gp(self, hp, z, x_control, x_moderate, weights, gpfactorykw):
+    def _gp(self, hp, z, x_control, x_moderate, pihat, weights, gpfactorykw):
+        """
+        Internal function to create the GP object. This function must work
+        both if the arguments are user-provided and need to be checked and
+        converted to standard format, and if they are traced jax values.
+        """
 
         # create GP object
         gp = self.fit.gpfactory(hp, **gpfactorykw)
@@ -356,23 +406,34 @@ class bcf:
         if z is not None:
 
             # check presence/absence of arguments is coherent
-            self._check_coherent_covariates(z, x_control, x_moderate)
+            self._check_coherent_covariates(z, x_control, x_moderate, pihat)
+
+            # check treatment and propensity score
+            z = self._to_vector(z)
+            pihat = self._to_vector(pihat)
+            assert pihat.shape == z.shape
+
+            # check weights
+            if weights is not None:
+                weights = self._to_vector(weights)
+                assert weights.shape == z.shape
+
+            # add propensity score to covariates
+            x_control = self._to_structured(x_control)
+            assert x_control.shape == z.shape
+            if test_moderate:
+                x_moderate = self._to_structured(x_moderate)
+                assert x_moderate.shape == z.shape
+            x_control, x_moderate = self._append_pihat(x_control, x_moderate, pihat)
 
             # convert covariates to indices
-            x_control = self._to_structured(x_control)
             i_control = self._toindices(x_control, gpfactorykw['splits'])
             assert i_control.dtype == gpfactorykw['i_control'].dtype
             if test_moderate:
-                x_moderate = self._to_structured(x_moderate)
                 i_moderate = self._toindices(x_moderate, gpfactorykw['splits'])
                 assert i_moderate.dtype == gpfactorykw['i_moderate'].dtype
             else:
                 i_moderate = None
-
-            # check weights
-            if weights is not None:
-                weights = jnp.asarray(weights)
-                assert weights.shape == i_control.shape
 
             # add test points
             x = self._join_points(z, i_control, i_moderate)
@@ -383,11 +444,14 @@ class bcf:
 
         return gp
 
-    def _check_coherent_covariates(self, z, x_control, x_moderate):
+    def _check_coherent_covariates(self, z, x_control, x_moderate, pihat):
         if z is None:
-            assert x_control is None and x_moderate is None
+            assert x_control is None
+            assert x_moderate is None
+            assert pihat is None
         else:
             assert x_control is not None
+            assert pihat is not None
             train_moderate = self.fit.gpfactorykw['i_moderate']
             if x_moderate is None:
                 assert train_moderate is None
@@ -410,7 +474,7 @@ class bcf:
         Returns
         -------
         data : dict
-            A dictionary representing ``y_train`` in the format required by the
+            A dictionary representing ``y`` in the format required by the
             `GP.pred` method.
         """
 
@@ -418,7 +482,7 @@ class bcf:
         return self.fit.data(hp, **self.fit.gpfactorykw)
 
     def pred(self, *, hp='map', error=False, format='matrices', z=None,
-        x_control=None, x_moderate=None, weights=None, rng=None):
+        x_control=None, x_moderate=None, pihat=None, weights=None, rng=None):
         """
         Predict the outcome at given locations.
 
@@ -434,9 +498,16 @@ class bcf:
         format : {'matrices', 'gvar'}
             If 'matrices' (default), return the mean and covariance matrix
             separately. If 'gvar', return an array of `GVar`s.
-        x_test : array or dataframe, optional
-            Covariates for the locations where the prediction is computed. If
-            not specified, predict at the data covariates.
+        z : (m,) array, optional
+            Treatment status at test points. If specified, also `x_control`,
+            `pihat`, and `x_moderate` (if and only if it was used at
+            initialization) must be specified.
+        x_control : (m, p) array or dataframe, optional
+            Control model covariates at test points.
+        x_moderate : (m, q) array or dataframe, optional
+            Moderating model covariates at test points.
+        pihat : (m,) array, optional
+            Estimated propensity score at test points.
         weights : array, optional
             Weights for the error variance on the test points.
         rng : numpy.random.Generator, optional
@@ -459,15 +530,22 @@ class bcf:
         # get hyperparameters
         hp = self._gethp(hp, rng)
         
-        # check and process covariates
-        self._check_coherent_covariates(z, x_control, x_moderate)
+        # check presence of covariates is coherent
+        self._check_coherent_covariates(z, x_control, x_moderate, pihat)
+
+        # convert all inputs to arrays compatible with jax to pass them to the
+        # compiled implementation
         if z is not None:
+            z = self._to_vector(z)
+            pihat = self._to_vector(pihat)
             x_control = self._to_structured(x_control)
             if x_moderate is not None:
                 x_moderate = self._to_structured(x_moderate)
+        if weights is not None:
+            weights = self._to_vector(weights)
         
         # GP regression
-        mean, cov = self._pred(hp, z, x_control, x_moderate, weights, self.fit.gpfactorykw, bool(error))
+        mean, cov = self._pred(hp, z, x_control, x_moderate, pihat, weights, self.fit.gpfactorykw, bool(error))
 
         # pack output
         if format == 'gvar':
@@ -480,9 +558,9 @@ class bcf:
     @functools.cached_property
     def _pred(self):
         
-        @functools.partial(jax.jit, static_argnums=(6,))
-        def _pred(hp, z, x_control, x_moderate, weights, gpfactorykw, error):
-            gp = self._gp(hp, z, x_control, x_moderate, weights, gpfactorykw)
+        @functools.partial(jax.jit, static_argnums=(7,))
+        def _pred(hp, z, x_control, x_moderate, pihat, weights, gpfactorykw, error):
+            gp = self._gp(hp, z, x_control, x_moderate, pihat, weights, gpfactorykw)
             data = self.fit.data(hp, **gpfactorykw)
             if z is None:
                 label = 'train'
@@ -519,8 +597,8 @@ class bcf:
 
         return x
 
-    @classmethod
-    def _to_vector(cls, x):
+    @staticmethod
+    def _to_vector(x):
         if hasattr(x, 'to_numpy'):
             x = x.to_numpy()
             x = x.squeeze() # for dataframes
@@ -542,7 +620,7 @@ class bcf:
 
     def __repr__(self):
         out = f"""BCF fit:
-[control param, moderate param]
+[control model, moderate model]
 alpha = {self.alpha} (0 -> intercept only, 1 -> any)
 beta = {self.beta} (0 -> any, ∞ -> no interactions)
 z0 = {self.z0} (control model applies at z = z0)
