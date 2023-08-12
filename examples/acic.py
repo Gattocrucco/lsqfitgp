@@ -29,7 +29,9 @@ https://doi.org/10.1353/obs.2023.0023
 dataset = 1
 datapath = pathlib.Path('examples') / 'acic'
 nsamples = 100
-bartkw = dict(fitkw=dict(verbosity=0))
+bartkw = dict(fitkw=dict(verbosity=0), kernelkw=dict(intercept=False))
+artificial_effect_shift = 0
+laplace = True
 
 # load data
 print('load data...')
@@ -37,6 +39,14 @@ prefix = datapath / 'track2_20220404'
 df_p = pl.read_csv(prefix / 'practice' / f'acic_practice_{dataset:04d}.csv')
 df_py = pl.read_csv(prefix / 'practice_year' / f'acic_practice_year_{dataset:04d}.csv')
 df = df_p.join(df_py, on='id.practice')
+
+# shift treated units by a fixed amount for testing purposes
+df = df.with_columns(
+    Y=pl.col('Y') + pl
+    .when((pl.col('Z') == 1) & (pl.col('post') == 1))
+    .then(artificial_effect_shift)
+    .otherwise(0)
+)
 
 # drop data to keep the script fast
 df = (df
@@ -50,7 +60,7 @@ df = (df
 print('least squares fit...')
 data = (df
     .filter(pl.col('post') == 1)
-    .select(['Y', 'year', 'Z', 'n.patients'])
+    .select(['Y', 'Z', 'n.patients'])
     .to_pandas()
 )
 model = smf.wls('Y ~ 1 + Z', data, weights=data['n.patients'])
@@ -93,7 +103,7 @@ X = Xobs.drop('Z').select(pl.lit(1).alias('Intercept'), pl.col('*'))
 z = Xobs['Z'].cast(pl.Boolean).to_numpy()
 model = sm.GLM(z, X.to_pandas(), family=sm.families.Binomial())
 result = model.fit()
-print(result.summary())
+print(result.summary().tables[0])
 ps = result.predict()
 
 # fit outcome with propensity score as covariate
@@ -103,11 +113,20 @@ Xmis_ps = (Xobs_ps
     .filter(pl.col('Z') == 1)
     .with_columns(Z=1 - pl.col('Z'))
 )
-fit_outcome_ps = lgp.bayestree.bart(Xobs_ps, y,
-    weights=npatients_obs,
-    kernelkw=dict(weights=np.where(np.array(Xobs_ps.columns) == 'ps', 39, 1)),
-    **bartkw)
+fit_outcome_ps = lgp.bayestree.bart(Xobs_ps, y, weights=npatients_obs, **bartkw)
 print(fit_outcome_ps)
+
+# fit outcome with propensity score as covariate using BCF
+print('\nfit outcome (BCF)...')
+fit_outcome_bcf = lgp.bayestree.bcf(
+    y=y,
+    z=Xobs['Z'],
+    x_control=Xobs.drop('Z'),
+    pihat=Xobs_ps['ps'],
+    weights=npatients_obs,
+    **bartkw,
+)
+print(fit_outcome_bcf)
 
 # define groups of units for conditional SATT
 strata = (df
@@ -128,10 +147,10 @@ def switchgvar():
     finally:
         gvar.restore_gvar()
 
-def compute_satt(fit, Xmis, *, rng=None):
+def compute_satt(fit, *, rng=None, **predkw):
 
     # create GP at MAP/sampled hypers and get imputed outcomes for the treated
-    kw = dict(x_test=Xmis, weights=npatients_mis, error=True, format='gvar')
+    kw = dict(weights=npatients_mis, error=True, format='gvar', **predkw)
     if rng is not None:
         with switchgvar():
             ymis = fit.pred(**kw, hp='sample', rng=rng)
@@ -161,41 +180,48 @@ def compute_satt(fit, Xmis, *, rng=None):
 print('\ncompute satt...')
 
 # compute the SATT at marginal MAP hyperparameters
-satt = compute_satt(fit_outcome, Xmis)
-satt_ps = compute_satt(fit_outcome_ps, Xmis_ps)
+satt = compute_satt(fit_outcome, x_test=Xmis)
+satt_ps = compute_satt(fit_outcome_ps, x_test=Xmis_ps)
+bcf_predkw = dict(z=Xmis['Z'], x_control=Xmis.drop('Z'), pihat=Xmis_ps['ps'])
+satt_bcf = compute_satt(fit_outcome_bcf, **bcf_predkw)
 
 # compute the SATT sampling the hyperparameters with the Laplace approx
-rng = np.random.default_rng(202307081315)
-satt_ps_samples = {}
-for _ in tqdm.tqdm(range(nsamples)):
-    satt_sample = compute_satt(fit_outcome_ps, Xmis_ps, rng=rng)
-    for k, v in satt_sample.items():
-        satt_ps_samples.setdefault(k, []).append(v)
-satt_ps_samples_quantiles = {}
-satt_ps_samples_meanstd = {}
-for k, samples in satt_ps_samples.items():
-    cl1 = np.diff(stats.norm.cdf([-1, 1])).item()
-    cl2 = np.diff(stats.norm.cdf([-2, 2])).item()
-    q = [(1 - cl2) / 2, (1 - cl1) / 2, 0.5, (1 + cl1) / 2, (1 + cl2) / 2]
-    satt_ps_samples_quantiles[k] = np.quantile(samples, q)
-    satt_ps_samples_meanstd[k] = gvar.gvar(np.mean(samples), np.std(samples))
+if laplace:
+    rng = np.random.default_rng(202307081315)
+    satt_bcf_samples = {}
+    for _ in tqdm.tqdm(range(nsamples)):
+        satt_sample = compute_satt(fit_outcome_bcf, rng=rng, **bcf_predkw)
+        for k, v in satt_sample.items():
+            satt_bcf_samples.setdefault(k, []).append(v)
+    satt_bcf_samples_quantiles = {}
+    satt_bcf_samples_meanstd = {}
+    for k, samples in satt_bcf_samples.items():
+        cl1 = np.diff(stats.norm.cdf([-1, 1])).item()
+        cl2 = np.diff(stats.norm.cdf([-2, 2])).item()
+        q = [(1 - cl2) / 2, (1 - cl1) / 2, 0.5, (1 + cl1) / 2, (1 + cl2) / 2]
+        satt_bcf_samples_quantiles[k] = np.quantile(samples, q)
+        satt_bcf_samples_meanstd[k] = gvar.gvar(np.mean(samples), np.std(samples))
 
 # print results
 print(f'\nATE (unadjusted) = {ate_unadjusted}')
 print(f'\nSATT (no PS, MAP) =\n{pprint.pformat(satt)}')
 print(f'\nSATT (w/ PS, MAP) =\n{pprint.pformat(satt_ps)}')
-print(f'\nSATT (w/ PS, Laplace) =\n{pprint.pformat(satt_ps_samples_meanstd)}')
+print(f'\nSATT (BCF, MAP) =\n{pprint.pformat(satt_bcf)}')
+if laplace:
+    print(f'\nSATT (BCF, Laplace) =\n{pprint.pformat(satt_bcf_samples_meanstd)}')
 
 # load actual true effect
 df_results = (pl
     .read_csv(datapath / 'results' / 'ACIC_estimand_truths.csv', null_values='NA')
     .filter(pl.col('dataset.num') == dataset)
     .filter(pl.col('variable').is_not_null())
-    .with_columns(level=(pl
-        .when(pl.col('variable') == 'Yearly')
-        .then(pl.col('year'))
-        .otherwise(pl.col('level'))
-    ))
+    .with_columns(
+        level=pl
+            .when(pl.col('variable') == 'Yearly')
+            .then(pl.col('year'))
+            .otherwise(pl.col('level')),
+        SATT=pl.col('SATT') + artificial_effect_shift,
+    )
 )
 
 # collect and show truth
@@ -241,8 +267,10 @@ ax_ps.legend()
 estimates = {
     'w/o PS, MAP': satt,
     'w/ PS, MAP': satt_ps,
-    'w/ PS, Laplace': satt_ps_samples_quantiles,
+    'BCF, MAP': satt_bcf,
 }
+if laplace:
+    estimates.update({'BCF, Laplace': satt_bcf_samples_quantiles})
 artist_estimate = [None] * len(estimates)
 
 for i, (label, satt_dict) in enumerate(estimates.items()):
@@ -271,6 +299,11 @@ for i, (label, satt_dict) in enumerate(estimates.items()):
         artist_truth, = ax_satt.plot(satt_true[stratum], tick, 'kx', label='Truth')
         tick -= 1
 
+m = ate_unadjusted.mean
+s = ate_unadjusted.sdev
+artist_ate = ax_satt.axvspan(m - s, m + s, color='lightgray', label='Unadjusted')
+ax_satt.axvline(m, color='darkgray')
+
 ax_satt.set(
     xlabel='SATT',
     ylabel='Stratum',
@@ -279,7 +312,7 @@ ax_satt.set(
     title='SATT posterior (0.05, 0.16, 0.50, 0.84, 0.95 quantiles)',
 )
 ax_satt.legend(
-    handles=[artist_truth, *artist_estimate],
+    handles=[artist_truth, artist_ate, *artist_estimate],
     loc='upper right',
 )
 

@@ -281,26 +281,27 @@ class CrossKernel:
         
         transf = lambda x: x
         
-        # TODO make maxdim, loc, scale, forcekron, derivable into separate
-        # methods like batch, both for tidiness and to allow the user to
-        # ovverride if needed.
-        if maxdim is not None:
-            def transf(x):
-                nd = _array._nd(x.dtype)
-                with _patch_jax.skipifabstract():
-                    if nd > maxdim:
-                        raise ValueError(f'kernel called on type with dimensionality {nd} > maxdim={maxdim}')
-                return x
-        
         if dim is not None:
             def transf(x, transf=transf):
                 x = transf(x)
                 if x.dtype.names is None:
                     raise ValueError(f'kernel called on non-structured array but dim={dim!r}')
-                elif x.dtype.fields[dim][0].shape:
+                elif x.dtype[dim].shape:
                     return x[[dim]]
                 else:
                     return x[dim]
+        
+        # TODO make maxdim, loc, scale, forcekron, derivable into separate
+        # methods like batch, both for tidiness and to allow the user to
+        # override if needed.
+        if maxdim is not None:
+            def transf(x, transf=transf):
+                x = transf(x)
+                nd = _array._nd(x.dtype)
+                with _patch_jax.skipifabstract():
+                    if nd > maxdim:
+                        raise ValueError(f'kernel called on type with dimensionality {nd} > maxdim={maxdim}')
+                return x
         
         if loc is not None:
             with _patch_jax.skipifabstract():

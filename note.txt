@@ -5089,6 +5089,13 @@ Plan:
         I wasn't doing this, obvious mistake. My outcomes are all positive. I
         should look at the distribution of Y and decide on a transformation,
         my a priori guess is log.
+
+        => Afterward I recalled I had already looked into it and it's already
+        quite Normal. It's because the outcome is already an average. Changing
+        the scale would complicate the inference, since the target estimand is
+        for differences over the original scale.
+
+        That said, using log improves the inference.
     - specific choices for the prior distribution and hyperparameters
         Hypers of μ:
             scale: half-Cauchy with prior median = 2 std(y)
@@ -5165,11 +5172,11 @@ Plan:
         way, 2) controlling the MCMC will be nasty. For (1), it could be that
         they fix the typical size of the groupings, while BART splits only along
         a fixed order, but with uniformly random size.
- - search on google scholar if there has been new developments
+ - search on google scholar if there has been new developments (DONE)
     I only found two new articles searching "Bayesian causal forest", and one
     is not accessible. The other is Caron et al. (2022). However, that article
     just adds in the sparsity method of Linero. Nothing new then.
- - implement bcf as a new class in lsqfitgp.bayestree
+ - implement bcf as a new class in lsqfitgp.bayestree (DONE)
  - see if it does better than bart+ps on acic's dataset 0001
 
 2023-08-05
@@ -5188,3 +5195,52 @@ https://github.com/marketplace/actions/mirror-repository
 => I dropped it because it is not functional. I would like an official mirroring
 system that clearly flags the other repo as alias, to put eventually my repo
 under the repo list of an organization without relinquishing possession.
+
+2023-08-12
+==========
+
+I think I have encountered the following bug: when I pass a BufferDict through
+a jit boundary, if the BufferDict contains arrays, then the pytree def is
+compared to check for preexisting compilations, and two things happen:
+    1) The random value in the skeleton makes the comparison fail;
+    2) If the BufferDict contains arrays, they are compared directly, and the
+       comparison fails due to underfined truth value.
+Check if this actually happens, and if so fix it. (DONE)
+
+..........
+
+I finished BCF and tried it on acic2022_0001. It works much better than BART-ps.
+However, since the true effect here is close to zero, I wonder if bcf is broken
+and just shrinks the effect. To check this, I can shift the outcomes of the
+treated units by some amount and see if the result follows suit.
+
+=> I guessed right, bcf always gives effect 0, while bart-ps follows the shift.
+
+=> The mistake was simple: I switched Z twice, so I was computing the difference
+between in-sample and out-of-sample on the same units.
+
+Result: bcf gives a result quite similar to bart-ps.
+
+..........
+
+I'm still not satisfied. I don't have clever ideas to improve the model. Things
+to try:
+
+    - fit ps with a nonparametric model instead of logistic regression, I can
+      first use an R bart package and then implement my own
+
+    - fit the outcome with a linear regression y ~ (z + ps) * x, see if it's
+      indeed poorer that bart
+
+    - add a separate regression term to bcf that depends on ps only
+
+    - use DID bcf like kokandakar 2023, I have to use z=post * Z and fit
+      pretreatment outcomes too
+
+    - log transform the outcomes
+
+...........
+
+I tried to set kernelkw=dict(intercept=False). I pre-registered that nothing
+relevant would change because I'm fitting both the mean and the scale. Indeed
+the only visible effect was decreasing a bit the fitted scale.

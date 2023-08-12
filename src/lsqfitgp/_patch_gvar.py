@@ -148,26 +148,46 @@ def from_jacobian(mean, jac, indices):
         g[i] = gvar.GVar(mean[i], der, cov)
     return g.reshape(shape)
 
-def _skeleton(bd):
-    return gvar.BufferDict(
-        bd,
-        buf=numpy.broadcast_to(numpy.empty((), bd.dtype), bd.buf.shape),
-        # buf is not copied, so the memoryless broadcast is kept
-    )
+class BufferDictPyTreeDef:
 
-def bufferdict_flatten(bd):
-    return (bd.buf,), _skeleton(bd)
+    @staticmethod
+    def _skeleton(bd):
+        """ Return a memoryless BufferDict with the same layout as `bd` """
+        return gvar.BufferDict(bd, buf=numpy.empty(bd.buf.shape, []))
+        # BufferDict mirrors the data type of the _buf attribute, so we do not
+        # need to preserve it to maintain consistency. buf is not copied.
 
-def bufferdict_unflatten(skeleton, children):
-    buf, = children
-    new = _skeleton(skeleton)
-    # copy the skeleton to permit multiple unflattening
-    new._extension = {}
-    new._buf = buf
-    return new
+    def __init__(self, bd):
+        self.skeleton = self._skeleton(bd)
+        self.layout = {k: tuple(bd.slice_shape(k)) for k in bd.keys()}
+        # it is not necessary to save the data type because that's in buf
+
+    def __eq__(self, other):
+        if not isinstance(other, __class__):
+            return NotImplemented
+        return self.layout == other.layout
+
+    def __hash__(self):
+        return hash(self.layout)
+
+    def __repr__(self):
+        return repr(self.layout)
+
+    @classmethod
+    def flatten(cls, bd):
+        return (bd.buf,), cls(bd)
+
+    @classmethod
+    def unflatten(cls, self, children):
+        buf, = children
+        new = cls._skeleton(self.skeleton)
+        # copy the skeleton to permit multiple unflattening
+        new._extension = {}
+        new._buf = buf
+        return new
 
 # register BufferDict as a pytree
-tree_util.register_pytree_node(gvar.BufferDict, bufferdict_flatten, bufferdict_unflatten)
+tree_util.register_pytree_node(gvar.BufferDict, BufferDictPyTreeDef.flatten, BufferDictPyTreeDef.unflatten)
 
 # TODO the current implementation of BufferDict as pytree is not really
 # consistent with how JAX handles trees, because JAX expects to be allowed to
@@ -178,6 +198,10 @@ tree_util.register_pytree_node(gvar.BufferDict, bufferdict_flatten, bufferdict_u
 # is a subsequent flattening of the dummy, I think JAX never does this. (The
 # reason for switching to buf-as-leaf in place of dict-values-as-leaves is that
 # the latter breaks tracing.)
+#
+# Maybe since BufferDict is simple and stable, I could read its code, bypass its
+# initialization altogether and set all the internal attributes to make it a
+# proper pytree but also compatible with tracing.
 
 def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
     """

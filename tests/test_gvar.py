@@ -21,8 +21,10 @@ import numpy as np
 import gvar
 from jax import tree_util
 import jax
+from pytest import mark
 
 from lsqfitgp import _patch_gvar
+
 from . import util
 
 def check_jacobian(nprim, shape, rng, *, pnz=1):
@@ -60,6 +62,26 @@ def test_bdtree_dtype():
     y = tree_util.tree_unflatten(t, l)
     assert x.dtype == y.dtype
 
+@mark.parametrize('shape', [(), (2,)])
+def test_bdtree_compare(rng, shape):
+    x = gvar.BufferDict(a=rng.standard_normal(shape))
+    _, t1 = tree_util.tree_flatten(x)
+    _, t2 = tree_util.tree_flatten(x)
+    assert t1 == t2
+
+@mark.parametrize('shape', [(), (2,)])
+def test_double_jit(rng, shape):
+    """ Call a jitted function twice with the same BufferDict to trigger the
+    machinery that checks if a compiled version already exists """
+    x = gvar.BufferDict(a=rng.standard_normal(shape))
+    @jax.jit
+    def f(x):
+        return x
+    y1 = f(x)
+    y2 = f(x)
+    util.assert_equal_bufferdict(x, y1)
+    util.assert_equal_bufferdict(x, y2)
+
 def test_tracer():
     x = gvar.BufferDict(a=0., b=1.)
     @jax.jit
@@ -67,3 +89,4 @@ def test_tracer():
         return tree_util.tree_map(lambda x: x, x)
     y = f(x)
     assert x == y
+

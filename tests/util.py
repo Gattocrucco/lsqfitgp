@@ -223,3 +223,8 @@ def assert_close_decomps(actual, desired, *, rtol=0, atol=0):
 def assert_allclose(actual, desired, *, rtol=0, atol=0, equal_nan=False, **kw):
     """ change the default arguments of np.testing.assert_allclose """
     np.testing.assert_allclose(actual, desired, rtol=rtol, atol=atol, equal_nan=equal_nan, **kw)
+
+def assert_equal_bufferdict(x, y):
+    assert np.all(x.buf == y.buf)
+    assert list(x.keys()) == list(y.keys())
+    assert all(x.slice_shape(k) == y.slice_shape(k) for k in x.keys())

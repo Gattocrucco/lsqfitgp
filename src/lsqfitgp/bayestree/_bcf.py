@@ -20,6 +20,8 @@
 import functools
 
 import numpy
+from numpy.lib import recfunctions
+from scipy import stats
 from jax import numpy as jnp
 import jax
 import gvar
@@ -30,6 +32,11 @@ from .. import _fit
 from .. import _array
 from .. import _GP
 from .. import _fastraniter
+
+# TODO split kernelkw into control and moderate
+
+# TODO add a method or a pred option to do causal inference stuff, e.g.,
+# impute missing outcomes, or ate, att, cate, catt.
 
 class bcf:
     
@@ -204,9 +211,9 @@ class bcf:
         # indices w.r.t. splitting grid
         i_control = self._toindices(x_control, splits)
         if x_moderate is None:
-            i_moderate = self._toindices(x_moderate, splits)
-        else:
             i_moderate = None
+        else:
+            i_moderate = self._toindices(x_moderate, splits)
 
         # data-dependent prior parameters
         ymin = jnp.min(y)
@@ -340,9 +347,9 @@ class bcf:
         ip = self._include_pi
         name = '__bayestree__pihat'
         if ip == 'control' or ip == 'both':
-            x_control = recfunctions.append_fields(x_control, name, pihat)
+            x_control = recfunctions.append_fields(x_control, name, pihat, usemask=False)
         if x_moderate is not None and (ip == 'moderate' or ip == 'both'):
-            x_moderate = recfunctions.append_fields(x_moderate, name, pihat)
+            x_moderate = recfunctions.append_fields(x_moderate, name, pihat, usemask=False)
         return x_control, x_moderate
 
     def _gethp(self, hp, rng):
@@ -421,7 +428,7 @@ class bcf:
             # add propensity score to covariates
             x_control = self._to_structured(x_control)
             assert x_control.shape == z.shape
-            if test_moderate:
+            if x_moderate is not None:
                 x_moderate = self._to_structured(x_moderate)
                 assert x_moderate.shape == z.shape
             x_control, x_moderate = self._append_pihat(x_control, x_moderate, pihat)
@@ -429,7 +436,7 @@ class bcf:
             # convert covariates to indices
             i_control = self._toindices(x_control, gpfactorykw['splits'])
             assert i_control.dtype == gpfactorykw['i_control'].dtype
-            if test_moderate:
+            if x_moderate is not None:
                 i_moderate = self._toindices(x_moderate, gpfactorykw['splits'])
                 assert i_moderate.dtype == gpfactorykw['i_moderate'].dtype
             else:
@@ -619,12 +626,16 @@ class bcf:
         return _array.unstructured_to_structured(ix, names=x.dtype.names)
 
     def __repr__(self):
-        out = f"""BCF fit:
-[control model, moderate model]
+        if hasattr(self.mean, 'sdev'):
+            mean = str(self.mean)
+        else:
+            mean = f'{self.mean:.3g}'
+
+        out = f"""BCF fit: [control model, moderate model]
 alpha = {self.alpha} (0 -> intercept only, 1 -> any)
 beta = {self.beta} (0 -> any, ∞ -> no interactions)
 z0 = {self.z0} (control model applies at z = z0)
-mean = {self.mean}
+mean = {mean}
 latent sdev = {self.scale} (large -> conservative extrapolation)
 data total sdev = {self.fit.gpfactorykw['ystd']:.3g}"""
 
