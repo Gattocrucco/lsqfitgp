@@ -662,8 +662,9 @@ def _concatenate_recursive(arrays, axis, dtype, shape, casting):
     return StructuredArray._array(shape, dtype, cat)
 
 @StructuredArray._implements(recfunctions.append_fields)
-def _append_fields(base, names, data):
-    if isinstance(name, str):
+def _append_fields(base, names, data, usemask=True):
+    assert not usemask, 'masked arrays not supported, set usemask=False'
+    if isinstance(names, str):
         names = [names]
         data = [data]
     assert len(names) == len(data)

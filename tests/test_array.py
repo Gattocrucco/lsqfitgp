@@ -29,6 +29,7 @@ import polars as pl
 
 import lsqfitgp as lgp
 from lsqfitgp import _array
+
 from . import util
 
 def test_ellipsis():
@@ -93,26 +94,57 @@ def crosscheck_operation(op, *arrays, **kw):
 
         util.assert_equal(res1, res2)
 
-def test_broadcast_to(rng):
-    op = np.broadcast_to # uses __array_function__
-    dtypes = [
-        [('f0', float)],
+@pytest.fixture
+def dtypes():
+    return [
+        [('a', float)],
         'f,f',
-        'f,d,f',
         'f,O',
         'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
+        [('a', 'f,f')],
+        [('a', float, 2)],
+        [('a', float, (2, 3))],
+        [('a', 'f,f', 3)],
+        [('a', 'f,f', 3), ('b', 'f,f', 3)],
+        [('a', 'f,f', (3, 5))],
+        [('a', 'f,13f', (3, 5))],
+        [('a', [('aa', 'f,2f', 3)], 5), ('b', bool)],
+        [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
     ]
-    shapes = [
+
+@pytest.fixture
+def dtypes_s2us():
+    # structured_to_unstructured does not work on object arrays (see numpy
+    # issue #21990) and needs types that can be casted to a common type
+    return [
+        [('a', float)],
+        'f,f',
+        'S25,U10',
+        [('a', 'f,f')],
+        [('a', float, 2)],
+        [('a', float, (2, 3))],
+        [('a', 'f,f', 3)],
+        [('a', 'f,f', 3), ('b', 'f,f', 3)],
+        [('a', 'f,f', (3, 5))],
+        [('a', 'f,13f', (3, 5))],
+        [('a', [('aa', 'f,2f', 3)], 5), ('b', float)],
+        [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
+    ]
+
+@pytest.fixture
+def shapes():
+    return [
         (),
         (0,),
         (1,),
         (1, 0),
         (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
+        (7,),
+        (7, 11),
     ]
+
+def test_broadcast_to(dtypes, shapes, rng):
+    op = np.broadcast_to # uses __array_function__
     transfs = [
         lambda s: s,
         lambda s: (1,) + s,
@@ -125,26 +157,8 @@ def test_broadcast_to(rng):
         array = random_array(shape, dtype, rng)
         crosscheck_operation(op, array, shape=transf(shape))
 
-def test_broadcast_arrays(rng):
+def test_broadcast_arrays(dtypes, shapes, rng):
     op = np.broadcast_arrays # uses __array_function__
-    dtypes = [
-        [('f0', float)],
-        'f,f',
-        'f,d,f',
-        'f,O',
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
-    ]
     transfs = [
         lambda s: s,
         lambda s: (1,) + s,
@@ -158,27 +172,9 @@ def test_broadcast_arrays(rng):
         array2 = random_array(transf(shape), dtype, rng)
         crosscheck_operation(op, array1, array2)
 
-def test_broadcast(rng):
+def test_broadcast(dtypes, shapes, rng):
     def op(array1, array2):
         return lgp.broadcast(array1, array2).shape
-    dtypes = [
-        [('f0', float)],
-        'f,f',
-        'f,d,f',
-        'f,O',
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
-    ]
     transfs = [
         lambda s: s,
         lambda s: (1,) + s,
@@ -192,53 +188,17 @@ def test_broadcast(rng):
         array2 = random_array(transf(shape), dtype, rng)
         crosscheck_operation(op, array1, array2)
 
-def test_asarray(rng):
+def test_asarray(dtypes, shapes, rng):
     def op(array):
         return lgp.asarray(array)
-    dtypes = [
-        [('f0', float)],
-        'f,f',
-        'f,d,f',
-        'f,O',
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
-    ]
     for dtype, shape in itertools.product(dtypes, shapes):
         array = random_array(shape, dtype, rng)
         crosscheck_operation(op, array)
 
-def test_multiindex(rng):
+def test_multiindex(dtypes, shapes, rng):
     def op(a):
         names = list(a.dtype.names)
         return a[names], a[names[:2]], a[names[-2:]], a[names[:1]]
-    dtypes = [
-        [('f0', float)],
-        'f,f',
-        'f,d,f',
-        'f,O',
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
-    ]
     for dtype, shape in itertools.product(dtypes, shapes):
         array = random_array(shape, dtype, rng)
         crosscheck_operation(op, array)
@@ -249,7 +209,7 @@ def array_meta_hash(a):
     type_hash = len(d) + d.itemsize + sum(d[i].num for i in range(len(d))) + d.num
     return shape_hash + type_hash
 
-def test_setfield(rng):
+def test_setfield(dtypes, shapes, rng):
     def op(a):
         name = a.dtype.names[0]
         a0 = a[name]
@@ -260,47 +220,11 @@ def test_setfield(rng):
         else:
             a[name] = val
         return a
-    dtypes = [
-        [('f0', float)],
-        'f,f',
-        'f,d,f',
-        'f,O',
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
-    ]
     for dtype, shape in itertools.product(dtypes, shapes):
         array = random_array(shape, dtype, rng)
         crosscheck_operation(op, array)
 
-def test_tree(rng):
-    dtypes = [
-        [('f0', float)],
-        'f,f',
-        'f,d,f',
-        'f,O',
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
-    ]
+def test_tree(dtypes, shapes, rng):
     for dtype, shape in itertools.product(dtypes, shapes):
         array1 = random_array(shape, dtype, rng)
         array = lgp.StructuredArray(array1)
@@ -309,25 +233,7 @@ def test_tree(rng):
         array2 = np.asarray(array)
         util.assert_equal(array1, array2)
 
-def test_tree_reshaped(rng):
-    dtypes = [
-        [('f0', float)],
-        'f,5f',
-        'f,d,f',
-        'f,O',
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
-    ]
+def test_tree_reshaped(dtypes, shapes, rng):
     for dtype, shape in itertools.product(dtypes, shapes):
         
         basearray = random_array(shape, dtype, rng)
@@ -366,29 +272,11 @@ def test_tree_reshaped(rng):
             
             util.assert_equal(array1, array2)
 
-def test_reshape(rng):
+def test_reshape(dtypes, shapes, rng):
     def op1(array, shape):
         return array.reshape(shape)
     def op2(array, shape):
         return array.reshape(*shape) if shape else array.reshape(shape)
-    dtypes = [
-        [('f0', float)],
-        'f,f',
-        'f,d,f',
-        'f,O',
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (10,),
-        (1, 2, 3),
-        (2, 3, 4),
-    ]
     transfs = [
         lambda s: s,
         lambda s: (1,) + s,
@@ -488,18 +376,7 @@ def test_set_subfield(rng):
     x2 = x.at['a']['b'].set(newb)
     util.assert_equal(np.array(x1), np.array(x2))
 
-def test_squeeze(rng):
-    dtypes = [
-        [('f0', float)],
-        'f,f',
-        'f,d,f',
-        # 'f,O',
-        # structured_to_unstructured does not work on object arrays, see
-        # numpy issue #21990
-        'S25,U10,?',
-        [('a', 'f,f', (3, 1)), ('b', [('c', 'd,d'), ('e', '?', 15)])],
-        [('a', [('aa', 'f,f', 2), ('ab', float)], 3)],
-    ]
+def test_squeeze(dtypes, rng):
     shapes = [
         (),
         (0,),
@@ -629,70 +506,20 @@ def test_ix(rng):
     util.assert_equal(z1.squeeze(), z)
     util.assert_equal(x1.squeeze(), x)
 
-def test_structured_to_unstructured(rng):
-    dtypes = [
-        [('a', float)],
-        'f,f',
-        'S25,U10,?',
-        [('a', 'f,f')],
-        [('a', float, 2)],
-        [('a', float, (2, 3))],
-        [('a', 'f,f', 3)],
-        [('a', 'f,f', 3), ('b', 'f,f', 3)],
-        [('a', 'f,f', (3, 5))],
-        [('a', 'f,13f', (3, 5))],
-        [('a', [('aa', 'f,2f', 3)], 5), ('b', float)],
-        [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
-        # structured_to_unstructured does not work on object arrays, see
-        # numpy issue #21990
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (7,),
-        (7, 11),
-    ]
-    for dtype, shape in itertools.product(dtypes, shapes):
+def test_structured_to_unstructured(dtypes_s2us, shapes, rng):
+    for dtype, shape in itertools.product(dtypes_s2us, shapes):
         array = random_array(shape, dtype, rng)
         crosscheck_operation(recfunctions.structured_to_unstructured, array)
 
-def test_unstructured_to_structured(rng):
-    dtypes = [
-        [('a', float)],
-        'f,f',
-        'S25,U10',
-        [('a', 'f,f')],
-        [('a', float, 2)],
-        [('a', float, (2, 3))],
-        [('a', 'f,f', 3)],
-        [('a', 'f,f', 3), ('b', 'f,f', 3)],
-        [('a', 'f,f', (3, 5))],
-        [('a', 'f,13f', (3, 5))],
-        [('a', [('aa', 'f,2f', 3)], 5), ('b', float)],
-        [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
-        # structured_to_unstructured does not work on object arrays, see
-        # numpy issue #21990
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (7,),
-        (7, 11),
-    ]
-    for dtype, shape in itertools.product(dtypes, shapes):
+def test_unstructured_to_structured(dtypes_s2us, shapes, rng):
+    for dtype, shape in itertools.product(dtypes_s2us, shapes):
         x = random_array(shape, dtype, rng)
         y = recfunctions.structured_to_unstructured(x)
         z = lgp.unstructured_to_structured(y, x.dtype)
         assert isinstance(z, lgp.StructuredArray)
         util.assert_equal(x, z)
 
-def test_unstructured_to_structured_2(rng):
+def test_unstructured_to_structured_nocopy(rng):
     x = random_array((8, 9), float, rng)
     y = lgp.unstructured_to_structured(x)
     assert isinstance(y, lgp.StructuredArray)
@@ -703,6 +530,7 @@ def test_unstructured_to_structured_2(rng):
     x[0, 0] = 100000
     assert y['f0'][0] == 100000
 
+def test_unstructured_to_structured_error0d(rng):
     x = random_array((), float, rng)
     with pytest.raises(ValueError):
         y = lgp.unstructured_to_structured(x)
@@ -750,30 +578,7 @@ def test_nd():
         ('a', 'f,2f', (3, 4)),
     ]) == (1 + 2) * 3 * 4
 
-def test_concatenate(rng):
-    dtypes = [
-        [('a', float)],
-        'f,f',
-        'S25,U10,?',
-        [('a', 'f,f')],
-        [('a', float, 2)],
-        [('a', float, (2, 3))],
-        [('a', 'f,f', 3)],
-        [('a', 'f,f', 3), ('b', 'f,f', 3)],
-        [('a', 'f,f', (3, 5))],
-        [('a', 'f,13f', (3, 5))],
-        [('a', [('aa', 'f,2f', 3)], 5), ('b', object)],
-        [('b', float), ('a', [('aa', [('aaa', 'f,2f', 3)], 5)], 7)],
-    ]
-    shapes = [
-        (),
-        (0,),
-        (1,),
-        (1, 0),
-        (0, 1),
-        (7,),
-        (7, 11),
-    ]
+def test_concatenate(dtypes, shapes, rng):
     for dtype, shape in itertools.product(dtypes, shapes):
         axis = rng.integers(0, len(shape) + 1)
         narrays = rng.integers(1, 5)
@@ -786,5 +591,57 @@ def test_concatenate(rng):
             return np.concatenate(args, axis=axis, **kw)
         crosscheck_operation(func, *arrays)
 
-# TODO test from_dict
-# TODO test append_fields
+def patched_append_fields(base, names, data, **kw):
+    """
+    Patched version of `numpy.lib.recfunctions.append_fields` that handles
+    zero-sized arrays and non-1D arrays correctly.
+    """
+
+    # TODO open a numpy issue about this
+
+    empty = base.size == 0
+    non1d = base.ndim != 1
+    oldshape = base.shape
+    
+    if empty:
+        shape = (1,) * base.ndim
+        base = np.zeros(shape, base.dtype)
+        if isinstance(names, str):
+            data = np.zeros(shape, data.dtype)
+        else:
+            data = [np.zeros(shape, array.dtype) for array in data]
+    elif non1d:
+        base = base.reshape(-1)
+        if isinstance(names, str):
+            data = data.reshape(-1)
+        else:
+            data = [array.reshape(-1) for array in data]
+    
+    out = recfunctions.append_fields(base, names, data, **kw)
+    
+    if empty:
+        out = out[:0].reshape(oldshape)
+    elif non1d:
+        out = out.reshape(oldshape)
+    
+    return out
+
+def test_append_fields(dtypes, shapes, rng):
+    for dtype, shape in itertools.product(dtypes, shapes):
+        array = random_array(shape, dtype, rng)
+        names = ['u', 'v']
+        data = [random_array(shape, 'f', rng) for _ in names]
+        def append1(array):
+            return patched_append_fields(array, names[0], data[0], usemask=False)
+        def append2(array):
+            return patched_append_fields(array, names, data, usemask=False)
+        crosscheck_operation(append1, array)
+        crosscheck_operation(append2, array)
+
+def test_from_dict(dtypes, shapes, rng):
+    dtype = np.dtype([(f'f{i}', dtype) for i, dtype in enumerate(dtypes)])
+    for shape in shapes:
+        array = random_array(shape, dtype, rng)
+        d = dict((name, array[name]) for name in array.dtype.names)
+        x = lgp.StructuredArray.from_dict(d)
+        util.assert_equal(array, x)
