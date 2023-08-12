@@ -26,14 +26,16 @@ import numpy as np
 import gvar
 import jax
 import pytest
+from scipy import stats
+
 import lsqfitgp as lgp
 
 @contextlib.contextmanager
 def jaxconfig(**opts):
     prev = {k: jax.config.read(k) for k in opts}
-    for k, v in opts.items():
-        jax.config.update(k, v)
     try:
+        for k, v in opts.items():
+            jax.config.update(k, v)
         yield
     finally:
         for k, v in prev.items():
@@ -48,12 +50,18 @@ class CopulaBaseTest:
     def name(self, request):
         return request.node.nodeid
     
-    def __init_subclass__(cls, params):
+    def __init_subclass__(cls, *, params, scipy_params=None):
         assert cls.__name__.startswith('Test')
         cls.copcls = getattr(lgp.copula, cls.__name__[4:].lower())
         cls.params = params
+        cls.scipy_params = params if scipy_params is None else scipy_params
+
+    def cdf(self):
+        distrname = self.copcls.__name__
+        distr = getattr(stats, distrname)
+        return distr(*self.scipy_params).cdf
         
-    def test_invfcn(self, name):
+    def test_invfcn_errorprop(self, name):
         self.copcls(name, *self.params)
         invfcn = gvar.BufferDict.invfcn[name]
         x = gvar.gvar(0.1, 1.2)
@@ -97,18 +105,25 @@ class CopulaBaseTest:
         x2 = self.copcls.invfcn(b[key], *self.params)
         np.testing.assert_allclose(x, x2, rtol=1e-6)
 
-    # TODO a test for the correctness of the distribution: sample from the
-    # standard normal, transform with invfcn, check with the kolmogorov-smirnov
-    # test using the cdf from scipy; overwrite the cdf with an optional method
+    def test_continuity_zero(self, name):
+        """ check that invfcn is continuous in zero, since it is a common
+        cutpoint to switch from ppf(cdf(·)) to isf(sf(·)) """
+        eps = np.finfo(float).eps
+        x1 = self.copcls.invfcn(-eps, *self.params)
+        x2 = self.copcls.invfcn(eps, *self.params)
+        np.testing.assert_allclose(x1, x2, atol=3 * eps, rtol=3 * eps)
 
-    # TODO check continuity in zero, since it is a common cutpoint to switch
-    # from Normal cdf to sf
+    def test_correct_distribution(self, rng):
+        samples = rng.standard_normal(10000)
+        samples = self.copcls.invfcn(samples, *self.params)
+        test = stats.ks_1samp(samples, self.cdf())
+        assert test.pvalue >= 0.001
 
-class TestInvGamma(CopulaBaseTest, params=(1.2, 2.3)): pass
+class TestInvGamma(CopulaBaseTest, params=(1.2, 2.3), scipy_params=(1.2, 0, 2.3)): pass
 class TestBeta(CopulaBaseTest, params=(1.2, 2.3)): pass
-class TestUniform(CopulaBaseTest, params=(-0.5, 2)): pass
-class TestHalfCauchy(CopulaBaseTest, params=(0.7,)): pass
-class TestHalfNorm(CopulaBaseTest, params=(1.3,)): pass
+class TestUniform(CopulaBaseTest, params=(-0.5, 2), scipy_params=(-0.5, 2 + 0.5)): pass
+class TestHalfCauchy(CopulaBaseTest, params=(0.7,), scipy_params=(0, 0.7)): pass
+class TestHalfNorm(CopulaBaseTest, params=(1.3,), scipy_params=(0, 1.3)): pass
 
 def test_invgamma_divergence():
     y = lgp.copula.invgamma.invfcn(10., 1, 1)
