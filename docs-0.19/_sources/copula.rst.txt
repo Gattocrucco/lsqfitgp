@@ -25,4 +25,7 @@ Copula factories
 .. autoclass:: CopulaFactory
     :members:
 .. autoclass:: beta
+.. autoclass:: halfcauchy
+.. autoclass:: halfnorm
 .. autoclass:: invgamma
+.. autoclass:: uniform

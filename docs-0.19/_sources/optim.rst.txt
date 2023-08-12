@@ -164,15 +164,12 @@ object and does some computations to check how a "good fit" it is for the given
 data.
 
 From the point of view of computational efficiency this means that, apart from
-taking posterior samples, the other techniques explained in the previous
-sections also apply here. In particular, when the number of datapoints `n`
-starts to be in the hundreds, to speed up the fit do::
+taking posterior samples, the techniques explained in the previous sections also
+apply here. However, :class:`empbayes_fit` applies the jit for you by default,
+so you don't have to deal with this yourself. If you disable the jit for some
+reason, use the options::
 
    GP(..., checksym=False, checkpos=False)
-
-when you create the :class:`GP` object in the factory function.
-:class:`empbayes_fit` applies the jit for you by default, so you don't have to
-deal with it yourself.
 
 Another way to improve the performance is by tweaking the minimization method.
 The main setting is the ``method`` argument, which picks a sensible preset for
@@ -180,3 +177,18 @@ the underlying routine `scipy.optimize.minimize`. Then, additional
 configurations can be specified through the ``minkw`` argument; to use it, it
 may be useful to look at the full argument list passed to `minimize`, which is
 provided after the fit in the attribute ``minargs``.
+
+Floating point 32 vs. 64 bit
+----------------------------
+
+`jax` by default uses the `float32` data type for all floating point arrays and
+calculations. Upon initialization, `lsqfitgp` configures `jax` to use `float64`
+instead, like `numpy`. Although operations with 32 bit floats are about twice as
+fast, Gaussian process regression is particularly sensitive to numerical
+accuracy. You can reset `jax`'s default with::
+
+   jax.config.update('jax_enable_x64', True)
+
+to get a speedup, but this will likely give problems when the number of
+datapoints is over 1000, and will break `empbayes_fit` unless you make an effort
+to tune the minimizer parameters to make it work at `float32` precision.
