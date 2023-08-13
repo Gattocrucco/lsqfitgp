@@ -148,7 +148,8 @@ class StructuredArray:
     @classmethod
     def from_dataframe(cls, df):
         """
-        Make a StructuredArray from a DataFrame. Data is not copied.
+        Make a StructuredArray from a DataFrame. Data is not copied if not
+        necessary.
         """
         d = {
             col: cls._readonlyview_wrapifstructured(df[col].to_numpy())
@@ -156,6 +157,8 @@ class StructuredArray:
         }
         return cls._array(None, None, d)
         # TODO support polars structured dtypes
+        # TODO polars has a parameter Series.to_numpy(zero_copy_only: bool),
+        # default False. Maybe make it accessible through kw or options.
 
     @classmethod
     def from_dict(cls, mapping):

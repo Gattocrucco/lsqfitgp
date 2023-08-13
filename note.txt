@@ -5227,7 +5227,7 @@ I'm still not satisfied. I don't have clever ideas to improve the model. Things
 to try:
 
     - fit ps with a nonparametric model instead of logistic regression, I can
-      first use an R bart package and then implement my own
+      first use an R bart package (DONE) and then implement my own
 
     - fit the outcome with a linear regression y ~ (z + ps) * x, see if it's
       indeed poorer that bart
@@ -5239,8 +5239,102 @@ to try:
 
     - log transform the outcomes
 
+    - compute summaries other than the mean of the per-patient covariates
+
+    - use differences in outcomes instead of the outcomes themselves
+
 ...........
 
 I tried to set kernelkw=dict(intercept=False). I pre-registered that nothing
 relevant would change because I'm fitting both the mean and the scale. Indeed
 the only visible effect was decreasing a bit the fitted scale.
+
+2023-08-13
+==========
+
+I noticed mistakes with the covariates.
+
+    1) I am using post-treatment n.patients instead of pre-treatment per year 
+       (FIXED)
+
+    2) And V*_avg post-treatment in addition to pre-treatment per year (FIXED)
+
+...........
+
+I tried running with the full dataset. All methods are too overconfident.
+
+Since the estimates are midway between truth and unadjusted ATE, I guess the
+problem is not adjusting enough for confounding.
+
+The fit with all data has low beta: 0.5 bart, [1.1, 0.3] bcf.
+
+Using Z as ps gives very large uncertainties, but does not move the estimate.
+
+...........
+
+Tentative detailed plan:
+
+   - copy acic.py to playground (DONE)
+   - continue coding alternatives by defining config flags (DONE)
+   - make a new script to study the propensity score (DONE)
+   - test out of sample ps with the same plot I'm using now, but done with the
+     estimated out-of-sample ps, or something similar (DONE)
+        It seems decent with the linear logistic regression. => Mistake: I was
+        duplicating all rows, so the fit was very good due to train-test
+        overlap. Now the test set is worse although still ok.
+   - copy bart wrappers from md2sl's code (DONE)
+   - fit ps with dbarts, see what changes (DONE)
+        Train more separated, test less. Decent. Although on first look this is
+        better for the logistic regression, I expect this not to be overfit
+        because the model is nonparametric, so the uncertainty over the test set
+        is larger. The marginal probability is shrunk towards the mean.
+   - move new ps to main script with flag (DONE)
+        As expected, the nonparametric ps is more extreme, and so increases a
+        a bit the uncertainty, but the SATT with all datapoints is still at 3
+        sigma.
+
+...........
+
+I've noticed that, as I run acic.py again and again, the memory usage increases
+without limit. Something is keeping large arrays around even as old objects
+disappear from the global namespace. Maybe it's jax stuff? Is there a way to
+inspect the memory usage of Python and trace it to live objects?
+
+gc.collect() did not change the memory footprint. I expected as much, but I
+tried to be sure.
+
+...........
+
+My explorations on ps gained me fixing one bug and a slight improvement.
+However, the substantial problem remains. Before trying the options I listed
+above, I want to try to understand from first principles what is the right thing
+to do.
+
+The BCF model is
+    
+    mu(x, π) + z tau(x)
+
+BART gives higher weight a priori to non-interacting terms, so I approximate
+this with
+
+    mu_x(x) + mu_π(π) + z tau(x)
+
+Lack of overlap means that I observe low π together with z = 0, high π together
+with z = 1, but rarely the cross combinations. Arguendo, x is complex enough
+that there's overlap even though π is well spread.
+
+When I impute a missing outcome, i.e., I flip z, I'm moving to a region I don't
+know well due to the π-z mismatch. However, to learn the above model with high
+confidence, I don't need such regions: mu_π and mu_x can be learned at z=0, tau
+at z=1 then.
+
+This does not square with the fact that, if I feed π=z, then the uncertainties
+do increase sizeably.
+
+Caught the error: mu_π can't be learned at z=0.
+
+At z=0, I observe mu_x + mu_π(0).
+
+At z=1, I observe mu_x + mu_π(1) + tau.
+
+(To be continued)

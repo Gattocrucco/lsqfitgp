@@ -49,12 +49,12 @@ df = df.with_columns(
 )
 
 # drop data to keep the script fast
-df = (df
-    .filter((pl
-        .col('id.practice')
-        .is_in(pl.col('id.practice').unique().sample(250, seed=20230623))
-    ))
-)
+# df = (df
+#     .filter((pl
+#         .col('id.practice')
+#         .is_in(pl.col('id.practice').unique().sample(250, seed=20230623))
+#     ))
+# )
 
 # compute effect as if Z was randomized, i.e., without adjustment
 print('least squares fit...')
@@ -70,20 +70,21 @@ ate_unadjusted = gvar.gvar(result.params['Z'], result.bse['Z'])
 # move pretreatment outcomes and per-year covariates to new columns: we are
 # going to use standard unconfoundedness given pretreatment outcomes instead
 # of the DID-like assumption given by the competition rules
-posttreatment = df.filter(pl.col('post') == 1)
-for year in [1, 2]:
+V_columns = [c for c in df.columns if c.startswith('V')]
+posttreatment = df.filter(pl.col('post') == 1).drop(V_columns, 'post')
+for year, stratum in df.filter(pl.col('post') == 0).groupby('year'):
     posttreatment = posttreatment.join(
-        df.filter(pl.col('year') == year).select([
-            c for c in df.columns
-            if c.startswith('V') or c in ['Y', 'id.practice']
-        ]), on='id.practice', suffix=f'_year{year}',
+        stratum.select(
+            'id.practice',
+            pl.col(['Y', 'n.patients'] + V_columns).suffix(f'_year{year}')
+        ), on='id.practice'
     )
 
 # extract outcome, weights and covariates
 y = posttreatment['Y'].to_numpy()
 npatients_obs = posttreatment['n.patients'].to_numpy() # to scale error variance
 Xobs = (posttreatment
-    .drop(['Y', 'id.practice', 'post'])
+    .drop(['Y', 'id.practice', 'n.patients'])
     .to_dummies(columns=['X2', 'X4'])
 )
 Xmis = (Xobs
@@ -99,7 +100,7 @@ print(fit_outcome)
 
 # fit treatment with a GLM
 print('\nfit treatment...')
-X = Xobs.drop('Z').select(pl.lit(1).alias('Intercept'), pl.col('*'))
+X = Xobs.drop('Z').select(pl.lit(1).alias('Intercept'), pl.all())
 z = Xobs['Z'].cast(pl.Boolean).to_numpy()
 model = sm.GLM(z, X.to_pandas(), family=sm.families.Binomial())
 result = model.fit()
@@ -301,6 +302,7 @@ for i, (label, satt_dict) in enumerate(estimates.items()):
 
 m = ate_unadjusted.mean
 s = ate_unadjusted.sdev
+artist_ate = ax_satt.axvspan(m - 2 * s, m + 2 * s, color='#eee', label='Unadjusted')
 artist_ate = ax_satt.axvspan(m - s, m + s, color='lightgray', label='Unadjusted')
 ax_satt.axvline(m, color='darkgray')
 

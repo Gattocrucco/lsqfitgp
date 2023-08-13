@@ -62,6 +62,24 @@ __all__ = [
 # Do not use DefaultProcess implicitly, document it as GP.DefaultProcess that
 # is used as default by instatiation methods
 
+# TODO split this files into various files with partial classes:
+# _GPProcesses for stuff dealing with processes and kernels
+# _GPElements for stuff dealing with evaluated processes
+# _GPCompute for prior, pred, solver, likelihood
+# _GPBase with the rest
+# GP inherits all with multiple inheritance. This should also fix
+# isinstance(..., GP) breaking under autoreload.
+
+# TODO methods to implement linear models. The elegant way to do this is with
+# kernels taking a formula, but that would not take advantage of the fact that
+# the kernel is low-rank if I re-implement Woodbury. I need to define an element
+# for the coefficients, and then the process works by definining finite
+# transformations of this element instead of going through the usual kernel
+# route.
+#
+# A more general route would be `features` mechanism for kernels: a kernel can
+# provide itself a way to evaluate a covariance matrix as a low-rank product.
+
 class GP:
     """
     
@@ -332,6 +350,7 @@ class GP:
         self._elements = dict() # key -> _Element
         self._covblocks = dict() # (key, key) -> matrix
         self._priordict = gvar.BufferDict({}, dtype=object) # key -> gvar array (shaped)
+            # TODO consider making _priordict an ordinary dict
         self._decompcache = dict() # tuple of keys -> Decomposition
         self._procs = dict() # proc key -> _Proc
         self._kernels = dict() # (proc key, proc key) -> _KernelBase

@@ -39,3 +39,5 @@ from ._zeta import *
 
 # TODO add explicit exponent parameter to infinitely divisible kernels, and
 # check the exponent is an int in __pow__.
+
+# TODO new kernels LM(formula) and LMER(formula).

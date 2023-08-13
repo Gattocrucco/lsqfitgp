@@ -37,6 +37,11 @@ def normcdf(x):
     x = x.astype(_patch_jax.float_type(x))
     return jspecial.ndtr(x)
 
+# BufferDict's function mechanism works with functions which modify an array at
+# once, possibly changing the shape. I can use that to implement nontrivial
+# multivariate distributions. Maybe I should ask Lepage to state this behavior
+# in the documentation.
+
 class CopulaFactory(metaclass=abc.ABCMeta):
     """
     Abstract base class for copula factories.
