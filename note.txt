@@ -5232,7 +5232,7 @@ to try:
     - fit the outcome with a linear regression y ~ (z + ps) * x, see if it's
       indeed poorer that bart
 
-    - add a separate regression term to bcf that depends on ps only
+    - add a separate regression term to bcf that depends on ps only (DONE)
 
     - use DID bcf like kokandakar 2023, I have to use z=post * Z and fit
       pretreatment outcomes too
@@ -5242,6 +5242,10 @@ to try:
     - compute summaries other than the mean of the per-patient covariates
 
     - use differences in outcomes instead of the outcomes themselves
+
+    - use actual bcf (DONE)
+
+    - use bartCause (DONE)
 
 ...........
 
@@ -5337,4 +5341,48 @@ At z=0, I observe mu_x + mu_π(0).
 
 At z=1, I observe mu_x + mu_π(1) + tau.
 
-(To be continued)
+So I can identify tau + mu_π(1) - mu_π(0). This gives large uncertainty about
+tau, because mu_π(0) is a priori independent of mu_π(1).
+
+What happens when there's some overlap? I observe some amount of mu_π(1) at z=0
+and vice versa.
+
+A = mu_x(x) + mu_π(π)
+B = mu_x(x') + mu_π(π) + tau(x')
+
+B - A = tau(x') + (mu_x(x') - mu_x(x))
+
+So with overlap, most of the uncertainty is due to mu_x. What if tau depended on
+π?
+
+B - A = tau_x(x') + tau_π(π) + (mu_x(x') - mu_x(x))
+
+Since I care about tau_x(x') + tau_π(π), this should not change identification
+of the total effect so much. With the real thing the uncertainty increases a bit
+because tau_π is well separated between groups. => behaves as predicted.
+
+2023-08-14
+==========
+
+I want the fit to try hard to explain all the difference with π. Maybe I should
+add a π-only component to the bcf model.
+
+=> Result: I added an Expon(π) GP. If I use as scale the same scale of mu, I get
+increased errors and reduced estimate as desired; if I use a different scale
+parameter, it's set to about 1/5 of the mu scale, and there's no visible
+improvement.
+
+I interpret this as the fact that, if I actually believe the possibility of
+strong confounding, I should put my finger on it in the prior.
+
+Using the linear regression ps makes the fit go back to the previous behavior.
+
+..............
+
+bartCause gives 2x larger confidence intervals, and the center is closer to the
+truth. Rerunning, the center moves farther from the truth; it's random
+variability of the MCMC. Without effect shift: stable. The gist is the very
+large interval.
+
+bcf (the R package) gives a result similar to my BCF but a bit farther from the
+truth. Rerun/shift: stable.

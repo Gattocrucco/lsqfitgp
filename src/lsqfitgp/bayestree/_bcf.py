@@ -20,7 +20,6 @@
 import functools
 
 import numpy
-from numpy.lib import recfunctions
 from scipy import stats
 from jax import numpy as jnp
 import jax
@@ -36,7 +35,29 @@ from .. import _fastraniter
 # TODO split kernelkw into control and moderate
 
 # TODO add a method or a pred option to do causal inference stuff, e.g.,
-# impute missing outcomes, or ate, att, cate, catt.
+# impute missing outcomes, or ate, att, cate, catt. Remember that the effect
+# may also depend on aux.
+
+def _recursive_cast(dtype, default, mapping):
+    if dtype in mapping:
+        return mapping[dtype]
+    elif dtype.names is not None:
+        return numpy.dtype([
+            (name, _recursive_cast(dtype[name], default, mapping))
+            for name in dtype.names
+        ])
+    elif dtype.subdtype is not None:
+        # note: has names => does not have subdtype
+        return numpy.dtype((_recursive_cast(dtype.base, default, mapping), dtype.shape))
+    elif default is None:
+        return dtype
+    else:
+        return default
+
+def cast(dtype, default, mapping={}):
+    mapping = {numpy.dtype(k): numpy.dtype(v) for k, v in mapping.items()}
+    default = None if default is None else numpy.dtype(default)
+    return _recursive_cast(numpy.dtype(dtype), default, mapping)
 
 class bcf:
     
@@ -51,6 +72,8 @@ class bcf:
         fitkw={},
         kernelkw={},
         marginalize_mean=True,
+        gpaux=None,
+        otherhp={},
     ):
         r"""
         Nonparametric Bayesian regression with a GP version of BCF.
@@ -88,15 +111,37 @@ class bcf:
             defaults.
         marginalize_mean : bool
             If True (default), marginalize the intercept of the model.
+        gpaux : callable, optional
+            If specified, this function is called with a pair ``(hp, gp)``,
+            where ``hp`` is a dictionary of hyperparameters, and ``gp`` is a
+            `~lsqfitgp.GP` object under construction, and is expected to define
+            a new process named ``'aux'`` with `~lsqfitgp.GP.addproc` or
+            similar. The process is added to the regression model. The input to
+            the process is a structured array with fields ``'z', 'control',
+            'moderate', 'pihat'``. The contents of ``'control'`` and
+            ``'moderate'`` have been modified to use the BART grid indices and
+            include ``pihat``.
+        otherhp : dictionary of gvar
+            A dictionary with the prior of additional hyperpameters, intended to
+            be used by ``gpaux``.
         
         Notes
         -----
         The regression model is:
 
         .. math::
-            y_i &= m + \lambda_\mu \mu(\mathbf x^\mu_i)
-                     + \lambda_\tau \tau(\mathbf x^\tau_i) (z_i - z_0)
-                     + \varepsilon_i, \\
+            y_i &= m + {} \\
+                &\phantom{{}={}} +
+                    \lambda_\mu\,\mathrm{std}(\mathbf y)
+                    \mu(\mathbf x^\mu_i, \hat\pi_i?) + {} \\
+                &\phantom{{}={}} +
+                    \lambda_\tau\,\mathrm{std}(\mathbf y)
+                    \tau(\mathbf x^\tau_i, \hat\pi_i?) (z_i - z_0) + {} \\
+                &\phantom{{}={}} +
+                    \mathrm{aux}
+                    (z, \mathbf x^\mu_i, \mathbf x^\tau_i, \hat\pi_i) + {} \\
+                &\phantom{{}={}} +
+                    \varepsilon_i, \\
             \varepsilon_i &\sim
                 N(0, \sigma^2 / w_i), \\
             m &\sim N(
@@ -107,16 +152,15 @@ class bcf:
                 \log(\overline{w(y - \bar y)^2}),
                 4
             ), \\
-            \lambda_\mu &\sim \mathrm{HalfCauchy}(2\,\mathrm{std}(\mathbf y)), \\
-            \lambda_\tau &\sim \mathrm{HalfNormal}(1.48\,\mathrm{std}(\mathbf y)), \\
-            \mu &\sim \mathrm{GP}(
-                0,
-                \mathrm{BART}(\alpha_\mu,\beta_\mu)
-            ), \\
-            \tau &\sim \mathrm{GP}(
-                0,
-                \mathrm{BART}(\alpha_\tau,\beta_\tau)
-            ), \\
+            \lambda_\mu
+                &\sim \mathrm{HalfCauchy}(2), \\
+            \lambda_\tau
+                &\sim \mathrm{HalfNormal}(1.48), \\
+            \mu &\sim \mathrm{GP}(0,
+                \mathrm{BART}(\alpha_\mu, \beta_\mu) ), \\
+            \tau &\sim \mathrm{GP}(0,
+                \mathrm{BART}(\alpha_\tau, \beta_\tau) ), \\
+            \mathrm{aux} & \sim \mathrm{GP}(0, \text{<user defined>}), \\
             \alpha_\mu, \alpha_\tau &\sim \mathrm{B}(2, 1), \\
             \beta_\mu, \beta_\tau &\sim \mathrm{IG}(1, 1), \\
             z_0 &\sim U(0, 1),
@@ -124,8 +168,9 @@ class bcf:
         where :math:`\mu` and :math:`\tau` are, respectively, the "control"
         and "moderate" models.
 
-        To make the inference, :math:`(\mu, \tau, \boldsymbol\varepsilon, m)`
-        are marginalized analytically, and the marginal posterior mode of
+        To make the inference, :math:`(\mu, \tau, \boldsymbol\varepsilon, m,
+        \mathrm{aux})` are marginalized analytically, and the marginal posterior
+        mode of
         :math:`(\sigma, \lambda_*, \alpha_*, \beta_*, z_0)` is found by
         numerical minimization, after transforming them to express their prior
         as a Gaussian copula. Their marginal posterior covariance matrix is
@@ -135,8 +180,7 @@ class bcf:
 
         The tree splitting grid of the BART kernel is set using quantiles of the
         observed covariates. This corresponds to settings ``usequants=True``,
-        ``numcut=inf`` in the R packages BayesTree and BART. Use the
-        ``kernelkw`` parameter to customize the grid.
+        ``numcut=inf`` in the R packages BayesTree and BART.
 
         Attributes
         ----------
@@ -197,23 +241,23 @@ class bcf:
             weights = self._to_vector(weights)
             assert weights.shape == x_control.shape
 
-        # add propensity score to covariates
-        self._set_include_pi(include_pi)
+        # check include_pi
+        if include_pi not in ('control', 'moderate', 'both'):
+            raise KeyError(f'invalid value include_pi={include_pi!r}')
+        self._include_pi = include_pi
+
+        # add pihat to covariates
         x_control, x_moderate = self._append_pihat(x_control, x_moderate, pihat)
     
-        # splitting points
+        # grid and indices
+        splits_control = _kernels.BART.splits_from_coord(x_control)
+        i_control = self._toindices(x_control, splits_control)
         if x_moderate is None:
-            x_all = x_control
-        else:
-            x_all = numpy.concatenate([x_control, x_moderate])
-        splits = _kernels.BART.splits_from_coord(x_all)
-
-        # indices w.r.t. splitting grid
-        i_control = self._toindices(x_control, splits)
-        if x_moderate is None:
+            splits_moderate = splits_control
             i_moderate = None
         else:
-            i_moderate = self._toindices(x_moderate, splits)
+            splits_moderate = _kernels.BART.splits_from_coord(x_moderate)
+            i_moderate = self._toindices(x_moderate, splits_moderate)
 
         # data-dependent prior parameters
         ymin = jnp.min(y)
@@ -230,7 +274,7 @@ class bcf:
         copula.beta('__bayestree__B', 2, 1)
         copula.invgamma('__bayestree__IG', 1, 1)
         copula.uniform('__bayestree__U', 0, 1)
-        copula.halfcauchy('__bayestree__HC', 1 / stats.halfcauchy.ppf(0.5))
+        copula.halfcauchy('__bayestree__HC', 2 / stats.halfcauchy.ppf(0.5))
         copula.halfnorm('__bayestree__HN', 1 / stats.halfnorm.ppf(0.5))
 
         # prior on hyperparams
@@ -248,33 +292,49 @@ class bcf:
             'mean': gvar.gvar(mu_mu, k_sigma_mu),
                 # mean of the GP
         }
+        hyperprior.update(otherhp)
         if marginalize_mean:
             hyperprior.pop('mean')
 
         # GP factory
-        def makegp(hp, *, z, i_control, i_moderate, weights, splits, ystd, **_):
+        def makegp(hp, *, z, i_control, i_moderate, pihat, weights,
+            splits_control, splits_moderate, ystd, **_):
             
-            kw = dict(maxd=10, reset=[2, 4, 6, 8], gamma=0.95, splits=splits)
+            kw = dict(maxd=10, reset=[2, 4, 6, 8], gamma=0.95)
             kw.update(kernelkw, indices=True)
-                # TODO maybe I should pass kernelkw as argument
+                # TODO maybe I should pass kernelkw as argument, but it may not
+                # be jittable
 
-            kernel_control = _kernels.BART(alpha=hp['alpha'][0], beta=hp['beta'][0], dim='control', **kw)
-            kernel_control *= (hp['scale_control'] * 2 * ystd) ** 2
-            if 'mean' not in hp:
-                kernel_control += k_sigma_mu ** 2 * _kernels.Constant()
-            
-            kernel_moderate = _kernels.BART(alpha=hp['alpha'][1], beta=hp['beta'][1], dim='moderate', **kw)
+            kw_control = dict(alpha=hp['alpha'][0], beta=hp['beta'][0], dim='control', splits=splits_control)
+            kernel_control = _kernels.BART(**kw_control, **kw)
+            kernel_control *= (hp['scale_control'] * ystd) ** 2
+
+            kw_moderate = dict(alpha=hp['alpha'][1], beta=hp['beta'][1], dim='moderate', splits=splits_moderate)
+            kernel_moderate = _kernels.BART(**kw_moderate, **kw)
             kernel_moderate *= (hp['scale_moderate'] * ystd) ** 2
 
             gp = _GP.GP(checkpos=False, checksym=False, solver='chol')
             gp.addproc(kernel_control, 'control')
             gp.addproc(kernel_moderate, 'moderate')
+
+            if gpaux is None:
+                gp.addproc(0 * _kernels.Constant(), 'aux')
+            else:
+                gpaux(hp, gp)
+
+            if 'mean' in hp:
+                kernel_mean = 0 * _kernels.Constant()
+            else:
+                kernel_mean = k_sigma_mu ** 2 * _kernels.Constant()
+            gp.addproc(kernel_mean, 'mean')
+
             gp.addproclintransf(
-                lambda mu, tau: lambda x: mu(x) + tau(x) * (x['z'] - hp['z0']),
-                ['control', 'moderate'],
+                lambda mean, mu, tau, aux: lambda x:
+                mean(x) + mu(x) + tau(x) * (x['z'] - hp['z0']) + aux(x),
+                ['mean', 'control', 'moderate', 'aux'],
             )
             
-            x = self._join_points(z, i_control, i_moderate)
+            x = self._join_points(z, i_control, i_moderate, pihat)
             gp.addx(x, 'trainmean')
             errcov = self._error_cov(hp, weights, x)
             gp.addcov(errcov, 'trainnoise')
@@ -288,18 +348,19 @@ class bcf:
 
         # fit hyperparameters
         gpkw = dict(
+            y=y,
             z=z,
             i_control=i_control,
             i_moderate=i_moderate,
+            pihat=pihat,
             weights=weights,
-            splits=splits,
+            splits_control=splits_control,
+            splits_moderate=splits_moderate,
             ystd=ystd,
             mu_mu=mu_mu,
-            y=y,
         )
         options = dict(
             verbosity=3,
-            raises=False,
             minkw=dict(method='l-bfgs-b', options=dict(maxls=4, maxiter=100)),
             mlkw=dict(epsrel=0),
             forward=True,
@@ -314,7 +375,7 @@ class bcf:
         self.alpha = fit.p['alpha']
         self.beta = fit.p['beta']
         self.scale = numpy.array([
-            fit.p['scale_control'] * 2 * ystd,
+            fit.p['scale_control'] * ystd,
             fit.p['scale_moderate'] * ystd,
         ])
         self.mean = fit.p.get('mean', mu_mu)
@@ -322,35 +383,37 @@ class bcf:
         # save fit object
         self.fit = fit
 
-    def _join_points(self, z, i_control, i_moderate):
+    def _append_pihat(self, x_control, x_moderate, pihat):
+        ip = self._include_pi
+        if ip == 'control' or ip == 'both':
+            x_control = _array.StructuredArray.from_dict(dict(
+                x_control=x_control,
+                pihat=pihat,
+            ))
+        if x_moderate is not None and (ip == 'moderate' or ip == 'both'):
+            x_moderate = _array.StructuredArray.from_dict(dict(
+                x_moderate=x_moderate,
+                pihat=pihat,
+            ))
+        return x_control, x_moderate
+
+    def _join_points(self, z, i_control, i_moderate, pihat):
         """ join covariates into a single StructuredArray """
         return _array.StructuredArray.from_dict(dict(
             z=z,
             control=i_control,
             moderate=i_control if i_moderate is None else i_moderate,
+            pihat=pihat,
         ))
 
-    def _error_cov(self, hp, weights, x):
+    @staticmethod
+    def _error_cov(hp, weights, x):
         """ fill error covariance matrix """
         if weights is None:
             error_var = jnp.broadcast_to(hp['sigma2'], len(x))
         else:
             error_var = hp['sigma2'] / weights
         return jnp.diag(error_var)
-
-    def _set_include_pi(self, include_pi):
-        if include_pi not in ('control', 'moderate', 'both'):
-            raise KeyError(f'invalid value include_pi={include_pi!r}')
-        self._include_pi = include_pi
-
-    def _append_pihat(self, x_control, x_moderate, pihat):
-        ip = self._include_pi
-        name = '__bayestree__pihat'
-        if ip == 'control' or ip == 'both':
-            x_control = recfunctions.append_fields(x_control, name, pihat, usemask=False)
-        if x_moderate is not None and (ip == 'moderate' or ip == 'both'):
-            x_moderate = recfunctions.append_fields(x_moderate, name, pihat, usemask=False)
-        return x_control, x_moderate
 
     def _gethp(self, hp, rng):
         if not isinstance(hp, str):
@@ -434,16 +497,16 @@ class bcf:
             x_control, x_moderate = self._append_pihat(x_control, x_moderate, pihat)
 
             # convert covariates to indices
-            i_control = self._toindices(x_control, gpfactorykw['splits'])
+            i_control = self._toindices(x_control, gpfactorykw['splits_control'])
             assert i_control.dtype == gpfactorykw['i_control'].dtype
             if x_moderate is not None:
-                i_moderate = self._toindices(x_moderate, gpfactorykw['splits'])
+                i_moderate = self._toindices(x_moderate, gpfactorykw['splits_moderate'])
                 assert i_moderate.dtype == gpfactorykw['i_moderate'].dtype
             else:
                 i_moderate = None
 
             # add test points
-            x = self._join_points(z, i_control, i_moderate)
+            x = self._join_points(z, i_control, i_moderate, pihat)
             gp.addx(x, 'testmean')
             errcov = self._error_cov(hp, weights, x)
             gp.addcov(errcov, 'testnoise')
@@ -623,7 +686,8 @@ class bcf:
     @staticmethod
     def _toindices(x, splits):
         ix = _kernels.BART.indices_from_coord(x, splits)
-        return _array.unstructured_to_structured(ix, names=x.dtype.names)
+        dtype = cast(x.dtype, ix.dtype)
+        return _array.unstructured_to_structured(ix, dtype=dtype)
 
     def __repr__(self):
         if hasattr(self.mean, 'sdev'):
