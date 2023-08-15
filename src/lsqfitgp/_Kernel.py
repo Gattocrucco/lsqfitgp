@@ -253,7 +253,6 @@ class CrossKernel:
             self.initargs = None
         
         # Check simple arguments.
-        assert isinstance(dim, (str, type(None)))
         forcekron = bool(forcekron)
         
         # Convert `derivable` to a tuple of integers.

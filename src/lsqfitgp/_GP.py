@@ -1654,6 +1654,11 @@ class GP:
         elif (fromdata or raw or not keepcorr) and y.dtype == object:
             ycov = gvar.evalcov(gvar.gvar(y))
             # TODO use evalcov_blocks
+            # TODO I think this ignores the case in which we are using gvars
+            # and they are correlated with the GP. I guess the correct thing
+            # would be to sum the data gvars to the prior ones and use the
+            # resulting covariance matrix, and write a note about possible
+            # different results in this case when switching raw or keepcorr.
         else:
             ycov = None
         self._check_ycov(ycov)

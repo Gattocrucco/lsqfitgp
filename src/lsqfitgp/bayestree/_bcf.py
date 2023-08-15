@@ -32,9 +32,9 @@ from .. import _array
 from .. import _GP
 from .. import _fastraniter
 
-# TODO add a method or a pred option to do causal inference stuff, e.g.,
-# impute missing outcomes, or ate, att, cate, catt. Remember that the effect
-# may also depend on aux.
+# TODO add methods or options to do causal inference stuff, e.g., impute missing
+# outcomes, or ate, att, cate, catt, sate, satt. Remember that the effect may
+# also depend on aux. See bartCause, possibly copy its naming.
 
 def _recursive_cast(dtype, default, mapping):
     if dtype in mapping:
@@ -53,6 +53,29 @@ def _recursive_cast(dtype, default, mapping):
         return default
 
 def cast(dtype, default, mapping={}):
+    """
+    Recursively cast a numpy data type.
+
+    Parameters
+    ----------
+    dtype : dtype
+        The data type to cast.
+    default : dtype or None
+        The leaf fields of `dtype` are casted to `default`, which can be
+        structured, unless they appear in `mapping`. If None, dtypes not in
+        `mapping` are left unchanged.
+    mapping : dict
+        A dictionary from dtypes to dtypes, indicating specific casting rules.
+        The dtypes can be structured, a match of a structured dtype takes
+        precedence over matches in its leaves, and the converted dtype is not
+        further searched for matches.
+
+    Returns
+    -------
+    casted_dtype : dtype
+        The casted version of `dtype`. May not have the same structure if
+        `mapping` contains structured dtypes.
+    """
     mapping = {numpy.dtype(k): numpy.dtype(v) for k, v in mapping.items()}
     default = None if default is None else numpy.dtype(default)
     return _recursive_cast(numpy.dtype(dtype), default, mapping)
@@ -72,6 +95,7 @@ class bcf:
         kernelkw_tau={},
         marginalize_mean=True,
         gpaux=None,
+        x_aux=None,
         otherhp={},
     ):
         r"""
@@ -95,9 +119,9 @@ class bcf:
             Outcome.
         z : (n,) array, series or dataframe
             Binary treatment status: 0 control group, 1 treatment group.
-        x_mu : (n, p) array or dataframe
+        x_mu : (n, p) array, series or dataframe
             Covariates for the :math:`\mu` model.
-        x_tau : (n, q) array or dataframe, optional
+        x_tau : (n, q) array, series or dataframe, optional
             Covariates for the :math:`\tau` model. If not specified, use `x_mu`.
         pihat : (n,) array, series or dataframe
             Estimated propensity score, i.e., P(Z=1|X).
@@ -120,10 +144,29 @@ class bcf:
             `~lsqfitgp.GP` object under construction, and is expected to define
             a new process named ``'aux'`` with `~lsqfitgp.GP.addproc` or
             similar. The process is added to the regression model. The input to
-            the process is a structured array with fields ``'z', 'mu', 'tau',
-            'pihat'``. The contents of ``'mu'`` and ``'tau'`` have
-            been modified to use the BART grid indices and include ``pihat``
-            as indicated by `include_pi`.
+            the process is a structured array with fields:
+
+            'train' : bool
+                Indicates wether the data is training set (the one passed on
+                initialization) or test set (the one passed to `pred` or `gp`).
+            'i' : int
+                Index of the flattened array.
+            'z' : int
+                Treatment status.
+            'mu', 'tau' : structured
+                The values in `x_mu` and `x_tau`, converted to indices according
+                to the BART grids. Where `pihat` has been added, there are two
+                subfields: ``'x'`` which contains the covariates, and
+                ``'pihat'``, the latter expressed in indices as well.
+            'pihat' : float
+                The `pihat` argument. Contrary to the subfield included under
+                ``'mu'`` and/or ``'tau'``, this field contains the original
+                values.
+            'aux' : structured
+                The values in `x_aux`, if specified.
+        
+        x_aux : (n, k) array, series or dataframe, optional
+            Additional covariates for the ``'aux'`` process.
         otherhp : dictionary of gvar
             A dictionary with the prior of additional hyperpameters, intended to
             be used by ``gpaux``.
@@ -141,8 +184,8 @@ class bcf:
                     \lambda_\tau\,\mathrm{std}(\mathbf y)
                     \tau(\mathbf x^\tau_i, \hat\pi_i?) (z_i - z_0) + {} \\
                 &\phantom{{}={}} +
-                    \mathrm{aux}
-                    (z, \mathbf x^\mu_i, \mathbf x^\tau_i, \hat\pi_i) + {} \\
+                    \mathrm{aux}(i, z_i, \mathbf x^\mu_i, \mathbf x^\tau_i,
+                        \hat\pi_i, \mathbf x^\text{aux}_i) + {} \\
                 &\phantom{{}={}} +
                     \varepsilon_i, \\
             \varepsilon_i &\sim
@@ -182,6 +225,27 @@ class bcf:
         observed covariates. This corresponds to settings ``usequants=True``,
         ``numcut=inf`` in the R packages BayesTree and BART. Use the parameters
         `kernelkw_mu` and `kernelkw_tau` to customize the grids.
+
+        The difference between the regression model evaluated at :math:`Z=1` vs.
+        :math:`Z=0` can be interpreted as the causal effect :math:`Z \rightarrow
+        Y` if the unconfoundedness assumption is made:
+
+        .. math::
+            \{Y(Z=0), Y(Z=1)\} \perp\!\!\!\perp Z \mid X.
+
+        In practical terms, this holds when:
+
+            1) :math:`X` are pre-treatment variables, i.e., they represent
+               quantities causally upstream of :math:`Z`.
+
+            2) :math:`X` are sufficient to adjust for all common causes of
+               :math:`Z` and :math:`Y`, such that the only remaining difference
+               is the causal effect and not just a correlation.
+
+        Here :math:`X` consists in `x_tau`, `x_mu` and `x_aux`. However these
+        arrays may also be used to pass "technical" values used to set up the
+        model, that do not satisfy the uncounfoundedness assumption, if you know
+        what you are doing.
 
         Attributes
         ----------
@@ -223,7 +287,8 @@ class bcf:
         .. [1] P. Richard Hahn, Jared S. Murray, Carlos M. Carvalho "Bayesian
             Regression Tree Models for Causal Inference: Regularization,
             Confounding, and Heterogeneous Effects (with Discussion)," Bayesian
-            Analysis 15(3), 965-1056, September 2020
+            Analysis 15(3), 965-1056, September 2020,
+            https://doi.org/10.1214/19-BA1195
         """
 
         # convert covariates to StructuredArray
@@ -231,6 +296,9 @@ class bcf:
         if x_tau is not None:
             x_tau = self._to_structured(x_tau)
             assert x_tau.shape == x_mu.shape
+        if x_aux is not None:
+            x_aux = self._to_structured(x_aux)
+            assert x_aux.shape == x_mu.shape
     
         # convert outcomes, treatment, propensity score, weights to 1d arrays
         y = self._to_vector(y)
@@ -271,7 +339,7 @@ class bcf:
         sigma2_priormean = numpy.mean(squares)
 
         # prior on hyperparams
-        hyperprior = {
+        hyperprior = gvar.BufferDict({
             'm': gvar.gvar(mu_mu, k_sigma_mu),
             'log(sigma^2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
             '__bayestree__HC(lambda_mu)': copula.halfcauchy('__bayestree__HC', 2 / stats.halfcauchy.ppf(0.5)),
@@ -281,17 +349,23 @@ class bcf:
             '__bayestree__IG(beta_mu)': copula.invgamma('__bayestree__IG', 1, 1),
             '__bayestree__IG(beta_tau)': copula.invgamma('__bayestree__IG', 1, 1),
             '__bayestree__U(z_0)': copula.uniform('__bayestree__U', 0, 1),
-        }
-        hyperprior.update(otherhp)
+        })
         if marginalize_mean:
             hyperprior.pop('m')
 
+        # add user hyperparams
+        otherhp = gvar.BufferDict(otherhp)
+        for key in otherhp.all_keys():
+            if hyperprior.has_dictkey(key):
+                raise ValueError(f'otherhp[{key!r}] overrides another hyperparameter')
+        hyperprior.update(otherhp)
+
         # GP factory
-        def makegp(hp, *, z, i_mu, i_tau, pihat, weights,
-            splits_mu, splits_tau, ystd, **_):
+        def makegp(hp, *, z, i_mu, i_tau, pihat, x_aux, weights,
+            splits_mu, splits_tau, ystd, k_sigma_mu, **_):
             
             # TODO maybe I should pass kernelkw_* as arguments, but they may not
-            # be jittable
+            # be jittable. I need jitkw in empbayes_fit for that.
 
             kw_overridable = dict(
                 maxd=10,
@@ -320,16 +394,16 @@ class bcf:
                 
                 gp.addproc(kernel, name)
 
-            if gpaux is None:
-                gp.addproc(0 * _kernels.Constant(), 'aux')
-            else:
-                gpaux(hp, gp)
-
             if 'm' in hp:
                 kernel_mean = 0 * _kernels.Constant()
             else:
                 kernel_mean = k_sigma_mu ** 2 * _kernels.Constant()
             gp.addproc(kernel_mean, 'm')
+
+            if gpaux is None:
+                gp.addproc(0 * _kernels.Constant(), 'aux')
+            else:
+                gpaux(hp, gp)
 
             gp.addproclintransf(
                 lambda m, mu, tau, aux: lambda x:
@@ -337,7 +411,7 @@ class bcf:
                 ['m', 'mu', 'tau', 'aux'],
             )
             
-            x = self._join_points(z, i_mu, i_tau, pihat)
+            x = self._join_points(True, z, i_mu, i_tau, pihat, x_aux)
             gp.addx(x, 'trainmean')
             errcov = self._error_cov(hp, weights, x)
             gp.addcov(errcov, 'trainnoise')
@@ -356,11 +430,13 @@ class bcf:
             i_mu=i_mu,
             i_tau=i_tau,
             pihat=pihat,
+            x_aux=x_aux,
             weights=weights,
             splits_mu=splits_mu,
             splits_tau=splits_tau,
             ystd=ystd,
             mu_mu=mu_mu,
+            k_sigma_mu=k_sigma_mu,
         )
         options = dict(
             verbosity=3,
@@ -390,24 +466,29 @@ class bcf:
         ip = self._include_pi
         if ip == 'mu' or ip == 'both':
             x_mu = _array.StructuredArray.from_dict(dict(
-                x_mu=x_mu,
+                x=x_mu,
                 pihat=pihat,
             ))
         if x_tau is not None and (ip == 'tau' or ip == 'both'):
             x_tau = _array.StructuredArray.from_dict(dict(
-                x_tau=x_tau,
+                x=x_tau,
                 pihat=pihat,
             ))
         return x_mu, x_tau
 
-    def _join_points(self, z, i_mu, i_tau, pihat):
+    def _join_points(self, train, z, i_mu, i_tau, pihat, x_aux):
         """ join covariates into a single StructuredArray """
-        return _array.StructuredArray.from_dict(dict(
+        columns = dict(
+            train=jnp.broadcast_to(bool(train), z.shape),
+            i=jnp.arange(z.size).reshape(z.shape),
             z=z,
             mu=i_mu,
             tau=i_mu if i_tau is None else i_tau,
             pihat=pihat,
-        ))
+        )
+        if x_aux is not None:
+            columns.update(aux=x_aux)
+        return _array.StructuredArray.from_dict(columns)
 
     @staticmethod
     def _error_cov(hp, weights, x):
@@ -428,7 +509,8 @@ class bcf:
         else:
             raise KeyError(hp)
 
-    def gp(self, *, hp='map', z=None, x_mu=None, x_tau=None, pihat=None, weights=None, rng=None):
+    def gp(self, *, hp='map', z=None, x_mu=None, x_tau=None, pihat=None,
+        x_aux=None, weights=None, rng=None):
         """
         Create a Gaussian process with the fitted hyperparameters.
 
@@ -439,15 +521,17 @@ class bcf:
             maximum a posteriori. If ``'sample'``, sample hyperparameters from
             the posterior. If a dict, use the given hyperparameters.
         z : (m,) array, series or dataframe, optional
-            Treatment status at test points. If specified, also `x_mu`,
-            `pihat`, and `x_tau` (the latter if and only if it was used at
+            Treatment status at test points. If specified, also `x_mu`, `pihat`,
+            `x_tau` and `x_aux` (the latter two if and only also specified at
             initialization) must be specified.
-        x_mu : (m, p) array or dataframe, optional
+        x_mu : (m, p) array, series or dataframe, optional
             Control model covariates at test points.
-        x_tau : (m, q) array or dataframe, optional
+        x_tau : (m, q) array, series or dataframe, optional
             Moderating model covariates at test points.
         pihat : (m,) array, series or dataframe, optional
             Estimated propensity score at test points.
+        x_aux : (m, k) array, series or dataframe, optional
+            Additional covariates for the ``'aux'`` process.
         weights : (m,) array, series or dataframe, optional
             Weights for the error variance on the test points.
         rng : numpy.random.Generator, optional
@@ -463,13 +547,13 @@ class bcf:
         """
 
         hp = self._gethp(hp, rng)
-        return self._gp(hp, z, x_mu, x_tau, pihat, weights, self.fit.gpfactorykw)
+        return self._gp(hp, z, x_mu, x_tau, pihat, x_aux, weights, self.fit.gpfactorykw)
 
-    def _gp(self, hp, z, x_mu, x_tau, pihat, weights, gpfactorykw):
+    def _gp(self, hp, z, x_mu, x_tau, pihat, x_aux, weights, gpfactorykw):
         """
         Internal function to create the GP object. This function must work
         both if the arguments are user-provided and need to be checked and
-        converted to standard format, and if they are traced jax values.
+        converted to standard format, or if they are traced jax values.
         """
 
         # create GP object
@@ -479,7 +563,7 @@ class bcf:
         if z is not None:
 
             # check presence/absence of arguments is coherent
-            self._check_coherent_covariates(z, x_mu, x_tau, pihat)
+            self._check_coherent_covariates(z, x_mu, x_tau, pihat, x_aux)
 
             # check treatment and propensity score
             z = self._to_vector(z)
@@ -508,8 +592,12 @@ class bcf:
             else:
                 i_tau = None
 
+            # check auxiliary points
+            if x_aux is not None:
+                x_aux = self._to_structured(x_aux)
+
             # add test points
-            x = self._join_points(z, i_mu, i_tau, pihat)
+            x = self._join_points(False, z, i_mu, i_tau, pihat, x_aux)
             gp.addx(x, 'testmean')
             errcov = self._error_cov(hp, weights, x)
             gp.addcov(errcov, 'testnoise')
@@ -517,11 +605,12 @@ class bcf:
 
         return gp
 
-    def _check_coherent_covariates(self, z, x_mu, x_tau, pihat):
+    def _check_coherent_covariates(self, z, x_mu, x_tau, pihat, x_aux):
         if z is None:
             assert x_mu is None
             assert x_tau is None
             assert pihat is None
+            assert x_aux is None
         else:
             assert x_mu is not None
             assert pihat is not None
@@ -530,6 +619,11 @@ class bcf:
                 assert train_tau is None
             else:
                 assert train_tau is not None
+            train_aux = self.fit.gpfactorykw['x_aux']
+            if x_aux is None:
+                assert train_aux is None
+            else:
+                assert train_aux is not None
 
     def data(self, *, hp='map', rng=None):
         """
@@ -555,8 +649,8 @@ class bcf:
         return self.fit.data(hp, **self.fit.gpfactorykw)
 
     def pred(self, *, hp='map', error=False, format='matrices', z=None,
-        x_mu=None, x_tau=None, pihat=None, weights=None, rng=None):
-        """
+        x_mu=None, x_tau=None, pihat=None, x_aux=None, weights=None, rng=None):
+        r"""
         Predict the outcome at given locations.
 
         Parameters
@@ -572,15 +666,17 @@ class bcf:
             If ``'matrices'`` (default), return the mean and covariance matrix
             separately. If ``'gvar'``, return an array of `~gvar.GVar`.
         z : (m,) array, series or dataframe, optional
-            Treatment status at test points. If specified, also `x_mu`,
-            `pihat`, and `x_tau` (the latter if and only if it was used at
+            Treatment status at test points. If specified, also `x_mu`, `pihat`,
+            `x_tau` and `x_aux` (the latter two if and only also specified at
             initialization) must be specified.
-        x_mu : (m, p) array or dataframe, optional
-            Control model covariates at test points.
-        x_tau : (m, q) array or dataframe, optional
-            Moderating model covariates at test points.
+        x_mu : (m, p) array, series or dataframe, optional
+            :math:`\mu` model covariates at test points.
+        x_tau : (m, q) array, series or dataframe, optional
+            :math:`\tau` model covariates at test points.
         pihat : (m,) array, series or dataframe, optional
             Estimated propensity score at test points.
+        x_aux : (m, k) array, series or dataframe, optional
+            Additional covariates for the ``'aux'`` process at test points.
         weights : (m,) array, series or dataframe, optional
             Weights for the error variance on the test points.
         rng : numpy.random.Generator, optional
@@ -605,7 +701,7 @@ class bcf:
         hp = self._gethp(hp, rng)
         
         # check presence of covariates is coherent
-        self._check_coherent_covariates(z, x_mu, x_tau, pihat)
+        self._check_coherent_covariates(z, x_mu, x_tau, pihat, x_aux)
 
         # convert all inputs to arrays compatible with jax to pass them to the
         # compiled implementation
@@ -615,11 +711,13 @@ class bcf:
             x_mu = self._to_structured(x_mu)
             if x_tau is not None:
                 x_tau = self._to_structured(x_tau)
+            if x_aux is not None:
+                x_aux = self._to_structured(x_aux)
         if weights is not None:
             weights = self._to_vector(weights)
         
         # GP regression
-        mean, cov = self._pred(hp, z, x_mu, x_tau, pihat, weights, self.fit.gpfactorykw, bool(error))
+        mean, cov = self._pred(hp, z, x_mu, x_tau, pihat, x_aux, weights, self.fit.gpfactorykw, bool(error))
 
         # pack output
         if format == 'gvar':
@@ -632,9 +730,9 @@ class bcf:
     @functools.cached_property
     def _pred(self):
         
-        @functools.partial(jax.jit, static_argnums=(7,))
-        def _pred(hp, z, x_mu, x_tau, pihat, weights, gpfactorykw, error):
-            gp = self._gp(hp, z, x_mu, x_tau, pihat, weights, gpfactorykw)
+        @functools.partial(jax.jit, static_argnums=(8,))
+        def _pred(hp, z, x_mu, x_tau, pihat, x_aux, weights, gpfactorykw, error):
+            gp = self._gp(hp, z, x_mu, x_tau, pihat, x_aux, weights, gpfactorykw)
             data = self.fit.data(hp, **gpfactorykw)
             if z is None:
                 label = 'train'
@@ -651,23 +749,28 @@ class bcf:
         return _pred
 
     @classmethod
-    def _to_structured(cls, x):
+    def _to_structured(cls, x, *, check_numerical=True):
 
         # convert to StructuredArray
         if hasattr(x, 'columns'):
             x = _array.StructuredArray.from_dataframe(x)
+        elif hasattr(x, 'to_numpy'):
+            x = _array.StructuredArray.from_dict({
+                'f0' if x.name is None else x.name: x.to_numpy()
+            })
         elif x.dtype.names is None:
             x = _array.unstructured_to_structured(x)
         else:
             x = _array.StructuredArray(x)
 
-        # check
-        assert x.ndim == 1
-        assert x.size > len(x.dtype)
-        def check_numerical(path, dtype):
-            if not numpy.issubdtype(dtype, numpy.number):
-                raise TypeError(f'covariate `{path}` is not numerical')
-        cls._walk_dtype(x.dtype, check_numerical)
+        # check fields are numerical, for BART
+        if check_numerical:
+            assert x.ndim == 1
+            assert x.size > len(x.dtype)
+            def check_numerical(path, dtype):
+                if not numpy.issubdtype(dtype, numpy.number):
+                    raise TypeError(f'covariate `{path}` is not numerical')
+            cls._walk_dtype(x.dtype, check_numerical)
 
         return x
 
@@ -704,22 +807,23 @@ class bcf:
             m = f'{self.m:.3g}'
 
         out = f"""BCF fit:
-alpha_μ/τ = {self.alpha_mu}, {self.alpha_tau} (0 -> intercept only, 1 -> any)
-beta_μ/τ = {self.beta_mu}, {self.beta_tau} (0 -> any, ∞ -> no interactions)
-z_0 = {self.z_0} (μ model applies at z = z_0)
+alpha_mu/tau = {self.alpha_mu} {self.alpha_tau} (0 -> intercept only, 1 -> any)
+beta_mu/tau = {self.beta_mu} {self.beta_tau} (0 -> any, ∞ -> no interactions)
+z_0 = {self.z_0} (mu model applies at z = z_0)
 m = {m}
-lambda_μ/τ std(y) = {self.sdev_mu}, {self.sdev_tau} (large -> conservative extrapolation)
+lambda_mu/tau std(y) = {self.sdev_mu} {self.sdev_tau} (large -> conservative extrapolation)
 std(y) = {self.fit.gpfactorykw['ystd']:.3g}"""
 
         weights = self.fit.gpfactorykw['weights']
         if weights is None:
             out += f"""
 sigma = {self.sigma}"""
+        
         else:
             weights = numpy.array(weights) # to avoid jax taking over the ops
             avgsigma = numpy.sqrt(numpy.mean(self.sigma ** 2 / weights))
             out += f"""
-√<sigma²/w>  = {avgsigma}
+sqrt(mean(sigma^2/w))  = {avgsigma}
 sigma = {self.sigma}"""
 
         return out

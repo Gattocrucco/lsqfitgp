@@ -178,6 +178,12 @@ class StructuredArray:
     @property
     def ndim(self):
         return len(self.shape)
+
+    def __len__(self):
+        if self.shape:
+            return self.shape[0]
+        else:
+            raise TypeError('len() of unsized object')
     
     def __getitem__(self, key):
         if isinstance(key, str):

@@ -5239,7 +5239,7 @@ to try:
 
     - log transform the outcomes
 
-    - compute summaries other than the mean of the per-patient covariates
+    - compute summaries other than the mean of the per-patient covariates (DONE)
 
     - use differences in outcomes instead of the outcomes themselves
 
@@ -5386,3 +5386,95 @@ large interval.
 
 bcf (the R package) gives a result similar to my BCF but a bit farther from the
 truth. Rerun/shift: stable.
+
+2023-08-15
+==========
+
+Next release title: See Two Forests and an Auxiliary Regression Term for the
+Forest.
+
+...........
+
+I computed further patient-level data summaries and used them in two ways:
+
+1) I added the covariates V(1|2|4)_(min|max|std)
+2) Use n / var(y) as weight instead of n
+
+Result:
+ - R bcf improves
+ - the GP methods get worse
+ - the propensity score is more extreme
+
+I should try 1 and 2 separately.
+
+Trying only 1, it makes things worse. The weights are pretty extreme: max/min =
+1000, while with n.patients is 100. Another things is that they are
+statistically wrong because they are post-treatment quantities. n.patients is
+too but it comes out of the averaging if I start from all units with the same
+sigma, nevertheless now that I took notice I should use pre-treatment
+n.patients. => No wait this is still wrong.
+
+Start from the per-patient data. Summarize the pre-treatment covariates per
+practice, this is valid. Consider a regression model with per-practice
+homoskedastic Normal errors. Then I can equivalently take the per-practice
+mean and infer sigma to be the standard deviation. So my weight calculation is
+procedurally correct, apart from having a free global factor for sigma, which
+nevertheless came out close to 1.
+
+What fails then? My guess is that unaveraged Y is far from Normal. I should
+probably take an interquantile range and see what happens. Before that, try 2
+alone. => Wrong again.
+
+What matters is the variance of the average, and for that I need the variance
+without any corrections. The average then is more Normal due to averaging, so
+the model is decently specified.
+
+I think I understand now. What I was missing is that being in a different
+hospital is a difference in itself, so I should have practice random effects.
+After aggregation, this means that the error variance is
+
+    sigma_practice^2 + var(y) / n_patients
+
+To implement this, the most covenient way is taking bcf's sigma as
+sigma_practice, without weights, and then adding the other component through a
+unit white noise in aux. To do that conveniently, I should add an unit index as
+input to the process, and make it different train-test for consistence. Better:
+add a train/test flag and a unit index.
+
+=> Result: sigma = 14(5), while std(y) / sqrt(n) >= 20 and goes up to 540. The
+estimate comes out less adjusted. On the other hand, GP-BART-ps without weights
+does better.
+
+I think I must understand why I should not use the face-value variances. I'm
+interested in the average in-sample effect, so the variable I care about is the
+mean of actual outcomes. This means that I can't take out practice outliers,
+they matter even more than other units.
+
+Maybe I'm not accounting for systematic error. Unconfoundedness does not hold
+given only the practice-level summaries of the covariates. So in each practice
+I'll make an error on the causal estimand due to that summarization, and that is
+not captured by a random effect in the model, because the model only cares about
+making the best prediction given the covariates it's fed.
+
+In particular, the more patients there are in a practice, the more deconfounding
+information I'm throwing away by averaging the covariates. Maybe on net, if I
+represent the unmeasured confounding as outcome error, the overall variance is
+quite steady.
+
+Dropping weights altogether improved everything. Yay! It was simple! The RMSE
+list amongst GPs is almost always
+
+    gp_bcf_laplace < gp_bcf < gp_bart_ps < gp_bart
+
+R bcf floats around gp_bart_ps and gp_bart. bartCause as usual gives a very
+large uncertainty, and its estimate is quite variable: this time it's centered
+on the unadjusted estimate. I wonder if I'm doing something wrong in extracting
+its results.
+
+Detailed plan for next work:
+    - Play with the additional pi effect in gp_bcf, I want to check if that's
+      the reason it does better than gp_bart
+    - Try to leave free the pi effect scale, I expect it to set it to a small
+      value and do worse, but removing the weights could have changed something
+    - Try the additional V* covariates, this may make it viable to leave free
+      the pi effect scale, since it reduces unadjusted confounding
