@@ -195,3 +195,5 @@ def value_and_ops(f, *ops, has_aux=False, **kw):
 def float_type(*args):
     t = jnp.result_type(*args)
     return jnp.sin(jnp.empty(0, t)).dtype
+    # TODO numpy does this with common_type, but that supports only arrays, not
+    # dtypes in the input

@@ -22,6 +22,7 @@ import warnings
 
 from jax import tree_util
 import numpy as np
+from numpy.lib import recfunctions
 from jax import numpy as jnp
 import gvar
 import pytest
@@ -44,11 +45,14 @@ def assert_equal(*args):
     """
     assert_array_equal(*jaxtonumpy(args))
 
+def normalize(dtype):
+    return recfunctions.repack_fields(dtype, align=False, recurse=True)
+
 def assert_array_equal(*args):
     args = [np.array(a) if isinstance(a, lgp.StructuredArray) else a for a in args]
     a = args[0]
     if isinstance(a, np.ndarray) and a.size == 0 and a.dtype.names:
-        assert all(b.dtype == a.dtype for b in args)
+        assert all(normalize(b.dtype) == normalize(a.dtype) for b in args)
         assert all(b.shape == a.shape for b in args)
     elif isinstance(a, np.ndarray) and a.dtype.names:
         # old versions of numpy force structured dtypes to be equal when

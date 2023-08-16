@@ -5237,7 +5237,7 @@ to try:
     - use DID bcf like kokandakar 2023, I have to use z=post * Z and fit
       pretreatment outcomes too
 
-    - log transform the outcomes
+    - log transform the outcomes => patient-level is signed (SKIP)
 
     - compute summaries other than the mean of the per-patient covariates (DONE)
 
@@ -5473,8 +5473,47 @@ its results.
 
 Detailed plan for next work:
     - Play with the additional pi effect in gp_bcf, I want to check if that's
-      the reason it does better than gp_bart
+      the reason it does better than gp_bart (DONE)
+            Indeed, it removing that effect makes gp_bart_ps < gp_bcf
     - Try to leave free the pi effect scale, I expect it to set it to a small
       value and do worse, but removing the weights could have changed something
+      (DONE)
+            The pi sdev is 41(53), indeed it's small and makes little
+            difference.
     - Try the additional V* covariates, this may make it viable to leave free
-      the pi effect scale, since it reduces unadjusted confounding
+      the pi effect scale, since it reduces unadjusted confounding (DONE)
+            Indeed, even with free pi scale, this restores the hierarchy above.
+            Pi scale is 39(21).
+
+2023-08-16
+==========
+
+Next things:
+    - Add also the V* quantiles, see what happens. It could be better because I
+      add more deconfounders, or worse because it starts being high-dimensional.
+      I expect to see no visible difference overall. (DONE)
+            It's a bit worse, both ps and effect. Maybe that could be solved by
+            leaving free the covariate weights, but I don't wanna go there
+            because I expect computational efficiency issues to address.
+    - Separate the plots. (DONE)
+    - Add a plot for heterogeneity: difference of subgroup SATT from main. 
+      (DONE)
+            Mistake fixed: I was mixing up the error bars of gp bcf laplace,
+            I don't think this changed anything from the previous reasoning
+            because under Normality the code was correct. 
+
+            There is no systematic bias in the heterogeneity. If anything, the
+            inference may be a bit underconfident.
+    - Use the samples to compute the SATT of bartCause instead of the Normal
+      approximation. (DONE)
+            Also did for bcf.
+
+            The 68% interval becomes larger, the 95% shorter. Unexpected. Is it
+            because the MCMC does not coverge? I set nburn=4000.
+
+            It worked. Now the distributions are heavier than Normal, and the
+            68% interval is sensible.
+
+            Lessons learned:
+            - do not convert MCMC samples to Normal before checking they are
+            - increase default burn in bart MCMC

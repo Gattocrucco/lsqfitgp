@@ -655,7 +655,6 @@ def test_len(rng):
     with pytest.raises(TypeError):
         len(x)
 
-@pytest.mark.xfail
 def test_normalized_dtype(rng):
     x = random_array((), 'f,f,f', rng)
     x = x[['f0', 'f2']]
@@ -663,6 +662,3 @@ def test_normalized_dtype(rng):
     y = random_array((), [('f0', 'f'), ('f2', 'f')], rng)
     y = lgp.StructuredArray(y)
     assert x.dtype == y.dtype
-    # TODO fix this by normalizing the dtype, it's explained in numpy's docs if
-    # I recall correctly, else rebuild manually, dtype.descr includes padding
-    # and is not idempotent

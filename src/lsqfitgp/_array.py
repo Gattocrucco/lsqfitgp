@@ -64,7 +64,7 @@ class StructuredArray:
     reference to the original array for that field is lost.
     
     """
-    
+
     @classmethod
     def _readonlyview_wrapifstructured(cls, x):
         if x.dtype.names is not None:
@@ -79,6 +79,9 @@ class StructuredArray:
     def _array(cls, s, t, d, *, check=True):
         """
         Create a new StructuredArray.
+
+        All methods and functions that create a new StructuredArray object
+        should use this method.
 
         Parameters
         ----------
@@ -108,6 +111,9 @@ class StructuredArray:
                 for name, x in d.items()
             ])
             # TODO infer the least common head shape instead of counting dims
+
+        # remove offset info since this is actually a columnar format
+        t = recfunctions.repack_fields(t, align=False, recurse=True)
 
         if s is None:
             # infer the shape from the arrays in the dictionary
