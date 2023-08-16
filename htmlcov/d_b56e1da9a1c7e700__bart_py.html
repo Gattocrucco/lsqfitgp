@@ -76,8 +76,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="d_b56e1da9a1c7e700__basic_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.2.7">coverage.py v7.2.7</a>,
-            created at 2023-08-12 10:41 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.3.0">coverage.py v7.3.0</a>,
+            created at 2023-08-16 00:41 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"/>
@@ -496,7 +496,7 @@
     <p class="run"><span class="n"><a id="t402" href="#t402">402</a></span><span class="t">        <span class="key">if</span> <span class="nam">weights</span> <span class="key">is</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs402" /><span class="r"><label for="ctxs402" class="ctx">5 ctx</label></span><span class="ctxs">1eabcd</span></p>
     <p class="run"><span class="n"><a id="t403" href="#t403">403</a></span><span class="t">            <span class="nam">weights</span> <span class="op">=</span> <span class="nam">jnp</span><span class="op">.</span><span class="nam">ones</span><span class="op">(</span><span class="nam">splitsbefore_or_totalsplits</span><span class="op">.</span><span class="nam">shape</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">,</span> <span class="nam">pnt</span><span class="op">.</span><span class="nam">dtype</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs403" /><span class="r"><label for="ctxs403" class="ctx">5 ctx</label></span><span class="ctxs">1eabcd</span></p>
     <p class="pln"><span class="n"><a id="t404" href="#t404">404</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t405" href="#t405">405</a></span><span class="t">            <span class="nam">weights</span> <span class="op">=</span> <span class="nam">jnp</span><span class="op">.</span><span class="nam">asarray</span><span class="op">(</span><span class="nam">weights</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs405" /><span class="r"><label for="ctxs405" class="ctx">5 ctx</label></span><span class="ctxs">1eabcd</span></p>
+    <p class="run"><span class="n"><a id="t405" href="#t405">405</a></span><span class="t">            <span class="nam">weights</span> <span class="op">=</span> <span class="nam">jnp</span><span class="op">.</span><span class="nam">asarray</span><span class="op">(</span><span class="nam">weights</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs405" /><span class="r"><label for="ctxs405" class="ctx">4 ctx</label></span><span class="ctxs">1abcd</span></p>
     <p class="pln"><span class="n"><a id="t406" href="#t406">406</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t407" href="#t407">407</a></span><span class="t">        <span class="com"># get interpolation coefficients</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t408" href="#t408">408</a></span><span class="t">        <span class="key">if</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">gamma</span><span class="op">,</span> <span class="nam">str</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs408" /><span class="r"><label for="ctxs408" class="ctx">5 ctx</label></span><span class="ctxs">1eabcd</span></p>
@@ -518,7 +518,7 @@
     <p class="pln"><span class="n"><a id="t424" href="#t424">424</a></span><span class="t">        <span class="com"># set first splitting probability to 1 to remove flat baseline (keep</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t425" href="#t425">425</a></span><span class="t">        <span class="com"># last!)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t426" href="#t426">426</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">intercept</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs426" /><span class="r"><label for="ctxs426" class="ctx">5 ctx</label></span><span class="ctxs">1eabcd</span></p>
-    <p class="run"><span class="n"><a id="t427" href="#t427">427</a></span><span class="t">            <span class="nam">pnt</span> <span class="op">=</span> <span class="nam">pnt</span><span class="op">.</span><span class="nam">at</span><span class="op">[</span><span class="op">...</span><span class="op">,</span> <span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="nam">set</span><span class="op">(</span><span class="num">1</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs427" /><span class="r"><label for="ctxs427" class="ctx">4 ctx</label></span><span class="ctxs">1abcd</span></p>
+    <p class="run"><span class="n"><a id="t427" href="#t427">427</a></span><span class="t">            <span class="nam">pnt</span> <span class="op">=</span> <span class="nam">pnt</span><span class="op">.</span><span class="nam">at</span><span class="op">[</span><span class="op">...</span><span class="op">,</span> <span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="nam">set</span><span class="op">(</span><span class="num">1</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs427" /><span class="r"><label for="ctxs427" class="ctx">5 ctx</label></span><span class="ctxs">1eabcd</span></p>
     <p class="pln"><span class="n"><a id="t428" href="#t428">428</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t429" href="#t429">429</a></span><span class="t">        <span class="com"># expand and check recursion reset depths</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t430" href="#t430">430</a></span><span class="t">        <span class="key">if</span> <span class="nam">reset</span> <span class="key">is</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs430" /><span class="r"><label for="ctxs430" class="ctx">5 ctx</label></span><span class="ctxs">1eabcd</span></p>
@@ -938,8 +938,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="d_b56e1da9a1c7e700__basic_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.2.7">coverage.py v7.2.7</a>,
-            created at 2023-08-12 10:41 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.3.0">coverage.py v7.3.0</a>,
+            created at 2023-08-16 00:41 +0000
         </p>
     </div>
 </footer>
