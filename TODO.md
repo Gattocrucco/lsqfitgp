@@ -1089,3 +1089,7 @@ Assumptions on off-diagonal blocks:
 - zero
 
 Can I do this using kanren? https://github.com/pythological/kanren
+
+#### Quantum stuff
+
+See Quimb. For example, they have a fast rank revealing SVD.

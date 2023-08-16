@@ -5517,3 +5517,37 @@ Next things:
             Lessons learned:
             - do not convert MCMC samples to Normal before checking they are
             - increase default burn in bart MCMC
+
+..........
+
+Implementing Linero's variable selection requires a copula for the Dirichlet,
+where the parameter is free. I think I can make copulas for conditional
+distributions. The interface would be passing a copula name in place of a
+parameter. Let's see if that works out. I represent the joint distribution
+instead of the marginal one:
+
+    p(x,a) = p(x|a) p(a)
+
+Then I represent the components as copulas:
+
+    a = F_a⁻¹(u_a)
+    x = F_x|a⁻¹(u_x,a)
+
+Problem: I need to feed a into x's invfcn. a is not a fixed parameter. I try to
+write what I want to happen:
+
+    lgp.copula.p1('ciao', (lgp.copula.p2, 3.14)) -> [0(1) 0(1)]
+
+And
+
+    'ciao'.invfcn(x) = p1.invfcn(x[0], p2.invfcn(x[1], 3.14))
+
+Right now CopulaFactory.__new__ makes up invfcn by partially evaluating it on
+the parameters. It must instead recursively check if the parameters contain
+distributions, accumulate a counter with the index to use in the array, and
+return an invfcn and the length of the required array.
+
+=> DONE.
+
+...........
+

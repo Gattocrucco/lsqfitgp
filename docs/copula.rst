@@ -17,10 +17,12 @@
 .. You should have received a copy of the GNU General Public License
 .. along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-.. currentmodule:: lsqfitgp.copula
+.. module:: lsqfitgp.copula
 
-Copula factories
+Gaussian copulas
 ================
+
+.. TODO write some introduction.
 
 .. autoclass:: CopulaFactory
     :members:
@@ -29,3 +31,5 @@ Copula factories
 .. autoclass:: halfnorm
 .. autoclass:: invgamma
 .. autoclass:: uniform
+
+.. TODO generate this file automatically

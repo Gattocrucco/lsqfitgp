@@ -26,6 +26,7 @@ import numpy as np
 import gvar
 import jax
 import pytest
+from pytest import mark
 from scipy import stats
 
 import lsqfitgp as lgp
@@ -49,17 +50,63 @@ class CopulaBaseTest:
     @pytest.fixture
     def name(self, request):
         return request.node.nodeid
+
+    testfor = {}
     
-    def __init_subclass__(cls, *, params, scipy_params=None):
+    def __init_subclass__(cls, *, params, scipy_params=None, recparams=None):
         assert cls.__name__.startswith('Test')
-        cls.copcls = getattr(lgp.copula, cls.__name__[4:].lower())
-        cls.params = params
-        cls.scipy_params = params if scipy_params is None else scipy_params
+        if scipy_params is None:
+            scipy_params = lambda *p: p
+        attrs = dict(
+            copcls=getattr(lgp.copula, cls.__name__[4:].lower()),
+            params=params,
+            scipy_params=staticmethod(scipy_params),
+            recparams=recparams,
+        )
+        for k, v in attrs.items():
+            if not hasattr(cls, k):
+                setattr(cls, k, v)
+        __class__.testfor[cls.copcls.__name__] = cls
 
     def cdf(self):
         distrname = self.copcls.__name__
         distr = getattr(stats, distrname)
-        return distr(*self.scipy_params).cdf
+        params = self.scipy_params(*self.params)
+        return distr(*params).cdf
+
+    @classmethod
+    def recrvs(cls, level):
+        
+        distrname = cls.copcls.__name__
+        distr = getattr(stats, distrname)
+        
+        def rvs(size):
+            if level > 0:
+                params = []
+                for param in cls.recparams:
+                    if isinstance(param, str):
+                        rvs = cls.testfor[param].recrvs(level - 1)
+                        param = rvs(size)
+                    params.append(param)
+            else:
+                params = cls.params 
+            params = cls.scipy_params(*params)
+            return distr.rvs(*params, size=size)
+        
+        return rvs
+
+    @classmethod
+    def convert_recparams(cls, level):
+        if level > 0:
+            params = []
+            for param in cls.recparams:
+                if isinstance(param, str):
+                    test = cls.testfor[param]
+                    param = (test.copcls, *test.convert_recparams(level - 1))
+                params.append(param)
+        else:
+            params = cls.params
+        return params
         
     def test_invfcn_errorprop(self, name):
         self.copcls(name, *self.params)
@@ -80,10 +127,6 @@ class CopulaBaseTest:
         self.copcls(name, *self.params)
         self.copcls(name, *self.params)
 
-    def test_nan_params(self, name):
-        with pytest.raises(ValueError):
-            self.copcls(name, *(np.nan,) * len(self.params))
-    
     def test_bufferdict_gvar(self, name):
         key = f'{name}(x)'
         b = gvar.BufferDict({
@@ -119,11 +162,44 @@ class CopulaBaseTest:
         test = stats.ks_1samp(samples, self.cdf())
         assert test.pvalue >= 0.001
 
-class TestInvGamma(CopulaBaseTest, params=(1.2, 2.3), scipy_params=(1.2, 0, 2.3)): pass
-class TestBeta(CopulaBaseTest, params=(1.2, 2.3)): pass
-class TestUniform(CopulaBaseTest, params=(-0.5, 2), scipy_params=(-0.5, 2 + 0.5)): pass
-class TestHalfCauchy(CopulaBaseTest, params=(0.7,), scipy_params=(0, 0.7)): pass
-class TestHalfNorm(CopulaBaseTest, params=(1.3,), scipy_params=(0, 1.3)): pass
+    @mark.parametrize('level', [0, 1, 2])
+    def test_recursive(self, name, level, rng):
+        variables = self.copcls(name, *self.convert_recparams(level))
+        samples = rng.standard_normal((10000,) + variables.shape)
+        bd = gvar.BufferDict({f'{name}(x)': samples})
+        samples = bd['x']
+        refsamples = self.recrvs(level)(samples.size)
+        test = stats.ks_2samp(samples, refsamples)
+        assert test.pvalue >= 0.001
+
+class TestBeta(CopulaBaseTest,
+    params=(1.2, 2.3),
+    recparams=('invgamma', 'halfcauchy'),
+): pass
+
+class TestHalfCauchy(CopulaBaseTest,
+    params=(0.7,),
+    scipy_params=(lambda gamma: (0, gamma)),
+    recparams=('invgamma',),
+): pass
+
+class TestHalfNorm(CopulaBaseTest,
+    params=(1.3,),
+    scipy_params=(lambda sigma: (0, sigma)),
+    recparams=('invgamma',)
+): pass
+
+class TestInvGamma(CopulaBaseTest,
+    params=(1.2, 2.3),
+    scipy_params=(lambda alpha, beta: (alpha, 0, beta)),
+    recparams=('invgamma', 'halfnorm')
+): pass
+
+class TestUniform(CopulaBaseTest,
+    params=(-0.5, 2),
+    scipy_params=(lambda a, b: (a, b - a)),
+    recparams=(-1, 'uniform'),
+): pass
 
 def test_invgamma_divergence():
     y = lgp.copula.invgamma.invfcn(10., 1, 1)
