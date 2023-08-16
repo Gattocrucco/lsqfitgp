@@ -118,12 +118,37 @@
 
           <div class="body" role="main">
             
-  <section id="bart">
+  <span class="target" id="module-lsqfitgp.bayestree"></span><section id="bart">
 <h1><span class="section-number">11. </span>BART<a class="headerlink" href="#bart" title="Permalink to this heading">¶</a></h1>
 <p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">bayestree</span></code> submodule contains classes to set up a Gaussian process
 regression with the <a class="reference internal" href="kernelsref.html#lsqfitgp.BART" title="lsqfitgp.BART"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART</span></code></a> kernel. See the <a class="reference internal" href="examplesref.html#bart"><span class="std std-ref">bart</span></a>,
 <a class="reference internal" href="examplesref.html#barteasy"><span class="std std-ref">barteasy</span></a> and <a class="reference internal" href="examplesref.html#acic"><span class="std std-ref">acic</span></a> examples.</p>
-<p>Index: <a class="reference internal" href="#lsqfitgp.bayestree.bart" title="lsqfitgp.bayestree.bart"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bart</span></code></a>, <a class="reference internal" href="#lsqfitgp.bayestree.bcf" title="lsqfitgp.bayestree.bcf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bcf</span></code></a>.</p>
+<p>The original version of these models is implemented in the R packages <a class="reference external" href="https://cran.r-project.org/package=BART">BART</a>, <a class="reference external" href="https://cran.r-project.org/package=dbarts">dbarts</a>, and <a class="reference external" href="https://cran.r-project.org/package=bcf">bcf</a>. Pros of the GP version provided
+here:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>No MCMC, the result is computed quite directly.</p></li>
+<li><p>Fast inference on the hyperparameters.</p></li>
+<li><p>Allows a wider region of hyperparameter space.</p></li>
+</ul>
+</div></blockquote>
+<p>Cons:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Does not scale to large datasets.</p></li>
+<li><p>Worse predictive performance at fixed hyperparameters.</p></li>
+<li><p>Slower at fixed hyperparameters.</p></li>
+<li><p>May use more memory.</p></li>
+</ul>
+</div></blockquote>
+<p>Overall, this version should tipycally be a better choice than the R packages if
+you have at most 10000 datapoints.</p>
+<section id="index">
+<h2><span class="section-number">11.1. </span>Index<a class="headerlink" href="#index" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="#lsqfitgp.bayestree.bart" title="lsqfitgp.bayestree.bart"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bart</span></code></a>, <a class="reference internal" href="#lsqfitgp.bayestree.bcf" title="lsqfitgp.bayestree.bcf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bcf</span></code></a></p>
+</section>
+<section id="documentation">
+<h2><span class="section-number">11.2. </span>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.bayestree.bart">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.bayestree.</span></span><span class="sig-name descname"><span class="pre">bart</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_train</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernelkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">marginalize_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bart.py#L34-L459"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bart" title="Permalink to this definition">¶</a></dt>
@@ -301,7 +326,7 @@ posterior. If a dict, use the given hyperparameters.</p>
 <code class="docutils literal notranslate"><span class="pre">True</span></code>, add the error term.</p>
 </dd>
 <dt><strong>format</strong><span class="classifier">{‘matrices’, ‘gvar’}</span></dt><dd><p>If ‘matrices’ (default), return the mean and covariance matrix
-separately. If ‘gvar’, return an array of <a href="#id1"><span class="problematic" id="id2">`</span></a>GVar`s.</p>
+separately. If ‘gvar’, return an array of <a href="#id2"><span class="problematic" id="id3">`</span></a>GVar`s.</p>
 </dd>
 <dt><strong>x_test</strong><span class="classifier">array or dataframe, optional</span></dt><dd><p>Covariates for the locations where the prediction is computed. If
 not specified, predict at the data covariates.</p>
@@ -330,39 +355,74 @@ over the regression function at the specified locations.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.bayestree.bcf">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.bayestree.</span></span><span class="sig-name descname"><span class="pre">bcf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_control</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_moderate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pihat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_pi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'control'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernelkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">marginalize_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bcf.py#L34-L642"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bcf" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.bayestree.</span></span><span class="sig-name descname"><span class="pre">bcf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pihat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_pi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernelkw_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernelkw_tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">marginalize_mean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpaux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_aux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">otherhp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bcf.py#L83-L829"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bcf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Nonparametric Bayesian regression with a GP version of BCF.</p>
-<p>BCF (Bayesian Causal Forest) is a regression method for observational
-causal inference studies introduced in <a class="reference internal" href="#r81cef080e874-1" id="id3">[1]</a> based on a pair of BART
+<p>BCF (Bayesian Causal Forests) is a regression method for observational
+causal inference studies introduced in <a class="reference internal" href="#r81cef080e874-1" id="id4">[1]</a> based on a pair of BART
 models.</p>
 <p>This class evaluates a Gaussian process regression with a kernel which
 accurately approximates BCF in the infinite trees limit of each BART
 model. The hyperparameters are optimized to their marginal MAP.</p>
-<dl class="field-list simple">
+<p>The model is (loosely, see notes below) <span class="math notranslate nohighlight">\(y = \mu(x) + z\tau(x)\)</span>,
+so <span class="math notranslate nohighlight">\(\tau(x)\)</span> is the expected causal effect of <span class="math notranslate nohighlight">\(z\)</span> on
+<span class="math notranslate nohighlight">\(y\)</span> at location <span class="math notranslate nohighlight">\(x\)</span>.</p>
+<dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>y</strong><span class="classifier">(n,) array</span></dt><dd><p>Outcome.</p>
+<dd class="field-odd"><dl>
+<dt><strong>y</strong><span class="classifier">(n,) array, series or dataframe</span></dt><dd><p>Outcome.</p>
 </dd>
-<dt><strong>z</strong><span class="classifier">(n,) array</span></dt><dd><p>Binary treatment status: 0 control group, 1 treatment group.</p>
+<dt><strong>z</strong><span class="classifier">(n,) array, series or dataframe</span></dt><dd><p>Binary treatment status: 0 control group, 1 treatment group.</p>
 </dd>
-<dt><strong>x_control</strong><span class="classifier">(n, p) array or dataframe</span></dt><dd><p>Covariates for the control model.</p>
+<dt><strong>x_mu</strong><span class="classifier">(n, p) array, series or dataframe</span></dt><dd><p>Covariates for the <span class="math notranslate nohighlight">\(\mu\)</span> model.</p>
 </dd>
-<dt><strong>x_moderate</strong><span class="classifier">(n, q) array or dataframe, optional</span></dt><dd><p>Covariates for the effect model. If not specified, use <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_control</span></code>.</p>
+<dt><strong>x_tau</strong><span class="classifier">(n, q) array, series or dataframe, optional</span></dt><dd><p>Covariates for the <span class="math notranslate nohighlight">\(\tau\)</span> model. If not specified, use <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_mu</span></code>.</p>
 </dd>
-<dt><strong>pihat</strong><span class="classifier">(n,) array</span></dt><dd><p>Estimated propensity score, i.e., P(Z=1|X).</p>
+<dt><strong>pihat</strong><span class="classifier">(n,) array, series or dataframe</span></dt><dd><p>Estimated propensity score, i.e., P(Z=1|X).</p>
 </dd>
-<dt><strong>include_pi</strong><span class="classifier">{‘control’, ‘moderate’, ‘both’}, optional</span></dt><dd><p>Whether to include the propensity score in the control model, the
-effect model, or both. Default is <code class="docutils literal notranslate"><span class="pre">'control'</span></code>.</p>
+<dt><strong>include_pi</strong><span class="classifier">{‘mu’, ‘tau’, ‘both’}, optional</span></dt><dd><p>Whether to include the propensity score in the <span class="math notranslate nohighlight">\(\mu\)</span> model,
+the <span class="math notranslate nohighlight">\(\tau\)</span> model, or both. Default is <code class="docutils literal notranslate"><span class="pre">'mu'</span></code>.</p>
 </dd>
-<dt><strong>weights</strong><span class="classifier">(n,) array</span></dt><dd><p>Weights used to rescale the error variance (as 1 / weight).</p>
+<dt><strong>weights</strong><span class="classifier">(n,) array, series or dataframe</span></dt><dd><p>Weights used to rescale the error variance (as 1 / weight).</p>
 </dd>
 <dt><strong>fitkw</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a>, overrides
 the defaults.</p>
 </dd>
-<dt><strong>kernelkw</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <a class="reference internal" href="kernelsref.html#lsqfitgp.BART" title="lsqfitgp.BART"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART</span></code></a>, overrides the
-defaults.</p>
+<dt><strong>kernelkw_mu, kernelkw_tau</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <a class="reference internal" href="kernelsref.html#lsqfitgp.BART" title="lsqfitgp.BART"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART</span></code></a> for each model,
+overrides the defaults.</p>
 </dd>
 <dt><strong>marginalize_mean</strong><span class="classifier">bool</span></dt><dd><p>If True (default), marginalize the intercept of the model.</p>
+</dd>
+<dt><strong>gpaux</strong><span class="classifier">callable, optional</span></dt><dd><p>If specified, this function is called with a pair <code class="docutils literal notranslate"><span class="pre">(hp,</span> <span class="pre">gp)</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">hp</span></code> is a dictionary of hyperparameters, and <code class="docutils literal notranslate"><span class="pre">gp</span></code> is a
+<a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a> object under construction, and is expected to define
+a new process named <code class="docutils literal notranslate"><span class="pre">'aux'</span></code> with <a class="reference internal" href="gp.html#lsqfitgp.GP.addproc" title="lsqfitgp.GP.addproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addproc</span></code></a> or
+similar. The process is added to the regression model. The input to
+the process is a structured array with fields:</p>
+<dl class="simple">
+<dt>‘train’<span class="classifier">bool</span></dt><dd><p>Indicates wether the data is training set (the one passed on
+initialization) or test set (the one passed to <a class="reference internal" href="#lsqfitgp.bayestree.bcf.pred" title="lsqfitgp.bayestree.bcf.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a> or <a class="reference internal" href="#lsqfitgp.bayestree.bcf.gp" title="lsqfitgp.bayestree.bcf.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>).</p>
+</dd>
+<dt>‘i’<span class="classifier">int</span></dt><dd><p>Index of the flattened array.</p>
+</dd>
+<dt>‘z’<span class="classifier">int</span></dt><dd><p>Treatment status.</p>
+</dd>
+<dt>‘mu’, ‘tau’<span class="classifier">structured</span></dt><dd><p>The values in <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_mu</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_tau</span></code>, converted to indices according
+to the BART grids. Where <code class="xref py py-obj docutils literal notranslate"><span class="pre">pihat</span></code> has been added, there are two
+subfields: <code class="docutils literal notranslate"><span class="pre">'x'</span></code> which contains the covariates, and
+<code class="docutils literal notranslate"><span class="pre">'pihat'</span></code>, the latter expressed in indices as well.</p>
+</dd>
+<dt>‘pihat’<span class="classifier">float</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">pihat</span></code> argument. Contrary to the subfield included under
+<code class="docutils literal notranslate"><span class="pre">'mu'</span></code> and/or <code class="docutils literal notranslate"><span class="pre">'tau'</span></code>, this field contains the original
+values.</p>
+</dd>
+<dt>‘aux’<span class="classifier">structured</span></dt><dd><p>The values in <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_aux</span></code>, if specified.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>x_aux</strong><span class="classifier">(n, k) array, series or dataframe, optional</span></dt><dd><p>Additional covariates for the <code class="docutils literal notranslate"><span class="pre">'aux'</span></code> process.</p>
+</dd>
+<dt><strong>otherhp</strong><span class="classifier">dictionary of gvar</span></dt><dd><p>A dictionary with the prior of additional hyperpameters, intended to
+be used by <code class="docutils literal notranslate"><span class="pre">gpaux</span></code>.</p>
 </dd>
 </dl>
 </dd>
@@ -376,9 +436,18 @@ defaults.</p>
 <p class="rubric">Notes</p>
 <p>The regression model is:</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}y_i &amp;= m + \lambda_\mu \mu(\mathbf x^\mu_i)
-         + \lambda_\tau \tau(\mathbf x^\tau_i) (z_i - z_0)
-         + \varepsilon_i, \\
+\[\begin{split}y_i &amp;= m + {} \\
+    &amp;\phantom{{}={}} +
+        \lambda_\mu\,\mathrm{std}(\mathbf y)
+        \mu(\mathbf x^\mu_i, \hat\pi_i?) + {} \\
+    &amp;\phantom{{}={}} +
+        \lambda_\tau\,\mathrm{std}(\mathbf y)
+        \tau(\mathbf x^\tau_i, \hat\pi_i?) (z_i - z_0) + {} \\
+    &amp;\phantom{{}={}} +
+        \mathrm{aux}(i, z_i, \mathbf x^\mu_i, \mathbf x^\tau_i,
+            \hat\pi_i, \mathbf x^\text{aux}_i) + {} \\
+    &amp;\phantom{{}={}} +
+        \varepsilon_i, \\
 \varepsilon_i &amp;\sim
     N(0, \sigma^2 / w_i), \\
 m &amp;\sim N(
@@ -389,23 +458,21 @@ m &amp;\sim N(
     \log(\overline{w(y - \bar y)^2}),
     4
 ), \\
-\lambda_\mu &amp;\sim \mathrm{HalfCauchy}(2\,\mathrm{std}(\mathbf y)), \\
-\lambda_\tau &amp;\sim \mathrm{HalfNormal}(1.48\,\mathrm{std}(\mathbf y)), \\
-\mu &amp;\sim \mathrm{GP}(
-    0,
-    \mathrm{BART}(\alpha_\mu,\beta_\mu)
-), \\
-\tau &amp;\sim \mathrm{GP}(
-    0,
-    \mathrm{BART}(\alpha_\tau,\beta_\tau)
-), \\
+\lambda_\mu
+    &amp;\sim \mathrm{HalfCauchy}(2), \\
+\lambda_\tau
+    &amp;\sim \mathrm{HalfNormal}(1.48), \\
+\mu &amp;\sim \mathrm{GP}(0,
+    \mathrm{BART}(\alpha_\mu, \beta_\mu) ), \\
+\tau &amp;\sim \mathrm{GP}(0,
+    \mathrm{BART}(\alpha_\tau, \beta_\tau) ), \\
+\mathrm{aux} &amp; \sim \mathrm{GP}(0, \text{&lt;user defined&gt;}), \\
 \alpha_\mu, \alpha_\tau &amp;\sim \mathrm{B}(2, 1), \\
 \beta_\mu, \beta_\tau &amp;\sim \mathrm{IG}(1, 1), \\
 z_0 &amp;\sim U(0, 1),\end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(\mu\)</span> and <span class="math notranslate nohighlight">\(\tau\)</span> are, respectively, the “control”
-and “moderate” models.</p>
-<p>To make the inference, <span class="math notranslate nohighlight">\((\mu, \tau, \boldsymbol\varepsilon, m)\)</span>
-are marginalized analytically, and the marginal posterior mode of
+<p>To make the inference, <span class="math notranslate nohighlight">\((\mu, \tau, \boldsymbol\varepsilon, m,
+\mathrm{aux})\)</span> are marginalized analytically, and the marginal posterior
+mode of
 <span class="math notranslate nohighlight">\((\sigma, \lambda_*, \alpha_*, \beta_*, z_0)\)</span> is found by
 numerical minimization, after transforming them to express their prior
 as a Gaussian copula. Their marginal posterior covariance matrix is
@@ -414,38 +481,57 @@ estimated with an approximation of the hessian inverse. See
 this procedure.</p>
 <p>The tree splitting grid of the BART kernel is set using quantiles of the
 observed covariates. This corresponds to settings <code class="docutils literal notranslate"><span class="pre">usequants=True</span></code>,
-<code class="docutils literal notranslate"><span class="pre">numcut=inf</span></code> in the R packages BayesTree and BART. Use the
-<code class="docutils literal notranslate"><span class="pre">kernelkw</span></code> parameter to customize the grid.</p>
+<code class="docutils literal notranslate"><span class="pre">numcut=inf</span></code> in the R packages BayesTree and BART. Use the parameters
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">kernelkw_mu</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">kernelkw_tau</span></code> to customize the grids.</p>
+<p>The difference between the regression model evaluated at <span class="math notranslate nohighlight">\(Z=1\)</span> vs.
+<span class="math notranslate nohighlight">\(Z=0\)</span> can be interpreted as the causal effect <span class="math notranslate nohighlight">\(Z \rightarrow
+Y\)</span> if the unconfoundedness assumption is made:</p>
+<div class="math notranslate nohighlight">
+\[\{Y(Z=0), Y(Z=1)\} \perp\!\!\!\perp Z \mid X.\]</div>
+<p>In practical terms, this holds when:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p><span class="math notranslate nohighlight">\(X\)</span> are pre-treatment variables, i.e., they represent
+quantities causally upstream of <span class="math notranslate nohighlight">\(Z\)</span>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(X\)</span> are sufficient to adjust for all common causes of
+<span class="math notranslate nohighlight">\(Z\)</span> and <span class="math notranslate nohighlight">\(Y\)</span>, such that the only remaining difference
+is the causal effect and not just a correlation.</p></li>
+</ol>
+</div></blockquote>
+<p>Here <span class="math notranslate nohighlight">\(X\)</span> consists in <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_tau</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_mu</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_aux</span></code>. However these
+arrays may also be used to pass “technical” values used to set up the
+model, that do not satisfy the uncounfoundedness assumption, if you know
+what you are doing.</p>
 <p class="rubric">References</p>
 <div role="list" class="citation-list">
 <div class="citation" id="r81cef080e874-1" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">1</a><span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">1</a><span class="fn-bracket">]</span></span>
 <p>P. Richard Hahn, Jared S. Murray, Carlos M. Carvalho “Bayesian
 Regression Tree Models for Causal Inference: Regularization,
 Confounding, and Heterogeneous Effects (with Discussion),” Bayesian
-Analysis, Bayesian Anal. 15(3), 965-1056, (September 2020)</p>
+Analysis 15(3), 965-1056, September 2020,
+<a class="reference external" href="https://doi.org/10.1214/19-BA1195">https://doi.org/10.1214/19-BA1195</a></p>
 </div>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Attributes<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mean</strong><span class="classifier">gvar</span></dt><dd><p>The prior mean <span class="math notranslate nohighlight">\(m\)</span>.</p>
+<dt><strong>m</strong><span class="classifier">float or gvar</span></dt><dd><p>The prior mean <span class="math notranslate nohighlight">\(m\)</span>.</p>
 </dd>
-<dt><strong>sigma</strong><span class="classifier">float or gvar</span></dt><dd><p>The error term standard deviation <span class="math notranslate nohighlight">\(\sigma\)</span>. If there are
+<dt><strong>sigma</strong><span class="classifier">gvar</span></dt><dd><p>The error term standard deviation <span class="math notranslate nohighlight">\(\sigma\)</span>. If there are
 weights, the sdev for each unit is obtained dividing <code class="docutils literal notranslate"><span class="pre">sigma</span></code> by
 sqrt(weight).</p>
 </dd>
-<dt><strong>alpha</strong><span class="classifier">pair of gvar</span></dt><dd><p>The numerator of the tree spawn probability <span class="math notranslate nohighlight">\(\alpha_*\)</span> (named
-<code class="docutils literal notranslate"><span class="pre">base</span></code> in bcf), respectively for control and moderate models.</p>
+<dt><strong>alpha_mu, alpha_tau</strong><span class="classifier">gvar</span></dt><dd><p>The numerator of the tree spawn probability <span class="math notranslate nohighlight">\(\alpha_*\)</span> (named
+<code class="docutils literal notranslate"><span class="pre">base</span></code> in R bcf).</p>
 </dd>
-<dt><strong>beta</strong><span class="classifier">pair of gvar</span></dt><dd><p>The depth exponent of the tree spawn probability <span class="math notranslate nohighlight">\(\beta\)</span>
-(named <code class="docutils literal notranslate"><span class="pre">power</span></code> in bcf), respectively for control and moderate
-models.</p>
+<dt><strong>beta_mu, beta_tau</strong><span class="classifier">gvar</span></dt><dd><p>The depth exponent of the tree spawn probability <span class="math notranslate nohighlight">\(\beta_*\)</span>
+(named <code class="docutils literal notranslate"><span class="pre">power</span></code> in R bcf).</p>
 </dd>
-<dt><strong>scale</strong><span class="classifier">gvar</span></dt><dd><p>The prior standard deviation <span class="math notranslate nohighlight">\(\lambda_*\)</span> of the control and
-moderate models.</p>
+<dt><strong>sdev_mu, sdev_tau</strong><span class="classifier">gvar</span></dt><dd><p>The prior standard deviation <span class="math notranslate nohighlight">\(\lambda_* \mathrm{std}(\mathbf
+y)\)</span>.</p>
 </dd>
-<dt><strong>z0</strong><span class="classifier">gvar</span></dt><dd><p>The treatment coding parameter.</p>
+<dt><strong>z_0</strong><span class="classifier">gvar</span></dt><dd><p>The treatment coding parameter.</p>
 </dd>
 <dt><strong>fit</strong><span class="classifier">empbayes_fit</span></dt><dd><p>The hyperparameters fit object.</p>
 </dd>
@@ -455,27 +541,27 @@ moderate models.</p>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.gp" title="lsqfitgp.bayestree.bcf.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>(*[, hp, z, x_control, x_moderate, pihat, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.gp" title="lsqfitgp.bayestree.bcf.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>(*[, hp, z, x_mu, x_tau, pihat, x_aux, ...])</p></td>
 <td><p>Create a Gaussian process with the fitted hyperparameters.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.data" title="lsqfitgp.bayestree.bcf.data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code></a>(*[, hp, rng])</p></td>
 <td><p>Get the data to be passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.pred</span></code> on a GP object returned by <a class="reference internal" href="#lsqfitgp.bayestree.bcf.gp" title="lsqfitgp.bayestree.bcf.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.pred" title="lsqfitgp.bayestree.bcf.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(*[, hp, error, format, z, x_control, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.pred" title="lsqfitgp.bayestree.bcf.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(*[, hp, error, format, z, x_mu, x_tau, ...])</p></td>
 <td><p>Predict the outcome at given locations.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.bayestree.bcf.data">
-<span class="sig-name descname"><span class="pre">data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'map'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bcf.py#L461-L482"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bcf.data" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'map'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bcf.py#L628-L649"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bcf.data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the data to be passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.pred</span></code> on a GP object returned by <a class="reference internal" href="#lsqfitgp.bayestree.bcf.gp" title="lsqfitgp.bayestree.bcf.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>hp</strong><span class="classifier">str or dict</span></dt><dd><p>The hyperparameters to use. If <code class="docutils literal notranslate"><span class="pre">'map'</span></code>, use the marginal maximum a
-posteriori. If <code class="docutils literal notranslate"><span class="pre">'sample'</span></code>, sample hyperparameters from the
-posterior. If a dict, use the given hyperparameters.</p>
+<dt><strong>hp</strong><span class="classifier">str or dict</span></dt><dd><p>The hyperparameters to use. If <code class="docutils literal notranslate"><span class="pre">'map'</span></code> (default), use the marginal
+maximum a posteriori. If <code class="docutils literal notranslate"><span class="pre">'sample'</span></code>, sample hyperparameters from
+the posterior. If a dict, use the given hyperparameters.</p>
 </dd>
 <dt><strong>rng</strong><span class="classifier">numpy.random.Generator, optional</span></dt><dd><p>Random number generator, used if <code class="docutils literal notranslate"><span class="pre">hp</span> <span class="pre">==</span> <span class="pre">'sample'</span></code>.</p>
 </dd>
@@ -493,26 +579,28 @@ posterior. If a dict, use the given hyperparameters.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.bayestree.bcf.gp">
-<span class="sig-name descname"><span class="pre">gp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'map'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_moderate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pihat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bcf.py#L358-L393"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bcf.gp" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">gp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'map'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pihat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_aux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bcf.py#L512-L550"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bcf.gp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a Gaussian process with the fitted hyperparameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>hp</strong><span class="classifier">str or dict</span></dt><dd><p>The hyperparameters to use. If <code class="docutils literal notranslate"><span class="pre">'map'</span></code>, use the marginal maximum a
-posteriori. If <code class="docutils literal notranslate"><span class="pre">'sample'</span></code>, sample hyperparameters from the
-posterior. If a dict, use the given hyperparameters.</p>
+<dt><strong>hp</strong><span class="classifier">str or dict</span></dt><dd><p>The hyperparameters to use. If <code class="docutils literal notranslate"><span class="pre">'map'</span></code> (default), use the marginal
+maximum a posteriori. If <code class="docutils literal notranslate"><span class="pre">'sample'</span></code>, sample hyperparameters from
+the posterior. If a dict, use the given hyperparameters.</p>
 </dd>
-<dt><strong>z</strong><span class="classifier">(m,) array, optional</span></dt><dd><p>Treatment status at test points. If specified, also <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_control</span></code>,
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">pihat</span></code>, and <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_moderate</span></code> (if and only if it was used at
+<dt><strong>z</strong><span class="classifier">(m,) array, series or dataframe, optional</span></dt><dd><p>Treatment status at test points. If specified, also <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_mu</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pihat</span></code>,
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">x_tau</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_aux</span></code> (the latter two if and only also specified at
 initialization) must be specified.</p>
 </dd>
-<dt><strong>x_control</strong><span class="classifier">(m, p) array or dataframe, optional</span></dt><dd><p>Control model covariates at test points.</p>
+<dt><strong>x_mu</strong><span class="classifier">(m, p) array, series or dataframe, optional</span></dt><dd><p>Control model covariates at test points.</p>
 </dd>
-<dt><strong>x_moderate</strong><span class="classifier">(m, q) array or dataframe, optional</span></dt><dd><p>Moderating model covariates at test points.</p>
+<dt><strong>x_tau</strong><span class="classifier">(m, q) array, series or dataframe, optional</span></dt><dd><p>Moderating model covariates at test points.</p>
 </dd>
-<dt><strong>pihat</strong><span class="classifier">(m,) array, optional</span></dt><dd><p>Estimated propensity score at test points.</p>
+<dt><strong>pihat</strong><span class="classifier">(m,) array, series or dataframe, optional</span></dt><dd><p>Estimated propensity score at test points.</p>
 </dd>
-<dt><strong>weights</strong><span class="classifier">array, optional</span></dt><dd><p>Weights for the error variance on the test points.</p>
+<dt><strong>x_aux</strong><span class="classifier">(m, k) array, series or dataframe, optional</span></dt><dd><p>Additional covariates for the <code class="docutils literal notranslate"><span class="pre">'aux'</span></code> process.</p>
+</dd>
+<dt><strong>weights</strong><span class="classifier">(m,) array, series or dataframe, optional</span></dt><dd><p>Weights for the error variance on the test points.</p>
 </dd>
 <dt><strong>rng</strong><span class="classifier">numpy.random.Generator, optional</span></dt><dd><p>Random number generator, used if <code class="docutils literal notranslate"><span class="pre">hp</span> <span class="pre">==</span> <span class="pre">'sample'</span></code>.</p>
 </dd>
@@ -520,9 +608,9 @@ initialization) must be specified.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>gp</strong><span class="classifier">GP</span></dt><dd><p>A centered Gaussian process object. To add the mean, use the
-<code class="docutils literal notranslate"><span class="pre">mean</span></code> attribute of the <a class="reference internal" href="#lsqfitgp.bayestree.bart" title="lsqfitgp.bayestree.bart"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bart</span></code></a> object. The keys of the GP are
-‘Xmean’, ‘Xnoise’, and ‘X’, where the “X” stands either for ‘train’
+<dt><strong>gp</strong><span class="classifier">GP</span></dt><dd><p>A centered Gaussian process object. To add the mean, use the <code class="xref py py-obj docutils literal notranslate"><span class="pre">m</span></code>
+attribute of the <a class="reference internal" href="#lsqfitgp.bayestree.bcf" title="lsqfitgp.bayestree.bcf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bcf</span></code></a> object. The keys of the GP are <code class="docutils literal notranslate"><span class="pre">'Xmean'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'Xnoise'</span></code>, and <code class="docutils literal notranslate"><span class="pre">'X'</span></code>, where the “X” stands either for ‘train’
 or ‘test’, and X = Xmean + Xnoise.</p>
 </dd>
 </dl>
@@ -532,45 +620,48 @@ or ‘test’, and X = Xmean + Xnoise.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.bayestree.bcf.pred">
-<span class="sig-name descname"><span class="pre">pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'map'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'matrices'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_moderate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pihat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bcf.py#L484-L556"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bcf.pred" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'map'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'matrices'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pihat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_aux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bcf.py#L651-L728"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bcf.pred" title="Permalink to this definition">¶</a></dt>
 <dd><p>Predict the outcome at given locations.</p>
-<dl class="field-list">
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>hp</strong><span class="classifier">str or dict</span></dt><dd><p>The hyperparameters to use. If <code class="docutils literal notranslate"><span class="pre">'map'</span></code>, use the marginal maximum a
-posteriori. If <code class="docutils literal notranslate"><span class="pre">'sample'</span></code>, sample hyperparameters from the
-posterior. If a dict, use the given hyperparameters.</p>
+<dt><strong>hp</strong><span class="classifier">str or dict</span></dt><dd><p>The hyperparameters to use. If <code class="docutils literal notranslate"><span class="pre">'map'</span></code> (default), use the marginal
+maximum a posteriori. If <code class="docutils literal notranslate"><span class="pre">'sample'</span></code>, sample hyperparameters from
+the posterior. If a dict, use the given hyperparameters.</p>
 </dd>
 <dt><strong>error</strong><span class="classifier">bool</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), make a prediction for the latent mean. If
 <code class="docutils literal notranslate"><span class="pre">True</span></code>, add the error term.</p>
 </dd>
-<dt><strong>format</strong><span class="classifier">{‘matrices’, ‘gvar’}</span></dt><dd><p>If ‘matrices’ (default), return the mean and covariance matrix
-separately. If ‘gvar’, return an array of <a href="#id5"><span class="problematic" id="id6">`</span></a>GVar`s.</p>
+<dt><strong>format</strong><span class="classifier">{‘matrices’, ‘gvar’}</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">'matrices'</span></code> (default), return the mean and covariance matrix
+separately. If <code class="docutils literal notranslate"><span class="pre">'gvar'</span></code>, return an array of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v11.11.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GVar</span></code></a>.</p>
 </dd>
-<dt><strong>z</strong><span class="classifier">(m,) array, optional</span></dt><dd><p>Treatment status at test points. If specified, also <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_control</span></code>,
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">pihat</span></code>, and <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_moderate</span></code> (if and only if it was used at
+<dt><strong>z</strong><span class="classifier">(m,) array, series or dataframe, optional</span></dt><dd><p>Treatment status at test points. If specified, also <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_mu</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pihat</span></code>,
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">x_tau</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">x_aux</span></code> (the latter two if and only also specified at
 initialization) must be specified.</p>
 </dd>
-<dt><strong>x_control</strong><span class="classifier">(m, p) array or dataframe, optional</span></dt><dd><p>Control model covariates at test points.</p>
+<dt><strong>x_mu</strong><span class="classifier">(m, p) array, series or dataframe, optional</span></dt><dd><p><span class="math notranslate nohighlight">\(\mu\)</span> model covariates at test points.</p>
 </dd>
-<dt><strong>x_moderate</strong><span class="classifier">(m, q) array or dataframe, optional</span></dt><dd><p>Moderating model covariates at test points.</p>
+<dt><strong>x_tau</strong><span class="classifier">(m, q) array, series or dataframe, optional</span></dt><dd><p><span class="math notranslate nohighlight">\(\tau\)</span> model covariates at test points.</p>
 </dd>
-<dt><strong>pihat</strong><span class="classifier">(m,) array, optional</span></dt><dd><p>Estimated propensity score at test points.</p>
+<dt><strong>pihat</strong><span class="classifier">(m,) array, series or dataframe, optional</span></dt><dd><p>Estimated propensity score at test points.</p>
 </dd>
-<dt><strong>weights</strong><span class="classifier">array, optional</span></dt><dd><p>Weights for the error variance on the test points.</p>
+<dt><strong>x_aux</strong><span class="classifier">(m, k) array, series or dataframe, optional</span></dt><dd><p>Additional covariates for the <code class="docutils literal notranslate"><span class="pre">'aux'</span></code> process at test points.</p>
+</dd>
+<dt><strong>weights</strong><span class="classifier">(m,) array, series or dataframe, optional</span></dt><dd><p>Weights for the error variance on the test points.</p>
 </dd>
 <dt><strong>rng</strong><span class="classifier">numpy.random.Generator, optional</span></dt><dd><p>Random number generator, used if <code class="docutils literal notranslate"><span class="pre">hp</span> <span class="pre">==</span> <span class="pre">'sample'</span></code>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><dl>
-<dt>If <code class="docutils literal notranslate"><span class="pre">format</span></code> is ‘matrices’ (default):</dt><dd></dd>
+<dd class="field-even"><dl class="simple">
+<dt>If <code class="xref py py-obj docutils literal notranslate"><span class="pre">format</span></code> is <code class="docutils literal notranslate"><span class="pre">'matrices'</span></code> (default):</dt><dd></dd>
 <dt><strong>mean, cov</strong><span class="classifier">arrays</span></dt><dd><p>The mean and covariance matrix of the Normal posterior distribution
 over the regression function at the specified locations.</p>
 </dd>
-<dt>If <code class="docutils literal notranslate"><span class="pre">format</span></code> is ‘gvar’:</dt><dd></dd>
-<dt><strong>out</strong><span class="classifier">array of <code class="xref py py-obj docutils literal notranslate"><span class="pre">GVar</span></code></span></dt><dd><p>The same distribution represented as an array of <code class="xref py py-obj docutils literal notranslate"><span class="pre">GVar</span></code> objects.</p>
+<dt>If <code class="xref py py-obj docutils literal notranslate"><span class="pre">format</span></code> is <code class="docutils literal notranslate"><span class="pre">'gvar'</span></code>:</dt><dd></dd>
+<dt><strong>out</strong><span class="classifier">array of gvar</span></dt><dd><p>The same distribution represented as an array of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v11.11.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GVar</span></code></a>
+objects.</p>
 </dd>
 </dl>
 </dd>
@@ -579,6 +670,7 @@ over the regression function at the specified locations.</p>
 
 </dd></dl>
 
+</section>
 </section>
 
 
