@@ -19,6 +19,7 @@
 
 import functools
 import textwrap
+import re
 
 import jax
 import gvar
@@ -293,14 +294,14 @@ def _join(cols):
     split = (col.split('\n') for col in cols)
     return '\n'.join(''.join(lines) for lines in zip(*split))
 
-def add_gvar_support(func):
-    """ Wraps a jax-traceable ufunc to support gvars """
+def gvar_ufunc(func):
+    """ Wraps a jax-traceable ufunc with one argument to support gvars """
     
-    dfdx = _patch_jax.elementwise_grad(func)
+    deriv = _patch_jax.elementwise_grad(func)
     
     def gvar_function(x):
         m = gvar.mean(x)
-        return gvar.gvar_function(x, func(m), dfdx(m))
+        return gvar.gvar_function(x, func(m), deriv(m))
     
     gvar_function_vectorized = numpy.vectorize(gvar_function)
 
@@ -315,8 +316,48 @@ def add_gvar_support(func):
     
     return decorated_func
 
-    # TODO make public? => To make it public, I need it to support arbitrary
-    # arguments, with some configuration (imitate vectorize), and pick a name
-    # that makes it clear it convert ufuncs from jax to gvar. => Maybe I should
-    # make a more general version starting from the code in GP that propagates
-    # gvars through lintransf.
+def gvar_gufunc(func, signature=None):
+    """ Wraps a jax-traceable gufunc with one argument to support gvars """
+
+    # get jacobian signature
+    if signature is None:
+        jac_signature = None
+    else:
+        m = re.fullmatch(r'\((.*?)\)(->\((.*?)\))?', signature)
+        inp, _, out = m.groups()
+        if out is None:
+            jac_signature = f'({inp})->({inp})'
+        else:
+            comma = ',' if out and inp else ''
+            jac_signature = f'({inp})->({out}{comma}{inp})'
+    
+    # make jacobian function
+    deriv = jnp.vectorize(jax.jacfwd(func), signature=jac_signature)
+
+    def gvar_function(x):
+
+        # unpack the gvars
+        in_mean = gvar.mean(x)
+        in_jac, indices = jacobian(x)
+
+        # apply function
+        out_mean = func(in_mean)
+        jac = deriv(in_mean)
+        out_jac = jnp.tensordot(jac, in_jac, in_jac.ndim - 1)
+
+        # pack output
+        return from_jacobian(out_mean, out_jac, indices)
+
+    @functools.wraps(func)
+    def decorated_func(x):
+        if isinstance(x, gvar.GVar):
+            out = gvar_function(x)
+            if not out.ndim:
+                out = out.item()
+            return out
+        elif getattr(x, 'dtype', None) == object:
+            return gvar_function(x)
+        else:
+            return func(x)
+
+    return decorated_func

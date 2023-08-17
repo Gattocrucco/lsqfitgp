@@ -5551,3 +5551,25 @@ return an invfcn and the length of the required array.
 
 ...........
 
+The Dirichlet distribution can be represented starting from independent gamma
+distributions, see
+https://en.wikipedia.org/wiki/Dirichlet_distribution#Related_distributions
+
+To implement it:
+    - implement the gamma copula (DONE)
+    - add a shape(*params) method that returns the desired shape of the input
+      to invfcn (DONE)
+    - use it to add support for gufunc invfcn (DONE)
+    - implement the dirichlet copula (DONE)
+        - parametrize as a, n
+            - a is a scalar, the global concentration parameter
+        - n is
+            - an integer: the number of dimensions, dirichlet is symmetric
+            - a vector: the unnormalized base measure
+    - write the unit test
+        Where I'm at: stats.dirichlet does not vectorize on alpha
+    - docstrings with examples
+    - introduction in the reference manual
+
+...........
+

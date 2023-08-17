@@ -89,4 +89,3 @@ def test_tracer():
         return tree_util.tree_map(lambda x: x, x)
     y = f(x)
     assert x == y
-

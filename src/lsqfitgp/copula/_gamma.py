@@ -1,4 +1,4 @@
-# lsqfitgp/copula/_invgamma.py
+# lsqfitgp/copula/_gamma.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #
@@ -17,7 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""JAX-compatible implementation of the inverse gamma distribution"""
+"""
+JAX-compatible implementation of the gamma and inverse gamma distributions
+"""
 
 import functools
 
@@ -54,7 +56,7 @@ def gammainccinv_jvp(primals, tangents):
     at, yt = tangents
     x = gammainccinv(a, y)
     a = jnp.asarray(a)
-    a = a.astype(jnp.sin(jnp.empty(0, a.dtype)).dtype)
+    a = a.astype(_patch_jax.float_type(a))
     # convert a to float to avoid dQ_da complaining even when we are not
     # actually deriving w.r.t. a
     dQ_da_a_x = dQ_da(a, x)
@@ -82,14 +84,36 @@ def gammaincinv_jvp(primals, tangents):
     at, yt = tangents
     x = gammaincinv(a, y)
     a = jnp.asarray(a)
-    a = a.astype(jnp.sin(jnp.empty(0, a.dtype)).dtype)
-    # convert a to float to avoid dQ_da complaining even when we are not
+    a = a.astype(_patch_jax.float_type(a))
+    # convert a to float to avoid dP_da complaining even when we are not
     # actually deriving w.r.t. a
     dP_da_a_x = dP_da(a, x)
     dP_dx_a_x = dP_dx(a, x)
     dPinv_dy_a_y = 1 / dP_dx_a_x
     dPinv_da_a_y = -dPinv_dy_a_y * dP_da_a_x
     return x, dPinv_da_a_y * at + dPinv_dy_a_y * yt
+
+def _invgammappf_normcdf_large_neg_x_1(x):
+    return 1 / (1/2 * jnp.log(2 * jnp.pi) + 1/2 * jnp.square(x) + jnp.log(-x))
+    # Φ(x) ≈ -1/√2π exp(-x²/2)/x
+    # Q(a, x) ≈ x^(a-1) e^-x / Γ(a)
+    # invgamma.ppf(x, a) = 1 / Q⁻¹(a, x)
+
+def _invgammappf_normcdf_large_neg_x(x, a):
+    x0 = 1/2 * jnp.log(2 * jnp.pi) + 1/2 * jnp.square(x) + jnp.log(-x)
+    x1 = x0 - (-(a - 1) * jnp.log(x0) + jspecial.gammaln(a)) / (1 - (a - 1) / x0)
+    return 1 / x1
+    # compared to _1, this adds one newton step for Q⁻¹(a, x)
+
+class gamma:
+    
+    @staticmethod
+    def ppf(q, a, scale=1):
+        return scale * gammaincinv(a, q)
+
+    @staticmethod
+    def isf(q, a, scale=1):
+        return scale * gammainccinv(a, q)
 
 class invgamma:
     

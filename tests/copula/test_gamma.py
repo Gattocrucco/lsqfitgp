@@ -1,4 +1,4 @@
-# lsqfitgp/tests/copula/test_invgamma.py
+# lsqfitgp/tests/copula/test_gamma.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #
@@ -17,40 +17,44 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Test the copula.invgamma module """
+""" Test the copula._gamma module """
 
 from jax import test_util
 from scipy import stats
+from pytest import mark
 import pytest
 import numpy as np
 
-from lsqfitgp.copula import _invgamma
+from lsqfitgp.copula import _gamma
 
-def test_grad():
-    test_util.check_grads(_invgamma.gammainccinv, (2.5, 0.3), 1)
-    test_util.check_grads(_invgamma.gammaincinv, (2.5, 0.3), 1)
+@mark.parametrize('degree', [
+    pytest.param(1, id='grad'),
+    pytest.param(2, id='hess', marks=mark.xfail),
+])
+@mark.parametrize('func', ['gammaincinv', 'gammainccinv'])
+def test_deriv(degree, func):
+    test_util.check_grads(getattr(_gamma, func), (2.5, 0.3), degree)
 
-@pytest.mark.xfail
-def test_hess():
-    test_util.check_grads(_invgamma.gammainccinv, (2.5, 0.3), 2)
-    test_util.check_grads(_invgamma.gammaincinv, (2.5, 0.3), 2)
+@pytest.fixture(params=['gamma', 'invgamma'])
+def distr(request):
+    return request.param
 
-def test_ppf():
+def test_ppf(distr):
     q = 0.43
     a = 3.6
     b = 2.1
     np.testing.assert_array_max_ulp(
-        stats.invgamma.ppf(q, a, scale=b),
-        _invgamma.invgamma.ppf(q, a, scale=b),
+        getattr(stats, distr).ppf(q, a, scale=b),
+        getattr(_gamma, distr).ppf(q, a, scale=b),
     )
 
-def test_isf():
+def test_isf(distr):
     q = 0.43
     a = 3.6
     b = 2.1
     np.testing.assert_allclose(
-        _invgamma.invgamma.isf(q, a, scale=b),
-        stats.invgamma.isf(q, a, scale=b),
+        getattr(_gamma, distr).isf(q, a, scale=b),
+        getattr(stats, distr).isf(q, a, scale=b),
         atol=0, rtol=1e-7,
     )
 
@@ -59,7 +63,7 @@ def test_logpdf():
     a = 3.6
     b = 2.1
     np.testing.assert_allclose(
-        _invgamma.invgamma.logpdf(q, a, scale=b),
+        _gamma.invgamma.logpdf(q, a, scale=b),
         stats.invgamma.logpdf(q, a, scale=b), 
         rtol=1e-5,
     )
@@ -69,7 +73,7 @@ def test_cdf():
     a = 3.6
     b = 2.1
     np.testing.assert_allclose(
-        _invgamma.invgamma.cdf(q, a, scale=b),
+        _gamma.invgamma.cdf(q, a, scale=b),
         stats.invgamma.cdf(q, a, scale=b), 
         rtol=1e-6,
     )

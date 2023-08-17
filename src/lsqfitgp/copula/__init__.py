@@ -42,9 +42,12 @@
 #
 # The default prefix would be something like '__copula_'.
 
+# TODO document the conditional copula functionality.
+
 import abc
 import functools
 import collections
+import numbers
 
 import gvar
 from jax.scipy import special as jspecial
@@ -55,7 +58,7 @@ from jax import numpy as jnp
 from .. import _patch_gvar
 from .. import _patch_jax
 from .. import _array
-from . import _beta, _invgamma
+from . import _beta, _gamma
 
 def normcdf(x):
     x = jnp.asarray(x)
@@ -109,34 +112,94 @@ class CopulaFactory(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def invfcn(cls, x, *params):
         r"""
+
+        Normal to desired distribution transformation.
+
         Maps a (multivariate) Normal variable to a variable with the desired
-        marginal distribution. This function must be an ufunc, jax traceable,
-        and differentiable one time in forward mode. :math:`F^{-1}(\Phi(x))`.
+        marginal distribution. In symbols: :math:`y = F^{-1}(\Phi(x))`. This
+        function is a generalized ufunc, jax traceable, and differentiable one
+        time.
+
+        Parameters
+        ----------
+        x : (*broadcast_shape, *in_shape) array or scalar
+            The input Normal variable. If multivariate, the variable shape must
+            be in the last axes. The calculation is broadcasted over other
+            leading axes. Use `input_shape` to determine the required variable
+            shape.
+        params :
+            The parameters of the distribution. Typically, numerical parameters
+            may be arrays and are broadcasted with `x`.
+
+        Returns
+        -------
+        y : (*broadcast_shape, *out_shape) array or scalar
+            The output variable with the desired marginal distribution.
+
         """
         pass
 
     @classmethod
-    def _partial_invfcn(cls, invfcn, params):
+    def input_shape(cls, *params):
+        """
+        Return the input shape expected by `invfcn`.
+
+        May depend on the type of the parameters, but not on their values. This
+        shape applies only to the class member `invfcn`, not to the one intended
+        for `gvar.BufferDict` that is created by the class constructor, which
+        always expects either a scalar or vector tail shape.
+
+        Parameters
+        ----------
+        params :
+            The same arguments that would be passed to `invfcn`.
+
+        Returns
+        -------
+        shape : tuple of int
+            The required shape of the last axes of the input array `x` to
+            `invfcn`.
+        """
+        return ()
+
+    @classmethod
+    def output_shape(cls, *params):
+        return ()
+
+    @classmethod
+    def _partial_invfcn(cls, params):
         """
         Partially apply `invfcn` to `params` and return a function that maps
         `nvariables` Normal variables to the desired marginal distribution.
         """
 
         # expand copulas in parameters
-        invfcn, nvariables = cls._partial_invfcn_rec(invfcn, params)
+        invfcn, nvariables, out_shape = cls._partial_invfcn_rec(params)
+
+        # determine signature
+        out_sig = ','.join(str(l) for l in out_shape)
+        if nvariables == 1:
+            signature = f'()->({out_sig})'
+        else:
+            signature = f'({nvariables})->({out_sig})'
 
         # add gvar support, manage conversion to array
-        @_patch_gvar.add_gvar_support # TODO this was not supposed to work on gufuncs!!
-        @functools.wraps(invfcn)
+        @functools.partial(_patch_gvar.gvar_gufunc, signature=signature)
+        @functools.wraps(cls.invfcn)
         def partial_invfcn(x):
             x = _array.asarray(x)
             if nvariables > 1:
-                assert x.ndim and x.shape[-1] == nvariables
+                actual_nvar = x.shape[-1] if x.ndim else 1
+                if actual_nvar != nvariables:
+                    raise ValueError(
+                        f'{cls.__name__} copula expected {nvariables} Normal '
+                        f'input variables, found {actual_nvar}'
+                    )
             else:
                 x = x[..., None]
             y, length = invfcn(x, 0)
             assert length == nvariables
-            assert y.shape == x.shape[:-1]
+            assert y.shape == x.shape[:-1] + out_shape
             return y
 
         # mark copula class
@@ -146,28 +209,62 @@ class CopulaFactory(metaclass=abc.ABCMeta):
         return partial_invfcn, nvariables
 
     @classmethod
-    def _partial_invfcn_rec(cls, invfcn, params, nvariables=0):
+    def _partial_invfcn_rec(cls, params, nvariables=0):
 
-        # process copulas in parameters
+        # process copulas in parameters, converting them to their invfcn
         partialparams = []
+        shapeparams = []
         for param in params:
-            if isinstance(param, (tuple, list)) and param and issubclass(param[0], __class__):
-                param, nvariables = cls._partial_invfcn_rec(param[0].invfcn, param[1:], nvariables)
-            partialparams.append(param)
+            is_copula = (
+                isinstance(param, (tuple, list))
+                and param
+                and isinstance(param[0], type)
+                and issubclass(param[0], __class__)
+            )
+            if is_copula:
+                invfcn, nvariables, out_shape = param[0]._partial_invfcn_rec(
+                    param[1:],
+                    nvariables,
+                )
+                partialparams.append(invfcn)
+                shapeparams.append(numpy.broadcast_to(numpy.empty(()), out_shape))
+            else:
+                partialparams.append(param)
+                shapeparams.append(param)
         partialparams = tuple(partialparams)
+
+        # statically determine input/output tail shapes
+        expected_in_shape = cls.input_shape(*shapeparams)
+        expected_in_size = numpy.prod(expected_in_shape, dtype=int)
+        expected_out_shape = cls.output_shape(*shapeparams)
         
         # wrap function to close on parameter values, call ancestor copulas,
         # and keep track of array usage
-        @functools.wraps(invfcn)
+        @functools.wraps(cls.invfcn)
         def newinvfcn(x, i):
+
             params = []
             for param in partialparams:
                 if callable(param):
                     param, i = param(x, i)
                 params.append(param)
-            return invfcn(x[..., i], *params), i + 1
-        
-        return newinvfcn, nvariables + 1
+
+            in_shape = cls.input_shape(*params)
+            assert in_shape == expected_in_shape
+            out_shape = cls.output_shape(*params)
+            assert out_shape == expected_out_shape
+
+            in_size = numpy.prod(in_shape, dtype=int)
+            x = x[..., i:i + in_size]
+            broadcast_shape = x.shape[:-1]
+            x = x.reshape(broadcast_shape + in_shape)
+
+            y = cls.invfcn(x, *params)
+            assert y.shape == broadcast_shape + out_shape
+            
+            return y, i + in_size
+
+        return newinvfcn, nvariables + expected_in_size, expected_out_shape
 
     _Params = collections.namedtuple('Params', ['params', 'nvariables'])
 
@@ -181,10 +278,12 @@ class CopulaFactory(metaclass=abc.ABCMeta):
                 # cls.params is not updated by
                 # gvar.BufferDict.del_distribution, but it is not a problem
             nvariables = existing.nvariables
+        
         else:
-            invfcn, nvariables = cls._partial_invfcn(cls.invfcn, params)
+            invfcn, nvariables = cls._partial_invfcn(params)
             gvar.BufferDict.add_distribution(name, invfcn)
             cls.params[name] = cls._Params(params, nvariables)
+        
         return gvar.gvar(numpy.zeros(nvariables), numpy.ones(nvariables)).squeeze()
 
 class beta(CopulaFactory):
@@ -198,6 +297,55 @@ class beta(CopulaFactory):
     @staticmethod
     def invfcn(x, alpha, beta):
         return _beta.beta.ppf(normcdf(x), a=alpha, b=beta)
+
+class dirichlet(CopulaFactory):
+    """
+    https://en.wikipedia.org/wiki/Dirichlet_distribution
+    """
+    
+    def __new__(cls, name, alpha, n):
+        return super().__new__(cls, name, alpha, n)
+    
+    @staticmethod
+    def invfcn(x, alpha, n):
+        alpha = jnp.asarray(alpha)
+        if isinstance(n, numbers.Integral):
+            n = jnp.ones(n)
+        else:
+            n = jnp.asarray(n)
+        n = n / n.sum(axis=-1, keepdims=True)
+        alpha = alpha[..., None] * n
+        y = jnp.where(x < 0,
+            _gamma.gamma.ppf(normcdf(x), a=alpha),
+            _gamma.gamma.isf(normcdf(-x), a=alpha),
+        )
+        return y / y.sum(axis=-1, keepdims=True)
+
+    @staticmethod
+    def input_shape(alpha, n):
+        if isinstance(n, numbers.Integral):
+            return (n,)
+        else:
+            return _array.asarray(n).shape[-1:]
+
+    @classmethod
+    def output_shape(cls, alpha, n):
+        return cls.input_shape(alpha, n)
+
+class gamma(CopulaFactory):
+    """
+    https://en.wikipedia.org/wiki/Gamma_distribution
+    """
+    
+    def __new__(cls, name, alpha, beta):
+        return super().__new__(cls, name, alpha, beta)
+
+    @staticmethod
+    def invfcn(x, alpha, beta):
+        return jnp.where(x < 0,
+            _gamma.gamma.ppf(normcdf(x), a=alpha),
+            _gamma.gamma.isf(normcdf(-x), a=alpha),
+        ) / beta
 
 class halfcauchy(CopulaFactory):
     """
@@ -262,20 +410,6 @@ class invgamma(CopulaFactory):
     def __new__(cls, name, alpha, beta):
         return super().__new__(cls, name, alpha, beta)
 
-    @staticmethod
-    def _ppf_normcdf_large_neg_x_1(x):
-        return 1 / (1/2 * jnp.log(2 * jnp.pi) + 1/2 * jnp.square(x) + jnp.log(-x))
-        # Φ(x) ≈ -1/√2π exp(-x²/2)/x
-        # Q(a, x) ≈ x^(a-1) e^-x / Γ(a)
-        # invgamma.ppf(x, a) = 1 / Q⁻¹(a, x)
-    
-    @staticmethod
-    def _ppf_normcdf_large_neg_x(x, a):
-        x0 = 1/2 * jnp.log(2 * jnp.pi) + 1/2 * jnp.square(x) + jnp.log(-x)
-        x1 = x0 - (-(a - 1) * jnp.log(x0) + jspecial.gammaln(a)) / (1 - (a - 1) / x0)
-        return 1 / x1
-        # compared to _1, this adds one newton step for Q⁻¹(a, x)
-
     @classmethod
     def invfcn(cls, x, alpha, beta):
         x = jnp.asarray(x)
@@ -284,12 +418,15 @@ class invgamma(CopulaFactory):
         return beta * _piecewise_multiarg(
             [x < -boundary, x < 0, x >= 0],
             [
-                lambda x, a: cls._ppf_normcdf_large_neg_x(x, a=a),
-                lambda x, a: _invgamma.invgamma.ppf(normcdf(x), a=a),
-                lambda x, a: _invgamma.invgamma.isf(normcdf(-x), a=a),
+                lambda x, a: _gamma._invgammappf_normcdf_large_neg_x(x, a=a),
+                lambda x, a: _gamma.invgamma.ppf(normcdf(x), a=a),
+                lambda x, a: _gamma.invgamma.isf(normcdf(-x), a=a),
             ],
             x, alpha,
         )
+        # gamma does not have the corresponding special case for large positive
+        # x. Is it because I have not encountered the problem yet, or because it
+        # is less likely to happen?
 
 def _piecewise_multiarg(conds, functions, *operands):
     conds = jnp.stack(conds, axis=-1)
