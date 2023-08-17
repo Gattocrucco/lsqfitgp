@@ -45,37 +45,54 @@ def jaxconfig(**opts):
         for k, v in prev.items():
             jax.config.update(k, v)
 
-class CopulaBaseTest:
+class CopulaFactoryTestBase:
     """
     Base class for tests of a CopulaFactory subclass
     """
-    
-    @pytest.fixture
-    def name(self, request):
-        return request.node.nodeid
 
     testfor = {}
     
-    def __init_subclass__(cls, *, params, scipy_params=None, recparams=None):
+    def __init_subclass__(cls):
         assert cls.__name__.startswith('Test')
-        if scipy_params is None:
-            scipy_params = lambda *p: p
         attrs = dict(
             copcls=getattr(lgp.copula, cls.__name__[4:].lower()),
-            params=params,
-            scipy_params=staticmethod(scipy_params),
-            recparams=recparams,
         )
         for k, v in attrs.items():
             if not hasattr(cls, k):
                 setattr(cls, k, v)
+        specialmethods = dict(
+            scipy_params=staticmethod,
+            rvs=classmethod,
+        )
+        for name, kind in specialmethods.items():
+            if not isinstance(meth := getattr(cls, name), kind):
+                setattr(cls, name, kind(meth))
         __class__.testfor[cls.copcls.__name__] = cls
+
+    params = ()
+    recparams = ()
+    accurate_range = (-np.inf, np.inf)
+    
+    def scipy_params(*params):
+        return params
 
     def cdf(self):
         distrname = self.copcls.__name__
         distr = getattr(stats, distrname)
         params = self.scipy_params(*self.params)
-        return distr(*params).cdf
+        cdf = distr(*params).cdf
+        cdf0 = cdf(self.accurate_range[0])
+        cdf1 = cdf(self.accurate_range[1])
+        @functools.wraps(cdf)
+        def clipped_cdf(x):
+            return (np.clip(cdf(x), cdf0, cdf1) - cdf0) / (cdf1 - cdf0)
+        return clipped_cdf
+
+    def rvs(cls, *params, size=(), random_state=None):
+        distrname = cls.copcls.__name__
+        distr = getattr(stats, distrname)
+        params = cls.scipy_params(*params)
+        return distr.rvs(*params, size=size, random_state=random_state)
 
     @classmethod
     def recrvs(cls, level):
@@ -83,20 +100,26 @@ class CopulaBaseTest:
         distrname = cls.copcls.__name__
         distr = getattr(stats, distrname)
         
-        def rvs(size):
+        def rvs(size, rng):
             if level > 0:
                 params = []
                 for param in cls.recparams:
                     if isinstance(param, str):
                         rvs = cls.testfor[param].recrvs(level - 1)
-                        param = rvs(size)
+                        param = rvs(size, rng)
                     params.append(param)
             else:
-                params = cls.params 
-            params = cls.scipy_params(*params)
-            return distr.rvs(*params, size=size)
-        
+                params = cls.params
+            return cls.rvs(*params, size=size, random_state=rng)
+                    
         return rvs
+
+    @classmethod
+    def trim(cls, x, corendim):
+        ok = x == np.clip(x, *cls.accurate_range)
+        axes = tuple(range(x.ndim - corendim, x.ndim))
+        ok = np.all(ok, axis=axes)
+        return x[np.nonzero(ok) + (slice(None),) * corendim]
 
     @classmethod
     def convert_recparams(cls, level):
@@ -111,10 +134,14 @@ class CopulaBaseTest:
             params = cls.params
         return params
         
+    @pytest.fixture
+    def name(self, request):
+        return request.node.nodeid
+
     def test_invfcn_errorprop(self, name, rng):
         variables = self.copcls(name, *self.params)
-        assert variables.ndim in (0, 1)
-        assert variables.ndim == 0 or variables.size > 1
+        assert np.ndim(variables) in (0, 1)
+        assert np.ndim(variables) == 0 or variables.size > 1
         x = gvar.gvar(
             rng.standard_normal(variables.shape),
             rng.gamma(10, 1/10, variables.shape),
@@ -170,108 +197,135 @@ class CopulaBaseTest:
     def nsamples(self):
         return 10000
 
-    def test_correct_distribution(self, rng, nsamples):
+    @pytest.fixture
+    def significance(self):
+        return 0.0001
+
+    def test_correct_distribution(self, rng, nsamples, significance):
         in_shape = self.copcls.input_shape(*self.params)
         out_shape = self.copcls.output_shape(*self.params)
-        samples = rng.standard_normal((nsamples,) + in_shape)
-        samples = self.copcls.invfcn(samples, *self.params)
+        samples_norm = rng.standard_normal((nsamples,) + in_shape)
+        samples = self.copcls.invfcn(samples_norm, *self.params)
         assert samples.shape == (nsamples,) + out_shape
         if out_shape or in_shape:
-            refsamples = self.recrvs(0)(nsamples)
-            self.compare_samples(samples, refsamples, rng)
+            refsamples = self.recrvs(0)(nsamples, rng)
+            self.compare_samples(samples, refsamples, rng, significance)
         else:
             test = stats.ks_1samp(samples, self.cdf())
-            assert test.pvalue >= 0.001
+            assert test.pvalue >= significance
 
     @mark.parametrize('level', [0, 1, 2])
-    def test_recursive(self, name, level, rng, nsamples):
+    def test_recursive(self, name, level, rng, nsamples, significance):
         variables = self.copcls(name, *self.convert_recparams(level))
-        samples = rng.standard_normal((nsamples,) + variables.shape)
-        bd = gvar.BufferDict({f'{name}(x)': samples})
+        samples_norm = rng.standard_normal((nsamples,) + variables.shape)
+        bd = gvar.BufferDict({f'{name}(x)': samples_norm})
         samples = bd['x']
-        refsamples = self.recrvs(level)(nsamples)
-        self.compare_samples(samples, refsamples, rng)
+        refsamples = self.recrvs(level)(nsamples, rng)
+        self.compare_samples(samples, refsamples, rng, significance)
 
-    def compare_samples(self, samples, refsamples, rng):
+    def assert_notnan(self, x):
+        assert np.all(~np.isnan(x)), np.sum(np.isnan(x))
+
+    def compare_samples(self, samples, refsamples, rng, significance):
+        self.assert_notnan(samples)
+        self.assert_notnan(refsamples)
         assert refsamples.shape == samples.shape
         out_shape = samples.shape[1:]
+        samples = self.trim(samples, len(out_shape))
+        refsamples = self.trim(refsamples, len(out_shape))
         
         for i in np.ndindex(*out_shape):
             i = (...,) + i
             test = stats.ks_2samp(samples[i], refsamples[i])
-            assert test.pvalue >= 0.001
+            assert test.pvalue >= significance
         
         direction = rng.standard_normal(out_shape)
         samples_1d = np.tensordot(samples, direction, direction.ndim)
         refsamples_1d = np.tensordot(refsamples, direction, direction.ndim)
         test = stats.ks_2samp(samples_1d, refsamples_1d)
-        assert test.pvalue >= 0.001
+        assert test.pvalue >= significance
 
-class TestBeta(CopulaBaseTest,
-    params=(1.2, 2.3),
-    recparams=('invgamma', 'halfcauchy'),
-): pass
+class TestBeta(CopulaFactoryTestBase):
+    params = 1.2, 2.3
+    recparams = 'invgamma', 'halfcauchy'
 
-def dirichlet_scipy_params(alpha, n):
-    if isinstance(n, numbers.Integral):
-        n = np.ones(n)
-    alpha = np.asarray(alpha)
-    n = np.asarray(n)
-    return alpha[..., None] * n / n.sum(),
+class TestDirichlet(CopulaFactoryTestBase):
+    params = 1.2, [1, 4, 3]
+    recparams = 'gamma', 5
+    accurate_range = 1e-15, np.inf
+        # TODO remove after using loggamma
+    
+    def scipy_params(alpha, n):
+        alpha = np.asarray(alpha)
+        if isinstance(n, numbers.Integral):
+            n = np.ones(n)
+        n = np.asarray(n)
+        return alpha[..., None] * n / n.sum(axis=-1, keepdims=True),
 
-class TestDirichlet(CopulaBaseTest,
-    params=(1.2, [1, 4, 3]),
-    scipy_params=dirichlet_scipy_params,
-    recparams=('gamma', 5),
-): pass
+    def rvs(cls, alpha, n, size=(), random_state=None):
+        alpha, = cls.scipy_params(alpha, n)
+        rng = np.random.default_rng(random_state)
+        shape = np.broadcast_shapes(alpha.shape[:-1], size) + alpha.shape[-1:]
+        alpha = np.broadcast_to(alpha, shape)
+        return cls.dirichlet_rvs(alpha, rng)
 
-class TestGamma(CopulaBaseTest,
-    params=(1.2, 2.3),
-    scipy_params=(lambda alpha, beta: (alpha, 0, 1 / beta)),
-    recparams=('invgamma', 'halfnorm'),
-): pass
+    @staticmethod
+    @functools.partial(np.vectorize, excluded=(1, 2), signature='(n)->(n)')
+    def dirichlet_rvs(alpha, rng):
+        """ neither numpy's nor scipy's rvs support broadcasting on alpha """
+        return rng.dirichlet(alpha)
 
-class TestHalfCauchy(CopulaBaseTest,
-    params=(0.7,),
-    scipy_params=(lambda gamma: (0, gamma)),
-    recparams=('invgamma',),
-): pass
+class TestGamma(CopulaFactoryTestBase):
+    params = 1.2, 2.3
+    recparams = 'invgamma', 'halfnorm'
+    scipy_params = lambda alpha, beta: (alpha, 0, 1 / beta)
 
-class TestHalfNorm(CopulaBaseTest,
-    params=(1.3,),
-    scipy_params=(lambda sigma: (0, sigma)),
-    recparams=('invgamma',)
-): pass
+class TestHalfCauchy(CopulaFactoryTestBase):
+    params = 0.7,
+    recparams = 'invgamma',
+    scipy_params = lambda gamma: (0, gamma)
 
-class TestInvGamma(CopulaBaseTest,
-    params=(1.2, 2.3),
-    scipy_params=(lambda alpha, beta: (alpha, 0, beta)),
-    recparams=('invgamma', 'halfnorm')
-): pass
+class TestHalfNorm(CopulaFactoryTestBase):
+    params = 1.3,
+    recparams = 'invgamma',
+    scipy_params = lambda sigma: (0, sigma)
 
-class TestUniform(CopulaBaseTest,
-    params=(-0.5, 2),
-    scipy_params=(lambda a, b: (a, b - a)),
-    recparams=(-1, 'uniform'),
-): pass
+class TestInvGamma(CopulaFactoryTestBase):
+    params = 1.2, 2.3
+    recparams = 'invgamma', 'halfnorm'
+    scipy_params = lambda alpha, beta: (alpha, 0, beta)
+
+class TestUniform(CopulaFactoryTestBase):
+    params = -0.5, 2
+    recparams = -1, 'uniform'
+    scipy_params = lambda a, b: (a, b - a)
 
 def test_invgamma_divergence():
     y = lgp.copula.invgamma.invfcn(10., 1, 1)
     assert np.isfinite(y)
 
-def test_invgamma_zero():
-    params = (1.2, 2.3)
-    y = lgp.copula.invgamma.invfcn(-100, *params)
-    assert y > 0
-    with jaxconfig(jax_enable_x64=False):
-        y1 = lgp.copula.invgamma.invfcn(-12 * (1 + np.finfo(np.float32).eps), *params)
-        y2 = lgp.copula.invgamma.invfcn(-12 * (1 - np.finfo(np.float32).eps), *params)
-        assert y1 > 0 and y2 > 0
-        np.testing.assert_allclose(y1, y2, atol=0, rtol=2e-4)
-    with jaxconfig(jax_enable_x64=True):
-        y1 = lgp.copula.invgamma.invfcn(-37 * (1 + np.finfo(np.float64).eps), *params)
-        y2 = lgp.copula.invgamma.invfcn(-37 * (1 - np.finfo(np.float64).eps), *params)
-        assert y1 > 0 and y2 > 0
-        np.testing.assert_allclose(y1, y2, atol=0, rtol=1e-5)
+@mark.parametrize('distr', ['gamma', 'invgamma'])
+@mark.parametrize('x64', [False, True])
+def test_gamma_zero(distr, x64):
+    
+    test = CopulaFactoryTestBase.testfor[distr]
 
+    # check there's no over/underflow
+    if distr == 'gamma':
+        y = test.copcls.invfcn(100, *test.params)
+        assert y < np.inf
+    else:
+        y = test.copcls.invfcn(-100, *test.params)
+        assert y > 0
+    
+    # check continuity at asymptotic series switchpoint
+    with jaxconfig(jax_enable_x64=x64):
+        dtype = [np.float32, np.float64][x64]
+        rtol = [2e-4, 1e-5][x64]
+        boundary = test.copcls._boundary(dtype(0.))
+        y1 = test.copcls.invfcn(boundary * (1 + np.finfo(dtype).eps), *test.params)
+        y2 = test.copcls.invfcn(boundary * (1 - np.finfo(dtype).eps), *test.params)
+        assert y1 > 0 and y2 > 0
+        np.testing.assert_allclose(y1, y2, atol=0, rtol=rtol)
+    
     # TODO improve the accuracy

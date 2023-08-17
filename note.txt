@@ -5566,10 +5566,82 @@ To implement it:
         - n is
             - an integer: the number of dimensions, dirichlet is symmetric
             - a vector: the unnormalized base measure
-    - write the unit test
+    - write the unit test (DONE)
         Where I'm at: stats.dirichlet does not vectorize on alpha
     - docstrings with examples
     - introduction in the reference manual
 
-...........
+2023-08-17
+==========
 
+Taking random samples with the dirichlet copula generates nans. The cdf
+discrepancy is at very small (output) values, so I guess that's were the nans
+happen.
+
+All the nan samples arise from a low input to the scalar concentration parameter
+gamma copula, about -3.
+
+I expect the quickest road is playing with the gamma invfcn. Result: seems to
+reliably produce no nans. It can produce infs of course with large enough
+inputs: and it occurs at 37, so it's the same problem as invgamma. Fixed
+
+Dirichlet continues to fail though, that was not the source of its problems.
+It's when the concentration parameter is small, that the gamma sources may all
+yield zero at once. Then they are not normalizable. Since I'm dividing by the
+sum, I could drop a common factor that's causing the underflow.
+
+Gamma's invfcn is the inverse w.r.t. x of
+
+    P(alpha, x) = gamma(alpha, x) / Gamma(alpha).
+
+For x -> 0, this is
+
+    P(alpha, x) = int_0^x dt e^-t t^(alpha - 1) / Gamma(alpha) =
+                = int_0^x dt t^(alpha - 1) / Gamma(alpha) =
+                = x^alpha / alpha / Gamma(alpha)
+
+    --> x^alpha = P(alpha, x) alpha Gamma(alpha)
+
+    --> x = (P(alpha, x) alpha Gamma(alpha))^(1/alpha)
+
+    --> P^-1(alpha, y) = (y alpha Gamma(alpha))^(1/alpha).
+
+As alpha -> 0, this is
+
+    P^-1(alpha, y) = y^1/alpha
+
+Let's check:
+
+    In [142]: special.gammaincinv(0.01,0.01)
+    Out[142]: 5.660738147061307e-201
+
+    In [143]: 0.01**(1/0.01)
+    Out[143]: 1.000000000000002e-200
+
+    In [144]: special.gammaincinv(0.01,0.02)
+    Out[144]: 7.175838109858222e-171
+
+    In [145]: 0.02**(1/0.01)
+    Out[145]: 1.267650600228232e-170
+
+The expression to evaluate is:
+
+    P^-1(alpha_i, y_i) / sum_j P^-1(alpha_j, y_j) =
+        = y_i^1/alpha_i / sum_j y_j^1/alpha_j
+
+I don't know how to simplify analytically, I'll try logarithms:
+
+    log ... =
+        = log(y_i) / alpha_i - log(sum_j e^(log(y_j) / alpha_j))
+
+I did the low x limit, but I shouldn't really, the problem is just alpha. For
+a -> 0:
+
+    gamma.cdf(x, a) = P(a, x)
+                    = gamma(a, x) / Gamma(a)
+                    = int_0^x t^(a-1) e^-t dt / (1 / a)
+                    = a int_0^x t^(a-1) e^-t dt
+                    = a x^a / a
+                    = x^a
+
+Well it's the same because the only important part of the integrand in near 0.

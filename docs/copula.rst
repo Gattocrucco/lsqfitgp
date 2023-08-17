@@ -27,6 +27,7 @@ Gaussian copulas
 .. autoclass:: CopulaFactory
     :members:
 .. autoclass:: beta
+.. autoclass:: dirichlet
 .. autoclass:: halfcauchy
 .. autoclass:: halfnorm
 .. autoclass:: invgamma
