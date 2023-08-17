@@ -5645,3 +5645,10 @@ a -> 0:
                     = x^a
 
 Well it's the same because the only important part of the integrand in near 0.
+
+...........
+
+The samplers comparison tests still fail on dirichlet, but after inspecting the
+empirical cdfs I reckon that the inaccuracy in on
+numpy.random.Generator.dirichlet. I'll try scipy's generator. => scipy uses
+numpy. Fixed by sampling from stats.loggamma.

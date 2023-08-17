@@ -28,7 +28,7 @@ import gvar
 import jax
 import pytest
 from pytest import mark
-from scipy import stats
+from scipy import stats, special
 
 import lsqfitgp as lgp
 
@@ -252,8 +252,6 @@ class TestBeta(CopulaFactoryTestBase):
 class TestDirichlet(CopulaFactoryTestBase):
     params = 1.2, [1, 4, 3]
     recparams = 'gamma', 5
-    accurate_range = 1e-15, np.inf
-        # TODO remove after using loggamma
     
     def scipy_params(alpha, n):
         alpha = np.asarray(alpha)
@@ -270,10 +268,16 @@ class TestDirichlet(CopulaFactoryTestBase):
         return cls.dirichlet_rvs(alpha, rng)
 
     @staticmethod
-    @functools.partial(np.vectorize, excluded=(1, 2), signature='(n)->(n)')
+    @functools.partial(np.vectorize, excluded=(1,), signature='(n)->(n)')
     def dirichlet_rvs(alpha, rng):
         """ neither numpy's nor scipy's rvs support broadcasting on alpha """
-        return rng.dirichlet(alpha)
+        lny = stats.loggamma.rvs(alpha, random_state=rng)
+        norm = special.logsumexp(lny)
+        return np.exp(lny - norm)
+
+        # TODO numpy.random.Generator.dirichlet is inaccurate for small alpha at
+        # x < eps, scipy piggybacks on numpy, see it by plotting an empirical
+        # cdf on x logscale with plt.stairs. Open an issue on numpy.
 
 class TestGamma(CopulaFactoryTestBase):
     params = 1.2, 2.3
@@ -310,7 +314,7 @@ def test_invgamma_divergence():
 
 @mark.parametrize('distr', ['gamma', 'invgamma'])
 @mark.parametrize('x64', [False, True])
-def test_gamma_zero(distr, x64):
+def test_gamma_asymp(distr, x64):
     
     test = CopulaFactoryTestBase.testfor[distr]
 
@@ -329,7 +333,8 @@ def test_gamma_zero(distr, x64):
         boundary = test.copcls._boundary(dtype(0.))
         y1 = test.copcls.invfcn(boundary * (1 + np.finfo(dtype).eps), *test.params)
         y2 = test.copcls.invfcn(boundary * (1 - np.finfo(dtype).eps), *test.params)
-        assert y1 > 0 and y2 > 0
+        assert 0 < y1 < np.inf and 0 < y2 < np.inf
+        assert y1 != y2
         np.testing.assert_allclose(y1, y2, atol=0, rtol=rtol)
     
     # TODO improve the accuracy

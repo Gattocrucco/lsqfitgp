@@ -67,19 +67,15 @@ class dirichlet(CopulaFactory):
         else:
             n = jnp.asarray(n)
         alpha = alpha[..., None] * n / n.sum(axis=-1, keepdims=True)
-        y = gamma.invfcn(x, alpha, 1)
-        # TODO use the loggamma distribution
-        norm = y.sum(axis=-1, keepdims=True)
-        return jnp.where(norm,
-            y / norm,
-            cls._asymp(x, alpha),
-        )
+        lny = loggamma.invfcn(x, alpha)
+        norm = jspecial.logsumexp(lny, axis=-1, keepdims=True)
+        return jnp.exp(lny - norm)
 
     @classmethod
-    def _asymp(cls, x, a):
+    def _invfcn_tiny_alpha(cls, x, alpha):
         q = _normcdf(x)
         lnq = jnp.log(q)
-        lny = lnq / a
+        lny = lnq / alpha
         lnnorm = jspecial.logsumexp(lny, axis=-1, keepdims=True)
         return jnp.exp(lny - lnnorm)
 
