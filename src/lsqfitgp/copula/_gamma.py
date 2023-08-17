@@ -18,7 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-JAX-compatible implementation of the gamma and inverse gamma distributions
+JAX-compatible implementation of the gamma and related distributions
 """
 
 import functools
@@ -93,43 +93,94 @@ def gammaincinv_jvp(primals, tangents):
     dPinv_da_a_y = -dPinv_dy_a_y * dP_da_a_x
     return x, dPinv_da_a_y * at + dPinv_dy_a_y * yt
 
-def _gammaisf_normcdf_large_neg_x_1(x):
-    return 1/2 * jnp.log(2 * jnp.pi) + 1/2 * jnp.square(x) + jnp.log(-x)
-    # Φ(x) ≈ -1/√2π exp(-x²/2)/x
-    # Q(a, x) ≈ x^(a-1) e^-x / Γ(a)
-    # gamma.isf(x, a) = Q⁻¹(a, x)
-
 def _gammaisf_normcdf_large_neg_x(x, a):
-    x0 = 1/2 * jnp.log(2 * jnp.pi) + 1/2 * jnp.square(x) + jnp.log(-x)
-    x1 = x0 - (-(a - 1) * jnp.log(x0) + jspecial.gammaln(a)) / (1 - (a - 1) / x0)
-    return x1
-    # compared to _1, this adds one newton step for Q⁻¹(a, x)
+    logphi = lambda x: -1/2 * jnp.log(2 * jnp.pi) - 1/2 * jnp.square(x) - jnp.log(-x)
+    logq = logphi(x)
+    loggammaa = jspecial.gammaln(a)
+    f = lambda y: (a - 1) * jnp.log(y) - y - loggammaa - logq
+    f1 = lambda y: (a - 1) / y - 1
+    y0 = -logq
+    y1 = y0 - ((a - 1) * jnp.log(y0) - loggammaa) / ((a - 1) / y0 - 1)
+    return y1
+
+    # TODO I tried adding one Newton step more, but it does not improve the
+    # accuracy. I probably have to add terms to the approximations of Phi and
+    # Q. I could try first special.erfcx for Phi.
+
+    # x -> -∞,  q -> 0+,  y -> ∞
+    # q = Φ(x) ≈ -1/√2π exp(-x²/2)/x
+    # q = Q(a, y) ≈ y^(a-1) e^-y / Γ(a)
+    # gamma.isf(q, a) = Q⁻¹(a, q)
+    # log q = -1/2 log 2π - x²/2 - log(-x)              (1)
+    # log q = (a - 1) log y - y - log Γ(a)              (2)
+    # f(y) = (a - 1) log y - y - log Γ(a) - log(q)
+    #      = 0     by (2)
+    # f'(y) = (a - 1) / y - 1
+    # y_0 = -log q    by considering y -> ∞
+    # y_1 = y_0 - f(y_0) / f'(y_0)    Newton step
+
+def _loggammaisf_normcdf_large_neg_x(x, a):
+    logphi = lambda x: -1/2 * jnp.log(2 * jnp.pi) - 1/2 * jnp.square(x) - jnp.log(-x)
+    logq = logphi(x)
+    loggammaa = jspecial.gammaln(a)
+    g = lambda logy: (a - 1) * logy - jnp.exp(logy) - loggammaa - logq
+    g1 = lambda logy: (a - 1) - jnp.exp(logy)
+    logy0 = jnp.log(-logq)
+    logy1 = logy0 - ((a - 1) * logy0 - loggammaa) / ((a - 1) + logq)
+    return logy1
 
 class gamma:
     
     @staticmethod
-    def ppf(q, a, scale=1):
-        return scale * gammaincinv(a, q)
+    def ppf(q, a):
+        return gammaincinv(a, q)
 
     @staticmethod
-    def isf(q, a, scale=1):
-        return scale * gammainccinv(a, q)
+    def isf(q, a):
+        return gammainccinv(a, q)
 
 class invgamma:
     
     @staticmethod
-    def ppf(q, a, scale=1):
-        return scale / gammainccinv(a, q)
+    def ppf(q, a):
+        return 1 / gammainccinv(a, q)
 
     @staticmethod
-    def isf(q, a, scale=1):
-        return scale / gammaincinv(a, q)
+    def isf(q, a):
+        return 1 / gammaincinv(a, q)
 
     @staticmethod
-    def logpdf(x, a, scale=1):
-        x = x / scale
-        return -jnp.log(scale) - (a + 1) * jnp.log(x) - 1 / x - jspecial.gammaln(a)
+    def logpdf(x, a):
+        return -(a + 1) * jnp.log(x) - 1 / x - jspecial.gammaln(a)
 
     @staticmethod
-    def cdf(x, a, scale=1):
-        return jspecial.gammaincc(a, scale / x)
+    def cdf(x, a):
+        return jspecial.gammaincc(a, 1 / x)
+
+class loggamma:
+
+    @staticmethod
+    def ppf(q, c):
+        # scipy code:
+        # g = sc.gammaincinv(c, q)
+        # return _lazywhere(g < _XMIN, (g, q, c),
+        #                   lambda g, q, c: (np.log(q) + sc.gammaln(c+1))/c,
+        #                   f2=lambda g, q, c: np.log(g))
+        g = gammaincinv(c, q)
+        return jnp.where(g < jnp.finfo(g.dtype).tiny,
+            (jnp.log(q) + jspecial.gammaln(c + 1)) / c,
+            jnp.log(g),
+        )
+
+    @staticmethod
+    def isf(q, c):
+        # scipy code:
+        # g = sc.gammainccinv(c, q)
+        # return _lazywhere(g < _XMIN, (g, q, c),
+        #                   lambda g, q, c: (np.log1p(-q) + sc.gammaln(c+1))/c,
+        #                   f2=lambda g, q, c: np.log(g))
+        g = gammainccinv(c, q)
+        return jnp.where(g < jnp.finfo(g.dtype).tiny,
+            (jnp.log1p(-q) + jspecial.gammaln(c + 1)) / c,
+            jnp.log(g),
+        )

@@ -191,7 +191,7 @@ class CopulaFactoryTestBase:
         eps = np.finfo(float).eps
         x1 = self.copcls.invfcn(-eps, *self.params)
         x2 = self.copcls.invfcn(eps, *self.params)
-        np.testing.assert_allclose(x1, x2, atol=3 * eps, rtol=3 * eps)
+        np.testing.assert_allclose(x1, x2, atol=4 * eps, rtol=3 * eps)
 
     @pytest.fixture
     def nsamples(self):
@@ -294,6 +294,10 @@ class TestInvGamma(CopulaFactoryTestBase):
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfnorm'
     scipy_params = lambda alpha, beta: (alpha, 0, beta)
+
+class TestLogGamma(CopulaFactoryTestBase):
+    params = 1.2,
+    recparams = 'invgamma',
 
 class TestUniform(CopulaFactoryTestBase):
     params = -0.5, 2

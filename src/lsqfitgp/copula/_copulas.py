@@ -129,12 +129,39 @@ class gamma(CopulaFactory):
         return _piecewise_multiarg(
             [x < 0, x < boundary, x >= boundary],
             [
-                lambda x, a: _gamma.gamma.ppf(_normcdf(x), a=a),
-                lambda x, a: _gamma.gamma.isf(_normcdf(-x), a=a),
-                lambda x, a: _gamma._gammaisf_normcdf_large_neg_x(-x, a=a),
+                lambda x, a: _gamma.gamma.ppf(_normcdf(x), a),
+                lambda x, a: _gamma.gamma.isf(_normcdf(-x), a),
+                lambda x, a: _gamma._gammaisf_normcdf_large_neg_x(-x, a),
             ],
             x, alpha,
         ) / beta
+
+class loggamma(CopulaFactory):
+    """
+    https://en.wikipedia.org/wiki/Gamma_distribution, `scipy.stats.loggamma`
+    """
+    
+    def __new__(cls, name, c, **kw):
+        return super().__new__(cls, name, c, **kw)
+
+    @staticmethod
+    def _boundary(x):
+        return gamma._boundary(x)
+
+    @classmethod
+    def invfcn(cls, x, c):
+        x = jnp.asarray(x)
+        x = x.astype(_patch_jax.float_type(x))
+        boundary = cls._boundary(x)
+        return _piecewise_multiarg(
+            [x < 0, x < boundary, x >= boundary],
+            [
+                lambda x, c: _gamma.loggamma.ppf(_normcdf(x), c),
+                lambda x, c: _gamma.loggamma.isf(_normcdf(-x), c),
+                lambda x, c: _gamma._loggammaisf_normcdf_large_neg_x(-x, c),
+            ],
+            x, c,
+        )
 
 class invgamma(CopulaFactory):
     """
@@ -156,9 +183,9 @@ class invgamma(CopulaFactory):
         return beta * _piecewise_multiarg(
             [x < boundary, x < 0, x >= 0],
             [
-                lambda x, a: 1 / _gamma._gammaisf_normcdf_large_neg_x(x, a=a),
-                lambda x, a: _gamma.invgamma.ppf(_normcdf(x), a=a),
-                lambda x, a: _gamma.invgamma.isf(_normcdf(-x), a=a),
+                lambda x, a: 1 / _gamma._gammaisf_normcdf_large_neg_x(x, a),
+                lambda x, a: _gamma.invgamma.ppf(_normcdf(x), a),
+                lambda x, a: _gamma.invgamma.isf(_normcdf(-x), a),
             ],
             x, alpha,
         )
