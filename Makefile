@@ -75,15 +75,16 @@ examples: $(EXAMPLES)
 docscode:
 	$(DOCSPY) runcode.py *.rst
 
-docs/kernelsref.rst: docs/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_patch_jax/*.py src/lsqfitgp/_special/*.py
+docs/copula.rst: docs/copula.py src/lsqfitgp/copula/*.py
 	$(DOCSPY) --append $(notdir $<)
 
 docs/examplesref.rst: docs/examplesref.py src/lsqfitgp/*.py src/lsqfitgp/*/*.py
 	$(DOCSPY) --append $(notdir $<)
 
-GENDOCS := $(addsuffix .rst, $(basename $(wildcard docs/*ref.py)))
+docs/kernelsref.rst: docs/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_patch_jax/*.py src/lsqfitgp/_special/*.py
+	$(DOCSPY) --append $(notdir $<)
 
-docs: $(GENDOCS)
+docs: docs/copula.rst docs/examplesref.rst docs/kernelsref.rst
 	make -C docs html
 	@echo
 	@echo "Now open docs/_build/html/index.html"

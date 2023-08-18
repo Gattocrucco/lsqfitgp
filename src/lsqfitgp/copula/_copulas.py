@@ -52,8 +52,14 @@ class beta(Distr):
         return _beta.beta.ppf(_normcdf(x), a=alpha, b=beta)
 
 class dirichlet(Distr):
-    """
+    r"""
     https://en.wikipedia.org/wiki/Dirichlet_distribution
+
+    This uses the :math:`(\alpha, \mathbf n)` parametrization, such that the
+    standard one is
+
+    .. math::
+        \boldsymbol\alpha = \frac{\alpha \mathbf n}{\sum_i n_i}.
     """
     
     def __new__(cls, alpha, n, **kw):
@@ -127,6 +133,10 @@ class gamma(Distr):
 class loggamma(Distr):
     """
     https://en.wikipedia.org/wiki/Gamma_distribution, `scipy.stats.loggamma`
+
+    This is the distribution of the logarithm of a Gamma variable. The naming
+    convention is the opposite of lognorm, which is the distribution of the
+    exponential of a Normal variable.
     """
     
     def __new__(cls, c, **kw):
