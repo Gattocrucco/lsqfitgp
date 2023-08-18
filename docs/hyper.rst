@@ -79,9 +79,10 @@ something you need a prior on it, there's no way out of this). The function
 ``makegp`` extracts a key ``'scale'`` from the dictionary, but in the
 hyperprior we used ``'log(scale)'``. This is a general feature of :mod:`gvar`,
 that it can automatically apply the inverse of the transformation specified in
-the key. It doesn't magically work with any function, by default only the
-logarithm is supported, you can add other functions with
-:meth:`gvar.BufferDict.add_distribution`.
+the key. It doesn't work out of the box with any function: by default only the
+logarithm is supported; you can add other functions with
+:meth:`gvar.BufferDict.add_distribution`, or use the `copula` module to define
+them automatically.
 
 This means that the parameter we are actually fitting is the logarithm of the
 scale. Something like this is necessary because the scale must be a positive

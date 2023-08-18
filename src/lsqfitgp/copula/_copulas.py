@@ -17,9 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+""" predefined distributions """
+
 import functools
 import collections
-import numbers
 
 from jax.scipy import special as jspecial
 import jax
@@ -44,9 +45,6 @@ class beta(Distr):
     https://en.wikipedia.org/wiki/Beta_distribution
     """
     
-    def __new__(cls, alpha, beta, **kw):
-        return super().__new__(cls, alpha, beta, **kw)
-    
     @staticmethod
     def invfcn(x, alpha, beta):
         return _beta.beta.ppf(_normcdf(x), a=alpha, b=beta)
@@ -61,9 +59,9 @@ class dirichlet(Distr):
     .. math::
         \boldsymbol\alpha = \frac{\alpha \mathbf n}{\sum_i n_i}.
     """
-    
-    def __new__(cls, alpha, n, **kw):
-        return super().__new__(cls, alpha, n, **kw)
+
+    # TODO when I implement array_like Distr, use the standard parametrization;
+    # the separate scalar parameter is mostly useful to make it random.
     
     @classmethod
     def invfcn(cls, x, alpha, n):
@@ -105,9 +103,6 @@ class gamma(Distr):
     https://en.wikipedia.org/wiki/Gamma_distribution
     """
     
-    def __new__(cls, alpha, beta, **kw):
-        return super().__new__(cls, alpha, beta, **kw)
-
     @staticmethod
     def _boundary(x):
         return {
@@ -139,9 +134,6 @@ class loggamma(Distr):
     exponential of a Normal variable.
     """
     
-    def __new__(cls, c, **kw):
-        return super().__new__(cls, c, **kw)
-
     @staticmethod
     def _boundary(x):
         return gamma._boundary(x)
@@ -166,9 +158,6 @@ class invgamma(Distr):
     https://en.wikipedia.org/wiki/Inverse-gamma_distribution
     """
     
-    def __new__(cls, alpha, beta, **kw):
-        return super().__new__(cls, alpha, beta, **kw)
-
     @staticmethod
     def _boundary(x):
         return -gamma._boundary(x)
@@ -202,9 +191,6 @@ class halfcauchy(Distr):
     https://en.wikipedia.org/wiki/Cauchy_distribution, `scipy.stats.halfcauchy`
     """
     
-    def __new__(cls, gamma, **kw):
-        return super().__new__(cls, gamma, **kw)
-
     @staticmethod
     def _ppf(p):
         return jnp.tan(jnp.pi * p / 2)
@@ -225,9 +211,6 @@ class halfnorm(Distr):
     https://en.wikipedia.org/wiki/Half-normal_distribution
     """
     
-    def __new__(cls, sigma, **kw):
-        return super().__new__(cls, sigma, **kw)
-
     @staticmethod
     def _ppf(p):
         # F(x) = 2 Φ(x) - 1
@@ -256,9 +239,6 @@ class uniform(Distr):
     """
     https://en.wikipedia.org/wiki/Continuous_uniform_distribution
     """
-    
-    def __new__(cls, a, b, **kw):
-        return super().__new__(cls, a, b, **kw)
     
     @staticmethod
     def invfcn(x, a, b):

@@ -171,18 +171,14 @@ class bart:
 
         # prior on hyperparams
         sigma2_priormean = numpy.mean((y_train - y_train.mean()) ** 2 * weights)
-        hyperprior = {
-            '__bayestree__B(alpha)': copula.beta(2, 1, name='__bayestree__B'),
-                # base of tree gen prob
-            '__bayestree__IG(beta)': copula.invgamma(1, 1, name='__bayestree__IG'),
-                # exponent of tree gen prob
-            'log(k)': gvar.gvar(numpy.log(2), 2),
-                # denominator of prior sdev
+        hyperprior = copula.makedict({
+            'alpha': copula.beta(2, 1), # base of tree gen prob
+            'beta': copula.invgamma(1, 1), # exponent of tree gen prob
+            'log(k)': gvar.gvar(numpy.log(2), 2), # denominator of prior sdev
             'log(sigma2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
                 # i.i.d. error variance, scaled with weights
-            'mean': gvar.gvar(mu_mu, k_sigma_mu),
-                # mean of the GP
-        }
+            'mean': gvar.gvar(mu_mu, k_sigma_mu), # mean of the GP
+        })
         if marginalize_mean:
             hyperprior.pop('mean')
 
@@ -350,7 +346,7 @@ class bart:
             ``True``, add the error term.     
         format : {'matrices', 'gvar'}
             If 'matrices' (default), return the mean and covariance matrix
-            separately. If 'gvar', return an array of `GVar`s.
+            separately. If 'gvar', return an array of gvars.
         x_test : array or dataframe, optional
             Covariates for the locations where the prediction is computed. If
             not specified, predict at the data covariates.

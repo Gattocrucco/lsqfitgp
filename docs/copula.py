@@ -47,7 +47,8 @@ but can also be used on its own.
 
 To define a variable, use one of the subclasses of `Distr` listed :ref:`below
 <families>`. Combine the variables together by using them as parameters to other
-variables, or by putting them in a `gvar.BufferDict`. See `Distr` for details.
+variables, or by putting them in a `gvar.BufferDict`. See `makedict` and `Distr`
+for details.
 
 ..  note::
     
@@ -59,6 +60,8 @@ variables, or by putting them in a `gvar.BufferDict`. See `Distr` for details.
     bivariate Normal as the transformation of uniform variables, as `"Gaussian
     copula" on wikipedia
     <https://en.wikipedia.org/wiki/Copula_(probability_theory)#Gaussian_copula>`_.
+
+.. autofunction:: makedict
 
 .. autoclass:: Distr
     :members:

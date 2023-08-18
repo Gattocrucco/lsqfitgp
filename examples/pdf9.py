@@ -155,13 +155,13 @@ M = intensity * np.random.chisquare(dof, intensity.shape) / dof
 # transformation from evolution to flavor basis
 evtoq = linalg.inv(pmtoev @ qtopm)
 
-hyperprior = {
+hyperprior = lgp.copula.makedict({
     # correlation length of the prior at x = 1
     'log(scale)' : np.log(gvar.gvar(0.5, 0.2)),
     # exponents of x Sigma(x) and x g(x) for x -> 0
-    'U(alpha_Sigma)': gvar.BufferDict.uniform('U', -0.5, 0.5),
-    'U(alpha_g)'    : gvar.BufferDict.uniform('U', -0.5, 0.5),
-}
+    'alpha_Sigma': lgp.copula.uniform(-0.5, 0.5),
+    'alpha_g'    : lgp.copula.uniform(-0.5, 0.5),
+})
 
 makegpkw = dict(
     grid=grid,

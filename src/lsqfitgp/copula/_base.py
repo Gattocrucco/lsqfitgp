@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-# TODO document the conditional copula functionality.
+""" core implementation of copula functionality """
 
 import abc
 import functools
@@ -186,7 +186,8 @@ class Distr(metaclass=abc.ABCMeta):
     Concrete subclasses must define `invfcn`, and possibly override the default
     implementations of `input_shape` and `output_shape`, which return an empty
     tuple. To easily make `invfcn` a generalized ufunc, consider using
-    `jax.numpy.vectorize`.
+    `jax.numpy.vectorize`. The implementation of `partial_invfcn` always
+    converts all inputs to arrays before passing them to `invfcn`.
 
     """
     
@@ -341,6 +342,8 @@ class Distr(metaclass=abc.ABCMeta):
                     p_x = p_x.reshape(p_x.shape[:-1] + p.in_shape)
                     p = p.partial_invfcn(p_x)
                     i += p_in_size
+                else:
+                    p = jnp.asarray(p)
                 
                 concrete_params.append(p)
 
@@ -510,6 +513,56 @@ class Distr(metaclass=abc.ABCMeta):
 
         return gvar.gvar(numpy.zeros(self.in_shape), numpy.ones(self.in_shape))
 
+def makedict(variables, prefix='__copula_'):
+    """
+
+    Expand distributions in a dictionary.
+
+    Parameters
+    ----------
+    variables : dict
+        A dictionary representing a collection of probability distribution. If a
+        value is an instance of `Distr`, the key is converted to mark a
+        transformation and the value is replaced with new primary gvars.
+    prefix : str
+        A prefix to make the transformation names unique.
+
+    Returns
+    -------
+    out : BufferDict
+        The transformed dictionary. Recognizes the same keys as `variables`,
+        but squashes the values through the transformation that sends a Normal
+        to the desired distribution.
+
+    Examples
+    --------
+
+    >>> bd = lgp.copula.makedict({
+    ...    'x': lgp.copula.beta(1, 1),
+    ...    'y': lgp.copula.gamma(3, 5),
+    ...    'z': gvar.gvar(0, 1),
+    ... })
+    >>> bd
+    BufferDict({'__copula_beta{1, 1}(x)': 0.0(1.0), '__copula_gamma{3, 5}(y)': 0.0(1.0), 'z': 0.0(1.0)})
+    >>> bd['x']
+    0.50(40)
+    >>> bd['__copula_beta{1, 1}(x)']
+    0.0(1.0)
+
+    """
+    out = {}
+    for k, v in variables.items():
+        if isinstance(v, Distr):
+            name = str(v._staticdescr).replace('(', '{').replace(')', '}')
+            assert '(' not in prefix and ')' not in prefix
+            name = prefix + name
+            v.add_distribution(name)
+            v = v.gvars()
+            k = f'{name}({k})'
+        assert k not in out
+        out[k] = v
+    return gvar.BufferDict(out)
+
 # TODO
 # - make partial_invfcn a method, requires an `excluded` arg in gvar_ufunc.
 # - make Distr instances shareable by using a cache : dict[Distr, output]
@@ -519,17 +572,16 @@ class Distr(metaclass=abc.ABCMeta):
 #   by creating a new instance with a custom invfcn (this requires always
 #   getting invfcn from self!) from a generic subclass that just applies the
 #   operation to the output of the operand invfcns using jax.numpy.
-# - make a function makedict({'a': norm(0, 1)}, prefix='ciao_') ->
-#   BufferDict({'ciao_norm{0, 1}(a)': 0(1)}), the default prefix is '__copula_',
-#   the name is the _staticdescr, convert parentheses in name to {}.
 # - make a class Copula usable by attributes, example usage:
 #       c = Copula()
 #       c.sigma('invgamma', 1, 1)
 #       c.x('norm', 0, c.sigma)
+#       c.y = halfcauchy(c.sigma)
+#       c.z = Copula(a=halfnorm(...))
+#       c.h = c.z.a
 #   implementation: __getattr__ returns the attr if it exists, else a proxy
 #   callable object that creates the Distr and stores it. Overwrite is thus
 #   forbidden. Make Distr.__call__ emit an explicative error. Use the Copula
-#   with c.bufferdict(prefix='__copula_'), c.invfcn(array) -> dict[name, array]
-#   c.in_size.
+#   with c.invfcn(array) -> T = dict[name, T | array], c.in_size.
 # - Drop custom __new__ in Distr subclasses, generate the class ref string
 #   from the signature of invfcn.

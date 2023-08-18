@@ -418,6 +418,10 @@ class empbayes_fit(Logger):
         # afterwards if the gradient was not used. These alternatives are not
         # mutually exclusive.
 
+        # TODO logger should save all the logged lines with the verbosity, and
+        # be able to reproduce the full log, which I would then use for
+        # a summary function with verbosity option and repr
+
     class _CountCalls:
         """ wrap a callable to count calls """
         

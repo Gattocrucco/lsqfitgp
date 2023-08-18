@@ -144,11 +144,11 @@ stackdatagrid = np.einsum('ab,ij->abij', np.eye(nflav), np.eye(len(datagrid)))
 # transformation from evolution to flavor basis
 evtoq = linalg.inv(pmtoev @ qtopm)
 
-hyperprior = {
+hyperprior = lgp.copula.makedict({
     'log(scale)' : np.log(gvar.gvar(0.5, 0.5)),
-    'U(alpha_Sigma)': gvar.BufferDict.uniform('U', -0.5, 0.5),
-    'U(alpha_g)'    : gvar.BufferDict.uniform('U', -0.5, 0.5),
-}
+    'alpha_Sigma': lgp.copula.uniform(-0.5, 0.5),
+    'alpha_g'    : lgp.copula.uniform(-0.5, 0.5),
+})
 
 def makegp(hp, quick=False):
     gp = lgp.GP(checkpos=False)
