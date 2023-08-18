@@ -41,11 +41,9 @@ def _castto(func, type):
 def gammainccinv(a, y):
     a = jnp.asarray(a)
     y = jnp.asarray(y)
-    class ResultDummy:
-        dtype = jnp.result_type(a.dtype, y.dtype)
-        shape = jnp.broadcast_shapes(a.shape, y.shape)
-    ufunc = _castto(special.gammainccinv, ResultDummy.dtype)
-    return jax.pure_callback(ufunc, ResultDummy, a, y, vectorized=True)
+    dtype = _patch_jax.float_type(a.dtype, y.dtype)
+    ufunc = _castto(special.gammainccinv, dtype)
+    return _patch_jax.pure_callback_ufunc(ufunc, dtype, a, y)
 
 dQ_da = _patch_jax.elementwise_grad(jspecial.gammaincc, 0)
 dQ_dx = _patch_jax.elementwise_grad(jspecial.gammaincc, 1)
@@ -69,11 +67,9 @@ def gammainccinv_jvp(primals, tangents):
 def gammaincinv(a, y):
     a = jnp.asarray(a)
     y = jnp.asarray(y)
-    class ResultDummy:
-        dtype = jnp.result_type(a.dtype, y.dtype)
-        shape = jnp.broadcast_shapes(a.shape, y.shape)
-    ufunc = _castto(special.gammaincinv, ResultDummy.dtype)
-    return jax.pure_callback(ufunc, ResultDummy, a, y, vectorized=True)
+    dtype = _patch_jax.float_type(a.dtype, y.dtype)
+    ufunc = _castto(special.gammaincinv, dtype)
+    return _patch_jax.pure_callback_ufunc(ufunc, dtype, a, y)
 
 dP_da = _patch_jax.elementwise_grad(jspecial.gammainc, 0)
 dP_dx = _patch_jax.elementwise_grad(jspecial.gammainc, 1)

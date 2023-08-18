@@ -390,3 +390,91 @@ def test_repr():
 
     x = lgp.copula.beta(jnp.array([1, 2.]), 3)
     assert repr(x) == 'beta(array(2,), 3, shape=2)'
+
+def test_shared_basic(rng):
+    """ test that a shared variable is not duplicated """
+    
+    x = lgp.copula.invgamma(1, 1)
+    y = lgp.copula.halfnorm(x)
+    z = lgp.copula.halfcauchy(x)
+    q = lgp.copula.uniform(y, z)
+
+    def q_invfcn(n):
+        x = lgp.copula.invgamma.invfcn(n[..., 0], 1, 1)
+        y = lgp.copula.halfnorm.invfcn(n[..., 1], x)
+        z = lgp.copula.halfcauchy.invfcn(n[..., 2], x)
+        return lgp.copula.uniform.invfcn(n[..., 3], y, z)
+
+    samples = rng.standard_normal((10000, 4))
+    s1 = q.partial_invfcn(samples)
+    s2 = q_invfcn(samples)
+    util.assert_allclose(s1, s2)
+
+def test_shared_degeneracy(rng):
+    """ test that a shared variable is not duplicated, by checking the
+    degeneracy in the model """
+
+    x = lgp.copula.loggamma(1)
+    y = lgp.copula.uniform(x, x)
+    samples = rng.standard_normal((10000, 2))
+    s1 = x.partial_invfcn(samples[:, 0])
+    s2 = y.partial_invfcn(samples)
+    util.assert_allclose(s1, s2)
+
+def test_shared_hierarchy(rng):
+    """ test that a shared variable is not duplicated, with complex hierachy """
+
+    x = lgp.copula.invgamma(1, 1)
+    y = lgp.copula.halfnorm(x)
+    z = lgp.copula.halfcauchy(x)
+    q = lgp.copula.uniform(y, z)
+    r = lgp.copula.beta(q, x)
+
+    def r_invfcn(n):
+        x = lgp.copula.invgamma.invfcn(n[..., 0], 1, 1)
+        y = lgp.copula.halfnorm.invfcn(n[..., 1], x)
+        z = lgp.copula.halfcauchy.invfcn(n[..., 2], x)
+        q = lgp.copula.uniform.invfcn(n[..., 3], y, z)
+        return lgp.copula.beta.invfcn(n[..., 4], q, x)
+
+    samples = rng.standard_normal((10000, 5))
+    s1 = r.partial_invfcn(samples)
+    s2 = r_invfcn(samples)
+    util.assert_allclose(s1, s2)
+
+def test_shared_shapes(rng):
+    """ test that a shared variable is not duplicated, with complex hierachy
+    and shapes """
+
+    a = lgp.copula.invgamma(2, 2, shape=2)     # 2
+    x = lgp.copula.invgamma(1, 1, shape=3)     # 3
+    y = lgp.copula.halfnorm(x)                 # 3
+    z = lgp.copula.halfcauchy(x)               # 3
+    q = lgp.copula.uniform(y, z, shape=(2, 3)) # 6
+    r = lgp.copula.beta(q, x)                  # 6
+    s = lgp.copula.dirichlet(a, r)             # 6
+
+    assert a.in_shape == (2,)
+    assert x.in_shape == (3,)
+    assert y.in_shape == (3 + 3,)
+    assert z.in_shape == (3 + 3,)
+    assert q.in_shape == (3 + 3 + 3 + 6,)
+    assert r.in_shape == (3 + 3 + 3 + 6 + 6,)
+    assert s.in_shape == (2 + 3 + 3 + 3 + 6 + 6 + 6,)
+
+    def s_invfcn(n):
+        a = lgp.copula.invgamma.invfcn(n[..., 0:2], 2, 2)
+        x = lgp.copula.invgamma.invfcn(n[..., 2:5], 1, 1)
+        y = lgp.copula.halfnorm.invfcn(n[..., 5:8], x)
+        z = lgp.copula.halfcauchy.invfcn(n[..., 8:11], x)
+        q = lgp.copula.uniform.invfcn(n[..., 11:17].reshape(n.shape[:-1] + (2, 3)), y[..., None, :], z[..., None, :])
+        r = lgp.copula.beta.invfcn(n[..., 17:23].reshape(q.shape), q, x[..., None, :])
+        return lgp.copula.dirichlet.invfcn(n[..., 23:29].reshape(q.shape), a, r)
+
+    shape = (100,)
+    samples = rng.standard_normal(shape + s.in_shape)
+    s1 = s_invfcn(samples)
+    assert s1.shape == shape + s.shape
+    s2 = s.partial_invfcn(samples)
+    assert s2.shape == shape + s.shape
+    util.assert_allclose(s1, s2)

@@ -34,6 +34,7 @@ from .. import _array
 
 class Distr(metaclass=abc.ABCMeta):
     r"""
+
     Abstract base class to represent distributions.
 
     A `Distr` object represents a probability distribution, and provides a
@@ -55,7 +56,8 @@ class Distr(metaclass=abc.ABCMeta):
     shape : int or tuple of int
         The shape of the array of variables to be represented. If the variable
         is multivariate, this shape adds as leading axes in the array. Default
-        scalar. This shape broadcasts with those of the parameters.
+        scalar. This shape broadcasts with the non-core shapes of the
+        parameters.
 
     Returns
     -------
@@ -72,11 +74,6 @@ class Distr(metaclass=abc.ABCMeta):
 
     Attributes
     ----------
-    partial_invfcn : callable
-        Transformation function from a (multivariate) Normal variable to the
-        target random variable. Differs from the class method `invfcn` in that
-        the core input shape is flattened or scalar, and the parameters are
-        baked in, including transformation of the random parameters.
     params : tuple
         The parameters as passed to the constructor.
     in_shape : tuple of int
@@ -91,17 +88,23 @@ class Distr(metaclass=abc.ABCMeta):
 
     Methods
     -------
+    partial_invfcn :
+        Transformation function from a (multivariate) Normal variable to the
+        target random variable. Differs from the class method `invfcn` in that
+        1) the core input shape is flattened or scalar, 2) the parameters are
+        baked in, including transformation of the random parameters, 3) the
+        function broadcasts on any additional leading axes of the input.
     add_distribution :
         Define the distribution for usage with `gvar.BufferDict`.
     gvars :
         Return an array of gvars with the appropriate shape for usage with
         `gvar.BufferDict`.
-    invfcn :
+    invfcn : classmethod
         Transformation function from a (multivariate) Normal variable to the
         target random variable.
-    input_shape :
+    input_shape : classmethod
         Return the input core shape expected by `invfcn`.
-    output_shape :
+    output_shape : classmethod
         Return the output core shape of `invfcn`.
 
     Examples
@@ -143,7 +146,7 @@ class Distr(metaclass=abc.ABCMeta):
         \sigma &\sim \mathrm{InvGamma}(1, 1), \\
         X \mid \sigma &\sim \mathrm{HalfNorm}(\sigma).
 
-    Repeated usage of `Distr` instances for random parameters will *not* share
+    Repeated usage of `Distr` instances for random parameters will share
     those parameters in the distributions. The following code:
 
     >>> sigma = lgp.copula.invgamma(1, 1)
@@ -153,12 +156,27 @@ class Distr(metaclass=abc.ABCMeta):
     Corresponds to the model
 
     .. math::
-        \sigma_X, \sigma_Y &\sim \mathrm{InvGamma}(1, 1), \\
-        X \mid \sigma_X &\sim \mathrm{HalfNorm}(\sigma_X), \\
-        Y \mid \sigma_Y &\sim \mathrm{HalfCauchy}(\sigma_Y),
+        \sigma &\sim \mathrm{InvGamma}(1, 1), \\
+        X \mid \sigma &\sim \mathrm{HalfNorm}(\sigma), \\
+        Y \mid \sigma &\sim \mathrm{HalfCauchy}(\sigma),
 
-    with independent, separate parameters :math:`\sigma_X` and :math:`\sigma_Y`.
-    To compose arbitrary distributions, use manually `invfcn`:
+    with the same parameter :math:`\sigma` shared between the two distributions.
+    However, if `X` and `Y` are now put into a `gvar.BufferDict`, e.g., with
+
+    >>> XY = lgp.copula.makedict({'X': X, 'Y': Y})
+
+    then this relationship breaks down, and the model represented by `XY`
+    becomes
+
+    .. math::
+        \sigma_X, \sigma_Y &\sim \mathrm{InvGamma}(1, 1), \\
+        X \mid \sigma &\sim \mathrm{HalfNorm}(\sigma_X), \\
+        Y \mid \sigma &\sim \mathrm{HalfCauchy}(\sigma_Y),
+
+    with separate parameters :math:`\sigma_X` and :math:`\sigma_Y`, because
+    each dictionary entry is evaluated separately.
+    
+    To apply arbitrary transformations, use manually `invfcn`:
 
     >>> @functools.partial(lgp.gvar_gufunc, signature='(3)->(3)')
     >>> def model_invfcn(normal_params):
@@ -265,139 +283,154 @@ class Distr(metaclass=abc.ABCMeta):
         """
         return ()
 
-    @classmethod
-    def _eval_shapes(cls, params, shape):
+    def _eval_shapes(self, shape):
+
+        # convert shape to tuple
+        if isinstance(shape, numbers.Integral):
+            shape = (shape,)
+        else:
+            shape = tuple(shape)
 
         # convert parameters to array dummies
         dummies = []
-        for p in params:
+        for p in self.params:
             if not hasattr(p, 'shape') or not hasattr(p, 'dtype'):
                 p = jnp.asarray(p)
             dummies.append(jax.ShapeDtypeStruct(p.shape, p.dtype))
         
         # determine signature of cls.invfcn
-        in_shape_0 = cls.input_shape(*dummies)
-        out_shape_0 = cls.output_shape(*dummies)
+        in_shape_0 = self.input_shape(*dummies)
+        self.distrshape = self.output_shape(*dummies)
         
         # make a dummy for the input to cls.invfcn
         x_dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
         x_dummy = jax.ShapeDtypeStruct(shape + in_shape_0, x_dtype)
         
         # use jax to get shape with parameter broadcasting
-        out_dummy = jax.eval_shape(cls.invfcn, x_dummy, *dummies)
-        broadcast_ndim = len(out_dummy.shape) - len(out_shape_0)
+        out_dummy = jax.eval_shape(self.invfcn, x_dummy, *dummies)
+        broadcast_ndim = len(out_dummy.shape) - len(self.distrshape)
         assert broadcast_ndim >= 0
-        assert out_dummy.shape[broadcast_ndim:] == out_shape_0
+        assert out_dummy.shape[broadcast_ndim:] == self.distrshape
 
-        # determine shapes to use with cls.invfcn
-        in_shape_1 = out_dummy.shape[:broadcast_ndim] + in_shape_0
-        out_shape_1 = out_dummy.shape
-        out_dtype = out_dummy.dtype
-
-        return in_shape_1, out_shape_1, out_shape_0, out_dtype
-
-    @classmethod
-    def _compute_in_shape_2(cls, params, in_shape_1):
-        in_size = 0
-        for p in params:
-            if isinstance(p, __class__):
-                in_size += numpy.prod(p.in_shape, dtype=int)
-        in_size += numpy.prod(in_shape_1, dtype=int)
-        if in_size == 1:
-            return ()
-        else:
-            return in_size,
-
-    @classmethod
-    def _make_partial_invfcn(cls, params, in_shape_2, in_shape_1, out_shape_1, out_dtype):
+        self._in_shape_1 = out_dummy.shape[:broadcast_ndim] + in_shape_0
+        self.shape = out_dummy.shape
+        self.dtype = out_dummy.dtype
         
-        # determine signature
-        shapestr = lambda shape: ', '.join(map(str, shape))
-        signature = f'({shapestr(in_shape_2)})->({shapestr(out_shape_1)})'
+        self._compute_in_shape()
 
-        # wrap to support input array of gvars and unpack input into parameters'
-        # distributions and our
-        @functools.partial(_patch_gvar.gvar_gufunc, signature=signature)
-        @functools.wraps(cls.invfcn)
-        def partial_invfcn(x):
+    def _compute_in_shape(self):
+        in_size = numpy.prod(self._in_shape_1, dtype=int)
+        cache = set()
+        for p in self.params:
+            if isinstance(p, __class__):
+                in_size += p._compute_in_size(cache)
+        if in_size == 1:
+            self.in_shape = ()
+        else:
+            self.in_shape = in_size,
+        self._ancestor_count = len(cache)
 
-            # check input
-            x = jnp.asarray(x)
-            assert x.ndim >= len(in_shape_2)
-            assert x.shape[x.ndim - len(in_shape_2):] == in_shape_2
-            if not in_shape_2:
-                x = x[..., None]
-            in_size = numpy.prod(in_shape_2, dtype=int)
+    def _compute_in_size(self, cache):
+        if self in cache:
+            return 0
+        cache.add(self)
+        in_size = numpy.prod(self._in_shape_1, dtype=int)
+        for p in self.params:
+            if isinstance(p, __class__):
+                in_size += p._compute_in_size(cache)
+        return in_size
+
+    @functools.cached_property
+    def _partial_invfcn_internal(self):
+        
+        @functools.wraps(self.invfcn)
+        def _partial_invfcn_internal(x, i, cache):
+            assert x.ndim == 1
 
             # loop over parameters
-            i = 0
             concrete_params = []
-            for p in params:
+            for p in self.params:
                 
-                # parameter is a copula, apply it
-                if isinstance(p, __class__):
-                    p_in_size = numpy.prod(p.in_shape, dtype=int)
-                    assert i + p_in_size <= in_size
-                    p_x = x[..., i:i + p_in_size]
-                    p_x = p_x.reshape(p_x.shape[:-1] + p.in_shape)
-                    p = p.partial_invfcn(p_x)
-                    i += p_in_size
-                else:
+                # parameter is not a copula, convert to array
+                if not isinstance(p, __class__):
                     p = jnp.asarray(p)
+                
+                # parameter is an already evaluated copula
+                elif p in cache:
+                    p = cache[p]
+                
+                # parameter is an unseen copula, evaluate and cache the result
+                else:
+                    y, i, cache = p._partial_invfcn_internal(x, i, cache)
+                    cache[p] = y
+                    p = y
                 
                 concrete_params.append(p)
 
             # evaluate inverse transformation
-            last = x[..., i:]
-            last = last.reshape(last.shape[:-1] + in_shape_1)
-            out = cls.invfcn(last, *concrete_params)
-            assert out.shape == x.shape[:-1] + out_shape_1
-            assert out.dtype == out_dtype
-            return out
+            in_size = numpy.prod(self._in_shape_1, dtype=int)
+            assert i + in_size <= x.size
+            last = x[i:i + in_size].reshape(self._in_shape_1)
+            y = self.invfcn(last, *concrete_params)
+            assert y.shape == self.shape
+            assert y.dtype == self.dtype
+            return y, i + in_size, cache
 
-        partial_invfcn.signature = signature
-        partial_invfcn.__doc__ = f"""
+        return _partial_invfcn_internal
+
+    @functools.cached_property
+    def _partial_invfcn(self):
+
+        # determine signature
+        shapestr = lambda shape: ','.join(map(str, shape))
+        signature = f'({shapestr(self.in_shape)})->({shapestr(self.shape)})'
+
+        # wrap to support gvars
+        @functools.partial(_patch_gvar.gvar_gufunc, signature=signature)
+        # jax.jit?
+        @functools.partial(jnp.vectorize, signature=signature)
+        @functools.wraps(self._partial_invfcn_internal)
+        def _partial_invfcn(x):
+            assert x.shape == self.in_shape
+            if not self.in_shape:
+                x = x[None]
+            y, i, cache = self._partial_invfcn_internal(x, 0, {})
+            assert i == x.size
+            assert len(cache) == self._ancestor_count
+            return y
+
+        return _partial_invfcn
+
+    def partial_invfcn(self, x):
+        """
             
-        Map i.i.d. Normal variables to a {cls.__name__} variable.
+        Map i.i.d. Normal variables to a the desired distribution.
 
-        This function is a generalized ufunc with signature {signature}.
-        It is jax traceable and differentiable one time. It supports arrays
-        of gvars as input.
+        This function is a generalized ufunc. It is jax traceable and
+        differentiable one time. It supports arrays of gvars as input.
 
         Parameters
         ----------
         x : array
-            An array of values representing draws of i.i.d. Normal
-            variates.
+            An array of values representing draws of i.i.d. Normal variates.
 
         Returns
         -------
         y : array
-            An array of values representing draws of the desired
-            distribution.
+            An array of values representing draws of the desired distribution.
 
         """
 
-        return partial_invfcn
+        return self._partial_invfcn(x)
+
+    def __init_subclass__(cls, **_):
+        cls._named = {}
 
     def __new__(cls, *params, name=None, shape=()):
 
-        if isinstance(shape, numbers.Integral):
-            shape = (shape,)
-        else:
-            shape = tuple(shape)
-
-        in_shape_1, out_shape_1, out_shape_0, out_dtype = cls._eval_shapes(params, shape)
-        in_shape_2 = cls._compute_in_shape_2(params, in_shape_1)
-        partial_invfcn = cls._make_partial_invfcn(params, in_shape_2, in_shape_1, out_shape_1, out_dtype)
-
         self = super().__new__(cls)
-        self.partial_invfcn = partial_invfcn
         self.params = params
-        self.in_shape = in_shape_2
-        self.distrshape = out_shape_0
-        self.shape = out_shape_1
-        self.dtype = out_dtype
+        self._eval_shapes(shape)
 
         if name is None:
             return self
@@ -450,17 +483,9 @@ class Distr(metaclass=abc.ABCMeta):
     def __repr__(self):
         return str(self._repr)
 
-    @classmethod
-    def _earmark(cls, obj):
-        obj._Distr_subclass_ = cls
+    def _is_same_family(self, invfcn):
+        return getattr(invfcn, '__self__', None).__class__ is self.__class__
 
-    @classmethod
-    def _is_earmarked(cls, obj):
-        return getattr(obj, '_Distr_subclass_', None) is cls
-
-    def __init_subclass__(cls, **_):
-        cls._named = {}
-    
     def add_distribution(self, name):
         """
 
@@ -484,7 +509,7 @@ class Distr(metaclass=abc.ABCMeta):
 
         if gvar.BufferDict.has_distribution(name):
             invfcn = gvar.BufferDict.invfcn[name]
-            if not self._is_earmarked(invfcn):
+            if not self._is_same_family(invfcn):
                 raise ValueError(f'distribution {name} already defined')
             existing = self._named[name]
             if existing != self._staticdescr:
@@ -494,7 +519,6 @@ class Distr(metaclass=abc.ABCMeta):
                 # gvar.BufferDict.del_distribution, but it is not a problem
         
         else:
-            self._earmark(self.partial_invfcn)
             gvar.BufferDict.add_distribution(name, self.partial_invfcn)
             self._named[name] = self._staticdescr
     
@@ -564,10 +588,6 @@ def makedict(variables, prefix='__copula_'):
     return gvar.BufferDict(out)
 
 # TODO
-# - make partial_invfcn a method, requires an `excluded` arg in gvar_ufunc.
-# - make Distr instances shareable by using a cache : dict[Distr, output]
-#   in partial_invfcn (Distr should by default compare with `is`, check this)
-#   and a cache : set[Distr] in _compute_in_shape_2
 # - make Distr instances dispatching array-likes that perform the operations
 #   by creating a new instance with a custom invfcn (this requires always
 #   getting invfcn from self!) from a generic subclass that just applies the
@@ -583,5 +603,3 @@ def makedict(variables, prefix='__copula_'):
 #   callable object that creates the Distr and stores it. Overwrite is thus
 #   forbidden. Make Distr.__call__ emit an explicative error. Use the Copula
 #   with c.invfcn(array) -> T = dict[name, T | array], c.in_size.
-# - Drop custom __new__ in Distr subclasses, generate the class ref string
-#   from the signature of invfcn.

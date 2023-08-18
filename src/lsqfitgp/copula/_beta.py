@@ -33,13 +33,10 @@ def betaincinv(a, b, y):
     a = jnp.asarray(a)
     b = jnp.asarray(b)
     y = jnp.asarray(y)
-    class result:
-        dtype = _patch_jax.float_type(a.dtype, b.dtype, y.dtype)
-        shape = jnp.broadcast_shapes(a.shape, b.shape, y.shape)
-    return jax.pure_callback(
-        lambda *args: special.betaincinv(*args).astype(result.dtype),
-        result, a, b, y,
-        vectorized=True,
+    dtype = _patch_jax.float_type(a.dtype, b.dtype, y.dtype)
+    return _patch_jax.pure_callback_ufunc(
+        lambda *args: special.betaincinv(*args).astype(dtype),
+        dtype, a, b, y,
     )
 
 dIdx_ = _patch_jax.elementwise_grad(jspecial.betainc, 2)

@@ -385,6 +385,7 @@ def gvar_gufunc(func, *, signature=None):
 
     return decorated_func
 
-    # TODO add more than one argument. Possibly without taking derivatives
-    # when it's not a gvar, i.e., merge the wrappers and cycle over args.
-    # Also implement excluded.
+    # TODO add more than one argument or output. Possibly without taking
+    # derivatives when it's not a gvar, i.e., merge the wrappers and cycle over
+    # args. Also implement excluded => note that jnp.vectorize only supports
+    # positional arguments, excluded takes in only indices, not names
