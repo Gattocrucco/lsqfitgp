@@ -342,13 +342,13 @@ class bcf:
         hyperprior = gvar.BufferDict({
             'm': gvar.gvar(mu_mu, k_sigma_mu),
             'log(sigma^2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
-            '__bayestree__HC(lambda_mu)': copula.halfcauchy('__bayestree__HC', 2 / stats.halfcauchy.ppf(0.5)),
-            '__bayestree__HN(lambda_tau)': copula.halfnorm('__bayestree__HN', 1 / stats.halfnorm.ppf(0.5)),
-            '__bayestree__B(alpha_mu)': copula.beta('__bayestree__B', 2, 1),
-            '__bayestree__B(alpha_tau)': copula.beta('__bayestree__B', 2, 1),
-            '__bayestree__IG(beta_mu)': copula.invgamma('__bayestree__IG', 1, 1),
-            '__bayestree__IG(beta_tau)': copula.invgamma('__bayestree__IG', 1, 1),
-            '__bayestree__U(z_0)': copula.uniform('__bayestree__U', 0, 1),
+            '__bayestree__HC(lambda_mu)': copula.halfcauchy(2 / stats.halfcauchy.ppf(0.5), name='__bayestree__HC'),
+            '__bayestree__HN(lambda_tau)': copula.halfnorm(1 / stats.halfnorm.ppf(0.5), name='__bayestree__HN'),
+            '__bayestree__B(alpha_mu)': copula.beta(2, 1, name='__bayestree__B'),
+            '__bayestree__B(alpha_tau)': copula.beta(2, 1, name='__bayestree__B'),
+            '__bayestree__IG(beta_mu)': copula.invgamma(1, 1, name='__bayestree__IG'),
+            '__bayestree__IG(beta_tau)': copula.invgamma(1, 1, name='__bayestree__IG'),
+            '__bayestree__U(z_0)': copula.uniform(0, 1, name='__bayestree__U'),
         })
         if marginalize_mean:
             hyperprior.pop('m')

@@ -67,8 +67,8 @@ k_sigma_mu = (ymax - ymin) / 2 # prior standard deviation times k
 # Gaussian copula prior on the free hyperparameters
 
 hyperprior = {
-    'B(alpha)': lgp.copula.beta('B', 2, 1), # base of tree gen prob
-    'IG(beta)': lgp.copula.invgamma('IG', 1, 1), # exponent of tree gen prob
+    'B(alpha)': lgp.copula.beta(2, 1, name='B'), # base of tree gen prob
+    'IG(beta)': lgp.copula.invgamma(1, 1, name='IG'), # exponent of tree gen prob
     'log(k)': gvar.gvar(np.log(2), 2), # denominator of prior sdev
     'log(sigma2)': gvar.gvar(np.log(1), 2), # i.i.d. error variance
 }

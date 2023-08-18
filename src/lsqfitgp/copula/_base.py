@@ -35,7 +35,7 @@
 # }, prefix='ciao_')
 #
 # -> BufferDict({
-#     'ciao_halfcauchy_1.0(a)': lgp.copula.halfcauchy('a', 1.0),
+#     'ciao_halfcauchy_1.0(a)': lgp.copula.halfcauchy(1.0, name='a'),
 # })
 #
 # The default prefix would be something like '__copula_'.
@@ -107,9 +107,6 @@ class Distr(metaclass=abc.ABCMeta):
     --------
     gvar.BufferDict.uniform
     """
-    
-    def __init_subclass__(cls, **_):
-        cls._named = {}
     
     @classmethod
     @abc.abstractmethod
@@ -186,28 +183,6 @@ class Distr(metaclass=abc.ABCMeta):
             The core shape of the output array `y` of `invfcn`.
         """
         return ()
-
-    class _Descr(collections.namedtuple('Distr', 'family shape params')):
-
-        def __repr__(self):
-            args = [
-                f'shape={self.shape}',
-            ] + list(map(repr, self.params))
-            arglist = ', '.join(args)
-            return f'{self.family.__name__}({arglist})'
-
-    def _describe(self):
-        return self._Descr(self.__class__, self.shape, self.staticparams)
-
-    @classmethod
-    def _make_staticparams(cls, params):
-        staticparams = []
-        for p in params:
-            if isinstance(p, __class__):
-                staticparams.append(p._describe())
-            else:
-                staticparams.append(p)
-        return tuple(staticparams)
 
     @classmethod
     def _eval_shapes(cls, params, shape):
@@ -299,6 +274,53 @@ class Distr(metaclass=abc.ABCMeta):
 
         return partial_invfcn
 
+    def __new__(cls, *params, name=None, shape=()):
+
+        if isinstance(shape, numbers.Integral):
+            shape = (shape,)
+        else:
+            shape = tuple(shape)
+
+        in_shape_1, out_shape_1, out_shape_0, out_dtype = cls._eval_shapes(params, shape)
+        in_shape_2 = cls._compute_in_shape_2(params, in_shape_1)
+        invfcn = cls._partial_invfcn(params, in_shape_2, in_shape_1, out_shape_1, out_dtype)
+
+        self = super().__new__(cls)
+        self.invfcn = invfcn
+        self.params = params
+        self.in_shape = in_shape_2
+        self.coreshape = out_shape_0
+        self.shape = out_shape_1
+        self.dtype = out_dtype
+
+        if name is None:
+            return self
+        else:
+            self.name(name)
+            return self.gvars()
+    
+    class _Descr(collections.namedtuple('Distr', 'family shape params')):
+
+        def __repr__(self):
+            args = [
+                f'shape={self.shape}',
+            ] + list(map(repr, self.params))
+            arglist = ', '.join(args)
+            return f'{self.family.__name__}({arglist})'
+
+    @functools.cached_property
+    def _descr(self):
+        
+        staticparams = []
+        for p in self.params:
+            if isinstance(p, __class__):
+                p = p._descr
+            else:
+                p = numpy.asarray(p).tolist()
+            staticparams.append(p)
+
+        return self._Descr(self.__class__, self.shape, tuple(staticparams))
+
     @classmethod
     def _earmark(cls, obj):
         obj._Distr_subclass_ = cls
@@ -307,61 +329,26 @@ class Distr(metaclass=abc.ABCMeta):
     def _is_earmarked(cls, obj):
         return getattr(obj, '_Distr_subclass_', None) is cls
 
-    _Info = collections.namedtuple('Info', [
-        'in_shape',
-        'coreshape',
-        'shape',
-        'dtype',
-        'staticparams',
-    ])
+    def __init_subclass__(cls, **_):
+        cls._named = {}
+    
+    def name(self, name):
 
-    def __new__(cls, *params, name=None, shape=()):
-
-        if isinstance(shape, numbers.Integral):
-            shape = (shape,)
-        else:
-            shape = tuple(shape)
-
-        staticparams = cls._make_staticparams(params)
-        in_shape_1, out_shape_1, out_shape_0, out_dtype = cls._eval_shapes(params, shape)
-        in_shape_2 = cls._compute_in_shape_2(params, in_shape_1)
-        invfcn = cls._partial_invfcn(params, in_shape_2, in_shape_1, out_shape_1, out_dtype)
-
-        info = cls._Info(
-            in_shape=in_shape_2,
-            coreshape=out_shape_0,
-            shape=out_shape_1,
-            dtype=out_dtype,
-            staticparams=staticparams,
-        )
-
-        if name is None:
-
-            self = super().__new__(cls)
-            self.invfcn = invfcn
-            for k, v in info._asdict().items():
-                setattr(self, k, v)
-            
-            return self
-
-        else:
-            
-            if gvar.BufferDict.has_distribution(name):
-                invfcn = gvar.BufferDict.invfcn[name]
-                if not cls._is_earmarked(invfcn):
-                    raise ValueError(f'distribution {name} already defined')
-                existing = cls._named[name]
-                if existing.staticparams != staticparams:
-                    raise ValueError('Attempt to overwrite existing'
-                        f' {cls.__name__} distribution with name {name}')
-                    # cls._named is not updated by
-                    # gvar.BufferDict.del_distribution, but it is not a problem
-                for k, v in info._asdict().items():
-                    assert getattr(existing, k) == v
-            
-            else:
-                cls._earmark(invfcn)
-                gvar.BufferDict.add_distribution(name, invfcn)
-                cls._named[name] = info
+        if gvar.BufferDict.has_distribution(name):
+            invfcn = gvar.BufferDict.invfcn[name]
+            if not self._is_earmarked(invfcn):
+                raise ValueError(f'distribution {name} already defined')
+            existing = self._named[name]
+            if existing != self._descr:
+                raise ValueError('Attempt to overwrite existing'
+                    f' {self.__class__.__name__} distribution with name {name}')
+                # cls._named is not updated by
+                # gvar.BufferDict.del_distribution, but it is not a problem
         
-            return gvar.gvar(numpy.zeros(info.in_shape), numpy.ones(info.in_shape))
+        else:
+            self._earmark(self.invfcn)
+            gvar.BufferDict.add_distribution(name, self.invfcn)
+            self._named[name] = self._descr
+    
+    def gvars(self):
+        return gvar.gvar(numpy.zeros(self.in_shape), numpy.ones(self.in_shape))

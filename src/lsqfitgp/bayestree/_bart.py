@@ -172,9 +172,9 @@ class bart:
         # prior on hyperparams
         sigma2_priormean = numpy.mean((y_train - y_train.mean()) ** 2 * weights)
         hyperprior = {
-            '__bayestree__B(alpha)': copula.beta('__bayestree__B', 2, 1),
+            '__bayestree__B(alpha)': copula.beta(2, 1, name='__bayestree__B'),
                 # base of tree gen prob
-            '__bayestree__IG(beta)': copula.invgamma('__bayestree__IG', 1, 1),
+            '__bayestree__IG(beta)': copula.invgamma(1, 1, name='__bayestree__IG'),
                 # exponent of tree gen prob
             'log(k)': gvar.gvar(numpy.log(2), 2),
                 # denominator of prior sdev
