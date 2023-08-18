@@ -5568,8 +5568,8 @@ To implement it:
             - a vector: the unnormalized base measure
     - write the unit test (DONE)
         Where I'm at: stats.dirichlet does not vectorize on alpha
-    - docstrings with examples
-    - introduction in the reference manual
+    - docstrings with examples (DONE)
+    - introduction in the reference manual (DONE)
 
 2023-08-17
 ==========

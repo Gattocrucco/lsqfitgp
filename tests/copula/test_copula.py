@@ -26,6 +26,7 @@ import numbers
 import numpy as np
 import gvar
 import jax
+from jax import numpy as jnp
 import pytest
 from pytest import mark
 from scipy import stats, special
@@ -337,3 +338,55 @@ def test_gamma_asymp(distr, x64):
         np.testing.assert_allclose(y1, y2, atol=0, rtol=rtol)
     
     # TODO improve the accuracy
+
+def test_staticdescr_repr():
+    
+    x = lgp.copula.beta(1, 2)
+    assert repr(x._staticdescr) == 'beta(1, 2)'
+
+    x = lgp.copula.beta(1, 2, shape=(3, 4))
+    assert repr(x._staticdescr) == 'beta(1, 2, shape=(3, 4))'
+
+    x = lgp.copula.beta(1, lgp.copula.uniform(0.5, 1))
+    assert repr(x._staticdescr) == 'beta(1, uniform(0.5, 1))'
+
+    x = lgp.copula.beta([1, 2, 3], 1)
+    assert repr(x._staticdescr) == 'beta([1, 2, 3], 1, shape=3)'
+
+    x = lgp.copula.beta([[1, 2], [3, 4]], [1, 2])
+    assert repr(x._staticdescr) == 'beta([[1, 2], [3, 4]], [1, 2], shape=(2, 2))'
+
+    x = lgp.copula.dirichlet(lgp.copula.invgamma(1, 1, shape=4), [1, 1, 1])
+    assert repr(x._staticdescr) == 'dirichlet(invgamma(1, 1, shape=4), [1, 1, 1], shape=(4, 3))'
+
+    x = lgp.copula.beta(np.array([1, 2.]), 3)
+    assert repr(x._staticdescr) == 'beta([1.0, 2.0], 3, shape=2)'
+
+    x = lgp.copula.beta(jnp.array([1, 2.]), 3)
+    assert repr(x._staticdescr) == 'beta([1.0, 2.0], 3, shape=2)'
+
+def test_repr():
+
+    x = lgp.copula.beta(1, 2)
+    assert repr(x) == 'beta(1, 2)'
+
+    x = lgp.copula.beta(1, 2, shape=(3, 4))
+    assert repr(x) == 'beta(1, 2, shape=(3, 4))'
+
+    x = lgp.copula.beta(1, lgp.copula.uniform(0.5, 1))
+    assert repr(x) == 'beta(1, uniform(0.5, 1))'
+
+    x = lgp.copula.beta([1, 2, 3], 1)
+    assert repr(x) == 'beta([1, 2, 3], 1, shape=3)'
+
+    x = lgp.copula.beta([[1, 2], [3, 4]], [1, 2])
+    assert repr(x) == 'beta([[1, 2], [3, 4]], [1, 2], shape=(2, 2))'
+
+    x = lgp.copula.dirichlet(lgp.copula.invgamma(1, 1, shape=4), [1, 1, 1])
+    assert repr(x) == 'dirichlet(invgamma(1, 1, shape=4), [1, 1, 1], shape=(4, 3))'
+
+    x = lgp.copula.beta(np.array([1, 2.]), 3)
+    assert repr(x) == 'beta(array(2,), 3, shape=2)'
+
+    x = lgp.copula.beta(jnp.array([1, 2.]), 3)
+    assert repr(x) == 'beta(array(2,), 3, shape=2)'

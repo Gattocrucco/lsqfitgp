@@ -26,7 +26,7 @@ See the manual at https://gattocrucco.github.io/lsqfitgp/docs
 __version__ = '0.19.dev0'
 
 from . import _patch_jax # keep first due to pre-import jax configs
-from . import _patch_gvar
+from ._patch_gvar import gvar_gufunc
 
 from ._GP import *
 from ._Kernel import *

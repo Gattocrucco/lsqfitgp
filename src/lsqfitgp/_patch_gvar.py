@@ -294,30 +294,53 @@ def _join(cols):
     split = (col.split('\n') for col in cols)
     return '\n'.join(''.join(lines) for lines in zip(*split))
 
-def gvar_ufunc(func):
-    """ Wraps a jax-traceable ufunc with one argument to support gvars """
+# def gvar_ufunc(func):
+#     """ Wraps a jax-traceable ufunc with one argument to support gvars """
     
-    deriv = _patch_jax.elementwise_grad(func)
+#     deriv = _patch_jax.elementwise_grad(func)
     
-    def gvar_function(x):
-        m = gvar.mean(x)
-        return gvar.gvar_function(x, func(m), deriv(m))
+#     def gvar_function(x):
+#         m = gvar.mean(x)
+#         return gvar.gvar_function(x, func(m), deriv(m))
     
-    gvar_function_vectorized = numpy.vectorize(gvar_function)
+#     gvar_function_vectorized = numpy.vectorize(gvar_function)
 
-    @functools.wraps(func)
-    def decorated_func(x):
-        if isinstance(x, gvar.GVar):
-            return gvar_function(x)
-        elif getattr(x, 'dtype', None) == object:
-            return gvar_function_vectorized(x)
-        else:
-            return func(x)
+#     @functools.wraps(func)
+#     def decorated_func(x):
+#         if isinstance(x, gvar.GVar):
+#             return gvar_function(x)
+#         elif getattr(x, 'dtype', None) == object:
+#             return gvar_function_vectorized(x)
+#         else:
+#             return func(x)
     
-    return decorated_func
+#     return decorated_func
 
-def gvar_gufunc(func, signature=None):
-    """ Wraps a jax-traceable gufunc with one argument to support gvars """
+def gvar_gufunc(func, *, signature=None):
+    """
+
+    Wraps a jax-traceable generalized ufunc with one argument to support gvars.
+
+    Parameters
+    ----------
+    func : callable
+        A function from one array to one array. It must be a generalized ufunc,
+        and differentiable one time with `jax`.
+    signature : str, optional
+        The signature of the generalized ufunc. If not specified, it is assumed
+        to be scalar to scalar (normal ufunc).
+
+    Returns
+    -------
+    decorated_func : callable
+        A function that, in addition to numerical arrays, accepts gvars and
+        returns gvars.
+
+    See also
+    --------
+    numpy.vectorize
+
+    """
 
     # get jacobian signature
     if signature is None:
@@ -361,3 +384,7 @@ def gvar_gufunc(func, signature=None):
             return func(x)
 
     return decorated_func
+
+    # TODO add more than one argument. Possibly without taking derivatives
+    # when it's not a gvar, i.e., merge the wrappers and cycle over args.
+    # Also implement excluded.
