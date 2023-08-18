@@ -45,9 +45,9 @@ def jaxconfig(**opts):
         for k, v in prev.items():
             jax.config.update(k, v)
 
-class CopulaFactoryTestBase:
+class DistrTestBase:
     """
-    Base class for tests of a CopulaFactory subclass
+    Base class for tests of a Distr subclass
     """
 
     testfor = {}
@@ -128,7 +128,7 @@ class CopulaFactoryTestBase:
             for param in cls.recparams:
                 if isinstance(param, str):
                     test = cls.testfor[param]
-                    param = (test.copcls, *test.convert_recparams(level - 1))
+                    param = test.copcls(*test.convert_recparams(level - 1))
                 params.append(param)
         else:
             params = cls.params
@@ -139,7 +139,7 @@ class CopulaFactoryTestBase:
         return request.node.nodeid
 
     def test_invfcn_errorprop(self, name, rng):
-        variables = self.copcls(name, *self.params)
+        variables = self.copcls(*self.params, name=name)
         assert np.ndim(variables) in (0, 1)
         assert np.ndim(variables) == 0 or variables.size > 1
         x = gvar.gvar(
@@ -157,15 +157,15 @@ class CopulaFactoryTestBase:
     def test_overwrite(self, name):
         gvar.BufferDict.add_distribution(name, gvar.exp)
         with pytest.raises(ValueError):
-            self.copcls(name, *self.params)
+            self.copcls(*self.params, name=name)
         gvar.BufferDict.del_distribution(name)
-        self.copcls(name, *self.params)
-        self.copcls(name, *self.params)
+        self.copcls(*self.params, name=name)
+        self.copcls(*self.params, name=name)
 
     def test_bufferdict_gvar(self, name):
         key = f'{name}(x)'
         b = gvar.BufferDict({
-            key: self.copcls(name, *self.params)
+            key: self.copcls(*self.params, name=name)
         })
         x = b['x']
         mean = gvar.mean(b[key])
@@ -177,13 +177,13 @@ class CopulaFactoryTestBase:
 
     def test_bufferdict(self, name):
         key = f'{name}(x)'
-        variables = self.copcls(name, *self.params)
+        variables = self.copcls(*self.params, name=name)
         b = gvar.BufferDict({
             key: np.zeros_like(variables, float)
         })
         x = b['x']
         x2 = self.copcls.invfcn(b[key], *self.params)
-        np.testing.assert_allclose(x, x2, rtol=1e-6)
+        util.assert_allclose(x, x2, rtol=1e-6)
 
     def test_continuity_zero(self, name):
         """ check that invfcn is continuous in zero, since it is a common
@@ -191,7 +191,7 @@ class CopulaFactoryTestBase:
         eps = np.finfo(float).eps
         x1 = self.copcls.invfcn(-eps, *self.params)
         x2 = self.copcls.invfcn(eps, *self.params)
-        np.testing.assert_allclose(x1, x2, atol=4 * eps, rtol=3 * eps)
+        util.assert_allclose(x1, x2, atol=4 * eps, rtol=3 * eps)
 
     @pytest.fixture
     def nsamples(self):
@@ -202,8 +202,9 @@ class CopulaFactoryTestBase:
         return 0.0001
 
     def test_correct_distribution(self, rng, nsamples, significance):
-        in_shape = self.copcls.input_shape(*self.params)
-        out_shape = self.copcls.output_shape(*self.params)
+        params = list(map(np.asarray, self.params))
+        in_shape = self.copcls.input_shape(*params)
+        out_shape = self.copcls.output_shape(*params)
         samples_norm = rng.standard_normal((nsamples,) + in_shape)
         samples = self.copcls.invfcn(samples_norm, *self.params)
         assert samples.shape == (nsamples,) + out_shape
@@ -216,7 +217,7 @@ class CopulaFactoryTestBase:
 
     @mark.parametrize('level', [0, 1, 2])
     def test_recursive(self, name, level, rng, nsamples, significance):
-        variables = self.copcls(name, *self.convert_recparams(level))
+        variables = self.copcls(*self.convert_recparams(level), name=name)
         samples_norm = rng.standard_normal((nsamples,) + variables.shape)
         bd = gvar.BufferDict({f'{name}(x)': samples_norm})
         samples = bd['x']
@@ -245,18 +246,16 @@ class CopulaFactoryTestBase:
         test = stats.ks_2samp(samples_1d, refsamples_1d)
         assert test.pvalue >= significance
 
-class TestBeta(CopulaFactoryTestBase):
+class TestBeta(DistrTestBase):
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfcauchy'
 
-class TestDirichlet(CopulaFactoryTestBase):
+class TestDirichlet(DistrTestBase):
     params = 1.2, [1, 4, 3]
-    recparams = 'gamma', 5
+    recparams = 'gamma', [1, 1, 1, 1, 1]
     
     def scipy_params(alpha, n):
         alpha = np.asarray(alpha)
-        if isinstance(n, numbers.Integral):
-            n = np.ones(n)
         n = np.asarray(n)
         return alpha[..., None] * n / n.sum(axis=-1, keepdims=True),
 
@@ -279,31 +278,31 @@ class TestDirichlet(CopulaFactoryTestBase):
         # x < eps, scipy piggybacks on numpy, see it by plotting an empirical
         # cdf on x logscale with plt.stairs. Open an issue on numpy.
 
-class TestGamma(CopulaFactoryTestBase):
+class TestGamma(DistrTestBase):
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfnorm'
     scipy_params = lambda alpha, beta: (alpha, 0, 1 / beta)
 
-class TestHalfCauchy(CopulaFactoryTestBase):
+class TestHalfCauchy(DistrTestBase):
     params = 0.7,
     recparams = 'invgamma',
     scipy_params = lambda gamma: (0, gamma)
 
-class TestHalfNorm(CopulaFactoryTestBase):
+class TestHalfNorm(DistrTestBase):
     params = 1.3,
     recparams = 'invgamma',
     scipy_params = lambda sigma: (0, sigma)
 
-class TestInvGamma(CopulaFactoryTestBase):
+class TestInvGamma(DistrTestBase):
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfnorm'
     scipy_params = lambda alpha, beta: (alpha, 0, beta)
 
-class TestLogGamma(CopulaFactoryTestBase):
+class TestLogGamma(DistrTestBase):
     params = 1.2,
     recparams = 'invgamma',
 
-class TestUniform(CopulaFactoryTestBase):
+class TestUniform(DistrTestBase):
     params = -0.5, 2
     recparams = -1, 'uniform'
     scipy_params = lambda a, b: (a, b - a)
@@ -312,17 +311,17 @@ def test_invgamma_divergence():
     y = lgp.copula.invgamma.invfcn(10., 1, 1)
     assert np.isfinite(y)
 
-@mark.parametrize('distr', ['gamma', 'invgamma'])
+@mark.parametrize('distr', ['gamma', 'invgamma', 'loggamma'])
 @mark.parametrize('x64', [False, True])
 def test_gamma_asymp(distr, x64):
     
-    test = CopulaFactoryTestBase.testfor[distr]
+    test = DistrTestBase.testfor[distr]
 
     # check there's no over/underflow
     if distr == 'gamma':
         y = test.copcls.invfcn(100, *test.params)
         assert y < np.inf
-    else:
+    elif distr == 'invgamma':
         y = test.copcls.invfcn(-100, *test.params)
         assert y > 0
     

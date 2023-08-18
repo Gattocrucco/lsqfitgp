@@ -51,30 +51,52 @@ import numbers
 
 import gvar
 import numpy
+import jax
+from jax import numpy as jnp
 
 from .. import _patch_gvar
 from .. import _array
 
-class CopulaFactory(metaclass=abc.ABCMeta):
+class Distr(metaclass=abc.ABCMeta):
     """
-    Abstract base class for copula factories.
+    Abstract base class to represent distributions.
 
-    Class to represent transformations in `gvar.BufferDict`, i.e., Gaussian
-    copulas.
+    A `Distr` object represents a probability distribution, and provides a
+    transformation function from a (multivariate) Normal variable to the target
+    random variable, in particular for use with `gvar.BufferDict`.
 
     Parameters
     ----------
-    name : str
-        The unique name assigned to the transformation using
-        `gvar.BufferDict.add_distribution`.
     *params : scalars
         The parameters of the distribution.
+    name : str, optional
+        If specified, the distribution is defined for usage with
+        `gvar.BufferDict` using `gvar.BufferDict.add_distribution`, and the
+        constructor returns an array of gvars with the appropriate shape for
+        convenience.
+    shape : int or tuple of int
+        The shape of the array of variables to be represented. If the variable
+        is multivariate, this shape adds as leading axes in the array. Default
+        scalar. This shape broadcasts with those of the parameters.
+
+    Returns
+    -------
+    If `name` is None (default):
+
+    distr : Distr
+        An object representing the distribution.
+
+    Else:
+
+    gvars : array of gvars
+        An array of primary gvars that can be set as value in a
+        `gvar.BufferDict` under a key that uses the just defined name.
 
     Examples
     --------
     >>> copula = gvar.BufferDict({
-    ...     'transf(x)': lgp.copula.beta('transf', 1, 1),
-    ...     'transf_2(y)': lgp.copula.beta('transf_2', 3, 5),
+    ...     'A(x)': lgp.copula.beta(1, 1, name='A'),
+    ...     'B(y)': lgp.copula.beta(3, 5, name='B'),
     ... })
     >>> copula['x']
     0.50(40)
@@ -87,7 +109,7 @@ class CopulaFactory(metaclass=abc.ABCMeta):
     """
     
     def __init_subclass__(cls, **_):
-        cls.params = {}
+        cls._named = {}
     
     @classmethod
     @abc.abstractmethod
@@ -103,19 +125,19 @@ class CopulaFactory(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        x : (*broadcast_shape, *in_shape) array or scalar
+        x : (*head_shape, *in_shape) array or scalar
             The input Normal variable. If multivariate, the variable shape must
-            be in the last axes. The calculation is broadcasted over other
-            leading axes. Use `input_shape` to determine the required variable
-            shape.
-        params :
-            The parameters of the distribution. Typically, numerical parameters
-            may be arrays and are broadcasted with `x`.
+            be in the core shape `in_shape`. The calculation is broadcasted over
+            other leading axes. Use `input_shape` to determine the required
+            variable shape.
+        params : scalar or arrays
+            The parameters of the distribution. They are broadcasted with `x`.
 
         Returns
         -------
-        y : (*broadcast_shape, *out_shape) array or scalar
-            The output variable with the desired marginal distribution.
+        y : (*head_shape, *out_shape) array or scalar
+            The output variable with the desired marginal distribution. Use
+            `output_shape` to determine `out_shape` before calling `invfcn`.
 
         """
         pass
@@ -123,164 +145,223 @@ class CopulaFactory(metaclass=abc.ABCMeta):
     @classmethod
     def input_shape(cls, *params):
         """
-        Return the input shape expected by `invfcn`.
+        Return the input core shape expected by `invfcn`.
 
-        May depend on the type of the parameters, but not on their values. This
-        shape applies only to the class member `invfcn`, not to the one intended
-        for `gvar.BufferDict` that is created by the class constructor, which
-        always expects either a scalar or vector tail shape.
+        May depend on the type and shape of the parameters, but not on their
+        values. This shape applies only to the class member `invfcn`, not to the
+        one intended for `gvar.BufferDict` that is created by the class
+        constructor, which always expects either a scalar or vector core shape.
 
         Parameters
         ----------
         params :
-            The same arguments that would be passed to `invfcn`.
+            The same arguments that would be passed to `invfcn` or to the
+            class constructor.
 
         Returns
         -------
         shape : tuple of int
-            The required shape of the last axes of the input array `x` to
-            `invfcn`.
+            The required core shape of the input array `x` to `invfcn`.
         """
         return ()
 
     @classmethod
     def output_shape(cls, *params):
+        """
+        Return the output core shape of `invfcn`.
+
+        May depend on the type and shape of the parameters, but not on their
+        values. Contrary to `input_shape`, this function applies both to
+        `invfcn` and to the function used by `gvar.BufferDict`.
+
+        Parameters
+        ----------
+        params :
+            The same arguments that would be passed to `invfcn` or to the
+            class constructor.
+
+        Returns
+        -------
+        shape : tuple of int
+            The core shape of the output array `y` of `invfcn`.
+        """
         return ()
 
+    class _Descr(collections.namedtuple('Distr', 'family shape params')):
+
+        def __repr__(self):
+            args = [
+                f'shape={self.shape}',
+            ] + list(map(repr, self.params))
+            arglist = ', '.join(args)
+            return f'{self.family.__name__}({arglist})'
+
+    def _describe(self):
+        return self._Descr(self.__class__, self.shape, self.staticparams)
+
     @classmethod
-    def _partial_invfcn(cls, params):
-        """
-        Partially apply `invfcn` to `params` and return a function that maps
-        `nvariables` Normal variables to the desired marginal distribution.
-        """
+    def _make_staticparams(cls, params):
+        staticparams = []
+        for p in params:
+            if isinstance(p, __class__):
+                staticparams.append(p._describe())
+            else:
+                staticparams.append(p)
+        return tuple(staticparams)
 
-        # expand copulas in parameters
-        invfcn, nvariables, out_shape = cls._partial_invfcn_rec(params)
+    @classmethod
+    def _eval_shapes(cls, params, shape):
 
-        # determine signature
-        out_sig = ','.join(str(l) for l in out_shape)
-        if nvariables == 1:
-            signature = f'()->({out_sig})'
+        # convert parameters to array dummies
+        dummies = []
+        for p in params:
+            if not hasattr(p, 'shape') or not hasattr(p, 'dtype'):
+                p = jnp.asarray(p)
+            dummies.append(jax.ShapeDtypeStruct(p.shape, p.dtype))
+        
+        # determine signature of cls.invfcn
+        in_shape_0 = cls.input_shape(*dummies)
+        out_shape_0 = cls.output_shape(*dummies)
+        
+        # make a dummy for the input to cls.invfcn
+        x_dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
+        x_dummy = jax.ShapeDtypeStruct(shape + in_shape_0, x_dtype)
+        
+        # use jax to get shape with parameter broadcasting
+        out_dummy = jax.eval_shape(cls.invfcn, x_dummy, *dummies)
+        broadcast_ndim = len(out_dummy.shape) - len(out_shape_0)
+        assert broadcast_ndim >= 0
+        assert out_dummy.shape[broadcast_ndim:] == out_shape_0
+
+        # determine shapes to use with cls.invfcn
+        in_shape_1 = out_dummy.shape[:broadcast_ndim] + in_shape_0
+        out_shape_1 = out_dummy.shape
+        out_dtype = out_dummy.dtype
+
+        return in_shape_1, out_shape_1, out_shape_0, out_dtype
+
+    @classmethod
+    def _compute_in_shape_2(cls, params, in_shape_1):
+        in_size = 0
+        for p in params:
+            if isinstance(p, __class__):
+                in_size += numpy.prod(p.in_shape, dtype=int)
+        in_size += numpy.prod(in_shape_1, dtype=int)
+        if in_size == 1:
+            return ()
         else:
-            signature = f'({nvariables})->({out_sig})'
+            return in_size,
 
-        # add gvar support, manage conversion to array
+    @classmethod
+    def _partial_invfcn(cls, params, in_shape_2, in_shape_1, out_shape_1, out_dtype):
+        
+        # determine signature
+        shapestr = lambda shape: ', '.join(map(str, shape))
+        signature = f'({shapestr(in_shape_2)})->({shapestr(out_shape_1)})'
+
+        # wrap to support input array of gvars and unpack input into parameters'
+        # distributions and our
         @functools.partial(_patch_gvar.gvar_gufunc, signature=signature)
         @functools.wraps(cls.invfcn)
         def partial_invfcn(x):
-            x = _array.asarray(x)
-            if nvariables > 1:
-                actual_nvar = x.shape[-1] if x.ndim else 1
-                if actual_nvar != nvariables:
-                    raise ValueError(
-                        f'{cls.__name__} copula expected {nvariables} Normal '
-                        f'input variables, found {actual_nvar}'
-                    )
-            else:
+
+            # check input
+            x = jnp.asarray(x)
+            assert x.ndim >= len(in_shape_2)
+            assert x.shape[x.ndim - len(in_shape_2):] == in_shape_2
+            if not in_shape_2:
                 x = x[..., None]
-            y, length = invfcn(x, 0)
-            assert length == nvariables
-            assert y.shape == x.shape[:-1] + out_shape
-            return y
+            in_size = numpy.prod(in_shape_2, dtype=int)
 
-        # mark copula class
-        partial_invfcn._CopulaFactory_subclass_ = cls
+            # loop over parameters
+            i = 0
+            concrete_params = []
+            for p in params:
+                
+                # parameter is a copula, apply it
+                if isinstance(p, __class__):
+                    p_in_size = numpy.prod(p.in_shape, dtype=int)
+                    assert i + p_in_size <= in_size
+                    p_x = x[..., i:i + p_in_size]
+                    p_x = p_x.reshape(p_x.shape[:-1] + p.in_shape)
+                    p = p.invfcn(p_x)
+                    i += p_in_size
+                
+                concrete_params.append(p)
 
-        # return transformation and size of dict field
-        return partial_invfcn, nvariables
+            # evaluate inverse transformation
+            last = x[..., i:]
+            last = last.reshape(last.shape[:-1] + in_shape_1)
+            out = cls.invfcn(last, *concrete_params)
+            assert out.shape == x.shape[:-1] + out_shape_1
+            assert out.dtype == out_dtype
+            return out
+
+        return partial_invfcn
 
     @classmethod
-    def _partial_invfcn_rec(cls, params, nvariables=0):
+    def _earmark(cls, obj):
+        obj._Distr_subclass_ = cls
 
-        # process copulas in parameters, converting them to their invfcn
-        partialparams = []
-        shapeparams = []
-        for param in params:
-            is_copula = (
-                isinstance(param, (tuple, list))
-                and param
-                and isinstance(param[0], type)
-                and issubclass(param[0], __class__)
-            )
-            if is_copula:
-                invfcn, nvariables, out_shape = param[0]._partial_invfcn_rec(
-                    param[1:],
-                    nvariables,
-                )
-                partialparams.append(invfcn)
-                shapeparams.append(numpy.broadcast_to(numpy.empty(()), out_shape))
-            else:
-                partialparams.append(param)
-                shapeparams.append(param)
-        partialparams = tuple(partialparams)
+    @classmethod
+    def _is_earmarked(cls, obj):
+        return getattr(obj, '_Distr_subclass_', None) is cls
 
-        # statically determine input/output tail shapes
-        expected_in_shape = cls.input_shape(*shapeparams)
-        expected_in_size = numpy.prod(expected_in_shape, dtype=int)
-        expected_out_shape = cls.output_shape(*shapeparams)
-        
-        # wrap function to close on parameter values, call ancestor copulas,
-        # and keep track of array usage
-        @functools.wraps(cls.invfcn)
-        def newinvfcn(x, i):
+    _Info = collections.namedtuple('Info', [
+        'in_shape',
+        'coreshape',
+        'shape',
+        'dtype',
+        'staticparams',
+    ])
 
-            params = []
-            for param in partialparams:
-                if callable(param):
-                    param, i = param(x, i)
-                params.append(param)
+    def __new__(cls, *params, name=None, shape=()):
 
-            in_shape = cls.input_shape(*params)
-            assert in_shape == expected_in_shape
-            out_shape = cls.output_shape(*params)
-            assert out_shape == expected_out_shape
-
-            in_size = numpy.prod(in_shape, dtype=int)
-            x = x[..., i:i + in_size]
-            broadcast_shape = x.shape[:-1]
-            x = x.reshape(broadcast_shape + in_shape)
-
-            y = cls.invfcn(x, *params)
-            assert y.shape == broadcast_shape + out_shape
-            
-            return y, i + in_size
-
-        return newinvfcn, nvariables + expected_in_size, expected_out_shape
-
-    _Params = collections.namedtuple('Params', ['params', 'nvariables'])
-
-    def __new__(cls, name, *params, shape=()):
-        
-        if gvar.BufferDict.has_distribution(name):
-            invfcn = gvar.BufferDict.invfcn[name]
-            if getattr(invfcn, '_CopulaFactory_subclass_', None) is not cls:
-                raise ValueError(f'distribution {name} already defined')
-            if (existing := cls.params[name]).params != params:
-                raise ValueError(f'Attempt to overwrite existing {cls.__name__}'
-                    f' distribution with name {name}')
-                # cls.params is not updated by
-                # gvar.BufferDict.del_distribution, but it is not a problem
-            nvariables = existing.nvariables
-        
-        else:
-            invfcn, nvariables = cls._partial_invfcn(params)
-            gvar.BufferDict.add_distribution(name, invfcn)
-            cls.params[name] = cls._Params(params, nvariables)
-        
         if isinstance(shape, numbers.Integral):
             shape = (shape,)
-        if nvariables > 1:
-            shape = shape + (nvariables,)
-        return gvar.gvar(numpy.zeros(shape), numpy.ones(shape))
+        else:
+            shape = tuple(shape)
 
-        # TODO I could attach metadata to the output ndarray here, such that
-        # recursive copulas can be built by calling __new__ instead of the
-        # custom tuple format. I can accumulate the gvars directly. This would
-        # allow supporting custom initialization code, and also the shape
-        # parameter. It's also more natural for the user. To attach metadata I
-        # need to subclass ndarray, I think it would be safe since I won't add
-        # anything but a metadata dict.
-        # https://numpy.org/doc/stable/user/basics.subclassing.html#basics-subclassing
-        # Subclass ndarray, define __array_finalize__(self, obj) to copy
-        # metadata from obj if it's the same class, use ndarray.view to cast to
-        # the new class, set the metadata on the new array
+        staticparams = cls._make_staticparams(params)
+        in_shape_1, out_shape_1, out_shape_0, out_dtype = cls._eval_shapes(params, shape)
+        in_shape_2 = cls._compute_in_shape_2(params, in_shape_1)
+        invfcn = cls._partial_invfcn(params, in_shape_2, in_shape_1, out_shape_1, out_dtype)
+
+        info = cls._Info(
+            in_shape=in_shape_2,
+            coreshape=out_shape_0,
+            shape=out_shape_1,
+            dtype=out_dtype,
+            staticparams=staticparams,
+        )
+
+        if name is None:
+
+            self = super().__new__(cls)
+            self.invfcn = invfcn
+            for k, v in info._asdict().items():
+                setattr(self, k, v)
+            
+            return self
+
+        else:
+            
+            if gvar.BufferDict.has_distribution(name):
+                invfcn = gvar.BufferDict.invfcn[name]
+                if not cls._is_earmarked(invfcn):
+                    raise ValueError(f'distribution {name} already defined')
+                existing = cls._named[name]
+                if existing.staticparams != staticparams:
+                    raise ValueError('Attempt to overwrite existing'
+                        f' {cls.__name__} distribution with name {name}')
+                    # cls._named is not updated by
+                    # gvar.BufferDict.del_distribution, but it is not a problem
+                for k, v in info._asdict().items():
+                    assert getattr(existing, k) == v
+            
+            else:
+                cls._earmark(invfcn)
+                gvar.BufferDict.add_distribution(name, invfcn)
+                cls._named[name] = info
+        
+            return gvar.gvar(numpy.zeros(info.in_shape), numpy.ones(info.in_shape))

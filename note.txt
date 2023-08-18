@@ -5652,3 +5652,11 @@ The samplers comparison tests still fail on dirichlet, but after inspecting the
 empirical cdfs I reckon that the inaccuracy in on
 numpy.random.Generator.dirichlet. I'll try scipy's generator. => scipy uses
 numpy. Fixed by sampling from stats.loggamma.
+
+...........
+
+I have rewritten the copula code to be greedy, and to have optional names.
+Currently the tests fail on recursive[1] locking at least for 10 seconds.
+To do:
+    - pass the tests
+    - modify usage in the rest of the library

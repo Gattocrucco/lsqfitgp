@@ -19,5 +19,5 @@
 
 """ Gaussian copulas for gvar """
 
-from ._base import CopulaFactory
+from ._base import Distr
 from ._copulas import *

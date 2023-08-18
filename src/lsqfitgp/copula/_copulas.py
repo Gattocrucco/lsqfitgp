@@ -28,7 +28,7 @@ from jax import numpy as jnp
 from .. import _patch_jax
 from .. import _array
 from . import _beta, _gamma
-from ._base import CopulaFactory
+from ._base import Distr
 
 def _normcdf(x):
     x = jnp.asarray(x)
@@ -39,45 +39,42 @@ def _normcdf(x):
     # of cdf(-x), defeating the purpose of numerical accuracy, open an
     # issue and PR to fix it
 
-class beta(CopulaFactory):
+class beta(Distr):
     """
     https://en.wikipedia.org/wiki/Beta_distribution
     """
     
-    def __new__(cls, name, alpha, beta, **kw):
-        return super().__new__(cls, name, alpha, beta, **kw)
+    def __new__(cls, alpha, beta, **kw):
+        return super().__new__(cls, alpha, beta, **kw)
     
     @staticmethod
     def invfcn(x, alpha, beta):
         return _beta.beta.ppf(_normcdf(x), a=alpha, b=beta)
 
-class dirichlet(CopulaFactory):
+class dirichlet(Distr):
     """
     https://en.wikipedia.org/wiki/Dirichlet_distribution
     """
     
-    def __new__(cls, name, alpha, n, **kw):
-        return super().__new__(cls, name, alpha, n, **kw)
+    def __new__(cls, alpha, n, **kw):
+        return super().__new__(cls, alpha, n, **kw)
     
     @classmethod
     def invfcn(cls, x, alpha, n):
         alpha = jnp.asarray(alpha)
-        if isinstance(n, numbers.Integral):
-            n = jnp.ones(n)
-        else:
-            n = jnp.asarray(n)
+        n = jnp.asarray(n)
         alpha = alpha[..., None] * n / n.sum(axis=-1, keepdims=True)
         lny = loggamma.invfcn(x, alpha)
         norm = jspecial.logsumexp(lny, axis=-1, keepdims=True)
         return jnp.exp(lny - norm)
 
-    @classmethod
-    def _invfcn_tiny_alpha(cls, x, alpha):
-        q = _normcdf(x)
-        lnq = jnp.log(q)
-        lny = lnq / alpha
-        lnnorm = jspecial.logsumexp(lny, axis=-1, keepdims=True)
-        return jnp.exp(lny - lnnorm)
+    # @classmethod
+    # def _invfcn_tiny_alpha(cls, x, alpha):
+    #     q = _normcdf(x)
+    #     lnq = jnp.log(q)
+    #     lny = lnq / alpha
+    #     lnnorm = jspecial.logsumexp(lny, axis=-1, keepdims=True)
+    #     return jnp.exp(lny - lnnorm)
 
         # For a -> 0:
         #
@@ -93,22 +90,17 @@ class dirichlet(CopulaFactory):
 
     @staticmethod
     def input_shape(alpha, n):
-        if isinstance(n, numbers.Integral):
-            return (n,)
-        else:
-            return _array.asarray(n).shape[-1:]
+        return n.shape[-1:]
 
-    @classmethod
-    def output_shape(cls, alpha, n):
-        return cls.input_shape(alpha, n)
+    output_shape = input_shape
 
-class gamma(CopulaFactory):
+class gamma(Distr):
     """
     https://en.wikipedia.org/wiki/Gamma_distribution
     """
     
-    def __new__(cls, name, alpha, beta, **kw):
-        return super().__new__(cls, name, alpha, beta, **kw)
+    def __new__(cls, alpha, beta, **kw):
+        return super().__new__(cls, alpha, beta, **kw)
 
     @staticmethod
     def _boundary(x):
@@ -132,13 +124,13 @@ class gamma(CopulaFactory):
             x, alpha,
         ) / beta
 
-class loggamma(CopulaFactory):
+class loggamma(Distr):
     """
     https://en.wikipedia.org/wiki/Gamma_distribution, `scipy.stats.loggamma`
     """
     
-    def __new__(cls, name, c, **kw):
-        return super().__new__(cls, name, c, **kw)
+    def __new__(cls, c, **kw):
+        return super().__new__(cls, c, **kw)
 
     @staticmethod
     def _boundary(x):
@@ -159,13 +151,13 @@ class loggamma(CopulaFactory):
             x, c,
         )
 
-class invgamma(CopulaFactory):
+class invgamma(Distr):
     """
     https://en.wikipedia.org/wiki/Inverse-gamma_distribution
     """
     
-    def __new__(cls, name, alpha, beta, **kw):
-        return super().__new__(cls, name, alpha, beta, **kw)
+    def __new__(cls, alpha, beta, **kw):
+        return super().__new__(cls, alpha, beta, **kw)
 
     @staticmethod
     def _boundary(x):
@@ -195,13 +187,13 @@ def _piecewise_multiarg(conds, functions, *operands):
 def _vectorized_switch(index, branches, *operands):
     return jax.lax.switch(index, branches, *operands)
 
-class halfcauchy(CopulaFactory):
+class halfcauchy(Distr):
     """
     https://en.wikipedia.org/wiki/Cauchy_distribution, `scipy.stats.halfcauchy`
     """
     
-    def __new__(cls, name, gamma, **kw):
-        return super().__new__(cls, name, gamma, **kw)
+    def __new__(cls, gamma, **kw):
+        return super().__new__(cls, gamma, **kw)
 
     @staticmethod
     def _ppf(p):
@@ -218,13 +210,13 @@ class halfcauchy(CopulaFactory):
             cls._isf(_normcdf(-x)),
         )
 
-class halfnorm(CopulaFactory):
+class halfnorm(Distr):
     """
     https://en.wikipedia.org/wiki/Half-normal_distribution
     """
     
-    def __new__(cls, name, sigma, **kw):
-        return super().__new__(cls, name, sigma, **kw)
+    def __new__(cls, sigma, **kw):
+        return super().__new__(cls, sigma, **kw)
 
     @staticmethod
     def _ppf(p):
@@ -250,13 +242,13 @@ class halfnorm(CopulaFactory):
             cls._isf(_normcdf(-x)),
         )
 
-class uniform(CopulaFactory):
+class uniform(Distr):
     """
     https://en.wikipedia.org/wiki/Continuous_uniform_distribution
     """
     
-    def __new__(cls, name, a, b, **kw):
-        return super().__new__(cls, name, a, b, **kw)
+    def __new__(cls, a, b, **kw):
+        return super().__new__(cls, a, b, **kw)
     
     @staticmethod
     def invfcn(x, a, b):
