@@ -20,6 +20,7 @@
 """ defines Copula """
 
 import textwrap
+import inspect
 
 from . import _distr
 from . import _copulas
@@ -29,32 +30,38 @@ from . import _copulas
 
 class Copula:
 
-    def __init__(self, **variables):
-        super().__setattr__('variables', {})
-        super().__setattr__('names', {})
-        for k, v in variables.items():
-            setattr(self, k, v)
+    _distrs = {
+        k: v for k, v in vars(_copulas).items()
+        if inspect.isclass(v) and issubclass(v, _distr.Distr)
+    }
 
-    def __setattr__(self, name, value):
-        assert name != '__wrapped__'
-        if name in self.variables:
-            raise AttributeError(f'cannot overwrite attribute {name!r}')
+    def __init__(self, variables={}):
+        self._variables = {}
+        for k, v in variables.items():
+            self[k] = v
+
+    def __getitem__(self, name):
+        return self._variables[name]
+
+    def __setitem__(self, name, value):
+        if name in self._variables:
+            raise AttributeError(f'cannot overwrite variable {name!r}')
         elif isinstance(value, (__class__, _distr.Distr)):
             if isinstance(value, __class__):
                 found = list(value._recursive_object_search(self, '<copula>'))
                 if found:
                     paths = ', '.join(found)
-                    raise ValueError(f'cannot set attribute {name!r} to a '
+                    raise ValueError(f'cannot set variable {name!r} to a '
                         f'copula that contains self as {paths}')
-            self.variables[name] = value
-            self.names[value] = name
+            self._variables[name] = value
         else:
-            raise TypeError(f'cannot set attribute {name!r} to {value!r}')
+            raise TypeError(f'cannot set variable {name!r} to {value!r}, ',
+                'type must be Copula or Distr')
 
     def _recursive_object_search(self, obj, path='self'):
         if obj is self:
             yield path
-        for k, v in self.variables.items():
+        for k, v in self._variables.items():
             subpath = path + '.' + k
             if isinstance(v, __class__):
                 yield from v._recursive_object_search(obj, subpath)
@@ -62,40 +69,12 @@ class Copula:
                 yield subpath
 
     def __getattr__(self, name):
-        if name in self.variables:
-            return self.variables[name]
+        if name in self._distrs:
+            return self._distrs[name]
+        elif name == 'Copula':
+            return __class__
         else:
-            return self._CopulaAttrProxy(self, name)
-
-    def __delattr__(self, name):
-        raise AttributeError(f'cannot delete attribute {name!r}')
-
-    class _CopulaAttrProxy:
-
-        def __init__(self, copula, name):
-            super.__setattr__(self, 'copula', copula)
-            super.__setattr__(self, 'name', name)
-
-        def __call__(self, distr, *args, **kw):
-            if isinstance(distr, str):
-                distr = getattr(_copulas, distr)
-            if not issubclass(distr, _distr.Distr):
-                raise TypeError(f'expected a Distr, got {distr!r}')
-            distr = distr(*args, **kw)
-            setattr(self.copula, self.name, distr)
-
-        def __getattr__(self, name):
-            copula = Copula()
-            setattr(self.copula, self.name, copula)
-            return getattr(copula, name)
-
-        def __setattr__(self, name, value):
-            copula = Copula()
-            setattr(self.copula, self.name, copula)
-            setattr(copula, name, value)
-
-        def __repr__(self):
-            return f'attribute proxy .{self.name} of {self.copula!r}'
+            raise AttributeError(name)
 
     def __repr__(self, path='', cache=None):
         if cache is None:
@@ -103,21 +82,22 @@ class Copula:
         if self in cache:
             return cache[self]
         cache[self] = f'<{path}>'
-                
-        indent = '    '
-        out = 'Copula(\n'
         
-        for k, v in self.variables.items():
+        indent = '    '
+        out = ''
+        
+        for k, v in self._variables.items():
             if isinstance(v, (__class__, _distr.Distr)):
                 sub = v.__repr__('.'.join((path, k)).lstrip('.'), cache)
             else:
                 sub = repr(v)
             
             sub = textwrap.indent(sub, indent).lstrip()
-            out += f'{indent}{k}={sub},\n'
+            out += f"{indent}'{k}': {sub},\n"
         
-        if not self.variables:
-            out = out.rstrip()
-        out += ')'
+        if out:
+            out = f'Copula({{\n{out}}})'
+        else:
+            out = 'Copula()'
         
         return out
