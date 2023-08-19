@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""JAX-compatible implementation of the beta distribution"""
+""" JAX-compatible implementation of the beta distribution """
 
 import functools
 

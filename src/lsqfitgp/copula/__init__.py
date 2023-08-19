@@ -19,5 +19,6 @@
 
 """ Gaussian copulas for gvar """
 
-from ._base import Distr, makedict
+from ._distr import Distr
+from ._makedict import makedict
 from ._copulas import *

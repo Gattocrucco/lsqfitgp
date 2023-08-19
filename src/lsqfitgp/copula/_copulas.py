@@ -29,7 +29,7 @@ from jax import numpy as jnp
 from .. import _patch_jax
 from .. import _array
 from . import _beta, _gamma
-from ._base import Distr
+from . import _distr
 
 def _normcdf(x):
     x = jnp.asarray(x)
@@ -40,7 +40,7 @@ def _normcdf(x):
     # of cdf(-x), defeating the purpose of numerical accuracy, open an
     # issue and PR to fix it
 
-class beta(Distr):
+class beta(_distr.Distr):
     """
     https://en.wikipedia.org/wiki/Beta_distribution
     """
@@ -49,7 +49,7 @@ class beta(Distr):
     def invfcn(x, alpha, beta):
         return _beta.beta.ppf(_normcdf(x), a=alpha, b=beta)
 
-class dirichlet(Distr):
+class dirichlet(_distr.Distr):
     r"""
     https://en.wikipedia.org/wiki/Dirichlet_distribution
 
@@ -92,7 +92,7 @@ class dirichlet(Distr):
         # gamma.ppf(q, a) = P^-1(a, q)
         #                 = q^1/a
 
-class gamma(Distr):
+class gamma(_distr.Distr):
     """
     https://en.wikipedia.org/wiki/Gamma_distribution
     """
@@ -119,7 +119,7 @@ class gamma(Distr):
             x, alpha,
         ) / beta
 
-class loggamma(Distr):
+class loggamma(_distr.Distr):
     """
     https://en.wikipedia.org/wiki/Gamma_distribution, `scipy.stats.loggamma`
 
@@ -147,7 +147,7 @@ class loggamma(Distr):
             x, c,
         )
 
-class invgamma(Distr):
+class invgamma(_distr.Distr):
     """
     https://en.wikipedia.org/wiki/Inverse-gamma_distribution
     """
@@ -180,7 +180,7 @@ def _piecewise_multiarg(conds, functions, *operands):
 def _vectorized_switch(index, branches, *operands):
     return jax.lax.switch(index, branches, *operands)
 
-class halfcauchy(Distr):
+class halfcauchy(_distr.Distr):
     """
     https://en.wikipedia.org/wiki/Cauchy_distribution, `scipy.stats.halfcauchy`
     """
@@ -200,7 +200,7 @@ class halfcauchy(Distr):
             cls._isf(_normcdf(-x)),
         )
 
-class halfnorm(Distr):
+class halfnorm(_distr.Distr):
     """
     https://en.wikipedia.org/wiki/Half-normal_distribution
     """
@@ -229,7 +229,7 @@ class halfnorm(Distr):
             cls._isf(_normcdf(-x)),
         )
 
-class uniform(Distr):
+class uniform(_distr.Distr):
     """
     https://en.wikipedia.org/wiki/Continuous_uniform_distribution
     """
