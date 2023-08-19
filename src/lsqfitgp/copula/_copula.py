@@ -104,7 +104,7 @@ class Copula:
         }
         return ImmutableCopula(variables)
 
-class ImmutableCopula(Copula):
+class ImmutableCopula(Copula, _distr._DistrBase):
 
     def __setitem__(self, name, value):
         raise TypeError('ImmutableCopula object is immutable')
@@ -205,7 +205,7 @@ class ImmutableCopula(Copula):
             def reshape_y(y, shape):
                 assert y.shape[1:] == shape
                 return y.reshape(head + shape)
-            return tree_util.tree_map(reshape_y, y, self.out_shape)
+            return tree_util.tree_map(reshape_y, y, self.shape)
 
         return partial_invfcn_3
 

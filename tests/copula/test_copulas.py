@@ -21,6 +21,7 @@
 
 import functools
 import contextlib
+import string
 
 import numpy as np
 import gvar
@@ -154,6 +155,33 @@ class DistrTestBase:
         util.assert_close_matrices(gvar.mean(y), ymean, rtol=1e-6)
         util.assert_close_matrices(gvar.evalcov(y).reshape(2 * y.shape), ycov, rtol=1e-6)
     
+    def test_partial_invfcn_gvar_vectorized(self, name, rng):
+
+        distr = self.copcls(*self.params)
+
+        shape = (13,)
+        x = gvar.gvar(
+            rng.standard_normal(shape + distr.in_shape),
+            rng.gamma(10, 1/10, shape + distr.in_shape),
+        )
+        
+        y = distr.partial_invfcn(x)
+        assert y.shape == shape + distr.shape
+        
+        ymean = distr.partial_invfcn(gvar.mean(x))
+        assert ymean.shape == shape + distr.shape
+        deriv = jax.vmap(jax.jacfwd(distr.partial_invfcn))(gvar.mean(x))
+        assert deriv.shape == shape + distr.shape + distr.in_shape
+        
+        ii = string.ascii_lowercase[:len(distr.in_shape)]
+        io1 = string.ascii_uppercase[:len(distr.shape)]
+        io2 = string.ascii_uppercase[len(distr.shape):2 * len(distr.shape)]
+        ycov = np.einsum(f'...{io1}{ii}, ...{ii}, ...{io2}{ii} -> ...{io1}{io2}', deriv, gvar.var(x), deriv)
+
+        for i in np.ndindex(*shape):
+            util.assert_close_matrices(gvar.mean(y[i]), ymean[i], rtol=1e-6)
+            util.assert_close_matrices(gvar.evalcov(y[i]).reshape(2 * y[i].shape), ycov[i], rtol=1e-6)
+
     def test_overwrite(self, name):
         gvar.BufferDict.add_distribution(name, gvar.exp)
         with pytest.raises(ValueError):

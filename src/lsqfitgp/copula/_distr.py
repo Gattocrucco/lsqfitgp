@@ -35,7 +35,7 @@ from .. import _array
 from .. import _signature
 
 class _DistrBase:
-    """ base class shared by Distr and Copula """
+    """ base class shared by Distr and ImmutableCopula """
 
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
