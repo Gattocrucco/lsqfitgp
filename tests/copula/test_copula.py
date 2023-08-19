@@ -505,3 +505,9 @@ def test_shared_shapes(rng):
     s2 = s.partial_invfcn(samples)
     assert s2.shape == shape + s.shape
     util.assert_allclose(s1, s2)
+
+def test_wrong_nargs():
+    with pytest.raises(TypeError):
+        lgp.copula.beta(1)
+    with pytest.raises(TypeError):
+        lgp.copula.beta(1, 2, 3)

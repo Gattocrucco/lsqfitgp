@@ -43,6 +43,10 @@ class Signature:
                 f'arguments, but signature {self.signature} '
                 f'requires {len(self.incores)}')
 
+    @property
+    def nin(self):
+        return len(self.incores)
+
     def eval(self, *args):
         """
 
@@ -66,6 +70,8 @@ class Signature:
     class EvaluatedSignature:
 
         def __init__(self, sig, *args):
+
+            assert len(args) == len(sig.incores)
             
             known_args = []
             known_cores = []

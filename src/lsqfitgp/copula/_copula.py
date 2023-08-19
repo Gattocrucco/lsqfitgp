@@ -25,9 +25,6 @@ import inspect
 from . import _distr
 from . import _copulas
 
-#   Make Distr.__call__ emit an explicative error. Use the Copula
-#   with c.invfcn(array) -> T = dict[name, T | array], c.in_size.
-
 class Copula:
 
     _distrs = {
@@ -101,3 +98,6 @@ class Copula:
             out = 'Copula()'
         
         return out
+
+# TODO since the copula is mutable, it can't have an invfcn an in_size, but it
+# should instead generate them. So Copula.make_invfcn() -> invfcn, in_size.

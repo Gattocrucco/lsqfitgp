@@ -243,6 +243,12 @@ class Distr(metaclass=abc.ABCMeta):
 
     def _eval_shapes(self, shape):
 
+        # check number of parameters
+        if self.signature.nin != 1 + len(self.params):
+            raise TypeError(f'{self.__class__.__name__} distribution has '
+                f'{self.signature.nin - 1} parameters, but {len(self.params)} '
+                'parameters were passed to the constructor')
+
         # convert shape to tuple
         if isinstance(shape, numbers.Integral):
             shape = (shape,)
@@ -382,8 +388,6 @@ class Distr(metaclass=abc.ABCMeta):
             cls.dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
 
     def __new__(cls, *params, name=None, shape=()):
-
-        # TODO check that the number of parameters is ok
 
         self = super().__new__(cls)
         self.params = params
