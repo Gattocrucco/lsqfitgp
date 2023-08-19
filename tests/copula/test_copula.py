@@ -170,8 +170,8 @@ class DistrTestBase:
         })
         x = b['x']
         mean = gvar.mean(b[key])
-        xmean = self.copcls.invfcn(mean, *self.params)
-        jac = jax.jacfwd(self.copcls.invfcn)(mean, *self.params)
+        xmean = self.copcls.invfcn(mean, *self.array_params)
+        jac = jax.jacfwd(self.copcls.invfcn)(mean, *self.array_params)
         xcov = np.dot(jac * gvar.var(b[key]), jac.T)
         util.assert_close_matrices(gvar.mean(x), xmean, rtol=1e-6)
         util.assert_close_matrices(gvar.evalcov(x).reshape(2 * x.shape), xcov, rtol=1e-6)
@@ -183,15 +183,15 @@ class DistrTestBase:
             key: np.zeros_like(variables, float)
         })
         x = b['x']
-        x2 = self.copcls.invfcn(b[key], *self.params)
+        x2 = self.copcls.invfcn(b[key], *self.array_params)
         util.assert_allclose(x, x2, rtol=1e-6)
 
     def test_continuity_zero(self, name):
         """ check that invfcn is continuous in zero, since it is a common
         cutpoint to switch from ppf(cdf(·)) to isf(sf(·)) """
         eps = np.finfo(float).eps
-        x1 = self.copcls.invfcn(-eps, *self.params)
-        x2 = self.copcls.invfcn(eps, *self.params)
+        x1 = self.copcls.invfcn(-eps, *self.array_params)
+        x2 = self.copcls.invfcn(eps, *self.array_params)
         util.assert_allclose(x1, x2, atol=4 * eps, rtol=3 * eps)
 
     @pytest.fixture
@@ -202,12 +202,16 @@ class DistrTestBase:
     def significance(self):
         return 0.0001
 
+    @functools.cached_property
+    def array_params(self):
+        return tuple(map(np.asarray, self.params))
+
     def test_correct_distribution(self, rng, nsamples, significance):
-        params = list(map(np.asarray, self.params))
-        in_shape = self.copcls.input_shape(*params)
-        out_shape = self.copcls.output_shape(*params)
+        sig = self.copcls.signature.eval(None, *self.array_params)
+        in_shape = sig.in_shapes[0]
+        out_shape, = sig.out_shapes
         samples_norm = rng.standard_normal((nsamples,) + in_shape)
-        samples = self.copcls.invfcn(samples_norm, *self.params)
+        samples = self.copcls.invfcn(samples_norm, *self.array_params)
         assert samples.shape == (nsamples,) + out_shape
         if out_shape or in_shape:
             refsamples = self.recrvs(0)(nsamples, rng)
@@ -399,11 +403,12 @@ def test_shared_basic(rng):
     z = lgp.copula.halfcauchy(x)
     q = lgp.copula.uniform(y, z)
 
+    @functools.partial(jnp.vectorize, signature='(4)->()')
     def q_invfcn(n):
-        x = lgp.copula.invgamma.invfcn(n[..., 0], 1, 1)
-        y = lgp.copula.halfnorm.invfcn(n[..., 1], x)
-        z = lgp.copula.halfcauchy.invfcn(n[..., 2], x)
-        return lgp.copula.uniform.invfcn(n[..., 3], y, z)
+        x = lgp.copula.invgamma.invfcn(n[0], 1, 1)
+        y = lgp.copula.halfnorm.invfcn(n[1], x)
+        z = lgp.copula.halfcauchy.invfcn(n[2], x)
+        return lgp.copula.uniform.invfcn(n[3], y, z)
 
     samples = rng.standard_normal((10000, 4))
     s1 = q.partial_invfcn(samples)
@@ -430,12 +435,13 @@ def test_shared_hierarchy(rng):
     q = lgp.copula.uniform(y, z)
     r = lgp.copula.beta(q, x)
 
+    @functools.partial(jnp.vectorize, signature='(5)->()')
     def r_invfcn(n):
-        x = lgp.copula.invgamma.invfcn(n[..., 0], 1, 1)
-        y = lgp.copula.halfnorm.invfcn(n[..., 1], x)
-        z = lgp.copula.halfcauchy.invfcn(n[..., 2], x)
-        q = lgp.copula.uniform.invfcn(n[..., 3], y, z)
-        return lgp.copula.beta.invfcn(n[..., 4], q, x)
+        x = lgp.copula.invgamma.invfcn(n[0], 1, 1)
+        y = lgp.copula.halfnorm.invfcn(n[1], x)
+        z = lgp.copula.halfcauchy.invfcn(n[2], x)
+        q = lgp.copula.uniform.invfcn(n[3], y, z)
+        return lgp.copula.beta.invfcn(n[4], q, x)
 
     samples = rng.standard_normal((10000, 5))
     s1 = r.partial_invfcn(samples)
@@ -462,14 +468,15 @@ def test_shared_shapes(rng):
     assert r.in_shape == (3 + 3 + 3 + 6 + 6,)
     assert s.in_shape == (2 + 3 + 3 + 3 + 6 + 6 + 6,)
 
+    @functools.partial(jnp.vectorize, signature='(29)->(2,3)')
     def s_invfcn(n):
-        a = lgp.copula.invgamma.invfcn(n[..., 0:2], 2, 2)
-        x = lgp.copula.invgamma.invfcn(n[..., 2:5], 1, 1)
-        y = lgp.copula.halfnorm.invfcn(n[..., 5:8], x)
-        z = lgp.copula.halfcauchy.invfcn(n[..., 8:11], x)
-        q = lgp.copula.uniform.invfcn(n[..., 11:17].reshape(n.shape[:-1] + (2, 3)), y[..., None, :], z[..., None, :])
-        r = lgp.copula.beta.invfcn(n[..., 17:23].reshape(q.shape), q, x[..., None, :])
-        return lgp.copula.dirichlet.invfcn(n[..., 23:29].reshape(q.shape), a, r)
+        a = lgp.copula.invgamma.invfcn(n[0:2], 2, 2)
+        x = lgp.copula.invgamma.invfcn(n[2:5], 1, 1)
+        y = lgp.copula.halfnorm.invfcn(n[5:8], x)
+        z = lgp.copula.halfcauchy.invfcn(n[8:11], x)
+        q = lgp.copula.uniform.invfcn(n[11:17].reshape(2, 3), y, z)
+        r = lgp.copula.beta.invfcn(n[17:23].reshape(2, 3), q, x)
+        return lgp.copula.dirichlet.invfcn(n[23:29].reshape(2, 3), a, r)
 
     shape = (100,)
     samples = rng.standard_normal(shape + s.in_shape)

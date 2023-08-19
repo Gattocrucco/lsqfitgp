@@ -23,6 +23,7 @@ import abc
 import functools
 import collections
 import numbers
+import inspect
 
 import gvar
 import numpy
@@ -31,6 +32,7 @@ from jax import numpy as jnp
 
 from .. import _patch_gvar
 from .. import _array
+from . import _signature
 
 class Distr(metaclass=abc.ABCMeta):
     r"""
@@ -91,9 +93,9 @@ class Distr(metaclass=abc.ABCMeta):
     partial_invfcn :
         Transformation function from a (multivariate) Normal variable to the
         target random variable. Differs from the class method `invfcn` in that
-        1) the core input shape is flattened or scalar, 2) the parameters are
-        baked in, including transformation of the random parameters, 3) the
-        function broadcasts on any additional leading axes of the input.
+        1) the core input shape is flat or scalar, 2) the parameters are baked
+        in, including transformation of the random parameters, 3) the function
+        broadcasts on any additional leading axes of the input.
     add_distribution :
         Define the distribution for usage with `gvar.BufferDict`.
     gvars :
@@ -102,10 +104,6 @@ class Distr(metaclass=abc.ABCMeta):
     invfcn : classmethod
         Transformation function from a (multivariate) Normal variable to the
         target random variable.
-    input_shape : classmethod
-        Return the input core shape expected by `invfcn`.
-    output_shape : classmethod
-        Return the output core shape of `invfcn`.
 
     Examples
     --------
@@ -179,6 +177,7 @@ class Distr(metaclass=abc.ABCMeta):
     To apply arbitrary transformations, use manually `invfcn`:
 
     >>> @functools.partial(lgp.gvar_gufunc, signature='(3)->(3)')
+    >>> @functools.partial(jnp.vectorize, signature='(3)->(3)')
     >>> def model_invfcn(normal_params):
     ...     sigma2 = lgp.copula.invgamma.invfcn(normal_params[0], 1, 1)
     ...     sigma = jnp.sqrt(sigma2)
@@ -193,7 +192,9 @@ class Distr(metaclass=abc.ABCMeta):
         X \mid \sigma &\sim \mathrm{HalfNorm}(\sigma), \\
         Y \mid \sigma &\sim \mathrm{HalfCauchy}(\sigma).
 
-    The `gvar_gufunc` decorator makes `model_invfcn` accept gvars as input.
+    The `jax.numpy.vectorize` decorator makes `model_invfcn` support
+    broadcasting on additional input axes, while `gvar_gufunc` makes it accept
+    gvars as input.
 
     See also
     --------
@@ -201,11 +202,9 @@ class Distr(metaclass=abc.ABCMeta):
 
     Notes
     -----
-    Concrete subclasses must define `invfcn`, and possibly override the default
-    implementations of `input_shape` and `output_shape`, which return an empty
-    tuple. To easily make `invfcn` a generalized ufunc, consider using
-    `jax.numpy.vectorize`. The implementation of `partial_invfcn` always
-    converts all inputs to arrays before passing them to `invfcn`.
+    Concrete subclasses must define `invfcn`, and define the class attribute
+    `signature` to the numpy signature string of `invfcn`, unless `invfcn` is
+    an ufunc.
 
     """
     
@@ -218,70 +217,22 @@ class Distr(metaclass=abc.ABCMeta):
 
         Maps a (multivariate) Normal variable to a variable with the desired
         marginal distribution. In symbols: :math:`y = F^{-1}(\Phi(x))`. This
-        function is a generalized ufunc, jax traceable, and differentiable one
-        time.
+        function is jax traceable, vmappable, and differentiable one time.
 
         Parameters
         ----------
-        x : ``(*head_shape, *input_shape)`` array or scalar
-            The input Normal variable. If multivariate, the variable shape must
-            be in the core shape ``in_shape``. The calculation is broadcasted
-            over other leading axes. Use `input_shape` to determine the required
-            variable shape.
-        params : scalar or arrays
-            The parameters of the distribution. They are broadcasted with `x`.
+        x : array_like
+            The input Normal variable.
+        *params : array_like
+            The parameters of the distribution.
 
         Returns
         -------
-        y : ``(*head_shape, *output_shape)`` array or scalar
-            The output variable with the desired marginal distribution. Use
-            `output_shape` to determine ``output_shape`` before calling
-            `invfcn`.
+        y : array_like
+            The output variable with the desired marginal distribution.
 
         """
         pass
-
-    @classmethod
-    def input_shape(cls, *params):
-        """
-        Return the input core shape expected by `invfcn`.
-
-        May depend on the type and shape of the parameters, but not on their
-        values.
-
-        Parameters
-        ----------
-        params :
-            The same arguments that would be passed to `invfcn` or to the
-            class constructor.
-
-        Returns
-        -------
-        shape : tuple of int
-            The required core shape of the input array `x` to `invfcn`.
-        """
-        return ()
-
-    @classmethod
-    def output_shape(cls, *params):
-        """
-        Return the output core shape of `invfcn`.
-
-        May depend on the type and shape of the parameters, but not on their
-        values.
-
-        Parameters
-        ----------
-        params :
-            The same arguments that would be passed to `invfcn` or to the
-            class constructor.
-
-        Returns
-        -------
-        shape : tuple of int
-            The core shape of the output array `y` of `invfcn`.
-        """
-        return ()
 
     def _eval_shapes(self, shape):
 
@@ -291,30 +242,19 @@ class Distr(metaclass=abc.ABCMeta):
         else:
             shape = tuple(shape)
 
-        # convert parameters to array dummies
-        dummies = []
-        for p in self.params:
-            if not hasattr(p, 'shape') or not hasattr(p, 'dtype'):
-                p = jnp.asarray(p)
-            dummies.append(jax.ShapeDtypeStruct(p.shape, p.dtype))
-        
-        # determine signature of cls.invfcn
-        in_shape_0 = self.input_shape(*dummies)
-        self.distrshape = self.output_shape(*dummies)
-        
-        # make a dummy for the input to cls.invfcn
-        x_dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
-        x_dummy = jax.ShapeDtypeStruct(shape + in_shape_0, x_dtype)
-        
-        # use jax to get shape with parameter broadcasting
-        out_dummy = jax.eval_shape(self.invfcn, x_dummy, *dummies)
-        broadcast_ndim = len(out_dummy.shape) - len(self.distrshape)
-        assert broadcast_ndim >= 0
-        assert out_dummy.shape[broadcast_ndim:] == self.distrshape
+        # make sure parameters have a shape
+        array_params = [
+            p if hasattr(p, 'shape') else jnp.asarray(p)
+            for p in self.params
+        ]
 
-        self._in_shape_1 = out_dummy.shape[:broadcast_ndim] + in_shape_0
-        self.shape = out_dummy.shape
-        self.dtype = out_dummy.dtype
+        # parse signature of cls.invfcn
+        sig = self.signature.eval(None, *array_params)
+        x = jax.ShapeDtypeStruct(shape + sig.core_in_shapes[0], 'd')
+        sig = self.signature.eval(x, *array_params)
+        self._in_shape_1 = sig.in_shapes[0]
+        self.distrshape, = sig.core_out_shapes
+        self.shape, = sig.out_shapes
         
         self._compute_in_shape()
 
@@ -425,6 +365,15 @@ class Distr(metaclass=abc.ABCMeta):
 
     def __init_subclass__(cls, **_):
         cls._named = {}
+        if not hasattr(cls, 'signature'):
+            sig = inspect.signature(cls.invfcn)
+            cls.signature = ','.join(['()'] * len(sig.parameters)) + '->()'
+        if not isinstance(cls.signature, _signature.Signature):
+            cls.signature = _signature.Signature(cls.signature)
+        cls.signature.check_nargs(cls.invfcn)
+        cls.invfcn_vec = jnp.vectorize(cls.invfcn, signature=cls.signature.signature)
+        if not hasattr(cls, 'dtype'):
+            cls.dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
 
     def __new__(cls, *params, name=None, shape=()):
 

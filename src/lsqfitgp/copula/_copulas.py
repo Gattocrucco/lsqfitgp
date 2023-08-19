@@ -62,12 +62,12 @@ class dirichlet(Distr):
 
     # TODO when I implement array_like Distr, use the standard parametrization;
     # the separate scalar parameter is mostly useful to make it random.
+
+    signature = '(n),(),(n)->(n)'
     
     @classmethod
     def invfcn(cls, x, alpha, n):
-        alpha = jnp.asarray(alpha)
-        n = jnp.asarray(n)
-        alpha = alpha[..., None] * n / n.sum(axis=-1, keepdims=True)
+        alpha = alpha[..., None] * n / jnp.sum(n, axis=-1, keepdims=True)
         lny = loggamma.invfcn(x, alpha)
         norm = jspecial.logsumexp(lny, axis=-1, keepdims=True)
         return jnp.exp(lny - norm)
@@ -91,12 +91,6 @@ class dirichlet(Distr):
         #
         # gamma.ppf(q, a) = P^-1(a, q)
         #                 = q^1/a
-
-    @staticmethod
-    def input_shape(alpha, n):
-        return n.shape[-1:]
-
-    output_shape = input_shape
 
 class gamma(Distr):
     """
