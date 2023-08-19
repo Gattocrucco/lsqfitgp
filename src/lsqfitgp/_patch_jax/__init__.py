@@ -32,7 +32,7 @@ from jax import tree_util
 from ._batcher import batchufunc
 from ._fasthash import fasthash64, fasthash32
 
-def makejaxufunc(ufunc, *derivs):
+def makejaxufunc(ufunc, *derivs, excluded=None):
     """
     
     Wrap a numpy ufunc to add jax support.
@@ -46,6 +46,8 @@ def makejaxufunc(ufunc, *derivs):
         Derivatives of the function w.r.t. each positional argument, with the
         same signature as `ufunc`. Pass None to indicate a missing derivative.
         There must be as many derivatives as the arguments to `ufunc`.
+    excluded : sequence of int, optional
+        The indices of arguments that are not broadcasted.
     
     Return
     ------
@@ -60,7 +62,7 @@ def makejaxufunc(ufunc, *derivs):
     @functools.partial(jax.custom_jvp, nondiff_argnums=nondiff_argnums)
     def func(*args):
         args = tuple(map(jnp.asarray, args))
-        return pure_callback_ufunc(ufunc, jnp.result_type(*args), *args)
+        return pure_callback_ufunc(ufunc, jnp.result_type(*args), *args, excluded=excluded)
 
     @func.defjvp
     def func_jvp(*allargs):
@@ -195,14 +197,21 @@ def float_type(*args):
     # numpy does this with common_type, but that supports only arrays, not
     # dtypes in the input. jnp.common_type is not defined.
 
-def pure_callback_ufunc(callback, dtype, *args, **kwargs):
+def pure_callback_ufunc(callback, dtype, *args, excluded=None, **kwargs):
     """ version of jax.pure_callback that deals correctly with ufuncs,
     see https://github.com/google/jax/issues/17187 """
-    shape = jnp.broadcast_shapes(*(arg.shape for arg in args))
+    if excluded is None:
+        excluded = ()
+    shape = jnp.broadcast_shapes(*(
+        a.shape
+        for i, a in enumerate(args)
+        if i not in excluded
+    ))
     ndim = len(shape)
     padded_args = [
-        jnp.expand_dims(a, tuple(range(ndim - a.ndim)))
-        for a in args
+        a if i in excluded
+        else jnp.expand_dims(a, tuple(range(ndim - a.ndim)))
+        for i, a in enumerate(args)
     ]
     result = jax.ShapeDtypeStruct(shape, dtype)
     return jax.pure_callback(callback, result, *padded_args, vectorized=True, **kwargs)

@@ -30,13 +30,13 @@ from . import _gamma
 j0 = _patch_jax.makejaxufunc(special.j0, lambda x: -j1(x))
 j1 = _patch_jax.makejaxufunc(special.j1, lambda x: (j0(x) - jv(2, x)) / 2.0)
 jv = _patch_jax.makejaxufunc(special.jv, None, lambda v, z: jvp(v, z, 1))
-jvp = _patch_jax.makejaxufunc(special.jvp, None, lambda v, z, n: jvp(v, z, n + 1), None)
+jvp = _patch_jax.makejaxufunc(special.jvp, None, lambda v, z, n: jvp(v, z, n + 1), None, excluded=(2,))
 
 kv = _patch_jax.makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
-kvp = _patch_jax.makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None)
+kvp = _patch_jax.makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None, excluded=(2,))
 
 # iv = _patch_jax.makejaxufunc(special.iv, None, lambda v, z: ivp(v, z, 1))
-# ivp = _patch_jax.makejaxufunc(special.ivp, None, lambda v, z, n: ivp(v, z, n + 1), None)
+# ivp = _patch_jax.makejaxufunc(special.ivp, None, lambda v, z, n: ivp(v, z, n + 1), None, excluded=(2,))
 
 # See jax #1870, #2466, #9956, #11002 and
 # https://github.com/josipd/jax/blob/master/jax/experimental/jambax.py

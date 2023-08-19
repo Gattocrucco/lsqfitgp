@@ -5660,3 +5660,10 @@ Currently the tests fail on recursive[1] locking at least for 10 seconds.
 To do:
     - pass the tests (DONE)
     - modify usage in the rest of the library (DONE)
+
+2023-08-19
+==========
+
+NaN problem on old versions, dirichlet recursive[1,2] fails. The nans are in
+the refsamples. I guess that the old scipy's loggamma does not handle well
+extreme values.
