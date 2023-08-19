@@ -71,6 +71,9 @@ for details.
 Predefined families
 -------------------
 
+The parametrizations follow Wikipedia, while the class names are as in
+`scipy.stats`.
+
 """
 
 for name in sorted(distrs):

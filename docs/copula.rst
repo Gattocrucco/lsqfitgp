@@ -36,6 +36,9 @@ for details.
 Predefined families
 -------------------
 
+The parametrizations follow Wikipedia, while the class names are as in
+`scipy.stats`.
+
 .. autoclass:: beta(alpha, beta)
 .. autoclass:: dirichlet(alpha, n)
 .. autoclass:: gamma(alpha, beta)

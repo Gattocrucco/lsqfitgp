@@ -87,6 +87,9 @@ class Distr(metaclass=abc.ABCMeta):
     distrshape : tuple of int
         The sub-core shape of the output array of `partial_invfcn` that
         represents the atomic shape of the distribution.
+    signature : Signature
+        An object representing the signature of `invfcn`. This is a class
+        attribute.
 
     Methods
     -------
@@ -94,8 +97,7 @@ class Distr(metaclass=abc.ABCMeta):
         Transformation function from a (multivariate) Normal variable to the
         target random variable. Differs from the class method `invfcn` in that
         1) the core input shape is flat or scalar, 2) the parameters are baked
-        in, including transformation of the random parameters, 3) the function
-        broadcasts on any additional leading axes of the input.
+        in, including transformation of the random parameters.
     add_distribution :
         Define the distribution for usage with `gvar.BufferDict`.
     gvars :
@@ -183,7 +185,7 @@ class Distr(metaclass=abc.ABCMeta):
     ...     sigma = jnp.sqrt(sigma2)
     ...     X = lgp.copula.halfnorm.invfcn(normal_params[1], sigma)
     ...     Y = lgp.copula.halfcauchy.invfcn(normal_params[2], sigma)
-    ...     return jnp.stack([sigma, X, Y], axis=-1)
+    ...     return jnp.stack([sigma, X, Y])
     
     Now the function `model_invfcn` represents the model
 
@@ -204,7 +206,7 @@ class Distr(metaclass=abc.ABCMeta):
     -----
     Concrete subclasses must define `invfcn`, and define the class attribute
     `signature` to the numpy signature string of `invfcn`, unless `invfcn` is
-    an ufunc.
+    an ufunc. `invfcn` must be vectorized.
 
     """
     
@@ -217,7 +219,9 @@ class Distr(metaclass=abc.ABCMeta):
 
         Maps a (multivariate) Normal variable to a variable with the desired
         marginal distribution. In symbols: :math:`y = F^{-1}(\Phi(x))`. This
-        function is jax traceable, vmappable, and differentiable one time.
+        function is a generalized ufunc, jax traceable, vmappable one time, and
+        differentiable one time. The signature is accessible through the
+        class attribute `signature`.
 
         Parameters
         ----------
@@ -344,7 +348,7 @@ class Distr(metaclass=abc.ABCMeta):
     def partial_invfcn(self, x):
         """
             
-        Map i.i.d. Normal variables to a the desired distribution.
+        Map independent Normal variables to the desired distribution.
 
         This function is a generalized ufunc. It is jax traceable and
         differentiable one time. It supports arrays of gvars as input.
@@ -371,7 +375,6 @@ class Distr(metaclass=abc.ABCMeta):
         if not isinstance(cls.signature, _signature.Signature):
             cls.signature = _signature.Signature(cls.signature)
         cls.signature.check_nargs(cls.invfcn)
-        cls.invfcn_vec = jnp.vectorize(cls.invfcn, signature=cls.signature.signature)
         if not hasattr(cls, 'dtype'):
             cls.dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
 
