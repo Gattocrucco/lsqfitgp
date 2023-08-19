@@ -72,15 +72,3 @@ def makedict(variables, prefix='__copula_'):
         assert k not in out
         out[k] = v
     return gvar.BufferDict(out)
-
-# - make a class Copula usable by attributes, example usage:
-#       c = Copula()
-#       c.sigma('invgamma', 1, 1)
-#       c.x('norm', 0, c.sigma)
-#       c.y = halfcauchy(c.sigma)
-#       c.z = Copula(a=halfnorm(...))
-#       c.h = c.z.a
-#   implementation: __getattr__ returns the attr if it exists, else a proxy
-#   callable object that creates the Distr and stores it. Overwrite is thus
-#   forbidden. Make Distr.__call__ emit an explicative error. Use the Copula
-#   with c.invfcn(array) -> T = dict[name, T | array], c.in_size.

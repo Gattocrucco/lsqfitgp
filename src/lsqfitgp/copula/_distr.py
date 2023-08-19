@@ -170,9 +170,11 @@ class Distr(metaclass=abc.ABCMeta):
     `sigmaXY` is
 
     .. math::
-        \sigma, \sigma_X, \sigma_Y &\sim \mathrm{InvGamma}(1, 1), \\
-        X \mid \sigma &\sim \mathrm{HalfNorm}(\sigma_X), \\
-        Y \mid \sigma &\sim \mathrm{HalfCauchy}(\sigma_Y),
+        \sigma &\sim \mathrm{InvGamma}(1, 1), \\
+        X \mid \sigma_X &\sim \mathrm{HalfNorm}(\sigma_X), \quad
+            & \sigma_X &\sim \mathrm{InvGamma}(1, 1), \\
+        Y \mid \sigma_Y &\sim \mathrm{HalfCauchy}(\sigma_Y), \quad
+            & \sigma_Y &\sim \mathrm{InvGamma}(1, 1),
 
     with separate, independent parameters :math:`\sigma,\sigma_X,\sigma_Y`,
     because each dictionary entry is evaluated separately.
@@ -394,8 +396,8 @@ class Distr(metaclass=abc.ABCMeta):
     class _Descr(collections.namedtuple('Distr', 'family shape params')):
         """ static representation of a Distr object """
 
-        def _repr(self, conv):
-            args = list(map(conv, self.params))
+        def __repr__(self):
+            args = list(map(repr, self.params))
             if len(self.shape) == 1:
                 args += [f'shape={self.shape[0]}']
             elif self.shape:
@@ -403,38 +405,50 @@ class Distr(metaclass=abc.ABCMeta):
             arglist = ', '.join(args)
             return f'{self.family.__name__}({arglist})'
 
-        __repr__ = lambda self: self._repr(repr)
-        __str__ = lambda self: self._repr(str)
-
-    def _descr(self, param_converter):
-
+    @functools.cached_property
+    def _staticdescr(self):
+        """ static description of self, can be compared """
+        
         params = []
         for p in self.params:
             if isinstance(p, __class__):
-                p = p._descr(param_converter)
+                p = p._staticdescr
             else:
-                p = param_converter(p)
+                p = numpy.asarray(p).tolist()
             params.append(p)
 
         return self._Descr(self.__class__, self.shape, tuple(params))
 
-    @functools.cached_property
-    def _staticdescr(self):
-        """ static description of self, can be compared """
-        return self._descr(lambda p: numpy.asarray(p).tolist())
-
-    @functools.cached_property
-    def _repr(self):
-        """ description of self for representation """
-        def param_converter(p):
-            if hasattr(p, 'shape'):
-                return f'array{p.shape}'
-            else:
-                return p
-        return self._descr(param_converter)
-
     def __repr__(self):
-        return str(self._repr)
+
+        def shapestr(shape):
+            if shape:
+                return (str(shape)
+                    .replace(',)', ')')
+                    .replace('(' , '[')
+                    .replace(')' , ']')
+                    .replace(' ', '')
+                )
+            else:
+                return ''
+        
+        args = []
+        for p in self.params:
+            
+            if isinstance(p, __class__):
+                p = f'{p.__class__.__name__}{shapestr(p.shape)}'
+            elif hasattr(p, 'shape'):
+                p = f'Array{shapestr(p.shape)}'
+            else:
+                p = repr(p)
+            args.append(p)
+
+        if len(self.shape) == 1:
+            args += [f'shape={self.shape[0]}']
+        elif self.shape:
+            args += [f'shape={self.shape}']
+
+        return f'{self.__class__.__name__}({", ".join(args)})'
 
     def _is_same_family(self, invfcn):
         return getattr(invfcn, '__self__', None).__class__ is self.__class__
