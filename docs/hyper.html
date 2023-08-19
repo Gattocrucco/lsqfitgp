@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,9 +8,9 @@
     <title>11. Hyperparameters &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=28c8e701" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=42f5af75"></script>
+    <script src="_static/documentation_options.js?v=95e146bd"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -122,7 +122,7 @@
           <div class="body" role="main">
             
   <section id="hyperparameters">
-<span id="hyper"></span><h1><span class="section-number">11. </span>Hyperparameters<a class="headerlink" href="#hyperparameters" title="Permalink to this heading">¶</a></h1>
+<span id="hyper"></span><h1><span class="section-number">11. </span>Hyperparameters<a class="headerlink" href="#hyperparameters" title="Link to this heading">¶</a></h1>
 <p>In the previous examples we often had to tweak the <code class="docutils literal notranslate"><span class="pre">scale</span></code> parameter of the
 kernel to make it work. Whenever you’re tweaking a parameter, it would be nice
 if the tweaking was done automatically. I would add: it would be nice to get
@@ -172,9 +172,10 @@ something you need a prior on it, there’s no way out of this). The function
 <code class="docutils literal notranslate"><span class="pre">makegp</span></code> extracts a key <code class="docutils literal notranslate"><span class="pre">'scale'</span></code> from the dictionary, but in the
 hyperprior we used <code class="docutils literal notranslate"><span class="pre">'log(scale)'</span></code>. This is a general feature of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.12)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>,
 that it can automatically apply the inverse of the transformation specified in
-the key. It doesn’t magically work with any function, by default only the
-logarithm is supported, you can add other functions with
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v11.11.12)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution()</span></code></a>.</p>
+the key. It doesn’t work out of the box with any function: by default only the
+logarithm is supported; you can add other functions with
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v11.11.12)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution()</span></code></a>, or use the <a class="reference internal" href="copula.html#module-lsqfitgp.copula" title="lsqfitgp.copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copula</span></code></a> module to define
+them automatically.</p>
 <p>This means that the parameter we are actually fitting is the logarithm of the
 scale. Something like this is necessary because the scale must be a positive
 number: if we put <code class="docutils literal notranslate"><span class="pre">'scale'</span></code> in the hyperprior, the fitting routine would
@@ -536,7 +537,7 @@ easy as cheating actually if we use the <a class="reference internal" href="kern
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
