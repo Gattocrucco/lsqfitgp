@@ -20,6 +20,7 @@
 import functools
 import textwrap
 import re
+import string
 
 import jax
 import gvar
@@ -30,6 +31,7 @@ import numpy
 from scipy import linalg
 
 from . import _patch_jax
+from . import _signature
 
 gvar_ufuncs = [
     'sin',
@@ -342,20 +344,30 @@ def gvar_gufunc(func, *, signature=None):
 
     """
 
-    # get jacobian signature
+    # parse signature
     if signature is None:
-        jac_signature = None
-    else:
-        m = re.fullmatch(r'\((.*?)\)(->\((.*?)\))?', signature)
-        inp, _, out = m.groups()
-        if out is None:
-            jac_signature = f'({inp})->({inp})'
-        else:
-            comma = ',' if out and inp else ''
-            jac_signature = f'({inp})->({out}{comma}{inp})'
+        signature = '()->()'
+    sig = _signature.Signature(signature)
+    inp, = sig.incores
+    out, = sig.outcores
+    jac_sig = _signature.Signature.from_tuples([inp], [out + inp])
     
     # make jacobian function
-    deriv = jnp.vectorize(jax.jacfwd(func), signature=jac_signature)
+    deriv = jnp.vectorize(jax.jacfwd(func), signature=jac_sig.signature)
+
+    # get indices for summation
+    ninp = len(inp)
+    nout = len(out)
+    head_indices = '...'
+    out_indices = string.ascii_letters[:nout]
+    in_indices = string.ascii_letters[nout:nout + ninp]
+    gvar_indices = string.ascii_letters[nout + ninp]
+
+    # make summation formula
+    jac_indices = head_indices + out_indices + in_indices
+    in_jac_indices = head_indices + in_indices + gvar_indices
+    out_indices = head_indices + out_indices + gvar_indices
+    formula = f'{jac_indices},{in_jac_indices}->{out_indices}'
 
     def gvar_function(x):
 
@@ -366,7 +378,13 @@ def gvar_gufunc(func, *, signature=None):
         # apply function
         out_mean = func(in_mean)
         jac = deriv(in_mean)
-        out_jac = jnp.tensordot(jac, in_jac, in_jac.ndim - 1)
+
+        # check shapes match
+        head_ndim = jac.ndim - nout - ninp
+        assert jac.shape[:head_ndim] == in_jac.shape[:in_jac.ndim - 1 - ninp]
+
+        # contract
+        out_jac = jnp.einsum(formula, jac, in_jac)
 
         # pack output
         return from_jacobian(out_mean, out_jac, indices)

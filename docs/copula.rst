@@ -30,6 +30,7 @@ for details.
 
 .. autoclass:: Distr
     :members:
+    :inherited-members:
 
 .. _families:
 

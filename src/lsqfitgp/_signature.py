@@ -1,4 +1,4 @@
-# lsqfitgp/copula/_signature.py
+# lsqfitgp/_signature.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #
@@ -32,6 +32,15 @@ class Signature:
         self.signature = signature
         self.incores, self.outcores = function_base._parse_gufunc_signature(signature)
 
+    @classmethod
+    def from_tuples(cls, incores, outcores):
+        self = cls.__new__(cls)
+        tuplestr = lambda t: '(' + ','.join(map(str, t)) + ')'
+        self.signature = ','.join(map(tuplestr, incores)) + '->' + ','.join(map(tuplestr, outcores))
+        self.incores = incores
+        self.outcores = outcores
+        return self
+
     def __repr__(self):
         return self.signature
 
@@ -46,6 +55,10 @@ class Signature:
     @property
     def nin(self):
         return len(self.incores)
+
+    @property
+    def nout(self):
+        return len(self.outcores)
 
     def eval(self, *args):
         """

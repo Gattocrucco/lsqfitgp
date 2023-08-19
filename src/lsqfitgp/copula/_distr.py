@@ -32,9 +32,67 @@ from jax import numpy as jnp
 
 from .. import _patch_gvar
 from .. import _array
-from . import _signature
+from .. import _signature
 
-class Distr(metaclass=abc.ABCMeta):
+class _DistrBase:
+    """ base class shared by Distr and Copula """
+
+    def __init_subclass__(cls, **kw):
+        super().__init_subclass__(**kw)
+        cls._named = {}
+
+    def add_distribution(self, name):
+        """
+
+        Register the distribution for usage with `gvar.BufferDict`.
+
+        Parameters
+        ----------
+        name : str
+            The name to use for the distribution. It must be globally unique,
+            and it should not contain parentheses. To redefine a distribution
+            with the same name, use `gvar.BufferDict.del_distribution` first.
+            However, it is allowed to reuse the name if the distribution family
+            and parameters are identical to those used for the existing
+            definition.
+
+        See also
+        --------
+        gvar.BufferDict.add_distribution, gvar.BufferDict.del_distribution
+
+        """
+
+        if gvar.BufferDict.has_distribution(name):
+            invfcn = gvar.BufferDict.invfcn[name]
+            if not self._is_same_family(invfcn):
+                raise ValueError(f'distribution {name} already defined')
+            existing = self._named[name]
+            if existing != self._staticdescr:
+                raise ValueError('Attempt to overwrite existing'
+                    f' {self.__class__.__name__} distribution with name {name}')
+                # cls._named is not updated by
+                # gvar.BufferDict.del_distribution, but it is not a problem
+        
+        else:
+            gvar.BufferDict.add_distribution(name, self.partial_invfcn)
+            self._named[name] = self._staticdescr
+    
+    def gvars(self):
+        """
+
+        Return an array of gvars intended as value in a `gvar.BufferDict`.
+
+        Returns
+        -------
+        gvars : array of gvars
+            An array of i.i.d. standard Normal primary gvars with shape
+            `in_shape`.
+
+        """
+
+        return gvar.gvar(numpy.zeros(self.in_shape), numpy.ones(self.in_shape))
+
+class Distr(_DistrBase, metaclass=abc.ABCMeta):
     r"""
 
     Abstract base class to represent distributions.
@@ -293,43 +351,28 @@ class Distr(metaclass=abc.ABCMeta):
                 in_size += p._compute_in_size(cache)
         return in_size
 
-    @functools.cached_property
-    def _partial_invfcn_internal(self):
-        
-        @functools.wraps(self.invfcn)
-        def _partial_invfcn_internal(x, i, cache):
-            assert x.ndim == 1
+    def _partial_invfcn_internal(self, x, i, cache):
+        if self in cache:
+            return cache[self], i
 
-            # loop over parameters
-            concrete_params = []
-            for p in self.params:
-                
-                # parameter is not a copula, convert to array
-                if not isinstance(p, __class__):
-                    p = jnp.asarray(p)
-                
-                # parameter is an already evaluated copula
-                elif p in cache:
-                    p = cache[p]
-                
-                # parameter is an unseen copula, evaluate and cache the result
-                else:
-                    y, i, cache = p._partial_invfcn_internal(x, i, cache)
-                    cache[p] = y
-                    p = y
-                
-                concrete_params.append(p)
+        concrete_params = []
+        for p in self.params:
+            
+            if isinstance(p, __class__):
+                p, i = p._partial_invfcn_internal(x, i, cache)
+            else:
+                p = jnp.asarray(p)
+            
+            concrete_params.append(p)
 
-            # evaluate inverse transformation
-            in_size = numpy.prod(self._in_shape_1, dtype=int)
-            assert i + in_size <= x.size
-            last = x[i:i + in_size].reshape(self._in_shape_1)
-            y = self.invfcn(last, *concrete_params)
-            assert y.shape == self.shape
-            assert y.dtype == self.dtype
-            return y, i + in_size, cache
-
-        return _partial_invfcn_internal
+        in_size = numpy.prod(self._in_shape_1, dtype=int)
+        assert i + in_size <= x.size
+        last = x[i:i + in_size].reshape(self._in_shape_1)
+        y = self.invfcn(last, *concrete_params)
+        assert y.shape == self.shape
+        assert y.dtype == self.dtype
+        cache[self] = y
+        return y, i + in_size
 
     @functools.cached_property
     def _partial_invfcn(self):
@@ -342,14 +385,14 @@ class Distr(metaclass=abc.ABCMeta):
         @functools.partial(_patch_gvar.gvar_gufunc, signature=signature)
         # jax.jit?
         @functools.partial(jnp.vectorize, signature=signature)
-        @functools.wraps(self._partial_invfcn_internal)
         def _partial_invfcn(x):
             assert x.shape == self.in_shape
             if not self.in_shape:
                 x = x[None]
-            y, i, cache = self._partial_invfcn_internal(x, 0, {})
+            cache = {}
+            y, i = self._partial_invfcn_internal(x, 0, cache)
             assert i == x.size
-            assert len(cache) == self._ancestor_count
+            assert len(cache) == 1 + self._ancestor_count
             return y
 
         return _partial_invfcn
@@ -376,8 +419,8 @@ class Distr(metaclass=abc.ABCMeta):
 
         return self._partial_invfcn(x)
 
-    def __init_subclass__(cls, **_):
-        cls._named = {}
+    def __init_subclass__(cls, **kw):
+        super().__init_subclass__(**kw)
         if not hasattr(cls, 'signature'):
             sig = inspect.signature(cls.invfcn)
             cls.signature = ','.join(['()'] * len(sig.parameters)) + '->()'
@@ -464,57 +507,6 @@ class Distr(metaclass=abc.ABCMeta):
 
     def _is_same_family(self, invfcn):
         return getattr(invfcn, '__self__', None).__class__ is self.__class__
-
-    def add_distribution(self, name):
-        """
-
-        Define the distribution for usage with `gvar.BufferDict`.
-
-        Parameters
-        ----------
-        name : str
-            The name to use for the distribution. It must be globally unique,
-            and it should not contain parentheses. To redefine a distribution
-            with the same name, use `gvar.BufferDict.del_distribution` first.
-            However, it is allowed to reuse the name if the distribution family
-            and parameters are identical to those used for the existing
-            definition.
-
-        See also
-        --------
-        gvar.BufferDict.add_distribution, gvar.BufferDict.del_distribution
-
-        """
-
-        if gvar.BufferDict.has_distribution(name):
-            invfcn = gvar.BufferDict.invfcn[name]
-            if not self._is_same_family(invfcn):
-                raise ValueError(f'distribution {name} already defined')
-            existing = self._named[name]
-            if existing != self._staticdescr:
-                raise ValueError('Attempt to overwrite existing'
-                    f' {self.__class__.__name__} distribution with name {name}')
-                # cls._named is not updated by
-                # gvar.BufferDict.del_distribution, but it is not a problem
-        
-        else:
-            gvar.BufferDict.add_distribution(name, self.partial_invfcn)
-            self._named[name] = self._staticdescr
-    
-    def gvars(self):
-        """
-
-        Return an array of gvars intended as value in a `gvar.BufferDict`.
-
-        Returns
-        -------
-        gvars : array of gvars
-            An array of i.i.d. standard Normal primary gvars with shape
-            `in_shape`.
-
-        """
-
-        return gvar.gvar(numpy.zeros(self.in_shape), numpy.ones(self.in_shape))
 
 # TODO
 # - make Distr instances dispatching array-likes that perform the operations
