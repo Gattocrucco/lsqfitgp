@@ -5666,4 +5666,4 @@ To do:
 
 NaN problem on old versions, dirichlet recursive[1,2] fails. The nans are in
 the refsamples. I guess that the old scipy's loggamma does not handle well
-extreme values.
+extreme values. => Indeed, I copied the code from a recent version.

@@ -274,8 +274,8 @@ class TestDirichlet(DistrTestBase):
     @staticmethod
     @functools.partial(np.vectorize, excluded=(1,), signature='(n)->(n)')
     def dirichlet_rvs(alpha, rng):
-        """ neither numpy's nor scipy's rvs support broadcasting on alpha """
-        lny = stats.loggamma.rvs(alpha, random_state=rng)
+        # Neither numpy's nor scipy's rvs support broadcasting on alpha.
+        lny = TestLogGamma.rvs(alpha, random_state=rng)
         norm = special.logsumexp(lny)
         return np.exp(lny - norm)
 
@@ -306,6 +306,19 @@ class TestInvGamma(DistrTestBase):
 class TestLogGamma(DistrTestBase):
     params = 1.2,
     recparams = 'invgamma',
+
+    def rvs(cls, c, size=(), random_state=None):
+        # old scipy versions do not handle small c, so I copied the code from
+        # a recent version
+        shape = getattr(c, 'shape', ())
+        size = np.broadcast_shapes(shape, size)
+        c = np.broadcast_to(c, size)
+        random_state = np.random.default_rng(random_state)
+        return (
+            np.log(random_state.gamma(c + 1, size=size))
+            + np.log(random_state.uniform(size=size)) / c
+        )
+        # return stats.loggamma.rvs(c, size=size, random_state=random_state)
 
 class TestUniform(DistrTestBase):
     params = -0.5, 2
