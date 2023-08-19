@@ -93,16 +93,17 @@ recovers the correct hyperparameters. ::
 You can see that cats seem to reproduce the trend of cars but with a delay.
 Let's fit now::
 
-    hprior = {
+    hprior = lgp.copula.makedict({
         'delay': gvar.gvar(10, 5),
-        'func(corr)': gvar.BufferDict.uniform('func', -1, 1),
-        'log(scale)': gvar.log(gvar.gvar(3, 1))
-    }
+        'corr': lgp.copula.uniform(-1, 1),
+        'log(scale)': gvar.log(gvar.gvar(3, 1)),
+    })
 
     fit = lgp.empbayes_fit(hprior, makegp, {'data': data})
     hp = fit.p
 
-When I run this last piece of code, it fails with::
+I used `copula.makedict` to generate automatically the transformation of the
+parameter ``'corr'``. When I run this last piece of code, it fails with::
 
    jax._src.errors.TracerArrayConversionError: The numpy.ndarray conversion method __array__() was called on the JAX Tracer object ...
 

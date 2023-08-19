@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,9 +8,9 @@
     <title>14. Optimization &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=28c8e701" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=42f5af75"></script>
+    <script src="_static/documentation_options.js?v=95e146bd"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -122,9 +122,9 @@
           <div class="body" role="main">
             
   <span class="target" id="optim"></span><section id="optimization">
-<h1><span class="section-number">14. </span>Optimization<a class="headerlink" href="#optimization" title="Permalink to this heading">¶</a></h1>
+<h1><span class="section-number">14. </span>Optimization<a class="headerlink" href="#optimization" title="Link to this heading">¶</a></h1>
 <section id="evaluating-a-single-gaussian-process-posterior">
-<h2><span class="section-number">14.1. </span>Evaluating a single Gaussian process posterior<a class="headerlink" href="#evaluating-a-single-gaussian-process-posterior" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">14.1. </span>Evaluating a single Gaussian process posterior<a class="headerlink" href="#evaluating-a-single-gaussian-process-posterior" title="Link to this heading">¶</a></h2>
 <p>There are three main computational steps when doing a Gaussian process fit with
 <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>:</p>
 <blockquote>
@@ -163,7 +163,7 @@ the full covariance matrix is computed even if <code class="docutils literal not
 covariance matrices are not computed twice).</p>
 </section>
 <section id="the-jax-compiler">
-<h2><span class="section-number">14.2. </span>The JAX compiler<a class="headerlink" href="#the-jax-compiler" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">14.2. </span>The JAX compiler<a class="headerlink" href="#the-jax-compiler" title="Link to this heading">¶</a></h2>
 <p>Since <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> uses JAX as computational backend, which provides a just
 in time compiler (JIT), in many cases a piece of code doing stuff with a
 Gaussian process can be put into a function and compiled to low-level
@@ -239,7 +239,7 @@ makes it faster, and that they are disabled anyway under jit. Let’s check:</p>
 a lot of speed: now the advantage is just 3x.</p>
 </section>
 <section id="fitting-hyperparameters">
-<h2><span class="section-number">14.3. </span>Fitting hyperparameters<a class="headerlink" href="#fitting-hyperparameters" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">14.3. </span>Fitting hyperparameters<a class="headerlink" href="#fitting-hyperparameters" title="Link to this heading">¶</a></h2>
 <p>The function <a class="reference internal" href="fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> finds the “optimal” hyperparameters by
 feeding the GP-factory you give to it into a minimization routine that tries to
 change the hyperparameters one step at a time and each time recreates the GP
@@ -255,13 +255,13 @@ reason, use the options:</p>
 </div>
 <p>Another way to improve the performance is by tweaking the minimization method.
 The main setting is the <code class="docutils literal notranslate"><span class="pre">method</span></code> argument, which picks a sensible preset for
-the underlying routine <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>. Then, additional
+the underlying routine <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>. Then, additional
 configurations can be specified through the <code class="docutils literal notranslate"><span class="pre">minkw</span></code> argument; to use it, it
 may be useful to look at the full argument list passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">minimize</span></code>, which is
 provided after the fit in the attribute <code class="docutils literal notranslate"><span class="pre">minargs</span></code>.</p>
 </section>
 <section id="floating-point-32-vs-64-bit">
-<h2><span class="section-number">14.4. </span>Floating point 32 vs. 64 bit<a class="headerlink" href="#floating-point-32-vs-64-bit" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">14.4. </span>Floating point 32 vs. 64 bit<a class="headerlink" href="#floating-point-32-vs-64-bit" title="Link to this heading">¶</a></h2>
 <p><code class="xref py py-obj docutils literal notranslate"><span class="pre">jax</span></code> by default uses the <code class="xref py py-obj docutils literal notranslate"><span class="pre">float32</span></code> data type for all floating point arrays and
 calculations. Upon initialization, <a class="reference internal" href="index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> configures <code class="xref py py-obj docutils literal notranslate"><span class="pre">jax</span></code> to use <code class="xref py py-obj docutils literal notranslate"><span class="pre">float64</span></code>
 instead, like <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.25)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy</span></code></a>. Although operations with 32 bit floats are about twice as
@@ -302,7 +302,7 @@ to tune the minimizer parameters to make it work at <code class="xref py py-obj 
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

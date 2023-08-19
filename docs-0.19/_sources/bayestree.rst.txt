@@ -18,7 +18,6 @@
 .. along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 .. module:: lsqfitgp.bayestree
-    :synopsis: Gaussian process regression with the BART kernel.
 
 BART
 ====
