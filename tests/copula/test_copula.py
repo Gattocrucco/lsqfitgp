@@ -391,7 +391,7 @@ def test_repr():
     assert repr(x) == 'beta(1, 2, shape=(3, 4))'
 
     x = lgp.copula.beta(1, lgp.copula.uniform(0.5, 1))
-    assert repr(x) == 'beta(1, uniform)'
+    assert repr(x) == 'beta(1, uniform(0.5, 1))'
 
     x = lgp.copula.beta([1, 2, 3], 1)
     assert repr(x) == 'beta([1, 2, 3], 1, shape=3)'
@@ -400,13 +400,20 @@ def test_repr():
     assert repr(x) == 'beta([[1, 2], [3, 4]], [1, 2], shape=(2, 2))'
 
     x = lgp.copula.dirichlet(lgp.copula.invgamma(1, 1, shape=4), [1, 1, 1])
-    assert repr(x) == 'dirichlet(invgamma[4], [1, 1, 1], shape=(4, 3))'
+    assert repr(x) == 'dirichlet(invgamma(1, 1, shape=4), [1, 1, 1], shape=(4, 3))'
 
     x = lgp.copula.beta(np.array([1, 2.]), 3)
     assert repr(x) == 'beta(Array[2], 3, shape=2)'
 
     x = lgp.copula.beta(jnp.ones((2, 3)), 3)
     assert repr(x) == 'beta(Array[2,3], 3, shape=(2, 3))'
+
+def test_repr_recursive():
+
+    x = lgp.copula.beta(1, 2)
+    y = lgp.copula.uniform(x, x)
+    z = lgp.copula.beta(y, x)
+    assert repr(z) == 'beta(uniform(beta(1, 2), <0.0>), <0.0>)'
 
 def test_shared_basic(rng):
     """ test that a shared variable is not duplicated """

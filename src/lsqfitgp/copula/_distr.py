@@ -383,6 +383,8 @@ class Distr(metaclass=abc.ABCMeta):
 
     def __new__(cls, *params, name=None, shape=()):
 
+        # TODO check that the number of parameters is ok
+
         self = super().__new__(cls)
         self.params = params
         self._eval_shapes(shape)
@@ -419,26 +421,32 @@ class Distr(metaclass=abc.ABCMeta):
 
         return self._Descr(self.__class__, self.shape, tuple(params))
 
-    def __repr__(self):
-
-        def shapestr(shape):
-            if shape:
-                return (str(shape)
-                    .replace(',)', ')')
-                    .replace('(' , '[')
-                    .replace(')' , ']')
-                    .replace(' ', '')
-                )
-            else:
-                return ''
+    def _shapestr(self, shape):
+        if shape:
+            return (str(shape)
+                .replace(',)', ')')
+                .replace('(' , '[')
+                .replace(')' , ']')
+                .replace(' ', '')
+            )
+        else:
+            return ''
         
+    def __repr__(self, path='', cache=None):
+        
+        if cache is None:
+            cache = {}
+        if self in cache:
+            return cache[self]
+        cache[self] = f'<{path}>'
+
         args = []
-        for p in self.params:
+        for i, p in enumerate(self.params):
             
             if isinstance(p, __class__):
-                p = f'{p.__class__.__name__}{shapestr(p.shape)}'
+                p = p.__repr__('.'.join((path, str(i))).lstrip('.'), cache)
             elif hasattr(p, 'shape'):
-                p = f'Array{shapestr(p.shape)}'
+                p = f'Array{self._shapestr(p.shape)}'
             else:
                 p = repr(p)
             args.append(p)

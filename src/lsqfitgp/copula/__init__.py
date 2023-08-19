@@ -21,4 +21,5 @@
 
 from ._distr import Distr
 from ._makedict import makedict
+from ._copula import Copula
 from ._copulas import *
