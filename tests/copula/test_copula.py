@@ -81,11 +81,14 @@ def test_add_distribution(name, rng):
 @mark.parametrize('broadcast_shape', [(), (2,), (2,3)])
 @mark.parametrize('shape', [(), (2,), (2,3)])
 @mark.parametrize('use_gvar', [False, True])
-def test_partial_invfcn(rng, broadcast_shape, shape, use_gvar):
+@mark.parametrize('double', [False, True])
+def test_partial_invfcn(rng, broadcast_shape, shape, use_gvar, double):
     """ check that a Distr used through a Copula works the same """
     
     distr = copula.beta(1, 2, shape=shape)
     c = copula.Copula({'a': distr})
+    if double:
+        c = copula.Copula(c)
     
     in_samples = rng.standard_normal(broadcast_shape + c.in_shape)
     if use_gvar:
@@ -112,3 +115,15 @@ def test_dependencies(rng, broadcast_shape):
     out_samples_2b = d['b'].invfcn(in_samples[..., 1], out_samples_1['a'], d['b'].params[1])
     util.assert_equal(out_samples_1['a'], out_samples_2a)
     util.assert_equal(out_samples_1['b'], out_samples_2b)
+
+@mark.parametrize('double', [False, True])
+@mark.parametrize('attr', ['shape', 'distrshape', 'dtype'])
+def test_out_attrs(double, attr):
+    d = {
+        'a': copula.beta(1, 2),
+        'b': copula.beta(1, 2, shape=(2,)),
+    }
+    c = copula.Copula(d)
+    if double:
+        c = copula.Copula(c)
+    assert getattr(c, attr) == {k: getattr(v, attr) for k, v in d.items()}

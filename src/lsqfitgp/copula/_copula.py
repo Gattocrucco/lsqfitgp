@@ -89,7 +89,9 @@ class Copula(_base.DistrBase):
         cache = set()
         self.in_shape = self._compute_in_size(cache),
         self._ancestor_count = len(cache) - 1
-        self.shape = self._compute_shape()
+        self.shape = self._map_getattr('shape')
+        self.distrshape = self._map_getattr('distrshape')
+        self.dtype = self._map_getattr('dtype')
 
     def _compute_in_size(self, cache):
         if (out := super()._compute_in_size(cache)) is not None:
@@ -98,13 +100,13 @@ class Copula(_base.DistrBase):
             return in_size + obj._compute_in_size(cache)
         return tree_util.tree_reduce(accumulate, self._variables, 0)
 
-    def _compute_shape(self):
-        def shape(obj):
+    def _map_getattr(self, attr):
+        def get_attr(obj):
             if isinstance(obj, __class__):
-                return obj._compute_shape()
+                return obj._map_getattr(attr)
             else:
-                return obj.shape
-        return tree_util.tree_map(shape, self._variables)
+                return getattr(obj, attr)
+        return tree_util.tree_map(get_attr, self._variables)
 
     def _partial_invfcn_internal(self, x, i, cache):
         if (out := super()._partial_invfcn_internal(x, i, cache)) is not None:
