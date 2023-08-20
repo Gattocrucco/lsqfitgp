@@ -56,7 +56,9 @@ namespaces = false
 "Homepage" = "https://github.com/Gattocrucco/lsqfitgp"
 "Bug Tracker" = "https://github.com/Gattocrucco/lsqfitgp/issues"
 
-# TODO consider adding here all the things in requirements.txt and
+# TODO consider moving here all the things in requirements.txt and
 # requirements-docs.txt under versions dev, tests, tests-old examples, docs. I
 # currently do not now if I can mark a dependency or version to be installed
 # with --no-pep-517, which I need in tests-old for gvar and lsqfit.
+
+# TODO move here coverage and pytest settings

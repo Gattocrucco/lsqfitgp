@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" defines Distr """
+""" define Distr """
 
 import abc
 import functools
@@ -33,73 +33,16 @@ from jax import numpy as jnp
 from .. import _patch_gvar
 from .. import _array
 from .. import _signature
+from . import _base
 
-class _DistrBase:
-    """ base class shared by Distr and ImmutableCopula """
-
-    def __init_subclass__(cls, **kw):
-        super().__init_subclass__(**kw)
-        cls._named = {}
-
-    def add_distribution(self, name):
-        """
-
-        Register the distribution for usage with `gvar.BufferDict`.
-
-        Parameters
-        ----------
-        name : str
-            The name to use for the distribution. It must be globally unique,
-            and it should not contain parentheses. To redefine a distribution
-            with the same name, use `gvar.BufferDict.del_distribution` first.
-            However, it is allowed to reuse the name if the distribution family
-            and parameters are identical to those used for the existing
-            definition.
-
-        See also
-        --------
-        gvar.BufferDict.add_distribution, gvar.BufferDict.del_distribution
-
-        """
-
-        if gvar.BufferDict.has_distribution(name):
-            invfcn = gvar.BufferDict.invfcn[name]
-            if not self._is_same_family(invfcn):
-                raise ValueError(f'distribution {name} already defined')
-            existing = self._named[name]
-            if existing != self._staticdescr:
-                raise ValueError('Attempt to overwrite existing'
-                    f' {self.__class__.__name__} distribution with name {name}')
-                # cls._named is not updated by
-                # gvar.BufferDict.del_distribution, but it is not a problem
-        
-        else:
-            gvar.BufferDict.add_distribution(name, self.partial_invfcn)
-            self._named[name] = self._staticdescr
-    
-    def gvars(self):
-        """
-
-        Return an array of gvars intended as value in a `gvar.BufferDict`.
-
-        Returns
-        -------
-        gvars : array of gvars
-            An array of i.i.d. standard Normal primary gvars with shape
-            `in_shape`.
-
-        """
-
-        return gvar.gvar(numpy.zeros(self.in_shape), numpy.ones(self.in_shape))
-
-class Distr(_DistrBase, metaclass=abc.ABCMeta):
+class Distr(_base.DistrBase):
     r"""
 
-    Abstract base class to represent distributions.
+    Abstract base class to represent probability distributions.
 
     A `Distr` object represents a probability distribution, and provides a
     transformation function from a (multivariate) Normal variable to the target
-    random variable, in particular for use with `gvar.BufferDict`.
+    random variable.
 
     Parameters
     ----------
@@ -136,31 +79,12 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
     ----------
     params : tuple
         The parameters as passed to the constructor.
-    in_shape : tuple of int
-        The core shape of the input array to `partial_invfcn`.
-    shape : tuple of int
-        The core shape of the output array of `partial_invfcn`.
-    dtype : dtype
-        The dtype of the output array of `partial_invfcn`.
-    distrshape : tuple of int
-        The sub-core shape of the output array of `partial_invfcn` that
-        represents the atomic shape of the distribution.
     signature : Signature
         An object representing the signature of `invfcn`. This is a class
         attribute.
 
     Methods
     -------
-    partial_invfcn :
-        Transformation function from a (multivariate) Normal variable to the
-        target random variable. Differs from the class method `invfcn` in that
-        1) the core input shape is flat or scalar, 2) the parameters are baked
-        in, including transformation of the random parameters.
-    add_distribution :
-        Define the distribution for usage with `gvar.BufferDict`.
-    gvars :
-        Return an array of gvars with the appropriate shape for usage with
-        `gvar.BufferDict`.
     invfcn : classmethod
         Transformation function from a (multivariate) Normal variable to the
         target random variable.
@@ -342,9 +266,8 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
         self._ancestor_count = len(cache)
 
     def _compute_in_size(self, cache):
-        if self in cache:
-            return 0
-        cache.add(self)
+        if (out := super()._compute_in_size(cache)) is not None:
+            return out
         in_size = numpy.prod(self._in_shape_1, dtype=int)
         for p in self.params:
             if isinstance(p, __class__):
@@ -352,8 +275,8 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
         return in_size
 
     def _partial_invfcn_internal(self, x, i, cache):
-        if self in cache:
-            return cache[self], i
+        if (out := super()._partial_invfcn_internal(x, i, cache)) is not None:
+            return out
 
         concrete_params = []
         for p in self.params:
@@ -368,9 +291,11 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
         in_size = numpy.prod(self._in_shape_1, dtype=int)
         assert i + in_size <= x.size
         last = x[i:i + in_size].reshape(self._in_shape_1)
+        
         y = self.invfcn(last, *concrete_params)
         assert y.shape == self.shape
         assert y.dtype == self.dtype
+        
         cache[self] = y
         return y, i + in_size
 
@@ -383,7 +308,7 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
 
         # wrap to support gvars
         @functools.partial(_patch_gvar.gvar_gufunc, signature=signature)
-        # jax.jit?
+        # @jax.jit
         @functools.partial(jnp.vectorize, signature=signature)
         def _partial_invfcn(x):
             assert x.shape == self.in_shape
@@ -397,28 +322,6 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
 
         return _partial_invfcn
 
-    def partial_invfcn(self, x):
-        """
-            
-        Map independent Normal variables to the desired distribution.
-
-        This function is a generalized ufunc. It is jax traceable and
-        differentiable one time. It supports arrays of gvars as input.
-
-        Parameters
-        ----------
-        x : array
-            An array of values representing draws of i.i.d. Normal variates.
-
-        Returns
-        -------
-        y : array
-            An array of values representing draws of the desired distribution.
-
-        """
-
-        return self._partial_invfcn(x)
-
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
         if not hasattr(cls, 'signature'):
@@ -427,7 +330,7 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
         if not isinstance(cls.signature, _signature.Signature):
             cls.signature = _signature.Signature(cls.signature)
         cls.signature.check_nargs(cls.invfcn)
-        if not hasattr(cls, 'dtype'):
+        if getattr(cls, 'dtype', NotImplemented) is NotImplemented:
             cls.dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
 
     def __new__(cls, *params, name=None, shape=()):
@@ -456,7 +359,6 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
 
     @functools.cached_property
     def _staticdescr(self):
-        """ static description of self, can be compared """
         
         params = []
         for p in self.params:
@@ -480,13 +382,10 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
             return ''
         
     def __repr__(self, path='', cache=None):
-        
-        if cache is None:
-            cache = {}
-        if self in cache:
-            return cache[self]
-        cache[self] = f'<{path}>'
 
+        if isinstance(cache := super().__repr__(path, cache), str):
+            return cache
+        
         args = []
         for i, p in enumerate(self.params):
             
@@ -505,11 +404,7 @@ class Distr(_DistrBase, metaclass=abc.ABCMeta):
 
         return f'{self.__class__.__name__}({", ".join(args)})'
 
-    def _is_same_family(self, invfcn):
-        return getattr(invfcn, '__self__', None).__class__ is self.__class__
-
 # TODO
 # - make Distr instances dispatching array-likes that perform the operations
-#   by creating a new instance with a custom invfcn (this requires always
-#   getting invfcn from self!) from a generic subclass that just applies the
+#   by creating a new instance from a generic Op subclass that just applies the
 #   operation to the output of the operand invfcns using jax.numpy.

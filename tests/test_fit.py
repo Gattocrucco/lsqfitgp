@@ -24,6 +24,7 @@ from jax import numpy as jnp
 import gvar
 from scipy import stats
 import pytest
+from pytest import mark
 
 import lsqfitgp as lgp
 from . import util
@@ -75,6 +76,7 @@ def check_fit(hyperprior, gpfactory, alpha=1e-5):
     chisq_test(fit.p - truehp, alpha)
 
 @util.tryagain
+@mark.xfail(reason='I guess Laplace approximation bad for this model')
 def test_period():
     hp = {
         'log(scale)': gvar.log(gvar.gvar(1, 0.1))
@@ -254,10 +256,3 @@ def test_data():
         p = fits[0].minresult.x
         for fit in fits[1:]:
             util.assert_allclose(fit.minresult.x, p, atol=1e-6)
-            
-#### XFAILS #####
-
-# TODO Investigate why this fails, redo the fit in a standalone script.
-# It is not wrong harmonic. Is the Laplace approximation not appropriate for
-# this model? Or is the hessian approximation with the BFGS matrix wrong?
-pytest.mark.xfail(test_period)

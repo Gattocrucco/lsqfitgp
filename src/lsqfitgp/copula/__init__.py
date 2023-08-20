@@ -19,7 +19,8 @@
 
 """ Gaussian copulas for gvar """
 
+from ._base import DistrBase
 from ._distr import Distr
+from ._copula import Copula
 from ._makedict import makedict
-from ._copula import Copula, ImmutableCopula
 from ._copulas import *

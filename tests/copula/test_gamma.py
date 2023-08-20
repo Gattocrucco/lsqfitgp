@@ -31,7 +31,7 @@ from .. import util
 
 @mark.parametrize('degree', [
     pytest.param(1, id='grad'),
-    pytest.param(2, id='hess', marks=mark.xfail),
+    pytest.param(2, id='hess', marks=mark.xfail(reason='missing second derivs for gammainc in jax')),
 ])
 @mark.parametrize('func', ['gammaincinv', 'gammainccinv'])
 def test_deriv(degree, func):

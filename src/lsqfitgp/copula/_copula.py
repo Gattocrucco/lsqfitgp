@@ -19,133 +19,103 @@
 
 """ defines Copula """
 
-import textwrap
 import functools
+import pprint
 
 import jax
 from jax import tree_util
+from jax import numpy as jnp
+import gvar
 
 from .. import _array
 from .. import _patch_gvar
-from . import _distr
+from . import _base
 
-class Copula:
+class Copula(_base.DistrBase):
 
-    def __init__(self, variables={}):
-        self._variables = {}
-        for k, v in variables.items():
-            self._setitem(k, v)
-                # avoid __setitem__ for immutable subclass; typically the
-                # superclass would be immutable, but here the immutable version
-                # has substantial additional functionality, so it is naturally a
-                # subclass
-
-    def __getitem__(self, name):
-        return self._variables[name]
-
-    def __setitem__(self, name, value):
-        self._setitem(name, value)
-
-    def _setitem(self, name, value):
-        if name in self._variables:
-            raise KeyError(f'cannot overwrite variable {name!r}')
-        elif isinstance(value, (__class__, _distr.Distr)):
-            if isinstance(value, __class__):
-                found = list(value._recursive_object_search(self, '<copula>'))
-                if found:
-                    paths = ', '.join(found)
-                    raise ValueError(f'cannot set variable {name!r} to a '
-                        f'copula that contains self as {paths}')
-            self._variables[name] = value
-        else:
-            raise TypeError(f'cannot set variable {name!r} to {value!r}, ',
-                'type must be Copula or Distr')
-
-    def _recursive_object_search(self, obj, path='self'):
-        if obj is self:
-            yield path
-        for k, v in self._variables.items():
-            subpath = path + '.' + k
-            if isinstance(v, __class__):
-                yield from v._recursive_object_search(obj, subpath)
-            elif v is obj:
-                yield subpath
-
-    def __repr__(self, path='', cache=None):
-        if cache is None:
-            cache = {}
-        if self in cache:
-            return cache[self]
-        cache[self] = f'<{path}>'
-        
-        indent = '    '
-        out = ''
-        
-        for k, v in self._variables.items():
-            if isinstance(v, (__class__, _distr.Distr)):
-                sub = v.__repr__('.'.join((path, k)).lstrip('.'), cache)
+    @staticmethod
+    def _tree_path_str(path):
+        """ format a jax pytree key path as a compact, readable string """
+        def parsekey(key):
+            if hasattr(key, 'key'):
+                return key.key
+            elif hasattr(key, 'idx'):
+                return key.idx
             else:
-                sub = repr(v)
-            
-            sub = textwrap.indent(sub, indent).lstrip()
-            out += f"{indent}'{k}': {sub},\n"
+                return key
+        def keystr(key):
+            key = parsekey(key)
+            return str(key).replace('.', r'\.')
+        return '.'.join(map(keystr, path))
+
+    @classmethod
+    def _patch_jax_dict_sorting(cls, pytree):
+        """ replace dicts in pytree with a custom dict subclass such their
+        insertion order is maintained, see
+        https://github.com/google/jax/issues/4085 """
         
-        if out:
-            out = f'{self.__class__.__name__}({{\n{out}}})'
-        else:
-            out = f'{self.__class__.__name__}()'
+        def is_dict(obj):
+            return obj.__class__ is dict
         
-        return out
+        def patch_dict(obj):
+            if is_dict(obj):
+                return tree_util.tree_map(patch_dict, cls._Dict(obj))
+            else:
+                return obj
+        
+        return tree_util.tree_map(patch_dict, pytree, is_leaf=is_dict)
 
-    def freeze(self):
-        variables = {
-            k: v.freeze() if isinstance(v, __class__) else v
-            for k, v in self._variables.items()
-        }
-        return ImmutableCopula(variables)
+    @tree_util.register_pytree_with_keys_class
+    class _Dict(dict):
 
-class ImmutableCopula(Copula, _distr._DistrBase):
+        def tree_flatten_with_keys(self):
+            treedef = {k: None for k in self}
+            keys_values = [(tree_util.DictKey(k), v) for k, v in self.items()]
+            return keys_values, treedef
 
-    def __setitem__(self, name, value):
-        raise TypeError('ImmutableCopula object is immutable')
-
-    def freeze(self):
-        return self
+        @classmethod
+        def tree_unflatten(cls, treedef, values):
+            return cls(zip(treedef, values))
 
     def __init__(self, variables):
-        super().__init__(variables)
+        variables = self._patch_jax_dict_sorting(variables)
+        def check_type(path, obj):
+            if not isinstance(obj, _base.DistrBase):
+                raise TypeError(f'only Distr or Copula objects can be '
+                    f'contained in a Copula, found {obj!r} at '
+                    f'<{self._tree_path_str(path)}>')
+            return obj
+        self._variables = tree_util.tree_map_with_path(check_type, variables)
         cache = set()
         self.in_shape = self._compute_in_size(cache),
         self._ancestor_count = len(cache) - 1
         self.shape = self._compute_shape()
 
     def _compute_in_size(self, cache):
-        if self in cache:
-            return 0
-        cache.add(self)
-        in_size = 0
-        for k, v in self._variables.items():
-            in_size += v._compute_in_size(cache)
-        return in_size
+        if (out := super()._compute_in_size(cache)) is not None:
+            return out
+        def accumulate(in_size, obj):
+            return in_size + obj._compute_in_size(cache)
+        return tree_util.tree_reduce(accumulate, self._variables, 0)
 
     def _compute_shape(self):
-        shape = {}
-        for k, v in self._variables.items():
-            if isinstance(v, __class__):
-                shape[k] = v._compute_shape()
+        def shape(obj):
+            if isinstance(obj, __class__):
+                return obj._compute_shape()
             else:
-                shape[k] = v.shape
-        return shape
+                return obj.shape
+        return tree_util.tree_map(shape, self._variables)
 
     def _partial_invfcn_internal(self, x, i, cache):
-        assert x.ndim == 1
-
-        if self in cache:
-            return cache[self], i
-
-        out = {}
-        for k, v in self._variables.items():
-            out[k], i = v._partial_invfcn_internal(x, i, cache)
+        if (out := super()._partial_invfcn_internal(x, i, cache)) is not None:
+            return out
+        
+        distributions, treedef = tree_util.tree_flatten(self._variables)
+        outputs = []
+        for distr in distributions:
+            out, i = distr._partial_invfcn_internal(x, i, cache)
+            outputs.append(out)
+        out = tree_util.tree_unflatten(treedef, outputs)
 
         cache[self] = out
         return out, i
@@ -154,6 +124,7 @@ class ImmutableCopula(Copula, _distr._DistrBase):
     def _partial_invfcn(self):
 
         # non vectorized version, check core shapes and call recursive impl
+        # @jax.jit
         def partial_invfcn_0(x):
             assert x.shape == self.in_shape
             cache = {}
@@ -209,12 +180,33 @@ class ImmutableCopula(Copula, _distr._DistrBase):
 
         return partial_invfcn_3
 
-    def partial_invfcn(self, x):
-        return self._partial_invfcn(x)
+    def __repr__(self, path='', cache=None):
+        
+        if isinstance(cache := super().__repr__(path, cache), str):
+            return cache
+        
+        def subrepr(k, obj):
+            if isinstance(obj, _base.DistrBase):
+                k = self._tree_path_str(k)
+                return obj.__repr__('.'.join((path, k)).lstrip('.'), cache)
+            else:
+                return repr(obj)
 
-# TODO methods to make the thing behave more like a dictionary => or maybe not.
-# that would enable converting it to a dict, which would remove the ability to
-# track dependencies.
+        class NoQuotesRepr:
+            def __init__(self, s):
+                self.s = s
+            def __repr__(self):
+                return self.s
+        
+        out = tree_util.tree_map_with_path(subrepr, self._variables)
+        out = tree_util.tree_map(NoQuotesRepr, out)
+        out = pprint.pformat(out, sort_dicts=False)
+        return f'{self.__class__.__name__}({out})'
+
+    @functools.cached_property
+    def _staticdescr(self):
+        return tree_util.tree_map(lambda x: x._staticdescr, self._variables)
 
 # TODO method to export to BufferDict, raises an error if there are dependencies
-# between the keys.
+# between the keys, works only if _variables is has attr keys(), the non-distr
+# leaves have invfcns with non-numerical output

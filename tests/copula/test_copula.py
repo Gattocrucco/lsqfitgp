@@ -19,67 +19,96 @@
 
 """ Test the Copula class """
 
-import numpy as np
 import gvar
-import jax
-from jax import numpy as jnp
 import pytest
 from pytest import mark
-from scipy import stats, special
 
-import lsqfitgp as lgp
+from lsqfitgp import copula
 
 from .. import util
 
-def test_repr():
-    c = lgp.copula.Copula()
-    assert repr(c) == 'Copula()'
+@pytest.fixture
+def name(request):
+    return request.node.nodeid
+
+def test_repr_paths():
+    """ check that no object is represented more than once """
+    d = {}
+    assert repr(copula.Copula(d)) == 'Copula({})'
     
-    c['a'] = lgp.copula.beta(1, 2)
-    assert repr(c) == """Copula({
-    'a': beta(1, 2),
-})"""
+    d['a'] = copula.beta(1, 2)
+    assert repr(copula.Copula(d)) == """Copula({'a': beta(1, 2)})"""
+
+    d['b'] = d['a']
+    assert repr(copula.Copula(d)) == """\
+Copula({'a': beta(1, 2), 'b': <a>})"""
     
-    c['b'] = c['a']
-    assert repr(c) == """Copula({
-    'a': beta(1, 2),
-    'b': <a>,
-})"""
+    c1 = copula.gamma(2, 2)
+    d['c'] = copula.beta(d['a'], c1)
+    assert repr(copula.Copula(d)) == """\
+Copula({'a': beta(1, 2), 'b': <a>, 'c': beta(<a>, gamma(2, 2))})"""
+
+    d['d'] = c1
+    assert repr(copula.Copula(d)) == """\
+Copula({'a': beta(1, 2), 'b': <a>, 'c': beta(<a>, gamma(2, 2)), 'd': <c.1>})"""
+
+def test_dict_order():
+    """ check that the insertion order of a dict is preserved (jax issue) """
+    d = dict(b=copula.beta(1, 2), a=copula.beta(1, 2))
+    assert list(copula.Copula(d)._variables) == list(d)
+
+def test_repr_dict_order():
+    """ check that the insertion order of a dict is preserved (pprint issue) """
+    d = dict(b=copula.beta(1, 2), a=copula.beta(1, 2))
+    assert repr(copula.Copula(d)) == """\
+Copula({'b': beta(1, 2), 'a': beta(1, 2)})"""
+
+def test_repr_long():
+    """ check that long reprs are split on newlines """
+    d = {str(i): copula.beta(1, 2) for i in range(100)}
+    assert repr(copula.Copula(d)).find('\n') >= 0
+
+def test_add_distribution(name, rng):
+    """ check that add_distribution works """
+    c = copula.Copula({'a': copula.beta(1, 2)})
+    c.add_distribution(name)
+    in_samples = rng.standard_normal(c.in_shape)
+    bd = gvar.BufferDict({f'{name}(x)': in_samples})
+    out_samples_1 = bd['x']['a']
+    out_samples_2 = c.partial_invfcn(in_samples)['a']
+    util.assert_equal(out_samples_1, out_samples_2)
+
+@mark.parametrize('broadcast_shape', [(), (2,), (2,3)])
+@mark.parametrize('shape', [(), (2,), (2,3)])
+@mark.parametrize('use_gvar', [False, True])
+def test_partial_invfcn(rng, broadcast_shape, shape, use_gvar):
+    """ check that a Distr used through a Copula works the same """
     
-    c1 = lgp.copula.gamma(2, 2)
-    c['c'] = lgp.copula.beta(c['a'], c1)
-    assert repr(c) == """Copula({
-    'a': beta(1, 2),
-    'b': <a>,
-    'c': beta(<a>, gamma(2, 2)),
-})"""
+    distr = copula.beta(1, 2, shape=shape)
+    c = copula.Copula({'a': distr})
+    
+    in_samples = rng.standard_normal(broadcast_shape + c.in_shape)
+    if use_gvar:
+        in_samples = gvar.gvar(in_samples, rng.gamma(5, 1/5, in_samples.shape))
+    
+    out_samples_1 = c.partial_invfcn(in_samples)['a']
+    out_samples_2 = distr.partial_invfcn(in_samples.reshape(broadcast_shape + distr.in_shape))
+    
+    if use_gvar:
+        util.assert_same_gvars(out_samples_1, out_samples_2)
+    else:
+        util.assert_equal(out_samples_1, out_samples_2)
 
-    c['d'] = c1
-    assert repr(c) == """Copula({
-    'a': beta(1, 2),
-    'b': <a>,
-    'c': beta(<a>, gamma(2, 2)),
-    'd': <c.1>,
-})"""
-
-def test_no_overwrite():
-    c = lgp.copula.Copula()
-    c['a'] = lgp.copula.beta(1, 2)
-    with pytest.raises(KeyError):
-        c['a'] = lgp.copula.beta(1, 2)
-
-def test_no_circular_references():
-    c = lgp.copula.Copula()
-    with pytest.raises(ValueError):
-        c['b'] = c
-    c['b'] = lgp.copula.Copula()
-    with pytest.raises(ValueError):
-        c['b']['c'] = c
-    with pytest.raises(ValueError):
-        c['b']['c'] = c['b']
-
-def test_immutable():
-    c = lgp.copula.Copula()
-    c = c.freeze()
-    with pytest.raises(TypeError):
-        c['a'] = lgp.copula.beta(1, 2)
+@mark.parametrize('broadcast_shape', [(), (2,), (2,3)])
+def test_dependencies(rng, broadcast_shape):
+    """ check that dependencies are respected """
+    d = {}
+    d['a'] = copula.beta(1, 2)
+    d['b'] = copula.beta(d['a'], 2)
+    c = copula.Copula(d)
+    in_samples = rng.standard_normal(broadcast_shape + c.in_shape)
+    out_samples_1 = c.partial_invfcn(in_samples)
+    out_samples_2a = d['a'].partial_invfcn(in_samples[..., 0])
+    out_samples_2b = d['b'].invfcn(in_samples[..., 1], out_samples_1['a'], d['b'].params[1])
+    util.assert_equal(out_samples_1['a'], out_samples_2a)
+    util.assert_equal(out_samples_1['b'], out_samples_2b)
