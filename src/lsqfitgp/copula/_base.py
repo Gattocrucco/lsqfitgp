@@ -27,17 +27,17 @@ import numpy
 class DistrBase(metaclass=abc.ABCMeta):
     r"""
 
-    Abstract base class to represent (collections of) probability distributions.
+    Abstract base class to represent (trees of) probability distributions.
 
     Attributes
     ----------
     in_shape : tuple of int
         The core shape of the input array to `partial_invfcn`.
-    shape : tuple of int
+    shape : (tree of) tuple of int
         The core shape of the output array of `partial_invfcn`.
-    dtype : dtype
+    dtype : (tree of) dtype
         The dtype of the output array of `partial_invfcn`.
-    distrshape : tuple of int
+    distrshape : (tree of) tuple of int
         The sub-core shape of the output array of `partial_invfcn` that
         represents the atomic shape of the distribution.
 
@@ -79,12 +79,12 @@ class DistrBase(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        x : (..., *in_shape) array
+        x : ``(..., *in_shape)`` array
             An array of values representing draws of i.i.d. Normal variates.
 
         Returns
         -------
-        y : (..., *shape) array
+        y : (tree of) ``(..., *shape)`` array
             An array of values representing draws of the desired distribution.
 
         """
@@ -108,8 +108,8 @@ class DistrBase(metaclass=abc.ABCMeta):
             The name to use for the distribution. It must be globally unique,
             and it should not contain parentheses. To redefine a distribution
             with the same name, use `gvar.BufferDict.del_distribution` first.
-            However, it is allowed to reuse the name if the distribution family
-            and parameters are identical to those used for the existing
+            However, it is allowed to reuse the name if the distribution family,
+            shape and parameters are identical to those used for the existing
             definition.
 
         See also
@@ -150,6 +150,8 @@ class DistrBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def __repr__(self, path='', cache=None):
+        """ produce a representation where no object appears more than once,
+        later appearances are replaced by a user-friendly identifier """
         if cache is None:
             cache = {}
         if self in cache:
@@ -159,6 +161,7 @@ class DistrBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _compute_in_size(self, cache):
+        """ compute input size to partial_invfcn, without double counting """
         if self in cache:
             return 0
         cache.add(self)

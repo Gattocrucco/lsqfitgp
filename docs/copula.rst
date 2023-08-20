@@ -6,14 +6,16 @@ Gaussian copulas
 ================
 
 The `copula` submodule provides classes to define probability distributions and
-parametrize them such that the joint distribution of the parameters is Normal.
-This is useful to define priors for the hyperparameters of a Gaussian process,
-but can also be used on its own.
+reparametrize them such that the joint distribution is Normal. This is useful to
+define priors for the hyperparameters of a Gaussian process, but can also be
+used on its own.
 
-To define a variable, use one of the subclasses of `Distr` listed :ref:`below
-<families>`. Combine the variables together by using them as parameters to other
-variables, or by putting them in a `gvar.BufferDict`. See `makedict` and `Distr`
-for details.
+To define a variable, use one of the subclasses of `Distr` listed under
+:ref:`families`. Combine the variables together to define a model by putting
+them in a `Copula` object. See `Distr` for examples.
+
+These objects can also interoperate with the similar mechanism provided by
+`gvar.BufferDict`. See `makedict`.
 
 ..  note::
     
@@ -26,11 +28,30 @@ for details.
     copula" on wikipedia
     <https://en.wikipedia.org/wiki/Copula_(probability_theory)#Gaussian_copula>`_.
 
-.. autofunction:: makedict
+.. _generic:
+
+Generic classes
+---------------
+
+The class `DistrBase` defines basic functionality shared by `Distr` and
+`Copula`, and can not be instantiated. `Distr` represents a probability
+distribution on a numerical tensor; it can not be instantied, use its concrete
+subclasses :ref:`listed below <families>`. `Copula` represents a collection of
+possibly related `Distr` objects and is intended for direct use.
+
+.. autoclass:: DistrBase
+    :members:
 
 .. autoclass:: Distr
     :members:
-    :inherited-members:
+
+.. autoclass:: Copula
+    :members:
+
+Utilities
+---------
+
+.. autofunction:: makedict
 
 .. _families:
 

@@ -538,3 +538,6 @@ def test_wrong_nargs():
         lgp.copula.beta(1)
     with pytest.raises(TypeError):
         lgp.copula.beta(1, 2, 3)
+
+# TODO do some tests that check wether _staticdescr is indeed 1:1 with
+# partial_invfcn

@@ -40,27 +40,31 @@ class Distr(_base.DistrBase):
 
     Abstract base class to represent probability distributions.
 
-    A `Distr` object represents a probability distribution, and provides a
-    transformation function from a (multivariate) Normal variable to the target
-    random variable.
+    A `Distr` object represents a probability distribution of a variable in
+    :math:`\mathbb R^n`, and provides a transformation function from a
+    (multivariate) Normal variable to the target random variable.
+
+    The main functionality is defined in `DistrBase`. The additional attributes
+    and methods `params`, `signature`, and `invfcn` are not intended for common
+    usage.
 
     Parameters
     ----------
     *params : tuple of scalar, array or Distr
         The parameters of the distribution. If the parameters have leading axes
-        other than those required, the distribution is independently repeated
+        other than those required, the distribution is repeated i.i.d.
         over those axes. If a parameter is an instance of `Distr` itself, it
         is a random parameter and its distribution is accounted for.
+    shape : int or tuple of int
+        The shape of the array of i.i.d. variables to be represented, scalar by
+        default. If the variable is multivariate, this shape adds as leading
+        axes in the array. This shape broadcasts with the non-core shapes of the
+        parameters.
     name : str, optional
         If specified, the distribution is defined for usage with
-        `gvar.BufferDict` using `gvar.BufferDict.add_distribution`, and the
-        constructor returns an array of gvars with the appropriate shape for
-        convenience. See `add_distribution`.
-    shape : int or tuple of int
-        The shape of the array of variables to be represented. If the variable
-        is multivariate, this shape adds as leading axes in the array. Default
-        scalar. This shape broadcasts with the non-core shapes of the
-        parameters.
+        `gvar.BufferDict` using `gvar.BufferDict.add_distribution`, and for
+        convenience the constructor returns an array of gvars with the
+        appropriate shape instead of the `Distr` object. See `add_distribution`.
 
     Returns
     -------
@@ -118,6 +122,15 @@ class Distr(_base.DistrBase):
     unique, for convenience it is permitted to redefine the same distribution
     family with the same parameters, even from another `Distr` instance.
 
+    To generate automatically sensible names and avoid repeating them twice, use
+    `makedict`:
+
+    >>> lgp.copula.makedict({
+    ...     'x': lgp.copula.beta(1, 1),
+    ...     'y': lgp.copula.beta(3, 5),
+    ... })
+    BufferDict({'__copula_beta{1, 1}(x)': 0.0(1.0), '__copula_beta{3, 5}(y)': 0.0(1.0)})
+
     Define a distribution with a random parameter:
 
     >>> X = lgp.copula.halfnorm(lgp.copula.invgamma(1, 1))
@@ -160,6 +173,27 @@ class Distr(_base.DistrBase):
 
     with separate, independent parameters :math:`\sigma,\sigma_X,\sigma_Y`,
     because each dictionary entry is evaluated separately.
+
+    To use all the distributions at once while preserving the relationships,
+    put them into a container of choice and wrap it as a `Copula` object:
+
+    >>> sigmaXY = lgp.copula.Copula({'sigma': sigma, 'X': X, 'Y': Y})
+
+    The `Copula` provides a `partial_invfcn` function to map Normal variables
+    to a structure, with the same layout as the input one, of desired variates.
+    The whole `Copula` can be registered for `gvar.BufferDict`:
+
+    >>> sigmaXY.add_distribution('mymodel')
+    >>> bd = gvar.BufferDict({'mymodel(sigmaXY)': sigmaXY.gvars()})
+    >>> bd
+    BufferDict({'mymodel(sigmaXY)': array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})
+    >>> bd['sigmaXY']
+    {'sigma': array(1.4(1.7), dtype=object),
+     'X': array(1.0(1.4), dtype=object),
+     'Y': array(1.4(2.5), dtype=object)}
+
+    Although the actual dictionary value is an array, getting the unwrapped key
+    reproduces the original structure.
     
     To apply arbitrary transformations, use manually `invfcn`:
 
@@ -185,7 +219,7 @@ class Distr(_base.DistrBase):
 
     See also
     --------
-    gvar.BufferDict.uniform
+    DistrBase, Copula, gvar.BufferDict.uniform
 
     Notes
     -----
@@ -333,7 +367,7 @@ class Distr(_base.DistrBase):
         if getattr(cls, 'dtype', NotImplemented) is NotImplemented:
             cls.dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
 
-    def __new__(cls, *params, name=None, shape=()):
+    def __new__(cls, *params, shape=(), name=None):
 
         self = super().__new__(cls)
         self.params = params

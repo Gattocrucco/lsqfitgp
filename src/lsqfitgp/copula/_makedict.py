@@ -72,3 +72,5 @@ def makedict(variables, prefix='__copula_'):
         assert k not in out
         out[k] = v
     return gvar.BufferDict(out)
+
+# TODO detect inter-key dependencies and raise an error

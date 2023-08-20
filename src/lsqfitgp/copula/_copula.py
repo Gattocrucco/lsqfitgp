@@ -32,6 +32,75 @@ from .. import _patch_gvar
 from . import _base
 
 class Copula(_base.DistrBase):
+    """
+    
+    Represents a tree of probability distributions.
+
+    By "tree" it is intended an arbitrarily nested structure of containers
+    (e.g., `dict` or `list`) where each leaf node is either a `Distr` object or
+    another `Copula`.
+
+    The function of a `Copula` is to keep into account the relationships
+    between all the `Distr` objects when defining the function `partial_invfcn`
+    that maps Normal variates to the desired random variable. The same `Distr`
+    object appearing in multiple places will not be sampled more than once.
+
+    This class inherits the functionality defined in `DistrBase` without
+    additions. The attributes `shape`, `dtype`, `distrshape`, that represents
+    properties of the output of `partial_invfcn`, are trees matching the
+    structure of the tree of variables. The same holds for the output of
+    `partial_invfcn`. `in_shape` instead is an ordinary array shape, indicating
+    that the input Normal variables are a raveled single array.
+
+    Parameters
+    ----------
+    variables : tree of Distr or Copula
+        The tree of distributions to wrap. The containers are copied, so
+        successive modifications will not be reflected on the `Copula`.
+
+    See also
+    --------
+    DistrBase, Distr, jax.tree_util
+
+    Examples
+    --------
+
+    Define a model into a dictionary one piece at a time, then wrap it as a
+    `Copula`:
+
+    >>> m = {}
+    >>> m['a'] = lgp.copula.halfnorm(1.5)
+    >>> m['b'] = lgp.copula.halfcauchy(2)
+    >>> m['c'] = [
+    ...     lgp.copula.uniform(m['a'], m['b']),
+    ...     lgp.copula.uniform(m['b'], m['a']),
+    ... ]
+    >>> cop = lgp.copula.Copula(m)
+    >>> cop
+    Copula({'a': halfnorm(1.5),
+     'b': halfcauchy(2),
+     'c': [uniform(<a>, <b>), uniform(<b>, <a>)]})
+
+    Notice how, when showing the object on the REPL, multiple appearances of
+    the same variables are replaced by identifiers derived from the dictionary
+    keys.
+
+    The model may then be extended to create a variant. This does not affect
+    `cop`:
+
+    >>> m['d'] = lgp.copula.invgamma(m['c'][0], m['c'][1])
+    >>> cop2 = lgp.copula.Copula(m)
+    >>> cop2
+    Copula({'a': halfnorm(1.5),
+     'b': halfcauchy(2),
+     'c': [uniform(<a>, <b>), uniform(<b>, <a>)],
+     'd': invgamma(<c.0>, <c.1>)})
+    >>> cop
+    Copula({'a': halfnorm(1.5),
+     'b': halfcauchy(2),
+     'c': [uniform(<a>, <b>), uniform(<b>, <a>)]})
+
+    """
 
     @staticmethod
     def _tree_path_str(path):
@@ -208,7 +277,3 @@ class Copula(_base.DistrBase):
     @functools.cached_property
     def _staticdescr(self):
         return tree_util.tree_map(lambda x: x._staticdescr, self._variables)
-
-# TODO method to export to BufferDict, raises an error if there are dependencies
-# between the keys, works only if _variables is has attr keys(), the non-distr
-# leaves have invfcns with non-numerical output
