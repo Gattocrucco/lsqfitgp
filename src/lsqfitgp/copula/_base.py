@@ -20,6 +20,8 @@
 """ define DistrBase """
 
 import abc
+import functools
+import collections
 
 import gvar
 import numpy
@@ -159,18 +161,25 @@ class DistrBase(metaclass=abc.ABCMeta):
         cache[self] = f'<{path}>'
         return cache
 
+    class _Path(collections.namedtuple('Path', ['path'])): pass
+
+    @abc.abstractmethod
+    def _compute_staticdescr(self, path, cache):
+        """ compute static description of self, can be compared """
+        if self in cache:
+            return cache[self]
+        cache[self] = self._Path(path)
+
+    @functools.cached_property
+    def _staticdescr(self):
+        return self._compute_staticdescr([], {})
+
     @abc.abstractmethod
     def _compute_in_size(self, cache):
         """ compute input size to partial_invfcn, without double counting """
         if self in cache:
             return 0
         cache.add(self)
-
-    @property
-    @abc.abstractmethod
-    def _staticdescr(self):
-        """ static description of self, can be compared """
-        pass
 
     @abc.abstractmethod
     def _partial_invfcn_internal(self, x, i, cache):

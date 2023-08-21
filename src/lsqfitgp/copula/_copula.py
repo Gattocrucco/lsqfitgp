@@ -277,6 +277,7 @@ class Copula(_base.DistrBase):
         out = pprint.pformat(out, sort_dicts=False)
         return f'{self.__class__.__name__}({out})'
 
-    @functools.cached_property
-    def _staticdescr(self):
-        return tree_util.tree_map(lambda x: x._staticdescr, self._variables)
+    def _compute_staticdescr(self, path, cache):
+        def compute(key, x):
+            return x._compute_staticdescr(path + [key], cache)
+        return tree_util.tree_map_with_path(compute, self._variables)

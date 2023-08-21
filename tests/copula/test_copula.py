@@ -127,3 +127,15 @@ def test_out_attrs(double, attr):
     if double:
         c = copula.Copula(c)
     assert getattr(c, attr) == {k: getattr(v, attr) for k, v in d.items()}
+
+def test_staticdescr():
+    x1 = copula.beta(1, 2)
+    x2 = x1.__class__(*x1.params)
+
+    c1 = copula.Copula([x1, x2])
+    c2 = copula.Copula([x2, x1])
+    assert c1._staticdescr == c2._staticdescr
+    
+    c1 = copula.Copula([x1, x1])
+    c2 = copula.Copula([x1, x2])
+    assert c1._staticdescr != c2._staticdescr

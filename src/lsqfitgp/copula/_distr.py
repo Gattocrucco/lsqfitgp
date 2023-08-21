@@ -401,21 +401,19 @@ class Distr(_base.DistrBase):
             arglist = ', '.join(args)
             return f'{self.family.__name__}({arglist})'
 
-    @functools.cached_property
-    def _staticdescr(self):
+    def _compute_staticdescr(self, path, cache):
+        if (obj := super()._compute_staticdescr(path, cache)) is not None:
+            return obj
         
         params = []
-        for p in self.params:
+        for i, p in enumerate(self.params):
             if isinstance(p, __class__):
-                p = p._staticdescr
+                p = p._compute_staticdescr(path + [i], cache)
             else:
                 p = numpy.asarray(p).tolist()
             params.append(p)
 
         return self._Descr(self.__class__, self.shape, tuple(params))
-
-        # TODO this does not notice multiple appearances of the same
-        # distribution object. I have to make this cache-recursive.
 
     def _shapestr(self, shape):
         if shape:
