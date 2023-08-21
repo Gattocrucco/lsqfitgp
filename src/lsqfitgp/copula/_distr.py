@@ -196,7 +196,7 @@ class Distr(_base.DistrBase):
 
     >>> bd = lgp.copula.makedict({'sigmaXY': sigmaXY})
     >>> bd
-    BufferDict({"__copula_{'sigma': invgamma{1, 1}, 'X': halfnorm{invgamma{1, 1}}, 'Y': halfcauchy{invgamma{1, 1}}}(sigmaXY)": array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})
+    BufferDict({"__copula_{'sigma': invgamma{1, 1}, 'X': halfnorm{_Path{path=[{DictKey{key='sigma'},}]}}, 'Y': halfcauchy{_Path{path=[{DictKey{key='sigma'},}]}}}(sigmaXY)": array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})
     >>> bd['sigmaXY']
     {'sigma': 1.4(1.7), 'X': 1.0(1.4), 'Y': 1.4(2.5)}
     >>> gvar.corr(bd['sigmaXY']['X'], bd['sigmaXY']['Y'])
