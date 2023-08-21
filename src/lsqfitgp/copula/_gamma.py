@@ -99,9 +99,9 @@ def _gammaisf_normcdf_large_neg_x(x, a):
     y1 = y0 - ((a - 1) * jnp.log(y0) - loggammaa) / ((a - 1) / y0 - 1)
     return y1
 
-    # TODO I tried adding one Newton step more, but it does not improve the
-    # accuracy. I probably have to add terms to the approximations of Phi and
-    # Q. I could try first special.erfcx for Phi.
+    # TODO Improve the accuracy. I tried adding one Newton step more, but it
+    # does not improve the accuracy. I probably have to add terms to the
+    # approximations of Phi and Q. I could try first special.erfcx for Phi.
 
     # x -> -∞,  q -> 0+,  y -> ∞
     # q = Φ(x) ≈ -1/√2π exp(-x²/2)/x

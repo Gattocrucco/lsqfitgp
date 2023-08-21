@@ -36,9 +36,9 @@ def _normcdf(x):
     x = x.astype(_patch_jax.float_type(x))
     return jspecial.ndtr(x)
 
-    # TODO jax.scipy.stats.norm.sf is implemented as 1 - cdf(x) instead
-    # of cdf(-x), defeating the purpose of numerical accuracy, open an
-    # issue and PR to fix it
+    # jax.scipy.stats.norm.sf is implemented as 1 - cdf(x) instead of cdf(-x),
+    # defeating the purpose of numerical accuracy. Use _normcdf(-x) instead. See
+    # https://github.com/google/jax/issues/17199
 
 class beta(_distr.Distr):
     """
@@ -243,6 +243,3 @@ class uniform(_distr.Distr):
 # def ciao(x, a, b):
 #     return the invfcn
 # produces class ciao(Distr): @staticmethod invfcn(x, a, b)
-
-# TODO somehow make the repl help reflect the parameters, I could define __new__
-# with eval based on inspection of invfcn

@@ -368,14 +368,33 @@ class Distr(_base.DistrBase):
 
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
+
+        # check and/or set signature attribute (the gufunc signature of invfcn)
         if not hasattr(cls, 'signature'):
             sig = inspect.signature(cls.invfcn)
             cls.signature = ','.join(['()'] * len(sig.parameters)) + '->()'
         if not isinstance(cls.signature, _signature.Signature):
             cls.signature = _signature.Signature(cls.signature)
         cls.signature.check_nargs(cls.invfcn)
+        
+        # set dtype to float if not specified
         if getattr(cls, 'dtype', NotImplemented) is NotImplemented:
             cls.dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
+
+        # set __signature__ to show positional parameters of invfcn
+        sig = inspect.signature(cls.invfcn)
+        assert all(
+            p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            for p in sig.parameters.values()
+        )
+        pos_params = list(sig.parameters.values())[1:]
+        sig = inspect.signature(__class__.__new__)
+        key_params = [
+            p for i, p in enumerate(sig.parameters.values())
+            if p.kind in (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            and i > 0
+        ]
+        cls.__signature__ = inspect.Signature(pos_params + key_params)
 
     def __new__(cls, *params, shape=(), name=None):
 

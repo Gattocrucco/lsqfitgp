@@ -299,16 +299,14 @@ class TestDirichlet(DistrTestBase):
         return cls.dirichlet_rvs(alpha, rng)
 
     @staticmethod
-    @functools.partial(np.vectorize, excluded=(1,), signature='(n)->(n)')
     def dirichlet_rvs(alpha, rng):
-        # Neither numpy's nor scipy's rvs support broadcasting on alpha.
         lny = TestLogGamma.rvs(alpha, random_state=rng)
-        norm = special.logsumexp(lny)
+        norm = special.logsumexp(lny, axis=-1, keepdims=True)
         return np.exp(lny - norm)
 
-        # TODO numpy.random.Generator.dirichlet is inaccurate for small alpha at
-        # x < eps, scipy piggybacks on numpy, see it by plotting an empirical
-        # cdf on x logscale with plt.stairs. Open an issue on numpy.
+        # numpy.random.Generator.dirichlet is inaccurate for small alpha at x <
+        # eps, scipy piggybacks on numpy, see
+        # https://github.com/numpy/numpy/issues/24475
 
 class TestGamma(DistrTestBase):
     params = 1.2, 2.3
@@ -381,8 +379,6 @@ def test_gamma_asymp(distr, x64):
         assert y1 != y2
         np.testing.assert_allclose(y1, y2, atol=0, rtol=rtol)
     
-    # TODO improve the accuracy
-
 def test_staticdescr_repr():
     
     x = lgp.copula.beta(1, 2)
