@@ -28,8 +28,6 @@ These objects can also interoperate with the similar mechanism provided by
     copula" on wikipedia
     <https://en.wikipedia.org/wiki/Copula_(probability_theory)#Gaussian_copula>`_.
 
-.. _generic:
-
 Generic classes
 ---------------
 
@@ -53,6 +51,8 @@ Utilities
 
 .. autofunction:: makedict
 
+.. autofunction:: distribution
+
 .. _families:
 
 Predefined families
@@ -67,5 +67,5 @@ The parametrizations follow Wikipedia, while the class names are as in
 .. autoclass:: halfcauchy(gamma)
 .. autoclass:: halfnorm(sigma)
 .. autoclass:: invgamma(alpha, beta)
-.. autoclass:: loggamma(c)
+.. autoclass:: loggamma(alpha)
 .. autoclass:: uniform(a, b)
