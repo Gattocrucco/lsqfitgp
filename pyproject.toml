@@ -61,4 +61,25 @@ namespaces = false
 # currently do not now if I can mark a dependency or version to be installed
 # with --no-pep-517, which I need in tests-old for gvar and lsqfit.
 
-# TODO move here coverage and pytest settings
+# TODO move here coverage settings
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+filterwarnings = [
+    'ignore:JAX on Mac ARM machines',
+    'ignore:the imp module is deprecated',
+    'ignore:k >= N for N \* N square matrix',
+    'ignore:Passing None has been deprecated',
+    'ignore:minimization failed. Desired error not necessarily achieved due to precision loss\.',
+    'ignore:in the future the `\.dtype` attribute of a given datatype object must be a valid dtype instance\. `data_type\.dtype` may need to be coerced using `np\.dtype\(data_type\.dtype\)`\. \(Deprecated NumPy 1\.20\)',
+    'ignore:The problem size .+? minus the constraints size .+? is too small',
+]
+addopts = [
+    "-rxXfE",
+    "--pdbcls=IPython.terminal.debugger:TerminalPdb",
+]
+
+# I wanted to use `--import-mode=importlib`, but it breaks importing submodules,
+# in particular `from . import util`.
