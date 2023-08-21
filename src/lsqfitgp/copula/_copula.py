@@ -246,7 +246,10 @@ class Copula(_base.DistrBase):
             y = partial_invfcn_2(x)
             def reshape_y(y, shape):
                 assert y.shape[1:] == shape
-                return y.reshape(head + shape)
+                y = y.reshape(head + shape)
+                if y.dtype == object and not y.ndim:
+                    y = y.item()
+                return y
             return tree_util.tree_map(reshape_y, y, self.shape)
 
         return partial_invfcn_3

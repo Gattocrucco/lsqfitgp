@@ -156,13 +156,19 @@ class Distr(_base.DistrBase):
         Y \mid \sigma &\sim \mathrm{HalfCauchy}(\sigma),
 
     with the same parameter :math:`\sigma` shared between the two distributions.
-    However, if the distributions are now put into a `gvar.BufferDict`, e.g.,
-    with
-
-    >>> sigmaXY = lgp.copula.makedict({'sigma': sigma, 'X': X, 'Y': Y})
+    However, if the distributions are now put into a `gvar.BufferDict`, with
+    
+    >>> sigma.add_distribution('distr_sigma')
+    >>> X.add_distribution('distr_X')
+    >>> Y.add_distribution('distr_Y')
+    >>> bd = gvar.BufferDict({
+    ...     'distr_sigma(sigma)': sigma.gvars(),
+    ...     'distr_X(X)': X.gvars(),
+    ...     'distr_Y(Y)': Y.gvars(),
+    ... })
 
     then this relationship breaks down; the model represented by the dictionary
-    `sigmaXY` is
+    `bd` is
 
     .. math::
         \sigma &\sim \mathrm{InvGamma}(1, 1), \\
@@ -172,7 +178,12 @@ class Distr(_base.DistrBase):
             & \sigma_Y &\sim \mathrm{InvGamma}(1, 1),
 
     with separate, independent parameters :math:`\sigma,\sigma_X,\sigma_Y`,
-    because each dictionary entry is evaluated separately.
+    because each dictionary entry is evaluated separately. Indeed, trying to do
+    this with `makedict` will raise an error:
+
+    >>> bd = lgp.copula.makedict({'sigma': sigma, 'X': X, 'Y': Y})
+    ValueError: cross-key occurrences of object(s):
+    invgamma with id 10952820880: <sigma>, <X.0>, <Y.0>
 
     To use all the distributions at once while preserving the relationships,
     put them into a container of choice and wrap it as a `Copula` object:
@@ -181,16 +192,15 @@ class Distr(_base.DistrBase):
 
     The `Copula` provides a `partial_invfcn` function to map Normal variables
     to a structure, with the same layout as the input one, of desired variates.
-    The whole `Copula` can be registered for `gvar.BufferDict`:
+    The whole `Copula` can be used in `gvar.BufferDict`:
 
-    >>> sigmaXY.add_distribution('mymodel')
-    >>> bd = gvar.BufferDict({'mymodel(sigmaXY)': sigmaXY.gvars()})
+    >>> bd = lgp.copula.makedict({'sigmaXY': sigmaXY})
     >>> bd
-    BufferDict({'mymodel(sigmaXY)': array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})
+    BufferDict({"__copula_{'sigma': invgamma{1, 1}, 'X': halfnorm{invgamma{1, 1}}, 'Y': halfcauchy{invgamma{1, 1}}}(sigmaXY)": array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})
     >>> bd['sigmaXY']
-    {'sigma': array(1.4(1.7), dtype=object),
-     'X': array(1.0(1.4), dtype=object),
-     'Y': array(1.4(2.5), dtype=object)}
+    {'sigma': 1.4(1.7), 'X': 1.0(1.4), 'Y': 1.4(2.5)}
+    >>> gvar.corr(bd['sigmaXY']['X'], bd['sigmaXY']['Y'])
+    0.5260263326687865
 
     Although the actual dictionary value is an array, getting the unwrapped key
     reproduces the original structure.
@@ -403,6 +413,9 @@ class Distr(_base.DistrBase):
             params.append(p)
 
         return self._Descr(self.__class__, self.shape, tuple(params))
+
+        # TODO this does not notice multiple appearances of the same
+        # distribution object. I have to make this cache-recursive.
 
     def _shapestr(self, shape):
         if shape:

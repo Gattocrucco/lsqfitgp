@@ -237,3 +237,12 @@ class uniform(_distr.Distr):
     @staticmethod
     def invfcn(x, a, b):
         return a + (b - a) * _normcdf(x)
+
+# TODO make a decorator intended for the user:
+# @distr(signature=...)
+# def ciao(x, a, b):
+#     return the invfcn
+# produces class ciao(Distr): @staticmethod invfcn(x, a, b)
+
+# TODO somehow make the repl help reflect the parameters, I could define __new__
+# with eval based on inspection of invfcn
