@@ -91,7 +91,7 @@ def makedict(variables, prefix='__copula_'):
 
     Since shared `DistrBase` objects represent statistical dependency, it is
     forbidden to have the same object appear under different keys, as that
-    would make it impossible to keep the dependencies into account:
+    would make it impossible to take the dependencies into account:
 
     >>> x = lgp.copula.beta(1, 1)
     >>> y = lgp.copula.beta(1, x)

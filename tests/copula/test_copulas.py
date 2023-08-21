@@ -221,6 +221,18 @@ class DistrTestBase:
         x2 = self.copcls.invfcn(eps, *self.array_params)
         util.assert_allclose(x1, x2, atol=4 * eps, rtol=3 * eps)
 
+    def test_decorator(self):
+        """ check that recreating the distrution with the decorator works """
+        alt = lgp.copula.distribution(self.copcls.invfcn, signature=self.copcls.signature.signature, dtype=self.copcls.dtype)
+        for attr in 'dtype',:
+            assert getattr(alt, attr) == getattr(self.copcls, attr)
+        d1 = self.copcls(*self.params)
+        d2 = alt(*self.params)
+        for attr in 'in_shape', 'shape', 'distrshape':
+            assert getattr(d1, attr) == getattr(d2, attr)
+        x = np.random.standard_normal((7,) + d1.in_shape)
+        util.assert_equal(d1.partial_invfcn(x), d2.partial_invfcn(x))
+
     @pytest.fixture
     def nsamples(self):
         return 10000

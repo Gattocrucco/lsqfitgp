@@ -133,18 +133,18 @@ class loggamma(_distr.Distr):
         return gamma._boundary(x)
 
     @classmethod
-    def invfcn(cls, x, c):
+    def invfcn(cls, x, alpha):
         x = jnp.asarray(x)
         x = x.astype(_patch_jax.float_type(x))
         boundary = cls._boundary(x)
         return _piecewise_multiarg(
             [x < 0, x < boundary, x >= boundary],
             [
-                lambda x, c: _gamma.loggamma.ppf(_normcdf(x), c),
-                lambda x, c: _gamma.loggamma.isf(_normcdf(-x), c),
-                lambda x, c: _gamma._loggammaisf_normcdf_large_neg_x(-x, c),
+                lambda x, alpha: _gamma.loggamma.ppf(_normcdf(x), alpha),
+                lambda x, alpha: _gamma.loggamma.isf(_normcdf(-x), alpha),
+                lambda x, alpha: _gamma._loggammaisf_normcdf_large_neg_x(-x, alpha),
             ],
-            x, c,
+            x, alpha,
         )
 
 class invgamma(_distr.Distr):
@@ -237,9 +237,3 @@ class uniform(_distr.Distr):
     @staticmethod
     def invfcn(x, a, b):
         return a + (b - a) * _normcdf(x)
-
-# TODO make a decorator intended for the user:
-# @distr(signature=...)
-# def ciao(x, a, b):
-#     return the invfcn
-# produces class ciao(Distr): @staticmethod invfcn(x, a, b)

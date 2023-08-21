@@ -17,13 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" define Distr """
+""" define Distr and distribution """
 
 import abc
 import functools
 import collections
 import numbers
 import inspect
+import types
 
 import gvar
 import numpy
@@ -472,3 +473,49 @@ class Distr(_base.DistrBase):
 # - make Distr instances dispatching array-likes that perform the operations
 #   by creating a new instance from a generic Op subclass that just applies the
 #   operation to the output of the operand invfcns using jax.numpy.
+
+def distribution(invfcn, signature=None, dtype=None):
+    r"""
+
+    Decorator to define a distribution from a transformation function.
+
+    Parameters
+    ----------
+    invfcn : function
+        The transformation function from a (multivariate) standard Normal
+        variable to the target random variable. The signature must be
+        ``invfcn(x, *params)``. It must be jax-traceable. It does not need to
+        be vectorized.
+    signature : str, optional
+        The signature of `invfcn`, as a numpy signature string. If not
+        specified, `invfcn` is assumed to take and output scalars.
+    dtype : dtype, optional
+        The dtype of the output of `invfcn`. If not specified, it is assumed to
+        be floating point.
+
+    Returns
+    -------
+    cls : Distr
+        The new distribution class.
+
+    Examples
+    --------
+
+    >>> @lgp.copula.distribution
+    ... def uniform(x, a, b):
+    ...     return a + (b - a) * jax.scipy.stats.norm.cdf(x)
+
+    >>> @functools.partial(lgp.copula.distribution, signature='(n)->()')
+    ... def chi2(x):
+    ...     return jax.numpy.sum(x ** 2)
+
+    """
+    
+    def exec_body(ns):
+        if signature is not None:
+            ns['signature'] = signature
+        if dtype is not None:
+            ns['dtype'] = dtype
+        ns['invfcn'] = staticmethod(jnp.vectorize(invfcn, signature=signature))
+
+    return types.new_class(invfcn.__name__, (Distr,), exec_body=exec_body)

@@ -20,7 +20,7 @@
 """ Gaussian copulas for gvar """
 
 from ._base import DistrBase
-from ._distr import Distr
+from ._distr import Distr, distribution
 from ._copula import Copula
 from ._makedict import makedict
 from ._copulas import *

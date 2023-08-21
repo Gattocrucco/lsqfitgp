@@ -63,8 +63,6 @@ These objects can also interoperate with the similar mechanism provided by
     copula" on wikipedia
     <https://en.wikipedia.org/wiki/Copula_(probability_theory)#Gaussian_copula>`_.
 
-.. _generic:
-
 Generic classes
 ---------------
 
@@ -87,6 +85,8 @@ Utilities
 ---------
 
 .. autofunction:: makedict
+
+.. autofunction:: distribution
 
 .. _families:
 
