@@ -172,36 +172,42 @@ class Distr(_base.DistrBase):
 
     Define a distribution with a random parameter:
 
-    >>> X = lgp.copula.halfnorm(lgp.copula.invgamma(1, 1))
+    >>> X = lgp.copula.halfnorm(np.sqrt(lgp.copula.invgamma(1, 1)))
+    >>> X
+    halfnorm(sqrt(invgamma(1, 1)))
 
     Now `X` represents the model
 
     .. math::
-        \sigma &\sim \mathrm{InvGamma}(1, 1), \\
+        \sigma^2 &\sim \mathrm{InvGamma}(1, 1), \\
         X \mid \sigma &\sim \mathrm{HalfNorm}(\sigma).
+
+    In general it is possible to transform a `Distr` with `numpy` ufuncs and
+    continuous arithmetic operations.
 
     Repeated usage of `Distr` instances for random parameters will share
     those parameters in the distributions. The following code:
 
-    >>> sigma = lgp.copula.invgamma(1, 1)
-    >>> X = lgp.copula.halfnorm(sigma)
-    >>> Y = lgp.copula.halfcauchy(sigma)
+    >>> sigma2 = lgp.copula.invgamma(1, 1)
+    >>> X = lgp.copula.halfnorm(np.sqrt(sigma2))
+    >>> Y = lgp.copula.halfcauchy(np.sqrt(sigma2))
 
     Corresponds to the model
 
     .. math::
-        \sigma &\sim \mathrm{InvGamma}(1, 1), \\
+        \sigma^2 &\sim \mathrm{InvGamma}(1, 1), \\
         X \mid \sigma &\sim \mathrm{HalfNorm}(\sigma), \\
         Y \mid \sigma &\sim \mathrm{HalfCauchy}(\sigma),
 
-    with the same parameter :math:`\sigma` shared between the two distributions.
-    However, if the distributions are now put into a `gvar.BufferDict`, with
+    with the same parameter :math:`\sigma^2` shared between the two
+    distributions. However, if the distributions are now put into a
+    `gvar.BufferDict`, with
     
-    >>> sigma.add_distribution('distr_sigma')
+    >>> sigma2.add_distribution('distr_sigma2')
     >>> X.add_distribution('distr_X')
     >>> Y.add_distribution('distr_Y')
     >>> bd = gvar.BufferDict({
-    ...     'distr_sigma(sigma)': sigma.gvars(),
+    ...     'distr_sigma2(sigma2)': sigma2.gvars(),
     ...     'distr_X(X)': X.gvars(),
     ...     'distr_Y(Y)': Y.gvars(),
     ... })
@@ -210,24 +216,24 @@ class Distr(_base.DistrBase):
     `bd` is
 
     .. math::
-        \sigma &\sim \mathrm{InvGamma}(1, 1), \\
+        \sigma^2 &\sim \mathrm{InvGamma}(1, 1), \\
         X \mid \sigma_X &\sim \mathrm{HalfNorm}(\sigma_X), \quad
-            & \sigma_X &\sim \mathrm{InvGamma}(1, 1), \\
+            & \sigma_X^2 &\sim \mathrm{InvGamma}(1, 1), \\
         Y \mid \sigma_Y &\sim \mathrm{HalfCauchy}(\sigma_Y), \quad
-            & \sigma_Y &\sim \mathrm{InvGamma}(1, 1),
+            & \sigma_Y^2 &\sim \mathrm{InvGamma}(1, 1),
 
     with separate, independent parameters :math:`\sigma,\sigma_X,\sigma_Y`,
     because each dictionary entry is evaluated separately. Indeed, trying to do
     this with `makedict` will raise an error:
 
-    >>> bd = lgp.copula.makedict({'sigma': sigma, 'X': X, 'Y': Y})
+    >>> bd = lgp.copula.makedict({'sigma2': sigma2, 'X': X, 'Y': Y})
     ValueError: cross-key occurrences of object(s):
-    invgamma with id 10952820880: <sigma>, <X.0>, <Y.0>
+    invgamma with id 6201535248: <sigma2>, <X.0.0>, <Y.0.0>
 
     To use all the distributions at once while preserving the relationships,
     put them into a container of choice and wrap it as a `Copula` object:
 
-    >>> sigmaXY = lgp.copula.Copula({'sigma': sigma, 'X': X, 'Y': Y})
+    >>> sigmaXY = lgp.copula.Copula({'sigma2': sigma2, 'X': X, 'Y': Y})
 
     The `Copula` provides a `partial_invfcn` function to map Normal variables
     to a structure, with the same layout as the input one, of desired variates.
@@ -235,14 +241,14 @@ class Distr(_base.DistrBase):
 
     >>> bd = lgp.copula.makedict({'sigmaXY': sigmaXY})
     >>> bd
-    BufferDict({"__copula_{'sigma': invgamma{1, 1}, 'X': halfnorm{_Path{path=[{DictKey{key='sigma'},}]}}, 'Y': halfcauchy{_Path{path=[{DictKey{key='sigma'},}]}}}(sigmaXY)": array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})
+    BufferDict({"__copula_{'sigma2': invgamma{1, 1}, 'X': halfnorm{sqrt{_Path{path=[{DictKey{key='sigma2'},}]}}}, 'Y': halfcauchy{sqrt{_Path{path=[{DictKey{key='sigma2'},}]}}}}(sigmaXY)": array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})
     >>> bd['sigmaXY']
-    {'sigma': 1.4(1.7), 'X': 1.0(1.4), 'Y': 1.4(2.5)}
+    {'sigma2': 1.4(1.7), 'X': 0.81(89), 'Y': 1.2(1.7)}
     >>> gvar.corr(bd['sigmaXY']['X'], bd['sigmaXY']['Y'])
-    0.5260263326687865
+    0.21950577757757836
 
-    Although the actual dictionary value is an array, getting the unwrapped key
-    reproduces the original structure.
+    Although the actual dictionary value is a flat array, getting the unwrapped
+    key reproduces the original structure.
     
     To apply arbitrary transformations, use manually `invfcn`:
 
@@ -255,13 +261,6 @@ class Distr(_base.DistrBase):
     ...     Y = lgp.copula.halfcauchy.invfcn(normal_params[2], sigma)
     ...     return jnp.stack([sigma, X, Y])
     
-    Now the function `model_invfcn` represents the model
-
-    .. math::
-        \sigma^2 &\sim \mathrm{InvGamma}(1, 1), \\
-        X \mid \sigma &\sim \mathrm{HalfNorm}(\sigma), \\
-        Y \mid \sigma &\sim \mathrm{HalfCauchy}(\sigma).
-
     The `jax.numpy.vectorize` decorator makes `model_invfcn` support
     broadcasting on additional input axes, while `gvar_gufunc` makes it accept
     gvars as input.
