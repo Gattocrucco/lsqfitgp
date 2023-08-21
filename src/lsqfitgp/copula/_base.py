@@ -60,16 +60,6 @@ class DistrBase(metaclass=abc.ABCMeta):
 
     """
 
-    # Redefine comparisons to override numpy's mixing operations in Distr. In
-    # general the machinery assumes DistrBase instances compare by address.
-    __hash__ = object.__hash__
-    __lt__ = object.__lt__
-    __le__ = object.__le__
-    __eq__ = object.__eq__
-    __ne__ = object.__ne__
-    __gt__ = object.__gt__
-    __ge__ = object.__ge__
-
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
         cls._named = {}

@@ -109,3 +109,4 @@ This software contains code adapted from the following sources:
     Yun Ling and Martin Lysy (GPL license)
   * [gvar](https://github.com/gplepage/gvar) by Peter Lepage (GPL license)
   * [scipy](https://github.com/scipy/scipy) (BSD-3 License)
+  * [numpy](https://github.com/numpy/numpy) (BSD-3 License)

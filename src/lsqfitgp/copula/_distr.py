@@ -28,7 +28,6 @@ import types
 
 import gvar
 import numpy
-from numpy.lib import mixins
 import jax
 from jax import numpy as jnp
 
@@ -37,7 +36,45 @@ from .. import _array
 from .. import _signature
 from . import _base
 
-class Distr(_base.DistrBase, mixins.NDArrayOperatorsMixin):
+######### The following 5 functions are adapted from numpy.lib.mixins #########
+
+def _disables_array_ufunc(obj):
+    """True when __array_ufunc__ is set to None."""
+    return getattr(obj, '__array_ufunc__', NotImplemented) is None
+
+def _binary_method(ufunc, name):
+    """Implement a forward binary method with a ufunc, e.g., __add__."""
+    def func(self, other):
+        if _disables_array_ufunc(other):
+            return NotImplemented
+        return ufunc(self, other)
+    func.__name__ = '__{}__'.format(name)
+    return func
+
+def _reflected_binary_method(ufunc, name):
+    """Implement a reflected binary method with a ufunc, e.g., __radd__."""
+    def func(self, other):
+        if _disables_array_ufunc(other):
+            return NotImplemented
+        return ufunc(other, self)
+    func.__name__ = '__r{}__'.format(name)
+    return func
+
+def _numeric_methods(ufunc, name):
+    """Implement forward and reflected binary methods with a ufunc."""
+    return (_binary_method(ufunc, name),
+            _reflected_binary_method(ufunc, name))
+
+def _unary_method(ufunc, name):
+    """Implement a unary special method with a ufunc."""
+    def func(self):
+        return ufunc(self)
+    func.__name__ = '__{}__'.format(name)
+    return func
+
+###############################################################################
+
+class Distr(_base.DistrBase):
     r"""
 
     Abstract base class to represent probability distributions.
@@ -482,6 +519,21 @@ class Distr(_base.DistrBase, mixins.NDArrayOperatorsMixin):
             return NotImplemented
         ufunc_class = UFunc.make_subclass(ufunc)
         return ufunc_class(*inputs)
+
+    # continuous numeric methods
+    __add__, __radd__ = _numeric_methods(numpy.add, 'add')
+    __sub__, __rsub__ = _numeric_methods(numpy.subtract, 'sub')
+    __mul__, __rmul__ = _numeric_methods(numpy.multiply, 'mul')
+    __matmul__, __rmatmul__ = _numeric_methods(numpy.matmul, 'matmul')
+    __truediv__, __rtruediv__ = _numeric_methods(numpy.divide, 'truediv')
+    __mod__, __rmod__ = _numeric_methods(numpy.remainder, 'mod')
+    __divmod__, __rdivmod__ = _numeric_methods(numpy.divmod, 'divmod')
+    __pow__, __rpow__ = _numeric_methods(numpy.power, 'pow')
+
+    # continuous unary methods
+    __neg__ = _unary_method(numpy.negative, 'neg')
+    __pos__ = _unary_method(numpy.positive, 'pos')
+    __abs__ = _unary_method(numpy.absolute, 'abs')
 
 class UFunc:
     """ base class of objects representing ufuncs applied to Distr instances """
