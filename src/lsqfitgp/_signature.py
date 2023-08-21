@@ -47,6 +47,8 @@ class Signature:
     def check_nargs(self, func):
         """ Check that the function has the correct number of arguments. """
         sig = inspect.signature(func)
+        if any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values()):
+            return
         if len(sig.parameters) != len(self.incores):
             raise ValueError(f'function {func} has {len(sig.parameters)} '
                 f'arguments, but signature {self.signature} '

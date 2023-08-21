@@ -901,6 +901,10 @@ def _makekernelsubclass(kernel, superclass, **prekw):
     
     name = getattr(named_object, '__name__', 'DecoratedKernel')
     newclass = types.new_class(name, (superclass,))
+
+    # TODO use the exec_body parameter of new_class instead of doing everything
+    # after creation, since an eventual __init_subclass__ wouldn't see the
+    # definitions.
         
     prekwset = set(prekw)
     def __new__(cls, **kw):

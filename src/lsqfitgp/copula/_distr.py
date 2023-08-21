@@ -28,6 +28,7 @@ import types
 
 import gvar
 import numpy
+from numpy.lib import mixins
 import jax
 from jax import numpy as jnp
 
@@ -36,7 +37,7 @@ from .. import _array
 from .. import _signature
 from . import _base
 
-class Distr(_base.DistrBase):
+class Distr(_base.DistrBase, mixins.NDArrayOperatorsMixin):
     r"""
 
     Abstract base class to represent probability distributions.
@@ -235,11 +236,12 @@ class Distr(_base.DistrBase):
     Notes
     -----
     Concrete subclasses must define `invfcn`, and define the class attribute
-    `signature` to the numpy signature string of `invfcn`, unless `invfcn` is
-    an ufunc. `invfcn` must be vectorized.
+    `signature` to the numpy signature string of `invfcn`, unless `invfcn` is an
+    ufunc and its number of parameters can be inferred. `invfcn` must be
+    vectorized.
 
     """
-    
+
     @classmethod
     @abc.abstractmethod
     def invfcn(cls, x, *params):
@@ -268,6 +270,10 @@ class Distr(_base.DistrBase):
         """
         pass
 
+    def _get_x_core_shape(self, *preprocessed_params):
+        sig = self.signature.eval(None, *preprocessed_params)
+        return sig.core_in_shapes[0]
+
     def _eval_shapes(self, shape):
 
         # check number of parameters
@@ -289,8 +295,8 @@ class Distr(_base.DistrBase):
         ]
 
         # parse signature of cls.invfcn
-        sig = self.signature.eval(None, *array_params)
-        x = jax.ShapeDtypeStruct(shape + sig.core_in_shapes[0], 'd')
+        x_core_shape = self._get_x_core_shape(*array_params)
+        x = jax.ShapeDtypeStruct(shape + x_core_shape, 'd')
         sig = self.signature.eval(x, *array_params)
         self._in_shape_1 = sig.in_shapes[0]
         self.distrshape, = sig.core_out_shapes
@@ -373,6 +379,12 @@ class Distr(_base.DistrBase):
         # check and/or set signature attribute (the gufunc signature of invfcn)
         if not hasattr(cls, 'signature'):
             sig = inspect.signature(cls.invfcn)
+            if not all(
+                p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                for p in sig.parameters.values()
+            ):
+                raise ValueError('can not automatically infer signature of '
+                    f'{cls.__qualname__}.invfcn')
             cls.signature = ','.join(['()'] * len(sig.parameters)) + '->()'
         if not isinstance(cls.signature, _signature.Signature):
             cls.signature = _signature.Signature(cls.signature)
@@ -382,14 +394,10 @@ class Distr(_base.DistrBase):
         if getattr(cls, 'dtype', NotImplemented) is NotImplemented:
             cls.dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
 
-        # set __signature__ to show positional parameters of invfcn
+        # set __signature__ to take positional parameters from invfcn
         sig = inspect.signature(cls.invfcn)
-        assert all(
-            p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
-            for p in sig.parameters.values()
-        )
         pos_params = list(sig.parameters.values())[1:]
-        sig = inspect.signature(__class__.__new__)
+        sig = inspect.signature(cls.__new__)
         key_params = [
             p for i, p in enumerate(sig.parameters.values())
             if p.kind in (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
@@ -469,10 +477,51 @@ class Distr(_base.DistrBase):
 
         return f'{self.__class__.__name__}({", ".join(args)})'
 
-# TODO
-# - make Distr instances dispatching array-likes that perform the operations
-#   by creating a new instance from a generic Op subclass that just applies the
-#   operation to the output of the operand invfcns using jax.numpy.
+    def __array_ufunc__(self, ufunc, method, *inputs, **kw):
+        if method != '__call__' or kw:
+            return NotImplemented
+        ufunc_class = UFunc.make_subclass(ufunc)
+        return ufunc_class(*inputs)
+
+class UFunc:
+    """ base class of objects representing ufuncs applied to Distr instances """
+
+    def __new__(cls, *args):
+        return super().__new__(cls, *args)
+
+    @classmethod
+    def invfcn(cls, x, *args):
+        return cls._ufunc(*args)
+
+    def _get_x_core_shape(self, *_):
+        return (0,)
+
+    _jax_ufuncs = {}
+
+    @classmethod
+    def _find_jax_ufunc(cls, ufunc):
+        out = cls._jax_ufuncs.get(ufunc)
+        if out is not None:
+            return out
+        out = getattr(jnp, ufunc.__name__)
+        cls._jax_ufuncs[ufunc] = out
+        return out
+
+    _ufunc_classes = {}
+
+    @classmethod
+    def make_subclass(cls, ufunc):
+        out = cls._ufunc_classes.get(ufunc)
+        if out is not None:
+            return out
+
+        def exec_body(ns):
+            ns['_ufunc'] = cls._find_jax_ufunc(ufunc)
+            ns['signature'] = ','.join(['(0)'] + ufunc.nin * ['()']) + '->()'
+
+        out = types.new_class(ufunc.__name__, (__class__, Distr), exec_body=exec_body)
+        cls._ufunc_classes[ufunc] = out
+        return out
 
 def distribution(invfcn, signature=None, dtype=None):
     r"""
@@ -505,9 +554,9 @@ def distribution(invfcn, signature=None, dtype=None):
     ... def uniform(x, a, b):
     ...     return a + (b - a) * jax.scipy.stats.norm.cdf(x)
 
-    >>> @functools.partial(lgp.copula.distribution, signature='(n)->()')
-    ... def chi2(x):
-    ...     return jax.numpy.sum(x ** 2)
+    >>> @functools.partial(lgp.copula.distribution, signature='(n,m)->(n)')
+    ... def wishart(x):
+    ...     return x @ x.T
 
     """
     
