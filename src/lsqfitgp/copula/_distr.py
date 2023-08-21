@@ -380,8 +380,10 @@ class Distr(_base.DistrBase):
         last = x[i:i + in_size].reshape(self._in_shape_1)
         
         y = self.invfcn(last, *concrete_params)
-        assert y.shape == self.shape
-        assert y.dtype == self.dtype
+        if y.shape != self.shape or y.dtype != self.dtype:
+            raise ValueError(f'{self.__class__.__name__}.invfcn returned '
+                f'array with shape {y.shape} and dtype {y.dtype}, while '
+                f'{self.shape} and {self.dtype} were expected')
         
         cache[self] = y
         return y, i + in_size
@@ -514,22 +516,25 @@ class Distr(_base.DistrBase):
         return f'{self.__class__.__name__}({", ".join(args)})'
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kw):
-        if method != '__call__' or kw:
+        if method != '__call__' or kw or ufunc.signature:
             return NotImplemented
         ufunc_class = UFunc.make_subclass(ufunc)
         return ufunc_class(*inputs)
 
-    # continuous numeric methods
+        # TODO make this work with gufuncs. See comment in _signature.py.
+        # matmul in particular.
+
+    # continuous binary operations
     __add__, __radd__ = _numeric_methods(numpy.add, 'add')
     __sub__, __rsub__ = _numeric_methods(numpy.subtract, 'sub')
     __mul__, __rmul__ = _numeric_methods(numpy.multiply, 'mul')
-    __matmul__, __rmatmul__ = _numeric_methods(numpy.matmul, 'matmul')
+    # __matmul__, __rmatmul__ = _numeric_methods(numpy.matmul, 'matmul')
     __truediv__, __rtruediv__ = _numeric_methods(numpy.divide, 'truediv')
     __mod__, __rmod__ = _numeric_methods(numpy.remainder, 'mod')
     __divmod__, __rdivmod__ = _numeric_methods(numpy.divmod, 'divmod')
     __pow__, __rpow__ = _numeric_methods(numpy.power, 'pow')
 
-    # continuous unary methods
+    # continuous unary operations
     __neg__ = _unary_method(numpy.negative, 'neg')
     __pos__ = _unary_method(numpy.positive, 'pos')
     __abs__ = _unary_method(numpy.absolute, 'abs')

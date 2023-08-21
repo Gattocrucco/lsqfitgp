@@ -122,3 +122,14 @@ class Signature:
 
         def __repr__(self):
             return self._repr(self.in_shapes) + '->' + self._repr(self.out_shapes)
+
+# I use numpy's internals to parse the signature, but these do not correspond to
+# the description in
+# https://numpy.org/doc/stable/reference/c-api/generalized-ufuncs.html. In
+# particular:
+# - integers are parsed like identifiers
+# - ? is not accepted
+# Looking at the issues, it seems a long standing issue amongst many with
+# vectorize and is not going to be solved.
+# See https://github.com/HypothesisWorks/hypothesis/blob/4e675dee1a4cba9d6902290bbc5719fd72072ec7/hypothesis-python/src/hypothesis/extra/_array_helpers.py#L289
+# for a more complete implementation
