@@ -56,11 +56,62 @@ namespaces = false
 "Homepage" = "https://github.com/Gattocrucco/lsqfitgp"
 "Bug Tracker" = "https://github.com/Gattocrucco/lsqfitgp/issues"
 
-# TODO consider moving here all the things in requirements.txt and
-# requirements-docs.txt under versions dev, tests, tests-old examples, docs. I
-# currently do not now if I can mark a dependency or version to be installed
-# with --no-pep-517, which I need in tests-old for gvar and lsqfit. => It
-# seems I can't add arbitrary pip options to individual requirements.
+[project.optional-dependencies]
+
+dev = [ # to work locally on lsqfitgp
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "gvar",
+    "lsqfit",
+    "jax",
+    "jaxlib",
+    "sphinx",
+    "myst-parser",
+    "numpydoc",
+    "pytest",
+    "coverage[toml]",
+    "twine",
+    "ipython",
+    "mpmath",
+    "pandas",
+    "polars[pyarrow]",
+    "build",
+    "statsmodels",
+    "tqdm",
+]
+
+tests = [ # to run the unit tests on CI
+    "numpy",
+    "scipy",
+    "gvar!=11.11.3",
+    "jax",
+    "jaxlib",
+    "pytest",
+    "coverage[toml]",
+    "mpmath",
+    "pandas",
+    "polars[pyarrow]",
+]
+
+docs = [ # to run examples, documentation code, and build documentation on CI
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "gvar!=11.11.3",
+    "lsqfit",
+    "jax",
+    "jaxlib",
+    "sphinx",
+    "myst-parser",
+    "numpydoc",
+    "coverage[toml]",
+    "polars",
+    "pandas",
+    "statsmodels",
+    "pyarrow",
+    "tqdm",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

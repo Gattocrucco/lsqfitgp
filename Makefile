@@ -98,7 +98,6 @@ resetenv:
 	test ! -d pyenv || rm -fr pyenv
 	python3 -m venv pyenv
 	pyenv/bin/python3 -m pip install --upgrade pip
-	pyenv/bin/python3 -m pip install --requirement requirements.txt
-	pyenv/bin/python3 -m pip install --editable .
+	pyenv/bin/python3 -m pip install --editable '.[dev]'
 	@echo
 	@echo 'Now type ". pyenv/bin/activate"'
