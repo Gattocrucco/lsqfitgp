@@ -48,7 +48,23 @@ bugs or request features, `open an issue
     examples.rst
     
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`search`
+
+Manual for older versions
+-------------------------
+
+  * `Latest development version <https://gattocrucco.github.io/lsqfitgp/docs/index.html>`_
+  * `0.18 <https://gattocrucco.github.io/lsqfitgp/docs-0.18/index.html>`_
+  * `0.17 <https://gattocrucco.github.io/lsqfitgp/docs-0.17/index.html>`_
+  * `0.16 <https://gattocrucco.github.io/lsqfitgp/docs-0.16/index.html>`_
+  * `0.15 <https://gattocrucco.github.io/lsqfitgp/docs-0.15/index.html>`_
+  * `0.14 <https://gattocrucco.github.io/lsqfitgp/docs-0.14/index.html>`_
+  * `0.13 <https://gattocrucco.github.io/lsqfitgp/docs-0.13/index.html>`_
+  * `0.12 <https://gattocrucco.github.io/lsqfitgp/docs-0.12/index.html>`_
+  * `0.11 <https://gattocrucco.github.io/lsqfitgp/docs-0.11/index.html>`_
+  * `0.10 <https://gattocrucco.github.io/lsqfitgp/docs-0.10/index.html>`_
+  * `0.9 <https://gattocrucco.github.io/lsqfitgp/docs-0.9/index.html>`_
+  * `0.8 <https://gattocrucco.github.io/lsqfitgp/docs-0.8/index.html>`_
