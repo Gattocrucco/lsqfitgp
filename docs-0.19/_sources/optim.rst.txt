@@ -187,7 +187,7 @@ instead, like `numpy`. Although operations with 32 bit floats are about twice as
 fast, Gaussian process regression is particularly sensitive to numerical
 accuracy. You can reset `jax`'s default with::
 
-   jax.config.update('jax_enable_x64', True)
+   jax.config.update('jax_enable_x64', False)
 
 to get a speedup, but this will likely give problems when the number of
 datapoints is over 1000, and will break `empbayes_fit` unless you make an effort

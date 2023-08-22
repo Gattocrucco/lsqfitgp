@@ -44,3 +44,7 @@ dl.field-list .field-even {
 dl.field-list .field-even:last-child {
     margin-bottom: 0em;
 }
+
+p + dl.simple {
+    margin-top: 0.7em;
+}
