@@ -6,10 +6,7 @@ Other TODOs are scattered in the code. Search for `TODO`.
 
 Add a Raises section to GP methods that can trigger covariance matrix checks.
 
-Add 'Examples' sections in docstrings
-
-Interlinks with gvar and lsqfit docs. => See intersphinx
-https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#module-sphinx.ext.intersphinx
+Add more 'Examples' sections in docstrings
 
 Mention that `numpy.lib.recfunctions.unstructured_to_structured` may be used
 for euclidean multidimensional input.
@@ -29,18 +26,6 @@ smart.
 Aggiungere che il manuale richiede conoscenze di base di algebra lineare e
 analisi.
 
-In lsqfit il risultato del fit dovrebbe rappresentare una probabilità
-condizionata sui dati. Quindi cosa rappresentano bayesianamente le correlazioni
-con i dati? E inoltre: se faccio due fit sugli stessi dati, qual è
-l'interpretazione bayesiana della correlazione tra i risultati? Forse queste
-cose è meglio se le studio prima su lsqfitgp che è equivalente a un fit lineare
-e le formule sono analitiche e scritte chiaramente.
-
-Explain somewhere how to combine processes defined on different variables. I
-don't know if this actually works seamlessly, derivatives may break. Surely it
-is a bit unelegant due to addx enforcing dtype uniformity. => I should stop
-enforcing uniformity after I make sure everything works with derivatives.
-
 Check again the raniter example because gvar.raniter seems to have gotten much
 faster. => Actually it's lgp.raniter who's gotten slower! The cholesky
 decomposition now takes only 10 ms on 1000x1000 compared to 50 ms on my old
@@ -57,11 +42,11 @@ weird way I can't predict. But why wouldn't this happen when I just call
 linalg.cholesky? => Activity monitor shows I'm using all cores when running
 a timeit of lgp.raniter, so nope.
 
-Add an "Andvanced guide" after the User guide, the first chapters would be
--kernel operations -fourier series -taylor series (taylor afterward because
-it has a richer set of kernels implementing but they must be obtained with
-transformations) -user defined kernels => Also something on pseudoinverses
-and projectors, for when the data is incompatible with the model.
+Chapters for the advanced guide: -kernel operations -fourier series -taylor
+series (taylor afterward because it has a richer set of kernels implementing but
+they must be obtained with transformations) -user defined kernels => Also
+something on pseudoinverses and projectors, for when the data is incompatible
+with the model.
 
 In the kernel reference add automatically flags for all the supported
 transformations. For loc, scale and other standard stuff striket' them if not
@@ -70,9 +55,6 @@ NotImplementedError right away instead of letting the core callable do it: thus
 the implementation methods shall return NotImplemented in place of a callable
 to disable the transformations.
 
-The way I specify the hyperprior with transformations of gvars from the point
-of view of a statistician is a gaussian copula.
-
 In the kernels reference, generate automatically:
 
   * random samples in 2D when maxdim > 1 (after removing default forcekron)
@@ -80,24 +62,16 @@ In the kernels reference, generate automatically:
   * in the index, a flag D0, D1, ..., D∞, D? for the derivability with the
     default parameters
 
-Explain somewhere the jax 32/64 bit thing.
-
 Add an example with regression + gp
-
-Link gppdf report in the introduction page
-
-I should move the doc index, covreport link, and development instructions to the
-installation section of the manual, and remove the index from pages and trim the
-readme.
 
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
 (quick partial fix: larger eps in `IsotropicKernel.__init__`).
 
-Check that float32 is respected.
+Check that float32 is respected. => may not be worth it since GP needs accuracy.
 
-Test recursive dtype support
+Test recursive dtype support in CrossKernel
 
 The minimum derivability warnings are annoying because there are a lot of them
 when doing nontrivial things, maybe I should put a warnings filter in GP.pred
@@ -168,6 +142,9 @@ variable.
 
 Or, once I have caching (see below in "optimization"), sample and pred could
 share a lot of internals and the cache would avoid decomposing matrices twice.
+
+=> I could make GP immutable, and .condition adds labels to an internal list,
+the calculation is always as if done all at once.
 
 ### Bayesian optimization
 
