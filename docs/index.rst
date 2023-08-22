@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/index.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -23,7 +23,7 @@ lsqfitgp
 ========
 
 This is the documentation for the python module :mod:`lsqfitgp`. It provides a
-simple but powerful interface to use Gaussian processes for fitting. The code
+simple but powerful interface to use Gaussian processes for inference. The code
 is open source, available on `github
 <https://github.com/Gattocrucco/lsqfitgp>`_ under the `GNU General Public
 License <https://www.gnu.org/licenses/gpl-3.0.html>`_.
@@ -43,6 +43,7 @@ bugs or request features, `open an issue
     :caption: Contents:
     
     userguide.rst
+    advancedguide.rst
     reference.rst
     examples.rst
     
