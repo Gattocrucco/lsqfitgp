@@ -41,8 +41,7 @@ all:
 	@echo " 4) $$ make upload"
 	@echo " 5) publish the github release"
 	@echo " 6) bump version number and add .dev0 suffix"
-	@echo " 7) switch to branch gh-pages and pull"
-	@echo " 8) add new version to index, commit and push"
+	@echo " 7) add docs link for released version to index.rst"
 
 upload:
 	python3 -m twine upload dist/*
@@ -55,7 +54,7 @@ release: $(RELEASE_TARGETS)
 PY = MPLBACKEND=agg coverage run
 TESTSPY = COVERAGE_FILE=.coverage.tests$(COVERAGE_SUFFIX) $(PY) --context=tests$(COVERAGE_SUFFIX)
 EXAMPLESPY = COVERAGE_FILE=.coverage.examples$(COVERAGE_SUFFIX) $(PY) --context=examples$(COVERAGE_SUFFIX)
-DOCSPY = cd docs && COVERAGE_FILE=../.coverage.docs$(COVERAGE_SUFFIX) $(PY) --rcfile=../pyproject.toml --context=docs$(COVERAGE_SUFFIX)
+DOCSPY = COVERAGE_FILE=.coverage.docs$(COVERAGE_SUFFIX) $(PY) --context=docs$(COVERAGE_SUFFIX)
 
 tests:
 	$(TESTSPY) -m pytest tests
@@ -73,16 +72,16 @@ examples: $(EXAMPLES)
 	$(EXAMPLESPY) examples/runexamples.py $(EXAMPLES)
 
 docscode:
-	$(DOCSPY) runcode.py *.rst
+	$(DOCSPY) docs/runcode.py docs/*.rst
 
 docs/copula.rst: docs/copula.py src/lsqfitgp/copula/*.py
-	$(DOCSPY) --append $(notdir $<)
+	$(DOCSPY) --append $<
 
 docs/examplesref.rst: docs/examplesref.py src/lsqfitgp/*.py src/lsqfitgp/*/*.py
-	$(DOCSPY) --append $(notdir $<)
+	$(DOCSPY) --append $<
 
 docs/kernelsref.rst: docs/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_patch_jax/*.py src/lsqfitgp/_special/*.py
-	$(DOCSPY) --append $(notdir $<)
+	$(DOCSPY) --append $<
 
 docs: docs/copula.rst docs/examplesref.rst docs/kernelsref.rst
 	make -C docs html
@@ -96,10 +95,10 @@ covreport:
 	@echo "Now open htmlcov/index.html"
 
 resetenv:
-	test -d pyenv && rm -fr pyenv || test -
+	test ! -d pyenv || rm -fr pyenv
 	python3 -m venv pyenv
 	pyenv/bin/python3 -m pip install --upgrade pip
-	pyenv/bin/python3 -m pip install -r requirements.txt
+	pyenv/bin/python3 -m pip install --requirement requirements.txt
 	pyenv/bin/python3 -m pip install --editable .
 	@echo
 	@echo 'Now type ". pyenv/bin/activate"'

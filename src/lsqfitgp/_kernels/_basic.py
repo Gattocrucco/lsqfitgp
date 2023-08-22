@@ -383,6 +383,9 @@ def CausalExpQuad(r, alpha=1):
     return jspecial.erfc(alpha / 4 * r) * jnp.exp(-1/2 * jnp.square(r))
     # TODO taylor-expand erfc near 0 and use r2
 
+    # TODO is the erfc part a standalone valid kernel? If so, separate it,
+    # since this can be obtained as the product
+
 @kernel(derivable=True, maxdim=1)
 def Decaying(x, y, alpha=1):
     """

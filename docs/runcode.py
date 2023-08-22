@@ -24,6 +24,9 @@ after the code block"""
 import re
 import sys
 import textwrap
+import contextlib
+import os
+import pathlib
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -34,24 +37,37 @@ from pygments import lexers, formatters
 def pyprint(text):
     print(pygments.highlight(text, lexers.PythonLexer(), formatters.TerminalFormatter()))
 
-class SwitchGVar:
-    __enter__ = lambda _: gvar.switch_gvar()
-    __exit__ = lambda *_: gvar.restore_gvar()
+@contextlib.contextmanager
+def switchgvar():
+    try:
+        yield gvar.switch_gvar()
+    finally:
+        gvar.restore_gvar()
 
-pattern = re.compile(r'::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
+@contextlib.contextmanager
+def chdir(path):
+    try:
+        cwd = pathlib.Path.cwd()
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(cwd)
+
+pattern = re.compile(r'(?m)(?!\.\..+?)^.*?::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
 
 def runcode(file):
 
+    file = pathlib.Path(file)
+
     # read source
-    with open(file, 'r') as stream:
-        text = stream.read()
+    text = pathlib.Path(file).read_text()
     
     # reset working environment
     plt.close('all')
     np.random.seed(0)
     gvar.ranseed(0)
     globals_dict = {}
-    with SwitchGVar():
+    with switchgvar():
 
         # run code
         for match in pattern.finditer(text):
@@ -60,7 +76,9 @@ def runcode(file):
             code = textwrap.dedent(codeblock).strip()
             printcode = '\n'.join(f' {i + 1:2d}  ' + l for i, l in enumerate(code.split('\n')))
             pyprint(printcode)
-            exec(code, globals_dict)
+
+            with chdir(file.parent):
+                exec(code, globals_dict)
 
 for file in sys.argv[1:]:
     s = f'*  running {file}  *'

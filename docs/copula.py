@@ -19,8 +19,6 @@
 
 """ Generate the reference page for the copula module """
 
-outputfile = 'copula.rst'
-
 import inspect
 import pathlib
 
@@ -109,5 +107,6 @@ for name in sorted(distrs):
 .. autoclass:: {name}{sig}
 """
 
-print(f'writing to {outputfile}...')
-pathlib.Path(outputfile).write_text(out)
+outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
+print(f'writing to {outfile}...')
+outfile.write_text(out)

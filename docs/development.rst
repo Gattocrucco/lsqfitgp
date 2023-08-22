@@ -25,7 +25,7 @@ Development
 To work on `lsqfitgp`, clone the repository, create a virtual environment and
 install the requirements:
 
-::
+.. code-block:: sh
 
     $ git clone git@github.com:Gattocrucco/lsqfitgp.git
     $ cd lsqfitgp
@@ -38,7 +38,7 @@ The ``Makefile`` in the root directory contains targets to build the
 documentation, run the tests, and prepare a release. Run ``make`` without
 arguments to show the available targets:
 
-::
+.. code-block:: sh
 
     (pyenv) $ make
     available targets: [...]

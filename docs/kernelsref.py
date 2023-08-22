@@ -19,9 +19,8 @@
 
 """ Generate a file with the list of kernels """
 
-outputfile = 'kernelsref.rst'
-
 import inspect
+import pathlib
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -243,7 +242,7 @@ for kernel in kernels2:
         ax.set_ylabel("x'")
         fig.colorbar(im, label="Cov[f(x), f(x')]")
     figname = f'kernelsref-{kernel}.png'
-    fig.savefig(figname)
+    fig.savefig(pathlib.Path(__file__).with_name(figname))
     
     out += f"""\
 .. image:: {figname}
@@ -277,12 +276,12 @@ for kernel in kernels2:
     ax.set_xlabel('x')
     ax.set_ylabel('f(x)')
     figname = f'kernelsref-{kernel}-samples.png'
-    fig.savefig(figname)
+    fig.savefig(pathlib.Path(__file__).with_name(figname))
 
     out += f"""\
 .. image:: {figname}
 """
 
-print(f'writing to {outputfile}...')
-with open(outputfile, 'w') as file:
-    file.write(out)
+outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
+print(f'writing to {outfile}...')
+outfile.write_text(out)

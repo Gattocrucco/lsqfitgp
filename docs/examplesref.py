@@ -19,13 +19,12 @@
 
 """ Generate a file with the list of example scripts. """
 
-outputfile = 'examplesref.rst'
-
 import pathlib
 import re
 import textwrap
+import os
 
-examples = pathlib.Path('../examples').glob('*.py')
+examples = pathlib.Path('examples').glob('*.py')
 examples = list(sorted(examples))
 
 shortindex = ''
@@ -54,7 +53,7 @@ for example in examples:
     if imgfile.exists():
         image = f"""
     
-    .. image:: {imgfile}"""
+    .. image:: {os.path.relpath(imgfile, pathlib.Path(__file__).parent)}"""
     else:
         image = ''
     
@@ -89,6 +88,6 @@ Long index
 {longindex}
 """
 
-print(f'writing to {outputfile}...')
-with open(outputfile, 'w') as file:
-    file.write(out)
+outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
+print(f'writing to {outfile}...')
+outfile.write_text(out)
