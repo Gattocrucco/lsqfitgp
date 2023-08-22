@@ -8,7 +8,7 @@ jaxlib
 sphinx
 numpydoc
 pytest
-coverage
+coverage[toml]
 twine
 ipython
 mpmath

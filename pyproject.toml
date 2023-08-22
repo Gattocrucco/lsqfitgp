@@ -61,8 +61,6 @@ namespaces = false
 # currently do not now if I can mark a dependency or version to be installed
 # with --no-pep-517, which I need in tests-old for gvar and lsqfit.
 
-# TODO move here coverage settings
-
 [tool.pytest.ini_options]
 testpaths = [
     "tests",
@@ -83,3 +81,39 @@ addopts = [
 
 # I wanted to use `--import-mode=importlib`, but it breaks importing submodules,
 # in particular `from . import util`.
+
+[tool.coverage.run]
+branch = true
+source = [
+    "lsqfitgp",
+]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.coverage.html]
+show_contexts = true
+
+[tool.coverage.paths]
+
+# the first path in each list must be the source directory in the machine that's
+# generating the coverage report
+
+github = [
+    '/home/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/',
+    '/Users/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/',
+    'D:\a\lsqfitgp\lsqfitgp\src\lsqfitgp\',
+    '/Library/Frameworks/Python.framework/Versions/*/lib/python*/site-packages/lsqfitgp/',
+    '/Users/runner/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/',
+    '/opt/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/',
+]
+
+local = [
+    'src/lsqfitgp/',
+    '/home/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/',
+    '/Users/runner/work/lsqfitgp/lsqfitgp/src/lsqfitgp/',
+    'D:\a\lsqfitgp\lsqfitgp\src\lsqfitgp\',
+    '/Library/Frameworks/Python.framework/Versions/*/lib/python*/site-packages/lsqfitgp/',
+    '/Users/runner/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/',
+    '/opt/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/',
+]

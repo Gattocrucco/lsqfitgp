@@ -3,7 +3,7 @@ scipy==1.5
 jax==0.4.6
 jaxlib==0.4.6
 pytest
-coverage
+coverage[toml]
 mpmath
 pandas<1.5
 polars==0.15.16

@@ -7,7 +7,7 @@ jax
 jaxlib
 sphinx
 numpydoc
-coverage
+coverage[toml]
 polars
 pandas
 statsmodels

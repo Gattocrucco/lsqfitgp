@@ -5,7 +5,7 @@ lsqfit
 jax
 jaxlib
 pytest
-coverage
+coverage[toml]
 mpmath
 pandas
 polars[pyarrow]
