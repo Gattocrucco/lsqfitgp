@@ -48,8 +48,7 @@ upload:
 	python3 -m twine upload dist/*
 
 release: $(RELEASE_TARGETS)
-	## test -d build && rm -r build || test -
-	## test -d dist && rm -r dist || test -
+	test ! -d dist || rm -r dist
 	python3 -m build
 
 PY = MPLBACKEND=agg coverage run

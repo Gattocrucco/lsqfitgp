@@ -11,15 +11,15 @@ Python module to do inference with Gaussian processes. Features:
   * Apply arbitrary linear transformations to the process, finite and
     infinite.
   * Small [PPL based on Gaussian
-    copulas](https://gattocrucco.github.io/lsqfitgp/docs/copula.html) to specify
-    the hyperparameters prior.
+    copulas](https://gattocrucco.github.io/lsqfitgp/docs/reference/copula.html)
+    to specify the hyperparameters prior.
   * [Rich
-    collection](https://gattocrucco.github.io/lsqfitgp/docs/kernelsref.html) of
-    covariance functions.
+    collection](https://gattocrucco.github.io/lsqfitgp/docs/reference/kernelsref.html)
+    of covariance functions.
   * Good GP versions of
-    [BART](https://gattocrucco.github.io/lsqfitgp/docs/bayestree.html#lsqfitgp.bayestree.bart)
+    [BART](https://gattocrucco.github.io/lsqfitgp/docs/reference/bayestree.html#lsqfitgp.bayestree.bart)
     (Bayes Additive Regression Trees) and
-    [BCF](https://gattocrucco.github.io/lsqfitgp/docs/bayestree.html#lsqfitgp.bayestree.bcf)
+    [BCF](https://gattocrucco.github.io/lsqfitgp/docs/reference/bayestree.html#lsqfitgp.bayestree.bcf)
     (Bayesian Causal Forests).
   
 See [this report](https://www.giacomopetrillo.com/scuola/gppdf.pdf) for the

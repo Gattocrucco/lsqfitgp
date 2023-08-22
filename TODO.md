@@ -102,6 +102,10 @@ checks everything and raises mid-minimization). Maybe wait for `checkify` to
 become non-experimental? => I tried using checkify and it was a disaster,
 definitely wait for improvements.
 
+Check that lsqfitgp installs from scratch on a fresh system. I expect that it
+will fail on a python venv due to the need to compile gvar and lsqfit, but
+succeed under spyder because it uses conda.
+
 ## Implementation details
 
 Chiamare GP -> `_GPBase` e poi fare una sottoclasse GP e mettere tutti i metodi
