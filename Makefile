@@ -35,13 +35,14 @@ all:
 	@echo " 2) $$ . pyenv/bin/activate"
 	@echo
 	@echo "Release instructions:"
-	@echo " 1) remove .devN suffix from version"
-	@echo " 2) push and check CI completes"
-	@echo " 3) $$ make release"
-	@echo " 4) $$ make upload"
-	@echo " 5) publish the github release"
-	@echo " 6) bump version number and add .dev0 suffix"
-	@echo " 7) add docs link for released version to index.rst"
+	@echo " 1) remove .devN suffix from version in src/lsqfitgp/__init__.py"
+	@echo " 2) describe release in docs/development/changelog.md"
+	@echo " 3) link versioned docs in docs/index.rst"
+	@echo " 4) push and check CI completes"
+	@echo " 5) $$ make release"
+	@echo " 6) $$ make upload"
+	@echo " 7) publish the github release"
+	@echo " 8) bump version number and add .dev0 suffix"
 
 upload:
 	python3 -m twine upload dist/*
@@ -72,18 +73,18 @@ examples: $(EXAMPLES)
 	$(EXAMPLESPY) examples/runexamples.py $(EXAMPLES)
 
 docscode:
-	$(DOCSPY) docs/runcode.py docs/*.rst
+	$(DOCSPY) docs/runcode.py docs/*.rst docs/*/*.rst
 
-docs/copula.rst: docs/copula.py src/lsqfitgp/copula/*.py
+docs/reference/copula.rst: docs/reference/copula.py src/lsqfitgp/copula/*.py
 	$(DOCSPY) --append $<
 
 docs/examplesref.rst: docs/examplesref.py src/lsqfitgp/*.py src/lsqfitgp/*/*.py
 	$(DOCSPY) --append $<
 
-docs/kernelsref.rst: docs/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_patch_jax/*.py src/lsqfitgp/_special/*.py
+docs/reference/kernelsref.rst: docs/reference/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_patch_jax/*.py src/lsqfitgp/_special/*.py
 	$(DOCSPY) --append $<
 
-docs: docs/copula.rst docs/examplesref.rst docs/kernelsref.rst
+docs: docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst
 	make -C docs html
 	@echo
 	@echo "Now open docs/_build/html/index.html"

@@ -38,14 +38,16 @@ To start, read the :ref:`installation` section, and then :ref:`sine`. To report
 bugs or request features, `open an issue
 <https://github.com/Gattocrucco/lsqfitgp/issues>`_ on github.
 
+Contents
+--------
+
 .. toctree::
     :maxdepth: 2
-    :caption: Contents:
     
-    userguide.rst
-    reference.rst
+    userguide/userguide.rst
+    reference/reference.rst
     examplesref.rst
-    development.rst
+    development/development.rst
     
 * :ref:`genindex`
 * :ref:`search`
