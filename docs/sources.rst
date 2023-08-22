@@ -1,4 +1,4 @@
-.. lsqfitgp/docs/advancedguide.rst
+.. lsqfitgp/docs/sources.rst
 ..
 .. Copyright (c) 2023, Giacomo Petrillo
 ..
@@ -17,13 +17,16 @@
 .. You should have received a copy of the GNU General Public License
 .. along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-Advanced guide
-==============
+Licensed sources
+================
 
-This guide covers topics that should not interest the casual user.
+This software contains code adapted from the following sources:
 
-.. toctree::
-    :maxdepth: 1
-    :numbered:
-    
-    development.rst
+  * `TOEPLITZ_CHOLESKY
+    <http://people.sc.fsu.edu/~jburkardt/py_src/toeplitz_cholesky/toeplitz_cholesky.html>`_
+    by John Burkardt (LGPL license)
+  * `SuperGauss <https://cran.r-project.org/package=SuperGauss>`_ by
+    Yun Ling and Martin Lysy (GPL license)
+  * `gvar <https://github.com/gplepage/gvar>`_ by Peter Lepage (GPL license)
+  * `scipy <https://github.com/scipy/scipy>`_ (BSD-3 License)
+  * `numpy <https://github.com/numpy/numpy>`_ (BSD-3 License)

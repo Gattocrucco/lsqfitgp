@@ -43,9 +43,9 @@ bugs or request features, `open an issue
     :caption: Contents:
     
     userguide.rst
-    advancedguide.rst
     reference.rst
     examplesref.rst
+    development.rst
     
 * :ref:`genindex`
 * :ref:`search`

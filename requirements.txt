@@ -6,6 +6,7 @@ lsqfit
 jax
 jaxlib
 sphinx
+myst-parser
 numpydoc
 pytest
 coverage[toml]

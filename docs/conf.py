@@ -59,7 +59,8 @@ extensions = [
     'numpydoc',
     'sphinx.ext.intersphinx',
     # 'sphinx.ext.viewcode', # local version of linkcode
-    'sphinx.ext.linkcode',
+    'sphinx.ext.linkcode', # [source] links to code on github
+    'myst_parser', # markdown support
 ]
 
 # Add any paths that contain templates here, relative to this directory.

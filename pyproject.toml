@@ -63,9 +63,7 @@ namespaces = false
 # seems I can't add arbitrary pip options to individual requirements.
 
 [tool.pytest.ini_options]
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
 filterwarnings = [
     'ignore:JAX on Mac ARM machines',
     'ignore:the imp module is deprecated',
@@ -85,9 +83,7 @@ addopts = [
 
 [tool.coverage.run]
 branch = true
-source = [
-    "lsqfitgp",
-]
+source = ["lsqfitgp"]
 
 [tool.coverage.report]
 show_missing = true
@@ -96,7 +92,6 @@ show_missing = true
 show_contexts = true
 
 [tool.coverage.paths]
-
 # the first path in each list must be the source directory in the machine that's
 # generating the coverage report
 
