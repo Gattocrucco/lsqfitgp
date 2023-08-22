@@ -14,7 +14,7 @@
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Reference manual" href="reference.html" />
+    <link rel="next" title="Advanced guide" href="advancedguide.html" />
     <link rel="prev" title="13. Nonlinear models" href="nonlinear.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -65,6 +65,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">14. Optimization</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="advancedguide.html">Advanced guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">Reference manual</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 </ul>
@@ -75,7 +76,7 @@
   <li><a href="index.html">Documentation overview</a><ul>
   <li><a href="userguide.html">User guide</a><ul>
       <li>Previous: <a href="nonlinear.html" title="previous chapter"><span class="section-number">13. </span>Nonlinear models</a></li>
-      <li>Next: <a href="reference.html" title="next chapter">Reference manual</a></li>
+      <li>Next: <a href="advancedguide.html" title="next chapter">Advanced guide</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -111,7 +112,7 @@
           <a href="nonlinear.html" title="Previous document"><span class="section-number">13. </span>Nonlinear models</a>
         </li>
         <li>
-          <a href="reference.html" title="Next document">Reference manual</a>
+          <a href="advancedguide.html" title="Next document">Advanced guide</a>
           &rarr;
         </li>
     </ul>
@@ -267,7 +268,7 @@ calculations. Upon initialization, <a class="reference internal" href="index.htm
 instead, like <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.25)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy</span></code></a>. Although operations with 32 bit floats are about twice as
 fast, Gaussian process regression is particularly sensitive to numerical
 accuracy. You can reset <code class="xref py py-obj docutils literal notranslate"><span class="pre">jax</span></code>’s default with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s1">&#39;jax_enable_x64&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s1">&#39;jax_enable_x64&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>to get a speedup, but this will likely give problems when the number of
@@ -287,7 +288,7 @@ to tune the minimizer parameters to make it work at <code class="xref py py-obj 
           <a href="nonlinear.html" title="Previous document"><span class="section-number">13. </span>Nonlinear models</a>
         </li>
         <li>
-          <a href="reference.html" title="Next document">Reference manual</a>
+          <a href="advancedguide.html" title="Next document">Advanced guide</a>
           &rarr;
         </li>
     </ul>
