@@ -24,7 +24,7 @@
 # Changelog
 
 
-## 0.19. Miss Two Forests and an Auxiliary Regression Term for the Forest (2023-08-22)
+## 0.19. Miss the Forest for Two Forests and an Auxiliary Regression Term (2023-08-22)
 
 ### Release highlights
   
