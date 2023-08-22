@@ -49,8 +49,9 @@ To define a variable, use one of the subclasses of `Distr` listed under
 :ref:`families`. Combine the variables together to define a model by putting
 them in a `Copula` object. See `Distr` for examples.
 
-These objects can also interoperate with the similar mechanism provided by
-`gvar.BufferDict`. See `makedict`.
+To represent at once concrete values of the variables and their transformed
+parametrization, put them in a `gvar.BufferDict` using `makedict`. To apply
+the transformation manually, use `~DistrBase.partial_invfcn`.
 
 ..  note::
     

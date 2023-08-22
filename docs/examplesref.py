@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Generate a file with the list of example scripts."""
+""" Generate a file with the list of example scripts. """
 
 outputfile = 'examplesref.rst'
 
@@ -76,7 +76,8 @@ out = f"""\
 Example scripts
 ===============
 
-This is an index of the example scripts in the ``examples`` directory in the
+This is an index of the example scripts in the `examples directory
+<https://github.com/Gattocrucco/lsqfitgp/tree/master/examples>`_ in the
 repository. The links point to the file preview on github.
 
 Short index

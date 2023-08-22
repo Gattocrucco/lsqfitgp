@@ -36,9 +36,9 @@ def _normcdf(x):
     x = x.astype(_patch_jax.float_type(x))
     return jspecial.ndtr(x)
 
-    # jax.scipy.stats.norm.sf is implemented as 1 - cdf(x) instead of cdf(-x),
-    # defeating the purpose of numerical accuracy. Use _normcdf(-x) instead. See
-    # https://github.com/google/jax/issues/17199
+    # In jax < 0.??.?, jax.scipy.stats.norm.sf is implemented as 1 - cdf(x)
+    # instead of cdf(-x), defeating the purpose of numerical accuracy. Use
+    # _normcdf(-x) instead. See https://github.com/google/jax/issues/17199
 
 class beta(_distr.Distr):
     """
@@ -146,6 +146,9 @@ class loggamma(_distr.Distr):
             ],
             x, alpha,
         )
+
+    # TODO scipy.stats.gamma has inaccurate logsf instead of using loggamma.sf,
+    # open an issue
 
 class invgamma(_distr.Distr):
     """
