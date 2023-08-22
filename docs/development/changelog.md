@@ -24,6 +24,36 @@
 # Changelog
 
 
+## 0.19. Miss Two Forests and an Auxiliary Regression Term for the Forest (2023-08-22)
+
+### Release highlights
+  
+  * GP version of BCF (Bayesian Causal Forests).
+  * Extension of the `copula` submodule to a full PPL (Probabilistic Programming Language) to specify the hyperparameter priors.
+
+### `bayestree` submodule
+
+* The new class `bcf` implements the infinite trees limit of the BCF model for causal inference in deconfounded observational studies. Additionally, it allows specifying an arbitrary auxiliary regression term.
+* `bart` adds a parameter `marginalize_mean` to avoid having the mean as hyperparameter.
+
+### `copula` submodule
+
+The new class `Distr` replaces `CopulaFactory` and can be instantiated. It represents a probability distribution over a tensor, much like PyMC. `Distr` objects can be used as parameters to other `Distr` objects to define a model. The distribution is always parametrized to be a multivariate standard Normal.
+
+### Improvements to `StructuredArray`
+
+ * `StructuredArrays` created from numpy structured arrays with same names and types, but different padding, will now  compare as equal instead of different.
+ * `StructuredArray.from_dict` to create a `StructuredArray` from a dict of arrays.
+ * Define `len(StructuredArray)`.
+ * Support `numpy.concatenate`.
+ * Support `numpy.lib.recfunctions.append_fields`.
+
+### `gvar`-related
+
+ * Solve bug that could make `jax.jit` fail if a `gvar.BufferDict` was passed as argument.
+ * Decorator `gvar_gufunc` to make a function support gvars.
+
+
 ## 0.18. Our code, hallowed be thy dependencies, but deliver us from pins and torment (2023-08-02)
 
 Recent versions of `lsqfitgp` would impose version 0.4.6 of `jax` and `jaxlib` due to incompatibilities with newer releases. This limitation is now gone. Thanks to the experimental Windows support added to `jax`, `lsqfitgp` can be `pip install`ed on Windows. The unit tests currently have some failures and crash midway, so I guess it's not fully usable.
