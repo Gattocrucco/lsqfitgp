@@ -5,15 +5,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>lsqfitgp &#8212; lsqfitgp documentation</title>
+    <title>lsqfitgp &#8212; lsqfitgp 0.19 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=28c8e701" />
-    <script src="_static/documentation_options.js?v=95e146bd"></script>
+    <script src="_static/documentation_options.js?v=2bff2458"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="User guide" href="userguide.html" />
+    <link rel="next" title="User guide" href="userguide/userguide.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -25,7 +25,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="#">lsqfitgp</a></h1>
+<h1 class="logo"><a href="#">lsqfitgp 0.19</a></h1>
 
 
 
@@ -44,19 +44,18 @@
 
 
 <h3>Navigation</h3>
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="userguide.html">User guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="advancedguide.html">Advanced guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="reference.html">Reference manual</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="userguide/userguide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference/reference.html">Reference manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examplesref.html">Example scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development/development.html">Development</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="#">Documentation overview</a><ul>
-      <li>Next: <a href="userguide.html" title="next chapter">User guide</a></li>
+      <li>Next: <a href="userguide/userguide.html" title="next chapter">User guide</a></li>
   </ul></li>
 </ul>
 </div>
@@ -87,7 +86,7 @@
   <nav id="rellinks">
     <ul>
         <li>
-          <a href="userguide.html" title="Next document">User guide</a>
+          <a href="userguide/userguide.html" title="Next document">User guide</a>
           &rarr;
         </li>
     </ul>
@@ -99,63 +98,65 @@
             
   <section id="lsqfitgp">
 <span id="module-lsqfitgp"></span><h1>lsqfitgp<a class="headerlink" href="#lsqfitgp" title="Link to this heading">¶</a></h1>
-<p>This is the documentation for the python module <a class="reference internal" href="#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>. It provides a
+<p>This is the documentation of the Python module <a class="reference internal" href="#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>. It provides a
 simple but powerful interface to use Gaussian processes for inference. The code
 is open source, available on <a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp">github</a> under the <a class="reference external" href="https://www.gnu.org/licenses/gpl-3.0.html">GNU General Public
 License</a>.</p>
-<p>Briefly, Gaussian processes are a statistical tool for fitting unknown
-functions. If you want to know more about Gaussian processes, the book
-<a class="reference external" href="http://gaussianprocess.org/gpml/">Gaussian Processes for Machine Learning</a>
-is a good reference available for free. However, understanding the technical
-details is not necessary to use the basic functionality of the module.</p>
-<p>To start, read the <a class="reference internal" href="installation.html#installation"><span class="std std-ref">Installation</span></a> section, and then <a class="reference internal" href="sine.html#sine"><span class="std std-ref">First example: a sine</span></a>. To report
+<p>Gaussian processes are a statistical tool for fitting unknown functions. If you
+want to know more about Gaussian processes, the book <a class="reference external" href="http://gaussianprocess.org/gpml/">Gaussian Processes for
+Machine Learning</a> is a good reference
+available for free. However, understanding the technical details is not
+necessary to use the basic functionality of the module.</p>
+<p>To start, read the <a class="reference internal" href="userguide/installation.html#installation"><span class="std std-ref">Installation</span></a> section, and then <a class="reference internal" href="userguide/sine.html#sine"><span class="std std-ref">First example: a sine</span></a>. To report
 bugs or request features, <a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/issues">open an issue</a> on github.</p>
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="userguide.html">User guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation.html">1. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sine.html">2. First example: a sine</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernels.html">3. More on kernels</a></li>
-<li class="toctree-l2"><a class="reference internal" href="derivatives.html">4. Taking derivatives</a></li>
-<li class="toctree-l2"><a class="reference internal" href="integrals.html">5. Taking integrals</a></li>
-<li class="toctree-l2"><a class="reference internal" href="customs.html">6. A custom kernel: text classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="in.html">7. Multidimensional input</a></li>
-<li class="toctree-l2"><a class="reference internal" href="partial.html">8. Partial derivatives</a></li>
-<li class="toctree-l2"><a class="reference internal" href="out.html">9. Multidimensional output</a></li>
-<li class="toctree-l2"><a class="reference internal" href="components.html">10. Splitting components</a></li>
-<li class="toctree-l2"><a class="reference internal" href="hyper.html">11. Hyperparameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="hyperstruct.html">12. Hyperparameters in the input</a></li>
-<li class="toctree-l2"><a class="reference internal" href="nonlinear.html">13. Nonlinear models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optim.html">14. Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="userguide/userguide.html">User guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="userguide/installation.html">1. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/sine.html">2. First example: a sine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/kernels.html">3. More on kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/derivatives.html">4. Taking derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/integrals.html">5. Taking integrals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/customs.html">6. A custom kernel: text classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/in.html">7. Multidimensional input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/partial.html">8. Partial derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/out.html">9. Multidimensional output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/components.html">10. Splitting components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/hyper.html">11. Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/hyperstruct.html">12. Hyperparameters in the input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/nonlinear.html">13. Nonlinear models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/optim.html">14. Optimization</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="advancedguide.html">Advanced guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="development.html">1. Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference/reference.html">Reference manual</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference/kernelsref.html">1. Kernels reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/kernel.html">2. Generic kernel classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/kerneldec.html">3. Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/kernelop.html">4. Kernel operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/deriv.html">5. Derivative specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/gp.html">6. Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/array.html">7. Structured arrays wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/fit.html">8. Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/raniter.html">9. Random sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/copula.html">10. Gaussian copulas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/bayestree.html">11. BART</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="reference.html">Reference manual</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">1. Kernels reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernel.html">2. Generic kernel classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">3. Kernel decorators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernelop.html">4. Kernel operations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deriv.html">5. Derivative specification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html">6. Gaussian process class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fit.html">8. Fitting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="copula.html">10. Gaussian copulas</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bayestree.html">11. BART</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examplesref.html">Example scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examplesref.html#short-index">Short index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examplesref.html#long-index">Long index</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="examplesref.html">1. Example scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development/development.html">Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="development/setup.html">Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="development/changelog.html">Changelog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="development/sources.html">Licensed sources</a></li>
 </ul>
 </li>
 </ul>
 </div>
-<section id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
@@ -166,6 +167,7 @@ bugs or request features, <a class="reference external" href="https://github.com
 <blockquote>
 <div><ul class="simple">
 <li><p><a class="reference external" href="https://gattocrucco.github.io/lsqfitgp/docs/index.html">Latest development version</a></p></li>
+<li><p><a class="reference external" href="https://gattocrucco.github.io/lsqfitgp/docs-0.19/index.html">0.19</a></p></li>
 <li><p><a class="reference external" href="https://gattocrucco.github.io/lsqfitgp/docs-0.18/index.html">0.18</a></p></li>
 <li><p><a class="reference external" href="https://gattocrucco.github.io/lsqfitgp/docs-0.17/index.html">0.17</a></p></li>
 <li><p><a class="reference external" href="https://gattocrucco.github.io/lsqfitgp/docs-0.16/index.html">0.16</a></p></li>
@@ -189,7 +191,7 @@ bugs or request features, <a class="reference external" href="https://github.com
   <nav id="rellinks">
     <ul>
         <li>
-          <a href="userguide.html" title="Next document">User guide</a>
+          <a href="userguide/userguide.html" title="Next document">User guide</a>
           &rarr;
         </li>
     </ul>

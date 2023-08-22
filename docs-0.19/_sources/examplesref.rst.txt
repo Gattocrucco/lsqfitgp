@@ -7,7 +7,8 @@
 Example scripts
 ===============
 
-This is an index of the example scripts in the ``examples`` directory in the
+This is an index of the example scripts in the `examples directory
+<https://github.com/Gattocrucco/lsqfitgp/tree/master/examples>`_ in the
 repository. The links point to the file preview on github.
 
 Short index
