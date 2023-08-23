@@ -48,8 +48,7 @@ class StructuredArray:
     >>> a = numpy.empty(3, dtype=[('f', float), ('g', float)])
     >>> a = StructuredArray(a)
     >>> a = a.at['f'].set(numpy.arange(3))
-    is equivalent to
-    >>> a['f'] = numpy.arange(3)
+    ... # is equivalent to a['f'] = numpy.arange(3)
         
     Parameters
     ----------

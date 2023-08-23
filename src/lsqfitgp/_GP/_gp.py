@@ -39,33 +39,31 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
 
     Parameters
     ----------
-    covfun : Kernel or None
+    covfun : Kernel, optional
         An instance of `Kernel` representing the covariance kernel of the
         default process of the GP object. It can be left unspecified.
-    solver : str
+    solver : str, default 'chol'
         The algorithm used to decompose the prior covariance matrix. See
-        `decompose` for the available solvers. Default is ``'chol'``.
-    checkpos : bool
-        If True (default), raise a `LinAlgError` if the prior covariance matrix
-        turns out non positive within numerical error.
-    checksym : bool
-        If True (default), check that the prior covariance matrix is
-        symmetric.
-    checkfinite : bool
-        If True (default), check that the prior covariance matrix does not
-        contain infs or nans.
-    checklin : bool
-        If True (default), the method `addlintransf` will check that the
-        given transformation is linear on a random input tensor.
-    posepsfac : number
+        `decompose` for the available solvers.
+    checkpos : bool, default True
+        Raise a `LinAlgError` if the prior covariance matrix turns out non
+        positive within numerical error.
+    checksym : bool, default True
+        Check that the prior covariance matrix is symmetric.
+    checkfinite : bool, default True
+        Check that the prior covariance matrix does not contain infs or nans.
+    checklin : bool, default True
+        The method `addlintransf` will check that the given transformation is
+        linear on a random input tensor.
+    posepsfac : number, default 1
         The threshold used to check if the prior covariance matrix is positive
-        definite is multiplied by this factor (default 1).
-    halfmatrix : bool
-        If True and ``checksym=False``, compute only half of the covariance
-        matrices by unrolling their lower triangular part as flat arrays. This
-        may actually be a large performance hit if the input arrays have large
-        item size or if the implementation of the kernel takes advantage of
-        non-broadcasted inputs, so it is False by default.
+        definite is multiplied by this factor.
+    halfmatrix : bool, default False
+        If ``checksym=False``, compute only half of the covariance matrices by
+        unrolling their lower triangular part as flat arrays. This may actually
+        be a large performance hit if the input arrays have large item size or
+        if the implementation of the kernel takes advantage of non-broadcasted
+        inputs.
     **kw
         Additional keyword arguments are passed to the solver, see `decompose`.
 

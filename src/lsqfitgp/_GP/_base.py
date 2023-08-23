@@ -48,7 +48,7 @@ class GPBase:
             raise NotImplementedError(f"{cls.__name__} can not be instantiated")
 
     class DefaultProcess(_Singleton):
-        """ Key for the default process in GP objects """
+        """ Key of the default process. """
         pass
 
     def _checklinear(self, func, inshapes, elementwise=False):

@@ -18,7 +18,6 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
-import warnings
 
 import gvar
 import numpy
@@ -124,6 +123,6 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
 
 def sample(*args, **kw):
     """
-    Shortcut for ``next(raniter(*args, **kw))``.
+    Shortcut for ``next(raniter(...))``.
     """
     return next(raniter(*args, n=1, **kw))
