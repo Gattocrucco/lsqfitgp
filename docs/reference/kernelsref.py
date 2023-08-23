@@ -43,8 +43,8 @@ out = """\
 
 .. _kernels:
 
-Kernels reference
-=================
+Predefined kernels
+==================
 
 This is a list of all the specific kernels implemented in :mod:`lsqfitgp`.
 

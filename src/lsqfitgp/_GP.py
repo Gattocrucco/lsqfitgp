@@ -42,44 +42,6 @@ __all__ = [
     'GP',
 ]
 
-# TODO make many methods that do not return anything return self, to allow
-# a polars-like syntax as lgp.GP(kernel).addx(x, 0).addx(x, 1).prior() => make
-# GP immutable and return a new GP, with non-copies of actual data? Kernels, jax
-# arrays and StructuredArray are already immutable.
-
-# TODO change the method names that define processes to def* instead of add*,
-# such that the distinction between the two kinds is clear, and take the
-# occasion to break the parameter order: make a coherent standard
-# name of new thing, operation, name of old thing, *, options
-#
-# defproc(key, kernel, *, deriv=0)
-# defproctransf(key, ops, *, deriv=0)
-# defproclintransf(key, transf, procs, *, deriv=0, checklin=False)
-# defprocderiv(key, deriv, proc)
-# defprocxtransf(key, transf, proc)
-# defprocrescale(key, scalefun, proc)
-#
-# Do not use DefaultProcess implicitly, document it as GP.DefaultProcess that
-# is used as default by instatiation methods
-
-# TODO split this files into various files with partial classes:
-# _GPProcesses for stuff dealing with processes and kernels
-# _GPElements for stuff dealing with evaluated processes
-# _GPCompute for prior, pred, solver, likelihood
-# _GPBase with the rest
-# GP inherits all with multiple inheritance. This should also fix
-# isinstance(..., GP) breaking under autoreload.
-
-# TODO methods to implement linear models. The elegant way to do this is with
-# kernels taking a formula, but that would not take advantage of the fact that
-# the kernel is low-rank if I re-implement Woodbury. I need to define an element
-# for the coefficients, and then the process works by definining finite
-# transformations of this element instead of going through the usual kernel
-# route.
-#
-# A more general route would be `features` mechanism for kernels: a kernel can
-# provide itself a way to evaluate a covariance matrix as a low-rank product.
-
 class GP:
     """
     
@@ -1937,3 +1899,87 @@ class GP:
         
         # TODO extend the interface to use composite decompositions
         # TODO accept a bufferdict for covariance matrix
+
+
+# TODO planned rewrite:
+# Methods:
+#     Processes
+#         .defproc(key, *args, *, deriv=0)
+#             *args is either (mean, kernel) or just (kernel,). The mean is an
+#             ordinary callable.
+#         .defproctransf(key, ops, *, deriv=0)
+#         .defproclintransf(key, transf, procs, *, deriv=0, checklin=False)
+#         .defprocderiv(key, deriv, proc)
+#         .defprocxtransf(key, transf, proc)
+#         .defprocrescale(key, scalefun, proc)
+
+#         Do not use DefaultProcess implicitly, document it instead and let the
+#         user pass it explicitly, this improves readability of the user code.
+
+#         All methods return a new GP object. Make a decorator @_newself that
+#         creates the clone, passes it, and returns it.
+#     Elements
+#         The signatures are mostly ok; I need to leave key behind for consistency
+#         because addx and addcov need it to support elegantly dictionary
+#         arguments.
+#     Implementation split
+#         In order of inheritance, left to right:
+
+#         _GPCompute for inference and decomposition
+#         _GPElements for stuff dealing with evaluated processes
+#         _GPProcesses for stuff dealing with processes and kernels
+#         _GPBase with the rest, shared utils, base __init__ and _clone
+
+#         GP -> (Compute, Elements, Processes) -> Base
+        
+#         GP does not add anything, but it lives in its own file to fix
+#         isinstance(..., GP) under autoreload.
+#     Inspection
+#         .elements() return a read-only mapping of keys -> named tuples with
+#             fields ancestors=(tuple of keys), kind=str (x, cov, transf), shape,
+#             x (array or None), proc (proc key or None). The mapping generates
+#             the descriptions on the fly in __getitem__.
+#         .processes() analogous with ancestors, kind (kernel, transf), kernel
+#             (Kernel or None)
+#         .dtype the x dtype, None if no x passed yet
+#         .kernel(*args) if one key a Kernel, if two a CrossKernel
+#         .meanfunc(prockey)
+#         .__repr__() -> multiline readable description
+#     Immutability
+#         All instance attributes must be created in __init__ for clarity, and
+#         are container-copied by ._clone().
+
+#         Each parent class defines its own __init__ and _clone(), and they all
+#         call super() but the base.
+#     Mean functions
+#         .__init__(*args, ...) supports either only the kernel or the mean and
+#         the kernel of the DefaultProcess.
+#     Conditioning
+#         .condition(given, givencov=None) -> new GP, with appended new keys and
+#             values to condition on. given and givencov keep dict layout like
+#             now.
+#         .extend(given, givencov=None) -> new GP, like current predfromfit. It
+#             sets a flag about the kind of conditioning in the list of given
+#             stuff. I have to derive how to condition and extend together.
+#     Distribution access
+#         .mean(key) -> array, the key can be a pytree
+#         .cov(*args) -> if one arg: square covariance, if two args: cross
+#             covariance. The keys can be pytrees, and the result is the pytree
+#             product with matrices as leaves.
+#         .gvars(key, keepcorr=True) -> tree of arrays of gvars. keepcorr=True
+#             won't work if condition was not passed gvars, so this default raises
+#             an error if that happens.
+#         .sample(key, n=1) -> array, key can be a pytree. caches the decomp.
+#     Density
+#         ._decomp(y, ycov=None) -> resid, cov (like _prior_decomp now)
+#         .logpdf(y, ycov=None) -> like marginal_likelihood now
+
+# TODO methods to implement linear models. The elegant way to do this is with
+# kernels taking a formula, but that would not take advantage of the fact that
+# the kernel is low-rank if I re-implement Woodbury. I need to define an element
+# for the coefficients, and then the process works by definining finite
+# transformations of this element instead of going through the usual kernel
+# route.
+#
+# A more general route would be `features` mechanism for kernels: a kernel can
+# provide itself a way to evaluate a covariance matrix as a low-rank product.

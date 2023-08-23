@@ -206,6 +206,9 @@ tree_util.register_pytree_node(gvar.BufferDict, BufferDictPyTreeDef.flatten, Buf
 # initialization altogether and set all the internal attributes to make it a
 # proper pytree but also compatible with tracing.
 
+# TODO am I passing BufferDict through jax interfaces anymore? Maybe I could
+# drop it altogether. It's cleaner.
+
 def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
     """
     

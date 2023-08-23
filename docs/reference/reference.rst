@@ -26,7 +26,6 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
 
 .. toctree::
     :maxdepth: 1
-    :numbered:
 
     kernelsref.rst
     kernel.rst

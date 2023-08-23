@@ -517,6 +517,7 @@ class Distr(_base.DistrBase):
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kw):
         if method != '__call__' or kw or ufunc.signature:
+            # TODO jax 0.4.15 should introduce ufunc methods
             return NotImplemented
         ufunc_class = UFunc.make_subclass(ufunc)
         return ufunc_class(*inputs)
