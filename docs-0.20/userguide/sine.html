@@ -177,7 +177,7 @@ we created before:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gproc</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>So, we add points using the <code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code> method of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> objects. It
+<p>So, we add points using the <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a> method of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> objects. It
 won’t be very useful to only ask for the process values on the data—we
 already know the answer there—so we add another array of points, more finely
 spaced, and more extended:</p>
@@ -186,7 +186,7 @@ spaced, and more extended:</p>
 </pre></div>
 </div>
 <p>When adding <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">xpred</span></code>, we also provided two strings to
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code>, <code class="docutils literal notranslate"><span class="pre">'foo'</span></code> and <code class="docutils literal notranslate"><span class="pre">'bar'</span></code>. These have no special meaning, they
+<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a>, <code class="docutils literal notranslate"><span class="pre">'foo'</span></code> and <code class="docutils literal notranslate"><span class="pre">'bar'</span></code>. These have no special meaning, they
 are just labels the <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object uses to distinguish the various arrays
 you add to it. You can think of them as variable names.</p>
 <p>When calling <code class="xref py py-obj docutils literal notranslate"><span class="pre">addx</span></code> the second time, we did <code class="docutils literal notranslate"><span class="pre">gproc</span> <span class="pre">=</span> <span class="pre">gproc.addx(...)</span></code>, instead
@@ -199,7 +199,7 @@ In Python this paradigm is employed, e.g., by strings.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ypred</span> <span class="o">=</span> <span class="n">gproc</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>So <code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code> takes two arguments: the first is a Python
+<p>So <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a> takes two arguments: the first is a Python
 dictionary with labels as keys and arrays of function values as values, the
 second is the label of the points on which we want the estimate.</p>
 <p>Now we make a plot of everything:</p>
@@ -223,7 +223,7 @@ second is the label of the points on which we want the estimate.</p>
 </div>
 <img alt="../_images/sine1.png" src="../_images/sine1.png" />
 <p>To plot <code class="docutils literal notranslate"><span class="pre">ypred</span></code>, we did <code class="docutils literal notranslate"><span class="pre">ypred_mean</span> <span class="pre">=</span> <span class="pre">gvar.mean(ypred)</span></code>. This is because the
-output of <code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code> is not an array of numbers, but an array of
+output of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a> is not an array of numbers, but an array of
 <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v11.11.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gvar.GVar</span></code></a> objects. <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables represent Gaussian
 distributions; <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.mean" title="(in gvar v11.11.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.mean()</span></code></a> extracts the mean of the distribution. Let’s
 make an error band for the fit by computing the standard deviations with

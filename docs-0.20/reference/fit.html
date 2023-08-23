@@ -14,7 +14,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Random sampling" href="raniter.html" />
-    <link rel="prev" title="Structured arrays wrapping" href="array.html" />
+    <link rel="prev" title="Structured arrays" href="array.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -54,7 +54,7 @@
 <li class="toctree-l2"><a class="reference internal" href="kernelop.html">Kernel operations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Fitting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="raniter.html">Random sampling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="copula.html">Gaussian copulas</a></li>
@@ -71,7 +71,7 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="reference.html">Reference manual</a><ul>
-      <li>Previous: <a href="array.html" title="previous chapter">Structured arrays wrapping</a></li>
+      <li>Previous: <a href="array.html" title="previous chapter">Structured arrays</a></li>
       <li>Next: <a href="raniter.html" title="next chapter">Random sampling</a></li>
   </ul></li>
   </ul></li>
@@ -105,7 +105,7 @@
     <ul>
         <li>
           &larr;
-          <a href="array.html" title="Previous document">Structured arrays wrapping</a>
+          <a href="array.html" title="Previous document">Structured arrays</a>
         </li>
         <li>
           <a href="raniter.html" title="Next document">Random sampling</a>
@@ -139,11 +139,11 @@ argument <code class="docutils literal notranslate"><span class="pre">hyperprior
 use jax.numpy and jax.scipy instead of plain numpy/scipy and avoid
 assignments to arrays.</p>
 </dd>
-<dt><strong>data</strong><span class="classifier">dict, tuple or callable</span></dt><dd><p>Dictionary of data that is passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code> on
+<dt><strong>data</strong><span class="classifier">dict, tuple or callable</span></dt><dd><p>Dictionary of data that is passed to <a class="reference internal" href="gp.html#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code></a> on
 the GP object returned by <code class="docutils literal notranslate"><span class="pre">gpfactory</span></code>. If a tuple, it contains the
-first two arguments to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code>. If a callable, it
+first two arguments to <a class="reference internal" href="gp.html#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code></a>. If a callable, it
 is called with the same arguments of <code class="docutils literal notranslate"><span class="pre">gpfactory</span></code> and must return
-the argument(s) for <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code>.</p>
+the argument(s) for <a class="reference internal" href="gp.html#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code></a>.</p>
 </dd>
 <dt><strong>raises</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), raise an error when the minimization fails.
 Otherwise, use the last point of the minimization as result.</p>
@@ -213,7 +213,7 @@ indicating which hyperparameters are kept fixed to their initial
 value. Scalars and arrays are broadcasted to the shape of
 <code class="docutils literal notranslate"><span class="pre">hyperprior</span></code>. If a dictionary, missing keys are treated as False.</p>
 </dd>
-<dt><strong>mlkw</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code>.</p>
+<dt><strong>mlkw</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <a class="reference internal" href="gp.html#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code></a>.</p>
 </dd>
 <dt><strong>forward</strong><span class="classifier">bool</span></dt><dd><p>Use forward instead of backward (default) derivatives. Typically,
 forward is faster with a small number of parameters.</p>
@@ -268,7 +268,7 @@ parameters were kept fixed to the values in <code class="docutils literal notran
     <ul>
         <li>
           &larr;
-          <a href="array.html" title="Previous document">Structured arrays wrapping</a>
+          <a href="array.html" title="Previous document">Structured arrays</a>
         </li>
         <li>
           <a href="raniter.html" title="Next document">Random sampling</a>

@@ -123,7 +123,7 @@
   <section id="taking-integrals">
 <span id="integrals"></span><h1><span class="section-number">5. </span>Taking integrals<a class="headerlink" href="#taking-integrals" title="Link to this heading">¶</a></h1>
 <p>There is no “direct” support for integrals in <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>. There’s not
-something like a <code class="docutils literal notranslate"><span class="pre">deriv=-1</span></code> option for <code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addx()</span></code>. However, since the
+something like a <code class="docutils literal notranslate"><span class="pre">deriv=-1</span></code> option for <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.addx()</span></code></a>. However, since the
 data can be specified for the derivative of the process, it is possible to do
 integrals by defining the process for the integral and then fitting its
 derivative.</p>
@@ -182,17 +182,17 @@ deviation.</p>
 <span class="nb">print</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Output: <code class="docutils literal notranslate"><span class="pre">-1.9157(27)</span></code>. What did we do? <code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code> is similar to
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code>, but instead of adding new points where the process is
+<p>Output: <code class="docutils literal notranslate"><span class="pre">-1.9157(27)</span></code>. What did we do? <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a> is similar to
+<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a>, but instead of adding new points where the process is
 evaluated, it defines a linear transformation of already specified process
 values. The first argument is <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">x:</span> <span class="pre">x[-1]</span> <span class="pre">-</span> <span class="pre">x[0]</span></code>, a function which
 takes in an array and computes the same difference we computed by hand before.
 The second argument is <code class="docutils literal notranslate"><span class="pre">['primitive']</span></code>, a list of labels that indicate which
 arrays are passed to the function. The last argument is the name of the newly
-defined array of process values, as in <code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code>.</p>
-<p>Using <code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code> for this is overkill, since transformations
+defined array of process values, as in <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a>.</p>
+<p>Using <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a> for this is overkill, since transformations
 applied to the posterior can always be applied directly to the arrays returned
-by <code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code>. It becomes useful when there’s data to fit against
+by <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a>. It becomes useful when there’s data to fit against
 the transformed quantities.</p>
 <p>Example: you already know the area of the function. Let’s try this with a
 Cauchy pdf, pretending we only know its area and some values of the function
