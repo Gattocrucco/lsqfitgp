@@ -123,9 +123,9 @@
             
   <section id="nonlinear-models">
 <span id="nonlinear"></span><h1><span class="section-number">13. </span>Nonlinear models<a class="headerlink" href="#nonlinear-models" title="Link to this heading">¶</a></h1>
-<p>Using <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a> we can define a Gaussian process. Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.addlintransf</span></code> we can
+<p>Using <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a> we can define a Gaussian process. Using <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.addlintransf</span></code></a> we can
 represent finite linear transformations of the process, and we can take
-derivatives with <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.addx</span></code>. This means that we can only do linear operations on
+derivatives with <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.addx</span></code></a>. This means that we can only do linear operations on
 the process before putting the data in.</p>
 <p>A common non-linear operation is putting a boundary on the possible data
 values. Gaussian distributions don’t play nicely with boundaries—they are
@@ -249,8 +249,8 @@ Settings:
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gpplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromfit</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;gproc&#39;</span><span class="p">]},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>This time we use <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.predfromfit</span></code> instead of the usual
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.predfromdata</span></code>. This method takes into account that the distribution
+<p>This time we use <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromfit" title="lsqfitgp.GP.predfromfit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.predfromfit</span></code></a> instead of the usual
+<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.predfromdata</span></code></a>. This method takes into account that the distribution
 represented by <code class="docutils literal notranslate"><span class="pre">fit.p['gproc']</span></code> is not the uncertainty of some datapoints,
 but is already the distribution of some points of our process. We want to
 “extend” <code class="docutils literal notranslate"><span class="pre">fit.p['gproc']</span></code>, not condition on it.</p>

@@ -21,17 +21,14 @@
 
 .. _array:
 
-Structured arrays wrapping
-==========================
+Structured arrays
+=================
 
-Taking derivatives on structured numpy arrays is not supported by :mod:`jax`,
+Taking derivatives on structured numpy arrays is not supported by `jax`,
 so structured arrays are internally wrapped with :class:`StructuredArray`.
 
-StructuredArray
----------------
-
 .. autoclass:: StructuredArray
-    :members: from_dataframe
+    :members: from_dataframe, from_dict
 
 Functions
 ---------

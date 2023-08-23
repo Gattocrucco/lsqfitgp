@@ -26,3 +26,4 @@ Gaussian process class
 
 .. autoclass:: GP
     :members:
+    :inherited-members:

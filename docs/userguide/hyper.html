@@ -134,7 +134,7 @@ mean a different kernel and so a different Gaussian process.</p>
 <p>This kind of parameters that reside on a “higher” level and can not be fitted
 are called <em>hyperparameters</em>. In this context the “normal”, non-hyper parameters
 are the values of the Gaussian process on the points you ask for them with
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code>.</p>
+<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code></a>.</p>
 <p>From a statistical point of view there’s no difference between parameters and
 hyperparameters, it is a practical categorization that comes up when the
 particular statistical tool you are using can not fit everything (our case), or
@@ -181,7 +181,7 @@ number: if we put <code class="docutils literal notranslate"><span class="pre">'
 explore negative values too, and we would get a loud error from <a class="reference internal" href="../reference/kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a>.</p>
 <p>Finally, we give everything to the class <a class="reference internal" href="../reference/fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a>: the hyperprior,
 the gp-creating function, and a dictionary of data like we would pass to
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code>. The attribute <code class="docutils literal notranslate"><span class="pre">p</span></code> is a dictionary containing the fit
+<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a>. The attribute <code class="docutils literal notranslate"><span class="pre">p</span></code> is a dictionary containing the fit
 result for the hyperparameters.</p>
 <p>Now that we have found the optimal scale, we can use it to create a gp object
 and take some samples. However, since the hyperparameter has an uncertainty,

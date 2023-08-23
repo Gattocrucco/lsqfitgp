@@ -123,8 +123,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/copula.html#lsqfitgp.copula.DistrBase.add_distribution">add_distribution() (lsqfitgp.copula.DistrBase method)</a>
 </li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.addcov">addcov() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.addlintransf">addlintransf() (lsqfitgp.GP method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference/gp.html#lsqfitgp.GP.addtransf">addtransf() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.addx">addx() (lsqfitgp.GP method)</a>
+</li>
       <li><a href="reference/kernelsref.html#lsqfitgp.AR">AR (class in lsqfitgp)</a>
 </li>
       <li><a href="reference/array.html#lsqfitgp.asarray">asarray() (in module lsqfitgp)</a>
@@ -201,10 +209,26 @@
       </ul></li>
       <li><a href="reference/kernelsref.html#lsqfitgp.Decaying">Decaying (class in lsqfitgp)</a>
 </li>
-      <li><a href="reference/deriv.html#lsqfitgp.Deriv">Deriv (class in lsqfitgp)</a>
+      <li><a href="reference/gp.html#lsqfitgp.GP.decompose">decompose() (lsqfitgp.GP class method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.defkernelop">defkernelop() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.defproc">defproc() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.defprocderiv">defprocderiv() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.defproclintransf">defproclintransf() (lsqfitgp.GP method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference/gp.html#lsqfitgp.GP.defprocrescale">defprocrescale() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.defproctransf">defproctransf() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.defprocxtransf">defprocxtransf() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/deriv.html#lsqfitgp.Deriv">Deriv (class in lsqfitgp)</a>
+</li>
       <li><a href="reference/kernel.html#lsqfitgp.Kernel.diff">diff() (lsqfitgp.Kernel method)</a>
 </li>
       <li><a href="reference/copula.html#lsqfitgp.copula.dirichlet">dirichlet (class in lsqfitgp.copula)</a>
@@ -243,11 +267,13 @@
         <li><a href="reference/kernelsref.html#lsqfitgp.Zeta.fourier">(lsqfitgp.Zeta method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/kernelsref.html#lsqfitgp.FracBrownian">FracBrownian (class in lsqfitgp)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/array.html#lsqfitgp.StructuredArray.from_dataframe">from_dataframe() (lsqfitgp.StructuredArray class method)</a>
+</li>
+      <li><a href="reference/array.html#lsqfitgp.StructuredArray.from_dict">from_dict() (lsqfitgp.StructuredArray class method)</a>
 </li>
       <li><a href="reference/gvarext.html#lsqfitgp.from_jacobian">from_jacobian() (in module lsqfitgp)</a>
 </li>
@@ -265,16 +291,18 @@
 </li>
       <li><a href="reference/kernelsref.html#lsqfitgp.Gibbs">Gibbs (class in lsqfitgp)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/gp.html#lsqfitgp.GP">GP (class in lsqfitgp)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/bayestree.html#lsqfitgp.bayestree.bart.gp">gp() (lsqfitgp.bayestree.bart method)</a>
 
       <ul>
         <li><a href="reference/bayestree.html#lsqfitgp.bayestree.bcf.gp">(lsqfitgp.bayestree.bcf method)</a>
 </li>
       </ul></li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.DefaultProcess">GP.DefaultProcess (class in lsqfitgp)</a>
+</li>
       <li><a href="reference/gvarext.html#lsqfitgp.gvar_gufunc">gvar_gufunc() (in module lsqfitgp)</a>
 </li>
       <li><a href="reference/copula.html#lsqfitgp.copula.DistrBase.gvars">gvars() (lsqfitgp.copula.DistrBase method)</a>
@@ -378,12 +406,14 @@
 </li>
       <li><a href="reference/copula.html#lsqfitgp.copula.makedict">makedict() (in module lsqfitgp.copula)</a>
 </li>
-      <li><a href="reference/kernelsref.html#lsqfitgp.Matern">Matern (class in lsqfitgp)</a>
+      <li><a href="reference/gp.html#lsqfitgp.GP.marginal_likelihood">marginal_likelihood() (lsqfitgp.GP method)</a>
 </li>
-      <li><a href="reference/kernelsref.html#lsqfitgp.Maternp">Maternp (class in lsqfitgp)</a>
+      <li><a href="reference/kernelsref.html#lsqfitgp.Matern">Matern (class in lsqfitgp)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference/kernelsref.html#lsqfitgp.Maternp">Maternp (class in lsqfitgp)</a>
+</li>
       <li>
     module
 
@@ -423,18 +453,26 @@
 </li>
       <li><a href="reference/kernelsref.html#lsqfitgp.AR.phi_from_gamma">phi_from_gamma() (lsqfitgp.AR class method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/kernelsref.html#lsqfitgp.AR.phi_from_roots">phi_from_roots() (lsqfitgp.AR class method)</a>
 </li>
       <li><a href="reference/kernelsref.html#lsqfitgp.Pink">Pink (class in lsqfitgp)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/bayestree.html#lsqfitgp.bayestree.bart.pred">pred() (lsqfitgp.bayestree.bart method)</a>
 
       <ul>
         <li><a href="reference/bayestree.html#lsqfitgp.bayestree.bcf.pred">(lsqfitgp.bayestree.bcf method)</a>
 </li>
+        <li><a href="reference/gp.html#lsqfitgp.GP.pred">(lsqfitgp.GP method)</a>
+</li>
       </ul></li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.predfromdata">predfromdata() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.predfromfit">predfromfit() (lsqfitgp.GP method)</a>
+</li>
+      <li><a href="reference/gp.html#lsqfitgp.GP.prior">prior() (lsqfitgp.GP method)</a>
+</li>
   </ul></td>
 </tr></table>
 

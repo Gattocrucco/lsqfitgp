@@ -55,7 +55,7 @@
 <li class="toctree-l2"><a class="reference internal" href="kernelop.html">Kernel operations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays</a></li>
 <li class="toctree-l2"><a class="reference internal" href="fit.html">Fitting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="raniter.html">Random sampling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="copula.html">Gaussian copulas</a></li>
@@ -397,7 +397,7 @@ overrides the defaults.</p>
 where <code class="docutils literal notranslate"><span class="pre">hp</span></code> is a dictionary of hyperparameters, and <code class="docutils literal notranslate"><span class="pre">gp</span></code> is a
 <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a> object under construction, and is expected to return
 a modified <code class="docutils literal notranslate"><span class="pre">gp</span></code> with a new process named <code class="docutils literal notranslate"><span class="pre">'aux'</span></code> defined with
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">defproc</span></code> or similar. The process is added to the
+<a class="reference internal" href="gp.html#lsqfitgp.GP.defproc" title="lsqfitgp.GP.defproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">defproc</span></code></a> or similar. The process is added to the
 regression model. The input to the process is a structured array
 with fields:</p>
 <dl class="simple">

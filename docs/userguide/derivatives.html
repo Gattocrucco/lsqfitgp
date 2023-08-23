@@ -143,7 +143,7 @@ automatic derivative calculations are implemented with <a class="reference exter
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>We said <code class="docutils literal notranslate"><span class="pre">deriv=1</span></code> to <code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code>, easy as that. Let’s plot a sample from
+<p>We said <code class="docutils literal notranslate"><span class="pre">deriv=1</span></code> to <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a>, easy as that. Let’s plot a sample from
 the prior:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
@@ -162,7 +162,7 @@ the prior:</p>
 </pre></div>
 </div>
 <img alt="../_images/derivatives1.png" src="../_images/derivatives1.png" />
-<p>This time we used <code class="xref py py-meth docutils literal notranslate"><span class="pre">prior()</span></code> without arguments, i.e., we did not specify
+<p>This time we used <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prior()</span></code></a> without arguments, i.e., we did not specify
 if we wanted <code class="docutils literal notranslate"><span class="pre">'foo'</span></code> or <code class="docutils literal notranslate"><span class="pre">'bar'</span></code>. If you print <code class="docutils literal notranslate"><span class="pre">sample</span></code>, you will see it
 is a dictionary of arrays:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">sample</span><span class="p">))</span>
