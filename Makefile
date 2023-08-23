@@ -80,7 +80,7 @@ docs/reference/copula.rst: docs/reference/copula.py src/lsqfitgp/copula/*.py
 docs/examplesref.rst: docs/examplesref.py src/lsqfitgp/*.py src/lsqfitgp/*/*.py
 	$(DOCSPY) --append $<
 
-docs/reference/kernelsref.rst: docs/reference/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_patch_jax/*.py src/lsqfitgp/_special/*.py
+docs/reference/kernelsref.rst: docs/reference/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_jaxext/*.py src/lsqfitgp/_special/*.py
 	$(DOCSPY) --append $<
 
 docs: docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst

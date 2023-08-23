@@ -1,4 +1,4 @@
-.. lsqfitgp/docs/reference.rst
+.. lsqfitgp/docs/reference/reference.rst
 ..
 .. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
@@ -38,5 +38,6 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     raniter.rst
     copula.rst
     bayestree.rst
+    gvarext.rst
 
 .. TODO decompositions reference under "Linear Algebra"

@@ -1,4 +1,4 @@
-.. lsqfitgp/docs/bayestree.rst
+.. lsqfitgp/docs/reference/bayestree.rst
 ..
 .. Copyright (c) 2023, Giacomo Petrillo
 ..

@@ -1,4 +1,4 @@
-# lsqfitgp/docs/kernelsref.py
+# lsqfitgp/docs/reference/kernelsref.py
 #
 # Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #

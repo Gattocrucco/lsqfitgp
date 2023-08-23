@@ -20,6 +20,7 @@
 import functools
 import textwrap
 import string
+import contextlib
 
 import jax
 import gvar
@@ -27,6 +28,13 @@ from jax import numpy as jnp
 import numpy
 
 from . import _signature
+
+__all__ = [
+    'jacobian',
+    'from_jacobian',
+    'gvar_gufunc',
+    'switchgvar',
+]
 
 def _getsvec(x):
     """
@@ -58,14 +66,18 @@ def jacobian(g):
     g : array_like
         An array of numbers or gvars.
     
-    Return
-    ------
+    Returns
+    -------
     jac : array
         The shape is g.shape + (m,), where m is the total number of primary
         gvars that g depends on.
     indices : (m,) int array
         The indices that map the last axis of jac to primary gvars in the
         global covariance matrix.
+
+    See also
+    --------
+    from_jacobian
     """
     g = numpy.asarray(g)
     v = _merge_svec(g.flat)
@@ -91,10 +103,14 @@ def from_jacobian(mean, jac, indices):
     indices : (m,) int array
         The indices of the primary gvars.
     
-    Return
-    ------
+    Returns
+    -------
     g : mean.shape array
         The new gvars.
+
+    See also
+    --------
+    jacobian
     """
     cov = gvar.gvar.cov
     mean = numpy.asarray(mean)
@@ -288,3 +304,42 @@ def gvar_gufunc(func, *, signature=None):
     # derivatives when it's not a gvar, i.e., merge the wrappers and cycle over
     # args. Also implement excluded => note that jnp.vectorize only supports
     # positional arguments, excluded takes in only indices, not names
+
+@contextlib.contextmanager
+def switchgvar():
+    """
+    Context manager to keep new gvars in a separate pool.
+
+    Creating new primary gvars fills up memory permanently. This context manager
+    keeps the gvars created within its context in a separate pool that is freed
+    when all such gvars are deleted. They can not be mixed in operations with
+    other gvars created outside of the context.
+    
+    Returns
+    -------
+    gvar : gvar.GVarFactory
+        The new gvar-creating function that uses a new pool. The change is also
+        reflected in the global `gvar.gvar`.
+
+    See also
+    --------
+    gvar.switch_gvar, gvar.restore_gvar
+
+    Examples
+    --------
+
+    >>> x = gvar.gvar(0, 1)
+    >>> with lgp.switchgvar():
+    >>>     y = gvar.gvar(0, 1)
+    >>>     z = gvar.gvar(0, 1)
+    >>> w = gvar.gvar(0, 1)
+    >>> q = y + z  # allowed, y and z created in the same pool
+    >>> p = x + w  # allowed, x and w created in the same pool
+    >>> h = x + y  # x and y created in different pools: this will silently
+    ...            # fail and possibly crash python immediately or later on
+
+    """
+    try:
+        yield gvar.switch_gvar()
+    finally:
+        gvar.restore_gvar()

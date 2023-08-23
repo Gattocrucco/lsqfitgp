@@ -99,6 +99,8 @@ def xfail(cls, meth):
 def skip(cls, meth):
     mark(cls, meth, 'skip')
 
+# TODO drop tryagain because now I'm using a deterministic seed
+
 def tryagain(fun, rep=2, method=False):
     """
     Decorates test `fun` to make it try again in case of failure. Inhibited

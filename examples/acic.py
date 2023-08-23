@@ -1,4 +1,3 @@
-import contextlib
 import pprint
 import pathlib
 
@@ -29,9 +28,9 @@ https://doi.org/10.1353/obs.2023.0023
 dataset = 1
 datapath = pathlib.Path('examples') / 'acic'
 nsamples = 100
-bartkw = dict(fitkw=dict(verbosity=0), kernelkw=dict(intercept=False))
+bartkw = dict(fitkw=dict(verbosity=0))
 artificial_effect_shift = 0
-laplace = True
+laplace = False
 
 # load data
 print('load data...')
@@ -49,12 +48,12 @@ df = df.with_columns(
 )
 
 # drop data to keep the script fast
-# df = (df
-#     .filter((pl
-#         .col('id.practice')
-#         .is_in(pl.col('id.practice').unique().sample(250, seed=20230623))
-#     ))
-# )
+df = (df
+    .filter((pl
+        .col('id.practice')
+        .is_in(pl.col('id.practice').unique().sample(250, seed=20230623))
+    ))
+)
 
 # compute effect as if Z was randomized, i.e., without adjustment
 print('least squares fit...')
@@ -122,7 +121,7 @@ print('\nfit outcome (BCF)...')
 fit_outcome_bcf = lgp.bayestree.bcf(
     y=y,
     z=Xobs['Z'],
-    x_control=Xobs.drop('Z'),
+    x_mu=Xobs.drop('Z'),
     pihat=Xobs_ps['ps'],
     weights=npatients_obs,
     **bartkw,
@@ -137,23 +136,12 @@ strata = (df
     .with_row_count('index')
 )
 
-@contextlib.contextmanager
-def switchgvar():
-    """ Creating new primary gvars fills up memory permanently. This context
-    manager keeps the gvars created within its context in a separate pool that
-    is freed when all such gvars are deleted. They can not be mixed in
-    operations with other gvars created outside of the context. """
-    try:
-        yield gvar.switch_gvar()
-    finally:
-        gvar.restore_gvar()
-
 def compute_satt(fit, *, rng=None, **predkw):
 
     # create GP at MAP/sampled hypers and get imputed outcomes for the treated
     kw = dict(weights=npatients_mis, error=True, format='gvar', **predkw)
     if rng is not None:
-        with switchgvar():
+        with lgp.switchgvar():
             ymis = fit.pred(**kw, hp='sample', rng=rng)
     else:
         ymis = fit.pred(**kw)
@@ -183,7 +171,7 @@ print('\ncompute satt...')
 # compute the SATT at marginal MAP hyperparameters
 satt = compute_satt(fit_outcome, x_test=Xmis)
 satt_ps = compute_satt(fit_outcome_ps, x_test=Xmis_ps)
-bcf_predkw = dict(z=Xmis['Z'], x_control=Xmis.drop('Z'), pihat=Xmis_ps['ps'])
+bcf_predkw = dict(z=Xmis['Z'], x_mu=Xmis.drop('Z'), pihat=Xmis_ps['ps'])
 satt_bcf = compute_satt(fit_outcome_bcf, **bcf_predkw)
 
 # compute the SATT sampling the hyperparameters with the Laplace approx

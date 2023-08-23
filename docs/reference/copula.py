@@ -1,4 +1,4 @@
-# lsqfitgp/docs/copula.py
+# lsqfitgp/docs/reference/copula.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #

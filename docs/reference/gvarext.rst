@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/reference/deriv.rst
+.. lsqfitgp/docs/reference/gvarext.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -19,9 +19,10 @@
 
 .. currentmodule:: lsqfitgp
 
-.. _derivspec:
+Gvar extensions
+===============
 
-Derivative specification
-========================
-
-.. autoclass:: Deriv
+.. autofunction:: gvar_gufunc
+.. autofunction:: switchgvar
+.. autofunction:: jacobian
+.. autofunction:: from_jacobian

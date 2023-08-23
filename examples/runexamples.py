@@ -21,46 +21,42 @@
 in the same directory of each corresponding script."""
 
 import sys
-import os
 import warnings
 import gc
+import pathlib
 
 import numpy as np
 from matplotlib import pyplot as plt
 import gvar
+import lsqfitgp as lgp
 
 warnings.filterwarnings('ignore', r'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure\.')
 
-class SwitchGVar:
-    __enter__ = lambda _: gvar.switch_gvar()
-    __exit__ = lambda *_: gvar.restore_gvar()
-
 for file in sys.argv[1:]:
+
+    file = pathlib.Path(file)
 
     # load source file
     print('\nrunexamples.py: running {}...'.format(file))
-    with open(file, 'r') as stream:
-        code = stream.read()
+    code = file.read_text()
     
     # reset working environment and run
-    with SwitchGVar():
+    with lgp.switchgvar():
         plt.close('all')
         np.random.seed(0)
         gvar.ranseed(0)
         globals_dict = {}
         gc.collect()
         exec(code, globals_dict)
+        # TODO try to use the stdlib runpy module
     
     # save figures
     nums = plt.get_fignums()
-    path, name = os.path.split(file)
-    base, _ = os.path.splitext(name)
-    prefix = os.path.join(path, 'plot', base)
-    directory, _ = os.path.split(prefix)
-    os.makedirs(directory, exist_ok=True)
+    directory = file.parent / 'plot'
+    directory.mkdir(exist_ok=True)
     for num in nums:
         fig = plt.figure(num)
         suffix = f'-{num}' if num > 1 else ''
-        out = f'{prefix}{suffix}.png'
+        out = directory / f'{file.stem}{suffix}.png'
         print(f'runexamples.py: write {out}')
         fig.savefig(out)
