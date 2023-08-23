@@ -23,7 +23,7 @@ from jax import tree_util
 import jax
 from pytest import mark
 
-from lsqfitgp import _patch_gvar
+from lsqfitgp import _gvarext
 
 from . import util
 
@@ -33,8 +33,8 @@ def check_jacobian(nprim, shape, rng, *, pnz=1):
     t = rng.standard_normal((*shape, nprim))
     t[rng.binomial(1, 1 - pnz, t.shape).astype(bool)] = 0
     y = t @ x
-    jac, indices = _patch_gvar.jacobian(y)
-    y2 = _patch_gvar.from_jacobian(gvar.mean(y), jac, indices)
+    jac, indices = _gvarext.jacobian(y)
+    y2 = _gvarext.from_jacobian(gvar.mean(y), jac, indices)
     util.assert_same_gvars(y, y2, atol=1e-16)
 
 def test_jacobian(rng):

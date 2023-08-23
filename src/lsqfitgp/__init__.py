@@ -25,8 +25,9 @@ See the manual at https://gattocrucco.github.io/lsqfitgp/docs
 
 __version__ = '0.20.dev0'
 
-from . import _patch_jax # keep first due to pre-import jax configs
-from ._patch_gvar import gvar_gufunc
+ # these first because they modify global state
+from . import _patch_jax
+from . import _patch_gvar
 
 from ._GP import *
 from ._Kernel import *
@@ -35,6 +36,7 @@ from ._array import *
 from ._fit import *
 from ._Deriv import *
 from ._fastraniter import *
+from ._gvarext import gvar_gufunc
 
 from . import copula
 from . import bayestree

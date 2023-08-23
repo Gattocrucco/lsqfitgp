@@ -31,7 +31,7 @@ import numpy
 import jax
 from jax import numpy as jnp
 
-from .. import _patch_gvar
+from .. import _gvarext
 from .. import _array
 from .. import _signature
 from . import _base
@@ -396,7 +396,7 @@ class Distr(_base.DistrBase):
         signature = f'({shapestr(self.in_shape)})->({shapestr(self.shape)})'
 
         # wrap to support gvars
-        @functools.partial(_patch_gvar.gvar_gufunc, signature=signature)
+        @functools.partial(_gvarext.gvar_gufunc, signature=signature)
         # @jax.jit
         @functools.partial(jnp.vectorize, signature=signature)
         def _partial_invfcn(x):

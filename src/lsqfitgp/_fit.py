@@ -34,7 +34,7 @@ from jax import tree_util
 from . import _GP
 from . import _linalg
 from . import _jaxext
-from . import _patch_gvar
+from . import _gvarext
 from . import _array
 
 __all__ = [
@@ -326,7 +326,7 @@ class empbayes_fit(Logger):
 
         # tabulate hyperparameter prior and posterior
         if self._verbosity >= 2:
-            self.log(_patch_gvar.tabulate_together(
+            self.log(_gvarext.tabulate_together(
                 self.prior, self.p,
                 headers=['param', 'prior', 'posterior'],
             )) # TODO replace tabulate_toegether with something more flexible I
@@ -526,10 +526,10 @@ class empbayes_fit(Logger):
         def unflat(x):
             assert x.ndim == 1
             if x.dtype == object:
-                jac, indices = _patch_gvar.jacobian(x)
+                jac, indices = _gvarext.jacobian(x)
                 xmean = mean + dec.correlate(gvar.mean(x))
                 xjac = dec.correlate(jac)
-                x = _patch_gvar.from_jacobian(xmean, xjac, indices)
+                x = _gvarext.from_jacobian(xmean, xjac, indices)
                 y = numpy.empty(flatfix.size, x.dtype)
                 y[unfixed_indices] = x
                 y[fixed_indices] = fixed_values

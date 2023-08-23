@@ -28,7 +28,7 @@ from jax import numpy as jnp
 import gvar
 
 from .. import _array
-from .. import _patch_gvar
+from .. import _gvarext
 from . import _base
 
 class Copula(_base.DistrBase):
@@ -216,7 +216,7 @@ class Copula(_base.DistrBase):
                 
                 # unpack the gvars
                 in_mean = gvar.mean(x)
-                in_jac, indices = _patch_gvar.jacobian(x)
+                in_jac, indices = _gvarext.jacobian(x)
 
                 # apply function
                 out_mean = partial_invfcn_1(in_mean)
@@ -230,7 +230,7 @@ class Copula(_base.DistrBase):
                     # ... = output
                     # g = gvar indices
                     out_jac = jnp.einsum('b...i,big->b...g', jac, in_jac)
-                    return _patch_gvar.from_jacobian(out_mean, out_jac, indices)
+                    return _gvarext.from_jacobian(out_mean, out_jac, indices)
 
                 return tree_util.tree_map(contract_and_pack, out_mean, jac)
 

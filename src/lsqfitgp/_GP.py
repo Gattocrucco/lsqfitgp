@@ -36,7 +36,7 @@ from . import _linalg
 from . import _array
 from . import _Deriv
 from . import _jaxext
-from . import _patch_gvar
+from . import _gvarext
 
 __all__ = [
     'GP',
@@ -1364,7 +1364,7 @@ class GP:
         
         # Extract jacobian and split it.
         slices = self._slices(x.keys)
-        jac, indices = _patch_gvar.jacobian(g)
+        jac, indices = _gvarext.jacobian(g)
         jacs = [
             jac[s].reshape(self._elements[k].shape + indices.shape)
             for s, k in zip(slices, x.keys)
@@ -1372,7 +1372,7 @@ class GP:
         # TODO the jacobian can be extracted much more efficiently when the
         # elements are _Points or _Cov, since in that case the gvars are primary
         # and contiguous within each block, so each jacobian is the identity + a
-        # range. Then write a function _patch_gvar.merge_jacobians to combine
+        # range. Then write a function _gvarext.merge_jacobians to combine
         # them, which also can be optimized knowing the indices are
         # non-overlapping ranges.
         
@@ -1382,7 +1382,7 @@ class GP:
         assert outjac.shape == x.shape + indices.shape
         
         # Rebuild gvars.
-        outg = _patch_gvar.from_jacobian(numpy.zeros(x.shape), outjac, indices)
+        outg = _gvarext.from_jacobian(numpy.zeros(x.shape), outjac, indices)
         return outg
     
     def _prior(self, key):
