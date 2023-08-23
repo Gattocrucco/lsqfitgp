@@ -45,10 +45,10 @@ suminteg[:, 1] =  1
 
 gp = lgp.GP()
 
-gp.addproc(kernel, 'h')
-gp.addproctransf({'h': 1}, 'primitive of f', deriv='x')
-gp.addproctransf({'h': 1}, 'f', deriv=(2, 'x'))
-gp.addproctransf({'primitive of f': lambda x: x['x'], 'h': -1}, 'primitive of xf(x)')
+gp.defproc('h', kernel)
+gp.defproctransf('primitive of f', {'h': 1}, deriv='x')
+gp.defproctransf('f', {'h': 1}, deriv=(2, 'x'))
+gp.defproctransf('primitive of xf(x)', {'primitive of f': lambda x: x['x'], 'h': -1})
 
 gp.addx(xdata, 'xdata', proc='f')
 gp.addtransf({'xdata': M}, 'data', axes=2)

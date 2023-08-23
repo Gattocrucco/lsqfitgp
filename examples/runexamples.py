@@ -24,6 +24,7 @@ import sys
 import warnings
 import gc
 import pathlib
+import runpy
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -38,17 +39,14 @@ for file in sys.argv[1:]:
 
     # load source file
     print('\nrunexamples.py: running {}...'.format(file))
-    code = file.read_text()
     
     # reset working environment and run
     with lgp.switchgvar():
         plt.close('all')
         np.random.seed(0)
         gvar.ranseed(0)
-        globals_dict = {}
+        runpy.run_path(str(file))
         gc.collect()
-        exec(code, globals_dict)
-        # TODO try to use the stdlib runpy module
     
     # save figures
     nums = plt.get_fignums()

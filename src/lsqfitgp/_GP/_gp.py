@@ -24,46 +24,6 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
     
     Object that represents a Gaussian process over arbitrary input.
     
-    Methods
-    -------
-    addx
-        Add points where the Gaussian process is evaluated.
-    addlintransf
-        Define a finite linear transformation of the evaluated process.
-    addtransf
-        Define a finite linear transformation of the evaluated process with
-        explicit coefficients.
-    addcov
-        Introduce a set of user-provided prior covariance matrix blocks.
-    addproc
-        Define a new independent component of the process.
-    addproctransf
-        Define a pointwise linear transformation of the process with explicit
-        coefficients.
-    addproclintransf
-        Define a pointwise linear transformation of the process.
-    addkernelop
-        Define a transformation of the process through a kernel method.
-    addprocderiv
-        Define a derivative of the process.
-    addprocxtransf
-        Define a process with transformed inputs.
-    addprocrescale
-        Define a rescaled process.
-    prior
-        Compute the prior for the process.
-    pred
-        Compute the posterior for the process.
-    predfromfit
-        Like `pred` with ``fromdata=False``.
-    predfromdata
-        Like `pred` with ``fromdata=True``.
-    marginal_likelihood
-        Compute the marginal likelihood, i.e., the unconditional probability of
-        data.
-    decompose
-        Decompose a pos. def. matrix.
-    
     Parameters
     ----------
     covfun : Kernel or None
@@ -96,6 +56,51 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
     **kw
         Additional keyword arguments are passed to the solver, see `decompose`.
 
+    Methods
+    -------
+    addx
+        Add points where the Gaussian process is evaluated.
+    addlintransf
+        Define a finite linear transformation of the evaluated process.
+    addtransf
+        Define a finite linear transformation of the evaluated process with
+        explicit coefficients.
+    addcov
+        Introduce a set of user-provided prior covariance matrix blocks.
+    def
+        Define a new independent component of the process.
+    deftransf
+        Define a pointwise linear transformation of the process with explicit
+        coefficients.
+    deflintransf
+        Define a pointwise linear transformation of the process.
+    defkernelop
+        Define a transformation of the process through a kernel method.
+    defderiv
+        Define a derivative of the process.
+    defxtransf
+        Define a process with transformed inputs.
+    defrescale
+        Define a rescaled process.
+    prior
+        Compute the prior for the process.
+    pred
+        Compute the posterior for the process.
+    predfromfit
+        Like `pred` with ``fromdata=False``.
+    predfromdata
+        Like `pred` with ``fromdata=True``.
+    marginal_likelihood
+        Compute the marginal likelihood, i.e., the unconditional probability of
+        data.
+    decompose
+        Decompose a pos. def. matrix.
+
+    Attributes
+    ----------
+    DefaultProcess :
+        The unique process key used to represent the default process.
+    
     """
 
     def __init__(self,

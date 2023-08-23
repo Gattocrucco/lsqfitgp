@@ -25,7 +25,7 @@ import gvar
 """Constrain the values of Fourier series coefficients"""
 
 gp = lgp.GP(lgp.Zeta(nu=2.5), checkpos=False) # TODO is this checkpos necessary
-gp.addkernelop('fourier', True, 'F')
+gp.defkernelop('F', 'fourier', True, gp.DefaultProcess)
 x = np.linspace(0, 1, 100)
 gp.addx(x, 'x')
 gp.addx(1, 's1', proc='F')

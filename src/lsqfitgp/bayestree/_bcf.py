@@ -142,7 +142,7 @@ class bcf:
             If specified, this function is called with a pair ``(hp, gp)``,
             where ``hp`` is a dictionary of hyperparameters, and ``gp`` is a
             `~lsqfitgp.GP` object under construction, and is expected to define
-            a new process named ``'aux'`` with `~lsqfitgp.GP.addproc` or
+            a new process named ``'aux'`` with `~lsqfitgp.GP.defproc` or
             similar. The process is added to the regression model. The input to
             the process is a structured array with fields:
 
@@ -392,20 +392,21 @@ class bcf:
                 kernel = _kernels.BART(**kw, **kw_not_overridable)
                 kernel *= (hp[f'lambda_{name}'] * ystd) ** 2
                 
-                gp.addproc(kernel, name)
+                gp.defproc(name, kernel)
 
             if 'm' in hp:
                 kernel_mean = 0 * _kernels.Constant()
             else:
                 kernel_mean = k_sigma_mu ** 2 * _kernels.Constant()
-            gp.addproc(kernel_mean, 'm')
+            gp.defproc('m', kernel_mean)
 
             if gpaux is None:
-                gp.addproc(0 * _kernels.Constant(), 'aux')
+                gp.defproc('aux', 0 * _kernels.Constant())
             else:
                 gpaux(hp, gp)
 
-            gp.addproclintransf(
+            gp.defproclintransf(
+                gp.DefaultProcess,
                 lambda m, mu, tau, aux: lambda x:
                 m(x) + mu(x) + tau(x) * (x['z'] - hp['z_0']) + aux(x),
                 ['m', 'mu', 'tau', 'aux'],

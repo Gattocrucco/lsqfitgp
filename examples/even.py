@@ -29,8 +29,8 @@ import numpy as np
 import gvar
 
 gp = lgp.GP(lgp.ExpQuad())
-gp.addproclintransf(lambda f: lambda x: (f(x) + f(-x)) / 2, [gp.DefaultProcess], 'even')
-gp.addproclintransf(lambda f: lambda x: (f(x) - f(-x)) / 2, [gp.DefaultProcess], 'odd')
+gp.defproclintransf('even', lambda f: lambda x: (f(x) + f(-x)) / 2, [gp.DefaultProcess])
+gp.defproclintransf('odd', lambda f: lambda x: (f(x) - f(-x)) / 2, [gp.DefaultProcess])
 
 x1, y1 = 1, 1
 gp.addx(x1, 'even', proc='even')

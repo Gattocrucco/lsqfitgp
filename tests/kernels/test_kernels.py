@@ -660,7 +660,7 @@ class KernelTestBase(KernelTestABC):
             
             x = np.linspace(0, 1, 100)
             gp = lgp.GP(kernel, posepsfac=200)
-            gp.addkernelop('fourier', True, 'F')
+            gp.defkernelop('F', 'fourier', True, gp.DefaultProcess)
             gp.addx(x, 'x')
             gp.addx(1, 's1', proc='F')
             gp.addx(2, 'c1', proc='F')

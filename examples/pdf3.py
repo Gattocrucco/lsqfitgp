@@ -82,13 +82,13 @@ constraints = {
 
 gp = lgp.GP()
 
-gp.addproc(kernel, 'h')
-gp.addproctransf({'h': 1}, 'primitive', deriv='x'     )
-gp.addproctransf({'h': 1}, 'f'        , deriv=(2, 'x'))
-gp.addproctransf({
+gp.defproc('h', kernel)
+gp.defproctransf('primitive', {'h': 1}, deriv='x'     )
+gp.defproctransf('f'        , {'h': 1}, deriv=(2, 'x'))
+gp.defproctransf('primitive of xf(x)', {
     'primitive': lambda x: x['x'],
     'h'        : -1,
-}, 'primitive of xf(x)')
+})
 
 # data
 gp.addx(xdata, 'xdata', proc='f')

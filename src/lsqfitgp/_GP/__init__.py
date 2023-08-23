@@ -25,21 +25,9 @@ from ._gp import GP
 #         .defproc(key, *args, *, deriv=0)
 #             *args is either (mean, kernel) or just (kernel,). The mean is an
 #             ordinary callable.
-#         .defproctransf(key, ops, *, deriv=0)
-#         .defproclintransf(key, transf, procs, *, deriv=0, checklin=False)
-#         .defprocderiv(key, deriv, proc)
-#         .defprocxtransf(key, transf, proc)
-#         .defprocrescale(key, scalefun, proc)
-
-#         Do not use DefaultProcess implicitly, document it instead and let the
-#         user pass it explicitly, this improves readability of the user code.
 
 #         All methods return a new GP object. Make a decorator @_newself that
 #         creates the clone, passes it, and returns it.
-#     Elements
-#         The signatures are mostly ok; I need to leave key behind for consistency
-#         because addx and addcov need it to support elegantly dictionary
-#         arguments.
 #     Inspection
 #         .elements() return a read-only mapping of keys -> named tuples with
 #             fields ancestors=(tuple of keys), kind=str (x, cov, transf), shape,
@@ -56,7 +44,7 @@ from ._gp import GP
 #         are container-copied by ._clone().
 
 #         Each parent class defines its own __init__ and _clone(), and they all
-#         call super() but the base.
+#         call super()._clone but the base.
 #     Mean functions
 #         .__init__(*args, ...) supports either only the kernel or the mean and
 #         the kernel of the DefaultProcess.

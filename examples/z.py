@@ -34,9 +34,9 @@ import lsqfitgp as lgp
 
 gp = lgp.GP()
 
-gp.addproc(lgp.ExpQuad(scale= 1), 'short')
-gp.addproc(lgp.ExpQuad(scale=10), 'long' )
-gp.addproctransf({'short': 0.3, 'long': 1}, 'sum')
+gp.defproc('short', lgp.ExpQuad(scale= 1))
+gp.defproc('long', lgp.ExpQuad(scale=10))
+gp.defproctransf('sum', {'short': 0.3, 'long': 1})
 
 time = np.arange(30)
 time_pred = np.linspace(-30, 60, 200)

@@ -193,10 +193,10 @@ object *without specifying a kernel*::
 
     gp = lgp.GP()
 
-Then we add separately the two kernels to the object using :meth:`GP.addproc`::
+Then we add separately the two kernels to the object using :meth:`GP.defproc`::
 
-    gp.addproc(kernel1, 'long')
-    gp.addproc(kernel2, 'short')
+    gp.defproc('long', kernel1)
+    gp.defproc('short', kernel2)
 
 Now the two names ``'long'`` and ``'short'`` stand for *independent* processes
 with their respective kernels. (These names reside in a namespace separate
@@ -204,9 +204,9 @@ from the one used by :meth:`~GP.addx` and :meth:`~GP.addtransf`.) Now we use
 these to define their sum *as a process* instead of summing them after
 evaluation on specific points::
 
-    gp.addproctransf({'long': 1, 'short': 1}, 'sum')
+    gp.defproctransf('sum', {'long': 1, 'short': 1})
 
-The method :meth:`~GP.addproctransf` is analogous to :meth:`~GP.addtransf` but
+The method :meth:`~GP.defproctransf` is analogous to :meth:`~GP.addtransf` but
 works for the whole process at once. What we are doing mathematically is the
 following:
 
@@ -214,7 +214,7 @@ following:
     \operatorname{sum}(x) \equiv 1 \cdot \operatorname{long}(x) +
                                  1 \cdot \operatorname{short}(x).
 
-(There is also the analogous :meth:`~GP.addproclintransf`, which takes a
+(There is also the analogous :meth:`~GP.defproclintransf`, which takes a
 Python function like :meth:`~GP.addlintransf`.) Now that we have defined the
 components, we evaluate them on the points::
 
@@ -257,7 +257,7 @@ Then we continue as before::
 
 If there was this more convenient way of dealing with latent components, why
 didn't we introduce it right away? The reason is that it is not as general as
-managing the components manually with an explicit field. :meth:`~GP.addproc`
+managing the components manually with an explicit field. :meth:`~GP.defproc`
 defines processes which are independent of each other; to have nontrivial a
 priori correlations it is necessary to put the process index in the domain such
 that kernel can manipulate it. We did this at the end of :ref:`multiout` when

@@ -82,21 +82,20 @@ class GPProcesses(_base.GPBase):
         
     _zerokernel = _Kernel.Zero()
 
-    def addproc(self, kernel=None, key=_base.GPBase.DefaultProcess, *, deriv=0):
+    def defproc(self, key, kernel=None, *, deriv=0):
         """
         
         Add an independent process.
         
         Parameters
         ----------
+        key : hashable
+            The name that identifies the process in the GP object.
         kernel : Kernel
             A kernel for the process. If None, use the default kernel. The
             difference between the default process and a process defined with
             the default kernel is that, although they have the same kernel,
             they are independent.
-        key : hashable
-            The name that identifies the process in the GP object. If not
-            specified, sets the kernel of the default process.
         deriv : Deriv-like
             Derivatives to take on the process defined by the kernel.
                 
@@ -112,7 +111,7 @@ class GPProcesses(_base.GPBase):
         
         self._procs[key] = self._ProcKernel(kernel, deriv)
     
-    def addproctransf(self, ops, key=_base.GPBase.DefaultProcess, *, deriv=0):
+    def defproctransf(self, key, ops, *, deriv=0):
         """
         
         Define a new process as a linear combination of other processes.
@@ -124,13 +123,12 @@ class GPProcesses(_base.GPBase):
         
         Parameters
         ----------
+        key : hashable
+            The name that identifies the new process in the GP object.
         ops : dict
             A dictionary mapping process keys to scalars or scalar
             functions. The functions must take an argument of the same kind
             of the domain of the process.
-        key : hashable
-            The name that identifies the new process in the GP object. If not
-            specified, sets the default process.
         deriv : Deriv-like
             The linear combination is derived as specified by this
             parameter.
@@ -159,8 +157,8 @@ class GPProcesses(_base.GPBase):
         
         self._procs[key] = self._ProcTransf(ops, deriv)
         
-        # we could implement addproctransf in terms of addproclintransf with
-        # the following code, but addproctransf has linear kernel building
+        # we could implement defproctransf in terms of defproclintransf with
+        # the following code, but defproctransf has linear kernel building
         # cost so I'm leaving it around (probably not significant anyway)
         # functions = [
         #     op if callable(op)
@@ -175,9 +173,9 @@ class GPProcesses(_base.GPBase):
         #             out = this if out is None else out + this
         #         return out
         #     return fun
-        # self.addproclintransf(equivalent_lintransf, list(ops.keys()), key, deriv, False)
+        # self.defproclintransf(key, equivalent_lintransf, list(ops.keys()), deriv=deriv, checklin=False)
     
-    def addproclintransf(self, transf, keys, key=_base.GPBase.DefaultProcess, *, deriv=0, checklin=False):
+    def defproclintransf(self, key, transf, procs, *, deriv=0, checklin=False):
         """
         
         Define a new process as a linear combination of other processes.
@@ -189,13 +187,12 @@ class GPProcesses(_base.GPBase):
         
         Parameters
         ----------
+        key : hashable
+            The name that identifies the new process in the GP object.
         transf : callable
             A function with signature ``transf(callable, callable, ...) -> callable``.
-        keys : sequence
+        procs : sequence
             The keys of the processes to be passed to the transformation.
-        key : hashable
-            The name that identifies the new process in the GP object. If not
-            specified, sets the default process.
         deriv : Deriv-like
             The linear combination is derived as specified by this
             parameter.
@@ -209,18 +206,18 @@ class GPProcesses(_base.GPBase):
         
         """
         
-        # TODO support single key in keys
+        # TODO support procs being a single key
         
         if key in self._procs:
             raise KeyError(f'process key {key!r} already used in GP')
     
-        for k in keys:
+        for k in procs:
             if k not in self._procs:
                 raise KeyError(k)
         
         deriv = _Deriv.Deriv(deriv)
         
-        if len(keys) == 0:
+        if len(procs) == 0:
             self._procs[key] = self._ProcKernel(self._zerokernel)
             return
         
@@ -235,28 +232,27 @@ class GPProcesses(_base.GPBase):
             def checktransf(*arrays):
                 functions = [mockup_function(a) for a in arrays]
                 return transf(*functions)(Mockup((0,)))
-            shapes = [(11,)] * len(keys)
+            shapes = [(11,)] * len(procs)
             self._checklinear(checktransf, shapes, elementwise=True)
         
-        self._procs[key] = self._ProcLinTransf(transf, keys, deriv)
+        self._procs[key] = self._ProcLinTransf(transf, procs, deriv)
 
-    def addkernelop(self, method, arg, key, proc=_base.GPBase.DefaultProcess):
+    def defkernelop(self, key, method, arg, proc):
         """
         
         Define a new process as the transformation of an existing one.
         
         Parameters
         ----------
+        key : hashable
+            Key for the new process.
         method : str
             A method of `Kernel` taking two arguments which returns a
             transformed kernel.
         arg : object
             A valid argument to the method.
-        key : hashable
-            Key for the new process.
         proc : hashable
-            Key of the process to be transformed. If not specified, use the
-            default process.
+            Key of the process to be transformed.
         
         """
         
@@ -269,7 +265,7 @@ class GPProcesses(_base.GPBase):
                 
         self._procs[key] = self._ProcKernelOp(proc, method, arg)
     
-    def addprocderiv(self, deriv, key, proc=_base.GPBase.DefaultProcess):
+    def defprocderiv(self, key, deriv, proc):
         """
         
         Define a new process as the derivative of an existing one.
@@ -279,19 +275,18 @@ class GPProcesses(_base.GPBase):
         
         Parameters
         ----------
-        deriv : Deriv-like
-            Derivation order.
         key : hashable
             The key of the new process.
+        deriv : Deriv-like
+            Derivation order.
         proc : hashable
-            The key of the process to be derived. If not specified, use the
-            default process.
+            The key of the process to be derived.
         
         """
         deriv = _Deriv.Deriv(deriv)
-        self.addkernelop('diff', deriv, key, proc)
+        self.defkernelop(key, 'diff', deriv, proc)
     
-    def addprocxtransf(self, transf, key, proc=_base.GPBase.DefaultProcess):
+    def defprocxtransf(self, key, transf, proc):
         """
         
         Define a new process by transforming the inputs of another one.
@@ -301,20 +296,19 @@ class GPProcesses(_base.GPBase):
         
         Parameters
         ----------
+        key : hashable
+            The key of the new process.
         transf : callable
             A function mapping the new kind input to the input expected by the
             transformed process.
-        key : hashable
-            The key of the new process.
         proc : hashable
-            The key of the process to be transformed. If not specified, use the
-            default process.
+            The key of the process to be transformed.
         
         """
         assert callable(transf)
-        self.addkernelop('xtransf', transf, key, proc)
+        self.defkernelop(key, 'xtransf', transf, proc)
     
-    def addprocrescale(self, scalefun, key, proc=_base.GPBase.DefaultProcess):
+    def defprocrescale(self, key, scalefun, proc):
         """
         
         Define a new process as a rescaling of an existing one.
@@ -324,17 +318,16 @@ class GPProcesses(_base.GPBase):
         
         Parameters
         ----------
-        scalefun : callable
-            A function from the domain of the process to a scalar.
         key : hashable
             The key of the new process.
+        scalefun : callable
+            A function from the domain of the process to a scalar.
         proc : hashable
-            The key of the process to be transformed. If not specified, use the
-            default process.
+            The key of the process to be transformed.
         
         """
         assert callable(scalefun)
-        self.addkernelop('rescale', scalefun, key, proc)
+        self.defkernelop(key, 'rescale', scalefun, proc)
     
     def _crosskernel(self, xpkey, ypkey):
         

@@ -161,24 +161,24 @@ def makegp(hp, quick=False):
     # define Ts and Vs
     for suffix in ['', '3', '8', '15']:
         if suffix != '':
-            gp.addproc(kernel, 'T' + suffix)
-        gp.addproc(kernel_prim, 'f' + suffix)
-        gp.addproctransf({'f' + suffix: 1}, 'V' + suffix, deriv=1)
+            gp.defproc('T' + suffix, kernel)
+        gp.defproc('f' + suffix, kernel_prim)
+        gp.defproctransf('V' + suffix, {'f' + suffix: 1}, deriv=1)
     
     # define xSigma
-    gp.addproc(kernel, 'f1')
+    gp.defproc('f1', kernel)
     a = hp['alpha_Sigma']
-    gp.addproctransf({'f1': lambda x: x ** (a + 1) / (a + 2)}, 'tf1')
-    gp.addproctransf({'tf1': 1}, "xSigma", deriv=1)
+    gp.defproctransf('tf1', {'f1': lambda x: x ** (a + 1) / (a + 2)})
+    gp.defproctransf('xSigma', {'tf1': 1}, deriv=1)
     
     # define xg
-    gp.addproc(kernel, 'f2')
+    gp.defproc('f2', kernel)
     b = hp['alpha_g']
-    gp.addproctransf({'f2': lambda x: x ** (b + 1) / (b + 2)}, 'tf2')
-    gp.addproctransf({'tf2': 1}, "xg", deriv=1)
+    gp.defproctransf('tf2', {'f2': lambda x: x ** (b + 1) / (b + 2)})
+    gp.defproctransf('xg', {'tf2': 1}, deriv=1)
     
     # define primitive of xSigma + xg
-    gp.addproctransf({'tf1': 1, 'tf2': 1}, 'tf12')
+    gp.defproctransf('tf12', {'tf1': 1, 'tf2': 1})
     
     # define a matrix of PDF values over the x grid
     for proc in tpnames:
@@ -204,13 +204,13 @@ def makegp(hp, quick=False):
         gp.addtransf({'datagrid': M_mean}, 'data', axes=2)
     
         # define flavor basis PDFs
-        gp.addproctransf({"xSigma": lambda x: 1 / x}, 'Sigma')
-        gp.addproctransf({"xg": lambda x: 1 / x}, 'g')
+        gp.defproctransf('Sigma', {'xSigma': lambda x: 1 / x})
+        gp.defproctransf('g', {'xg': lambda x: 1 / x})
         for qi, qproc in enumerate(qnames):
-            gp.addproctransf({
+            gp.defproctransf(qproc, {
                 eproc: evtoq[qi, ei]
                 for ei, eproc in enumerate(evnames)
-            }, qproc)
+            })
     
         # define a matrix of PDF values over the plot grid
         for proc in tpnames:

@@ -18,7 +18,6 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import jax
-
 from jax import numpy as jnp
 
 from .. import _jaxext
@@ -28,6 +27,20 @@ class GPBase:
     def __init__(self, *, checkfinite=True, checklin=True):
         self._checkfinite = bool(checkfinite)
         self._checklin = bool(checklin)
+
+    class _SingletonMeta(type):
+    
+        def __repr__(cls):
+            return cls.__name__
+
+    class _Singleton(metaclass=_SingletonMeta):
+    
+        def __new__(cls):
+            raise NotImplementedError(f"{cls.__name__} can not be instantiated")
+
+    class DefaultProcess(_Singleton):
+        """ Key for the default process in GP objects """
+        pass
 
     def _checklinear(self, func, inshapes, elementwise=False):
         
@@ -61,17 +74,3 @@ class GPBase:
                 if out0.shape != shape or not (jnp.allclose(out0[zeros], 0) and jnp.allclose(out1[zeros], 0)):
                     raise RuntimeError('the transformation is not elementwise')
     
-    class _SingletonMeta(type):
-    
-        def __repr__(cls):
-            return cls.__name__
-
-    class _Singleton(metaclass=_SingletonMeta):
-    
-        def __new__(cls):
-            raise NotImplementedError(f"{cls.__name__} can not be instantiated")
-
-    class DefaultProcess(_Singleton):
-        """ Key for the default process in GP objects """
-        pass
-
