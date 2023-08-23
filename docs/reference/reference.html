@@ -13,7 +13,7 @@
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="1. Kernels reference" href="kernelsref.html" />
+    <link rel="next" title="Predefined kernels" href="kernelsref.html" />
     <link rel="prev" title="14. Optimization" href="../userguide/optim.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -48,17 +48,18 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">User guide</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Reference manual</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">1. Kernels reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernel.html">2. Generic kernel classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">3. Kernel decorators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernelop.html">4. Kernel operations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deriv.html">5. Derivative specification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html">6. Gaussian process class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fit.html">8. Fitting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="copula.html">10. Gaussian copulas</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bayestree.html">11. BART</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">Predefined kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">Generic kernel classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelop.html">Kernel operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fit.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="raniter.html">Random sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="copula.html">Gaussian copulas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayestree.html">BART</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gvarext.html">Gvar extensions</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
@@ -70,7 +71,7 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
       <li>Previous: <a href="../userguide/optim.html" title="previous chapter"><span class="section-number">14. </span>Optimization</a></li>
-      <li>Next: <a href="kernelsref.html" title="next chapter"><span class="section-number">1. </span>Kernels reference</a></li>
+      <li>Next: <a href="kernelsref.html" title="next chapter">Predefined kernels</a></li>
   </ul></li>
 </ul>
 </div>
@@ -105,7 +106,7 @@
           <a href="../userguide/optim.html" title="Previous document"><span class="section-number">14. </span>Optimization</a>
         </li>
         <li>
-          <a href="kernelsref.html" title="Next document"><span class="section-number">1. </span>Kernels reference</a>
+          <a href="kernelsref.html" title="Next document">Predefined kernels</a>
           &rarr;
         </li>
     </ul>
@@ -122,17 +123,18 @@ this information can also be accessed with the Python help system directly from
 a shell with <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">lsqfitgp;</span> <span class="pre">help(lsqfitgp)</span></code>.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="kernelsref.html">1. Kernels reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kernel.html">2. Generic kernel classes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kerneldec.html">3. Kernel decorators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="kernelop.html">4. Kernel operations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="deriv.html">5. Derivative specification</a></li>
-<li class="toctree-l1"><a class="reference internal" href="gp.html">6. Gaussian process class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
-<li class="toctree-l1"><a class="reference internal" href="fit.html">8. Fitting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="copula.html">10. Gaussian copulas</a></li>
-<li class="toctree-l1"><a class="reference internal" href="bayestree.html">11. BART</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernelsref.html">Predefined kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">Generic kernel classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kerneldec.html">Kernel decorators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernelop.html">Kernel operations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array.html">Structured arrays wrapping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fit.html">Fitting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="raniter.html">Random sampling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="copula.html">Gaussian copulas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bayestree.html">BART</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gvarext.html">Gvar extensions</a></li>
 </ul>
 </div>
 </section>
@@ -148,7 +150,7 @@ a shell with <code class="docutils literal notranslate"><span class="pre">import
           <a href="../userguide/optim.html" title="Previous document"><span class="section-number">14. </span>Optimization</a>
         </li>
         <li>
-          <a href="kernelsref.html" title="Next document"><span class="section-number">1. </span>Kernels reference</a>
+          <a href="kernelsref.html" title="Next document">Predefined kernels</a>
           &rarr;
         </li>
     </ul>

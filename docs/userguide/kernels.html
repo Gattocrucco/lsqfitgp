@@ -131,8 +131,9 @@ of the process values at two different points:</p>
 on an infinitely long vector <span class="math notranslate nohighlight">\(f(x)\)</span>, where <span class="math notranslate nohighlight">\(x\)</span> is a “continuous
 index”, and <span class="math notranslate nohighlight">\(k(x, x')\)</span> is the covariance matrix.</p>
 <p>This implies that kernels are symmetric, i.e., <span class="math notranslate nohighlight">\(k(x, x') = k(x', x)\)</span>.
-Also, covariance matrices must be positive semidefinite (if you wonder why, you
-can find an explanation on <a class="reference external" href="https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_matrices?">wikipedia</a>). For kernels, this means that, for <em>any</em> function <span class="math notranslate nohighlight">\(g\)</span>,</p>
+Also, covariance matrices must be positive semidefinite (<a class="reference external" href="https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_matrices?">explanation on
+wikipedia</a>).
+For kernels, this means that, for <em>any</em> function <span class="math notranslate nohighlight">\(g\)</span>,</p>
 <div class="math notranslate nohighlight">
 \[\int_{-\infty}^\infty \mathrm dx \mathrm dx'\, g(x) k(x, x') g(x') \ge 0.\]</div>
 <p>This is the reason why you can’t pick any two-variable symmetric function as
@@ -178,8 +179,8 @@ when thinking in terms of Gaussian processes, you normally use an infinite
 set of functions <span class="math notranslate nohighlight">\(h_i\)</span>. You don’t even think about it in terms of the
 <span class="math notranslate nohighlight">\(h_i\)</span>, because the kernel has meaning in itself.</p>
 <p>Let’s now build some feeling for how kernels behave. In <a class="reference internal" href="sine.html#sine"><span class="std std-ref">First example: a sine</span></a> we always
-used the <a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a> kernel (booring). To start, we will sum two
-exponential quadratic kernels with different scales, and see what happens:</p>
+used the <a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a> kernel. To start, we will sum two exponential
+quadratic kernels with different scales, and see what happens:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">gvar</span>
@@ -191,7 +192,7 @@ exponential quadratic kernels with different scales, and see what happens:</p>
 <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
 
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
+<span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">)</span>
 
@@ -204,7 +205,7 @@ exponential quadratic kernels with different scales, and see what happens:</p>
 </div>
 <img alt="../_images/kernels1.png" src="../_images/kernels1.png" />
 <p>First thing to notice, we introduced another <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> method:
-<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.prior" title="lsqfitgp.GP.prior"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prior()</span></code></a>. It returns an array of <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables representing
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">prior()</span></code>. It returns an array of <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables representing
 the prior. In general it is useful to plot some samples from the prior to
 understand if the kernel makes sense before putting the data in.</p>
 <p>Looking at the plot, we see the function oscillates rapidly, but the center of
@@ -224,8 +225,10 @@ and one <code class="docutils literal notranslate"><span class="pre">ExpQuad(sca
 quadratic:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lorentz</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">kernel</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">()</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">stdfun</span><span class="o">=</span><span class="n">lorentz</span><span class="p">)</span>
-<span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
+<span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
+<span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
 
@@ -248,7 +251,7 @@ function (cyan), and the band of the standard deviation of <code class="docutils
 </pre></div>
 </div>
 <img alt="../_images/kernels3.png" src="../_images/kernels3.png" />
-<p>We see only one green (cyan+yellow) band, because it is a perfect match! We
+<p>We see only one green (cyan+yellow) band, because it is a perfect match. We
 have rescaled the standard deviations of the prior with the function
 <code class="docutils literal notranslate"><span class="pre">lorentz</span></code>, without changing the correlations. Since the <a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a>
 prior variance is 1 everywhere, after the multiplication it just matches

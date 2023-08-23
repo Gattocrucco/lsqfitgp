@@ -1,4 +1,4 @@
-.. lsqfitgp/docs/kerneldec.rst
+.. lsqfitgp/docs/reference/kerneldec.rst
 ..
 .. Copyright (c) 2020, 2022, Giacomo Petrillo
 ..

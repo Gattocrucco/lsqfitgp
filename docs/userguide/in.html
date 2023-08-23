@@ -125,7 +125,7 @@
 <span id="multiin"></span><h1><span class="section-number">7. </span>Multidimensional input<a class="headerlink" href="#multidimensional-input" title="Link to this heading">¶</a></h1>
 <p><a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> supports multidimensional input through <a class="reference external" href="https://numpy.org/doc/stable/user/basics.rec.html">numpy structured
 arrays</a>. Elements of
-structured arrays have named fields. Easier done than said:</p>
+structured arrays have named fields:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
@@ -137,38 +137,37 @@ structured arrays have named fields. Easier done than said:</p>
 </pre></div>
 </div>
 <p>Here we used a bit of Numpy indexing and broadcasting to fill a 30x30 array
-<code class="docutils literal notranslate"><span class="pre">xy</span></code> with a grid of x, y coordinates. Let’s look at it in order. We specified
-a data type <code class="docutils literal notranslate"><span class="pre">[('x',</span> <span class="pre">float),</span> <span class="pre">('y',</span> <span class="pre">float)]</span></code> for the array <code class="docutils literal notranslate"><span class="pre">xy</span></code>, this means
-that each element of <code class="docutils literal notranslate"><span class="pre">xy</span></code> is a pair of numbers. We specified a shape
-<code class="docutils literal notranslate"><span class="pre">(len(x),</span> <span class="pre">len(y))</span></code>, where <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are the two linspaces, and then
-filled separately the <code class="docutils literal notranslate"><span class="pre">'x'</span></code> and <code class="docutils literal notranslate"><span class="pre">'y'</span></code> fields of the <code class="docutils literal notranslate"><span class="pre">xy</span></code> elements with
-the linspaces. <code class="docutils literal notranslate"><span class="pre">xy</span></code> is a 2D array, while <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are 1D, so using
-<code class="docutils literal notranslate"><span class="pre">None</span></code> we added a dummy dimension along which the copying is repeated. The
-colons <code class="docutils literal notranslate"><span class="pre">:</span></code> are empty slices and leave the dimension untouched.</p>
+<code class="docutils literal notranslate"><span class="pre">xy</span></code> with a grid of x, y coordinates. We specified a data type <code class="docutils literal notranslate"><span class="pre">[('x',</span>
+<span class="pre">float),</span> <span class="pre">('y',</span> <span class="pre">float)]</span></code> for the array <code class="docutils literal notranslate"><span class="pre">xy</span></code>, this means that each element of
+<code class="docutils literal notranslate"><span class="pre">xy</span></code> is a pair of numbers. We specified a shape <code class="docutils literal notranslate"><span class="pre">(len(x),</span> <span class="pre">len(y))</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are the two linspaces, and then filled separately the <code class="docutils literal notranslate"><span class="pre">'x'</span></code>
+and <code class="docutils literal notranslate"><span class="pre">'y'</span></code> fields of the <code class="docutils literal notranslate"><span class="pre">xy</span></code> elements with the linspaces. <code class="docutils literal notranslate"><span class="pre">xy</span></code> is a 2D
+array, while <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are 1D, so using <code class="docutils literal notranslate"><span class="pre">None</span></code> we added a dummy
+dimension along which the copying is repeated. The colons <code class="docutils literal notranslate"><span class="pre">:</span></code> are empty slices
+and leave the dimension untouched.</p>
 <p>It is not important for <code class="docutils literal notranslate"><span class="pre">xy</span></code> to be a 2D array because we are using
 bidimensional points, it is just a convenience for building a rectangular grid.
 Do not confuse the number of dimensions of the array with the number of fields
 in its elements.</p>
-<p>A thing to notice is that we only used 30 points for the side of the grid. This
-is because 30x30 = 900 and at around 1000 datapoints <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> starts
-being slow. This is an inherent limitation of Gaussian processes, which can be
-only overcome with approximations or specialized algorithms. If you need to
-handle a lot of datapoints, <a class="reference external" href="https://docs.pymc.io/notebooks/GP-Kron.html">pymc3</a> has some support for separable
-kernels on grids, while <a class="reference external" href="https://celerite.readthedocs.io/en/stable/">celerite</a> implements harmonic oscillators
-in 1D.</p>
+<p>We only used 30 points for the side of the grid. This is because 30x30 = 900 and
+at around 1000 datapoints <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> starts being slow. This is an inherent
+limitation of Gaussian processes, which can be overcome only with approximations
+or specialized algorithms.</p>
 <p>Now we put <code class="docutils literal notranslate"><span class="pre">xy</span></code> into a <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> as usual and extract a sample from the
 prior.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
 <span class="kn">import</span> <span class="nn">gvar</span>
 
-<span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="p">)</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
 <span class="n">sample</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>We plot the sample following the <a class="reference external" href="https://matplotlib.org/tutorials/toolkits/mplot3d.html#sphx-glr-tutorials-toolkits-mplot3d-py">matplotlib 3d tutorial</a>:</p>
+<p>We plot the sample in 3d:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">,</span> <span class="n">subplot_kw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">))</span>
@@ -190,8 +189,10 @@ as long as it can apply Pythagoras’ theorem. So the kernel we used is:</p>
 <p>We can do more sophisticated things if we control how the kernel acts on each
 dimension. Let’s use a random walk along <span class="math notranslate nohighlight">\(x\)</span> and an exponential
 quadratic along <span class="math notranslate nohighlight">\(y\)</span>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">Wiener</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=-</span><span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">))</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">Wiener</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=-</span><span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="p">)</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
 <span class="n">sample</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
@@ -220,8 +221,10 @@ otherwise <a class="reference internal" href="../index.html#module-lsqfitgp" tit
 2-dimensional point instead of a pair of points, so we encapsulate it in a
 field. <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.25)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> treats the ellipsis <code class="docutils literal notranslate"><span class="pre">...</span></code> as a string of colons <code class="docutils literal notranslate"><span class="pre">:</span></code> of
 the appropriate length.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="p">)</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
 <span class="n">sample</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
@@ -236,9 +239,8 @@ the appropriate length.</p>
 <p>However, with this method, it is not possible to apply a kernel only along a
 specific dimension. A kernel can be applied only on everything or on a single
 whole named field. By splitting your dimensions in named fields with different
-shapes this should still be flexible enough, nevertheless in a future release I
-will introduce support for applying a kernel along any kind of subset of the
-dimensions.</p>
+shapes this should still be flexible enough. To do arbitrary manipulations,
+write your own kernel.</p>
 </section>
 
 

@@ -1,4 +1,4 @@
-.. lsqfitgp/docs/array.rst
+.. lsqfitgp/docs/reference/array.rst
 ..
 .. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..

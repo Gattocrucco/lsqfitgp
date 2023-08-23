@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/customs.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -29,15 +29,15 @@ kernel. There are many other kernels available in the module; however, it will
 be useful to build at least once our own kernel to understand more about how
 kernels work.
 
-First I will make up a problem for which there's not already a reasonable
-kernel in the module. Let's say we want to recognize automatically the language
-of a text. To keep things simple, we will use only two languages, English and
-Latin. To represent this binary classification problem with a Gaussian process,
-we consider a real "score" which is modeled as a Gaussian process. Negative
-scores correspond to English, positive scores correspond to Latin. Example: if
-the prior for a text score is :math:`0 \pm 1`, it means there's 50 %
-probability it's English and 50 % it's Latin. In general we have to integrate a
-Gaussian distribution over the negative/positive semiaxis.
+First I will make up a problem for which there's not already a reasonable kernel
+in the module. Let's say we want to recognize automatically the language of a
+text. To keep things simple, we will use only two languages, English and Latin.
+To represent this binary classification problem with a Gaussian process, we
+consider a "score" which is modeled as a Gaussian process. Negative scores
+correspond to English, positive scores correspond to Latin. Example: if the
+prior for a text score is :math:`0 \pm 1`, it means there's 50 % probability
+it's English and 50 % it's Latin. In general we have to integrate a Gaussian
+distribution over the negative/positive semiaxis.
 
 Without using statistical techniques, writing a language identification program
 is quite simple; we could just put a list of common words for each language and
@@ -45,11 +45,11 @@ count the words in the text. However, for the sake of the example, we will
 write a dumb kernel that has no internal knowledge of the languages and doesn't
 even consider words.
 
-How do we make a kernel over texts? We always talked about kernels with real
-numbers, but actually the definition did not require :math:`x` and :math:`x'`
-to be numbers. It didn't require them to be *anything*. In :ref:`kernelexpl` we
-wrote the positivity requirement with an integral, but it can also be written
-as a sum:
+How do we make a kernel over texts? We always talked about kernels as functions
+of real numbers, but actually the definition did not require :math:`x` and
+:math:`x'` to be numbers. It didn't require them to be *anything*. In
+:ref:`kernelexpl` we wrote the positivity requirement with an integral, but it
+can also be written as a sum:
 
 .. math::
     \forall g: \sum_x \sum_{x'} g(x) k(x, x') g(x') \ge 0.
@@ -93,16 +93,17 @@ We wrote a function that counts the occurences of a letter, multiplies the
 counts, and then sums over all letters. We then applied two decorators:
 ``np.vectorize``, which applies the function to each text in ``x`` and ``y``
 when they are arrays instead of single texts, and ``lgp.kernel``, which marks
-the function as a kernel for :mod:`lsqfitgp`. The decorator order matters!
-First we transform the function to make it work on arrays, and only then we
+the function as a kernel for :mod:`lsqfitgp`. The decorator order matters:
+first we transform the function to make it work on arrays, and only then we
 can apply ``@lgp.kernel`` to mark it as a kernel.
 
 Note that this function is disastrously inefficient, I just wrote it to be as
 clear as possible.
 
-Now we need some texts. I'll just copy-paste the first paragraph of random
-articles from the `English <https://en.wikipedia.org/wiki/Special:Random>`_ and
-`Latin <https://la.wikipedia.org/wiki/Specialis:Pagina_fortuita>`_ wikipedias.
+Now we need some texts. I'll copy-pasted the first paragraph of random articles
+from the `English <https://en.wikipedia.org/wiki/Special:Random>`_ and `Latin
+<https://la.wikipedia.org/wiki/Specialis:Pagina_fortuita>`_ wikipedias.
+
 ::
 
     english_texts = [
@@ -165,9 +166,11 @@ Ok, so we have 25 english texts and 25 latin texts. There's some contamination,
 like the latin wikipedia page on the *Hills Road Sixth Form College*, but this
 is life. Let's put all this in a Gaussian process object::
 
-    gp = lgp.GP(CountLetters())
-    gp.addx(english_texts, 'english')
-    gp.addx(latin_texts, 'latin')
+    gp = (lgp
+        .GP(CountLetters())
+        .addx(english_texts, 'english')
+        .addx(latin_texts, 'latin')
+    )
 
 I'm a bit worried. Will this mess really work? I'll look at the prior to see
 if it makes sense before going on::
@@ -178,9 +181,11 @@ if it makes sense before going on::
         for i in range(len(texts)):
             print('   ', texts[i][:20], '  ', prior[label][i])
 
-Output::
+Output:
 
-   ***** english *****
+.. code-block:: text
+
+    ***** english *****
        Kiy Island (Russian:    0(95)
        Haakon Andreas Olsen    0(17)
        Le Chant des chemins    0(47)
@@ -206,7 +211,7 @@ Output::
        "Did It in a Minute"    0(61)
        Chaerodrys is a genu    0(17)
        A photographic album    0(98)
-   ***** latin *****
+    ***** latin *****
        Colloretum[1] (-i, n    0(52)
        Lánzhōu,[1] seu fort    0(20)
        Aizecourt-le-Bas est    0(23)
@@ -234,12 +239,11 @@ Output::
        Clairfayts est commu    0(29)
 
 Ok, what's this? The mean is zero because the prior mean is always zero. The
-standard deviations are all different; why should the prior be particularly
-uncertain about the language score for the wikipedia introduction to printed
-electronics? After all, if the mean is zero it means 50-50 whatever the
-standard deviation. Yes, it's measuring the length! The printed electronics
-paragraph is the longest, and in general the Latin ones were shorter. Is this
-a problem? I don't know. Let's see what happens.
+standard deviations are all different: should this be the case? Why should the
+prior be particularly uncertain about the language score for the wikipedia
+introduction to printed electronics? After all, if the mean is zero it means
+50-50 whatever the standard deviation. Try to think about the answer, solution
+in the footnote [#f2]_. Is this a problem? I don't know. Let's see what happens.
 
 To use the Gaussian process, I need some other texts which I won't tell to it
 if they are English or Latin. I'll pick this time::
@@ -285,8 +289,10 @@ if they are English or Latin. I'll pick this time::
         Things unattempted yet in prose or rhyme.
     """
     
-    gp.addx(debellogallico, 'caesar')
-    gp.addx(paradiselost, 'milton')
+    gp = (gp
+        .addx(debellogallico, 'caesar')
+        .addx(paradiselost, 'milton')
+    )
 
 To say if a text is English or Latin, we have to give a specific score as data.
 Short of better ideas, I'll use -1 and +1::
@@ -303,10 +309,12 @@ is::
     print(post['caesar'])
     print(post['milton'])
 
-Output::
+Output:
 
-   6.4436854(48)
-   -1.1356411(14)
+.. code-block:: text
+
+    5.86042324(59)
+    -2.4367508(15)
 
 It works! The standard deviations are very small compared to the values, so the
 probabilities of the sign are almost exactly 100 % (as a rule of thumb, a
@@ -339,7 +347,7 @@ Now to another matter. In the end, it was not a problem that the prior
 variances where depending on the length of the text. But still it feels wrong,
 we initially stated the problem as determining if a text is English, not if it
 is *a lot of* English. We set the datapoints to +1 and -1, Milton comes out as
-roughly -1, while Caesar is +6. So Caesar is... very Latin?
+roughly -2, while Caesar is +6. So Caesar is... very Latin?
 
 We can fix this by normalizing the kernel such that the variance is always one.
 It is like replacing a covariance matrix with a correlation matrix. We'll
@@ -354,10 +362,12 @@ So, we instantiated our :class:`CountLetters` kernel, wrote a function
 ``inv_sdev`` that computes the inverse of its standard deviation, and used this
 function to rescale the kernel. Now let's run the fit::
 
-    gp.addx(english_texts, 'english')
-    gp.addx(latin_texts, 'latin')
-    gp.addx(debellogallico, 'caesar')
-    gp.addx(paradiselost, 'milton')
+    gp = (gp
+        .addx(english_texts, 'english')
+        .addx(latin_texts, 'latin')
+        .addx(debellogallico, 'caesar')
+        .addx(paradiselost, 'milton')
+    )
     
     post = gp.predfromdata({
         'english': -1 * np.ones(len(english_texts)),
@@ -366,14 +376,21 @@ function to rescale the kernel. Now let's run the fit::
     
     print(post)
 
-Output::
+Output:
 
-   {'caesar': 0.729684638(16), 'milton': -1.268445800(24)}
+.. code-block:: text
+
+    {'caesar': array(0.729906033(12), dtype=object), 'milton': array(-1.267473517(25), dtype=object)}
 
 This time both means are close to ±1.
 
 .. note::
 
-   The technique of using -1 and +1 to map a binary variable to continuous
-   values for regression works fine in this simple example but is in general
-   poor.
+    The technique of using -1 and +1 to map a binary variable to continuous
+    values for regression works fine in this simple example but is in general
+    poor.
+
+.. rubric:: Footnotes
+
+.. [#f2] It's the length. The printed electronics paragraph is the longest,
+         and in general the Latin ones were shorter.

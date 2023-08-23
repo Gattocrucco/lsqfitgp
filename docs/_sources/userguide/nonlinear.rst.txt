@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/nonlinear.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -24,10 +24,10 @@
 Nonlinear models
 ================
 
-Using `GP` we can define a Gaussian process. Using
-`GP.addlintransf` we can represent finite linear transformations of the
-process, and we can take derivatives with `GP.addx`. This means that we
-can only do linear operations on the process before putting the data in.
+Using `GP` we can define a Gaussian process. Using `GP.addlintransf` we can
+represent finite linear transformations of the process, and we can take
+derivatives with `GP.addx`. This means that we can only do linear operations on
+the process before putting the data in.
 
 A common non-linear operation is putting a boundary on the possible data
 values. Gaussian distributions don't play nicely with boundaries---they are
@@ -54,7 +54,7 @@ data. ::
     gp = lgp.GP(lgp.ExpQuad())
     
     x = np.arange(15)
-    gp.addx(x, 'data')
+    gp = gp.addx(x, 'data')
     
     data_gp = gvar.sample(gp.prior('data'))
 
@@ -83,14 +83,15 @@ sufficient is when the mapping between the Gaussian process and the data
 depends on a fit parameter. ::
 
     err = 0.1
-    data += err * np.random.randn(len(data))
+    rng = np.random.default_rng([2023, 8, 23, 17, 18])
+    data += err * rng.standard_normal(len(data))
     data = gvar.gvar(data, np.full_like(data, err))
 
 Then as usual we add a finer grid of points where we will compute the
 prediction::
 
     xplot = np.linspace(-10, 25, 200)
-    gp.addx(xplot, 'plot')
+    gp = gp.addx(xplot, 'plot')
 
 Now we define the prior and model function following the requirements of
 :class:`lsqfit.nonlinear_fit` and run the fit::
@@ -107,50 +108,52 @@ Now we define the prior and model function following the requirements of
     fit = lsqfit.nonlinear_fit(data=data, fcn=fcn, prior=prior)
     print(fit.format(maxline=True))
 
-Output::
+Output:
 
-   Least Square Fit:
-     chi2/dof [dof] = 1.1 [15]    Q = 0.37    logGBF = -7.9817
+.. code-block:: text
 
-   Parameters:
-           gproc 0   -0.97 (22)     [  0.0 (1.0) ]  
-                 1   -0.50 (12)     [  0.0 (1.0) ]  
-                 2    0.37 (11)     [  0.0 (1.0) ]  
-                 3    0.31 (11)     [  0.0 (1.0) ]  
-                 4   -1.05 (24)     [  0.0 (1.0) ]  *
-                 5   -1.97 (56)     [  0.0 (1.0) ]  *
-                 6   -1.59 (47)     [  0.0 (1.0) ]  *
-                 7   -0.79 (17)     [  0.0 (1.0) ]  
-                 8    0.28 (11)     [  0.0 (1.0) ]  
-                 9    0.37 (11)     [  0.0 (1.0) ]  
-                10    0.20 (10)     [  0.0 (1.0) ]  
-                11   -0.56 (13)     [  0.0 (1.0) ]  
-                12   -1.47 (37)     [  0.0 (1.0) ]  *
-                13   -1.26 (32)     [  0.0 (1.0) ]  *
-                14   -1.09 (26)     [  0.0 (1.0) ]  *
+    Least Square Fit:
+      chi2/dof [dof] = 1.1 [15]    Q = 0.36    logGBF = -11.047
 
-   Fit:
-         key        y[key]      f(p)[key]
-   --------------------------------------
-           0    -0.77 (10)    -0.749 (95)  
-           1    -0.46 (10)    -0.459 (97)  
-           2     0.36 (10)     0.352 (98)  
-           3     0.30 (10)     0.296 (98)  
-           4    -0.80 (10)    -0.783 (93)  
-           5    -1.20 (10)    -0.962 (42)  **
-           6    -0.90 (10)    -0.921 (71)  
-           7    -0.69 (10)    -0.657 (96)  
-           8     0.29 (10)     0.268 (98)  
-           9     0.34 (10)     0.350 (97)  
-          10     0.20 (10)     0.198 (98)  
-          11    -0.51 (10)    -0.512 (97)  
-          12    -1.00 (10)    -0.899 (71)  
-          13    -0.83 (10)    -0.851 (87)  
-          14    -0.83 (10)    -0.798 (95)  
+    Parameters:
+            gproc 0   -0.15 (10)     [  0.0 (1.0) ]  
+                  1    0.71 (15)     [  0.0 (1.0) ]  
+                  2   -1.30 (34)     [  0.0 (1.0) ]  *
+                  3   -2.37 (56)     [  0.0 (1.0) ]  **
+                  4   -1.20 (30)     [  0.0 (1.0) ]  *
+                  5    0.58 (13)     [  0.0 (1.0) ]  
+                  6    0.55 (13)     [  0.0 (1.0) ]  
+                  7    0.24 (10)     [  0.0 (1.0) ]  
+                  8   -0.52 (12)     [  0.0 (1.0) ]  
+                  9   -0.41 (11)     [  0.0 (1.0) ]  
+                 10    0.54 (13)     [  0.0 (1.0) ]  
+                 11    0.86 (18)     [  0.0 (1.0) ]  
+                 12    0.51 (12)     [  0.0 (1.0) ]  
+                 13    0.33 (11)     [  0.0 (1.0) ]  
+                 14    0.15 (10)     [  0.0 (1.0) ]  
 
-   Settings:
-     svdcut/n = 1e-12/0    tol = (1e-08,1e-10,1e-10*)    (itns/time = 29/0.2)
-     fitter = scipy_least_squares    method = trf
+    Fit:
+          key        y[key]      f(p)[key]
+    --------------------------------------
+            0    -0.17 (10)    -0.149 (99)  
+            1     0.67 (10)     0.610 (97)  
+            2    -0.99 (10)    -0.861 (88)  *
+            3    -0.91 (10)    -0.983 (19)  
+            4    -0.92 (10)    -0.832 (91)  
+            5     0.57 (10)     0.523 (97)  
+            6     0.47 (10)     0.500 (96)  
+            7     0.26 (10)     0.235 (98)  
+            8    -0.50 (10)    -0.476 (96)  
+            9    -0.39 (10)    -0.388 (97)  
+           10     0.50 (10)     0.494 (96)  
+           11     0.71 (10)     0.696 (93)  
+           12     0.46 (10)     0.467 (97)  
+           13     0.33 (10)     0.322 (98)  
+           14     0.15 (10)     0.152 (99)  
+
+    Settings:
+      svdcut/n = 1e-12/0    tol = (1e-08,1e-10,1e-10*)    (itns/time = 22/0.1)
+      fitter = scipy_least_squares    method = trf
 
 Let's plot everything. First we compute the posterior on the ``xplot`` points::
 
@@ -167,9 +170,9 @@ Then we inject the extended posterior into a copy of the fit result dictionary::
     fitp = dict(fit.p)     # dict() makes a copy of fit.p
     fitp['gproc'] = gpplot
 
-(This copy-and-replace step is a bit redundant here, it is for when there are
+This copy-and-replace step is a bit redundant here, it is for when there are
 also other parameters beside the Gaussian process, and we do not want to modify
-the fit result dictionary for good bookkeeping practice.) Then we plot both the
+the fit result dictionary for good bookkeeping practice. Then we plot both the
 data space and the Gaussian process space. ::
 
     from matplotlib import pyplot as plt
@@ -196,8 +199,3 @@ data space and the Gaussian process space. ::
     fig.savefig('nonlinear1.png')
 
 .. image:: nonlinear1.png
-
-The thing to notice here is that, in the Gaussian process space, the samples
-can get quite far from the points. This is because the nonlinear mapping
-stretches the space near the boundaries. However, in the data space they look
-fine: this is because we did the fit in the data space.
