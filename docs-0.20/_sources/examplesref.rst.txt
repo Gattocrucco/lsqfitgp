@@ -37,6 +37,8 @@ Long index
     Learned from the 2022 ACIC Competition to Estimate Health Policy Impacts,"
     Observational Studies, Volume 9, Issue 3, 2023, pp. 3-27,
     https://doi.org/10.1353/obs.2023.0023
+    
+    .. image:: ../examples/plot/acic.png
 
 .. _b:
 

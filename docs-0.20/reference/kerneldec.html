@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>3. Kernel decorators &#8212; lsqfitgp documentation</title>
+    <title>Kernel decorators &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
     <script src="../_static/documentation_options.js?v=1b5e2a23"></script>
@@ -13,8 +13,8 @@
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="4. Kernel operations" href="kernelop.html" />
-    <link rel="prev" title="2. Generic kernel classes" href="kernel.html" />
+    <link rel="next" title="Kernel operations" href="kernelop.html" />
+    <link rel="prev" title="Generic kernel classes" href="kernel.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -48,17 +48,18 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">User guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference manual</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">1. Kernels reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernel.html">2. Generic kernel classes</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">3. Kernel decorators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernelop.html">4. Kernel operations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deriv.html">5. Derivative specification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html">6. Gaussian process class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fit.html">8. Fitting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="raniter.html">9. Random sampling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="copula.html">10. Gaussian copulas</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bayestree.html">11. BART</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">Predefined kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">Generic kernel classes</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelop.html">Kernel operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fit.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="raniter.html">Random sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="copula.html">Gaussian copulas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayestree.html">BART</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gvarext.html">Gvar extensions</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
@@ -70,8 +71,8 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="reference.html">Reference manual</a><ul>
-      <li>Previous: <a href="kernel.html" title="previous chapter"><span class="section-number">2. </span>Generic kernel classes</a></li>
-      <li>Next: <a href="kernelop.html" title="next chapter"><span class="section-number">4. </span>Kernel operations</a></li>
+      <li>Previous: <a href="kernel.html" title="previous chapter">Generic kernel classes</a></li>
+      <li>Next: <a href="kernelop.html" title="next chapter">Kernel operations</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -104,10 +105,10 @@
     <ul>
         <li>
           &larr;
-          <a href="kernel.html" title="Previous document"><span class="section-number">2. </span>Generic kernel classes</a>
+          <a href="kernel.html" title="Previous document">Generic kernel classes</a>
         </li>
         <li>
-          <a href="kernelop.html" title="Next document"><span class="section-number">4. </span>Kernel operations</a>
+          <a href="kernelop.html" title="Next document">Kernel operations</a>
           &rarr;
         </li>
     </ul>
@@ -118,7 +119,7 @@
           <div class="body" role="main">
             
   <section id="kernel-decorators">
-<span id="kerneldec"></span><h1><span class="section-number">3. </span>Kernel decorators<a class="headerlink" href="#kernel-decorators" title="Link to this heading">¶</a></h1>
+<span id="kerneldec"></span><h1>Kernel decorators<a class="headerlink" href="#kernel-decorators" title="Link to this heading">¶</a></h1>
 <p>These decorators convert a callable to a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a>. The
 decorators can be used both with and without keyword arguments. The keyword
 arguments will be passed as initialization arguments to the superclass, and
@@ -172,10 +173,10 @@ Example:</p>
     <ul>
         <li>
           &larr;
-          <a href="kernel.html" title="Previous document"><span class="section-number">2. </span>Generic kernel classes</a>
+          <a href="kernel.html" title="Previous document">Generic kernel classes</a>
         </li>
         <li>
-          <a href="kernelop.html" title="Next document"><span class="section-number">4. </span>Kernel operations</a>
+          <a href="kernelop.html" title="Next document">Kernel operations</a>
           &rarr;
         </li>
     </ul>

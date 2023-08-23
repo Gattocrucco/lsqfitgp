@@ -123,7 +123,7 @@
             
   <section id="first-example-a-sine">
 <span id="sine"></span><h1><span class="section-number">2. </span>First example: a sine<a class="headerlink" href="#first-example-a-sine" title="Link to this heading">¶</a></h1>
-<p>We will go through a very simple example fit to introduce how the module works.
+<p>We will go through a simple example fit to introduce how the module works.
 First, import the modules:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -133,7 +133,7 @@ First, import the modules:</p>
 <p>I suppose you know about <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.25)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a>, but you may not know about <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.12)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>.
 It is a module for automatic linear correlation tracking. We will se how to use
 it in the example, if you want to know more <a class="reference external" href="https://gvar.readthedocs.io/en/latest/">it has a good documentation</a>.</p>
-<p>Now we generate some fake data. Let’s make a sine:</p>
+<p>Now we generate some fake data. Let’s make a sine:<a class="footnote-reference brackets" href="#f1" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span> <span class="c1"># 11 numbers uniformly spaced from -5 to 5</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </pre></div>
@@ -174,28 +174,32 @@ calling it.</p>
 <p>Now we build a <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object, providing as argument the kernel we want to
 use, and tell it we want to evaluate the process on the array of points <code class="docutils literal notranslate"><span class="pre">x</span></code>
 we created before:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gproc</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
-<span class="n">gproc</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gproc</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>So, we add points using the <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a> method of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> objects. It
+<p>So, we add points using the <code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code> method of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> objects. It
 won’t be very useful to only ask for the process values on the data—we
 already know the answer there—so we add another array of points, more finely
 spaced, and more extended:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xpred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
-<span class="n">gproc</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xpred</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
+<span class="n">gproc</span> <span class="o">=</span> <span class="n">gproc</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xpred</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>When adding <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">xpred</span></code>, we also provided two strings to
-<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a>, <code class="docutils literal notranslate"><span class="pre">'foo'</span></code> and <code class="docutils literal notranslate"><span class="pre">'bar'</span></code>. These have no special meaning, they
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code>, <code class="docutils literal notranslate"><span class="pre">'foo'</span></code> and <code class="docutils literal notranslate"><span class="pre">'bar'</span></code>. These have no special meaning, they
 are just labels the <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object uses to distinguish the various arrays
 you add to it. You can think of them as variable names.</p>
+<p>When calling <code class="xref py py-obj docutils literal notranslate"><span class="pre">addx</span></code> the second time, we did <code class="docutils literal notranslate"><span class="pre">gproc</span> <span class="pre">=</span> <span class="pre">gproc.addx(...)</span></code>, instead
+of just <code class="docutils literal notranslate"><span class="pre">gproc.addx(...)</span></code>. This is necessary because <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a> object are
+immutable: each operation returns a new <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a> object, leaving the original as it
+is. This may cause some easy to fix coding errors, but it prevents messier ones.
+In Python this paradigm is employed, e.g., by strings.</p>
 <p>Now, we ask <code class="docutils literal notranslate"><span class="pre">gproc</span></code> to compute the <em>a posteriori</em> function values on
 <code class="docutils literal notranslate"><span class="pre">xpred</span></code> by using the known values on <code class="docutils literal notranslate"><span class="pre">x</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ypred</span> <span class="o">=</span> <span class="n">gproc</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>So <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a> takes two arguments; the first is a Python
+<p>So <code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code> takes two arguments: the first is a Python
 dictionary with labels as keys and arrays of function values as values, the
 second is the label of the points on which we want the estimate.</p>
 <p>Now we make a plot of everything:</p>
@@ -218,12 +222,12 @@ second is the label of the points on which we want the estimate.</p>
 </pre></div>
 </div>
 <img alt="../_images/sine1.png" src="../_images/sine1.png" />
-<p>Notice that, to plot <code class="docutils literal notranslate"><span class="pre">ypred</span></code>, we did <code class="docutils literal notranslate"><span class="pre">ypred_mean</span> <span class="pre">=</span> <span class="pre">gvar.mean(ypred)</span></code>. This
-is because the output of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a> is not an array of numbers,
-but an array of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v11.11.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gvar.GVar</span></code></a> objects. <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables represent
-Gaussian distributions; <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.mean" title="(in gvar v11.11.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.mean()</span></code></a> extracts the mean of the
-distribution. Let’s make an error band for the fit by computing the standard
-deviations with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sdev" title="(in gvar v11.11.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sdev()</span></code></a>:</p>
+<p>To plot <code class="docutils literal notranslate"><span class="pre">ypred</span></code>, we did <code class="docutils literal notranslate"><span class="pre">ypred_mean</span> <span class="pre">=</span> <span class="pre">gvar.mean(ypred)</span></code>. This is because the
+output of <code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code> is not an array of numbers, but an array of
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v11.11.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gvar.GVar</span></code></a> objects. <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables represent Gaussian
+distributions; <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.mean" title="(in gvar v11.11.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.mean()</span></code></a> extracts the mean of the distribution. Let’s
+make an error band for the fit by computing the standard deviations with
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sdev" title="(in gvar v11.11.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sdev()</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ypred_sdev</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">ypred</span><span class="p">)</span>
 <span class="n">bottom</span> <span class="o">=</span> <span class="n">ypred_mean</span> <span class="o">-</span> <span class="n">ypred_sdev</span>
 <span class="n">top</span> <span class="o">=</span> <span class="n">ypred_mean</span> <span class="o">+</span> <span class="n">ypred_sdev</span>
@@ -233,13 +237,13 @@ deviations with <a class="reference external" href="https://gvar.readthedocs.io/
 </pre></div>
 </div>
 <img alt="../_images/sine2.png" src="../_images/sine2.png" />
-<p>Let’s take a moment to look at the result. First, consider the line giving the
-mean. Between the data points, it goes smoothly from one point to the next. It
-reasonably approximates a sine. However, outside the region with the data it
-goes to zero. This is about a thing I forgot to mention when introducing
-kernels: apart from the variance and correlations, a Gaussian process also has
-an a priori mean. <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> always assumes that the a priori mean is
-zero, so, going far from the data, the a posteriori mean should go to zero too.</p>
+<p>Look at the result. First, consider the line giving the mean. Between the data
+points, it goes smoothly from one point to the next. It reasonably approximates
+a sine. However, outside the region with the data it goes to zero. This is about
+a thing I forgot to mention when introducing kernels: apart from the variance
+and correlations, a Gaussian process also has an a priori mean. <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>
+always assumes that the a priori mean is zero, so, going far from the data, the
+a posteriori mean should go to zero too.</p>
 <p>It would be easy to provide an arbitrary prior mean by first subtracting it
 from the data, and then adding it back to the result. However, I encourage the
 reader to avoid using prior means at all while learning Gaussian processes. You
@@ -247,18 +251,18 @@ should always think about the links and correlations between the points and the
 general properties of the function instead of focusing on what value or
 specific functional form you expect, and let the data choose the values and
 shape.</p>
-<p>Now we look at the band. It is a band of <span class="math notranslate nohighlight">\(\pm1\sigma\)</span> around the
-posterior mean (<span class="math notranslate nohighlight">\(\sigma\)</span> stands conventionally for the standard
-deviation). For the Gaussian distribution, this interval has a probability of
-68 %. A <span class="math notranslate nohighlight">\(\pm2\sigma\)</span> interval would have a probability of 95 %, so this
-means that the fit expects the function to stay most of the time within a band
-twice as large as that plotted, and 2/3 of the time inside the one plotted. So,
-the summary of the figure is this: close to the points, the function is
-probably a sine; as soon as we move out from the datapoints, the fit gives up
-and just returns the prior.</p>
-<p>Instead of trying to interpret what functions the fit result is representing,
-we can write a code to sample some plausible functions from the posterior
-distribution. <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.12)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a> has a function for doing that, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v11.11.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>:</p>
+<p>Now look at the band. It is a band of <span class="math notranslate nohighlight">\(\pm1\sigma\)</span> around the posterior
+mean (<span class="math notranslate nohighlight">\(\sigma\)</span> stands conventionally for the standard deviation). For the
+Gaussian distribution, this interval has a probability of 68 %. A
+<span class="math notranslate nohighlight">\(\pm2\sigma\)</span> interval would have a probability of 95 %, so this means that
+the fit expects the function to stay most of the time within a band twice as
+large as that plotted, and 2/3 of the time inside the one plotted. So, the
+summary of the figure is this: close to the points, the function is probably a
+sine; as soon as we move out from the datapoints, the fit gives up and just
+returns the prior.</p>
+<p>Instead of trying to interpret what functions the fit result is representing, we
+can sample some plausible functions from the posterior distribution. <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.12)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>
+has a function for doing that, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v11.11.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ypred_sample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">ypred</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xpred</span><span class="p">,</span> <span class="n">ypred_sample</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
@@ -279,9 +283,11 @@ input points prior to feeding them to the kernel. We could do that by hand by
 multiplying <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">xpred</span></code> by something, but all <a class="reference internal" href="../reference/kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a> objects
 provide a convenient parameter to do that automatically, <code class="docutils literal notranslate"><span class="pre">scale</span></code>. So
 let’s do everything again, rescaling by a factor of 3:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xpred</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xpred</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
+<span class="p">)</span>
 <span class="n">ypred</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;bar&#39;</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span> <span class="c1"># clear the plot</span>
@@ -299,7 +305,7 @@ all follow the same path, and they continue to oscillate in a reasonable way
 also outside from the datapoints. But what further away? Let’s make a plot
 from -20 to 20:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xpred_long</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xpred_long</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
+<span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xpred_long</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
 
 <span class="n">ypred</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
 
@@ -315,9 +321,10 @@ from -20 to 20:</p>
 <img alt="../_images/sine5.png" src="../_images/sine5.png" />
 <p>So, after a an oscillation, it still goes back to the prior, as it should. It
 just goes on 3 times as much as before because we set <code class="docutils literal notranslate"><span class="pre">scale=3</span></code>.</p>
-<p>Finally, for completeness, let’s see how to add errors to the data. First, we
-generate some Gaussian distributed errors with standard deviation 0.2:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">yerr</span> <span class="o">=</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+<p>Finally, let’s see how to add errors to the data. First, we generate some
+Gaussian distributed errors with standard deviation 0.2:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">([</span><span class="mi">2023</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">23</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">28</span><span class="p">])</span>
+<span class="n">yerr</span> <span class="o">=</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
 <span class="n">y</span> <span class="o">+=</span> <span class="n">yerr</span>
 </pre></div>
 </div>
@@ -327,8 +334,7 @@ generate some Gaussian distributed errors with standard deviation 0.2:</p>
 </div>
 <p>Now <code class="docutils literal notranslate"><span class="pre">gy</span></code> represents an array of independent Gaussian distributions with mean
 <code class="docutils literal notranslate"><span class="pre">y</span></code> and standard deviation 0.2. We then repeat everything as before, but
-using <code class="docutils literal notranslate"><span class="pre">gy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">y</span></code>; we don’t even need to recreate the <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>
-object because we are not modifying the <span class="math notranslate nohighlight">\(x\)</span> points:</p>
+using <code class="docutils literal notranslate"><span class="pre">gy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">y</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ypred</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;foo&#39;</span><span class="p">:</span> <span class="n">gy</span><span class="p">},</span> <span class="s1">&#39;baz&#39;</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
@@ -344,7 +350,15 @@ object because we are not modifying the <span class="math notranslate nohighligh
 <p>The behaviour makes sense: the samples are not forced any more to pass strictly
 on the datapoints.</p>
 <p>You should now know all the basics. You can experiment using other kernels, the
-available ones are listed in the <a class="reference internal" href="../reference/kernelsref.html#kernels"><span class="std std-ref">Kernels reference</span></a>.</p>
+available ones are listed in <a class="reference internal" href="../reference/kernelsref.html#kernels"><span class="std std-ref">Predefined kernels</span></a>.</p>
+<p class="rubric">Footnotes</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="f1" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>The sine is a staple of Gaussian process regression tutorials. I
+don’t know why.</p>
+</aside>
+</aside>
 </section>
 
 

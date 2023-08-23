@@ -132,9 +132,9 @@ parameter, because that parameter goes into the definition of the kernel, and
 the kernel completely specifies the Gaussian process. A different scale would
 mean a different kernel and so a different Gaussian process.</p>
 <p>This kind of parameters that reside on a “higher” level and can not be fitted
-are called <em>hyperparameters</em>. In this context the “normal” parameters are the
-values of the Gaussian process on the points you ask for them with
-<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code></a>.</p>
+are called <em>hyperparameters</em>. In this context the “normal”, non-hyper parameters
+are the values of the Gaussian process on the points you ask for them with
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.predfromdata()</span></code>.</p>
 <p>From a statistical point of view there’s no difference between parameters and
 hyperparameters, it is a practical categorization that comes up when the
 particular statistical tool you are using can not fit everything (our case), or
@@ -149,21 +149,20 @@ need another fancy name.</p>
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">makegp</span><span class="p">(</span><span class="n">hyperparams</span><span class="p">):</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">hyperparams</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]))</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;sine&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">gp</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">lgp</span>
+        <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">hyperparams</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]))</span>
+        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;sine&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
 <span class="n">hyperprior</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;log(scale)&#39;</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))}</span>
 <span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hyperprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">hp</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">hp</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">2.16</span><span class="p">(</span><span class="mi">17</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2.16(17)
 </pre></div>
 </div>
-<p>As usual, it’s easier done than said! The code is short but introduces a bunch
-of new things, let’s go through it.</p>
+<p>The code is short but introduces a bunch of new things, let’s go through it.</p>
 <p>First, we encapsulated creating the <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> object and adding points in
 the function <code class="docutils literal notranslate"><span class="pre">makegp</span></code>, that takes as sole argument a dictionary of
 hyperparameters.</p>
@@ -182,7 +181,7 @@ number: if we put <code class="docutils literal notranslate"><span class="pre">'
 explore negative values too, and we would get a loud error from <a class="reference internal" href="../reference/kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a>.</p>
 <p>Finally, we give everything to the class <a class="reference internal" href="../reference/fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a>: the hyperprior,
 the gp-creating function, and a dictionary of data like we would pass to
-<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a>. The attribute <code class="docutils literal notranslate"><span class="pre">p</span></code> is a dictionary containing the fit
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code>. The attribute <code class="docutils literal notranslate"><span class="pre">p</span></code> is a dictionary containing the fit
 result for the hyperparameters.</p>
 <p>Now that we have found the optimal scale, we can use it to create a gp object
 and take some samples. However, since the hyperparameter has an uncertainty,
@@ -193,9 +192,8 @@ we have to sample it too:</p>
 
 <span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 
-<span class="k">for</span> <span class="n">hpsample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">hp</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsample</span><span class="p">)</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">hpsample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsample</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
     <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">ysample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">yplot</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
@@ -212,12 +210,11 @@ we change that with an hyperparameter? The amplitude of the oscillations is
 given by the prior variance, so we just need to multiply the kernel by a
 constant:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">makegp</span><span class="p">(</span><span class="n">hyperparams</span><span class="p">):</span>
-    <span class="n">variance</span> <span class="o">=</span> <span class="n">hyperparams</span><span class="p">[</span><span class="s1">&#39;sdev&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span>
-    <span class="n">scale</span> <span class="o">=</span> <span class="n">hyperparams</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span>
-    <span class="n">kernel</span> <span class="o">=</span> <span class="n">variance</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;sine&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">gp</span>
+    <span class="n">kernel</span> <span class="o">=</span> <span class="n">hyperparams</span><span class="p">[</span><span class="s1">&#39;sdev&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">hyperparams</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">lgp</span>
+        <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;sine&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
 
 <span class="n">hyperprior</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s1">&#39;log(sdev)&#39;</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
@@ -225,9 +222,8 @@ constant:</p>
 <span class="p">}</span>
 
 <span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hyperprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">hp</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;sdev&#39;</span><span class="p">,</span> <span class="n">hp</span><span class="p">[</span><span class="s1">&#39;sdev&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span> <span class="n">hp</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;sdev&#39;</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;sdev&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -239,17 +235,16 @@ numpy functions, you have to do <code class="docutils literal notranslate"><span
 <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">numpy</span></code>. Read the <a class="reference external" href="https://jax.readthedocs.io/en/latest">jax documentation</a> for detailed information.</p>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdev</span> <span class="mf">2.44</span><span class="p">(</span><span class="mi">81</span><span class="p">)</span>
-<span class="n">scale</span> <span class="mf">2.86</span><span class="p">(</span><span class="mi">22</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>sdev 2.44(81)
+scale 2.86(22)
 </pre></div>
 </div>
 <p>It did not do what I wanted! The fitted standard deviation is even higher
 than 1.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
 
-<span class="k">for</span> <span class="n">hpsample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">hp</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsample</span><span class="p">)</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">hpsample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
+    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsample</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
     <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">ysample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">yplot</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
@@ -268,13 +263,12 @@ did’t tell this to the fit. I told it that the kernel is an exponential
 quadratic. The fit is trying to find a scale and variance such that it becomes
 as likely as possible to see a sine-like oscillation 10 units long with an
 exponential quadratic correlation.</p>
-<p>So we should deduce that such an oscillation tipically comes out as a small
+<p>So we should deduce that such an oscillation typically comes out as a small
 oscillation in a more widely varying function. To get a feel of that, let’s
 plot a lot of samples from the prior with the hyperparameters I would have
 liked to come out, i.e., I’ll use a scale of 2 and a standard deviation of, say,
 0.7:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">({</span><span class="s1">&#39;scale&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;sdev&#39;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">})</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">({</span><span class="s1">&#39;scale&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;sdev&#39;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">})</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 
@@ -292,8 +286,7 @@ liked to come out, i.e., I’ll use a scale of 2 and a standard deviation of, sa
 </div>
 <img alt="../_images/hyper3.png" src="../_images/hyper3.png" />
 <p>Now we do the same with the optimized hyperparameters:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">hp</span><span class="p">))</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">pmean</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 
@@ -316,13 +309,13 @@ integrating the Gaussian distribution, with the caveat that the parameter we
 actually used in the fit is log(sdev):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
 
-<span class="n">p</span> <span class="o">=</span> <span class="n">hp</span><span class="p">[</span><span class="s1">&#39;log(sdev)&#39;</span><span class="p">]</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;log(sdev)&#39;</span><span class="p">]</span>
 <span class="n">prob</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="n">gvar</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="n">scale</span><span class="o">=</span><span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:.3g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prob</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">0.00383</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>0.00383
 </pre></div>
 </div>
 <p>Ouch, that’s low. The fit values my intuition at less than 1 %. Now I’m
@@ -330,13 +323,13 @@ outraged, I’ll show <a class="reference internal" href="../index.html#module-l
 proper bayesian fit with Markov Chains using <code class="xref py py-mod docutils literal notranslate"><span class="pre">pymc3</span></code>. First, I print
 the mean and standard deviations of the effective hyperparameters (the
 logarithms):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">hp</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">log</span><span class="p">(</span><span class="n">sdev</span><span class="p">)</span> <span class="mf">0.89</span><span class="p">(</span><span class="mi">33</span><span class="p">)</span>
-<span class="n">log</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span> <span class="mf">1.051</span><span class="p">(</span><span class="mi">77</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>log(sdev) 0.89(33)
+log(scale) 1.051(77)
 </pre></div>
 </div>
 <p>Then I run this code to get the (I hope) correct and satisfying answer:</p>
@@ -383,7 +376,7 @@ logarithms):</p>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>logp = -108.32, ||grad|| = 2,021.1: 100%|█████████████████████████████████████████████████████████████████| 20/20 [00:00&lt;00:00, 228.23it/s]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>logp = -108.32, ||grad|| = 2,021.1: 100%|█████████████████████████████████████████████████████████████████| 20/20 [00:00&lt;00:00, 228.23it/s]
 Auto-assigning NUTS sampler...
 Initializing NUTS using jitter+adapt_diag...
 Sequential sampling (2 chains in 1 job)
@@ -420,8 +413,8 @@ wrong.</p>
 <p>Second, we learned that I was wrong and effectively it is not very likely,
 with the exponential quadratic kernel, to get an harmonic oscillation with a
 prior variance less than 1.</p>
-<p>Is there a somewhat clear explanation of this? Yes there is! In
-<a class="reference internal" href="kernels.html#kernelexpl"><span class="std std-ref">More on kernels</span></a>, we said that any kernel can be written as</p>
+<p>Is there a somewhat clear explanation of this? In <a class="reference internal" href="kernels.html#kernelexpl"><span class="std std-ref">More on kernels</span></a>, we said
+that any kernel can be written as</p>
 <div class="math notranslate nohighlight">
 \[k(x, x') = \sum_i h_i(x) h_i(x').\]</div>
 <p>What are the <span class="math notranslate nohighlight">\(h_i\)</span> for the exponential quadratic kernel? Well, first I
@@ -477,23 +470,22 @@ easy as cheating actually if we use the <a class="reference internal" href="../r
 <span class="k">def</span> <span class="nf">makegp</span><span class="p">(</span><span class="n">hp</span><span class="p">):</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">hp</span><span class="p">[</span><span class="s1">&#39;period&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
     <span class="n">kernel</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">Periodic</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;sine&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">gp</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">lgp</span>
+        <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;sine&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
 
 <span class="n">hprior</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s1">&#39;log(period)&#39;</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
 <span class="p">}</span>
 <span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">hp</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span>
-<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">hp</span><span class="o">.</span><span class="n">all_keys</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">hp</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">all_keys</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
 
-<span class="k">for</span> <span class="n">hpsamp</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">hp</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsamp</span><span class="p">)</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">hpsamp</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsamp</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
     <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">ysamp</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">yplot</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
@@ -505,8 +497,8 @@ easy as cheating actually if we use the <a class="reference internal" href="../r
 </div>
 <img alt="../_images/hyper7.png" src="../_images/hyper7.png" />
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">log</span><span class="p">(</span><span class="n">period</span><span class="p">)</span> <span class="mf">1.8373</span><span class="p">(</span><span class="mi">29</span><span class="p">)</span>
-<span class="n">period</span> <span class="mf">6.280</span><span class="p">(</span><span class="mi">18</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>log(period) 1.8373(29)
+period 6.280(18)
 </pre></div>
 </div>
 </section>

@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/partial.rst
 ..
-.. Copyright (c) 2022, Giacomo Petrillo
+.. Copyright (c) 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -45,35 +45,38 @@ has value 0 at the four corners of the unitary square::
     
     zdata = np.zeros(4)
     
-    gp.addx(xydata, 'corners')
+    gp = gp.addx(xydata, 'corners')
 
 Next, we have to specify the saddle point using derivatives. For simplicity,
 let's say that the saddle point is oriented along the axes and fix that the
 curvature is negative along `x` and positive along `y`. This implies that:
 
-  * the second derivatives w.r.t. `x` and `y` are respectively negative and positive;
+  * the second derivatives w.r.t. `x` and `y` are respectively negative and
+    positive;
  
   * the cross second derivative is zero;
   
   * the first derivatives are zero.
   
-To specify partial derivatives, we just pass a field name, a tuple of field
-names, or a pair `(order, field name)` as ``deriv`` argument to ``addx``::
+To specify partial derivatives, we pass a field name, a tuple of field names, or
+a pair ``(order, field name)`` as ``deriv`` argument to ``addx``::
 
     center = np.array((0.5, 0.5), dtype=xydata.dtype)
-    gp.addx(center,   'dx', deriv=       'x')
-    gp.addx(center,   'dy', deriv=       'y')
-    gp.addx(center,  'd2x', deriv=('x', 'x'))
-    gp.addx(center,  'd2y', deriv=(  2, 'y'))
-    gp.addx(center, 'dxdy', deriv=('x', 'y'))
+    gp = (gp
+        .addx(center,   'dx', deriv=       'x')
+        .addx(center,   'dy', deriv=       'y')
+        .addx(center,  'd2x', deriv=('x', 'x'))
+        .addx(center,  'd2y', deriv=(  2, 'y'))
+        .addx(center, 'dxdy', deriv=('x', 'y'))
+    )
 
 Now we add a grid of points to do the plot and then ask for the prediction::
 
     xyplot = np.empty((30, 30), dtype=xydata.dtype)
-    xyplot['x'] = np.linspace(0, 1, 30)[:, None]
-    xyplot['y'] = np.linspace(0, 1, 30)[None, :]
+    xyplot['x'] = np.linspace(0, 1, xyplot.shape[0])[:, None]
+    xyplot['y'] = np.linspace(0, 1, xyplot.shape[1])[None, :]
     
-    gp.addx(xyplot, 'plot')
+    gp = gp.addx(xyplot, 'plot')
     
     zplot = gp.predfromdata({
         'corners': zdata,

@@ -28,7 +28,7 @@ dl.py.class, dl.py.function {
     margin-bottom: 2.5em;
 }
 
-dl.py.class > dd > p:first-child {
+dl.py.class > dd > p:first-child, dl.py.function > dd > p:first-child {
     margin-top: 0.8em;
 }
 

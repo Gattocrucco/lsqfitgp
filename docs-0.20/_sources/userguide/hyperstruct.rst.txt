@@ -24,10 +24,10 @@
 Hyperparameters in the input
 ============================
 
-This section is a bit technical, I will just explain a workaround necessary to
-make :class:`empbayes_fit` work when the hyperparameters enter in the
-definition of the Gaussian process from the input points instead of from the
-kernel parameters and the input points are multidimensional.
+This section is a bit technical, I will explain a nonobvious thing necessary to
+make :class:`empbayes_fit` work when the hyperparameters enter in the definition
+of the Gaussian process from the input points instead of from the kernel
+parameters and the input points are multidimensional.
 
 Let's say you are investigating on a case of disappeared cats in a village. You
 want to study the correlation between the number of new cars bought per day and
@@ -66,9 +66,7 @@ recovers the correct hyperparameters. ::
         
         points = makepoints(time)
         points['time'][0] -= delay
-        gp.addx(points, 'data')
-        
-        return gp
+        return gp.addx(points, 'data')
     
     truehp = {
         'delay': 10,
@@ -100,12 +98,13 @@ Let's fit now::
     })
 
     fit = lgp.empbayes_fit(hprior, makegp, {'data': data})
-    hp = fit.p
 
 I used `copula.makedict` to generate automatically the transformation of the
-parameter ``'corr'``. When I run this last piece of code, it fails with::
+parameter ``'corr'``. When I run this last piece of code, it fails with:
 
-   jax._src.errors.TracerArrayConversionError: The numpy.ndarray conversion method __array__() was called on the JAX Tracer object ...
+.. code-block:: text
+
+    jax._src.errors.TracerArrayConversionError: The numpy.ndarray conversion method __array__() was called on the JAX Tracer object ...
 
 Ok, what went wrong? First, I used :func:`np.array` in `makegp` without doing
 ``from jax import numpy``. Second, I did ``points['time'][0] -= delay``,
@@ -133,32 +132,30 @@ assigning to fields without breaking :mod:`jax`::
         points = points.at['time'].set(jnp.array([time - delay, time]))
         #                              ~~~ jax numpy
         # this creates a copy of the array with the modified field
-        gp.addx(points, 'data')
-        
-        return gp
+        return gp.addx(points, 'data')
     
     fit = lgp.empbayes_fit(hprior, makegp, {'data': data}, raises=False)
         # we use raises=False because the minimizer is a bit picky.
-    hp = fit.p
     
     for k in truehp:
-        print(k, truehp[k], hp[k])
+        print(k, truehp[k], fit.p[k])
 
-Output::
+Output:
 
-   delay 10 10.29(29)
-   corr 0.7 0.64(15)
-   scale 3 2.963(24)
+.. code-block:: text
+
+    delay 10 8.98(58)
+    corr 0.7 0.67(15)
+    scale 3 3.107(49)
 
 It seems to work. Let's plot some samples::
 
     timeplot = np.linspace(0, 19, 200)
     xplot = makepoints(timeplot)
     
-    for hpsamp in gvar.raniter(hp, 2):
-        gp = makegp(hpsamp)
+    for hpsamp in gvar.raniter(fit.p, 2):
         xplot[0]['time'] = timeplot - hpsamp['delay']
-        gp.addx(xplot, 'plot')
+        gp = makegp(hpsamp).addx(xplot, 'plot')
         yplot = gp.predfromdata({'data': data}, 'plot')
         
         for sample in gvar.raniter(yplot, 1):

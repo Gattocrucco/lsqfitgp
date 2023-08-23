@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>9. Random sampling &#8212; lsqfitgp documentation</title>
+    <title>Random sampling &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
     <script src="../_static/documentation_options.js?v=1b5e2a23"></script>
@@ -13,8 +13,8 @@
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="10. Gaussian copulas" href="copula.html" />
-    <link rel="prev" title="8. Fitting" href="fit.html" />
+    <link rel="next" title="Gaussian copulas" href="copula.html" />
+    <link rel="prev" title="Fitting" href="fit.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -48,17 +48,18 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">User guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference manual</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">1. Kernels reference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernel.html">2. Generic kernel classes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">3. Kernel decorators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kernelop.html">4. Kernel operations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deriv.html">5. Derivative specification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gp.html">6. Gaussian process class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="array.html">7. Structured arrays wrapping</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fit.html">8. Fitting</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">9. Random sampling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="copula.html">10. Gaussian copulas</a></li>
-<li class="toctree-l2"><a class="reference internal" href="bayestree.html">11. BART</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">Predefined kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">Generic kernel classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelop.html">Kernel operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays wrapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fit.html">Fitting</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Random sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="copula.html">Gaussian copulas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayestree.html">BART</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gvarext.html">Gvar extensions</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
@@ -70,8 +71,8 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="reference.html">Reference manual</a><ul>
-      <li>Previous: <a href="fit.html" title="previous chapter"><span class="section-number">8. </span>Fitting</a></li>
-      <li>Next: <a href="copula.html" title="next chapter"><span class="section-number">10. </span>Gaussian copulas</a></li>
+      <li>Previous: <a href="fit.html" title="previous chapter">Fitting</a></li>
+      <li>Next: <a href="copula.html" title="next chapter">Gaussian copulas</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -104,10 +105,10 @@
     <ul>
         <li>
           &larr;
-          <a href="fit.html" title="Previous document"><span class="section-number">8. </span>Fitting</a>
+          <a href="fit.html" title="Previous document">Fitting</a>
         </li>
         <li>
-          <a href="copula.html" title="Next document"><span class="section-number">10. </span>Gaussian copulas</a>
+          <a href="copula.html" title="Next document">Gaussian copulas</a>
           &rarr;
         </li>
     </ul>
@@ -118,7 +119,7 @@
           <div class="body" role="main">
             
   <section id="random-sampling">
-<h1><span class="section-number">9. </span>Random sampling<a class="headerlink" href="#random-sampling" title="Link to this heading">¶</a></h1>
+<h1>Random sampling<a class="headerlink" href="#random-sampling" title="Link to this heading">¶</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.raniter">
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">raniter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cov</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_fastraniter.py#L42-L123"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.raniter" title="Link to this definition">¶</a></dt>
@@ -176,10 +177,10 @@ number generator.</p>
     <ul>
         <li>
           &larr;
-          <a href="fit.html" title="Previous document"><span class="section-number">8. </span>Fitting</a>
+          <a href="fit.html" title="Previous document">Fitting</a>
         </li>
         <li>
-          <a href="copula.html" title="Next document"><span class="section-number">10. </span>Gaussian copulas</a>
+          <a href="copula.html" title="Next document">Gaussian copulas</a>
           &rarr;
         </li>
     </ul>

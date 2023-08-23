@@ -1,4 +1,4 @@
-.. lsqfitgp/docs/raniter.rst
+.. lsqfitgp/docs/reference/raniter.rst
 ..
 .. Copyright (c) 2020, 2022, Giacomo Petrillo
 ..

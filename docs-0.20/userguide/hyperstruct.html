@@ -122,10 +122,10 @@
             
   <section id="hyperparameters-in-the-input">
 <span id="hyperstruct"></span><h1><span class="section-number">12. </span>Hyperparameters in the input<a class="headerlink" href="#hyperparameters-in-the-input" title="Link to this heading">¶</a></h1>
-<p>This section is a bit technical, I will just explain a workaround necessary to
-make <a class="reference internal" href="../reference/fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> work when the hyperparameters enter in the
-definition of the Gaussian process from the input points instead of from the
-kernel parameters and the input points are multidimensional.</p>
+<p>This section is a bit technical, I will explain a nonobvious thing necessary to
+make <a class="reference internal" href="../reference/fit.html#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> work when the hyperparameters enter in the definition
+of the Gaussian process from the input points instead of from the kernel
+parameters and the input points are multidimensional.</p>
 <p>Let’s say you are investigating on a case of disappeared cats in a village. You
 want to study the correlation between the number of new cars bought per day and
 the number of reported disappeared cats per day.</p>
@@ -161,9 +161,7 @@ recovers the correct hyperparameters.</p>
 
     <span class="n">points</span> <span class="o">=</span> <span class="n">makepoints</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
     <span class="n">points</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">delay</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">gp</span>
+    <span class="k">return</span> <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
 
 <span class="n">truehp</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
@@ -194,12 +192,11 @@ Let’s fit now:</p>
 <span class="p">})</span>
 
 <span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">})</span>
-<span class="n">hp</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span>
 </pre></div>
 </div>
 <p>I used <a class="reference internal" href="../reference/copula.html#lsqfitgp.copula.makedict" title="lsqfitgp.copula.makedict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copula.makedict</span></code></a> to generate automatically the transformation of the
 parameter <code class="docutils literal notranslate"><span class="pre">'corr'</span></code>. When I run this last piece of code, it fails with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">jax</span><span class="o">.</span><span class="n">_src</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">TracerArrayConversionError</span><span class="p">:</span> <span class="n">The</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span> <span class="n">conversion</span> <span class="n">method</span> <span class="n">__array__</span><span class="p">()</span> <span class="n">was</span> <span class="n">called</span> <span class="n">on</span> <span class="n">the</span> <span class="n">JAX</span> <span class="n">Tracer</span> <span class="nb">object</span> <span class="o">...</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>jax._src.errors.TracerArrayConversionError: The numpy.ndarray conversion method __array__() was called on the JAX Tracer object ...
 </pre></div>
 </div>
 <p>Ok, what went wrong? First, I used <code class="xref py py-func docutils literal notranslate"><span class="pre">np.array()</span></code> in <code class="xref py py-obj docutils literal notranslate"><span class="pre">makegp</span></code> without doing
@@ -227,32 +224,28 @@ assigning to fields without breaking <code class="xref py py-mod docutils litera
     <span class="n">points</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">time</span> <span class="o">-</span> <span class="n">delay</span><span class="p">,</span> <span class="n">time</span><span class="p">]))</span>
     <span class="c1">#                              ~~~ jax numpy</span>
     <span class="c1"># this creates a copy of the array with the modified field</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">gp</span>
+    <span class="k">return</span> <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
 
 <span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="c1"># we use raises=False because the minimizer is a bit picky.</span>
-<span class="n">hp</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span>
 
 <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">truehp</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">truehp</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">hp</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">truehp</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">delay</span> <span class="mi">10</span> <span class="mf">10.29</span><span class="p">(</span><span class="mi">29</span><span class="p">)</span>
-<span class="n">corr</span> <span class="mf">0.7</span> <span class="mf">0.64</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
-<span class="n">scale</span> <span class="mi">3</span> <span class="mf">2.963</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>delay 10 8.98(58)
+corr 0.7 0.67(15)
+scale 3 3.107(49)
 </pre></div>
 </div>
 <p>It seems to work. Let’s plot some samples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">timeplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 <span class="n">xplot</span> <span class="o">=</span> <span class="n">makepoints</span><span class="p">(</span><span class="n">timeplot</span><span class="p">)</span>
 
-<span class="k">for</span> <span class="n">hpsamp</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">hp</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsamp</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">hpsamp</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
     <span class="n">xplot</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">timeplot</span> <span class="o">-</span> <span class="n">hpsamp</span><span class="p">[</span><span class="s1">&#39;delay&#39;</span><span class="p">]</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsamp</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
     <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">yplot</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>

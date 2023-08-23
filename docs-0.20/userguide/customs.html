@@ -127,25 +127,25 @@
 kernel. There are many other kernels available in the module; however, it will
 be useful to build at least once our own kernel to understand more about how
 kernels work.</p>
-<p>First I will make up a problem for which there’s not already a reasonable
-kernel in the module. Let’s say we want to recognize automatically the language
-of a text. To keep things simple, we will use only two languages, English and
-Latin. To represent this binary classification problem with a Gaussian process,
-we consider a real “score” which is modeled as a Gaussian process. Negative
-scores correspond to English, positive scores correspond to Latin. Example: if
-the prior for a text score is <span class="math notranslate nohighlight">\(0 \pm 1\)</span>, it means there’s 50 %
-probability it’s English and 50 % it’s Latin. In general we have to integrate a
-Gaussian distribution over the negative/positive semiaxis.</p>
+<p>First I will make up a problem for which there’s not already a reasonable kernel
+in the module. Let’s say we want to recognize automatically the language of a
+text. To keep things simple, we will use only two languages, English and Latin.
+To represent this binary classification problem with a Gaussian process, we
+consider a “score” which is modeled as a Gaussian process. Negative scores
+correspond to English, positive scores correspond to Latin. Example: if the
+prior for a text score is <span class="math notranslate nohighlight">\(0 \pm 1\)</span>, it means there’s 50 % probability
+it’s English and 50 % it’s Latin. In general we have to integrate a Gaussian
+distribution over the negative/positive semiaxis.</p>
 <p>Without using statistical techniques, writing a language identification program
 is quite simple; we could just put a list of common words for each language and
 count the words in the text. However, for the sake of the example, we will
 write a dumb kernel that has no internal knowledge of the languages and doesn’t
 even consider words.</p>
-<p>How do we make a kernel over texts? We always talked about kernels with real
-numbers, but actually the definition did not require <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(x'\)</span>
-to be numbers. It didn’t require them to be <em>anything</em>. In <a class="reference internal" href="kernels.html#kernelexpl"><span class="std std-ref">More on kernels</span></a> we
-wrote the positivity requirement with an integral, but it can also be written
-as a sum:</p>
+<p>How do we make a kernel over texts? We always talked about kernels as functions
+of real numbers, but actually the definition did not require <span class="math notranslate nohighlight">\(x\)</span> and
+<span class="math notranslate nohighlight">\(x'\)</span> to be numbers. It didn’t require them to be <em>anything</em>. In
+<a class="reference internal" href="kernels.html#kernelexpl"><span class="std std-ref">More on kernels</span></a> we wrote the positivity requirement with an integral, but it
+can also be written as a sum:</p>
 <div class="math notranslate nohighlight">
 \[\forall g: \sum_x \sum_{x'} g(x) k(x, x') g(x') \ge 0.\]</div>
 <p>It still holds that a function of the form <span class="math notranslate nohighlight">\(k(x, x') = \sum_i h_i(x)
@@ -184,14 +184,13 @@ other text. Texts with a lot of “a” will be much a-correlated between them.<
 counts, and then sums over all letters. We then applied two decorators:
 <code class="docutils literal notranslate"><span class="pre">np.vectorize</span></code>, which applies the function to each text in <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>
 when they are arrays instead of single texts, and <code class="docutils literal notranslate"><span class="pre">lgp.kernel</span></code>, which marks
-the function as a kernel for <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>. The decorator order matters!
-First we transform the function to make it work on arrays, and only then we
+the function as a kernel for <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>. The decorator order matters:
+first we transform the function to make it work on arrays, and only then we
 can apply <code class="docutils literal notranslate"><span class="pre">&#64;lgp.kernel</span></code> to mark it as a kernel.</p>
 <p>Note that this function is disastrously inefficient, I just wrote it to be as
 clear as possible.</p>
-<p>Now we need some texts. I’ll just copy-paste the first paragraph of random
-articles from the <a class="reference external" href="https://en.wikipedia.org/wiki/Special:Random">English</a> and
-<a class="reference external" href="https://la.wikipedia.org/wiki/Specialis:Pagina_fortuita">Latin</a> wikipedias.</p>
+<p>Now we need some texts. I’ll copy-pasted the first paragraph of random articles
+from the <a class="reference external" href="https://en.wikipedia.org/wiki/Special:Random">English</a> and <a class="reference external" href="https://la.wikipedia.org/wiki/Specialis:Pagina_fortuita">Latin</a> wikipedias.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">english_texts</span> <span class="o">=</span> <span class="p">[</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Kiy Island (Russian: Кий-остров) is an island in the Onega Bay of the White Sea, 8 km off-shore and 15 km from the town of Onega. The island stretches for 2 kilometres from north-west to south-east, but its width does not exceed 800 meters. The island includes wide and sandy beaches, piny woods rich with berries, and large rocks. It has a remarkably interesting architectural ensemble, and hosts the history of the Kiysky Krestny monastery. Thousands of tourists go and visit the island.[1]&quot;&quot;&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Haakon Andreas Olsen (18 September 1923[citation needed] – 22 August 2010) was a Norwegian physicist.&quot;&quot;&quot;</span><span class="p">,</span>
@@ -252,9 +251,11 @@ articles from the <a class="reference external" href="https://en.wikipedia.org/w
 <p>Ok, so we have 25 english texts and 25 latin texts. There’s some contamination,
 like the latin wikipedia page on the <em>Hills Road Sixth Form College</em>, but this
 is life. Let’s put all this in a Gaussian process object:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">CountLetters</span><span class="p">())</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">english_texts</span><span class="p">,</span> <span class="s1">&#39;english&#39;</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">latin_texts</span><span class="p">,</span> <span class="s1">&#39;latin&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">CountLetters</span><span class="p">())</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">english_texts</span><span class="p">,</span> <span class="s1">&#39;english&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">latin_texts</span><span class="p">,</span> <span class="s1">&#39;latin&#39;</span><span class="p">)</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 <p>I’m a bit worried. Will this mess really work? I’ll look at the prior to see
@@ -267,67 +268,66 @@ if it makes sense before going on:</p>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*****</span> <span class="n">english</span> <span class="o">*****</span>
-    <span class="n">Kiy</span> <span class="n">Island</span> <span class="p">(</span><span class="n">Russian</span><span class="p">:</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">95</span><span class="p">)</span>
-    <span class="n">Haakon</span> <span class="n">Andreas</span> <span class="n">Olsen</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">17</span><span class="p">)</span>
-    <span class="n">Le</span> <span class="n">Chant</span> <span class="n">des</span> <span class="n">chemins</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">47</span><span class="p">)</span>
-    <span class="n">Omanaia</span> <span class="p">(</span><span class="n">Māori</span><span class="p">:</span> <span class="n">Ōman</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
-    <span class="n">Printed</span> <span class="n">electronics</span>     <span class="mi">0</span><span class="p">(</span><span class="mi">169</span><span class="p">)</span>
-    <span class="n">The</span> <span class="n">Battle</span> <span class="n">of</span> <span class="n">Blair</span><span class="s1">&#39;    0(28)</span>
-    <span class="n">Bradley</span> <span class="n">Godden</span> <span class="p">(</span><span class="n">born</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-    <span class="n">Milecastle</span> <span class="mi">22</span> <span class="p">(</span><span class="n">Portg</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">55</span><span class="p">)</span>
-    <span class="n">Mešeišta</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">villag</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">41</span><span class="p">)</span>
-    <span class="n">Taubensee</span> <span class="p">(</span><span class="n">Kössen</span><span class="o">/</span><span class="n">Un</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">13</span><span class="p">)</span>
-    <span class="n">Local</span> <span class="n">elections</span> <span class="n">were</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">85</span><span class="p">)</span>
-    <span class="n">New</span> <span class="n">Fork</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">ghost</span>     <span class="mi">0</span><span class="p">(</span><span class="mi">88</span><span class="p">)</span>
-    <span class="s2">&quot;Tell Me You&#39;re Mine    0(30)</span>
-    <span class="n">In</span> <span class="n">Greek</span> <span class="n">mythology</span><span class="p">,</span>     <span class="mi">0</span><span class="p">(</span><span class="mi">81</span><span class="p">)</span>
-    <span class="n">Sanxiantai</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">(</span><span class="n">Amis</span><span class="p">:</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">117</span><span class="p">)</span>
-    <span class="n">A</span> <span class="n">number</span> <span class="n">of</span> <span class="n">steamshi</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
-    <span class="n">Animaux</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">French</span>     <span class="mi">0</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
-    <span class="n">Lin</span> <span class="n">Li</span><span class="p">,</span> <span class="n">FREng</span><span class="p">,</span> <span class="n">CEng</span><span class="p">,</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">31</span><span class="p">)</span>
-    <span class="n">In</span> <span class="n">various</span> <span class="n">urban</span> <span class="n">act</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">72</span><span class="p">)</span>
-    <span class="n">Pocono</span> <span class="n">Airlines</span> <span class="n">was</span>     <span class="mi">0</span><span class="p">(</span><span class="mi">39</span><span class="p">)</span>
-    <span class="n">Strokkers</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">Spani</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">48</span><span class="p">)</span>
-    <span class="n">Harrison</span> <span class="n">Fraker</span><span class="p">,</span> <span class="n">FAI</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">29</span><span class="p">)</span>
-    <span class="s2">&quot;Did It in a Minute&quot;</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">61</span><span class="p">)</span>
-    <span class="n">Chaerodrys</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">genu</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">17</span><span class="p">)</span>
-    <span class="n">A</span> <span class="n">photographic</span> <span class="n">album</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">98</span><span class="p">)</span>
-<span class="o">*****</span> <span class="n">latin</span> <span class="o">*****</span>
-    <span class="n">Colloretum</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">(</span><span class="o">-</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">52</span><span class="p">)</span>
-    <span class="n">Lánzhōu</span><span class="p">,[</span><span class="mi">1</span><span class="p">]</span> <span class="n">seu</span> <span class="n">fort</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
-    <span class="n">Aizecourt</span><span class="o">-</span><span class="n">le</span><span class="o">-</span><span class="n">Bas</span> <span class="n">est</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span>
-    <span class="mi">4009</span> <span class="n">Drobyshevskij</span><span class="p">,[</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">71</span><span class="p">)</span>
-    <span class="n">Vaslui</span> <span class="p">(</span><span class="n">Dacoromanice</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">39</span><span class="p">)</span>
-    <span class="n">Argentolium</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">(</span><span class="n">Fran</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
-    <span class="n">Rimogne</span> <span class="n">est</span> <span class="n">commune</span>     <span class="mi">0</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
-    <span class="n">Respublica</span> <span class="n">Helvetica</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">34</span><span class="p">)</span>
-    <span class="n">Hills</span> <span class="n">Road</span> <span class="n">Sixth</span> <span class="n">For</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">92</span><span class="p">)</span>
-    <span class="n">Aucopolis</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="p">(</span><span class="n">Ang</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">55</span><span class="p">)</span>
-    <span class="n">Vaprium</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">(</span><span class="o">-</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="o">.</span><span class="p">)</span>     <span class="mi">0</span><span class="p">(</span><span class="mi">48</span><span class="p">)</span>
-    <span class="n">Mirepoix</span> <span class="p">(</span><span class="n">Gasconice</span>     <span class="mi">0</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
-    <span class="n">Volsci</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="n">populus</span> <span class="n">an</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
-    <span class="n">Lantenay</span> <span class="n">est</span> <span class="n">commune</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">33</span><span class="p">)</span>
-    <span class="n">Étouy</span> <span class="n">est</span> <span class="n">commune</span> <span class="n">Fr</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
-    <span class="n">Astropecten</span> <span class="n">polyacan</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span>
-    <span class="n">Statoniensis</span> <span class="n">lacus</span><span class="p">[</span><span class="mi">1</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">46</span><span class="p">)</span>
-    <span class="n">Annus</span> <span class="mi">11</span> <span class="n">a</span><span class="o">.</span><span class="n">C</span><span class="o">.</span><span class="n">n</span><span class="o">.</span> <span class="n">e</span> <span class="n">se</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
-    <span class="n">Anna</span> <span class="n">Reagan</span> <span class="p">(</span><span class="n">Anglice</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">87</span><span class="p">)</span>
-    <span class="n">Saint</span><span class="o">-</span><span class="n">Martial</span><span class="o">-</span><span class="n">d</span><span class="s1">&#39;Alba    0(25)</span>
-    <span class="n">Béla</span> <span class="n">Németh</span> <span class="p">(</span><span class="n">sive</span> <span class="n">Be</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">17</span><span class="p">)</span>
-    <span class="n">Franciscus</span> <span class="n">Salmhofer</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-    <span class="n">Deversorium</span> <span class="n">Astoria</span>     <span class="mi">0</span><span class="p">(</span><span class="mi">55</span><span class="p">)</span>
-    <span class="n">Concressault</span> <span class="n">est</span> <span class="n">com</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span>
-    <span class="n">Clairfayts</span> <span class="n">est</span> <span class="n">commu</span>    <span class="mi">0</span><span class="p">(</span><span class="mi">29</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>***** english *****
+   Kiy Island (Russian:    0(95)
+   Haakon Andreas Olsen    0(17)
+   Le Chant des chemins    0(47)
+   Omanaia (Māori: Ōman    0(20)
+   Printed electronics     0(169)
+   The Battle of Blair&#39;    0(28)
+   Bradley Godden (born    0(42)
+   Milecastle 22 (Portg    0(55)
+   Mešeišta is a villag    0(41)
+   Taubensee (Kössen/Un    0(13)
+   Local elections were    0(85)
+   New Fork is a ghost     0(88)
+   &quot;Tell Me You&#39;re Mine    0(30)
+   In Greek mythology,     0(81)
+   Sanxiantai[1] (Amis:    0(117)
+   A number of steamshi    0(12)
+   Animaux is a French     0(15)
+   Lin Li, FREng, CEng,    0(31)
+   In various urban act    0(72)
+   Pocono Airlines was     0(39)
+   Strokkers is a Spani    0(48)
+   Harrison Fraker, FAI    0(29)
+   &quot;Did It in a Minute&quot;    0(61)
+   Chaerodrys is a genu    0(17)
+   A photographic album    0(98)
+***** latin *****
+   Colloretum[1] (-i, n    0(52)
+   Lánzhōu,[1] seu fort    0(20)
+   Aizecourt-le-Bas est    0(23)
+   4009 Drobyshevskij,[    0(71)
+   Vaslui (Dacoromanice    0(39)
+   Argentolium[1] (Fran    0(32)
+   Rimogne est commune     0(25)
+   Respublica Helvetica    0(34)
+   Hills Road Sixth For    0(92)
+   Aucopolis[1][2] (Ang    0(55)
+   Vaprium[1] (-i, n.)     0(48)
+   Mirepoix (Gasconice     0(30)
+   Volsci[1] populus an    0(16)
+   Lantenay est commune    0(33)
+   Étouy est commune Fr    0(20)
+   Astropecten polyacan    0(21)
+   Statoniensis lacus[1    0(46)
+   Annus 11 a.C.n. e se    0(11)
+   Anna Reagan (Anglice    0(87)
+   Saint-Martial-d&#39;Alba    0(25)
+   Béla Németh (sive Be    0(17)
+   Franciscus Salmhofer    0(42)
+   Deversorium Astoria     0(55)
+   Concressault est com    0(21)
+   Clairfayts est commu    0(29)
 </pre></div>
 </div>
 <p>Ok, what’s this? The mean is zero because the prior mean is always zero. The
-standard deviations are all different; why should the prior be particularly
-uncertain about the language score for the wikipedia introduction to printed
-electronics? After all, if the mean is zero it means 50-50 whatever the
-standard deviation. Yes, it’s measuring the length! The printed electronics
-paragraph is the longest, and in general the Latin ones were shorter. Is this
-a problem? I don’t know. Let’s see what happens.</p>
+standard deviations are all different: should this be the case? Why should the
+prior be particularly uncertain about the language score for the wikipedia
+introduction to printed electronics? After all, if the mean is zero it means
+50-50 whatever the standard deviation. Try to think about the answer, solution
+in the footnote <a class="footnote-reference brackets" href="#f2" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>. Is this a problem? I don’t know. Let’s see what happens.</p>
 <p>To use the Gaussian process, I need some other texts which I won’t tell to it
 if they are English or Latin. I’ll pick this time:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">debellogallico</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
@@ -371,8 +371,10 @@ if they are English or Latin. I’ll pick this time:</p>
 <span class="s2">    Things unattempted yet in prose or rhyme.</span>
 <span class="s2">&quot;&quot;&quot;</span>
 
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">debellogallico</span><span class="p">,</span> <span class="s1">&#39;caesar&#39;</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">paradiselost</span><span class="p">,</span> <span class="s1">&#39;milton&#39;</span><span class="p">)</span>
+<span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">debellogallico</span><span class="p">,</span> <span class="s1">&#39;caesar&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">paradiselost</span><span class="p">,</span> <span class="s1">&#39;milton&#39;</span><span class="p">)</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 <p>To say if a text is English or Latin, we have to give a specific score as data.
@@ -383,7 +385,7 @@ Short of better ideas, I’ll use -1 and +1:</p>
 <span class="p">},</span> <span class="p">[</span><span class="s1">&#39;caesar&#39;</span><span class="p">,</span> <span class="s1">&#39;milton&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>This time we passed a list of labels to <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a>, which means
+<p>This time we passed a list of labels to <code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code>, which means
 it returns a dictionary with the requested labels as keys. And the posterior
 is:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">post</span><span class="p">[</span><span class="s1">&#39;caesar&#39;</span><span class="p">])</span>
@@ -391,8 +393,8 @@ is:</p>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">6.4436854</span><span class="p">(</span><span class="mi">48</span><span class="p">)</span>
-<span class="o">-</span><span class="mf">1.1356411</span><span class="p">(</span><span class="mi">14</span><span class="p">)</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>5.86042324(59)
+-2.4367508(15)
 </pre></div>
 </div>
 <p>It works! The standard deviations are very small compared to the values, so the
@@ -422,7 +424,7 @@ it is also why we get a very small but non-zero error on the output.</p>
 variances where depending on the length of the text. But still it feels wrong,
 we initially stated the problem as determining if a text is English, not if it
 is <em>a lot of</em> English. We set the datapoints to +1 and -1, Milton comes out as
-roughly -1, while Caesar is +6. So Caesar is… very Latin?</p>
+roughly -2, while Caesar is +6. So Caesar is… very Latin?</p>
 <p>We can fix this by normalizing the kernel such that the variance is always one.
 It is like replacing a covariance matrix with a correlation matrix. We’ll
 use the <a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.Rescaling" title="lsqfitgp.Rescaling"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rescaling</span></code></a> kernel:</p>
@@ -435,10 +437,12 @@ use the <a class="reference internal" href="../reference/kernelsref.html#lsqfitg
 <p>So, we instantiated our <code class="xref py py-class docutils literal notranslate"><span class="pre">CountLetters</span></code> kernel, wrote a function
 <code class="docutils literal notranslate"><span class="pre">inv_sdev</span></code> that computes the inverse of its standard deviation, and used this
 function to rescale the kernel. Now let’s run the fit:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">english_texts</span><span class="p">,</span> <span class="s1">&#39;english&#39;</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">latin_texts</span><span class="p">,</span> <span class="s1">&#39;latin&#39;</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">debellogallico</span><span class="p">,</span> <span class="s1">&#39;caesar&#39;</span><span class="p">)</span>
-<span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">paradiselost</span><span class="p">,</span> <span class="s1">&#39;milton&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">english_texts</span><span class="p">,</span> <span class="s1">&#39;english&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">latin_texts</span><span class="p">,</span> <span class="s1">&#39;latin&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">debellogallico</span><span class="p">,</span> <span class="s1">&#39;caesar&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">paradiselost</span><span class="p">,</span> <span class="s1">&#39;milton&#39;</span><span class="p">)</span>
+<span class="p">)</span>
 
 <span class="n">post</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span>
     <span class="s1">&#39;english&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">english_texts</span><span class="p">)),</span>
@@ -449,7 +453,7 @@ function to rescale the kernel. Now let’s run the fit:</p>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;caesar&#39;</span><span class="p">:</span> <span class="mf">0.729684638</span><span class="p">(</span><span class="mi">16</span><span class="p">),</span> <span class="s1">&#39;milton&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.268445800</span><span class="p">(</span><span class="mi">24</span><span class="p">)}</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{&#39;caesar&#39;: array(0.729906033(12), dtype=object), &#39;milton&#39;: array(-1.267473517(25), dtype=object)}
 </pre></div>
 </div>
 <p>This time both means are close to ±1.</p>
@@ -459,6 +463,14 @@ function to rescale the kernel. Now let’s run the fit:</p>
 values for regression works fine in this simple example but is in general
 poor.</p>
 </div>
+<p class="rubric">Footnotes</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="f2" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>It’s the length. The printed electronics paragraph is the longest,
+and in general the Latin ones were shorter.</p>
+</aside>
+</aside>
 </section>
 
 

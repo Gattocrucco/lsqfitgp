@@ -94,11 +94,13 @@ Example::
     def doinference(data, **options):
         x = jnp.linspace(0, 10, len(data))
         xplot = jnp.linspace(0, 10, 100)
-        gp = lgp.GP(lgp.ExpQuad(), **options)
-        gp.addx(x, 'data')
-        gp.addx(xplot, 'plot')
-        yplot_mean, yplot_cov = gp.predfromdata({'data': data}, 'plot', raw=True)
-        # notice we use raw=True to return mean and covariance separately
+        yplot_mean, yplot_cov = (lgp
+            .GP(lgp.ExpQuad(), **options)
+            .addx(x, 'data')
+            .addx(xplot, 'plot')
+            .predfromdata({'data': data}, 'plot', raw=True)
+        )
+        # we use raw=True to return mean and covariance separately
         # instead of implicitly tracked into gvars
         yplot_sdev = jnp.sqrt(jnp.diag(yplot_cov))
         return yplot_mean, yplot_sdev
@@ -121,10 +123,12 @@ Example::
     benchmark(doinference, data)
     benchmark(doinference_compiled, data)
 
-And the winner is::
+And the winner is:
 
-   doinference took   6.701 ms on average
-   doinference took   0.018 ms on average
+.. code-block:: text
+
+    doinference took   6.701 ms on average
+    doinference took   0.018 ms on average
 
 The compiled version is 400 times faster. The difference is so stark because we
 used only 10 datapoints, so most of the time is spent in routing overhead
@@ -135,10 +139,12 @@ should be milder::
     benchmark(doinference, data)
     benchmark(doinference_compiled, data)
 
-Indeed, it's 20x faster, lower but still high::
+Indeed, it's 20x faster, lower but still high:
 
-   doinference took 554.387 ms on average
-   doinference took  26.828 ms on average
+.. code-block:: text
+
+    doinference took 554.387 ms on average
+    doinference took  26.828 ms on average
 
 We said that using the :class:`GP` options ``checkpos=False, checksym=False``
 makes it faster, and that they are disabled anyway under jit. Let's check::
@@ -146,10 +152,12 @@ makes it faster, and that they are disabled anyway under jit. Let's check::
     benchmark(doinference, data, checkpos=False, checksym=False)
     benchmark(doinference_compiled, data, checkpos=False, checksym=False)
 
-Result::
+Result:
 
-   doinference took  65.561 ms on average
-   doinference took  23.917 ms on average
+.. code-block:: text
+
+    doinference took  65.561 ms on average
+    doinference took  23.917 ms on average
 
 As expected, the compiled version is not affected, while the original one gains
 a lot of speed: now the advantage is just 3x.
@@ -185,9 +193,11 @@ Floating point 32 vs. 64 bit
 calculations. Upon initialization, `lsqfitgp` configures `jax` to use `float64`
 instead, like `numpy`. Although operations with 32 bit floats are about twice as
 fast, Gaussian process regression is particularly sensitive to numerical
-accuracy. You can reset `jax`'s default with::
+accuracy. You can reset `jax`'s default with:
 
-   jax.config.update('jax_enable_x64', False)
+.. code-block::
+
+    jax.config.update('jax_enable_x64', False)
 
 to get a speedup, but this will likely give problems when the number of
 datapoints is over 1000, and will break `empbayes_fit` unless you make an effort

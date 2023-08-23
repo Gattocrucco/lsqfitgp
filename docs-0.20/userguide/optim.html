@@ -177,11 +177,13 @@ Example:</p>
 <span class="k">def</span> <span class="nf">doinference</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
     <span class="n">xplot</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(),</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
-    <span class="n">yplot_mean</span><span class="p">,</span> <span class="n">yplot_cov</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="c1"># notice we use raw=True to return mean and covariance separately</span>
+    <span class="n">yplot_mean</span><span class="p">,</span> <span class="n">yplot_cov</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+        <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(),</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="c1"># we use raw=True to return mean and covariance separately</span>
     <span class="c1"># instead of implicitly tracked into gvars</span>
     <span class="n">yplot_sdev</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">yplot_cov</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">yplot_mean</span><span class="p">,</span> <span class="n">yplot_sdev</span>
@@ -206,8 +208,8 @@ Example:</p>
 </pre></div>
 </div>
 <p>And the winner is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doinference</span> <span class="n">took</span>   <span class="mf">6.701</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
-<span class="n">doinference</span> <span class="n">took</span>   <span class="mf">0.018</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>doinference took   6.701 ms on average
+doinference took   0.018 ms on average
 </pre></div>
 </div>
 <p>The compiled version is 400 times faster. The difference is so stark because we
@@ -220,8 +222,8 @@ should be milder:</p>
 </pre></div>
 </div>
 <p>Indeed, it’s 20x faster, lower but still high:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doinference</span> <span class="n">took</span> <span class="mf">554.387</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
-<span class="n">doinference</span> <span class="n">took</span>  <span class="mf">26.828</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>doinference took 554.387 ms on average
+doinference took  26.828 ms on average
 </pre></div>
 </div>
 <p>We said that using the <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> options <code class="docutils literal notranslate"><span class="pre">checkpos=False,</span> <span class="pre">checksym=False</span></code>
@@ -231,8 +233,8 @@ makes it faster, and that they are disabled anyway under jit. Let’s check:</p>
 </pre></div>
 </div>
 <p>Result:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doinference</span> <span class="n">took</span>  <span class="mf">65.561</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
-<span class="n">doinference</span> <span class="n">took</span>  <span class="mf">23.917</span> <span class="n">ms</span> <span class="n">on</span> <span class="n">average</span>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>doinference took  65.561 ms on average
+doinference took  23.917 ms on average
 </pre></div>
 </div>
 <p>As expected, the compiled version is not affected, while the original one gains

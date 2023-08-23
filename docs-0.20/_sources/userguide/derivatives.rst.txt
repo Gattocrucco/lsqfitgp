@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/derivatives.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -24,7 +24,7 @@
 Taking derivatives
 ==================
 
-The kernel of a derivative is just the derivative of the kernel:
+The kernel of a derivative is the derivative of the kernel:
 
 .. math::
     \operatorname{Cov}[f'(x), f'(x')]
@@ -34,7 +34,7 @@ The kernel of a derivative is just the derivative of the kernel:
 
 With :mod:`lsqfitgp` it's easy to use derivatives of functions in fits (the
 automatic derivative calculations are implemented with `jax
-<https://github.com/google/jax>`_). Let's just dive into the code::
+<https://github.com/google/jax>`_). Let's dive into the code::
 
     import lsqfitgp as lgp
     import numpy as np
@@ -42,11 +42,13 @@ automatic derivative calculations are implemented with `jax
     
     gp = lgp.GP(lgp.ExpQuad())
     x = np.linspace(-5, 5, 200)
-    gp.addx(x, 'foo')
-    gp.addx(x, 'bar', deriv=1)
+    gp = (gp
+        .addx(x, 'foo')
+        .addx(x, 'bar', deriv=1)
+    )
 
-We just said ``deriv=1`` to :meth:`~GP.addx`, easy as that. Let's plot a sample
-from the prior::
+We said ``deriv=1`` to :meth:`~GP.addx`, easy as that. Let's plot a sample from
+the prior::
 
     from matplotlib import pyplot as plt
     
@@ -67,34 +69,28 @@ from the prior::
 
 This time we used :meth:`~GP.prior` without arguments, i.e., we did not specify
 if we wanted ``'foo'`` or ``'bar'``. If you print ``sample``, you will see it
-is a dictionary-like object, a :class:`gvar.BufferDict`::
+is a dictionary of arrays::
 
     print(repr(sample))
 
-Output::
+Output:
 
-   BufferDict({
-       'foo':
-       array([-0.11402307, -0.13106434, -0.15281161, -0.17887973, -0.20891296,
-              -0.24251195, -0.27929914, -0.31884674, -0.36082554, -0.40486661,
-              -0.45060696, -0.49775005, -0.54600385, -0.59508847, -0.64472969,
-              ...
-              -2.63530838, -2.57269031, -2.50366536, -2.42837376, -2.34700524,
-              -2.25988906, -2.16741678, -2.07009175, -1.96849014, -1.86329373,
-              -1.75520165, -1.64503595, -1.53361282, -1.42176569, -1.31041028]),
-       'bar':
-       array([-0.28986829, -0.38697043, -0.47703517, -0.5596318 , -0.63448716,
-              -0.70151704, -0.76081473, -0.81251086, -0.85690719, -0.89436659,
-              -0.9252808 , -0.95011071, -0.96927296, -0.98326304, -0.99243838,
-              ...
-               1.18240169,  1.31010815,  1.43645288,  1.55958856,  1.6775638 ,
-               1.78841069,  1.89030301,  1.9813785 ,  2.06002936,  2.12473898,
-               2.17429867,  2.20770577,  2.2242869 ,  2.22366448,  2.2058344 ]),
-   })
+.. code-block:: text
 
-In general :mod:`gvar`, and so also :mod:`lsqfitgp`, can work with arrays or
-dictionaries of arrays/scalars. This comes in handy to carry around all the
-numbers in one object without forgetting the names of things.
+    BufferDict({
+        'foo':
+        array([-0.54830765, -0.44060242, -0.33276906, -0.22575309, -0.12042057,
+                ...
+                0.54683066,  0.51520693,  0.48205661,  0.44766003,  0.41235182]),
+        'bar':
+        array([ 2.13527672,  2.14804117,  2.14081828,  2.11552881,  2.07431084,
+                ...
+               -0.61230835, -0.64528377, -0.67311803, -0.69489595, -0.70976863]),
+    })
+
+:mod:`lsqfitgp` (and also `gvar`) can work with arrays or dictionaries of
+arrays/scalars. This comes in handy to carry around all the numbers in one
+object without forgetting the names of things.
 
 Looking at the plot, the points where the derivative is zero seem to
 correspond to minima/maxima of the function. Let's check this more accurately::
@@ -110,15 +106,15 @@ correspond to minima/maxima of the function. Let's check this more accurately::
 
 .. image:: derivatives2.png
 
-It works! The prior "knows" that one line is the derivative of the other just
-by using the correlations.
+It works! Through the correlations, the prior "knows" that one line is the
+derivative of the other.
 
-For a more realistic example, we will add data. Imagine you have some
-datapoints, and that you also know that at a certain point the function has a
-maximum. You don't know its value, but you know it must have a maximum. In
-terms of derivatives, a maximum is given by a zero first derivative and a
-negative second derivative. It won't be complicated. I will stop using *foo*
-and *bar* and give meaningful names to the points::
+For a more realistic example, we add data. Imagine you have some datapoints, and
+that you also know that at a certain point the function has a maximum. You don't
+know its value, but you know it must have a maximum. In terms of derivatives, a
+maximum is given by a zero first derivative and a negative second derivative. It
+won't be complicated. I will stop using *foo* and *bar* and give meaningful
+names to the points::
 
     x = np.array([-5, -4, -3, 3, 4, 5])
     yerr = 0.1
@@ -126,13 +122,15 @@ and *bar* and give meaningful names to the points::
     y += yerr * np.random.randn(len(x))
     y = gvar.gvar(y, yerr * np.ones(len(x)))
     
-    gp = lgp.GP(lgp.ExpQuad(scale=2))
-    gp.addx(x, 'data')
-    gp.addx(0, 'maximum-slope', deriv=1) # the cosine maximum is in 0
-    gp.addx(0, 'maximum-curvature', deriv=2)
+    gp = (lgp
+        .GP(lgp.ExpQuad(scale=2))
+        .addx(x, 'data')
+        .addx(0, 'maximum-slope', deriv=1) # the cosine maximum is in 0
+        .addx(0, 'maximum-curvature', deriv=2)
+    )
     
     xplot = np.linspace(-6, 6, 200)
-    gp.addx(xplot, 'plot')
+    gp = gp.addx(xplot, 'plot')
     
     given = {
         'data': y,  
