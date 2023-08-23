@@ -665,9 +665,7 @@ class empbayes_fit(Logger):
             # create GP object
             hp = hpunflat(p)
             gp = gpfactory(hp, **kw)
-            assert gp.__class__.__name__ == 'GP'
-                # avoid isinstance because it breaks under reloading
-                # TODO maybe replace with custom isinstance?
+            assert isinstance(gp, _GP.GP)
             
             # extract data
             if cachedargs:
