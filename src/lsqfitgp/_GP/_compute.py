@@ -191,9 +191,9 @@ class GPCompute(_base.GPBase):
         pmean : array or dictionary of arrays
             The mean of the posterior. Equivalent to ``gvar.mean(posterior)``.
         pcov : 2D array or dictionary of 2D arrays
-            The covariance matrix of the posterior. If ``pmean`` is a dictionary,
-            the keys of ``pcov`` are pairs of keys of ``pmean``. Equivalent to
-            ``gvar.evalcov(posterior)``.
+            The covariance matrix of the posterior. If ``pmean`` is a
+            dictionary, the keys of ``pcov`` are pairs of keys of ``pmean``.
+            Equivalent to ``gvar.evalcov(posterior)``.
         
         """
 
@@ -318,10 +318,10 @@ class GPCompute(_base.GPBase):
             flatout = gvar.gvar(mean, cov, fast=True)
         
         if not strip:
-            return gvar.BufferDict({
+            return {
                 key: flatout[slic].reshape(self._elements[key].shape)
                 for key, slic in zip(outkeys, outslices)
-            })
+            }
         else:
             outkey, = outkeys
             return flatout.reshape(self._elements[outkey].shape)

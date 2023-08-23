@@ -157,9 +157,8 @@ class GPElements(_base.GPBase):
 
     def __init__(self, *, checkpos, checksym, posepsfac, halfmatrix):
         self._elements = dict() # key -> _Element
-        self._covblocks = dict() # (key, key) -> matrix
-        self._priordict = gvar.BufferDict({}, dtype=object) # key -> gvar array (shaped)
-            # TODO consider making _priordict an ordinary dict
+        self._covblocks = dict() # (key, key) -> matrix (2d flattened)
+        self._priordict = {} # key -> gvar array (shaped)
         self._checkpositive = bool(checkpos)
         self._posepsfac = float(posepsfac)
         self._checksym = bool(checksym)
@@ -819,7 +818,7 @@ class GPElements(_base.GPBase):
         -------
         If raw=False (default):
         
-        prior : np.ndarray or gvar.BufferDict
+        prior : np.ndarray or dict
             A collection of gvars representing the prior.
         
         If raw=True:
@@ -851,9 +850,7 @@ class GPElements(_base.GPBase):
         elif raw:
             return self._covblock(key, key).reshape(2 * self._elements[key].shape)
         elif outkeys is not None:
-            return gvar.BufferDict({
-                key: self._prior(key) for key in outkeys
-            })
+            return {key: self._prior(key) for key in outkeys}
         else:
             return self._prior(key)
         

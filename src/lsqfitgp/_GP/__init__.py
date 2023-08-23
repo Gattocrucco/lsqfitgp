@@ -47,7 +47,8 @@ from ._gp import GP
 #         call super()._clone but the base.
 #     Mean functions
 #         .__init__(*args, ...) supports either only the kernel or the mean and
-#         the kernel of the DefaultProcess.
+#              the kernel of the DefaultProcess.
+#         .add(*args) arrays/dicts mean and cov or just cov, replaces .addcov.
 #     Conditioning
 #         .condition(given, givencov=None) -> new GP, with appended new keys and
 #             values to condition on. given and givencov keep dict layout like
@@ -63,7 +64,7 @@ from ._gp import GP
 #         .gvars(key, keepcorr=True) -> tree of arrays of gvars. keepcorr=True
 #             won't work if condition was not passed gvars, so this default raises
 #             an error if that happens.
-#         .sample(key, n=1) -> array, key can be a pytree. caches the decomp.
+#         .sample(key, n=1) -> array, key can be a pytree. caches the decomp?
 #     Density
 #         ._decomp(y, ycov=None) -> resid, cov (like _prior_decomp now)
 #         .logpdf(y, ycov=None) -> like marginal_likelihood now
