@@ -32,7 +32,7 @@ class GPProcesses(_base.GPBase):
 
     def __init__(self, *, covfun):
         self._procs = {} # proc key -> _Proc
-        self._kernels = {} # (proc key, proc key) -> _KernelBase
+        self._kernels = {} # (proc key, proc key) -> CrossKernel
         if covfun is not None:
             if not isinstance(covfun, _Kernel.Kernel):
                 raise TypeError('covariance function must be of class Kernel')
@@ -142,20 +142,11 @@ class GPProcesses(_base.GPBase):
             parameter.
         
         """
-
-        def is_numerical_scalar(x):
-            return (
-                isinstance(x, numbers.Number) or
-                (isinstance(x, (numpy.ndarray, jnp.ndarray)) and x.ndim == 0)
-            )
-            # do not use jnp.isscalar because it returns False for strongly
-            # typed 0-dim arrays; do not use jnp.ndim(•) == 0 because it accepts
-            # non-numerical types
         
         for k, func in ops.items():
             if k not in self._procs:
                 raise KeyError(f'process key {k!r} not in GP object')
-            if not is_numerical_scalar(func) and not callable(func):
+            if not _Kernel.is_numerical_scalar(func) and not callable(func):
                 raise TypeError(f'object of type {type(func)!r} for key {k!r} is neither scalar nor callable')
 
         if key in self._procs:

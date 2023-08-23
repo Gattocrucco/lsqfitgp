@@ -86,7 +86,7 @@ class Zeta(_ZetaBase):
     
     __doc__ = _ZetaBase.__doc__
     
-    # TODO write a method of _KernelBase that makes a new kernel from the
+    # TODO write a method of CrossKernel that makes a new kernel from the
     # current one to be used as starting point by all the transformation
     # methods. It should have an option on how much the subclass should be
     # preserved, for example this implementation of `fourier` is broken as soon
@@ -102,7 +102,7 @@ class Zeta(_ZetaBase):
     def fourier(self, dox, doy):
         
         # TODO problem: this ignores completely loc and scale. Write a static
-        # _KernelBase method that applies loc and scale to a kernel core, use
+        # CrossKernel method that applies loc and scale to a kernel core, use
         # it in __init__ and here.
         
         if not dox and not doy:

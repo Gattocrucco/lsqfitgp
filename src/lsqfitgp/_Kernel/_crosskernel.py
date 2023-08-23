@@ -1,4 +1,4 @@
-# lsqfitgp/_Kernel.py
+# lsqfitgp/_Kernel/_crosskernel.py
 #
 # Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 #
@@ -18,86 +18,20 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import warnings
-import types
 import enum
+import warnings
 
-import jax
-from jax import numpy as jnp
 import numpy
+from jax import numpy as jnp
 
-from . import _array
-from . import _Deriv
-from . import _jaxext
+from .. import _Deriv
+from .. import _array
+from .. import _jaxext
 
-__all__ = [
-    'CrossKernel',
-    'Kernel',
-    'StationaryKernel',
-    'IsotropicKernel',
-    'kernel',
-    'stationarykernel',
-    'isotropickernel',
-    'where',
-]
-
-# TODO make some of these functions static methods of CrossKernel if they are
-# not used elsewhere.
+from . import _util
 
 def _asfloat(x):
-    if not jnp.issubdtype(x.dtype, jnp.floating):
-        return x.astype(float)
-    else:
-        return x
-
-def _isscalar(x):
-    return not isinstance(x, CrossKernel) and jnp.ndim(x) == 0
-
-# TODO reimplement with tree_reduce, closuring ndim to recognize shaped fields
-def _reduce_recurse_dtype(fun, *args, reductor=None, npreductor=None, jnpreductor=None):
-    x = args[0]
-    if x.dtype.names is None:
-        return fun(*args)
-    else:
-        acc = None
-        for name in x.dtype.names:
-            recargs = (arg[name] for arg in args)
-            reckw = dict(reductor=reductor, npreductor=npreductor, jnpreductor=jnpreductor)
-            result = _reduce_recurse_dtype(fun, *recargs, **reckw)
-            
-            dtype = x.dtype[name]
-            if dtype.ndim:
-                axis = tuple(range(-dtype.ndim, 0))
-                red = jnpreductor if isinstance(result, jnp.ndarray) else npreductor
-                result = red(result, axis=axis)
-            
-            if acc is None:
-                acc = result
-            else:
-                acc = reductor(acc, result)
-        
-        assert acc.shape == _array.broadcast(*args).shape
-        return acc
-
-def sum_recurse_dtype(fun, *args):
-    plus = lambda a, b: a + b
-    return _reduce_recurse_dtype(fun, *args, reductor=plus, npreductor=numpy.sum, jnpreductor=jnp.sum)
-
-def prod_recurse_dtype(fun, *args):
-    times = lambda a, b: a * b
-    return _reduce_recurse_dtype(fun, *args, reductor=times, npreductor=numpy.prod, jnpreductor=jnp.prod)
-
-# TODO reimplement with tree_map
-def transf_recurse_dtype(transf, x, *args):
-    if x.dtype.names is None:
-        return transf(x, *args)
-    else:
-        x = _array.StructuredArray(x)
-        # redundant creation of StructuredArrays with nested dtypes; whatever
-        for name in x.dtype.names:
-            newargs = tuple(y[name] for y in args)
-            x = x.at[name].set(transf_recurse_dtype(transf, x[name], *newargs))
-        return x
+    return x.astype(_jaxext.float_type(x))
 
 def _greatest_common_superclass(classes):
     # from https://stackoverflow.com/a/25787091/3942284
@@ -135,8 +69,8 @@ class CrossKernel:
         assert kernels
         classes = (IsotropicKernel, *map(type, kernels))
         cls = _greatest_common_superclass(classes)
-        assert issubclass(cls, CrossKernel)
-        obj = super(CrossKernel, cls).__new__(cls)
+        assert issubclass(cls, __class__)
+        obj = super(__class__, cls).__new__(cls)
         mind = [k._minderivable for k in kernels]
         maxd = [k._maxderivable for k in kernels]
         obj._minderivable = tuple(numpy.min(mind, axis=0))
@@ -305,12 +239,12 @@ class CrossKernel:
         if loc is not None:
             with _jaxext.skipifabstract():
                 assert -jnp.inf < loc < jnp.inf
-            transf = lambda x, transf=transf: transf_recurse_dtype(lambda x: x - loc, transf(x))
+            transf = lambda x, transf=transf: _util.transf_recurse_dtype(lambda x: x - loc, transf(x))
         
         if scale is not None:
             with _jaxext.skipifabstract():
                 assert 0 < scale < jnp.inf
-            transf = lambda x, transf=transf: transf_recurse_dtype(lambda x: x / scale, transf(x))
+            transf = lambda x, transf=transf: _util.transf_recurse_dtype(lambda x: x / scale, transf(x))
         
         # TODO when dim becomes deep, forcekron must apply also to subfields
         # for consistence. Maybe it should do it now already.
@@ -319,7 +253,7 @@ class CrossKernel:
                 x = transf(x)
                 y = transf(y)
                 fun = lambda x, y: kernel(x, y, **kw)
-                return prod_recurse_dtype(fun, x, y)
+                return _util.prod_recurse_dtype(fun, x, y)
         else:
             _kernel = lambda x, y: kernel(transf(x), transf(y), **kw)
         
@@ -376,7 +310,7 @@ class CrossKernel:
         return cls._newkernel_from(core, kernels)
     
     def _binary(self, value, op):
-        if _isscalar(value):
+        if _util.is_numerical_scalar(value):
             val = value
             value = self._copywith(lambda x, y: val)
             # TODO this may add too much uncertainty in the derivability
@@ -396,7 +330,7 @@ class CrossKernel:
     __rmul__ = __mul__
     
     def __pow__(self, value):
-        if not _isscalar(value):
+        if not _util.is_numerical_scalar(value):
             return NotImplemented
         with _jaxext.skipifabstract():
             assert 0 <= value < jnp.inf, value
@@ -454,7 +388,7 @@ class CrossKernel:
             def fun(x, y):
                 return xfun(x) * yfun(y) * kernel(x, y)
         
-        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else CrossKernel
+        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else __class__
         obj = cls(fun)
         obj._maxderivable = self._maxderivable
         return obj
@@ -499,7 +433,7 @@ class CrossKernel:
             def fun(x, y):
                 return kernel(xfun(x), yfun(y))
         
-        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else CrossKernel
+        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else __class__
         obj = cls(fun)
         obj._maxderivable = self._maxderivable
         return obj
@@ -634,7 +568,7 @@ class CrossKernel:
                     args.append(_asfloat(y[dim]))
                 return f(x, y, *args)
         
-        cls = Kernel if xderiv == yderiv and isinstance(self, Kernel) else CrossKernel
+        cls = Kernel if xderiv == yderiv and isinstance(self, Kernel) else __class__
         obj = cls(fun)
         obj._minderivable = tuple(self._minderivable[i] - orders[i] for i in range(2))
         obj._maxderivable = tuple(self._maxderivable[i] -   maxs[i] for i in range(2))
@@ -725,338 +659,3 @@ class CrossKernel:
             return self
         raise NotImplementedError
 
-class Kernel(CrossKernel):
-    
-    @property
-    def derivable(self):
-        assert self._minderivable[0] == self._minderivable[1]
-        assert self._maxderivable[0] == self._maxderivable[1]
-        if self._minderivable == self._maxderivable:
-            return self._minderivable[0]
-        else:
-            return None
-    
-    @property
-    def maxdim(self):
-        return self._maxdim
-        
-    def _binary(self, value, op):
-        with _jaxext.skipifabstract():
-            assert not _isscalar(value) or 0 <= value < jnp.inf, value
-        return super()._binary(value, op)
-    
-class StationaryKernel(Kernel):
-
-    def __new__(cls, kernel, *, input='signed', scale=None, **kw):
-        """
-        
-        Subclass of `Kernel` for isotropic kernels.
-    
-        Parameters
-        ----------
-        kernel : callable
-            A function taking one argument ``delta`` which is the difference
-            between x and y, plus optionally keyword arguments.
-        input : {'signed', 'soft', 'hard'}
-            If 'signed' (default), `kernel` is passed the bare difference. If
-            'soft', `kernel` is passed the absolute value of the difference,
-            and the difference of equal points is a small number instead of
-            zero. If 'hard', the absolute value.
-        scale : scalar
-            The difference is divided by ``scale``.
-        **kw
-            Additional keyword arguments are passed to the `Kernel` init.
-                
-        """
-        
-        # TODO using 'signed', 'abs', 'softabs' as labels could be clearer.
-
-        if input == 'soft':
-            func = lambda x, y: _softabs(x - y)
-        elif input == 'signed':
-            func = lambda x, y: x - y
-        elif input == 'hard':
-            func = lambda x, y: jnp.abs(x - y)
-        else:
-            raise KeyError(input)
-        
-        transf = lambda q: q
-        if scale is not None:
-            with _jaxext.skipifabstract():
-                assert 0 < scale < jnp.inf
-            transf = lambda q : q / scale
-        
-        def function(x, y, **kwargs):
-            q = transf_recurse_dtype(func, x, y)
-            return kernel(transf(q), **kwargs)
-        
-        return Kernel.__new__(cls, function, **kw)
-
-class IsotropicKernel(StationaryKernel):
-    
-    # TODO add the `distance` parameter to supply an arbitrary distance, maybe
-    # allow string keywords for premade distances, like euclidean, hamming,
-    # p-norms. Question: the known isotropic kernels effectively work for any
-    # distance, or the proofs are only for the 2-norm? (I guess only 2-norm)
-    
-    # TODO it is not efficient that the distance is computed separately for
-    # each kernel in a kernel expression, but probably it would be difficult
-    # to support everything without bugs while also computing the distance once.
-    # A possible way is adding a keyword argument to the _kernel member
-    # that kernels use to memoize things, the first IsotropicKernel that gets
-    # called puts the distance there. Possible name: _cache.
-    
-    # TODO the scale parameter is specified to divide the distance, which is
-    # currently equivalent to dividing the values. If I introduced
-    # inhomogeneous distances, would it be better to divide the values or the
-    # distance?
-    
-    def __new__(cls, kernel, *, input='squared', scale=None, **kw):
-        """
-        
-        Subclass of :class:`Kernel` for isotropic kernels.
-    
-        Parameters
-        ----------
-        kernel : callable
-            A function taking one argument ``r2`` which is the squared distance
-            between x and y, plus optionally keyword arguments.
-        input : {'squared', 'hard', 'soft', 'raw'}
-            If 'squared' (default), ``kernel`` is passed the squared distance.
-            If 'hard', it is passed the distance (not squared). If 'soft', it
-            is passed the distance, and the distance of equal points is a small
-            number instead of zero. If 'raw', the kernel is passed both points
-            separately like non-stationary kernels.
-        scale : scalar
-            The distance is divided by ``scale``.
-        **kw
-            Additional keyword arguments are passed to the `Kernel` init.
-        
-        Notes
-        -----
-        The 'soft' option will cause problems with second derivatives in more
-        than one dimension.
-                
-        """
-        if input == 'raw':
-            return Kernel.__new__(cls, kernel, scale=scale, **kw)
-            
-        if input in ('squared', 'hard'):
-            func = lambda x, y: (x - y) ** 2
-        elif input == 'soft':
-            func = lambda x, y: _softabs(x - y) ** 2
-        else:
-            raise KeyError(input)
-        
-        transf = lambda q: q
-        
-        if scale is not None:
-            with _jaxext.skipifabstract():
-                assert 0 < scale < jnp.inf
-            transf = lambda q: q / scale ** 2
-        
-        if input in ('soft', 'hard'):
-            transf = (lambda t: lambda q: jnp.sqrt(t(q)))(transf)
-            # I do square and then square root because I first have to
-            # compute the sum of squares
-        
-        def function(x, y, **kwargs):
-            q = sum_recurse_dtype(func, x, y)
-            return kernel(transf(q), **kwargs)
-        
-        return Kernel.__new__(cls, function, **kw)
-
-def _eps(x):
-    if jnp.issubdtype(x.dtype, jnp.inexact):
-        return jnp.finfo(x.dtype).eps
-        # finfo(x) does not work in numpy 1.20
-    else:
-        return jnp.finfo(jnp.empty(())).eps
-
-def _softabs(x):
-    return jnp.abs(x) + _eps(x)
-
-class Zero(IsotropicKernel):
-
-    def __new__(cls):
-        self = object.__new__(cls)
-        self._kernel = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
-        self._minderivable = (sys.maxsize, sys.maxsize)
-        self._maxderivable = (sys.maxsize, sys.maxsize)
-        self.initargs = None
-        self._maxdim = sys.maxsize
-        return self
-    
-    _swap = lambda self: self
-    diff = lambda self, xderiv, yderiv: self
-    batch = lambda self, maxnbytes: self
-
-def _makekernelsubclass(kernel, superclass, **prekw):
-    assert issubclass(superclass, Kernel)
-    
-    if hasattr(kernel, 'pyfunc'): # np.vectorize objects
-        named_object = kernel.pyfunc
-    else:
-        named_object = kernel
-    
-    name = getattr(named_object, '__name__', 'DecoratedKernel')
-    newclass = types.new_class(name, (superclass,))
-
-    # TODO use the exec_body parameter of new_class instead of doing everything
-    # after creation, since an eventual __init_subclass__ wouldn't see the
-    # definitions.
-        
-    prekwset = set(prekw)
-    def __new__(cls, **kw):
-        kwargs = prekw.copy()
-        shared_keys = prekwset & set(kw)
-        if shared_keys:
-            msg = 'overriding init argument(s) ' + ', '.join(shared_keys)
-            msg += ' of kernel ' + name
-            warnings.warn(msg)
-        kwargs.update(kw)
-        return super(newclass, cls).__new__(cls, kernel, **kwargs)
-    
-    newclass.__new__ = __new__
-    newclass.__wrapped__ = named_object
-    newclass.__doc__ = named_object.__doc__
-    newclass.__qualname__ = getattr(named_object, '__qualname__', name)
-    
-    # TODO functools.wraps raised an error, but maybe functools.update_wrapper
-    # with appropriate arguments would work even on a class.
-    
-    return newclass
-
-def _kerneldecoratorimpl(cls, *args, **kw):
-    functional = lambda kernel: _makekernelsubclass(kernel, cls, **kw)
-    if len(args) == 0:
-        return functional
-    elif len(args) == 1:
-        return functional(*args)
-    else:
-        raise ValueError(len(args))
-
-def kernel(*args, **kw):
-    """
-    
-    Decorator to convert a function to a subclass of `Kernel`. Example::
-    
-        @kernel(loc=10) # the default loc will be 10
-        def MyKernel(x, y, cippa=1, lippa=42):
-            return cippa * (x * y) ** lippa
-    
-    """
-    return _kerneldecoratorimpl(Kernel, *args, **kw)
-
-def stationarykernel(*args, **kw):
-    """
-    
-    Decorator to convert a function to a subclass of `StationaryKernel`.
-    Example::
-    
-        @stationarykernel(input='soft')
-        def MyKernel(absdelta, cippa=1, lippa=42):
-            return cippa * sum(
-                np.exp(-absdelta[name] / lippa)
-                for name in absdelta.dtype.names
-            )
-    
-    """
-    return _kerneldecoratorimpl(StationaryKernel, *args, **kw)
-
-def isotropickernel(*args, **kw):
-    """
-    
-    Decorator to convert a function to a subclass of `IsotropicKernel`.
-    Example::
-    
-        @isotropickernel(derivable=True)
-        def MyKernel(distsquared, cippa=1, lippa=42):
-            return cippa * np.exp(-distsquared) + lippa
-    
-    """
-    return _kerneldecoratorimpl(IsotropicKernel, *args, **kw)
-
-def where(condfun, kernel1, kernel2, dim=None):
-    """
-    
-    Make a kernel(x, y) that yields:
-    
-      * kernel1(x, y) where condfun(x) and condfun(y) are True
-    
-      * kernel2(x, y) where condfun(x) and condfun(y) are False
-    
-      * zero where condfun(x) is different from condfun(y)
-    
-    Parameters
-    ----------
-    condfun : callable
-        Function that is applied on an array of points and must return
-        a boolean array with the same shape.
-    kernel1 : Kernel
-        Kernel used where condfun yields True.
-    kernel2 : Kernel
-        Kernel used where condfun yields False.
-    dim : str or None
-        If specified, when the input arrays are structured, ``condfun`` is
-        applied only to the field ``dim``. If the field has a shape, the
-        array passed to ``condfun`` still has ``dim`` as explicit field.
-    
-    Returns
-    -------
-    Kernel
-        If both kernel1 and kernel2 are IsotropicKernel, the class is
-        IsotropicKernel.
-    
-    """
-    assert isinstance(kernel1, Kernel)
-    assert isinstance(kernel2, Kernel)
-    assert callable(condfun)
-    
-    assert isinstance(dim, (str, type(None)))
-    if isinstance(dim, str):
-        def transf(x):
-            if x.dtype.names is None:
-                raise ValueError('kernel called on non-structured array but condition dim="{}"'.format(dim))
-            elif x.dtype.fields[dim][0].shape:
-                # TODO should probably use subdtype, such that when the user
-                # explicitly specifies an empty shape the behaviour is the
-                # same as with nontrivial shapes. This applies also to Kernel.
-                return x[[dim]]
-            else:
-                return x[dim]
-        condfun = lambda x, condfun=condfun: condfun(transf(x))
-    
-    def kernel_op(k1, k2):
-        def kernel(xy):
-            # TODO this is inefficient, kernels should be computed only on
-            # the relevant points. To support this with autograd, make a
-            # custom np.where that uses assignment and define its vjp.
-            
-            # TODO this may produce a very sparse matrix, when I implement
-            # sparse support do it here too.
-            
-            # TODO it will probably often be the case that the result is
-            # either dense or all zero. The latter case can be optimized this
-            # way: if it's zero, broadcast a 0-d array to the required shape,
-            # and flag it as all zero with an instance variable.
-            
-            x, y = xy
-            xcond = condfun(x)
-            ycond = condfun(y)
-            r = jnp.where(xcond & ycond, k1(xy), k2(xy))
-            return jnp.where(xcond ^ ycond, 0, r)
-        return kernel
-    
-    # TODO when I implement double callable derivable, propagate it
-    # properly by overwriting it in the returned object since _binary will
-    # require both kernels to be derivable on a given point.
-    
-    return kernel1._binary(kernel2, kernel_op)
-
-# TODO add a function `choose` to extend `where`. Interface:
-# choose(keyfun, mapping)
-# example where `comp` is an integer field selecting the kernel:
-# choose(lambda comp: comp, [kernel0, kernel1, kernel2, ...], dim='comp')
-# example where `comp` is a string field, and without using `dim`:
-# choose(lambda x: x['comp'], {'a': kernela, 'b': kernelb})

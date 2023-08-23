@@ -1,6 +1,6 @@
-# lsqfitgp/__init__.py
+# lsqfitgp/_Kernel/__init__.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2023, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,27 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Module to fit Gaussian processes
-
-See the manual at https://gattocrucco.github.io/lsqfitgp/docs
-"""
-
-__version__ = '0.20.dev0'
-
- # these first because they modify global state
-from . import _patch_jax
-from . import _patch_gvar
-
-from ._GP import *
-from ._Kernel import (CrossKernel, Kernel, StationaryKernel, IsotropicKernel,
-    where, kernel, stationarykernel, isotropickernel)
-from ._kernels import *
-from ._array import *
-from ._fit import *
-from ._Deriv import *
-from ._fastraniter import *
-from ._gvarext import *
-
-from . import copula
-from . import bayestree
+from ._util import prod_recurse_dtype, sum_recurse_dtype, is_numerical_scalar
+from ._crosskernel import CrossKernel
+from ._kernel import Kernel
+from ._stationary import StationaryKernel
+from ._isotropic import IsotropicKernel, Zero
+from ._decorators import kernel, stationarykernel, isotropickernel
+from ._where import where
