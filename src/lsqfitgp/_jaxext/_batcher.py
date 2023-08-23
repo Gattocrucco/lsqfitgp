@@ -1,4 +1,4 @@
-# lsqfitgp/_patch_jax/_batcher.py
+# lsqfitgp/_jaxext/_batcher.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #

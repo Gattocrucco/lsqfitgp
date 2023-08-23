@@ -35,7 +35,7 @@ from . import _Kernel
 from . import _linalg
 from . import _array
 from . import _Deriv
-from . import _patch_jax
+from . import _jaxext
 from . import _patch_gvar
 
 __all__ = [
@@ -741,7 +741,7 @@ class GP:
         for k, t in tensors.items():
             t = jnp.asarray(t)
             # no need to check dtype since jax supports only numerical arrays
-            with _patch_jax.skipifabstract():
+            with _jaxext.skipifabstract():
                 if self._checkfinite and not jnp.all(jnp.isfinite(t)):
                     raise ValueError(f'tensors[{k!r}] contains infs/nans')
             rshape = self._elements[k].shape
@@ -865,7 +865,7 @@ class GP:
                 inp[i] = a.at[zeros].set(0)
             
         # Compute JVP and check it is identical to the function itself.
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             out0, out1 = jax.jvp(func, inp, inp)
             if out1.dtype == jax.float0:
                 cond = jnp.allclose(out0, 0)
@@ -969,7 +969,7 @@ class GP:
                     raise ValueError(f'shape {block.shape!r} of diagonal block {key!r} is not symmetric')
                 shapes[xkey] = head
                 
-                with _patch_jax.skipifabstract():
+                with _jaxext.skipifabstract():
                     if self._checksym and not jnp.allclose(block, block.T):
                         raise ValueError(f'diagonal block {key!r} is not symmetric')
                 
@@ -989,7 +989,7 @@ class GP:
         # diagonal blocks match those of diagonal ones.
         blocks = {}
         for keys, block in preblocks.items():
-            with _patch_jax.skipifabstract():
+            with _jaxext.skipifabstract():
                 if self._checkfinite and not jnp.all(jnp.isfinite(block)):
                     raise ValueError(f'block {keys!r} not finite')
             xkey, ykey = keys
@@ -1014,7 +1014,7 @@ class GP:
         
         # Check symmetry of out of diagonal blocks.
         if self._checksym:
-            with _patch_jax.skipifabstract():
+            with _jaxext.skipifabstract():
                 for keys, block in blocks.items():
                     xkey, ykey = keys
                     if xkey != ykey:
@@ -1197,7 +1197,7 @@ class GP:
             # TODO handle zero cov block efficiently
             cov = jnp.zeros((x.size, y.size))
         
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             if self._checkfinite and not jnp.all(jnp.isfinite(cov)):
                 raise RuntimeError(f'covariance block {(xkey, ykey)!r} is not finite')
             if self._checksym and xkey == ykey and not jnp.allclose(cov, cov.T):
@@ -1211,7 +1211,7 @@ class GP:
             block = self._makecovblock(row, col)
             if row != col:
                 if self._checksym:
-                    with _patch_jax.skipifabstract():
+                    with _jaxext.skipifabstract():
                         blockT = self._makecovblock(col, row)
                         if not jnp.allclose(block.T, blockT):
                             msg = 'covariance block {!r} is not symmetric'
@@ -1289,7 +1289,7 @@ class GP:
         return decomp
         
     def _checkpos(self, cov):
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             # eigv = jnp.linalg.eigvalsh(cov)
             # mineigv, maxeigv = jnp.min(eigv), jnp.max(eigv)
             with warnings.catch_warnings():
@@ -1749,14 +1749,14 @@ class GP:
         return decomp, ymean
     
     def _check_ymean(self, ymean):
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             if self._checkfinite and not jnp.all(jnp.isfinite(ymean)):
                 raise ValueError('mean of `given` is not finite')
     
     def _check_ycov(self, ycov):
         if ycov is None or isinstance(ycov, _linalg.Decomposition):
             return
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             if self._checkfinite and not jnp.all(jnp.isfinite(ycov)):
                 raise ValueError('covariance matrix of `given` is not finite')
             if self._checksym and not jnp.allclose(ycov, ycov.T):

@@ -29,7 +29,7 @@ from jax.scipy import special as jspecial
 from jax import numpy as jnp
 import numpy
 
-from .. import _patch_jax
+from .. import _jaxext
 
 def _castto(func, type):
     @functools.wraps(func)
@@ -41,12 +41,12 @@ def _castto(func, type):
 def gammainccinv(a, y):
     a = jnp.asarray(a)
     y = jnp.asarray(y)
-    dtype = _patch_jax.float_type(a.dtype, y.dtype)
+    dtype = _jaxext.float_type(a.dtype, y.dtype)
     ufunc = _castto(special.gammainccinv, dtype)
-    return _patch_jax.pure_callback_ufunc(ufunc, dtype, a, y)
+    return _jaxext.pure_callback_ufunc(ufunc, dtype, a, y)
 
-dQ_da = _patch_jax.elementwise_grad(jspecial.gammaincc, 0)
-dQ_dx = _patch_jax.elementwise_grad(jspecial.gammaincc, 1)
+dQ_da = _jaxext.elementwise_grad(jspecial.gammaincc, 0)
+dQ_dx = _jaxext.elementwise_grad(jspecial.gammaincc, 1)
 
 @gammainccinv.defjvp
 def gammainccinv_jvp(primals, tangents):
@@ -54,7 +54,7 @@ def gammainccinv_jvp(primals, tangents):
     at, yt = tangents
     x = gammainccinv(a, y)
     a = jnp.asarray(a)
-    a = a.astype(_patch_jax.float_type(a))
+    a = a.astype(_jaxext.float_type(a))
     # convert a to float to avoid dQ_da complaining even when we are not
     # actually deriving w.r.t. a
     dQ_da_a_x = dQ_da(a, x)
@@ -67,12 +67,12 @@ def gammainccinv_jvp(primals, tangents):
 def gammaincinv(a, y):
     a = jnp.asarray(a)
     y = jnp.asarray(y)
-    dtype = _patch_jax.float_type(a.dtype, y.dtype)
+    dtype = _jaxext.float_type(a.dtype, y.dtype)
     ufunc = _castto(special.gammaincinv, dtype)
-    return _patch_jax.pure_callback_ufunc(ufunc, dtype, a, y)
+    return _jaxext.pure_callback_ufunc(ufunc, dtype, a, y)
 
-dP_da = _patch_jax.elementwise_grad(jspecial.gammainc, 0)
-dP_dx = _patch_jax.elementwise_grad(jspecial.gammainc, 1)
+dP_da = _jaxext.elementwise_grad(jspecial.gammainc, 0)
+dP_dx = _jaxext.elementwise_grad(jspecial.gammainc, 1)
 
 @gammaincinv.defjvp
 def gammaincinv_jvp(primals, tangents):
@@ -80,7 +80,7 @@ def gammaincinv_jvp(primals, tangents):
     at, yt = tangents
     x = gammaincinv(a, y)
     a = jnp.asarray(a)
-    a = a.astype(_patch_jax.float_type(a))
+    a = a.astype(_jaxext.float_type(a))
     # convert a to float to avoid dP_da complaining even when we are not
     # actually deriving w.r.t. a
     dP_da_a_x = dP_da(a, x)

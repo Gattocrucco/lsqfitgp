@@ -26,20 +26,20 @@ import jax
 from jax.scipy import special as jspecial
 from jax import numpy as jnp
 
-from .. import _patch_jax
+from .. import _jaxext
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1))
 def betaincinv(a, b, y):
     a = jnp.asarray(a)
     b = jnp.asarray(b)
     y = jnp.asarray(y)
-    dtype = _patch_jax.float_type(a.dtype, b.dtype, y.dtype)
-    return _patch_jax.pure_callback_ufunc(
+    dtype = _jaxext.float_type(a.dtype, b.dtype, y.dtype)
+    return _jaxext.pure_callback_ufunc(
         lambda *args: special.betaincinv(*args).astype(dtype),
         dtype, a, b, y,
     )
 
-dIdx_ = _patch_jax.elementwise_grad(jspecial.betainc, 2)
+dIdx_ = _jaxext.elementwise_grad(jspecial.betainc, 2)
 
 @betaincinv.defjvp
 def betaincinv_jvp(a, b, primals, tangents):

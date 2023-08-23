@@ -26,7 +26,7 @@ from jax.scipy import special as jspecial
 
 from . import _gamma
 from . import _taylor
-from .. import _patch_jax
+from .. import _jaxext
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def expn_imag(n, x):
@@ -56,7 +56,7 @@ def expn_imag(n, x):
     x = jnp.asarray(x)
     with jax.ensure_compile_time_eval():
         n = jnp.asarray(n)
-        dt = _patch_jax.float_type(n, x)
+        dt = _jaxext.float_type(n, x)
         if dt == jnp.float32:
             nt = jnp.array(10, 'i4') # TODO optimize to raise maximum n
         else:
@@ -82,7 +82,7 @@ def expn_imag_smallx(n, x):
     
     n, x = jnp.asarray(n), jnp.asarray(x)
     k = jnp.arange(n)
-    fact = jnp.cumprod(k.at[0].set(1), dtype=_patch_jax.float_type(n, x))
+    fact = jnp.cumprod(k.at[0].set(1), dtype=_jaxext.float_type(n, x))
     n_1fact = fact[-1]
     ix = 1j * x
     E_1 = exp1_imag(x) # E_1(-ix)
@@ -209,7 +209,7 @@ _g_denom = [
 def _si_smallx(x):
     """ Compute Si(x) = int_0^x dt sin t / t, for x < 4"""
     x2 = jnp.square(x)
-    dtype = _patch_jax.float_type(x)
+    dtype = _jaxext.float_type(x)
     num = jnp.polyval(jnp.array(_si_num[::-1], dtype), x2)
     denom = jnp.polyval(jnp.array(_si_denom[::-1], dtype), x2)
     return x * num / denom
@@ -217,7 +217,7 @@ def _si_smallx(x):
 def _minus_cin_smallx(x):
     """ Compute -Cin(x) = int_0^x dt (cos t - 1) / t, for x < 4 """
     x2 = jnp.square(x)
-    dtype = _patch_jax.float_type(x)
+    dtype = _jaxext.float_type(x)
     num = jnp.polyval(jnp.array(_ci_num[::-1], dtype), x2)
     denom = jnp.polyval(jnp.array(_ci_denom[::-1], dtype), x2)
     return x2 * num / denom
@@ -230,7 +230,7 @@ def _ci_smallx(x):
 def _f_largex(x):
     """ Compute f(x) = int_0^oo dt sin t / (x + t), for x > 4 """
     x2 = 1 / jnp.square(x)
-    dtype = _patch_jax.float_type(x)
+    dtype = _jaxext.float_type(x)
     num = jnp.polyval(jnp.array(_f_num[::-1], dtype), x2)
     denom = jnp.polyval(jnp.array(_f_denom[::-1], dtype), x2)
     return num / denom / x
@@ -238,7 +238,7 @@ def _f_largex(x):
 def _g_largex(x):
     """ Compute g(x) = int_0^oo dt cos t / (x + t), for x > 4 """
     x2 = 1 / jnp.square(x)
-    dtype = _patch_jax.float_type(x)
+    dtype = _jaxext.float_type(x)
     num = jnp.polyval(jnp.array(_g_num[::-1], dtype), x2)
     denom = jnp.polyval(jnp.array(_g_denom[::-1], dtype), x2)
     return x2 * num / denom

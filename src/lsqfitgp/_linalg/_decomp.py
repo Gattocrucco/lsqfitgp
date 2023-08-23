@@ -121,7 +121,7 @@ from jax import numpy as jnp
 from jax.scipy import linalg as jlinalg
 from jax import lax
 
-from .. import _patch_jax
+from .. import _jaxext
 from . import _pytree
 
 class Decomposition(_pytree.AutoPyTree, abc.ABC):
@@ -245,7 +245,7 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
 
     def _parseeps(self, K, epsrel, epsabs, maxeigv=None):
         """ Determine eps from input arguments """
-        machine_eps = jnp.finfo(_patch_jax.float_type(K)).eps
+        machine_eps = jnp.finfo(_jaxext.float_type(K)).eps
         if epsrel == 'auto':
             epsrel = len(K) * machine_eps
         if epsabs == 'auto':
@@ -386,7 +386,7 @@ class Chol(Decomposition):
         eps = self._parseeps(K, epsrel, epsabs)
         K = K.at[jnp.diag_indices_from(K)].add(eps)
         L = jlinalg.cholesky(K, lower=True)
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             if not jnp.all(jnp.isfinite(L)):
                 # TODO check that jax fills with nan after failed row, detect
                 # and report minor index like scipy

@@ -33,7 +33,7 @@ from jax import tree_util
 
 from . import _GP
 from . import _linalg
-from . import _patch_jax
+from . import _jaxext
 from . import _patch_gvar
 from . import _array
 

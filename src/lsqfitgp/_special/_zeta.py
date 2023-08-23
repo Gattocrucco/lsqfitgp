@@ -25,7 +25,7 @@ from jax import lax
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
-from .. import _patch_jax
+from .. import _jaxext
 from . import _gamma
 
 def _hurwitz_zeta_series(m, x, a1, onlyeven=False, onlyodd=False, skipterm=None):
@@ -37,7 +37,7 @@ def _hurwitz_zeta_series(m, x, a1, onlyeven=False, onlyodd=False, skipterm=None)
     """
     
     # decide number of terms to sum
-    t = _patch_jax.float_type(m, x, a1)
+    t = _jaxext.float_type(m, x, a1)
     nmax = _hze_nmax(t)
     n = jnp.arange(nmax + 1)
     
@@ -110,7 +110,7 @@ def periodic_zeta(x, s, imag=False):
     s = jnp.asarray(s)
     
     # decide boundary for large/small s implementation
-    t = _patch_jax.float_type(x, s)
+    t = _jaxext.float_type(x, s)
     eps = jnp.finfo(t).eps
     nmax = 50
     larges = math.ceil(-math.log(eps) / math.log(nmax)) # 1/nmax^s < eps
@@ -141,7 +141,7 @@ def _standard_x(x):
 def _periodic_zeta_larges(x, s, nmax, imag):
     """ https://dlmf.nist.gov/25.13.E1 """
 
-    t = _patch_jax.float_type(x, s)
+    t = _jaxext.float_type(x, s)
     s = s.astype(t) # avoid n^s overflow with integer s
     n = jnp.arange(1, nmax + 1)
     neg, nx = _standard_x(n * x[..., None])
@@ -158,7 +158,7 @@ def _periodic_zeta_smalls(x, s, imag):
     """
     neg, x = _standard_x(x) # x in [0, 1/2]
     
-    eps = jnp.finfo(_patch_jax.float_type(x, s)).eps
+    eps = jnp.finfo(_jaxext.float_type(x, s)).eps
     s = jnp.where(s % 1, s, s * (1 + eps)) # avoid integer s
 
     s1 = 1 - s  # < 0
@@ -219,7 +219,7 @@ def zeta_zero(s):
     # = f(s) + 1/(s-1) + 1 - 1 + 1/2 =
     # = f(s) - 1/2 + s/(s-1)
     
-    t = _patch_jax.float_type(s)
+    t = _jaxext.float_type(s)
     coef = jnp.array(_zeta_zero_coef, t).at[0].set(0)
     fact = jnp.cumprod(jnp.arange(coef.size).at[0].set(1), dtype=t)
     coef /= fact

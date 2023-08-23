@@ -1,4 +1,4 @@
-# lsqfitgp/_patch_jax/__init__.py
+# lsqfitgp/_jaxext/__init__.py
 #
 # Copyright (c) 2022, 2023, Giacomo Petrillo
 #
@@ -17,17 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from jax.config import config
-config.update("jax_enable_x64", True)
-
 import traceback
 import functools
 
 import jax
-from jax import core
-from jax import lax
 from jax import numpy as jnp
-from jax import tree_util
 
 from ._batcher import batchufunc
 from ._fasthash import fasthash64, fasthash32

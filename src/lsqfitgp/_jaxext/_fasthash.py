@@ -1,4 +1,4 @@
-# lsqfitgp/_patch_jax/_fasthash.py
+# lsqfitgp/_jaxext/_fasthash.py
 #
 # Copyright (c) 2023, Giacomo Petrillo
 #

@@ -27,7 +27,7 @@ import pytest
 from pytest import mark
 import mpmath
 
-from lsqfitgp import _special, _patch_jax
+from lsqfitgp import _special, _jaxext
 from . import util
 
 def test_sinc():
@@ -74,8 +74,8 @@ def test_kvmodx2_hi():
             s1 = f1(x2)
             s2 = f2(x2)
             util.assert_allclose(s1, s2, atol=0, rtol=1e-14)
-            f1 = _patch_jax.elementwise_grad(f1)
-            f2 = _patch_jax.elementwise_grad(f2)
+            f1 = _jaxext.elementwise_grad(f1)
+            f2 = _jaxext.elementwise_grad(f2)
 
 def randpoly(rng, n):
     """ currently not used, what was this for? """
@@ -203,7 +203,7 @@ def test_periodic_zeta_deriv(i, cached):
 
     z1 = 2j * np.pi * cached('z1', periodic_zeta, x, s - 1)
     z1 = z1.imag if i else z1.real
-    z2 = _patch_jax.elementwise_grad(_special.periodic_zeta)(x, s, i)
+    z2 = _jaxext.elementwise_grad(_special.periodic_zeta)(x, s, i)
     
     eps = np.finfo(float).eps
     tol = 100 * eps * np.max(np.abs(z1), 1)

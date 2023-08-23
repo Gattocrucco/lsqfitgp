@@ -30,7 +30,7 @@ from jax import tree_util
 import numpy
 from scipy import linalg
 
-from . import _patch_jax
+from . import _jaxext
 from . import _signature
 
 gvar_ufuncs = [
@@ -302,7 +302,7 @@ def _join(cols):
 # def gvar_ufunc(func):
 #     """ Wraps a jax-traceable ufunc with one argument to support gvars """
     
-#     deriv = _patch_jax.elementwise_grad(func)
+#     deriv = _jaxext.elementwise_grad(func)
     
 #     def gvar_function(x):
 #         m = gvar.mean(x)

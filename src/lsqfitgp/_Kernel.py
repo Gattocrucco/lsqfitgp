@@ -28,7 +28,7 @@ import numpy
 
 from . import _array
 from . import _Deriv
-from . import _patch_jax
+from . import _jaxext
 
 __all__ = [
     'CrossKernel',
@@ -297,18 +297,18 @@ class CrossKernel:
             def transf(x, transf=transf):
                 x = transf(x)
                 nd = _array._nd(x.dtype)
-                with _patch_jax.skipifabstract():
+                with _jaxext.skipifabstract():
                     if nd > maxdim:
                         raise ValueError(f'kernel called on type with dimensionality {nd} > maxdim={maxdim}')
                 return x
         
         if loc is not None:
-            with _patch_jax.skipifabstract():
+            with _jaxext.skipifabstract():
                 assert -jnp.inf < loc < jnp.inf
             transf = lambda x, transf=transf: transf_recurse_dtype(lambda x: x - loc, transf(x))
         
         if scale is not None:
-            with _patch_jax.skipifabstract():
+            with _jaxext.skipifabstract():
                 assert 0 < scale < jnp.inf
             transf = lambda x, transf=transf: transf_recurse_dtype(lambda x: x / scale, transf(x))
         
@@ -398,7 +398,7 @@ class CrossKernel:
     def __pow__(self, value):
         if not _isscalar(value):
             return NotImplemented
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             assert 0 <= value < jnp.inf, value
         return self._binary(value, lambda f, g: lambda x: f(x) ** g(x))
         # Only infinitely divisible kernels allow non-integer exponent.
@@ -585,9 +585,9 @@ class CrossKernel:
             
             f = self._kernel
             for _ in range(xderiv.order):
-                f = _patch_jax.elementwise_grad(f, 0)
+                f = _jaxext.elementwise_grad(f, 0)
             for _ in range(yderiv.order):
-                f = _patch_jax.elementwise_grad(f, 1)
+                f = _jaxext.elementwise_grad(f, 1)
             
             def fun(x, y):
                 check(x, y)
@@ -614,10 +614,10 @@ class CrossKernel:
             i = -1
             for i, dim in enumerate(xderiv):
                 for _ in range(xderiv[dim]):
-                    f = _patch_jax.elementwise_grad(f, 2 + i)
+                    f = _jaxext.elementwise_grad(f, 2 + i)
             for j, dim in enumerate(yderiv):
                 for _ in range(yderiv[dim]):
-                    f = _patch_jax.elementwise_grad(f, 2 + 1 + i + j)
+                    f = _jaxext.elementwise_grad(f, 2 + 1 + i + j)
             
             def fun(x, y):
                 check(x, y)
@@ -659,7 +659,7 @@ class CrossKernel:
         batched_kernel : CrossKernel
             The same kernel but with batched computations.
         """
-        kernel = _patch_jax.batchufunc(self._kernel, maxnbytes=maxnbytes)
+        kernel = _jaxext.batchufunc(self._kernel, maxnbytes=maxnbytes)
         return self._copywith(kernel)
     
     def fourier(self, dox, doy):
@@ -741,7 +741,7 @@ class Kernel(CrossKernel):
         return self._maxdim
         
     def _binary(self, value, op):
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             assert not _isscalar(value) or 0 <= value < jnp.inf, value
         return super()._binary(value, op)
     
@@ -782,7 +782,7 @@ class StationaryKernel(Kernel):
         
         transf = lambda q: q
         if scale is not None:
-            with _patch_jax.skipifabstract():
+            with _jaxext.skipifabstract():
                 assert 0 < scale < jnp.inf
             transf = lambda q : q / scale
         
@@ -851,7 +851,7 @@ class IsotropicKernel(StationaryKernel):
         transf = lambda q: q
         
         if scale is not None:
-            with _patch_jax.skipifabstract():
+            with _jaxext.skipifabstract():
                 assert 0 < scale < jnp.inf
             transf = lambda q: q / scale ** 2
         

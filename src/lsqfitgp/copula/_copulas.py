@@ -26,14 +26,14 @@ from jax.scipy import special as jspecial
 import jax
 from jax import numpy as jnp
 
-from .. import _patch_jax
+from .. import _jaxext
 from .. import _array
 from . import _beta, _gamma
 from . import _distr
 
 def _normcdf(x):
     x = jnp.asarray(x)
-    x = x.astype(_patch_jax.float_type(x))
+    x = x.astype(_jaxext.float_type(x))
     return jspecial.ndtr(x)
 
     # In jax < 0.??.?, jax.scipy.stats.norm.sf is implemented as 1 - cdf(x)
@@ -107,7 +107,7 @@ class gamma(_distr.Distr):
     @classmethod
     def invfcn(cls, x, alpha, beta):
         x = jnp.asarray(x)
-        x = x.astype(_patch_jax.float_type(x))
+        x = x.astype(_jaxext.float_type(x))
         boundary = cls._boundary(x)
         return _piecewise_multiarg(
             [x < 0, x < boundary, x >= boundary],
@@ -135,7 +135,7 @@ class loggamma(_distr.Distr):
     @classmethod
     def invfcn(cls, x, alpha):
         x = jnp.asarray(x)
-        x = x.astype(_patch_jax.float_type(x))
+        x = x.astype(_jaxext.float_type(x))
         boundary = cls._boundary(x)
         return _piecewise_multiarg(
             [x < 0, x < boundary, x >= boundary],
@@ -162,7 +162,7 @@ class invgamma(_distr.Distr):
     @classmethod
     def invfcn(cls, x, alpha, beta):
         x = jnp.asarray(x)
-        x = x.astype(_patch_jax.float_type(x))
+        x = x.astype(_jaxext.float_type(x))
         boundary = cls._boundary(x)
         return beta * _piecewise_multiarg(
             [x < boundary, x < 0, x >= 0],

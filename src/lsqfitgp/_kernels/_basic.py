@@ -27,7 +27,7 @@ from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
 from .. import _special
-from .. import _patch_jax
+from .. import _jaxext
 from .. import _Kernel
 from .._Kernel import kernel, stationarykernel, isotropickernel
 
@@ -109,7 +109,7 @@ def GammaExp(r2, gamma=1):
 
     Reference: Rasmussen and Williams (2006, p. 86).
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 < gamma <= 2, gamma
     nondiff = jnp.exp(-(r2 ** (gamma / 2)))
     diff = jnp.exp(-r2)
@@ -151,7 +151,7 @@ def NNKernel(x, y, sigma0=1):
     
     # TODO the `2`s in the formula are a bit arbitrary. Remove them or give
     # motivation relative to the precise formulation of the neural network.
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 < sigma0 < jnp.inf
     q = sigma0 ** 2
     denom = (1 + 2 * (q + _dot(x, x))) * (1 + 2 * (q + _dot(y, y)))
@@ -184,7 +184,7 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     """
     sx = scalefun(x)
     sy = scalefun(y)
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert jnp.all(sx > 0)
         assert jnp.all(sy > 0)
     denom = sx ** 2 + sy ** 2
@@ -211,7 +211,7 @@ def Periodic(delta, outerscale=1):
     
     Reference: Rasmussen and Williams (2006, p. 92).
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 < outerscale < jnp.inf
     return jnp.exp(-2 * (jnp.sin(delta / 2) / outerscale) ** 2)
 
@@ -234,7 +234,7 @@ def Categorical(x, y, cov=None):
     cov = jnp.asarray(cov)
     assert len(cov.shape) == 2
     assert cov.shape[0] == cov.shape[1]
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert jnp.allclose(cov, cov.T)
     return cov[x, y]
 
@@ -352,7 +352,7 @@ def Cauchy(r2, alpha=2, beta=2):
     (2006, p. 86).
     
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 < alpha <= 2, alpha
         assert 0 < beta, beta
     power = jnp.where(alpha == 2, r2, r2 ** (alpha / 2))
@@ -378,7 +378,7 @@ def CausalExpQuad(r, alpha=1):
         
     From https://github.com/wesselb/mlkernels.
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert alpha >= 0, alpha
     return jspecial.erfc(alpha / 4 * r) * jnp.exp(-1/2 * jnp.square(r))
     # TODO taylor-expand erfc near 0 and use r2
@@ -399,7 +399,7 @@ def Decaying(x, y, alpha=1):
     Reference: Swersky, Snoek and Adams (2014).
     """
     # TODO high dimensional version of this, see mlkernels issue #3
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert jnp.all(x >= 0)
         assert jnp.all(y >= 0)
     return 1 / (x + y + 1) ** alpha

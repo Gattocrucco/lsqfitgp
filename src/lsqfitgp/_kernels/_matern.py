@@ -19,7 +19,7 @@
 
 from jax import numpy as jnp
 
-from .. import _patch_jax
+from .. import _jaxext
 from .. import _special
 from .._Kernel import isotropickernel
 
@@ -43,14 +43,14 @@ def Maternp(r2, p=None):
 
     Reference: Rasmussen and Williams (2006, p. 85).
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert int(p) == p and p >= 0, p
     r2 = (2 * p + 1) * r2
     return _special.kvmodx2_hi(r2 + 1e-30, p)
     # TODO see if I can remove the 1e-30 improving kvmodx2_hi_jvp
 
 def _matern_derivable(nu=None):
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         return max(0, jnp.ceil(nu) - 1)
 
 @isotropickernel(derivable=_matern_derivable)
@@ -70,7 +70,7 @@ def Matern(r2, nu=None):
 
     Reference: Rasmussen and Williams (2006, p. 84).
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 <= nu < jnp.inf, nu
     r2 = 2 * jnp.where(nu, nu, 1) * r2  # for v = 0 the correct limit is white
                                         # noise, so I avoid doing r2 * 0
@@ -96,7 +96,7 @@ def Matern(r2, nu=None):
 #         return zl + (nu - lnu) * (zr - zl) / (rnu - lnu)
 
 def _bessel_derivable(nu=0):
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         return nu // 2
 
 # TODO looking at the plot in the reference, it seems derivable also for nu = 0.
@@ -105,7 +105,7 @@ def _bessel_derivable(nu=0):
 # properly in this case.
 
 def _bessel_maxdim(nu=0):
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         return 2 * (jnp.floor(nu) + 1)
 
 @isotropickernel(derivable=_bessel_derivable, maxdim=_bessel_maxdim)
@@ -123,7 +123,7 @@ def Bessel(r2, nu=0):
     
     Reference: Rasmussen and Williams (2006, p. 89).
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 <= nu < jnp.inf, nu
     r2 = r2 * (2 + nu / 2) ** 2
     return _special.gamma(nu + 1) * _special.jvmodx2(nu, r2)

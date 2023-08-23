@@ -20,12 +20,12 @@
 from jax import numpy as jnp
 
 from .. import _special
-from .. import _patch_jax
+from .. import _jaxext
 from .. import _Kernel
 from .._Kernel import stationarykernel
 
 def _zeta_derivable(nu=None):
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         return max(0, jnp.ceil(nu) - 1)
 
 @stationarykernel(maxdim=1, derivable=_zeta_derivable, saveargs=True)
@@ -69,7 +69,7 @@ def _ZetaBase(delta, nu=None):
     
     # TODO the derivative w.r.t. nu is probably broken
     
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 <= nu < jnp.inf, nu
         
     s = 1 + 2 * nu

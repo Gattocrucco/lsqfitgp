@@ -118,7 +118,7 @@ class Copula(_base.DistrBase):
         return '.'.join(map(keystr, path))
 
     @classmethod
-    def _patch_jax_dict_sorting(cls, pytree):
+    def _jaxext_dict_sorting(cls, pytree):
         """ replace dicts in pytree with a custom dict subclass such their
         insertion order is maintained, see
         https://github.com/google/jax/issues/4085 """
@@ -147,7 +147,7 @@ class Copula(_base.DistrBase):
             return cls(zip(treedef, values))
 
     def __init__(self, variables):
-        variables = self._patch_jax_dict_sorting(variables)
+        variables = self._jaxext_dict_sorting(variables)
         def check_type(path, obj):
             if not isinstance(obj, _base.DistrBase):
                 raise TypeError(f'only Distr or Copula objects can be '

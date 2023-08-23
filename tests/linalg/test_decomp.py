@@ -25,7 +25,7 @@ from jax import numpy as jnp
 from jax.scipy import linalg as jlinalg
 import gvar
 
-from lsqfitgp import _linalg, _patch_jax
+from lsqfitgp import _linalg, _jaxext
 from .. import util
 
 class TestChol:
@@ -76,7 +76,7 @@ class TestChol:
             indices = rng.choice(n, size=2, replace=False)
             rot = jnp.eye(n).at[jnp.ix_(indices, indices)].set(rot)
             transf = rot @ transf
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             util.assert_allclose(transf @ transf.T, np.eye(n), atol=1e-14)
         return (transf * eigvals) @ transf.T
 

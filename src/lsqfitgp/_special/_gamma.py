@@ -20,7 +20,7 @@
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
-from .. import _patch_jax
+from .. import _jaxext
 
 def sgngamma(x):
     return jnp.where((x > 0) | (x % 2 < 1), 1, -1)
@@ -42,7 +42,7 @@ def gamma_incr(x, e):
     # = expm1(log(G(x + e) / G(x)G(1+e))) =
     # = expm1(log G(x + e) - log G(x) - log G(1 + e))
     
-    t = _patch_jax.float_type(x, e)
+    t = _jaxext.float_type(x, e)
     n = 23 if t == jnp.float64 else 10
     # n such that 1/2^n 1/n! d^n/dx^n log G(x) |_x=2 < eps
     k = jnp.arange(n).reshape((n,) + (1,) * max(x.ndim, e.ndim))
@@ -58,7 +58,7 @@ def gamma_incr(x, e):
 def gammaln1(x):
     """ compute log Γ(1+x) accurately for |x| <= 1/2 """
     
-    t = _patch_jax.float_type(x)
+    t = _jaxext.float_type(x)
     coef = jnp.array(_gammaln1_coef_1[:48], t) # 48 found by trial and error
     return x * jnp.polyval(coef[::-1], x)
     

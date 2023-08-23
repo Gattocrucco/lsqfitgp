@@ -25,7 +25,7 @@ from jax import lax
 from jax.scipy import special as jspecial
 from numpy.lib import recfunctions
 
-from .. import _patch_jax
+from .. import _jaxext
 from .. import _array
 from .._Kernel import kernel
 
@@ -374,7 +374,7 @@ class BART(_BARTBase):
         assert jnp.issubdtype(splitsafter_or_index2.dtype, jnp.integer)
         
         # check splitting indices
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             assert jnp.all(splitsbefore_or_totalsplits >= 0), 'splitting counts must be nonnegative'
             if altinput:
                 assert jnp.all((0 <= splitsbetween_or_index1) & (splitsbetween_or_index1 <= splitsbefore_or_totalsplits)), 'splitting index must be in [0, n]'
@@ -388,7 +388,7 @@ class BART(_BARTBase):
             assert maxd == int(maxd) and maxd >= 0, maxd
             alpha = jnp.asarray(alpha)
             beta = jnp.asarray(beta)
-            with _patch_jax.skipifabstract():
+            with _jaxext.skipifabstract():
                 assert jnp.all((0 <= alpha) & (alpha <= 1)), 'alpha must be in [0, 1]'
                 assert jnp.all(beta >= 0), 'beta must be in [0, inf)'
             d = jnp.arange(maxd + 1)
@@ -416,7 +416,7 @@ class BART(_BARTBase):
             gamma = jnp.asarray(gamma)
         
         # check values are in range
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             assert jnp.all((0 <= gamma) & (gamma <= 1)), 'gamma must be in [0, 1]'
             assert jnp.all((0 <= pnt) & (pnt <= 1)), 'pnt must be in [0, 1]'
             assert jnp.all(weights >= 0), 'weights must be in [0, inf)'
@@ -511,7 +511,7 @@ class BART(_BARTBase):
             if s.ndim == 1:
                 s = s[:, None]
             assert l.size == s.shape[1]
-        with _patch_jax.skipifabstract():
+        with _jaxext.skipifabstract():
             assert jnp.all((0 <= l) & (l <= s.shape[0])), 'length out of bounds'
             if not indices:
                 assert jnp.all(jnp.sort(s, axis=0) == s), 'unsorted splitting points'
@@ -546,7 +546,7 @@ class BART(_BARTBase):
         n0 = jnp.where(w, n0, 0)
         nplus = jnp.where(w, nplus, 0)
         
-        float_type = _patch_jax.float_type(pnt, gamma, w)
+        float_type = _jaxext.float_type(pnt, gamma, w)
         
         if nminus.size == 0:
             return jnp.array(1, float_type)
@@ -677,7 +677,7 @@ class BART(_BARTBase):
             repeat = 1
 
         # infer float type from float arguments
-        flt = _patch_jax.float_type(pnt, gamma, w)
+        flt = _jaxext.float_type(pnt, gamma, w)
         
         # no covariates, always return 1
         if n.size == 0:
@@ -696,8 +696,8 @@ class BART(_BARTBase):
 
         # check if the points coincide
         seed = jnp.uint64(16132933535611723338)
-        hx = _patch_jax.fasthash64(ix, seed)
-        hy = _patch_jax.fasthash64(iy, seed)
+        hx = _jaxext.fasthash64(ix, seed)
+        hy = _jaxext.fasthash64(iy, seed)
         anyn0 = hx != hy
         # no hash collision checking, it would be branchless because of vmap,
         # the probability of collision building a nxn matrix with n=10000 is

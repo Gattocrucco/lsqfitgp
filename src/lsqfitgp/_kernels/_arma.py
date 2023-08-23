@@ -24,7 +24,7 @@ import numpy
 
 from .. import _linalg
 from .._linalg import _toeplitz
-from .. import _patch_jax
+from .. import _jaxext
 from .._Kernel import stationarykernel
 
 # use positive delta because negative indices wrap around
@@ -495,7 +495,7 @@ class AR(_ARBase):
         # (current one is O(p), that would be O(log p)).
         
         if coef.size:
-            with _patch_jax.skipifabstract():
+            with _jaxext.skipifabstract():
                 numpy.testing.assert_equal(coef[0].item(), 1)
                 numpy.testing.assert_allclose(jnp.imag(coef), 0, rtol=0, atol=1e-4)
         return -coef.real[1:]

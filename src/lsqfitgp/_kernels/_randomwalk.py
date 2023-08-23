@@ -20,7 +20,7 @@
 import jax
 from jax import numpy as jnp
 
-from .. import _patch_jax
+from .. import _jaxext
 from .._Kernel import kernel, stationarykernel
 
 @kernel(forcekron=True, derivable=False)
@@ -35,7 +35,7 @@ def Wiener(x, y):
     
     Reference: Rasmussen and Williams (2006, p. 94).
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert jnp.all(x >= 0)
         assert jnp.all(y >= 0)
     return jnp.minimum(x, y)
@@ -65,7 +65,7 @@ def FracBrownian(x, y, H=1/2, K=1):
     # TODO I think the correlation between successive same step increments
     # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
     
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 < H <= 1, H
         assert 0 < K <= 1, K
     H2 = 2 * H
@@ -108,7 +108,7 @@ def WienerIntegral(x, y):
     # TODO can I generate this algorithmically for arbitrary integration order?
     # If I don't find a closed formula I can use sympy.
     
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert jnp.all(x >= 0)
         assert jnp.all(y >= 0)
     a = _minimum(x, y)
@@ -133,7 +133,7 @@ def OrnsteinUhlenbeck(x, y):
     
     # TODO reference? look on wikipedia
     
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert jnp.all(x >= 0)
         assert jnp.all(y >= 0)
     return jnp.exp(-jnp.abs(x - y)) - jnp.exp(-(x + y))
@@ -156,7 +156,7 @@ def BrownianBridge(x, y):
     # (t^2H(1-s) + s^2H(1-t) + s(1-t)^2H + t(1-s)^2H - (t+s) - |t-s|^2H + 2ts)/2
     # but I have to check if it is correct. (In new kernel FracBrownianBridge.)
     
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert jnp.all(x >= 0) and jnp.all(x <= 1)
         assert jnp.all(y >= 0) and jnp.all(y <= 1)
     return jnp.minimum(x, y) - x * y
@@ -178,7 +178,7 @@ def StationaryFracBrownian(delta, H=1/2):
     
     # TODO older reference, see [29] is GS06.
     
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 < H <= 1, H
     H2 = 2 * H
     return 1/2 * (jnp.abs(delta + 1) ** H2 + jnp.abs(delta - 1) ** H2 - 2 * jnp.abs(delta) ** H2)

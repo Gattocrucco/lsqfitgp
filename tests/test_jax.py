@@ -24,7 +24,7 @@ from jax import lax
 from jax import numpy as jnp
 from pytest import mark
 
-from lsqfitgp import _patch_jax
+from lsqfitgp import _jaxext
 import lsqfitgp as lgp
 from . import util
 
@@ -33,7 +33,7 @@ def test_elementwise_grad_1():
         return 2 * x
     x = np.arange(8.)
     with jax.checking_leaks():
-        y = _patch_jax.elementwise_grad(f)(x)
+        y = _jaxext.elementwise_grad(f)(x)
     y2 = jax.vmap(jax.grad(f))(x)
     util.assert_equal(y, y2)
 
@@ -42,7 +42,7 @@ def test_elementwise_grad_2():
         return 2 * x * z
     x = np.arange(8.)
     with jax.checking_leaks():
-        y = _patch_jax.elementwise_grad(f, 0)(x, x)
+        y = _jaxext.elementwise_grad(f, 0)(x, x)
     y2 = jax.vmap(jax.grad(f, 0))(x, x)
     util.assert_equal(y, y2)
 
@@ -51,7 +51,7 @@ def test_elementwise_grad_3():
         return 2 * x
     x = np.arange(8.)
     with jax.checking_leaks():
-        y = _patch_jax.elementwise_grad(_patch_jax.elementwise_grad(f))(x)
+        y = _jaxext.elementwise_grad(_jaxext.elementwise_grad(f))(x)
     y2 = jax.vmap(jax.grad(jax.grad(f)))(x)
     util.assert_equal(y, y2)
 
@@ -60,7 +60,7 @@ def test_elementwise_grad_4():
         return 2 * x * z
     x = np.arange(8.)
     with jax.checking_leaks():
-        y = _patch_jax.elementwise_grad(_patch_jax.elementwise_grad(f, 0), 0)(x, x)
+        y = _jaxext.elementwise_grad(_jaxext.elementwise_grad(f, 0), 0)(x, x)
     y2 = jax.vmap(jax.grad(jax.grad(f, 0), 0))(x, x)
     util.assert_equal(y, y2)
 
@@ -69,7 +69,7 @@ def test_elementwise_grad_5():
         return 2 * x * z
     x = np.arange(8.)
     with jax.checking_leaks():
-        y = _patch_jax.elementwise_grad(_patch_jax.elementwise_grad(f, 0), 1)(x, x)
+        y = _jaxext.elementwise_grad(_jaxext.elementwise_grad(f, 0), 1)(x, x)
     y2 = jax.vmap(jax.grad(jax.grad(f, 0), 1))(x, x)
     util.assert_equal(y, y2)
 
@@ -78,7 +78,7 @@ def test_elementwise_grad_6():
         return 2 * x * z
     x = np.arange(8.)
     with jax.checking_leaks():
-        y = jax.jacrev(_patch_jax.elementwise_grad(f, 0), 1)(x, x)
+        y = jax.jacrev(_jaxext.elementwise_grad(f, 0), 1)(x, x)
     y2 = jax.jacrev(jax.vmap(jax.grad(f, 0)), 1)(x, x)
     util.assert_equal(y, y2)
 
@@ -86,7 +86,7 @@ def test_elementwise_grad_6():
 def test_batcher(maxnbytes, rng):
     def func(x, y):
         return x * y
-    batched = _patch_jax.batchufunc(func, maxnbytes=maxnbytes)
+    batched = _jaxext.batchufunc(func, maxnbytes=maxnbytes)
     x, y = rng.standard_normal((2, 20, 7))
     args = (x[None, :, :], y[:, None, :])
     p1 = func(*args)
@@ -97,7 +97,7 @@ def test_batcher(maxnbytes, rng):
 def test_batcher_structured(maxnbytes, rng):
     def func(x, y):
         return jnp.sum(x['x'] * y['x'], axis=-1)
-    batched = _patch_jax.batchufunc(func, maxnbytes=maxnbytes)
+    batched = _jaxext.batchufunc(func, maxnbytes=maxnbytes)
     xy = rng.standard_normal((2, 20, 7)).view([('x', float, 7)]).squeeze(-1)
     xy = lgp.StructuredArray(xy)
     x, y = xy
@@ -177,8 +177,8 @@ def test_hash():
     seed32 = 2428169863
     seed64 = 6361217807637034346
     for inp, h32, h64 in zip(inputs, hashes32, hashes64):
-        hash64 = _patch_jax.fasthash64(inp, seed64)
-        hash32 = _patch_jax.fasthash32(inp, seed32)
+        hash64 = _jaxext.fasthash64(inp, seed64)
+        hash32 = _jaxext.fasthash32(inp, seed32)
         assert h64 == hash64
         assert h32 == hash32
 
@@ -198,8 +198,8 @@ def test_hash_bitflip(rng):
     assert np.sum(lax.population_count(buf ^ bufmod)) == 1
 
     seed = genint(rng, 'u8')
-    h = _patch_jax.fasthash64(buf, seed)
-    hmod = _patch_jax.fasthash64(bufmod, seed)
+    h = _jaxext.fasthash64(buf, seed)
+    hmod = _jaxext.fasthash64(bufmod, seed)
     diff = h ^ hmod
     flipped_bits = lax.population_count(diff)
     total_bits = h.nbytes * 8
@@ -211,4 +211,4 @@ def test_hash_bitflip(rng):
 def test_hash_numpy(rng):
     """ check numpy arrays do not break the hash """
     buf = genint(rng, 'u1', 2)
-    _patch_jax.fasthash64(buf, 12345)
+    _jaxext.fasthash64(buf, 12345)

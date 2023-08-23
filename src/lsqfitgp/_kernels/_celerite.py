@@ -20,7 +20,7 @@
 import jax
 from jax import numpy as jnp
 
-from .. import _patch_jax
+from .. import _jaxext
 from .._Kernel import stationarykernel
     
 def _Celerite_derivable(**kw):
@@ -49,7 +49,7 @@ def Celerite(delta, gamma=1, B=0):
     Angus: *Fast and Scalable Gaussian Process Modeling With Applications To
     Astronomical Time Series*.
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 <= gamma < jnp.inf, gamma
         assert abs(B) <= gamma, (B, gamma)
     return jnp.exp(-gamma * delta) * (jnp.cos(delta) + B * jnp.sin(delta))
@@ -98,7 +98,7 @@ def Harmonic(delta, Q=1):
     
     # TODO will fail if Q is traced.
     
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert 0 < Q < jnp.inf, Q
     
     tau = jnp.abs(delta)

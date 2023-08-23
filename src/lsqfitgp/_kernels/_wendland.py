@@ -19,14 +19,14 @@
 
 from jax import numpy as jnp
 
-from .. import _patch_jax
+from .. import _jaxext
 from .._Kernel import stationarykernel, isotropickernel
 
 def _wendland_derivable(k=0, **_):
     return k
 
 def _wendland_maxdim(k=0, alpha=1):
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         return jnp.floor(2 * alpha - 1)
 
 @isotropickernel(input='soft', derivable=_wendland_derivable, maxdim=_wendland_maxdim)
@@ -58,7 +58,7 @@ def Wendland(r, k=0, alpha=1):
     # be a general mechanism implemented in GP that gives sparse x and y to
     # the kernel
     
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         D = _wendland_maxdim(k, alpha)
         assert D >= 1, D
     
@@ -120,7 +120,7 @@ def Circular(delta, tau=4, c=1/2):
     
     Reference: Padonou and Roustant (2016).
     """
-    with _patch_jax.skipifabstract():
+    with _jaxext.skipifabstract():
         assert tau >= 4, tau
         assert 0 < c <= 1/2, c
     x = delta % 1
