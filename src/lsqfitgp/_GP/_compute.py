@@ -31,9 +31,15 @@ from . import _base
 class GPCompute(_base.GPBase):
 
     def __init__(self, *, solver, solverkw):
-        self._decompcache = dict() # tuple of keys -> Decomposition
+        self._decompcache = {} # tuple of keys -> Decomposition
         decomp = self._getdecomp(solver)
         self._decompclass = lambda K, **kwargs: decomp(K, **kwargs, **solverkw)
+
+    def _clone(self):
+        newself = super()._clone()
+        newself._decompcache = self._decompcache.copy()
+        newself._decompclass = self._decompclass
+        return newself
 
     def _solver(self, keys, ycov=None, *, covtransf=None, **kw):
         """
@@ -521,4 +527,4 @@ class GPCompute(_base.GPBase):
         return decompcls(m, **kw)
         
         # TODO extend the interface to use composite decompositions
-        # TODO accept a bufferdict for covariance matrix
+        # TODO accept a dict for covariance matrix

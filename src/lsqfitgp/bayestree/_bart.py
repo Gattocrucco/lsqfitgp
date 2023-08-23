@@ -192,17 +192,17 @@ class bart:
             kernel = _kernels.BART(splits=splits, indices=True, **kw)
             kernel *= (k_sigma_mu / hp['k']) ** 2
             
-            gp = _GP.GP(kernel, checkpos=False, checksym=False, solver='chol')
-            gp.addx(i_train, 'trainmean')
-            gp.addcov(jnp.diag(hp['sigma2'] / weights), 'trainnoise')
+            gp = (_GP
+                .GP(kernel, checkpos=False, checksym=False, solver='chol')
+                .addx(i_train, 'trainmean')
+                .addcov(jnp.diag(hp['sigma2'] / weights), 'trainnoise')
+            )
             pieces = {'trainmean': 1, 'trainnoise': 1}
             if 'mean' not in hp:
-                gp.addcov(k_sigma_mu ** 2, 'mean')
+                gp = gp.addcov(k_sigma_mu ** 2, 'mean')
                 pieces.update({'mean': 1})
-            gp.addtransf(pieces, 'train')
+            return gp.addtransf(pieces, 'train')
             
-            return gp
-
         # data factory
         def info(hp, *, mu_mu, **_):
             return {'train': y_train - hp.get('mean', mu_mu)}
@@ -298,12 +298,14 @@ class bart:
                 weights = jnp.ones(i_test.shape)
 
             # add test points
-            gp.addx(i_test, 'testmean')
-            gp.addcov(jnp.diag(hp['sigma2'] / weights), 'testnoise')
+            gp = (gp
+                .addx(i_test, 'testmean')
+                .addcov(jnp.diag(hp['sigma2'] / weights), 'testnoise')
+            )
             pieces = {'testmean': 1, 'testnoise': 1}
             if 'mean' not in hp:
                 pieces.update({'mean': 1})
-            gp.addtransf(pieces, 'test')
+            gp = gp.addtransf(pieces, 'test')
 
         return gp
 

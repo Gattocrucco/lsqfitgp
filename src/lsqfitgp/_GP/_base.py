@@ -17,6 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+import textwrap
+
 import jax
 from jax import numpy as jnp
 
@@ -27,6 +30,12 @@ class GPBase:
     def __init__(self, *, checkfinite=True, checklin=True):
         self._checkfinite = bool(checkfinite)
         self._checklin = bool(checklin)
+
+    def _clone(self):
+        newself = object.__new__(self.__class__)
+        newself._checkfinite = self._checkfinite
+        newself._checklin = self._checklin
+        return newself
 
     class _SingletonMeta(type):
     
@@ -74,3 +83,26 @@ class GPBase:
                 if out0.shape != shape or not (jnp.allclose(out0[zeros], 0) and jnp.allclose(out1[zeros], 0)):
                     raise RuntimeError('the transformation is not elementwise')
     
+def newself(meth):
+    """ Decorator to create a new GP object and pass it to the method. """
+
+    @functools.wraps(meth)
+    def newmeth(self, *args, **kw):
+        self = self._clone()
+        meth(self, *args, **kw)
+        return self
+
+    # append return value description to docstring
+    doctail = textwrap.dedent("""
+    Returns
+    -------
+    gp : GP
+        A new GP object with the applied modifications.
+    """)
+    methdoc = textwrap.dedent(meth.__doc__)
+    lineend = meth.__doc__.find('\n')
+    indented_lineend = methdoc.find('\n')
+    indent = meth.__doc__[:indented_lineend - lineend]
+    newmeth.__doc__ = textwrap.indent(methdoc + doctail, indent)
+
+    return newmeth

@@ -659,11 +659,12 @@ class KernelTestBase(KernelTestABC):
                 continue
             
             x = np.linspace(0, 1, 100)
-            gp = lgp.GP(kernel, posepsfac=200)
-            gp.defkernelop('F', 'fourier', True, gp.DefaultProcess)
-            gp.addx(x, 'x')
-            gp.addx(1, 's1', proc='F')
-            gp.addx(2, 'c1', proc='F')
+            gp = (lgp.GP(kernel, posepsfac=200)
+                .defkernelop('F', 'fourier', True, lgp.GP.DefaultProcess)
+                .addx(x, 'x')
+                .addx(1, 's1', proc='F')
+                .addx(2, 'c1', proc='F')
+            )
             ms, cs = gp.predfromdata(dict(s1=1, c1=0), 'x', raw=True)
             mc, cc = gp.predfromdata(dict(c1=1, s1=0), 'x', raw=True)
             util.assert_allclose(ms, np.sin(2 * np.pi * x), atol=1e-15)

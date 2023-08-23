@@ -37,11 +37,13 @@ y = np.sin(xdata)
 y[1::2] = np.cos(xdata[1::2])
 
 print('make GP...')
-gp = lgp.GP(lgp.ExpQuad(scale=3))
-gp.addx(xdata[0::2], 'data', deriv=0)
-gp.addx(xdata[1::2], 'dataderiv', deriv=1)
-gp.addx(xpred, 'pred', deriv=0)
-gp.addx(xpred, 'predderiv', deriv=1)
+gp = (lgp
+    .GP(lgp.ExpQuad(scale=3))
+    .addx(xdata[0::2], 'data', deriv=0)
+    .addx(xdata[1::2], 'dataderiv', deriv=1)
+    .addx(xpred, 'pred', deriv=0)
+    .addx(xpred, 'predderiv', deriv=1)
+)
 
 print('fit...')
 u = gp.predfromdata({'data': y[0::2], 'dataderiv': y[1::2]}, ['pred', 'predderiv'])

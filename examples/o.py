@@ -35,7 +35,7 @@ derivs = [0, 1, 2]
 
 gp = lgp.GP(lgp.ExpQuad(scale=2))
 for d in derivs:
-    gp.addx(x, d, deriv=d)
+    gp = gp.addx(x, d, deriv=d)
 
 cov = gp.prior(raw=True)
 

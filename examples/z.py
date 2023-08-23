@@ -32,22 +32,24 @@ import gvar
 
 import lsqfitgp as lgp
 
-gp = lgp.GP()
-
-gp.defproc('short', lgp.ExpQuad(scale= 1))
-gp.defproc('long', lgp.ExpQuad(scale=10))
-gp.defproctransf('sum', {'short': 0.3, 'long': 1})
+gp = (lgp.GP()
+    .defproc('short', lgp.ExpQuad(scale= 1))
+    .defproc('long', lgp.ExpQuad(scale=10))
+    .defproctransf('sum', {'short': 0.3, 'long': 1})
+)
 
 time = np.arange(30)
 time_pred = np.linspace(-30, 60, 200)
 
-def addcomps(key, time):
-    gp.addx(time, key + 'short', proc='short')
-    gp.addx(time, key + 'long' , proc='long' )
-    gp.addx(time, key          , proc='sum'  )
+def addcomps(gp, key, time):
+    return (gp
+        .addx(time, key + 'short', proc='short')
+        .addx(time, key + 'long' , proc='long' )
+        .addx(time, key          , proc='sum'  )
+    )
 
-addcomps('data', time)
-addcomps('pred', time_pred)
+gp = addcomps(gp, 'data', time)
+gp = addcomps(gp, 'pred', time_pred)
 
 print('generate data...')
 prior = gp.prior(['data', 'datashort', 'datalong'])

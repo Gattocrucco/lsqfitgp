@@ -95,29 +95,31 @@ def makegp(hp):
     gp = lgp.GP()
 
     kernel = makekernel(hp)
-    gp.defproc('h', kernel)
-    gp.defproctransf('primitive', {'h': 1}, deriv='x'     )
-    gp.defproctransf('f'        , {'h': 1}, deriv=(2, 'x'))
-    gp.defproctransf('primitive of xf(x)', {
-        'primitive': lambda x: x['x'],
-        'h'        : -1,
-    })
+    gp = (gp
+        .defproc('h', kernel)
+        .defproctransf('primitive', {'h': 1}, deriv='x'     )
+        .defproctransf('f'        , {'h': 1}, deriv=(2, 'x'))
+        .defproctransf('primitive of xf(x)', {
+            'primitive': lambda x: x['x'],
+            'h'        : -1,
+        })
 
-    # data
-    gp.addx(xdata, 'xdata', proc='f')
-    gp.addtransf({'xdata': M}, 'data', axes=2)
+        # data
+        .addx(xdata, 'xdata', proc='f')
+        .addtransf({'xdata': M}, 'data', axes=2)
 
-    # total momentum rule
-    gp.addx(xinteg, 'xmomrule', proc='primitive of xf(x)')
-    gp.addtransf({'xmomrule': suminteg}, 'momrule', axes=2)
+        # total momentum rule
+        .addx(xinteg, 'xmomrule', proc='primitive of xf(x)')
+        .addtransf({'xmomrule': suminteg}, 'momrule', axes=2)
+    )
     
     # quark sum rules
     for quark in 'ducs':
         idx = indices[quark]
         label = f'{quark}{quark}bar' # the one appearing in `constraints`
         xlabel = f'x{label}'
-        gp.addx(xinteg[idx], xlabel, proc='primitive')
-        gp.addtransf({xlabel: suminteg[idx] * qdiff}, label, axes=2)
+        gp = gp.addx(xinteg[idx], xlabel, proc='primitive')
+        gp = gp.addtransf({xlabel: suminteg[idx] * qdiff}, label, axes=2)
 
     return gp
 

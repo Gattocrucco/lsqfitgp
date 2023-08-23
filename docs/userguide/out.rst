@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/out.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -51,8 +51,10 @@ coordinate corresponds to the output coordinate. ::
 
     import lsqfitgp as lgp
     
-    gp = lgp.GP(lgp.Wiener(dim='time') * lgp.White(dim='coord'))
-    gp.addx(x, 'walk')
+    gp = (lgp
+        .GP(lgp.Wiener(dim='time') * lgp.White(dim='coord'))
+        .addx(x, 'walk')
+    )
 
 We use a :class:`Wiener` kernel (a random walk) on the ``'time'`` field
 multiplied with a :class:`White` kernel (white noise, no correlations) on the
@@ -66,7 +68,7 @@ Just for fun, we'll force the random walk to arrive at the (1, 1) point::
     end = np.empty(2, dtype=x.dtype)
     end['time'] = np.max(time)
     end['coord'] = np.arange(2)
-    gp.addx(end, 'endpoint')
+    gp = gp.addx(end, 'endpoint')
     
     path = gp.predfromdata({'endpoint': [1, 1]}, 'walk')
     
@@ -99,9 +101,11 @@ going directly in the top-right direction is unfavored. ::
     corr = -0.99
     cov = np.array([[1,    corr],
                     [corr, 1   ]])
-    gp = lgp.GP(lgp.Wiener(dim='time') * lgp.Categorical(dim='coord', cov=cov))
-    gp.addx(x, 'walk')
-    gp.addx(end, 'endpoint')
+    gp = (lgp
+        .GP(lgp.Wiener(dim='time') * lgp.Categorical(dim='coord', cov=cov))
+        .addx(x, 'walk')
+        .addx(end, 'endpoint')
+    )
     
     path = gp.predfromdata({'endpoint': [1, 1]}, 'walk')
     

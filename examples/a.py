@@ -35,11 +35,13 @@ xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 300)
 y = np.sin(xdata)
 
-gp = lgp.GP(lgp.ExpQuad(scale=3))
-gp.addx(xdata, 'pere')
-gp.addx(xpred, 'banane')
+u = (lgp
+    .GP(lgp.ExpQuad(scale=3))
+    .addx(xdata, 'pere')
+    .addx(xpred, 'banane')
+    .predfromdata({'pere': y}, 'banane')
+)
 
-u = gp.predfromdata({'pere': y}, 'banane')
 m = gvar.mean(u)
 s = gvar.sdev(u)
 cov = gvar.evalcov(u)

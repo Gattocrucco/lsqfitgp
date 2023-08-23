@@ -53,10 +53,11 @@ print(f'corr = {corr:.3g}')
 def makegp(params):
     kernel_time = lgp.ExpQuad(scale=params['time_scale'], dim='time')
     kernel_label = lgp.ExpQuad(scale=label_scale, dim='label')
-    gp = lgp.GP(kernel_time * kernel_label)
-    gp.addx(x, 'data', deriv=(data_deriv, 'time'))
-    gp.addx(np.array([(0, 0)], dtype=x.dtype), 'fixed_point')
-    return gp
+    return (lgp
+        .GP(kernel_time * kernel_label)
+        .addx(x, 'data', deriv=(data_deriv, 'time'))
+        .addx(np.array([(0, 0)], dtype=x.dtype), 'fixed_point')
+    )
 
 prior = {
     'log(time_scale)': gvar.log(gvar.gvar(3, 2))
@@ -64,15 +65,16 @@ prior = {
 datadict = {'data': data, 'fixed_point': [gvar.gvar(0, 1e2)]}
 params = lgp.empbayes_fit(prior, makegp, datadict, raises=False).p
 print('time_scale:', params['time_scale'])
-gp = makegp(gvar.mean(params))
 
 time_pred = np.linspace(-10, 10, 100)
 xpred = np.empty((2, len(time_pred)), dtype=x.dtype)
 xpred['time'] = time_pred
 xpred['label'][0] = 0
 xpred['label'][1] = 1
-gp.addx(xpred[0], 0)
-gp.addx(xpred[1], 1, deriv=(1, 'time'))
+gp = (makegp(gvar.mean(params))
+    .addx(xpred[0], 0)
+    .addx(xpred[1], 1, deriv=(1, 'time'))
+)
 
 pred = gp.predfromdata(datadict, [0, 1])
 

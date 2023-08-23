@@ -37,9 +37,11 @@ plot_simulated_lines = True
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 300)
 
-gp = lgp.GP(lgp.ExpQuad(scale=3))
-gp.addx(xdata, 'data')
-gp.addx(xpred, 'pred')
+gp = (lgp
+    .GP(lgp.ExpQuad(scale=3))
+    .addx(xdata, 'data')
+    .addx(xpred, 'pred')
+)
 
 true_par = dict(
     phi=np.sin(xdata),

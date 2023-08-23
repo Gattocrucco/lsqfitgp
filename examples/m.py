@@ -43,16 +43,15 @@ def makegp(par):
     return lgp.GP(lgp.Maternp(p=2, scale=scale))
 
 def fun(par):
-    gp = makegp(par)
-    gp.addx(xdata, 'data')
-    return -gp.marginal_likelihood({'data': y})
+    return -makegp(par).addx(xdata, 'data').marginal_likelihood({'data': y})
 
 result = optimize.minimize(fun, np.log([5]), jac=jax.jacfwd(fun))
 print(result)
 
-gp = makegp(result.x)
-gp.addx(xdata, 'data')
-gp.addx(xpred, 'pred')
+gp = (makegp(result.x)
+    .addx(xdata, 'data')
+    .addx(xpred, 'pred')
+)
 
 m, cov = gp.predfromdata({'data': y}, 'pred', raw=True)
 s = np.sqrt(np.diag(cov))

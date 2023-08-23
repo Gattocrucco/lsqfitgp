@@ -22,8 +22,21 @@ from . import _base, _compute, _elements, _processes
 class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
     """
     
-    Object that represents a Gaussian process over arbitrary input.
+    Object that represents a Gaussian process.
+
+    A `GP` is structured like a pair of dictionaries, one for "processes", and
+    one for "elements". The processes represent independent Gaussian processes,
+    i.e., infinite-dimensional Normally distributed variables. The elements
+    represent finite-dimensional Normal variables, typically finite subsets of
+    the processes.
+
+    The methods to define processes start with "def", while those to define
+    elements starts with "add". The basic methods are `defproc` and `addx`.
     
+    A `GP` object is immutable. Methods that modify the Gaussian process return
+    a new object which differs only in the requested modification, leaving the
+    original untouched.
+
     Parameters
     ----------
     covfun : Kernel or None
@@ -37,7 +50,7 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
         turns out non positive within numerical error.
     checksym : bool
         If True (default), check that the prior covariance matrix is
-        symmetric. If False, only half of the matrix is computed.
+        symmetric.
     checkfinite : bool
         If True (default), check that the prior covariance matrix does not
         contain infs or nans.
@@ -59,42 +72,39 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
     Methods
     -------
     addx
-        Add points where the Gaussian process is evaluated.
+        Add points where a process is evaluated.
     addlintransf
-        Define a finite linear transformation of the evaluated process.
+        Define a finite linear transformation.
     addtransf
-        Define a finite linear transformation of the evaluated process with
-        explicit coefficients.
+        Define a finite linear transformation with explicit coefficients.
     addcov
         Introduce a set of user-provided prior covariance matrix blocks.
-    def
-        Define a new independent component of the process.
-    deftransf
-        Define a pointwise linear transformation of the process with explicit
-        coefficients.
-    deflintransf
-        Define a pointwise linear transformation of the process.
+    defproc
+        Define a new independent process with a kernel.
+    defproclintransf
+        Define a pointwise linear transformation.
+    defproctransf
+        Define a pointwise linear transformation with explicit coefficients.
     defkernelop
-        Define a transformation of the process through a kernel method.
-    defderiv
-        Define a derivative of the process.
-    defxtransf
+        Define an arbitrary linear transformation through a kernel method.
+    defprocderiv
+        Define a process as the derivative of another one.
+    defprocxtransf
         Define a process with transformed inputs.
-    defrescale
-        Define a rescaled process.
+    defprocrescale
+        Rescale a process.
     prior
-        Compute the prior for the process.
+        Compute the prior.
     pred
-        Compute the posterior for the process.
+        Compute the posterior.
     predfromfit
         Like `pred` with ``fromdata=False``.
     predfromdata
         Like `pred` with ``fromdata=True``.
     marginal_likelihood
-        Compute the marginal likelihood, i.e., the unconditional probability of
-        data.
+        Compute the probability density.
     decompose
-        Decompose a pos. def. matrix.
+        Decompose a pos. semidef. matrix.
 
     Attributes
     ----------

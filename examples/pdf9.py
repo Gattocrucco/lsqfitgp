@@ -190,55 +190,55 @@ def makegp(hp, **kw):
     # define Ts and Vs
     for suffix in ['', '3', '8', '15']:
         if suffix != '':
-            gp.defproc('T' + suffix, kernel)
-        gp.defproc('f' + suffix, kernel_prim)
-        gp.defprocderiv('f' + suffix, 1, 'V' + suffix)
+            gp = gp.defproc('T' + suffix, kernel)
+        gp = gp.defproc('f' + suffix, kernel_prim)
+        gp = gp.defprocderiv('V' + suffix, 1, 'f' + suffix)
     
     # define xSigma
-    gp.defproc('f1', kernel)
+    gp = gp.defproc('f1', kernel)
     a = hp['alpha_Sigma']
-    gp.defprocrescale('tf1', lambda x: x ** (a + 1) / (a + 2), 'f1')
-    gp.defprocderiv('xSigma', 1, 'tf1')
+    gp = gp.defprocrescale('tf1', lambda x: x ** (a + 1) / (a + 2), 'f1')
+    gp = gp.defprocderiv('xSigma', 1, 'tf1')
     
     # define xg
-    gp.defproc('f2', kernel)
+    gp = gp.defproc('f2', kernel)
     b = hp['alpha_g']
-    gp.defprocrescale('tf2', lambda x: x ** (b + 1) / (b + 2), 'f2')
-    gp.defprocderiv('xg', 1, 'tf2')
+    gp = gp.defprocrescale('tf2', lambda x: x ** (b + 1) / (b + 2), 'f2')
+    gp = gp.defprocderiv('xg', 1, 'tf2')
     
     # define primitive of xSigma + xg
-    gp.defproctransf('tf12', {'tf1': 1, 'tf2': 1})
+    gp = gp.defproctransf('tf12', {'tf1': 1, 'tf2': 1})
     
     # definite integrals
     for proc in ['tf12', 'f', 'f3', 'f8', 'f15']:
-        gp.addx([0, 1], proc + '-endpoints', proc=proc)
-        gp.addlintransf(lambda x: x[1] - x[0], [proc + '-endpoints'], proc + '-diff')
+        gp = gp.addx([0, 1], proc + '-endpoints', proc=proc)
+        gp = gp.addlintransf(lambda x: x[1] - x[0], [proc + '-endpoints'], proc + '-diff')
     
     # right endpoint
     for proc in tpnames:
-        gp.addx(1, f'{proc}(1)', proc=proc)
+        gp = gp.addx(1, f'{proc}(1)', proc=proc)
     
     # define a matrix of PDF values over the x grid
     for proc in tpnames:
-        gp.addx(datagrid, proc + '-datagrid', proc=proc)
-    gp.addlintransf(lambda *args: jnp.stack(args), [proc + '-datagrid' for proc in tpnames], 'datagrid')
+        gp = gp.addx(datagrid, proc + '-datagrid', proc=proc)
+    gp = gp.addlintransf(lambda *args: jnp.stack(args), [proc + '-datagrid' for proc in tpnames], 'datagrid')
 
     # linear data
-    gp.addtransf({'datagrid': M}, 'datalatent', axes=2)
+    gp = gp.addtransf({'datagrid': M}, 'datalatent', axes=2)
 
     # define flavor basis PDFs
-    gp.defprocrescale('Sigma', lambda x: 1 / x, 'xSigma')
-    gp.defprocrescale('g', lambda x: 1 / x, 'xg')
+    gp = gp.defprocrescale('Sigma', lambda x: 1 / x, 'xSigma')
+    gp = gp.defprocrescale('g', lambda x: 1 / x, 'xg')
     for qi, qproc in enumerate(qnames):
-        gp.defproctransf(qproc, {
+        gp = gp.defproctransf(qproc, {
             eproc: evtoq[qi, ei]
             for ei, eproc in enumerate(evnames)
         })
 
     # define a matrix of PDF values over the plot grid
     for proc in tpnames:
-        gp.addx(plotgrid, proc + '-plotgrid', proc=proc)
-    gp.addlintransf(lambda *args: jnp.stack(args), [proc + '-plotgrid' for proc in tpnames], 'plotgrid')
+        gp = gp.addx(plotgrid, proc + '-plotgrid', proc=proc)
+    gp = gp.addlintransf(lambda *args: jnp.stack(args), [proc + '-plotgrid' for proc in tpnames], 'plotgrid')
 
     return gp
 

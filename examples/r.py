@@ -46,9 +46,11 @@ xdata = makegrid(xdata1d)
 xpred = makegrid(xpred1d)
 z = np.cos(xdata['x']) * np.cos(xdata['y'])
 
-gp = lgp.GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=1, dim='y'))
-gp.addx(xdata, 'pere')
-gp.addx(xpred, 'banane')
+gp = (lgp
+    .GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=1, dim='y'))
+    .addx(xdata, 'pere')
+    .addx(xpred, 'banane')
+)
 
 print('fit...')
 m, cov = gp.predfromdata({'pere': z}, 'banane', raw=True)

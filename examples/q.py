@@ -50,9 +50,11 @@ xdata = makexy(xdata1d, xdata1d)
 xpred = makexy(xpred1d, xpred1d)
 y = np.cos(xdata['x']) * np.cos(xdata['y'])
 
-gp = lgp.GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=3, dim='y'))
-gp.addx(xdata.reshape(-1), 'pere')
-gp.addx(xpred.reshape(-1), 'banane')
+gp = (lgp
+    .GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=3, dim='y'))
+    .addx(xdata.reshape(-1), 'pere')
+    .addx(xpred.reshape(-1), 'banane')
+)
 
 print('fit...')
 m, cov = gp.predfromdata({'pere': y.reshape(-1)}, 'banane', raw=True)

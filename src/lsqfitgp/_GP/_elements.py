@@ -37,6 +37,29 @@ from . import _base
 
 class GPElements(_base.GPBase):
 
+    def __init__(self, *, checkpos, checksym, posepsfac, halfmatrix):
+        self._elements = dict() # key -> _Element
+        self._covblocks = dict() # (key, key) -> matrix (2d flattened)
+        self._priordict = {} # key -> gvar array (shaped)
+        self._checkpositive = bool(checkpos)
+        self._posepsfac = float(posepsfac)
+        self._checksym = bool(checksym)
+        self._halfmatrix = bool(halfmatrix)
+        self._dtype = None
+        assert not (halfmatrix and checksym)
+
+    def _clone(self):
+        newself = super()._clone()
+        newself._elements = self._elements.copy()
+        newself._covblocks = self._covblocks.copy()
+        newself._priordict = self._priordict.copy()
+        newself._checkpositive = self._checkpositive
+        newself._posepsfac = self._posepsfac
+        newself._checksym = self._checksym
+        newself._halfmatrix = self._halfmatrix
+        newself._dtype = self._dtype
+        return newself
+
     @staticmethod
     def _concatenate(alist):
         """
@@ -62,30 +85,6 @@ class GPElements(_base.GPBase):
         q = q.at[iy, ix].set(a)
         return ix, iy, q
 
-    @staticmethod
-    def _compatible_dtypes(d1, d2): # pragma: no cover
-        """
-        Function to check x arrays datatypes passed to GP.addx. If the dtype is
-        structured, it checks the structure of the fields is the same, but
-        allows casting of concrete dtypes (like, in one array a field can be
-        int, in another float, as long as the field name and position is the
-        same). Currently not used.
-
-        May not be needed in numpy 1.23, check what result_type does now.
-        """
-        if d1.names != d2.names or d1.shape != d2.shape:
-            return False
-        if d1.names is not None:
-            for name in d1.names:
-                if not _compatible_dtypes(d1.fields[name][0], d2.fields[name][0]):
-                    return False
-        else:
-            try:
-                numpy.result_type(d1, d2) # TODO not strict enough!
-            except TypeError:
-                return False
-        return True
-    
     class _Element(abc.ABC):
         """
         Abstract class for an object holding information associated to a key in
@@ -155,16 +154,7 @@ class GPElements(_base.GPBase):
             self.blocks = blocks
             self.shape = shape
 
-    def __init__(self, *, checkpos, checksym, posepsfac, halfmatrix):
-        self._elements = dict() # key -> _Element
-        self._covblocks = dict() # (key, key) -> matrix (2d flattened)
-        self._priordict = {} # key -> gvar array (shaped)
-        self._checkpositive = bool(checkpos)
-        self._posepsfac = float(posepsfac)
-        self._checksym = bool(checksym)
-        self._halfmatrix = bool(halfmatrix)
-        assert not (halfmatrix and checksym)
-
+    @_base.newself
     def addx(self, x, key=None, *, deriv=0, proc=_base.GPBase.DefaultProcess):
         """
         
@@ -239,7 +229,7 @@ class GPElements(_base.GPBase):
             # TODO result_type is too lax. Examples: str, float -> str,
             # object, float -> object. I should use something like the
             # ordering function in updowncast.py.
-            if hasattr(self, '_dtype'):
+            if self._dtype is not None:
                 try:
                     self._dtype = numpy.result_type(self._dtype, gx.dtype)
                     # do not use jnp.result_type, it does not support
@@ -265,7 +255,7 @@ class GPElements(_base.GPBase):
 
     def _get_x_dtype(self):
         """ Get the data type of x points """
-        return getattr(self, '_dtype', None)
+        return self._dtype
         
     def addtransf(self, tensors, key, *, axes=1):
         """
@@ -287,6 +277,11 @@ class GPElements(_base.GPBase):
             referring to trailing axes for tensors in ` tensors``, and to
             heading axes for process points. Default 1.
         
+        Returns
+        -------
+        gp : GP
+            A new GP object with the applied modifications.
+       
         Notes
         -----
         The multiplication between the tensors and the process is done with
@@ -360,8 +355,9 @@ class GPElements(_base.GPBase):
                     out = out + b
             return out
         keys = list(tens.keys())
-        self.addlintransf(equiv_lintransf, keys, key, checklin=False)
+        return self.addlintransf(equiv_lintransf, keys, key, checklin=False)
     
+    @_base.newself
     def addlintransf(self, transf, keys, key, *, checklin=None):
         """
         
@@ -427,6 +423,7 @@ class GPElements(_base.GPBase):
         
         self._elements[key] = self._LinTransf(transf, keys, shape)
     
+    @_base.newself
     def addcov(self, covblocks, key=None, *, decomps=None):
         """
         
@@ -862,4 +859,3 @@ class GPElements(_base.GPBase):
         sizes = [self._elements[key].size for key in keylist]
         stops = numpy.pad(numpy.cumsum(sizes), (1, 0))
         return [slice(stops[i - 1], stops[i]) for i in range(1, len(stops))]
-    

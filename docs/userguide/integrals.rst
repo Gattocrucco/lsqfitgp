@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/integrals.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -40,15 +40,16 @@ Let's compute the primitive of our dear friend cosine::
     y = np.cos(x)
     xplot = np.linspace(-5, 5, 200)
     
-    gp = lgp.GP(lgp.ExpQuad(scale=2))
-    gp.addx(xplot, 'primitive')
-    gp.addx(x, 'cosine', deriv=1)
+    gp = (lgp
+        .GP(lgp.ExpQuad(scale=2))
+        .addx(xplot, 'primitive')
+        .addx(x, 'cosine', deriv=1)
+    )
     
     yplot = gp.predfromdata({'cosine': y}, 'primitive')
 
-We just gave the data for the ``'cosine'`` label which has ``deriv=1``, and
-asked for the posterior on the label ``'primitive'`` which is not derived. Now
-we plot::
+We gave the data for the ``'cosine'`` label which has ``deriv=1``, and asked for
+the posterior on the label ``'primitive'`` which is not derived. Now we plot::
 
     from matplotlib import pyplot as plt
     
@@ -83,7 +84,7 @@ deviation.
 
 The not obvious way follows::
 
-    gp.addlintransf(lambda x: x[-1] - x[0], ['primitive'], 'integral')
+    gp = gp.addlintransf(lambda x: x[-1] - x[0], ['primitive'], 'integral')
     area = gp.predfromdata({'cosine': y}, 'integral')
     print(area)
 
@@ -108,20 +109,21 @@ not too close to the center::
     from scipy import stats
     
     x = np.array([-5, -4, -3, -2, 2, 3, 4, 5])
+    xplot = np.linspace(-5, 5, 200)
     
     true_function = stats.cauchy.pdf
     true_area = np.subtract(*stats.cauchy.cdf([x[-1], x[0]]))
     
     y = true_function(x)
     
-    gp = lgp.GP(lgp.ExpQuad(scale=2))
-    gp.addx(x, 'datapoints', deriv=1)
-    gp.addx(-5, 'left')
-    gp.addx(5, 'right')
-    gp.addlintransf(lambda l, r: r - l, ['left', 'right'], 'area')
-    
-    xplot = np.linspace(-5, 5, 200)
-    gp.addx(xplot, 'plot', deriv=1)
+    gp = (lgp
+        .GP(lgp.ExpQuad(scale=2))
+        .addx(x, 'datapoints', deriv=1)
+        .addx(xplot, 'plot', deriv=1)
+        .addx(-5, 'left')
+        .addx(5, 'right')
+        .addlintransf(lambda l, r: r - l, ['left', 'right'], 'area')
+    )
     
     yplot = gp.predfromdata({'datapoints': y, 'area': true_area}, 'plot')
     

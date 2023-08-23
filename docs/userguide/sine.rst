@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/sine.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -24,7 +24,7 @@
 First example: a sine
 =====================
 
-We will go through a very simple example fit to introduce how the module works.
+We will go through a simple example fit to introduce how the module works.
 First, import the modules::
 
     import lsqfitgp as lgp
@@ -36,7 +36,7 @@ It is a module for automatic linear correlation tracking. We will se how to use
 it in the example, if you want to know more `it has a good documentation
 <https://gvar.readthedocs.io/en/latest/>`_.
 
-Now we generate some fake data. Let's make a sine::
+Now we generate some fake data. Let's make a sine:[#f1]_ ::
 
     x = np.linspace(-5, 5, 11) # 11 numbers uniformly spaced from -5 to 5
     y = np.sin(x)
@@ -87,8 +87,7 @@ Now we build a :class:`GP` object, providing as argument the kernel we want to
 use, and tell it we want to evaluate the process on the array of points ``x``
 we created before::
 
-    gproc = lgp.GP(kernel)
-    gproc.addx(x, 'foo')
+    gproc = lgp.GP(kernel).addx(x, 'foo')
 
 So, we add points using the :meth:`~GP.addx` method of :class:`GP` objects. It
 won't be very useful to only ask for the process values on the data---we
@@ -96,19 +95,25 @@ already know the answer there---so we add another array of points, more finely
 spaced, and more extended::
 
     xpred = np.linspace(-10, 10, 200)
-    gproc.addx(xpred, 'bar')
+    gproc = gproc.addx(xpred, 'bar')
 
 When adding ``x`` and ``xpred``, we also provided two strings to
 :meth:`~GP.addx`, ``'foo'`` and ``'bar'``. These have no special meaning, they
 are just labels the :class:`GP` object uses to distinguish the various arrays
 you add to it. You can think of them as variable names.
 
+When calling `addx` the second time, we did ``gproc = gproc.addx(...)``, instead
+of just ``gproc.addx(...)``. This is necessary because `GP` object are
+immutable: each operation returns a new `GP` object, leaving the original as it
+is. This may cause some easy to fix coding errors, but it prevents messier ones.
+In Python this paradigm is employed, e.g., by strings.
+
 Now, we ask ``gproc`` to compute the *a posteriori* function values on
 ``xpred`` by using the known values on ``x``::
 
     ypred = gproc.predfromdata({'foo': y}, 'bar')
 
-So :meth:`~GP.predfromdata` takes two arguments; the first is a Python
+So :meth:`~GP.predfromdata` takes two arguments: the first is a Python
 dictionary with labels as keys and arrays of function values as values, the
 second is the label of the points on which we want the estimate.
 
@@ -133,12 +138,12 @@ Now we make a plot of everything::
 
 .. image:: sine1.png
 
-Notice that, to plot ``ypred``, we did ``ypred_mean = gvar.mean(ypred)``. This
-is because the output of :meth:`~GP.predfromdata` is not an array of numbers,
-but an array of :class:`gvar.GVar` objects. :class:`GVar` variables represent
-Gaussian distributions; :func:`gvar.mean` extracts the mean of the
-distribution. Let's make an error band for the fit by computing the standard
-deviations with :func:`gvar.sdev`::
+To plot ``ypred``, we did ``ypred_mean = gvar.mean(ypred)``. This is because the
+output of :meth:`~GP.predfromdata` is not an array of numbers, but an array of
+:class:`gvar.GVar` objects. :class:`GVar` variables represent Gaussian
+distributions; :func:`gvar.mean` extracts the mean of the distribution. Let's
+make an error band for the fit by computing the standard deviations with
+:func:`gvar.sdev`::
 
     ypred_sdev = gvar.sdev(ypred)
     bottom = ypred_mean - ypred_sdev
@@ -149,13 +154,13 @@ deviations with :func:`gvar.sdev`::
 
 .. image:: sine2.png
 
-Let's take a moment to look at the result. First, consider the line giving the
-mean. Between the data points, it goes smoothly from one point to the next. It
-reasonably approximates a sine. However, outside the region with the data it
-goes to zero. This is about a thing I forgot to mention when introducing
-kernels: apart from the variance and correlations, a Gaussian process also has
-an a priori mean. :mod:`lsqfitgp` always assumes that the a priori mean is
-zero, so, going far from the data, the a posteriori mean should go to zero too.
+Look at the result. First, consider the line giving the mean. Between the data
+points, it goes smoothly from one point to the next. It reasonably approximates
+a sine. However, outside the region with the data it goes to zero. This is about
+a thing I forgot to mention when introducing kernels: apart from the variance
+and correlations, a Gaussian process also has an a priori mean. :mod:`lsqfitgp`
+always assumes that the a priori mean is zero, so, going far from the data, the
+a posteriori mean should go to zero too.
 
 It would be easy to provide an arbitrary prior mean by first subtracting it
 from the data, and then adding it back to the result. However, I encourage the
@@ -165,19 +170,19 @@ general properties of the function instead of focusing on what value or
 specific functional form you expect, and let the data choose the values and
 shape.
 
-Now we look at the band. It is a band of :math:`\pm1\sigma` around the
-posterior mean (:math:`\sigma` stands conventionally for the standard
-deviation). For the Gaussian distribution, this interval has a probability of
-68 %. A :math:`\pm2\sigma` interval would have a probability of 95 %, so this
-means that the fit expects the function to stay most of the time within a band
-twice as large as that plotted, and 2/3 of the time inside the one plotted. So,
-the summary of the figure is this: close to the points, the function is
-probably a sine; as soon as we move out from the datapoints, the fit gives up
-and just returns the prior.
+Now look at the band. It is a band of :math:`\pm1\sigma` around the posterior
+mean (:math:`\sigma` stands conventionally for the standard deviation). For the
+Gaussian distribution, this interval has a probability of 68 %. A
+:math:`\pm2\sigma` interval would have a probability of 95 %, so this means that
+the fit expects the function to stay most of the time within a band twice as
+large as that plotted, and 2/3 of the time inside the one plotted. So, the
+summary of the figure is this: close to the points, the function is probably a
+sine; as soon as we move out from the datapoints, the fit gives up and just
+returns the prior.
 
-Instead of trying to interpret what functions the fit result is representing,
-we can write a code to sample some plausible functions from the posterior
-distribution. :mod:`gvar` has a function for doing that, :func:`gvar.raniter`::
+Instead of trying to interpret what functions the fit result is representing, we
+can sample some plausible functions from the posterior distribution. :mod:`gvar`
+has a function for doing that, :func:`gvar.raniter`::
 
     for ypred_sample in gvar.raniter(ypred, 4):
         ax.plot(xpred, ypred_sample, color='red', alpha=0.3)
@@ -202,9 +207,11 @@ multiplying ``x`` and ``xpred`` by something, but all :class:`Kernel` objects
 provide a convenient parameter to do that automatically, ``scale``. So
 let's do everything again, rescaling by a factor of 3::
 
-    gp = lgp.GP(lgp.ExpQuad(scale=3))
-    gp.addx(x, 'foo')
-    gp.addx(xpred, 'bar')
+    gp = (lgp
+        .GP(lgp.ExpQuad(scale=3))
+        .addx(x, 'foo')
+        .addx(xpred, 'bar')
+    )
     ypred = gp.predfromdata({'foo': y}, 'bar')
     
     ax.cla() # clear the plot
@@ -223,7 +230,7 @@ also outside from the datapoints. But what further away? Let's make a plot
 from -20 to 20::
 
     xpred_long = np.linspace(-20, 20, 200)
-    gp.addx(xpred_long, 'baz')
+    gp = gp.addx(xpred_long, 'baz')
     
     ypred = gp.predfromdata({'foo': y}, 'baz')
     
@@ -240,10 +247,11 @@ from -20 to 20::
 So, after a an oscillation, it still goes back to the prior, as it should. It
 just goes on 3 times as much as before because we set ``scale=3``.
 
-Finally, for completeness, let's see how to add errors to the data. First, we
-generate some Gaussian distributed errors with standard deviation 0.2::
+Finally, let's see how to add errors to the data. First, we generate some
+Gaussian distributed errors with standard deviation 0.2::
 
-    yerr = 0.2 * np.random.randn(len(y))
+    rng = np.random.default_rng([2023, 8, 23, 16, 28])
+    yerr = 0.2 * rng.standard_normal(len(y))
     y += yerr
 
 Then, we build an array of :class:`GVar` variables from ``y``::
@@ -252,8 +260,7 @@ Then, we build an array of :class:`GVar` variables from ``y``::
 
 Now ``gy`` represents an array of independent Gaussian distributions with mean
 ``y`` and standard deviation 0.2. We then repeat everything as before, but
-using ``gy`` instead of ``y``; we don't even need to recreate the :class:`GP`
-object because we are not modifying the :math:`x` points::
+using ``gy`` instead of ``y``::
 
     ypred = gp.predfromdata({'foo': gy}, 'baz')
     
@@ -271,4 +278,9 @@ The behaviour makes sense: the samples are not forced any more to pass strictly
 on the datapoints.
 
 You should now know all the basics. You can experiment using other kernels, the
-available ones are listed in the :ref:`kernels`.
+available ones are listed in :ref:`kernels`.
+
+.. rubric:: Footnotes
+
+.. [#f1] The sine is a staple of Gaussian process regression tutorials. I
+         don't know why.

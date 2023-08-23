@@ -36,10 +36,12 @@ xpred = np.linspace(-15, 25, 200)
 y = np.cos(xdata)
 
 print('make GP...')
-gp = lgp.GP(lgp.ExpQuad(scale=3))
-gp.addx(xdata, 'data', deriv=1)
-gp.addx(xpred, 'integral')
-gp.addx(xpred, 'pred', deriv=1)
+gp = (lgp
+    .GP(lgp.ExpQuad(scale=3))
+    .addx(xdata, 'data', deriv=1)
+    .addx(xpred, 'integral')
+    .addx(xpred, 'pred', deriv=1)
+)
 
 print('fit...')
 u = gp.predfromdata({'data': y}, ['integral', 'pred'])

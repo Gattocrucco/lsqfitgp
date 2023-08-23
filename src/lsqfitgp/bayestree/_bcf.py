@@ -141,10 +141,11 @@ class bcf:
         gpaux : callable, optional
             If specified, this function is called with a pair ``(hp, gp)``,
             where ``hp`` is a dictionary of hyperparameters, and ``gp`` is a
-            `~lsqfitgp.GP` object under construction, and is expected to define
-            a new process named ``'aux'`` with `~lsqfitgp.GP.defproc` or
-            similar. The process is added to the regression model. The input to
-            the process is a structured array with fields:
+            `~lsqfitgp.GP` object under construction, and is expected to return
+            a modified ``gp`` with a new process named ``'aux'`` defined with
+            `~lsqfitgp.GP.defproc` or similar. The process is added to the
+            regression model. The input to the process is a structured array
+            with fields:
 
             'train' : bool
                 Indicates wether the data is training set (the one passed on
@@ -392,20 +393,20 @@ class bcf:
                 kernel = _kernels.BART(**kw, **kw_not_overridable)
                 kernel *= (hp[f'lambda_{name}'] * ystd) ** 2
                 
-                gp.defproc(name, kernel)
+                gp = gp.defproc(name, kernel)
 
             if 'm' in hp:
                 kernel_mean = 0 * _kernels.Constant()
             else:
                 kernel_mean = k_sigma_mu ** 2 * _kernels.Constant()
-            gp.defproc('m', kernel_mean)
+            gp = gp.defproc('m', kernel_mean)
 
             if gpaux is None:
-                gp.defproc('aux', 0 * _kernels.Constant())
+                gp = gp.defproc('aux', 0 * _kernels.Constant())
             else:
-                gpaux(hp, gp)
+                gp = gpaux(hp, gp)
 
-            gp.defproclintransf(
+            gp = gp.defproclintransf(
                 gp.DefaultProcess,
                 lambda m, mu, tau, aux: lambda x:
                 m(x) + mu(x) + tau(x) * (x['z'] - hp['z_0']) + aux(x),
@@ -413,12 +414,12 @@ class bcf:
             )
             
             x = self._join_points(True, z, i_mu, i_tau, pihat, x_aux)
-            gp.addx(x, 'trainmean')
+            gp = gp.addx(x, 'trainmean')
             errcov = self._error_cov(hp, weights, x)
-            gp.addcov(errcov, 'trainnoise')
-            gp.addtransf({'trainmean': 1, 'trainnoise': 1}, 'train')
-            
-            return gp
+            return (gp
+                .addcov(errcov, 'trainnoise')
+                .addtransf({'trainmean': 1, 'trainnoise': 1}, 'train')
+            )
 
         # data factory
         def info(hp, *, y, mu_mu, **_):
@@ -599,10 +600,12 @@ class bcf:
 
             # add test points
             x = self._join_points(False, z, i_mu, i_tau, pihat, x_aux)
-            gp.addx(x, 'testmean')
+            gp = gp.addx(x, 'testmean')
             errcov = self._error_cov(hp, weights, x)
-            gp.addcov(errcov, 'testnoise')
-            gp.addtransf({'testmean': 1, 'testnoise': 1}, 'test')
+            gp = (gp
+                .addcov(errcov, 'testnoise')
+                .addtransf({'testmean': 1, 'testnoise': 1}, 'test')
+            )
 
         return gp
 

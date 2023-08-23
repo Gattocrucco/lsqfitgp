@@ -62,8 +62,7 @@ def makegp(params):
     kernel *= lgp.ExpQuad(scale=params['label_scale'], dim='label')
     gp = lgp.GP(kernel)
     xmod = x.at['time'].set(jnp.array([time, time - params['delay']]))
-    gp.addx(xmod, 'A')
-    return gp
+    return gp.addx(xmod, 'A')
 
 hyperprior = gvar.BufferDict({
     'log(time_scale)': gvar.log(gvar.gvar(10, 10)),
@@ -86,7 +85,7 @@ for style, params_sample in zip(['-', '--'], gvar.raniter(fit.p, 2)):
     
     gp = makegp(params_sample)
     xpred = makex(time_pred, params_sample['delay'])
-    gp.addx(xpred, 'B')
+    gp = gp.addx(xpred, 'B')
     pred = gp.predfromdata({'A': data}, 'B')
 
     for sample in gvar.raniter(pred, 1):

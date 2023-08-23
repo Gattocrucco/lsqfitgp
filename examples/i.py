@@ -37,9 +37,11 @@ xpred = np.linspace(-15, 25, 300)
 y = np.sin(xdata)
 yerr = 0.1
 
-gp = lgp.GP(lgp.ExpQuad(scale=3))
-gp.addx(xdata, 'pere')
-gp.addx(xpred, 'banane')
+gp = (lgp
+    .GP(lgp.ExpQuad(scale=3))
+    .addx(xdata, 'pere')
+    .addx(xpred, 'banane')
+)
 
 uy = gvar.gvar(y + yerr * np.random.randn(len(y)), yerr * np.ones_like(y))
 u = gp.predfromdata({'pere': uy}, 'banane', keepcorr=False)

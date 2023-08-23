@@ -44,17 +44,19 @@ xintegx[    'x'] = 1
 
 #### CREATE GP OBJECT ####
 
-gp = lgp.GP(kernel)
+gp = (lgp
+    .GP(kernel)
 
-gp.addx(xdata, 'xdata', deriv=(2, 'x'))
-gp.addtransf({'xdata': M}, 'data', axes=2)
+    .addx(xdata, 'xdata', deriv=(2, 'x'))
+    .addtransf({'xdata': M}, 'data', axes=2)
 
-gp.addx(xinteg, 'xinteg', deriv='x')
-gp.addtransf({'xinteg': suminteg}, 'suminteg', axes=2)
+    .addx(xinteg, 'xinteg', deriv='x')
+    .addtransf({'xinteg': suminteg}, 'suminteg', axes=2)
 
-gp.addx(xinteg, 'xintegx0')
-gp.addx(xintegx[None], 'xintegx1', deriv='x')
-gp.addtransf({'xintegx1': np.ones((1, 8)), 'xintegx0': -suminteg}, 'sumintegx', axes=2)
+    .addx(xinteg, 'xintegx0')
+    .addx(xintegx[None], 'xintegx1', deriv='x')
+    .addtransf({'xintegx1': np.ones((1, 8)), 'xintegx0': -suminteg}, 'sumintegx', axes=2)
+)
 
 #### GENERATE FAKE DATA ####
 

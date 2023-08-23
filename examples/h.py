@@ -35,9 +35,11 @@ xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 300)
 y = np.sin(xdata)
 
-gp = lgp.GP(lgp.ExpQuad(scale=3))
-gp.addx(xdata, 'pere')
-gp.addx(xpred, 'banane')
+gp = (lgp
+    .GP(lgp.ExpQuad(scale=3))
+    .addx(xdata, 'pere')
+    .addx(xpred, 'banane')
+)
 
 u = gp.predfromdata({'pere': y}, 'banane', keepcorr=False)
 m = gvar.mean(u)

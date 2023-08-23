@@ -35,9 +35,11 @@ xdata = np.linspace(0, 1, 10)
 xpred = np.linspace(0, 1, 500)
 y = np.ones_like(xdata)
 
-gp = lgp.GP(lgp.Zeta(nu=1.5))
-gp.addx(xdata, 'pere')
-gp.addx(xpred, 'banane')
+gp = (lgp.
+    GP(lgp.Zeta(nu=1.5))
+    .addx(xdata, 'pere')
+    .addx(xpred, 'banane')
+)
 
 u = gp.predfromdata({'pere': y}, 'banane')
 m = gvar.mean(u)

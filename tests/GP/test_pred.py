@@ -36,14 +36,18 @@ def pred(seed, err, **kw):
     x = rng.uniform(-5, 5, size=20)
     xpred = rng.uniform(-10, 10, size=100)
 
-    gp = lgp.GP(lgp.ExpQuad())
-    gp.addx(x, 'data')
-    gp.addx(xpred, 'pred')
+    gp = (lgp
+        .GP(lgp.ExpQuad())
+        .addx(x, 'data')
+        .addx(xpred, 'pred')
+    )
     
     y = np.tanh(x)
     if err:
-        datagp = lgp.GP(0.1 ** 2 * lgp.Cauchy(scale=0.3))
-        datagp.addx(x, 'data')
+        datagp = (lgp
+            .GP(0.1 ** 2 * lgp.Cauchy(scale=0.3))
+            .addx(x, 'data')
+        )
         y = y + datagp.prior('data')
     
     result = gp.pred({'data': y}, 'pred', **kw)
@@ -87,8 +91,7 @@ def test_double_pred(rng):
     n = 50
     gp = lgp.GP(lgp.ExpQuad())
     ax, bx = rng.standard_normal((2, n))
-    gp.addx(ax, 'a')
-    gp.addx(bx, 'b')
+    gp = gp.addx(ax, 'a').addx(bx, 'b')
     m = rng.standard_normal((n, n))
     ay = gvar.gvar(rng.standard_normal(n), m.T @ m)
     m1, cov1 = gp.predfromdata({'a': ay}, 'b', raw=True)

@@ -35,8 +35,8 @@ the kernel completely specifies the Gaussian process. A different scale would
 mean a different kernel and so a different Gaussian process.
 
 This kind of parameters that reside on a "higher" level and can not be fitted
-are called *hyperparameters*. In this context the "normal" parameters are the
-values of the Gaussian process on the points you ask for them with
+are called *hyperparameters*. In this context the "normal", non-hyper parameters
+are the values of the Gaussian process on the points you ask for them with
 :meth:`GP.predfromdata`.
 
 From a statistical point of view there's no difference between parameters and
@@ -55,20 +55,21 @@ Enough chatter already, let's fit this damn ``scale`` parameter::
     x = np.linspace(-5, 5, 11)
     y = np.sin(x)
     def makegp(hyperparams):
-        gp = lgp.GP(lgp.ExpQuad(scale=hyperparams['scale']))
-        gp.addx(x, 'sine')
-        return gp
+        return (lgp
+            .GP(lgp.ExpQuad(scale=hyperparams['scale']))
+            .addx(x, 'sine')
+        )
     hyperprior = {'log(scale)': gvar.log(gvar.gvar(3, 3))}
     fit = lgp.empbayes_fit(hyperprior, makegp, {'sine': y}, raises=False)
-    hp = fit.p
-    print(hp['scale'])
+    print(fit.p['scale'])
 
-Output::
+Output:
 
-   2.16(17)
+.. code-block:: text
 
-As usual, it's easier done than said! The code is short but introduces a bunch
-of new things, let's go through it. 
+    2.16(17)
+
+The code is short but introduces a bunch of new things, let's go through it.
 
 First, we encapsulated creating the :class:`GP` object and adding points in
 the function ``makegp``, that takes as sole argument a dictionary of
@@ -104,9 +105,8 @@ we have to sample it too::
     
     xplot = np.linspace(-15, 15, 200)
     
-    for hpsample in gvar.raniter(hp, 3):
-        gp = makegp(hpsample)
-        gp.addx(xplot, 'plot')
+    for hpsample in gvar.raniter(fit.p, 3):
+        gp = makegp(hpsample).addx(xplot, 'plot')
         yplot = gp.predfromdata({'sine': y}, 'plot')
         
         for ysample in gvar.raniter(yplot, 1):
@@ -124,12 +124,11 @@ given by the prior variance, so we just need to multiply the kernel by a
 constant::
 
     def makegp(hyperparams):
-        variance = hyperparams['sdev'] ** 2
-        scale = hyperparams['scale']
-        kernel = variance * lgp.ExpQuad(scale=scale)
-        gp = lgp.GP(kernel)
-        gp.addx(x, 'sine')
-        return gp
+        kernel = hyperparams['sdev'] ** 2 * lgp.ExpQuad(scale=hyperparams['scale'])
+        return (lgp
+            .GP(kernel)
+            .addx(x, 'sine')
+        )
     
     hyperprior = {
         'log(sdev)': gvar.log(gvar.gvar(1, 1)),
@@ -137,9 +136,8 @@ constant::
     }
     
     fit = lgp.empbayes_fit(hyperprior, makegp, {'sine': y}, raises=False)
-    hp = fit.p
-    print('sdev', hp['sdev'])
-    print('scale', hp['scale'])
+    print('sdev', fit.p['sdev'])
+    print('scale', fit.p['scale'])
 
 .. note::
 
@@ -150,19 +148,20 @@ constant::
    ``import numpy``. Read the `jax documentation
    <https://jax.readthedocs.io/en/latest>`_ for detailed information.
 
-Output::
+Output:
 
-   sdev 2.44(81)
-   scale 2.86(22)
+.. code-block:: text
+
+    sdev 2.44(81)
+    scale 2.86(22)
 
 It did not do what I wanted! The fitted standard deviation is even higher
 than 1. ::
 
     ax.cla()
     
-    for hpsample in gvar.raniter(hp, 5):
-        gp = makegp(hpsample)
-        gp.addx(xplot, 'plot')
+    for hpsample in gvar.raniter(fit.p, 5):
+        gp = makegp(hpsample).addx(xplot, 'plot')
         yplot = gp.predfromdata({'sine': y}, 'plot')
         
         for ysample in gvar.raniter(yplot, 1):
@@ -182,14 +181,13 @@ quadratic. The fit is trying to find a scale and variance such that it becomes
 as likely as possible to see a sine-like oscillation 10 units long with an
 exponential quadratic correlation.
 
-So we should deduce that such an oscillation tipically comes out as a small
+So we should deduce that such an oscillation typically comes out as a small
 oscillation in a more widely varying function. To get a feel of that, let's
 plot a lot of samples from the prior with the hyperparameters I would have
 liked to come out, i.e., I'll use a scale of 2 and a standard deviation of, say,
 0.7::
 
-    gp = makegp({'scale': 2, 'sdev': 0.7})
-    gp.addx(xplot, 'plot')
+    gp = makegp({'scale': 2, 'sdev': 0.7}).addx(xplot, 'plot')
     
     prior = gp.prior('plot')
     
@@ -208,8 +206,7 @@ liked to come out, i.e., I'll use a scale of 2 and a standard deviation of, say,
 
 Now we do the same with the optimized hyperparameters::
 
-    gp = makegp(gvar.mean(hp))
-    gp.addx(xplot, 'plot')
+    gp = makegp(fit.pmean).addx(xplot, 'plot')
     
     prior = gp.prior('plot')
     
@@ -233,13 +230,15 @@ actually used in the fit is log(sdev)::
 
     from scipy import stats
     
-    p = hp['log(sdev)']
+    p = fit.p['log(sdev)']
     prob = stats.norm.cdf(np.log(1), loc=gvar.mean(p), scale=gvar.sdev(p))
     print('{:.3g}'.format(prob))
 
-Output::
+Output:
 
-   0.00383
+.. code-block:: text
+
+    0.00383
 
 Ouch, that's low. The fit values my intuition at less than 1 %. Now I'm
 outraged, I'll show :mod:`lsqfitgp` that he's wrong and I'm right. I'll do a
@@ -247,13 +246,15 @@ proper bayesian fit with Markov Chains using :mod:`pymc3`. First, I print
 the mean and standard deviations of the effective hyperparameters (the
 logarithms)::
 
-    for k, v in hp.items():
+    for k, v in fit.p.items():
         print(k, v)
 
-Output::
+Output:
 
-   log(sdev) 0.89(33)
-   log(scale) 1.051(77)
+.. code-block:: text
+
+    log(sdev) 0.89(33)
+    log(scale) 1.051(77)
 
 Then I run this code to get the (I hope) correct and satisfying answer::
 
@@ -298,28 +299,30 @@ Then I run this code to get the (I hope) correct and satisfying answer::
    print('prob_gauss {:.3g}'.format(prob_gauss))
    print('true_prob {:.3g}'.format(true_prob))
 
-Output::
+Output:
 
-   logp = -108.32, ||grad|| = 2,021.1: 100%|█████████████████████████████████████████████████████████████████| 20/20 [00:00<00:00, 228.23it/s]
-   Auto-assigning NUTS sampler...
-   Initializing NUTS using jitter+adapt_diag...
-   Sequential sampling (2 chains in 1 job)
-   NUTS: [logsdev, logscale]
-   Sampling chain 0, 0 divergences: 100%|███████████████████████████████████████████████████████████████| 10500/10500 [03:41<00:00, 47.38it/s]
-   Sampling chain 1, 0 divergences: 100%|███████████████████████████████████████████████████████████████| 10500/10500 [03:37<00:00, 48.17it/s]
-   The number of effective samples is smaller than 25% for some parameters.
-   
-   Maximum a posteriori (must be the same as lsqfitgp):
-   log(sdev) 0.89
-   log(scale) 1.05
-   
-   Posterior mean and standard deviation:
-   log(sdev) 0.86(40)
-   log(scale) 1.01(11)
-   
-   Probability of having sdev < 1:
-   prob_gauss 0.0151
-   true_prob 0.0165
+.. code-block:: text
+
+    logp = -108.32, ||grad|| = 2,021.1: 100%|█████████████████████████████████████████████████████████████████| 20/20 [00:00<00:00, 228.23it/s]
+    Auto-assigning NUTS sampler...
+    Initializing NUTS using jitter+adapt_diag...
+    Sequential sampling (2 chains in 1 job)
+    NUTS: [logsdev, logscale]
+    Sampling chain 0, 0 divergences: 100%|███████████████████████████████████████████████████████████████| 10500/10500 [03:41<00:00, 47.38it/s]
+    Sampling chain 1, 0 divergences: 100%|███████████████████████████████████████████████████████████████| 10500/10500 [03:37<00:00, 48.17it/s]
+    The number of effective samples is smaller than 25% for some parameters.
+
+    Maximum a posteriori (must be the same as lsqfitgp):
+    log(sdev) 0.89
+    log(scale) 1.05
+
+    Posterior mean and standard deviation:
+    log(sdev) 0.86(40)
+    log(scale) 1.01(11)
+
+    Probability of having sdev < 1:
+    prob_gauss 0.0151
+    true_prob 0.0165
 
 So the correct mean and standard deviation for log(sdev) are :math:`0.86 \pm
 0.40`, versus :mod:`lsqfitgp`'s result :math:`0.89 \pm 0.33`. The probability
@@ -339,8 +342,8 @@ Second, we learned that I was wrong and effectively it is not very likely,
 with the exponential quadratic kernel, to get an harmonic oscillation with a
 prior variance less than 1.
 
-Is there a somewhat clear explanation of this? Yes there is! In
-:ref:`kernelexpl`, we said that any kernel can be written as
+Is there a somewhat clear explanation of this? In :ref:`kernelexpl`, we said
+that any kernel can be written as
 
 .. math::
     k(x, x') = \sum_i h_i(x) h_i(x').
@@ -349,10 +352,10 @@ What are the :math:`h_i` for the exponential quadratic kernel? Well, first I
 have to say that I'll actually do an integral instead of a summation, but
 whatever. The solution is, guess what, Gaussians:
 
-.. This explanation does not make sense because this base is not orthogonal. An
-.. alternative would be taking the orthogonal basis of Hermite functions,
-.. although that's quite a detour possibly. Another alternative is considering
-.. the curvature of the covariance function.
+.. This base is not orthogonal, but is not a problem. If you want to avoid this
+.. mathematically blah explanation, do something similar with the orthogonal
+.. basis of Hermite functions, or consider the curvature of the covariance
+.. function.
 
 .. math::
     h_\mu(x) &= \exp(-(x - \mu)^2), \\
@@ -410,23 +413,22 @@ easy as cheating actually if we use the :class:`Periodic` kernel::
     def makegp(hp):
         scale = hp['period'] / (2 * np.pi)
         kernel = lgp.Periodic(scale=scale)
-        gp = lgp.GP(kernel)
-        gp.addx(x, 'sine')
-        return gp
+        return (lgp
+            .GP(kernel)
+            .addx(x, 'sine')
+        )
     
     hprior = {
         'log(period)': gvar.log(2 * np.pi * gvar.gvar(1, 1)),
     }
     fit = lgp.empbayes_fit(hprior, makegp, {'sine': y}, raises=False)
-    hp = fit.p
-    for k in hp.all_keys():
-        print(k, hp[k])
+    for k in fit.p.all_keys():
+        print(k, fit.p[k])
     
     ax.cla()
     
-    for hpsamp in gvar.raniter(hp, 3):
-        gp = makegp(hpsamp)
-        gp.addx(xplot, 'plot')
+    for hpsamp in gvar.raniter(fit.p, 3):
+        gp = makegp(hpsamp).addx(xplot, 'plot')
         yplot = gp.predfromdata({'sine': y}, 'plot')
         
         for ysamp in gvar.raniter(yplot, 1):
@@ -437,7 +439,9 @@ easy as cheating actually if we use the :class:`Periodic` kernel::
 
 .. image:: hyper7.png
 
-Output::
+Output:
 
-   log(period) 1.8373(29)
-   period 6.280(18)
+.. code-block:: text
+
+    log(period) 1.8373(29)
+    period 6.280(18)

@@ -49,13 +49,15 @@ klong = lgp.ExpQuad(scale=10, dim='time')
 kernel = lgp.where(lambda comp: comp == 'short', kshort, klong, dim='comp')
 gp = lgp.GP(kernel)
 
-def addcomps(key, time):
-    gp.addx(makex(time, 'short'), key + 'short')
-    gp.addx(makex(time, 'long'), key + 'long')
-    gp.addtransf({key + 'short': 0.3, key + 'long': 1}, key)
+def addcomps(gp, key, time):
+    return (gp
+        .addx(makex(time, 'short'), key + 'short')
+        .addx(makex(time, 'long'), key + 'long')
+        .addtransf({key + 'short': 0.3, key + 'long': 1}, key)
+    )
 
-addcomps('data', time)
-addcomps('pred', time_pred)
+gp = addcomps(gp, 'data', time)
+gp = addcomps(gp, 'pred', time_pred)
 
 print('generate data...')
 prior = gp.prior(['data', 'datashort', 'datalong'])

@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/kernels.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -35,10 +35,10 @@ on an infinitely long vector :math:`f(x)`, where :math:`x` is a "continuous
 index", and :math:`k(x, x')` is the covariance matrix.
 
 This implies that kernels are symmetric, i.e., :math:`k(x, x') = k(x', x)`.
-Also, covariance matrices must be positive semidefinite (if you wonder why, you
-can find an explanation on `wikipedia
-<https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_m
-atrices?>`_). For kernels, this means that, for *any* function :math:`g`,
+Also, covariance matrices must be positive semidefinite (`explanation on
+wikipedia
+<https://en.wikipedia.org/wiki/Covariance_matrix#Which_matrices_are_covariance_matrices?>`_).
+For kernels, this means that, for *any* function :math:`g`,
 
 .. math::
     \int_{-\infty}^\infty \mathrm dx \mathrm dx'\, g(x) k(x, x') g(x') \ge 0.
@@ -99,8 +99,8 @@ set of functions :math:`h_i`. You don't even think about it in terms of the
 :math:`h_i`, because the kernel has meaning in itself.
 
 Let's now build some feeling for how kernels behave. In :ref:`sine` we always
-used the :class:`ExpQuad` kernel (booring). To start, we will sum two
-exponential quadratic kernels with different scales, and see what happens::
+used the :class:`ExpQuad` kernel. To start, we will sum two exponential
+quadratic kernels with different scales, and see what happens::
 
     import lsqfitgp as lgp
     import numpy as np
@@ -113,7 +113,7 @@ exponential quadratic kernels with different scales, and see what happens::
     gp = lgp.GP(kernel)
     
     x = np.linspace(-15, 15, 300)
-    gp.addx(x, 'baz')
+    gp = gp.addx(x, 'baz')
     
     fig, ax = plt.subplots(num='lsqfitgp example')
     
@@ -151,8 +151,10 @@ quadratic::
 
     lorentz = lambda x: 1 / (1 + x**2)
     kernel = lgp.ExpQuad() * lgp.Rescaling(stdfun=lorentz)
-    gp = lgp.GP(kernel)
-    gp.addx(x, 'baz')
+    gp = (lgp
+        .GP(kernel)
+        .addx(x, 'baz')
+    )
     
     ax.cla()
     
@@ -176,7 +178,7 @@ function (cyan), and the band of the standard deviation of ``y`` (yellow)::
 
 .. image:: kernels3.png
 
-We see only one green (cyan+yellow) band, because it is a perfect match! We
+We see only one green (cyan+yellow) band, because it is a perfect match. We
 have rescaled the standard deviations of the prior with the function
 ``lorentz``, without changing the correlations. Since the :class:`ExpQuad`
 prior variance is 1 everywhere, after the multiplication it just matches

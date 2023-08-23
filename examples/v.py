@@ -52,7 +52,7 @@ kernels = [
 for label, kernel in kernels:
     gp = lgp.GP(kernel)
     x = np.linspace(0, 20, 500)
-    gp.addx(x, 'x')
+    gp = gp.addx(x, 'x')
     cov = gp.prior(raw=True)['x', 'x']
     samples = np.random.multivariate_normal(np.zeros_like(x), cov, size=1)
     ax.plot(x, samples.T, label=label)

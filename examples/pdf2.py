@@ -43,21 +43,23 @@ suminteg[:, 1] =  1
 
 #### CREATE GP OBJECT ####
 
-gp = lgp.GP()
+gp = (lgp
+    .GP()
 
-gp.defproc('h', kernel)
-gp.defproctransf('primitive of f', {'h': 1}, deriv='x')
-gp.defproctransf('f', {'h': 1}, deriv=(2, 'x'))
-gp.defproctransf('primitive of xf(x)', {'primitive of f': lambda x: x['x'], 'h': -1})
+    .defproc('h', kernel)
+    .defproctransf('primitive of f', {'h': 1}, deriv='x')
+    .defproctransf('f', {'h': 1}, deriv=(2, 'x'))
+    .defproctransf('primitive of xf(x)', {'primitive of f': lambda x: x['x'], 'h': -1})
 
-gp.addx(xdata, 'xdata', proc='f')
-gp.addtransf({'xdata': M}, 'data', axes=2)
+    .addx(xdata, 'xdata', proc='f')
+    .addtransf({'xdata': M}, 'data', axes=2)
 
-gp.addx(xinteg, 'xinteg', proc='primitive of f')
-gp.addtransf({'xinteg': suminteg}, 'suminteg', axes=2)
+    .addx(xinteg, 'xinteg', proc='primitive of f')
+    .addtransf({'xinteg': suminteg}, 'suminteg', axes=2)
 
-gp.addx(xinteg, 'xintegx', proc='primitive of xf(x)')
-gp.addtransf({'xintegx': suminteg}, 'sumintegx', axes=2)
+    .addx(xinteg, 'xintegx', proc='primitive of xf(x)')
+    .addtransf({'xintegx': suminteg}, 'sumintegx', axes=2)
+)
 
 #### GENERATE FAKE DATA ####
 

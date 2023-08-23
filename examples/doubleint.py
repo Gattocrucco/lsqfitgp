@@ -16,14 +16,16 @@ np.random.seed(20220417)
 gp = lgp.GP(lgp.ExpQuad())
 
 x = np.linspace(0, 1, 10)
-gp.addx(x, 'data', deriv=2)
+gp = (gp
+    .addx(x, 'data', deriv=2)
 
-gp.addx([0, 1], 'xinteg', deriv=1)
-gp.addtransf({'xinteg': [-1, 1]}, 'integ')
+    .addx([0, 1], 'xinteg', deriv=1)
+    .addtransf({'xinteg': [-1, 1]}, 'integ')
 
-gp.addx([0, 1], 'xintegx0')
-gp.addx(1, 'xintegx1', deriv=1)
-gp.addtransf({'xintegx1': 1, 'xintegx0': [1, -1]}, 'integx')
+    .addx([0, 1], 'xintegx0')
+    .addx(1, 'xintegx1', deriv=1)
+    .addtransf({'xintegx1': 1, 'xintegx0': [1, -1]}, 'integx')
+)
 
 #### GENERATE FAKE DATA ####
 

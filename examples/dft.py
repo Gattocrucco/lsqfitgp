@@ -38,23 +38,23 @@ gp = lgp.GP(lgp.Zeta(scale=2 * np.pi, nu=0.5))
 # shrinking prior on the DFT coefficients. Try it.
 
 xdata = np.linspace(0, 2 * np.pi, 20)
-gp.addx(xdata, PORCO)
+gp = gp.addx(xdata, PORCO)
 
 xpred = np.linspace(-2 * np.pi, 4 * np.pi, 50 * 6 + 1)
 # If we don't align the number of points to the period, the samples will not
 # show as periodic because the function is very rough. The distribution would
 # still be periodic though, it's just an artifact of looking at a coarse grid.
-gp.addx(xpred, DUO)
+gp = gp.addx(xpred, DUO)
 
 def transf(x):
     # use jax.numpy instead of numpy in this function
     f = jnp.fft.rfft(x)
     return jnp.stack([jnp.real(f), jnp.imag(f)])
 
-gp.addlintransf(transf, [PORCO], 'dft')
+gp = gp.addlintransf(transf, [PORCO], 'dft')
 
-gp.addlintransf(lambda x: x[0, 3], ['dft'], '3rd real coef')
-gp.addlintransf(lambda x: x[0, 3] - x[1, 3], ['dft'], '3rd coef pseudo-phase')
+gp = gp.addlintransf(lambda x: x[0, 3], ['dft'], '3rd real coef')
+gp = gp.addlintransf(lambda x: x[0, 3] - x[1, 3], ['dft'], '3rd coef pseudo-phase')
 # We will force the 3rd spectrum coefficient to be high because the supervisor
 # said that it always comes out high, so the plot can't be different from the
 # other articles. The statistics professor said that the correct fitting method

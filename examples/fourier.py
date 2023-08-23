@@ -24,12 +24,16 @@ import gvar
 
 """Constrain the values of Fourier series coefficients"""
 
-gp = lgp.GP(lgp.Zeta(nu=2.5), checkpos=False) # TODO is this checkpos necessary
-gp.defkernelop('F', 'fourier', True, gp.DefaultProcess)
+gp = (lgp
+    .GP(lgp.Zeta(nu=2.5), checkpos=False) # TODO is this checkpos necessary
+    .defkernelop('F', 'fourier', True, lgp.GP.DefaultProcess)
+)
 x = np.linspace(0, 1, 100)
-gp.addx(x, 'x')
-gp.addx(1, 's1', proc='F')
-gp.addx(2, 'c1', proc='F')
+gp = (gp
+    .addx(x, 'x')
+    .addx(1, 's1', proc='F')
+    .addx(2, 'c1', proc='F')
+)
 
 comb = [
     [0, 0],

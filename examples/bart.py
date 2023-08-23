@@ -88,13 +88,13 @@ def makegp(hp, *, i_train, i_test, splits):
     kernel = lgp.BART(splits=splits, indices=True, **kw)
     kernel *= (k_sigma_mu / hp['k']) ** 2
     
-    gp = lgp.GP(kernel, checkpos=False, checksym=False, solver='chol')
-    gp.addx(i_train, 'data_latent')
-    gp.addcov(hp['sigma2'] * jnp.eye(i_train.size), 'noise')
-    gp.addtransf({'data_latent': 1, 'noise': 1}, 'data')
-    gp.addx(i_test, 'test')
-    
-    return gp
+    return (lgp
+        .GP(kernel, checkpos=False, checksym=False, solver='chol')
+        .addx(i_train, 'data_latent')
+        .addcov(hp['sigma2'] * jnp.eye(i_train.size), 'noise')
+        .addtransf({'data_latent': 1, 'noise': 1}, 'data')
+        .addx(i_test, 'test')
+    )
 
 # Fit hyperparameters (Laplace approximation of the marginal posterior)
 

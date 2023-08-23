@@ -28,20 +28,24 @@ from matplotlib import pyplot as plt
 import numpy as np
 import gvar
 
-gp = lgp.GP(lgp.ExpQuad())
-gp.defproclintransf('even', lambda f: lambda x: (f(x) + f(-x)) / 2, [gp.DefaultProcess])
-gp.defproclintransf('odd', lambda f: lambda x: (f(x) - f(-x)) / 2, [gp.DefaultProcess])
+gp = (lgp
+    .GP(lgp.ExpQuad())
+    .defproclintransf('even', lambda f: lambda x: (f(x) + f(-x)) / 2, [lgp.GP.DefaultProcess])
+    .defproclintransf('odd', lambda f: lambda x: (f(x) - f(-x)) / 2, [lgp.GP.DefaultProcess])
+)
 
 x1, y1 = 1, 1
-gp.addx(x1, 'even', proc='even')
+gp = gp.addx(x1, 'even', proc='even')
 
 x2, y2 = 1, -1
-gp.addx(x2, 'odd', proc='odd')
+gp = gp.addx(x2, 'odd', proc='odd')
 
 xplot = np.linspace(-5, 5, 300)
-gp.addx(xplot, 'function')
-gp.addx(xplot, 'even part', proc='odd')
-gp.addx(xplot, 'odd part', proc='even')
+gp = (gp
+    .addx(xplot, 'function')
+    .addx(xplot, 'even part', proc='odd')
+    .addx(xplot, 'odd part', proc='even')
+)
 
 y = gp.predfromdata({'even': y1, 'odd': y2})
 

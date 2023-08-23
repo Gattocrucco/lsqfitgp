@@ -83,9 +83,7 @@ def test_period():
     }
     x = np.linspace(0, 6, 10)
     def gpfactory(hp):
-        gp = lgp.GP(lgp.Periodic(scale=hp['scale']))
-        gp.addx(x, 'x')
-        return gp
+        return lgp.GP(lgp.Periodic(scale=hp['scale'])).addx(x, 'x')
     for _ in range(10):
         check_fit(hp, gpfactory)
 
@@ -96,9 +94,7 @@ def test_scale():
     }
     x = np.linspace(0, 2 * np.pi * 5, 20)
     def gpfactory(hp):
-        gp = lgp.GP(lgp.ExpQuad(scale=hp['scale']))
-        gp.addx(x, 'x')
-        return gp
+        return lgp.GP(lgp.ExpQuad(scale=hp['scale'])).addx(x, 'x')
     for _ in range(10):
         check_fit(hp, gpfactory, alpha=1e-7)
 
@@ -109,9 +105,7 @@ def test_sdev():
     }
     x = np.linspace(0, 5, 10)
     def gpfactory(hp):
-        gp = lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2)
-        gp.addx(x, 'x')
-        return gp
+        return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
     for _ in range(10):
         check_fit(hp, gpfactory, alpha=1e-8)
     # TODO once I've seen the chi2 check fail with sf(q) = 1e-8. Is this
@@ -125,17 +119,11 @@ def test_flat():
     })
     x = np.linspace(0, 5, 10)
     def gpfactory1(hp):
-        gp = lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2)
-        gp.addx(x, 'x')
-        return gp
+        return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
     def gpfactory2(hp):
-        gp = lgp.GP(lgp.ExpQuad() * jnp.exp(hp[0]) ** 2)
-        gp.addx(x, 'x')
-        return gp
+        return lgp.GP(lgp.ExpQuad() * jnp.exp(hp[0]) ** 2).addx(x, 'x')
     def gpfactory3(hp):
-        gp = lgp.GP(lgp.ExpQuad() * jnp.exp(hp) ** 2)
-        gp.addx(x, 'x')
-        return gp
+        return lgp.GP(lgp.ExpQuad() * jnp.exp(hp) ** 2).addx(x, 'x')
     truehp = gvar.sample(hp)
     truegp = gpfactory1(truehp)
     trueprior = truegp.prior()
@@ -154,9 +142,7 @@ def test_method():
     })
     x = np.linspace(0, 5, 10)
     def gpfactory(hp):
-        gp = lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2)
-        gp.addx(x, 'x')
-        return gp
+        return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
     truehp = gvar.sample(hp)
     truegp = gpfactory(truehp)
     trueprior = truegp.prior()
@@ -190,17 +176,13 @@ def test_checks():
         lgp.empbayes_fit(gvar.gvar(0, 1), lambda: None, lambda: None, method='cippa', **FITKW)
     with pytest.raises(RuntimeError) as err:
         def makegp(x):
-            gp = lgp.GP(lgp.ExpQuad())
-            gp.addx(x, 'x')
-            return gp
+            return lgp.GP(lgp.ExpQuad()).addx(x, 'x')
         lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0.}, minkw=dict(options=dict(maxiter=0)), **FITKW)
     assert 'minimization failed: ' in str(err.value)
 
 def test_int_data():
     def makegp(x):
-        gp = lgp.GP(lgp.ExpQuad())
-        gp.addx(x, 'x')
-        return gp
+        return lgp.GP(lgp.ExpQuad()).addx(x, 'x')
     lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0}, **FITKW)
 
 def test_data():
@@ -210,9 +192,7 @@ def test_data():
     })
     x = np.linspace(0, 5, 10)
     def gpfactory(hp):
-        gp = lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2)
-        gp.addx(x, 'x')
-        return gp
+        return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
     truehp = gvar.sample(hp)
     truegp = gpfactory(truehp)
     trueprior = truegp.prior()

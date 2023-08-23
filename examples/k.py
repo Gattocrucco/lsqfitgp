@@ -36,10 +36,12 @@ xpred = np.linspace(-15, 25, 200)
 y = np.sin(xdata)
 
 print('make GP...')
-gp = lgp.GP(lgp.Maternp(p=2, scale=3), checkpos=False)
-gp.addx(xdata, 'data')
-gp.addx(xpred, 'pred')
-gp.addx(xpred, 'deriv', deriv=1)
+gp = (lgp
+    .GP(lgp.Maternp(p=2, scale=3), checkpos=False)
+    .addx(xdata, 'data')
+    .addx(xpred, 'pred')
+    .addx(xpred, 'deriv', deriv=1)
+)
 
 print('fit...')
 u = gp.pred({'data': y}, ['pred', 'deriv'], fromdata=True)

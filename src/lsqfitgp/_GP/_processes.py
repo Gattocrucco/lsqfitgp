@@ -31,12 +31,18 @@ from . import _base
 class GPProcesses(_base.GPBase):
 
     def __init__(self, *, covfun):
-        self._procs = dict() # proc key -> _Proc
-        self._kernels = dict() # (proc key, proc key) -> _KernelBase
+        self._procs = {} # proc key -> _Proc
+        self._kernels = {} # (proc key, proc key) -> _KernelBase
         if covfun is not None:
             if not isinstance(covfun, _Kernel.Kernel):
                 raise TypeError('covariance function must be of class Kernel')
             self._procs[self.DefaultProcess] = self._ProcKernel(covfun)
+
+    def _clone(self):
+        newself = super()._clone()
+        newself._procs = self._procs.copy()
+        newself._kernels = self._kernels.copy()
+        return newself
 
     class _Proc(abc.ABC):
         """
@@ -82,6 +88,7 @@ class GPProcesses(_base.GPBase):
         
     _zerokernel = _Kernel.Zero()
 
+    @_base.newself
     def defproc(self, key, kernel=None, *, deriv=0):
         """
         
@@ -111,6 +118,7 @@ class GPProcesses(_base.GPBase):
         
         self._procs[key] = self._ProcKernel(kernel, deriv)
     
+    @_base.newself
     def defproctransf(self, key, ops, *, deriv=0):
         """
         
@@ -175,6 +183,7 @@ class GPProcesses(_base.GPBase):
         #     return fun
         # self.defproclintransf(key, equivalent_lintransf, list(ops.keys()), deriv=deriv, checklin=False)
     
+    @_base.newself
     def defproclintransf(self, key, transf, procs, *, deriv=0, checklin=False):
         """
         
@@ -237,6 +246,7 @@ class GPProcesses(_base.GPBase):
         
         self._procs[key] = self._ProcLinTransf(transf, procs, deriv)
 
+    @_base.newself
     def defkernelop(self, key, method, arg, proc):
         """
         
@@ -282,9 +292,14 @@ class GPProcesses(_base.GPBase):
         proc : hashable
             The key of the process to be derived.
         
+        Returns
+        -------
+        gp : GP
+            A new GP object with the applied modifications.
+
         """
         deriv = _Deriv.Deriv(deriv)
-        self.defkernelop(key, 'diff', deriv, proc)
+        return self.defkernelop(key, 'diff', deriv, proc)
     
     def defprocxtransf(self, key, transf, proc):
         """
@@ -304,9 +319,14 @@ class GPProcesses(_base.GPBase):
         proc : hashable
             The key of the process to be transformed.
         
+        Returns
+        -------
+        gp : GP
+            A new GP object with the applied modifications.
+
         """
         assert callable(transf)
-        self.defkernelop(key, 'xtransf', transf, proc)
+        return self.defkernelop(key, 'xtransf', transf, proc)
     
     def defprocrescale(self, key, scalefun, proc):
         """
@@ -325,9 +345,14 @@ class GPProcesses(_base.GPBase):
         proc : hashable
             The key of the process to be transformed.
         
+        Returns
+        -------
+        gp : GP
+            A new GP object with the applied modifications.
+
         """
         assert callable(scalefun)
-        self.defkernelop(key, 'rescale', scalefun, proc)
+        return self.defkernelop(key, 'rescale', scalefun, proc)
     
     def _crosskernel(self, xpkey, ypkey):
         

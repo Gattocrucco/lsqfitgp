@@ -36,10 +36,12 @@ xpred = np.linspace(-15, 25, 200)
 y = np.sin(xdata)
 
 print('make GP...')
-gp = lgp.GP(lgp.ExpQuad(scale=3))
-gp.addx(xdata, 'data')
-gp.addx(xpred, 'pred', deriv=0)
-gp.addx(xpred, 'predderiv', deriv=1)
+gp = (lgp
+    .GP(lgp.ExpQuad(scale=3))
+    .addx(xdata, 'data')
+    .addx(xpred, 'pred', deriv=0)
+    .addx(xpred, 'predderiv', deriv=1)
+)
 
 print('fit...')
 umean, ucov = gp.predfromdata({'data': y}, ['pred', 'predderiv'], raw=True)

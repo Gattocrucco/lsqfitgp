@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/components.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -30,10 +30,10 @@ of two processes, because the kernel of a sum of processes is the sum of their
 kernels.
 
 When summing processes it is useful to get the fit result separately for each
-component. In :mod:`lsqfitgp` there's not a specific tool for this because it
-can be implemented using kernel tricks, multidimensional input and
-transformations.
+component. In :mod:`lsqfitgp` there are two main ways to do it, one long, and
+one short.
 
+The long way is using kernel tricks, multidimensional input and transformations.
 Let's see. We first generate some data::
 
     import numpy as np
@@ -44,7 +44,7 @@ Let's see. We first generate some data::
     gp = lgp.GP(10 * lgp.ExpQuad(scale=10) + lgp.ExpQuad(scale=1))
     
     x = np.linspace(-10, 10, 21)
-    gp.addx(x, 'pinguini')
+    gp = gp.addx(x, 'pinguini')
     
     prior = gp.prior('pinguini')
     y = gvar.sample(prior)
@@ -90,9 +90,11 @@ only when acting on two points which have the same ``'comp'``.
 Now we add separately the two components and sum them with
 :meth:`~GP.addtransf`::
 
-    gp.addx(xcomp[0], 'longscale')
-    gp.addx(xcomp[1], 'shortscale')
-    gp.addtransf({'shortscale': 1, 'longscale': 1}, 'sum')
+    gp = (gp
+        .addx(xcomp[0], 'longscale')
+        .addx(xcomp[1], 'shortscale')
+        .addtransf({'shortscale': 1, 'longscale': 1}, 'sum')
+    )
 
 This method is an alternative to :meth:`~GP.addlintransf` that takes explicitly
 the coefficients of the linear transformation instead of a Python function
@@ -106,9 +108,11 @@ We can now proceed as usual to get the posterior on other points::
     xplot['x'] = np.linspace(-10, 10, xplot.shape[1])
     xplot['comp'] = np.array([0, 1])[:, None]
     
-    gp.addx(xplot[0], 'longscale_plot')
-    gp.addx(xplot[1], 'shortscale_plot')
-    gp.addtransf({'longscale_plot': 1, 'shortscale_plot': 1}, 'sum_plot')
+    gp = (gp
+        .addx(xplot[0], 'longscale_plot')
+        .addx(xplot[1], 'shortscale_plot')
+        .addtransf({'longscale_plot': 1, 'shortscale_plot': 1}, 'sum_plot')
+    )
     
     post = gp.predfromdata({'sum': y})
     
@@ -126,9 +130,9 @@ We can now proceed as usual to get the posterior on other points::
 
 .. image:: components2.png
 
-It's interesting to note that the uncertainty on the individual components is
-larger than the uncertainty on the total, because there are various possible
-combinations that give the same data.
+The uncertainty on the individual components comes out larger than the
+uncertainty on the total, because there are various possible combinations that
+give the same data.
 
 Writing this code was a bit tedious, I had to use :class:`Rescaling` for each
 kernel component, make a structured array and add separately the components,
@@ -142,22 +146,24 @@ on the sum as before::
     
     keys = ['longscale', 'shortscale', 'sum']
     
-    def addxcomp(x, basekey):
+    def addxcomp(gp, x, basekey):
         xcomp = np.empty((2, len(x)), dtype=[('x', float), ('comp', int)])
         xcomp['x'] = x
         xcomp['comp'] = np.arange(2)[:, None]
-        gp.addx(xcomp[0], basekey + keys[0])
-        gp.addx(xcomp[1], basekey + keys[1])
-        gp.addtransf({
-            basekey + keys[0]: 1,
-            basekey + keys[1]: 1
-        }, basekey + keys[2])
+        return (gp
+            .addx(xcomp[0], basekey + keys[0])
+            .addx(xcomp[1], basekey + keys[1])
+            .addtransf({
+                basekey + keys[0]: 1,
+                basekey + keys[1]: 1
+            }, basekey + keys[2])
+        )
     
     x = np.linspace(-10, 10, 21)
     xplot = np.linspace(-10, 10, 200)
     
-    addxcomp(x, 'data')
-    addxcomp(xplot, 'plot')
+    gp = addxcomp(gp, x, 'data')
+    gp = addxcomp(gp, xplot, 'plot')
     
     dataprior = gp.prior(['data' + k for k in keys])
     y = gvar.sample(dataprior)
@@ -187,24 +193,28 @@ with, but it's not very intuitive. We still have to take care manually of
 indicating which component we are using by setting appropriately the ``'comp'``
 field in the ``x`` arrays each time, and each time, for each set of points we
 want to consider, we have to sum the two components after evaluating them
-separately. There is another set of methods in :class:`GP` designed to make
-this kind of thing quicker. Let's see. We start by creating a :class:`GP`
+separately. 
+
+So here comes the short way. There is another set of methods in :class:`GP`
+designed to make this kind of thing quicker. We start by creating a :class:`GP`
 object *without specifying a kernel*::
 
     gp = lgp.GP()
 
 Then we add separately the two kernels to the object using :meth:`GP.defproc`::
 
-    gp.defproc('long', kernel1)
-    gp.defproc('short', kernel2)
+    gp = (gp
+        .defproc('long', kernel1)
+        .defproc('short', kernel2)
+    )
 
 Now the two names ``'long'`` and ``'short'`` stand for *independent* processes
-with their respective kernels. (These names reside in a namespace separate
-from the one used by :meth:`~GP.addx` and :meth:`~GP.addtransf`.) Now we use
+with their respective kernels. These names reside in a namespace separate
+from the one used by :meth:`~GP.addx` and :meth:`~GP.addtransf`. Now we use
 these to define their sum *as a process* instead of summing them after
 evaluation on specific points::
 
-    gp.defproctransf('sum', {'long': 1, 'short': 1})
+    gp = gp.defproctransf('sum', {'long': 1, 'short': 1})
 
 The method :meth:`~GP.defproctransf` is analogous to :meth:`~GP.addtransf` but
 works for the whole process at once. What we are doing mathematically is the
@@ -214,20 +224,22 @@ following:
     \operatorname{sum}(x) \equiv 1 \cdot \operatorname{long}(x) +
                                  1 \cdot \operatorname{short}(x).
 
-(There is also the analogous :meth:`~GP.defproclintransf`, which takes a
-Python function like :meth:`~GP.addlintransf`.) Now that we have defined the
+There is also the analogous :meth:`~GP.defproclintransf`, which takes a
+Python function like :meth:`~GP.addlintransf`. Now that we have defined the
 components, we evaluate them on the points::
 
     x = np.linspace(-10, 10, 21)
     xplot = np.linspace(-10, 10, 200)
     
-    gp.addx(x, 'datalong' , proc='long' )
-    gp.addx(x, 'datashort', proc='short')
-    gp.addx(x, 'datasum'  , proc='sum'  )
+    gp = (gp
+        .addx(x, 'datalong' , proc='long' )
+        .addx(x, 'datashort', proc='short')
+        .addx(x, 'datasum'  , proc='sum'  )
     
-    gp.addx(xplot, 'plotlong' , proc='long' )
-    gp.addx(xplot, 'plotshort', proc='short')
-    gp.addx(xplot, 'plotsum'  , proc='sum'  )
+        .addx(xplot, 'plotlong' , proc='long' )
+        .addx(xplot, 'plotshort', proc='short')
+        .addx(xplot, 'plotsum'  , proc='sum'  )
+    )
 
 We specified the processes using the ``proc`` parameter of :meth:`~GP.addx`.
 Then we continue as before::
@@ -256,11 +268,10 @@ Then we continue as before::
 .. image:: components4.png
 
 If there was this more convenient way of dealing with latent components, why
-didn't we introduce it right away? The reason is that it is not as general as
-managing the components manually with an explicit field. :meth:`~GP.defproc`
-defines processes which are independent of each other; to have nontrivial a
-priori correlations it is necessary to put the process index in the domain such
-that kernel can manipulate it. We did this at the end of :ref:`multiout` when
-we introduced an anticorrelation between the random walk components by
-multiplying the kernel with ``lgp.Categorical(dim='coord', cov=[[1, -0.99],
-[-0.99, 1]])``.
+didn't we explain first? The reason is that it is not as general as managing the
+components manually with an explicit field. :meth:`~GP.defproc` defines
+processes which are independent of each other; to have nontrivial a priori
+correlations it is necessary to put the process index in the domain such that
+kernel can manipulate it. We did this at the end of :ref:`multiout` when we
+introduced an anticorrelation between the random walk components by multiplying
+the kernel with ``lgp.Categorical(dim='coord', cov=[[1, -0.99], [-0.99, 1]])``.
