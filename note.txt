@@ -5781,3 +5781,7 @@ apply it to the mean function too.
 The only way I see which is compatible with all the transformations I'd like to
 implement eventually is defining a Mean object that defines transformations
 methods like kernel. Make an abc that defines the shared interface.
+
+...........
+
+Todo: continue pytest --kw and fix the kernel overhaul.

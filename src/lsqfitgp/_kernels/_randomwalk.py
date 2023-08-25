@@ -23,7 +23,7 @@ from jax import numpy as jnp
 from .. import _jaxext
 from .._Kernel import kernel, stationarykernel
 
-@kernel(forcekron=True, derivable=False)
+@kernel(derivable=False, maxdim=1)
 def Wiener(x, y):
     """
     Wiener kernel.
@@ -45,7 +45,7 @@ def _fracbrownian_derivable(H=1/2, K=1):
     # TODO fails under tracing, return None if not concrete, maybe silence
     # derivability warnings under tracing
 
-@kernel(forcekron=True, derivable=_fracbrownian_derivable)
+@kernel(derivable=_fracbrownian_derivable, maxdim=1)
 def FracBrownian(x, y, H=1/2, K=1):
     """
     Bifractional Brownian motion kernel.
@@ -94,7 +94,7 @@ def _maximum_jvp(primals, tangents):
     xdot, ydot = tangents
     return _maximum(x, y), jnp.where(x >= y, xdot, ydot)
 
-@kernel(derivable=1, forcekron=True)
+@kernel(derivable=1, maxdim=1)
 def WienerIntegral(x, y):
     """
     Kernel for a process whose derivative is a Wiener process.
@@ -115,7 +115,7 @@ def WienerIntegral(x, y):
     b = _maximum(x, y)
     return 1/2 * a ** 2 * (b - a / 3)
 
-@kernel(forcekron=True, derivable=False)
+@kernel(derivable=False, maxdim=1)
 def OrnsteinUhlenbeck(x, y):
     """
     Ornstein-Uhlenbeck process kernel.
@@ -138,7 +138,7 @@ def OrnsteinUhlenbeck(x, y):
         assert jnp.all(y >= 0)
     return jnp.exp(-jnp.abs(x - y)) - jnp.exp(-(x + y))
 
-@kernel(forcekron=True, derivable=False)
+@kernel(derivable=False, maxdim=1)
 def BrownianBridge(x, y):
     """
     Brownian bridge kernel.
@@ -164,7 +164,7 @@ def BrownianBridge(x, y):
 def _stationaryfracbrownian_derivable(H=1/2):
     return H == 1
 
-@stationarykernel(forcekron=True, derivable=_stationaryfracbrownian_derivable, input='signed')
+@stationarykernel(derivable=_stationaryfracbrownian_derivable, input='signed', maxdim=1)
 def StationaryFracBrownian(delta, H=1/2):
     """
     Stationary fractional Brownian motion kernel.
@@ -184,4 +184,3 @@ def StationaryFracBrownian(delta, H=1/2):
     return 1/2 * (jnp.abs(delta + 1) ** H2 + jnp.abs(delta - 1) ** H2 - 2 * jnp.abs(delta) ** H2)
     
     # TODO is the bifractional version of this valid?
-

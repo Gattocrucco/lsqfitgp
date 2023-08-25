@@ -45,7 +45,7 @@ args = [
     (2, {})
 ]
 for Q, kw in args:
-    y = lgp.Harmonic(Q=Q).diff(1, 1)(0, x)
+    y = lgp.Harmonic(Q=Q).transf('diff', 1, 1)(0, x)
     ax.plot(x, y, label=f'Q={Q}', **kw)
 
 ax.legend(loc='best')

@@ -27,19 +27,14 @@ from .. import util
 from lsqfitgp import _linalg
 from lsqfitgp._linalg import _toeplitz
 
-s1, s2 = np.random.SeedSequence(202307261619).spawn(2)
-rng = np.random.default_rng(s1)
-np.random.seed(s2.generate_state(1))
-
-@util.tryagain
-def test_toeplitz_gershgorin():
+def test_toeplitz_gershgorin(rng):
     t = rng.standard_normal(100)
     m = linalg.toeplitz(t)
     b1 = _linalg._decomp.eigval_bound(m)
     b2 = _toeplitz.eigv_bound(t)
     util.assert_close_matrices(b2, b1, rtol=1e-15)
 
-def check_toeplitz():
+def check_toeplitz(rng):
     for n in [10, 2, 1]:
         x = np.linspace(0, 3, n)
         t = np.pi * np.exp(-1/2 * x ** 2)
@@ -66,17 +61,14 @@ def check_toeplitz():
         imb2 = np.linalg.solve(m, b)
         util.assert_close_matrices(imb1, imb2, rtol=1e-8)
 
-@util.tryagain
-def test_toeplitz_nojit():
+def test_toeplitz_nojit(rng):
     with jax.disable_jit():
-        check_toeplitz()
+        check_toeplitz(rng)
 
-@util.tryagain
-def test_toeplitz():
-    check_toeplitz()
+def test_toeplitz(rng):
+    check_toeplitz(rng)
 
-@util.tryagain
-def test_toeplitz_chol_solve_numpy():
+def test_toeplitz_chol_solve_numpy(rng):
     shapes = [
         [(), ()],
         [(10,), (1,)],

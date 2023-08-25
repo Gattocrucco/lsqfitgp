@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/reference/kerneldec.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -24,11 +24,15 @@
 Kernel decorators
 =================
 
-These decorators convert a callable to a subclass of :class:`Kernel`. The
-decorators can be used both with and without keyword arguments. The keyword
-arguments will be passed as initialization arguments to the superclass, and
-will be overwritten by keyword arguments given at initialization of the
-subclass.
+These decorators are the preferred way to create subclasses of `Kernel`.
+
+Index
+-----
+
+`kernel`, `stationarykernel`, `isotropickernel`
+
+Decorators
+----------
 
 .. autofunction:: kernel
 

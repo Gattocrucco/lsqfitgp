@@ -17,54 +17,53 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+
 from jax import numpy as jnp
 
 from .. import _special
 from .. import _jaxext
 from .. import _Kernel
-from .._Kernel import stationarykernel
 
-def _zeta_derivable(nu=None):
+__all__ = ['Zeta']
+
+def zeta_derivable(nu=None):
     with _jaxext.skipifabstract():
         return max(0, jnp.ceil(nu) - 1)
 
-@stationarykernel(maxdim=1, derivable=_zeta_derivable, saveargs=True)
-def _ZetaBase(delta, nu=None):
-    """
+@_Kernel.stationarykernel(maxdim=1, derivable=zeta_derivable, saveargs=True)
+def Zeta(delta, nu=None):
+    r"""
+    
     Zeta kernel.
     
     .. math::
-        k(\\Delta)
-        &= \\frac{\\Re F(\\Delta, s)}{\\zeta(s)} =
-        \\qquad (s = 1 + 2 \\nu, \\quad \\nu \\ge 0) \\\\
-        &= \\frac1{\\zeta(s)} \\sum_{k=1}^\\infty
-        \\frac {\\cos(2\\pi k\\Delta)} {k^s} = \\\\
+        k(\Delta)
+        &= \frac{\Re F(\Delta, s)}{\zeta(s)} =
+        \qquad (s = 1 + 2 \nu, \quad \nu \ge 0) \\
+        &= \frac1{\zeta(s)} \sum_{k=1}^\infty
+        \frac {\cos(2\pi k\Delta)} {k^s} = \\
         &= -(-1)^{s/2}
-        \\frac {(2\\pi)^s} {2s!}
-        \\frac {\\tilde B_s(\\Delta)} {\\zeta(s)}
-        \\quad \\text{for even integer $s$.}
+        \frac {(2\pi)^s} {2s!}
+        \frac {\tilde B_s(\Delta)} {\zeta(s)}
+        \quad \text{for even integer $s$.}
     
     It is equivalent to fitting with a Fourier series of period 1 with
     independent priors on the coefficients with mean zero and variance
-    :math:`1/(\\zeta(s)k^s)` for the :math:`k`-th term. Analogously to
-    :class:`Matern`, the process is :math:`\\lceil\\nu\\rceil - 1` times
-    derivable, and the highest derivative is continuous iff :math:`\\nu\\bmod 1
-    \\ge 1/2`.
+    :math:`1/(\zeta(s)k^s)` for the :math:`k`-th term. Analogously to
+    :class:`Matern`, the process is :math:`\lceil\nu\rceil - 1` times
+    derivable, and the highest derivative is continuous iff :math:`\nu\bmod 1
+    \ge 1/2`.
     
-    Note that the :math:`k = 0` term is not included in the summation, so the
-    mean of the process over one period is forced to be zero.
+    The :math:`k = 0` term is not included in the summation, so the mean of the
+    process over one period is forced to be zero.
+
+    This kernel defines the transformation ``'fourier'`` to be used with
+    `~CrossKernel.transf`.
     
     Reference: Petrillo (2022).
     
     """
-    
-    # TODO reference as covariance function? I had found something with
-    # fourier and bernoulli but lost it. Maybe known as zeta?
-    
-    # TODO add constant as option, otherwise I can't compute the Fourier
-    # series when I add a constant. => Maybe this will be solved when I
-    # improve the transformations system.
-    
     # TODO ND version. The separable product is not equivalent I think.
     
     # TODO the derivative w.r.t. nu is probably broken
@@ -80,56 +79,54 @@ def _ZetaBase(delta, nu=None):
     # return -(-1) ** (s // 2) * _special.scaled_periodic_bernoulli(s, delta) / jspecial.zeta(s, 1)
     
     # TODO use the bernoully version for integer even s, based on the type of
-    # the input so that it's static, because it is much more accurate
+    # the input such that it's static, because it is much more accurate
+
+@functools.partial(Zeta.register_transf, argparser=bool)
+def fourier(self, dox, doy):
+    r"""
+
+    Compute the Fourier series transform of the function.
+
+    .. math::
+
+        T(f)(k) = \begin{cases}
+                \frac2T \int_0^T \mathrm dx\, f(x)
+                \cos\left(\frac{2\pi}T \frac k2 x\right)
+                & \text{if $k$ is even} \\
+                \frac2T \int_0^T \mathrm dx\, f(x)
+                \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
+                & \text{if $k$ is odd}
+            \end{cases}
+        
+    The period :math:`T` is 1.
+
+    """
     
-class Zeta(_ZetaBase):
+    nu = self.initargs['nu']
+    s = 1 + 2 * nu
     
-    __doc__ = _ZetaBase.__doc__
+    if dox and doy:
+        def core(k, q):
+            order = jnp.ceil(k / 2)
+            denom = order ** s * _special.zeta(s)
+            return jnp.where((k == q) & (k > 0), 1 / denom, 0)
     
-    # TODO write a method of CrossKernel that makes a new kernel from the
-    # current one to be used as starting point by all the transformation
-    # methods. It should have an option on how much the subclass should be
-    # preserved, for example this implementation of `fourier` is broken as soon
-    # as a transformation is applied to the kernel. Linear transformations
-    # should transform not only the kernel but also its transformations. I
-    # have to think how to make this work in full generality. => Tentative
-    # design: loc, scale, dim, etc. must become standalone methods and
-    # appropriately transform the other transformation methods. Alternative:
-    # interface for providing the internals of the transformations, separately
-    # for cross and symmetric cases, and it's always the Kernel method that
-    # manages everything like it is for __call__.
+    else:
+        def core(k, y):
+            order = jnp.ceil(k / 2)
+            denom = order ** s * _special.zeta(s)
+            odd = k % 2
+            arg = 2 * jnp.pi * order * y
+            return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)
     
-    def fourier(self, dox, doy):
-        
-        # TODO problem: this ignores completely loc and scale. Write a static
-        # CrossKernel method that applies loc and scale to a kernel core, use
-        # it in __init__ and here.
-        
-        if not dox and not doy:
-            return self
-        
-        nu = self.initargs['nu']
-        s = 1 + 2 * nu
-        
-        if dox and doy:
-            def kernel(k, q):
-                order = jnp.ceil(k / 2)
-                denom = order ** s * _special.zeta(s)
-                return jnp.where((k == q) & (k > 0), 1 / denom, 0)
-        
-        else:
-            def kernel(k, y):
-                order = jnp.ceil(k / 2)
-                denom = order ** s * _special.zeta(s)
-                odd = k % 2
-                arg = 2 * jnp.pi * order * y
-                return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)
-        
-            if doy:
-                kernel = lambda x, q, kernel=kernel: kernel(q, x)
-        
-        cls = _Kernel.Kernel if dox == doy and isinstance(self, _Kernel.Kernel) else _Kernel.CrossKernel
-        obj = cls(kernel)
-        obj.initargs = self.initargs
-        obj._maxderivable = self._maxderivable
-        return obj
+        if doy:
+            core = lambda x, q, core=core: core(q, x)
+    
+    return self._clone(core=core)
+
+# TODO I want to get rid of initargs.
+
+# 1) Restrict it to only the additional keyword arguments passed
+# to core.
+
+# 2) Somehow pass `nu` to the transformation code.

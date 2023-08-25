@@ -26,7 +26,7 @@ import gvar
 
 gp = (lgp
     .GP(lgp.Zeta(nu=2.5), checkpos=False) # TODO is this checkpos necessary
-    .defkernelop('F', 'fourier', True, lgp.GP.DefaultProcess)
+    .defkerneltransf('F', 'fourier', True, lgp.GP.DefaultProcess)
 )
 x = np.linspace(0, 1, 100)
 gp = (gp

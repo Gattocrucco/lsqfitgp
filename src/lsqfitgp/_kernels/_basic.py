@@ -31,7 +31,7 @@ from .. import _jaxext
 from .. import _Kernel
 from .._Kernel import kernel, stationarykernel, isotropickernel
 
-@isotropickernel(derivable=True, input='raw')
+@isotropickernel(derivable=True, input='raw', maxdim=numpy.inf)
 def Constant(x, y):
     """
     Constant kernel.
@@ -45,7 +45,7 @@ def Constant(x, y):
     """
     return jnp.ones(jnp.broadcast_shapes(x.shape, y.shape))
     
-@isotropickernel(derivable=False, input='raw')
+@isotropickernel(derivable=False, input='raw', maxdim=numpy.inf)
 def White(x, y):
     """
     White noise kernel.
@@ -59,7 +59,7 @@ def White(x, y):
     return _Kernel.prod_recurse_dtype(lambda x, y: x == y, x, y).astype(int)
     # TODO maybe StructuredArray should support equality and other operations
 
-@isotropickernel(derivable=True)
+@isotropickernel(derivable=True, maxdim=numpy.inf)
 def ExpQuad(r2):
     """
     Exponential quadratic kernel.
@@ -78,7 +78,7 @@ def ExpQuad(r2):
 def _dot(x, y):
     return _Kernel.sum_recurse_dtype(lambda x, y: x * y, x, y)
     
-@kernel(derivable=True)
+@kernel(derivable=True, maxdim=numpy.inf)
 def Linear(x, y):
     """
     Dot product kernel.
@@ -92,7 +92,7 @@ def Linear(x, y):
     """
     return _dot(x, y)
 
-@isotropickernel(derivable=lambda gamma=1: gamma == 2)
+@isotropickernel(derivable=lambda gamma=1: gamma == 2, maxdim=numpy.inf)
 def GammaExp(r2, gamma=1):
     """
     Gamma exponential kernel.
@@ -124,7 +124,7 @@ def GammaExp(r2, gamma=1):
     # TODO derivatives w.r.t. gamma at gamma==2 are probably broken, although
     # I guess they are not needed since it's on the boundary of the domain
     
-@kernel(derivable=True)
+@kernel(derivable=True, maxdim=numpy.inf)
 def NNKernel(x, y, sigma0=1):
     """
     Neural network kernel.
@@ -161,6 +161,9 @@ def NNKernel(x, y, sigma0=1):
     # augmented vector even if x and y are transformed, unless I support q
     # being a vector or an additional parameter.
 
+    # TODO if arcsin has positive taylor coefficients, this can be obtained as
+    # arcsin(1 + linear) * rescaling.
+
 @kernel(maxdim=sys.maxsize)
 def Gibbs(x, y, scalefun=lambda x: 1):
     """
@@ -192,22 +195,22 @@ def Gibbs(x, y, scalefun=lambda x: 1):
     distsq = _Kernel.sum_recurse_dtype(lambda x, y: (x - y) ** 2, x, y)
     return factor * jnp.exp(-distsq / denom)
 
-@stationarykernel(derivable=True, forcekron=True)
+@stationarykernel(derivable=True, maxdim=1)
 def Periodic(delta, outerscale=1):
-    """
+    r"""
     Periodic Gaussian kernel.
     
     .. math::
-        k(\\Delta) = \\exp \\left(
-        -2 \\left(
-        \\frac {\\sin(\\Delta / 2)} {\\texttt{outerscale}}
-        \\right)^2
-        \\right)
+        k(\Delta) = \exp \left(
+        -2 \left(
+        \frac {\sin(\Delta / 2)} {\texttt{outerscale}}
+        \right)^2
+        \right)
     
     A Gaussian kernel over a transformed periodic space. It represents a
-    periodic process. The usual ``scale`` parameter sets the period, with the
-    default ``scale=1`` giving a period of 2π, while the ``outerscale`` parameter
-    sets the length scale of the correlations.
+    periodic process. The usual `scale` parameter sets the period, with the
+    default ``scale=1`` giving a period of 2π, while `outerscale` sets the
+    length scale of the correlations.
     
     Reference: Rasmussen and Williams (2006, p. 92).
     """
@@ -215,15 +218,15 @@ def Periodic(delta, outerscale=1):
         assert 0 < outerscale < jnp.inf
     return jnp.exp(-2 * (jnp.sin(delta / 2) / outerscale) ** 2)
 
-@kernel(forcekron=True, derivable=False)
+@kernel(derivable=False, maxdim=1)
 def Categorical(x, y, cov=None):
-    """
+    r"""
     Categorical kernel.
     
     .. math::
-        k(x, y) = \\texttt{cov}[x, y]
+        k(x, y) = \texttt{cov}[x, y]
     
-    A kernel over integers from 0 to N-1. The parameter ``cov`` is the covariance
+    A kernel over integers from 0 to N-1. The parameter `cov` is the covariance
     matrix of the values.
     """
         
@@ -232,7 +235,7 @@ def Categorical(x, y, cov=None):
     
     assert jnp.issubdtype(x.dtype, jnp.integer)
     cov = jnp.asarray(cov)
-    assert len(cov.shape) == 2
+    assert cov.ndim == 2
     assert cov.shape[0] == cov.shape[1]
     with _jaxext.skipifabstract():
         assert jnp.allclose(cov, cov.T)
@@ -240,18 +243,18 @@ def Categorical(x, y, cov=None):
 
 @kernel
 def Rescaling(x, y, stdfun=None):
-    """
+    r"""
     Outer product kernel.
     
     .. math::
-        k(x, y) = \\texttt{stdfun}(x) \\texttt{stdfun}(y)
+        k(x, y) = \texttt{stdfun}(x) \texttt{stdfun}(y)
     
-    A totally correlated kernel with arbitrary variance. Parameter ``stdfun``
+    A totally correlated kernel with arbitrary variance. Parameter `stdfun`
     must be a function that takes ``x`` or ``y`` and computes the standard
     deviation at the point. It can yield negative values; points with the same
-    sign of ``fun`` will be totally correlated, points with different sign will
+    sign of `stdfun` will be totally correlated, points with different sign will
     be totally anticorrelated. Use this kernel to modulate the variance of
-    other kernels. By default ``stdfun`` returns a constant, so it is equivalent
+    other kernels. By default `stdfun` returns a constant, so it is equivalent
     to `Constant`.
     
     """
@@ -261,7 +264,7 @@ def Rescaling(x, y, stdfun=None):
         # do not use x.dtype because it could be structured
     return stdfun(x) * stdfun(y)
 
-@stationarykernel(forcekron=True, derivable=False, input='hard')
+@stationarykernel(derivable=False, input='hard', maxdim=1)
 def Expon(delta):
     """
     Exponential kernel.
@@ -282,7 +285,7 @@ def Expon(delta):
 
 _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]')
 
-@kernel(forcekron=True, derivable=False)
+@kernel(derivable=False, maxdim=1)
 @numpy.vectorize
 def BagOfWords(x, y):
     """
@@ -315,7 +318,7 @@ def BagOfWords(x, y):
 
 # TODO add bag of characters and maybe other text kernels
 
-@stationarykernel(derivable=False, input='hard', forcekron=True)
+@stationarykernel(derivable=False, input='hard', maxdim=1)
 def HoleEffect(delta):
     """
     
@@ -331,22 +334,22 @@ def HoleEffect(delta):
 def _cauchy_derivable(alpha=2, **_):
     return alpha == 2
 
-@isotropickernel(derivable=_cauchy_derivable)
+@isotropickernel(derivable=_cauchy_derivable, maxdim=jnp.inf)
 def Cauchy(r2, alpha=2, beta=2):
-    """
+    r"""
     Generalized Cauchy kernel.
     
     .. math::
-        k(r) = \\left(1 + \\frac{r^\\alpha}{\\beta} \\right)^{-\\beta/\\alpha},
-        \\quad \\alpha \\in (0, 2], \\beta > 0.
+        k(r) = \left(1 + \frac{r^\alpha}{\beta} \right)^{-\beta/\alpha},
+        \quad \alpha \in (0, 2], \beta > 0.
     
-    In the geostatistics literature, the case :math:`\\alpha=2` and
-    :math:`\\beta=2` (default) is known as the Cauchy kernel. In the machine
-    learning literature, the case :math:`\\alpha=2` (for any :math:`\\beta`) is
-    known as the rational quadratic kernel. For :math:`\\beta\\to\\infty` it is
+    In the geostatistics literature, the case :math:`\alpha=2` and
+    :math:`\beta=2` (default) is known as the Cauchy kernel. In the machine
+    learning literature, the case :math:`\alpha=2` (for any :math:`\beta`) is
+    known as the rational quadratic kernel. For :math:`\beta\to\infty` it is
     equivalent to ``GammaExp(gamma=alpha, scale=alpha ** (1/alpha))``, while
-    for :math:`\\beta\\to 0` to ``Constant``. It is smooth only for
-    :math:`\\alpha=2`.
+    for :math:`\beta\to 0` to ``Constant``. It is smooth only for
+    :math:`\alpha=2`.
     
     References: Gneiting and Schlather (2004, p. 273), Rasmussen and Williams
     (2006, p. 86).
@@ -367,14 +370,14 @@ def Cauchy(r2, alpha=2, beta=2):
 def _causalexpquad_derivable(alpha=1):
     return alpha == 0
 
-@isotropickernel(derivable=_causalexpquad_derivable, input='soft')
+@isotropickernel(derivable=_causalexpquad_derivable, input='soft', maxdim=jnp.inf)
 def CausalExpQuad(r, alpha=1):
-    """
+    r"""
     Causal exponential quadratic kernel.
     
     .. math::
-        k(r) = \\big(1 - \\operatorname{erf}(\\alpha r/4)\\big)
-        \\exp\\left(-\\frac12 r^2 \\right)
+        k(r) = \big(1 - \operatorname{erf}(\alpha r/4)\big)
+        \exp\left(-\frac12 r^2 \right)
         
     From https://github.com/wesselb/mlkernels.
     """
@@ -406,7 +409,7 @@ def Decaying(x, y, alpha=1):
     # use x + y + 1 instead of 1 + x + y because the latter is less numerically
     # accurate and symmetric for small x and y
 
-@isotropickernel(derivable=False, input='soft')
+@isotropickernel(derivable=False, input='soft', maxdim=jnp.inf)
 def Log(r):
     """
     Log kernel.
@@ -418,7 +421,7 @@ def Log(r):
     """
     return jnp.log1p(r) / r
 
-@kernel(forcekron=True, derivable=True)
+@kernel(derivable=True, maxdim=1)
 def Taylor(x, y):
     """
     Exponential-like power series kernel.

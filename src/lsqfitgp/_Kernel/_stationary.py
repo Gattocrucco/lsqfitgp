@@ -22,33 +22,34 @@ from jax import numpy as jnp
 from .. import _jaxext
 
 from . import _util
+from . import _crosskernel
 from . import _kernel
 
-class StationaryKernel(_kernel.Kernel):
+class CrossStationaryKernel(_crosskernel.CrossKernel):
+    """
+    
+    Subclass of `CrossKernel` for stationary kernels.
+
+    Parameters
+    ----------
+    kernel : callable
+        A function taking one argument ``delta`` which is the difference
+        between x and y, plus optionally keyword arguments.
+    input : {'signed', 'soft', 'hard'}
+        If 'signed' (default), `kernel` is passed the bare difference. If
+        'soft', `kernel` is passed the absolute value of the difference,
+        and the difference of equal points is a small number instead of
+        zero. If 'hard', the absolute value.
+    scale : scalar
+        The difference is divided by ``scale``.
+    **kw
+        Additional keyword arguments are passed to the `Kernel` init.
+            
+    """
 
     def __new__(cls, kernel, *, input='signed', scale=None, **kw):
-        """
         
-        Subclass of `Kernel` for isotropic kernels.
-    
-        Parameters
-        ----------
-        kernel : callable
-            A function taking one argument ``delta`` which is the difference
-            between x and y, plus optionally keyword arguments.
-        input : {'signed', 'soft', 'hard'}
-            If 'signed' (default), `kernel` is passed the bare difference. If
-            'soft', `kernel` is passed the absolute value of the difference,
-            and the difference of equal points is a small number instead of
-            zero. If 'hard', the absolute value.
-        scale : scalar
-            The difference is divided by ``scale``.
-        **kw
-            Additional keyword arguments are passed to the `Kernel` init.
-                
-        """
-        
-        # TODO using 'signed', 'abs', 'softabs' as labels could be clearer.
+        # TODO using 'signed', 'abs', 'posabs' as labels could be clearer.
 
         if input == 'soft':
             func = lambda x, y: _softabs(x - y)
@@ -70,6 +71,9 @@ class StationaryKernel(_kernel.Kernel):
             return kernel(transf(q), **kwargs)
         
         return _kernel.Kernel.__new__(cls, function, **kw)
+
+class StationaryKernel(CrossStationaryKernel, _kernel.Kernel):
+    pass
 
 def _eps(x):
     if jnp.issubdtype(x.dtype, jnp.inexact):

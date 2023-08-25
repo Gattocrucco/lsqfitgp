@@ -223,7 +223,7 @@ def test_kernelop():
     f = lambda x: x
     gp = (gp
         .defproc('b1', lgp.ExpQuad() * lgp.Rescaling(stdfun=f))
-        .defkernelop('b2', 'rescale', f, 'a')
+        .defkerneltransf('b2', 'rescale', f, 'a')
     )
     x = np.arange(20)
     gp = (gp
@@ -286,20 +286,15 @@ def test_empty_proc():
     util.assert_equal(cov['ax', 'ax'], np.zeros(2 * x.shape))
     util.assert_equal(cov['bx', 'bx'], np.zeros(2 * x.shape))
 
-def test_no_op():
-    gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
-        gp.defkernelop('a', 'cippa', None, gp.DefaultProcess)
-
 def test_already_defined():
     gp = lgp.GP().defproc('a', lgp.ExpQuad())
     with pytest.raises(KeyError):
-        gp.defkernelop('a', 'diff', 1, 'a')
+        gp.defkerneltransf('a', 'diff', 1, 'a')
 
 def test_proc_not_found():
     gp = lgp.GP()
     with pytest.raises(KeyError):
-        gp.defkernelop('b', 'diff', 1, 'a')
+        gp.defkerneltransf('b', 'diff', 1, 'a')
 
 def test_defprocderiv():
     x = np.arange(20)

@@ -17,21 +17,16 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import enum
-import warnings
+import functools
 
 import numpy
 from jax import numpy as jnp
 
-from .. import _Deriv
 from .. import _array
 from .. import _jaxext
 
 from . import _util
-
-def _asfloat(x):
-    return x.astype(_jaxext.float_type(x))
 
 def _greatest_common_superclass(classes):
     # from https://stackoverflow.com/a/25787091/3942284
@@ -39,142 +34,89 @@ def _greatest_common_superclass(classes):
     for x in classes[0]: # pragma: no branch
         if all(x in mro for mro in classes):
             return x
-
+           
 class CrossKernel:
+    r"""
     
-    # TODO if I implement double callable derivable, derivable should always be
-    # a callable, and _newkernel_from should propagate it properly (with an
-    # `and`?).
-    
-    # TODO make some unit tests checking that Kernel classes are
-    # propagated properly
+    Base class to represent kernels, i.e., covariance functions.
 
-    def _copywith(self, core):
-        """
-        Return a kernel object with the same attributes but a new kernel
-        function.
-        """
-        obj = super().__new__(type(self))
-        for n, v in vars(self).items():
-            setattr(obj, n, v)
-        obj._kernel = core
-        return obj
+    A kernel is a two-argument function that computes the covariance between
+    two functions at some points according to some probability distribution:
 
-    @staticmethod
-    def _newkernel_from(core, kernels):
-        """
-        Make a new kernel object which is the result of an operation on the
-        kernels in ``kernels``, with implementation callable ``core``.
-        """
-        assert kernels
-        classes = (IsotropicKernel, *map(type, kernels))
-        cls = _greatest_common_superclass(classes)
-        assert issubclass(cls, __class__)
-        obj = super(__class__, cls).__new__(cls)
-        mind = [k._minderivable for k in kernels]
-        maxd = [k._maxderivable for k in kernels]
-        obj._minderivable = tuple(numpy.min(mind, axis=0))
-        obj._maxderivable = tuple(numpy.max(maxd, axis=0)) # TODO or is it the sum, for the nd case?
-        obj.initargs = None
-        obj._maxdim = None
-        # TODO implement maxdim like derivable (distinguish left/right
-        # argument and have minimum/maximum). Here take as minimum the
-        # minimum maxdim of the kernels and as maximum the sum of the
-        # maxima.
-        obj._kernel = core
-        return obj
+    .. math::
+        \mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), g(y)].
     
-    def __new__(cls, kernel, *, dim=None, loc=None, scale=None, forcekron=False, derivable=None, saveargs=False, maxdim=sys.maxsize, batchbytes=None, **kw):
-        """
-        
-        Base class for objects representing covariance kernels.
-        
-        A Kernel object is callable, the signature is obj(x, y). Kernel objects
-        can be summed and multiplied between them and with scalars, or raised
-        to power with a scalar exponent.
-    
-        Attributes
-        ----------
-        derivable : int or None
-            How many times the process represented by the kernel is derivable.
-            ``sys.maxsize`` if it is smooth. ``None`` if the derivability is
-            unknown.
-        maxdim : int or None
-            Maximum input dimensionality. None means unknown.
-        
-        Parameters
-        ----------
-        kernel : callable
-            A function with signature ``kernel(x, y)``, where ``x`` and ``y`` are
-            two broadcastable numpy arrays, which computes the covariance of
-            f(x) with f(y) where f is the Gaussian process.
-        dim : None or str
-            When the input arrays are structured arrays, if ``dim`` is None the
-            kernel will operate on all fields, i.e., it will be passed the whole
-            arrays. If ``dim`` is a string, ``kernel`` will see only the arrays for
-            the field named ``dim``. If ``dim`` is a string and the array is not
-            structured, an exception is raised. If the field for name `dim` has
-            a nontrivial shape, the array passed to ``kernel`` is still
-            structured but has only field ``dim``.
-        loc, scale : scalar
-            The inputs to ``kernel`` are transformed as (x - loc) / scale.
-        forcekron : bool
-            If True, when calling ``kernel``, if ``x`` and ``y`` are structured
-            arrays, i.e., if they represent multidimensional input, ``kernel`` is
-            invoked separately for each dimension, and the result is the
-            product. Default False. The selection indicated by ``dim`` limits the
-            dimensions over which ``forcekron`` applies.
-        derivable : bool, int, None, or callable
-            Specifies how many times the kernel can be derived, only for error
-            checking purposes. True means infinitely many times derivable. If
-            callable, it is called with the same keyword arguments as ``kernel``.
-            If None (default) it means that the degree of derivability is
-            unknown.
-        saveargs : bool
-            If True, save the all the initialization arguments in a
-            dictionary under the attribute ``initargs``. Default False.
-        maxdim : int, callable or None
-            The maximum input dimensionality accepted by the kernel. If
-            callable, it is called with the same keyword arguments as the
-            kernel. Default sys.maxsize.
-        batchbytes : number, optional
-            If specified, apply ``batch(batchbytes)`` to the kernel.
-        **kw
-            Additional keyword arguments are passed to ``kernel``.
-        
-        Methods
-        -------
-        rescale : multiply the kernel by some functions
-        diff : take derivatives of the kernel
-        xtransf : transform the inputs to the kernel
-        fourier : take the Fourier series
-        taylor : take the Taylor series
-        batch : batch the computation of the kernel
-        
-        """
-        # TODO linear transformation of input that works with arbitrarily
-        # nested dtypes. Use an array/dictionary of arrays/dictionaries etc.
-        # to represent a matrix. Dictionaries implicitly allow the
-        # matrix to be sparse over fields. The transformation is applied prior
-        # to selecting a field with `dim`.
-        
-        # TODO allow dim to select arbitrarily nested fields, and also sets of
-        # fields and slices of array fields. It shall be similar to the Deriv
-        # syntax (still not done).
-        
-        # TODO allow a list of dim
-        
-        # TODO if derivable is a callable and it returns another callable,
-        # the second callable is called with input points to determine on
-        # which points exactly the kernel is derivable. (But still returns
-        # a single boolean for an array of points, equivalent to an `all`.)
-        
-        # TODO maxdim's default should be None, not sys.maxsize
+    `CrossKernel` objects are callable, the signature is ``obj(x, y)``, and
+    they can be summed and multiplied between them and with scalars. They
+    are immutable; all operations return new objects.
 
+    Parameters
+    ----------
+    core : callable
+        A function with signature ``core(x, y)``, where ``x`` and ``y``
+        are two broadcastable numpy arrays, which computes the value of the
+        kernel.
+    derivable, scale, loc, maxdim, dim :
+        If specified, these arguments are passed as arguments to the
+        correspondingly named transformations, in the order listed here. See
+        `transf.` Briefly: the kernel selects only fields `dim` in the
+        input, checks the dimensionality against `maxdim`, transforms as
+        ``(x - loc) / scale``, then sets the degree of differentiability. If
+        any argument is callable, it is passed `**kw` and must return the
+        actual argument.
+    forcekron : bool, default False
+        If True, apply `Kernel.forcekron` before the other transformations.
+    saveargs : bool, default False
+        If True, save the all the initialization arguments in a
+        dictionary under the attribute `initargs`.
+    batchbytes : number, optional
+        If specified, apply ``.batch(batchbytes)`` to the kernel.
+    **kw
+        Additional keyword arguments are passed to `core`.
+    
+    Attributes
+    ----------
+    derivable : pair of int or None
+        How many times each function is (mean-square sense) derivable.
+        ``sys.maxsize`` if it is smooth. ``None`` mean unknown.
+    maxdim : pair of int or None
+        Maximum input dimensionality. ``None`` means unknown.
+    
+    Methods
+    -------
+    batch :
+        Batch the computation of the kernel.
+    transf :
+        Return a transformed kernel.
+    transf_help :
+        Return the documentation of a transformation.
+    register_transf :
+        Register a transformation.
+    register_coretransf :
+        Register a transformation that acts only on the core.
+    register_xtransf :
+        Register a transformation that acts only on the input.
+
+    See also
+    --------
+    Kernel
+    
+    """
+    
+    def __new__(cls, core, *,
+        dim=None,
+        loc=None,
+        scale=None,
+        forcekron=False,
+        derivable=None,
+        maxdim=None,
+        saveargs=False,
+        batchbytes=None,
+        **kw,
+    ):
         self = super().__new__(cls)
                 
         if saveargs:
-            # TODO I want to get rid of this functionality
             self.initargs = dict(
                 dim=dim,
                 loc=loc,
@@ -186,101 +128,74 @@ class CrossKernel:
         else:
             self.initargs = None
         
-        # Check simple arguments.
-        forcekron = bool(forcekron)
-        
-        # Convert `derivable` to a tuple of integers.
-        if callable(derivable):
-            derivable = derivable(**kw)
-        if derivable is None:
-            derivable = (0, sys.maxsize)
-        elif isinstance(derivable, bool):
-            derivable = sys.maxsize if derivable else 0
-        elif int(derivable) == derivable:
-            assert derivable >= 0
-            derivable = int(derivable)
-        else:
-            raise ValueError(f'derivability degree {derivable!r} not valid')
-        if not isinstance(derivable, tuple):
-            derivable = (derivable, derivable)
-        self._minderivable = (derivable[0], derivable[0])
-        self._maxderivable = (derivable[1], derivable[1])
-        
-        # Convert `maxdim` to a tuple of integers.
-        if callable(maxdim):
-            maxdim = maxdim(**kw)
-        assert maxdim is None or int(maxdim) == maxdim and maxdim >= 0
-        self._maxdim = maxdim
-        
-        transf = lambda x: x
-        
-        if dim is not None:
-            def transf(x, transf=transf):
-                x = transf(x)
-                if x.dtype.names is None:
-                    raise ValueError(f'kernel called on non-structured array but dim={dim!r}')
-                elif x.dtype[dim].shape:
-                    return x[[dim]]
-                else:
-                    return x[dim]
-        
-        # TODO make maxdim, loc, scale, forcekron, derivable into separate
-        # methods like batch, both for tidiness and to allow the user to
-        # override if needed.
-        if maxdim is not None:
-            def transf(x, transf=transf):
-                x = transf(x)
-                nd = _array._nd(x.dtype)
-                with _jaxext.skipifabstract():
-                    if nd > maxdim:
-                        raise ValueError(f'kernel called on type with dimensionality {nd} > maxdim={maxdim}')
-                return x
-        
-        if loc is not None:
-            with _jaxext.skipifabstract():
-                assert -jnp.inf < loc < jnp.inf
-            transf = lambda x, transf=transf: _util.transf_recurse_dtype(lambda x: x - loc, transf(x))
-        
-        if scale is not None:
-            with _jaxext.skipifabstract():
-                assert 0 < scale < jnp.inf
-            transf = lambda x, transf=transf: _util.transf_recurse_dtype(lambda x: x / scale, transf(x))
-        
-        # TODO when dim becomes deep, forcekron must apply also to subfields
-        # for consistence. Maybe it should do it now already.
+        self._core = lambda x, y: core(x, y, **kw)
+        self._derivable = None, None
+        self._maxdim = None, None
+
         if forcekron:
-            def _kernel(x, y):
-                x = transf(x)
-                y = transf(y)
-                fun = lambda x, y: kernel(x, y, **kw)
-                return _util.prod_recurse_dtype(fun, x, y)
-        else:
-            _kernel = lambda x, y: kernel(transf(x), transf(y), **kw)
-        
-        self._kernel = _kernel
+            self = self.forcekron()
+
+        transf_args = {
+            'derivable': derivable,
+            'scale': scale,
+            'loc': loc,
+            'maxdim': maxdim,
+            'dim': dim,
+        }
+        for transfname, arg in transf_args.items():
+            if callable(arg):
+                arg = arg(**kw)
+            if arg is not None:
+                self = self.transf(transfname, arg)
 
         if batchbytes is not None:
             self = self.batch(batchbytes)
 
         return self
-    
-    # TODO it would be useful to be able to pass additional keyword arguments
-    # here. Since _kernel may have been transformed, I'd need to add keyword
-    # arguments support to all kernel transformations.
+
     def __call__(self, x, y):
         x = _array.asarray(x)
         y = _array.asarray(y)
-        numpy.result_type(x.dtype, y.dtype)
         shape = _array.broadcast(x, y).shape
-        # TODO allow the result to have a different shape and broadcast it,
-        # this handles automatically constant matrices without using memory,
-        # and makes writing the kernel simpler
-        result = self._kernel(x, y)
+        result = self._core(x, y)
         assert isinstance(result, (numpy.ndarray, jnp.number, jnp.ndarray))
         assert jnp.issubdtype(result.dtype, jnp.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
         return result
 
+    @property
+    def derivable(self):
+        return self._derivable
+
+    @property
+    def maxdim(self):
+        return self._maxdim
+    
+    def _clone(self, core=None, cls=None):
+        newself = object.__new__(self.__class__ if cls is None else cls)
+        newself.initargs = self.initargs
+        newself._core = self._core if core is None else core
+        newself._derivable = self._derivable
+        newself._maxdim = self._maxdim
+        return newself
+
+    @staticmethod
+    def _newkernel_from(core, kernels):
+        """
+        Make a new kernel object which is the result of an operation on the
+        kernels in `kernels`, with implementation callable `core`.
+        """
+        assert kernels
+        classes = (IsotropicKernel, *map(type, kernels))
+        cls = _greatest_common_superclass(classes)
+        assert issubclass(cls, __class__)
+        self = object.__new__(cls)
+        self.initargs = None
+        self._core = core
+        self._derivable = None, None
+        self._maxdim = None, None
+        return self
+    
     class _side(enum.Enum):
         LEFT = 0
         RIGHT = 1
@@ -301,23 +216,27 @@ class CrossKernel:
         else: # pragma: no cover
             raise KeyError(side)
         
-        cores = [k._kernel for k in kernels]
+        cores = [k._core for k in kernels]
         def core(x, y):
             wrapped = [wrapper(c, x, y) for c in cores]
             transformed = op(*wrapped)
             return transformed(arg(x, y))
         
         return cls._newkernel_from(core, kernels)
+
+        # TODO propagate the transformations
     
     def _binary(self, value, op):
         if _util.is_numerical_scalar(value):
-            val = value
-            value = self._copywith(lambda x, y: val)
-            # TODO this may add too much uncertainty in the derivability
-            # check
-        if not isinstance(value, CrossKernel):
+            unary_op = lambda f: lambda x: op(f, lambda _: value)(x)
+            out = self._nary(unary_op, [self], self._side.BOTH)
+            out._derivable = self._derivable
+            out._maxdim = self._maxdim
+            return out
+        elif isinstance(value, __class__):
+            return self._nary(op, [self, value], self._side.BOTH)
+        else:
             return NotImplemented
-        return self._nary(op, [self, value], self._side.BOTH)
     
     def __add__(self, value):
         return self._binary(value, lambda f, g: lambda x: f(x) + g(x))
@@ -328,251 +247,17 @@ class CrossKernel:
         return self._binary(value, lambda f, g: lambda x: f(x) * g(x))
     
     __rmul__ = __mul__
-    
-    def __pow__(self, value):
-        if not _util.is_numerical_scalar(value):
-            return NotImplemented
-        with _jaxext.skipifabstract():
-            assert 0 <= value < jnp.inf, value
-        return self._binary(value, lambda f, g: lambda x: f(x) ** g(x))
-        # Only infinitely divisible kernels allow non-integer exponent.
-        # It would be difficult to check for this though, since the user can
-        # compose and write arbitrary kernels.
 
+    # TODO add back pow, but check it is an integer type. Make a function
+    # is_integer in _util. Add unit tests.
+    
     def _swap(self):
-        """permute the arguments (cross kernels are not symmetric)"""
-        kernel = self._kernel
-        obj = self._copywith(lambda x, y: kernel(y, x))
-        obj._minderivable = obj._minderivable[::-1]
-        obj._maxderivable = obj._maxderivable[::-1]
-        return obj
-        # TODO make _swap public?
-                
-    def rescale(self, xfun, yfun):
-        """
-        
-        Multiply the kernel by functions of its arguments.
-        
-        .. math::
-            h(x, y) = f(x) k(x, y) g(y)
-        
-        Parameters
-        ----------
-        xfun, yfun : callable or None
-            Functions from the type of the arguments of the kernel to scalar.
-            If both are None, this is a no-op.
-        
-        Returns
-        -------
-        h : Kernel-like
-            The rescaled kernel. If ``xfun is yfun``, it is a Kernel object,
-            otherwise a Kernel-like one.
-        
-        """
-        
-        # TODO option to specify derivability of xfun and yfun, to avoid
-        # zeroing _minderivable
-        
-        if xfun is None and yfun is None:
-            return self
-        
-        kernel = self._kernel
-        
-        if xfun is None:
-            def fun(x, y):
-                return yfun(y) * kernel(x, y)
-        elif yfun is None:
-            def fun(x, y):
-                return xfun(x) * kernel(x, y)
-        else:
-            def fun(x, y):
-                return xfun(x) * yfun(y) * kernel(x, y)
-        
-        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else __class__
-        obj = cls(fun)
-        obj._maxderivable = self._maxderivable
-        return obj
-    
-    def xtransf(self, xfun, yfun):
-        """
-        
-        Transform the inputs of the kernel.
-        
-        .. math::
-            h(x, y) = k(f(x), g(y))
-        
-        Parameters
-        ----------
-        xfun, yfun : callable or None
-            Functions mapping a new kind of input to the kind of input
-            accepted by the kernel. If both are None, this is a no-op.
-        
-        Returns
-        -------
-        h : Kernel-like
-            The transformed kernel. If ``xfun is yfun``, it is a Kernel object,
-            otherwise a Kernel-like one.
-        
-        """
-        
-        # TODO option to specify derivability of xfun and yfun, to avoid
-        # zeroing _minderivable
-        
-        if xfun is None and yfun is None:
-            return self
-        
-        kernel = self._kernel
-        
-        if xfun is None:
-            def fun(x, y):
-                return kernel(x, yfun(y))
-        elif yfun is None:
-            def fun(x, y):
-                return kernel(xfun(x), y)
-        else:
-            def fun(x, y):
-                return kernel(xfun(x), yfun(y))
-        
-        cls = Kernel if xfun is yfun and isinstance(self, Kernel) else __class__
-        obj = cls(fun)
-        obj._maxderivable = self._maxderivable
-        return obj
-
-    def diff(self, xderiv, yderiv):
-        """
-        
-        Return a Kernel-like object that computes the derivatives of this
-        kernel. The derivatives are computed automatically with JAX. If
-        ``xderiv`` and ``yderiv`` are trivial, this is a no-op.
-        
-        .. math::
-            h(x, y) = \\frac{\\partial^n}{\\partial x^n}
-                      \\frac{\\partial^m}{\\partial y^m}
-                      k(x, y)
-        
-        Parameters
-        ----------
-        xderiv, yderiv : Deriv-like
-            A `Deriv` object or something that can be converted to a
-            Deriv object.
-        
-        Returns
-        -------
-        h : Kernel-like
-            An object representing the derivatives of this one. If ``xderiv ==
-            yderiv``, it is actually another Kernel.
-        
-        Raises
-        ------
-        RuntimeError
-            The derivative orders are greater than the ``derivative`` attribute.
-            
-        """
-                
-        # TODO to check the derivability precisely, I would need to make a new
-        # class Derivable (somewhat similar to Deriv) that has two separate
-        # counters, `other` and `all`. `all` decrements each time you take a
-        # derivate (w.r.t. any variable) while `other` is the assumed starting
-        # point for variables which still don't have their own counter, which is
-        # copied from `other` and then decremented when deriving w.r.t. that
-        # variable. However this still lacks generality: you would need to also
-        # have groups of variables which behave like `all` or `other` but only
-        # within the group. For example, `all` corresponds to the behavior of
-        # isotropic kernels, `other` to separable ones. And there is also the
-        # case where the user gives a custom nontrivial derivability
-        # specification and then applies the kernel to a subfield, which would
-        # require to prefix the subfield to all variable (group) specifications.
-        
-        xderiv = _Deriv.Deriv(xderiv)
-        yderiv = _Deriv.Deriv(yderiv)
-        
-        if not xderiv and not yderiv:
-            return self
-        
-        # Check kernel is derivable.
-        
-        # best case: max derivability + only single variable order matters
-        maxs   = (  xderiv.max,   yderiv.max)
-        if any(  maxs[i] > self._maxderivable[i] for i in range(2)):
-            raise RuntimeError(f'maximum single-variable derivative orders {maxs} greater than kernel maximum {self._maxderivable}')
-        
-        # worst case: min derivability + total derivation order matters
-        orders = (xderiv.order, yderiv.order)
-        if any(orders[i] > self._minderivable[i] for i in range(2)):
-            warnings.warn(f'total derivative orders {orders} greater than kernel minimum {self._minderivable}')
-        
-        # Check derivatives are ok for x and y.
-        def check(x, y):
-            if x.dtype.names is not None:
-                for deriv in xderiv, yderiv:
-                    for dim in deriv:
-                        if dim not in x.dtype.names:
-                            raise ValueError(f'derivative along missing field {dim!r}')
-                        if not jnp.issubdtype(x.dtype.fields[dim][0], jnp.number):
-                            raise TypeError(f'derivative along non-numeric field {dim!r}')
-            elif not xderiv.implicit or not yderiv.implicit:
-                raise ValueError('explicit derivatives with non-structured array')
-        
-        
-        # Handle the non-structured case.
-        if xderiv.implicit and yderiv.implicit:
-            
-            f = self._kernel
-            for _ in range(xderiv.order):
-                f = _jaxext.elementwise_grad(f, 0)
-            for _ in range(yderiv.order):
-                f = _jaxext.elementwise_grad(f, 1)
-            
-            def fun(x, y):
-                check(x, y)
-                if xderiv:
-                    x = _asfloat(x)
-                if yderiv:
-                    y = _asfloat(y)
-                return f(x, y)
-        
-        # Structured case.
-        else:
-            
-            # Wrap of kernel with derivable arguments only.
-            kernel = self._kernel
-            def f(x, y, *args):
-                i = -1
-                for i, dim in enumerate(xderiv):
-                    x = x.at[dim].set(args[i])
-                for j, dim in enumerate(yderiv):
-                    y = y.at[dim].set(args[1 + i + j])
-                return kernel(x, y)
-                
-            # Make derivatives.
-            i = -1
-            for i, dim in enumerate(xderiv):
-                for _ in range(xderiv[dim]):
-                    f = _jaxext.elementwise_grad(f, 2 + i)
-            for j, dim in enumerate(yderiv):
-                for _ in range(yderiv[dim]):
-                    f = _jaxext.elementwise_grad(f, 2 + 1 + i + j)
-            
-            def fun(x, y):
-                check(x, y)
-                                
-                # JAX-friendly wrap of structured arrays.
-                x = _array.StructuredArray(x)
-                y = _array.StructuredArray(y)
-            
-                # Make argument list and call function.
-                args = []
-                for dim in xderiv:
-                    args.append(_asfloat(x[dim]))
-                for dim in yderiv:
-                    args.append(_asfloat(y[dim]))
-                return f(x, y, *args)
-        
-        cls = Kernel if xderiv == yderiv and isinstance(self, Kernel) else __class__
-        obj = cls(fun)
-        obj._minderivable = tuple(self._minderivable[i] - orders[i] for i in range(2))
-        obj._maxderivable = tuple(self._maxderivable[i] -   maxs[i] for i in range(2))
-        return obj
+        """ permute the arguments (cross kernels are not symmetric) """
+        core = self._core
+        self = self._clone(core=lambda x, y: core(y, x))
+        self._derivable = self._derivable[::-1]
+        self._maxdim = self._maxdim[::-1]
+        return self
 
     def batch(self, maxnbytes):
         """
@@ -585,77 +270,311 @@ class CrossKernel:
         ----------
         maxnbytes : number
             The maximum number of input bytes per chunk, counted after
-            broadcasting the inputs (actual broadcasting may not occur if not
-            induced by the operations in the kernel).
+            broadcasting the input shapes. Actual broadcasting may not occur if
+            not induced by the operations in the kernel.
 
         Returns
         -------
         batched_kernel : CrossKernel
             The same kernel but with batched computations.
         """
-        kernel = _jaxext.batchufunc(self._kernel, maxnbytes=maxnbytes)
-        return self._copywith(kernel)
+        core = _jaxext.batchufunc(self._core, maxnbytes=maxnbytes)
+        return self._clone(core=core)
     
-    def fourier(self, dox, doy):
-        """
-        
-        Compute the Fourier series of the kernel.
-        
-        .. math::
-            h(k, y) = \\begin{cases}
-                \\frac2T \\int_0^T \\mathrm dx\\, k(x, y)
-                \\cos\\left(\\frac{2\\pi}T \\frac k2 x\\right)
-                & \\text{if $k$ is even} \\\\
-                \\frac2T \\int_0^T \\mathrm dx\\, k(x, y)
-                \\sin\\left(\\frac{2\\pi}T \\frac{k+1}2 x\\right)
-                & \\text{if $k$ is odd}
-            \\end{cases}
-        
-        The period :math:`T` is implicit in the definition of the kernel.
-        
-        Parameters
-        ----------
-        dox, doy : bool
-            Specify if to compute the series w.r.t. x, y or both. If both are
-            False, this is a no-op.
-        
-        Returns
-        -------
-        h : Kernel-like
-            A Kernel-like object computing the Fourier series. If dox and
-            doy are equal, it is a Kernel.
-        
-        """
-        if not dox and not doy:
-            return self
-        raise NotImplementedError
-    
-    def taylor(self, dox, doy):
-        """
-        
-        Compute the Taylor series of the kernel.
-        
-        .. math::
-            h(k, y) = \\left.
-                \\frac{\\partial^k}{\\partial x^k} k(x, y)
-            \\right|_{x_0}
-        
-        The expansion point :math:`x0` is implicit in the definition of the kernel.
-        
-        Parameters
-        ----------
-        dox, doy : bool
-            Specify if to compute the series w.r.t. x, y or both. If both are
-            False, this is a no-op.
-        
-        Returns
-        -------
-        h : Kernel-like
-            A Kernel-like object computing the Taylor series. If dox and
-            doy are equal, it is a Kernel.
-        
-        """ 
-        if not dox and not doy:
-            return self
-        raise NotImplementedError
+    _transf = {}
 
+    def __init_subclass__(cls, **kw):
+        super().__init_subclass__(**kw)
+        cls._transf = {}
+
+    @classmethod
+    def _crossmro(cls):
+        """ MRO iterator excluding subclasses of Kernel """
+        return (c for c in cls.mro()[:-1] if not issubclass(c, Kernel))
+
+    @classmethod
+    def _gettransf(cls, transfname):
+        """
+        Find a transformation.
+
+        The transformation is searched following the MRO, skipping subclasses of
+        `Kernel`.
+
+        Parameters
+        ----------
+        transfname : hashable
+            The transformation name.
+
+        Returns
+        -------
+        cls : type
+            The class where the transformation was found.
+        transf, argparser, doc : tuple
+            The objects set by `register_transf`.
+
+        Raises
+        ------
+        KeyError :
+            The transformation was not found.
+        """
+        for cls in cls._crossmro():
+            try:
+                return cls, cls._transf[transfname]
+            except KeyError:
+                pass
+        raise KeyError(transfname)
+
+    @classmethod
+    def has_transf(cls, transfname):
+        """
+        Check if a transformation is registered.
+
+        Parameters
+        ----------
+        transfname : hashable
+            The transformation name.
+
+        Returns
+        -------
+        has_transf : bool
+            Whether the transformation is registered.
+        """
+        try:
+            cls._gettransf(transfname)
+        except KeyError as exc:
+            if exc.args == (transfname,):
+                return False
+            else:
+                raise
+        else:
+            return True
+
+    @classmethod
+    def register_transf(cls, transf, transfname=None, argparser=None, doc=None):
+        """
+        
+        Register a transformation for use with `transf`.
+
+        The transformation is registered for the first non-`Kernel`-subclass in
+        the MRO and for its subclasses.
+
+        Parameters
+        ----------
+        transf : callable
+            A method ``transf(self, arg1, arg2) -> CrossKernel`` that returns
+            the new kernel.
+        transfname : hashable, optional.
+            The `transfname` parameter to `transf` this transformation will
+            be accessible under. If not specified, use the name of `transf`.
+        argparser : callable, optional
+            A function applied to each of the arguments. It must return ``None``
+            if the operation is the identity.
+        doc : str, optional
+            The documentation of the transformation returned by `transf_help`.
+            If not specified, use the docstring of `transf`.
+
+        Returns
+        -------
+        transf : callable
+            The argument `transf` as is.
+
+        Raises
+        ------
+        KeyError :
+            The transformation is already registered on the target class.
+
+        Notes
+        -----
+        The function `transf` is called only if `arg1` or `arg2` is not
+        ``None`` before or after conversion with `argparser`.
+
+        See also
+        --------
+        register_coretransf, register_xtransf, has_transf, transf, transf_help
+
+        """
+        # transf(self, argparser(arg1), argparser(arg2)) -> CrossKernel
+        if transfname is None:
+            transfname = transf.__name__
+        if doc is None:
+            doc = transf.__doc__
+        cls = next(cls._crossmro())
+        if transfname in cls._transf:
+            raise KeyError(f'transformation {transfname!r} already registered '
+                f'for {cls.__name__}')
+        cls._transf[transfname] = transf, argparser, doc
+        return transf
+
+    # TODO consider renaming `transf` to `linop`.
+
+    def transf(self, transfname, *args):
+        r"""
+
+        Transform the kernel to represent a transformation of the functions.
+
+        .. math::
+            \mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), g(y)]
+            \mathrm{newkernel}(x, y) = \mathrm{Cov}[T_1(f)(x), T_2(g)(y)]
+
+        Parameters
+        ----------
+        transfname : hashable
+            The name of the transformation. The following transformations are
+            defined by `CrossKernel`:
+
+            'xtransf' :
+                Arbitrary input transformation.
+            'loc' :
+                Input translation.
+            'scale' :
+                Input rescaling.
+            'dim' :
+                Consider only a subset of dimensions of the input.
+            'maxdim' :
+                Restrict maximum input dimensionality.
+            'diff' :
+                Derivative.
+            'derivable' :
+                Set the degree of differentiability, used by ``'diff'`` for
+                error checking.
+            'rescale' :
+                Multiply the function by another fixed function.
+
+            Subclasses may define their own.
+        *args :
+            Two arguments that indicate how to transform each function. If both
+            arguments represent the identity, this is a no-op. If there is only
+            one argument, it is intended that the two arguments are equal.
+            ``None`` always represents the identity.
+
+        Returns
+        -------
+        newkernel : CrossKernel
+            The transformed kernel.
+            
+            If the object is not an instance of `Kernel`, or if the two
+            arguments differ, the class of `newkernel` is the first superclass
+            that defines the transformation.
+
+            If the object is a `Kernel` and the two arguments are equal, the
+            class of `newkernel` is the first superclass that defines the
+            transformation, or the preceding one in the MRO if that superclass
+            is not a subclass of `Kernel` while the preceding one is.
+
+        See also
+        --------
+        register_transf, register_coretransf, register_xtransf, transf_help
+        """
+
+        if len(args) not in (1, 2):
+            raise ValueError(f'incorrect number of arguments {len(args)}, '
+                'expected 1 or 2')
+
+        cls, (transf, argparser, _) = self._gettransf(transfname)
+
+        if all(a is None for a in args):
+            return self
+        if argparser:
+            args = tuple(map(argparser, args))
+        if all(a is None for a in args):
+            return self
+        
+        if len(args) == 1:
+            arg1, = arg2, = args
+        else:
+            arg1, arg2 = args
+
+        if isinstance(self, Kernel) and arg1 == arg2 and not issubclass(cls, Kernel):
+            mro = self.__class__.mro()
+            pos = mro.index(cls)
+            if pos > 0 and issubclass(mro[pos - 1], Kernel):
+                cls = mro[pos - 1]
+        
+        return transf(self, arg1, arg2)._clone(cls=cls)
+
+        # TODO propagate the transformations
+
+    @classmethod
+    def transf_help(cls, transfname):
+        """
+        
+        Return the documentation of a transformation.
+
+        Parameters
+        ----------
+        transfname : hashable
+            The name of the transformation.
+
+        Returns
+        -------
+        doc : str
+            The documentation of the transformation.
+
+        """
+        _, (_, _, doc) = cls._gettransf(transfname)
+        return doc
+
+    @classmethod
+    def register_coretransf(cls, coretransf, transfname=None, argparser=None, doc=None):
+        """
+
+        Register a transformation that acts only on the core.
+
+        Parameters
+        ----------
+        coretransf : callable
+            A function ``coretransf(core, arg1, arg2) -> newcore``, where
+            ``core`` is the function that implements the kernel passed at
+            initialization.
+        transfname, argparser, doc :
+            See `register_transf`.
+
+        Returns
+        -------
+        transf : callable
+            A method in the format of `register_transf` that wraps
+            `coretransf`.
+
+        """
+        @functools.wraps(coretransf)
+        def transf(self, arg1, arg2):
+            core = coretransf(self._core, arg1, arg2)
+            return self._clone(core=core)
+        return cls.register_transf(transf, transfname, argparser, doc)
+
+    @classmethod
+    def register_xtransf(cls, xtransf, transfname=None, doc=None):
+        """
+
+        Register a transformation that acts only on the input.
+
+        Parameters
+        ----------
+        xtransf : callable
+            A function ``xtransf(arg) -> (transf x: newx)`` that takes in a
+            transformation argument and produces a function to transform the
+            input.
+        transfname, doc :
+            See `register_transf`. `argparser` is not provided because its
+            functionality can be included in `xtransf`.
+
+        Returns
+        -------
+        transf : callable
+            A method in the format of `register_transf` that wraps `xtransf`.
+
+        """
+        # xtransf(arg) -> (transf(x) -> x)
+        @functools.wraps(xtransf)
+        def coretransf(core, xfun, yfun):
+            if not xfun:
+                return lambda x, y: core(x, yfun(y))
+            elif not yfun:
+                return lambda x, y: core(xfun(x), y)
+            else:
+                return lambda x, y: core(xfun(x), yfun(y))
+        return cls.register_coretransf(coretransf, transfname, xtransf, doc)
+
+# TODO add a method similar to transf but for kernel algebra transformations,
+# i.e., apply a function with nonnegative power series coefficients. atransf
+# for "algebraic transf".

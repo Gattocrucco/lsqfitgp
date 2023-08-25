@@ -26,7 +26,7 @@ from .._Kernel import isotropickernel
 def _maternp_derivable(p=None):
     return p
 
-@isotropickernel(derivable=_maternp_derivable)
+@isotropickernel(derivable=_maternp_derivable, maxdim=jnp.inf)
 def Maternp(r2, p=None):
     """
     Matérn kernel of half-integer order. 
@@ -53,7 +53,7 @@ def _matern_derivable(nu=None):
     with _jaxext.skipifabstract():
         return max(0, jnp.ceil(nu) - 1)
 
-@isotropickernel(derivable=_matern_derivable)
+@isotropickernel(derivable=_matern_derivable, maxdim=jnp.inf)
 def Matern(r2, nu=None):
     """
     Matérn kernel of real order. 
@@ -106,7 +106,7 @@ def _bessel_derivable(nu=0):
 
 def _bessel_maxdim(nu=0):
     with _jaxext.skipifabstract():
-        return 2 * (jnp.floor(nu) + 1)
+        return 2 * int(jnp.floor(nu) + 1)
 
 @isotropickernel(derivable=_bessel_derivable, maxdim=_bessel_maxdim)
 def Bessel(r2, nu=0):

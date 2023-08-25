@@ -83,7 +83,7 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
         Define a pointwise linear transformation.
     defproctransf
         Define a pointwise linear transformation with explicit coefficients.
-    defkernelop
+    defkerneltransf
         Define an arbitrary linear transformation through a kernel method.
     defprocderiv
         Define a process as the derivative of another one.

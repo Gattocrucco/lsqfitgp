@@ -31,7 +31,7 @@ def _Celerite_derivable(**kw):
     else:
         return False
 
-@stationarykernel(forcekron=True, derivable=_Celerite_derivable, input='hard')
+@stationarykernel(derivable=_Celerite_derivable, input='hard', maxdim=1)
 def Celerite(delta, gamma=1, B=0):
     """
     Celerite kernel.
@@ -54,7 +54,7 @@ def Celerite(delta, gamma=1, B=0):
         assert abs(B) <= gamma, (B, gamma)
     return jnp.exp(-gamma * delta) * (jnp.cos(delta) + B * jnp.sin(delta))
 
-@stationarykernel(forcekron=True, derivable=1)
+@stationarykernel(derivable=1, maxdim=1)
 def Harmonic(delta, Q=1):
     """
     Damped stochastically driven harmonic oscillator kernel.

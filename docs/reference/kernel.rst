@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/reference/kernel.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -22,33 +22,35 @@
 Generic kernel classes
 ======================
 
-All kernels in :mod:`lsqfitgp` are subclasses of :class:`Kernel`,
-:class:`StationaryKernel` or :class:`IsotropicKernel` (the latter two are
-themselves subclasses of :class:`Kernel`).
+All kernels in `lsqfitgp` are subclasses of `CrossKernel`. The user should
+almost exclusively deal with its subclass `Kernel`, as `CrossKernel` objects
+are produced behind the scenes by `GP`.
 
-:class:`Kernel` itself is a subclass of :class:`CrossKernel`, which represents
-the covariance function between two different processes. In symbols, the kernel
-of a process :math:`f` is
+The generic classes can be used standalone. To ease subclassing, use the
+:ref:`decorators <kerneldec>`.
 
-.. math::
-    k_f(x, y) = \operatorname{Cov}[f(x), f(y)],
+Index
+-----
+`CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`,
+`CrossIsotropicKernel`, `IsotropicKernel`
 
-while the cross kernel between processes :math:`f` and :math:`g` is
+Classes
+-------
 
-.. math::
-    k_{fg}(x, y) = \operatorname{Cov}[f(x), g(y)].
-
-However you will probably never need to deal directly with a cross kernel, they
-are generated automatically behind the scenes by :class:`GP`.
-
-The three general classes can be used directly by instantiating them with a
-callable which will do the actual computation. However, this can be done in a
-simpler and more functional way using the decorators :func:`kernel`,
-:func:`stationarykernel` and :func:`isotropickernel`.
+.. autoclass:: CrossKernel
+    :members:
 
 .. autoclass:: Kernel
-    :inherited-members:
+    :members:
 
-.. autoclass:: StationaryKernel    
+.. autoclass:: CrossStationaryKernel
+    :members:
+
+.. autoclass:: StationaryKernel
+    :members:
+
+.. autoclass:: CrossIsotropicKernel
+    :members:
 
 .. autoclass:: IsotropicKernel
+    :members:

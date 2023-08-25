@@ -586,7 +586,7 @@ class GPElements(_base.GPBase):
             # TODO handle zero cov block efficiently
             return jnp.zeros((x.size, y.size))
         
-        kernel = kernel.diff(x.deriv, y.deriv)
+        kernel = kernel.transf('diff', x.deriv, y.deriv)
         
         if x is y and not self._checksym and self._halfmatrix:
             ix, iy, back = self._triu_indices_and_back(x.size)

@@ -18,28 +18,19 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import inspect
-import abc
 import re
+import types
 
 import pytest
+from pytest import mark
 import numpy as np
 from scipy import linalg
-from jax import test_util
 import jax
 
 import lsqfitgp as lgp
 from lsqfitgp import _kernels, _Kernel
 
 from .. import util
-
-# Make list of Kernel concrete subclasses.
-kernels = []
-for name, obj in vars(_kernels).items():
-    if inspect.isclass(obj) and issubclass(obj, _Kernel.Kernel):
-        assert obj not in (_Kernel.Kernel, _Kernel.StationaryKernel, _Kernel.IsotropicKernel), obj
-        if name.startswith('_'):
-            continue
-        kernels.append(obj)
 
 pytestmark = pytest.mark.filterwarnings(
     r'ignore:overriding init argument\(s\)',
@@ -52,737 +43,685 @@ pytestmark = pytest.mark.filterwarnings(
 # which defaults to loc and scale.
 
 # TODO systematically test higher dimensions now that maxdim allows it.
-
-class KernelTestABC(metaclass=abc.ABCMeta):
     
-    @property
-    @abc.abstractmethod
-    def kernel_class(self):
-        pass
-    
-    def __init_subclass__(cls):
-        for name, meth in vars(cls).items():
-            if name.startswith('test_'):
-                setattr(cls, name, util.tryagain(meth, method=True))
-
-class KernelTestBase(KernelTestABC):
+class KernelTestBase:
     """
-    Abstract base class to test kernels. Each subclass tests one specific
-    kernel.
+    Base class to test kernels. Each subclass tests one specific kernel.
     """
     
     @property
-    def kwargs_list(self):
-        return [dict()]
-    
-    def random_x(self, rng, **kw):
-        return rng.uniform(-5, 5, size=100)
-    
-    def random_x_nd(self, rng, ndim, **kw):
-        xs = [self.random_x(rng, **kw) for _ in range(ndim)]
-        x = np.empty(len(xs[0]), dtype=ndim * [('', xs[0].dtype)])
-        for i in range(ndim):
-            x[x.dtype.names[i]] = xs[i]
-        return x
-    
-    @staticmethod
-    def make_x_nd_implicit(x):
-        n = len(x.dtype.names)
-        dtype = x.dtype.fields[x.dtype.names[0]][0]
-        newx = np.empty(x.shape, [('f0', dtype, (n,))])
-        for i, name in enumerate(x.dtype.names):
-            newx['f0'][..., i] = x[name]
-        return newx
-    
-    @property
-    def eps(self):
-        """ used only by test_positive_* """
-        return 200 * np.finfo(float).eps
-        # TODO reduce this default
+    def kercls(self):
+        """ Kernel subclass to test """
+        clsname = self.__class__.__name__
+        assert clsname.startswith('Test')
+        return getattr(_kernels, clsname[4:])
     
     def test_public(self):
-        assert self.kernel_class in vars(lgp).values()
-    
-    def positive(self, rng, deriv, nd=False):
-        donesomething = False
-        for kw in self.kwargs_list:
-            x = self.random_x_nd(rng, 2, **kw) if nd else self.random_x(rng, **kw)
-            kernel = self.kernel_class(**kw)
-            if kernel.derivable < deriv:
-                continue
-            if nd and kernel.maxdim < 2:
-                continue
-            d = (deriv, 'f0') if nd else deriv
-            cov = kernel.diff(d, d)(x[None, :], x[:, None])
-            util.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7)
-            eigv = linalg.eigvalsh(cov)
-            assert np.min(eigv) >= -len(cov) * self.eps * np.max(eigv)
-            donesomething = True
-        if not donesomething:
-            pytest.skip()
-    
-    def test_positive(self, rng):
-        self.positive(rng, 0)
-    
-    def test_positive_deriv(self, rng):
-        self.positive(rng, 1)
-    
-    def test_positive_deriv2(self, rng):
-        self.positive(rng, 2)
-    
-    def test_positive_nd(self, rng):
-        self.positive(rng, 0, True)
-    
-    def test_positive_deriv_nd(self, rng):
-        self.positive(rng, 1, True)
-    
-    def test_positive_deriv2_nd(self, rng):
-        self.positive(rng, 2, True)
-    
-    def symmetric_offdiagonal(self, rng, xderiv, yderiv):
-        donesomething = False
-        for kw in self.kwargs_list:
-            x = self.random_x(rng, **kw)[None, :]
-            if xderiv == yderiv:
-                y = self.random_x(rng, **kw)[:, None]
-            else:
-                y = x.T
-            kernel = self.kernel_class(**kw)
-            if kernel.derivable < max(xderiv, yderiv):
-                continue
-            b1 = kernel.diff(xderiv, yderiv)(x, y)
-            b2 = kernel.diff(yderiv, xderiv)(y, x)
-            util.assert_allclose(b1, b2, atol=1e-10)
-            donesomething = True
-        if not donesomething:
-            pytest.skip()
+        assert self.kercls in vars(lgp).values()
 
-    def test_symmetric_00(self, rng):
-        self.symmetric_offdiagonal(rng, 0, 0)
+    @pytest.fixture
+    def kw(self):
+        """ Keyword arguments for the constructor """
+        return {}
+
+    @pytest.fixture
+    def kernel(self, kw):
+        """ A kernel instance """
+        return self.kercls(**kw)
+
+    @pytest.fixture
+    def ranx_scalar(self, rng):
+        """ A callable generating a random vector of scalar input values """
+        return lambda size=100: rng.uniform(-5, 5, size=size)
+
+    @pytest.fixture
+    def ranx_nd(self, ranx_scalar):
+        """ A callable generating a random vector of sized input values """
+        def gen(ndim, size=(100,)):
+            x = ranx_scalar(size + (ndim,))
+            return x.view([('', x.dtype)] * ndim).squeeze(-1)
+        return gen
+
+    @pytest.fixture
+    def x_scalar(self, ranx_scalar):
+        """ A random vector of scalar input values """
+        return ranx_scalar()
+
+    @pytest.fixture
+    def x_nd(self, ranx_nd):
+        return ranx_nd(3)
+
+    @pytest.fixture
+    def psdeps(self):
+        """ Relative tolerance for the smallest eigenvalue to be negative """
+        return np.finfo(float).eps
     
-    def test_symmetric_10(self, rng):
-        self.symmetric_offdiagonal(rng, 1, 0)
-    
-    def test_symmetric_11(self, rng):
-        self.symmetric_offdiagonal(rng, 1, 1)
-    
-    def test_symmetric_20(self, rng):
-        self.symmetric_offdiagonal(rng, 2, 0)
-    
-    def test_symmetric_21(self, rng):
-        self.symmetric_offdiagonal(rng, 2, 1)
-    
-    def test_symmetric_22(self, rng):
-        self.symmetric_offdiagonal(rng, 2, 2)
-    
-    # TODO test higher derivatives?
-    
-    def jit(self, rng, deriv=0, nd=False):
-        donesomething = False
-        for kw in self.kwargs_list:
-            if nd:
-                x = self.random_x_nd(rng, 2, **kw)
-                x = lgp.StructuredArray(x)
-                dtype = np.result_type(*(x[name].dtype for name in x.dtype.names))
-            else:
-                x = self.random_x(rng, **kw)
-                dtype = x.dtype
-            if not np.issubdtype(dtype, np.number) and not dtype == bool:
-                continue
-            kernel = self.kernel_class(**kw)
-            if kernel.derivable < deriv:
-                continue
-            if nd and kernel.maxdim < 2:
-                continue
-            d = (deriv, 'f0') if nd else deriv
-            kernel = kernel.diff(d, d)
-            cov1 = kernel(x[None, :], x[:, None])
-            cov2 = jax.jit(kernel)(x[None, :], x[:, None])
-            util.assert_allclose(cov2, cov1, rtol=1e-6, atol=1e-5)
-            donesomething = True
-        if not donesomething:
+    def impl_positive(self, kernel, deriv, x, psdeps):
+        if kernel.derivable < deriv:
             pytest.skip()
-    
+        if x.dtype.names and kernel.maxdim < len(x.dtype.names):
+            pytest.skip()
+        d = (deriv, 'f0') if x.dtype.names else deriv
+        cov = kernel.transf('diff', d, d)(x[None, :], x[:, None])
+        util.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7)
+        eigv = linalg.eigvalsh(cov)
+        assert np.min(eigv) >= -len(cov) * psdeps * np.max(eigv)
+
+    def test_positive_scalar_0(self, kernel, x_scalar, psdeps):
+        self.impl_positive(kernel, 0, x_scalar, psdeps)
+
+    def test_positive_scalar_1(self, kernel, x_scalar, psdeps):
+        self.impl_positive(kernel, 1, x_scalar, psdeps)
+
+    def test_positive_scalar_2(self, kernel, x_scalar, psdeps):
+        self.impl_positive(kernel, 2, x_scalar, psdeps)
+
+    def test_positive_nd_0(self, kernel, x_nd, psdeps):
+        self.impl_positive(kernel, 0, x_nd, psdeps)
+
+    def test_positive_nd_1(self, kernel, x_nd, psdeps):
+        self.impl_positive(kernel, 1, x_nd, psdeps)
+
+    def test_positive_nd_2(self, kernel, x_nd, psdeps):
+        self.impl_positive(kernel, 2, x_nd, psdeps)
+
+    def impl_jit(self, kernel, deriv, x):
+        if kernel.derivable < deriv:
+            pytest.skip()
+        if x.dtype.names:
+            x = lgp.StructuredArray(x)
+            dtype = np.result_type(*(x.dtype[name].base for name in x.dtype.names))
+            if kernel.maxdim < len(x.dtype):
+                pytest.skip()
+            deriv = deriv, 'f0'
+        else:
+            dtype = x.dtype
+        if not np.issubdtype(dtype, np.number) and not dtype == bool:
+            pytest.skip()
+        kernel = kernel.transf('diff', deriv, deriv)
+        cov1 = kernel(x[None, :], x[:, None])
+        cov2 = jax.jit(kernel)(x[None, :], x[:, None])
+        util.assert_allclose(cov2, cov1, rtol=1e-6, atol=1e-5)
+
+    def test_jit_scalar_0(self, kernel, x_scalar):
+        self.impl_jit(kernel, 0, x_scalar)
+
+    def test_jit_scalar_1(self, kernel, x_scalar):
+        self.impl_jit(kernel, 1, x_scalar)
+
+    def test_jit_scalar_2(self, kernel, x_scalar):
+        self.impl_jit(kernel, 2, x_scalar)
+
+    def test_jit_nd_0(self, kernel, x_nd):
+        self.impl_jit(kernel, 0, x_nd)
+
+    def test_jit_nd_1(self, kernel, x_nd):
+        self.impl_jit(kernel, 1, x_nd)
+
+    def test_jit_nd_2(self, kernel, x_nd):
+        self.impl_jit(kernel, 2, x_nd)
+
     # TODO jit with kw as arguments. use static_argnames filtering by dtype.
     
     # TODO test vmap
     
-    def test_jit(self, rng):
-        self.jit(rng)
+    @pytest.fixture(params=[(0, 0), (1, 0), (1, 1), (2, 0), (2, 1), (2, 2)])
+    def derivs(self, request):
+        """ Pair of numbers of derivatives to take """
+        return request.param
     
-    def test_jit_deriv(self, rng):
-        self.jit(rng, 1)
-    
-    def test_jit_deriv2(self, rng):
-        self.jit(rng, 2)
-    
-    def test_jit_nd(self, rng):
-        self.jit(rng, 0, True)
-    
-    def test_jit_deriv_nd(self, rng):
-        self.jit(rng, 1, True)
-    
-    def test_jit_deriv2_nd(self, rng):
-        self.jit(rng, 2, True)
-
-    def test_normalized(self, rng):
-        kernel = self.kernel_class
-        if issubclass(kernel, _Kernel.StationaryKernel):
-            for kw in self.kwargs_list:
-                x = self.random_x(rng, **kw)
-                var = kernel(**kw)(x, x)
-                util.assert_allclose(var, 1, rtol=1e-14, atol=1e-15)
+    def test_symmetric_offdiagonal(self, kernel, derivs, x_scalar):
+        xderiv, yderiv = derivs
+        if xderiv == yderiv:
+            x = x_scalar[:x_scalar.size // 2, None]
+            y = x_scalar[None, x_scalar.size // 2:]
         else:
+            x = x_scalar[:, None]
+            y = x.T
+        if kernel.derivable < max(xderiv, yderiv):
             pytest.skip()
+        b1 = kernel.transf('diff', xderiv, yderiv)(x, y)
+        b2 = kernel.transf('diff', yderiv, xderiv)(y, x)
+        util.assert_allclose(b1, b2, atol=1e-10)
+
+    # TODO test higher derivatives?
     
-    def check_continuous_at_zero(self, rng, deriv):
-        kernel = self.kernel_class
-        if not issubclass(kernel, _Kernel.StationaryKernel):
+    def impl_continuous_in_zero(self, kernel, deriv, x_scalar, kw):
+        if not isinstance(kernel, _Kernel.StationaryKernel):
+            pytest.skip()
+        if not np.issubdtype(x_scalar.dtype, np.inexact):
+            pytest.skip()
+        if kernel.derivable < deriv:
             pytest.skip()
         
-        donesomething = False
-        for kw in self.kwargs_list:
-            t = self.random_x(rng, **kw).dtype
-            if not np.issubdtype(t, np.inexact):
-                pytest.skip()
-            k = kernel(**kw)
-            if k.derivable < deriv:
-                continue
-            
-            # discontinuos kernels
-            if kernel == _kernels.Cauchy and kw.get('alpha', 2) < 1:
-                continue
-            if kernel == _kernels.GammaExp and kw.get('gamma', 1) < 1:
-                continue
-            if kernel == _kernels.Matern and kw['nu'] - deriv < 0.5:
-                continue
-            if kernel == _kernels.StationaryFracBrownian and kw.get('H', 0.5) < 0.5:
-                continue
-            if kernel == _kernels.White:
-                continue
-            if kernel == _kernels.Zeta and kw['nu'] - deriv < 0.5:
-                continue
-            
-            k = k.diff(deriv, deriv)
-            c0 = k(0, 0)
-            c1 = k(0, 1e-15)
-            util.assert_allclose(c1, c0, rtol=1e-10)
-            
-            donesomething = True
-        if not donesomething:
+        # discontinuos kernels
+        if self.kercls is _kernels.Cauchy and kw.get('alpha', 2) < 1:
+            pytest.skip()
+        if self.kercls is _kernels.GammaExp and kw.get('gamma', 1) < 1:
+            pytest.skip()
+        if self.kercls is _kernels.Matern and kw['nu'] - deriv < 0.5:
+            pytest.skip()
+        if self.kercls is _kernels.StationaryFracBrownian and kw.get('H', 0.5) < 0.5:
+            pytest.skip()
+        if self.kercls is _kernels.White:
+            pytest.skip()
+        if self.kercls is _kernels.Zeta and kw['nu'] - deriv < 0.5:
             pytest.skip()
         
-    def test_continuous_at_zero_0(self, rng):
-        self.check_continuous_at_zero(rng, 0)
+        kernel = kernel.transf('diff', deriv)
+        c0 = kernel(0, 0)
+        c1 = kernel(0, 1e-15)
+        util.assert_allclose(c1, c0, rtol=1e-10)
 
-    def test_continuous_at_zero_1(self, rng):
-        self.check_continuous_at_zero(rng, 1)
+    def test_continuous_in_zero_0(self, kernel, x_scalar, kw):
+        self.impl_continuous_in_zero(kernel, 0, x_scalar, kw)
 
-    def test_continuous_at_zero_2(self, rng):
-        self.check_continuous_at_zero(rng, 2)
+    def test_continuous_in_zero_1(self, kernel, x_scalar, kw):
+        self.impl_continuous_in_zero(kernel, 1, x_scalar, kw)
 
-    def test_stationary(self, rng):
-        kernel = self.kernel_class
-        if issubclass(kernel, _Kernel.StationaryKernel):
-            for kw in self.kwargs_list:
-                x = self.random_x(rng, **kw)
-                var = kernel(**kw)(x, x)
-                util.assert_allclose(var, var[0])
+    def test_continuous_in_zero_2(self, kernel, x_scalar, kw):
+        self.impl_continuous_in_zero(kernel, 2, x_scalar, kw)
+
+    def test_stationary(self, x_scalar, kernel):
+        if isinstance(kernel, _Kernel.StationaryKernel):
+            var = kernel(x_scalar, x_scalar)
+            util.assert_allclose(var, var[0])
         else:
             pytest.skip()
 
-    def test_double_diff_scalar_first(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            if kernel.derivable < 1:
-                continue
-            x = self.random_x(rng, **kw)
-            r1 = kernel.diff(1, 1)(x[None, :], x[:, None])
-            r2 = kernel.diff(1, 0).diff(0, 1)(x[None, :], x[:, None])
-            util.assert_allclose(r1, r2)
-            donesomething = True
-        if not donesomething:
+    def test_normalized(self, kernel, x_scalar):
+        if isinstance(kernel, _Kernel.StationaryKernel):
+            var = kernel(x_scalar, x_scalar)
+            util.assert_allclose(var, 1, rtol=1e-14, atol=1e-15)
+        else:
             pytest.skip()
     
-    def test_double_diff_scalar_second(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            if kernel.derivable < 2:
-                continue
-            x = self.random_x(rng, **kw)
-            r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
-            r2 = kernel.diff(1, 1).diff(1, 1)(x[None, :], x[:, None])
-            util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-9)
-            donesomething = True
-        if not donesomething:
+    def test_double_diff_scalar_first(self, kernel, x_scalar):
+        if kernel.derivable < 1:
             pytest.skip()
+        r1 = kernel.transf('diff', 1, 1)(x_scalar[None, :], x_scalar[:, None])
+        r2 = kernel.transf('diff', 1, 0).transf('diff', 0, 1)(x_scalar[None, :], x_scalar[:, None])
+        util.assert_allclose(r1, r2)
     
-    def test_double_diff_scalar_second_chopped(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            if kernel.derivable < 2:
-                continue
-            x = self.random_x(rng, **kw)
-            r1 = kernel.diff(2, 2)(x[None, :], x[:, None])
-            r2 = kernel.diff(2, 0).diff(0, 2)(x[None, :], x[:, None])
-            util.assert_allclose(r1, r2)
-            donesomething = True
-        if not donesomething:
+    def test_double_diff_scalar_second(self, kernel, x_scalar):
+        if kernel.derivable < 2:
             pytest.skip()
+        r1 = kernel.transf('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
+        r2 = kernel.transf('diff', 1, 1).transf('diff', 1, 1)(x_scalar[None, :], x_scalar[:, None])
+        util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-9)
     
-    def test_double_diff_nd_first(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            if kernel.derivable < 1:
-                continue
-            if kernel.maxdim < 2:
-                continue
-            x = self.random_x_nd(rng, 2, **kw)[None, :]
-            r1 = kernel.diff('f0', 'f0')(x, x.T)
-            r2 = kernel.diff('f0', 0).diff(0, 'f0')(x, x.T)
-            util.assert_allclose(r1, r2)
-            donesomething = True
-        if not donesomething:
+    def test_double_diff_scalar_second_chopped(self, kernel, x_scalar):
+        if kernel.derivable < 2:
             pytest.skip()
+        r1 = kernel.transf('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
+        r2 = kernel.transf('diff', 2, 0).transf('diff', 0, 2)(x_scalar[None, :], x_scalar[:, None])
+        util.assert_allclose(r1, r2)
+    
+    def test_double_diff_nd_first(self, kernel, ranx_nd):
+        if kernel.derivable < 1:
+            pytest.skip()
+        if kernel.maxdim < 2:
+            pytest.skip()
+        x = ranx_nd(2)[:, None]
+        r1 = kernel.transf('diff', 'f0', 'f0')(x, x.T)
+        r2 = kernel.transf('diff', 'f0', 0).transf('diff', 0, 'f0')(x, x.T)
+        util.assert_allclose(r1, r2)
 
-    def test_double_diff_nd_second(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            if kernel.derivable < 2:
-                continue
-            if kernel.maxdim < 2:
-                continue
-            x = self.random_x_nd(rng, 2, **kw)[None, :]
-            r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
-            r2 = kernel.diff('f0', 'f0').diff('f1', 'f1')(x, x.T)
-            util.assert_allclose(r1, r2)
-            donesomething = True
-        if not donesomething:
+    def test_double_diff_nd_second(self, kernel, ranx_nd):
+        if kernel.derivable < 2:
             pytest.skip()
+        if kernel.maxdim < 2:
+            pytest.skip()
+        x = ranx_nd(2)[:, None]
+        r1 = kernel.transf('diff', (2, 'f0'), (2, 'f1'))(x, x.T)
+        r2 = kernel.transf('diff', 'f0', 'f0').transf('diff', 'f1', 'f1')(x, x.T)
+        util.assert_allclose(r1, r2)
 
-    def test_double_diff_nd_second_chopped(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            if kernel.derivable < 2:
-                continue
-            if kernel.maxdim < 2:
-                continue
-            x = self.random_x_nd(rng, 2, **kw)[None, :]
-            r1 = kernel.diff((2, 'f0'), (2, 'f1'))(x, x.T)
-            r2 = kernel.diff('f0', 'f1').diff('f0', 'f1')(x, x.T)
-            util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-12)
-            donesomething = True
-        if not donesomething:
+    def test_double_diff_nd_second_chopped(self, kernel, ranx_nd):
+        if kernel.derivable < 2:
             pytest.skip()
-    
-    def test_implicit_fields(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
-            x1 = self.random_x_nd(rng, 2, **kw)[:, None]
-            x2 = self.make_x_nd_implicit(x1)
-            covfun = self.kernel_class(**kw)
-            if covfun.maxdim < 2:
-                continue
-            c1 = covfun(x1, x1.T)
-            c2 = covfun(x2, x2.T)
-            util.assert_allclose(c1, c2, atol=1e-15, rtol=1e-14)
-            donesomething = True
-        if not donesomething:
+        if kernel.maxdim < 2:
             pytest.skip()
+        x = ranx_nd(2)[:, None]
+        r1 = kernel.transf('diff', (2, 'f0'), (2, 'f1'))(x, x.T)
+        r2 = kernel.transf('diff', 'f0', 'f1').transf('diff', 'f0', 'f1')(x, x.T)
+        util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-12)
     
-    def test_loc_scale_nd(self, rng):
-        kernel = self.kernel_class
+    @staticmethod
+    def make_x_nd_implicit(x):
+        from numpy.lib import recfunctions
+        dtype = recfunctions.repack_fields(x.dtype, align=False, recurse=True)
+        return x.astype(dtype).view([('', x.dtype[0], (len(x.dtype),))]).copy()
+    
+    def test_implicit_fields(self, kernel, ranx_nd):
+        if kernel.maxdim < 2:
+            pytest.skip()
+        x1 = ranx_nd(2)[:, None]
+        x2 = self.make_x_nd_implicit(x1)
+        c1 = kernel(x1, x1.T)
+        c2 = kernel(x2, x2.T)
+        util.assert_allclose(c1, c2, atol=1e-15, rtol=1e-14)
+    
+    def test_loc_scale_nd(self, kernel, kw, ranx_nd, x_scalar):
+        if kernel.maxdim < 2:
+            pytest.skip()
         loc = -2  # < 0
         scale = 3 # > abs(loc)
-        donesomething = False
-        for kw in self.kwargs_list:
-            # TODO maybe put loc and scale in kw and let random_x adapt the
-            # domain to loc and scale
-            x = self.random_x(rng, **kw)
-            if not np.issubdtype(x.dtype, np.inexact):
-                continue
-            x1 = self.random_x_nd(rng, 2, **kw)[:, None]
-            x2 = self.make_x_nd_implicit(x1)
-            x2['f0'] -= loc
-            x2['f0'] /= scale
-            covfun1 = kernel(loc=loc, scale=scale, **kw)
-            if covfun1.maxdim < 2:
-                continue
-            c1 = covfun1(x1, x1.T)
-            c2 = kernel(**kw)(x2, x2.T)
-            util.assert_allclose(c1, c2, rtol=1e-12, atol=1e-13)
-            donesomething = True
-        if not donesomething:
+        # TODO maybe put loc and scale in kw and let random_x adapt the
+        # domain to loc and scale
+        if not np.issubdtype(x_scalar.dtype, np.inexact):
             pytest.skip()
+        x1 = ranx_nd(2)[:, None]
+        x2 = self.make_x_nd_implicit(x1)
+        x2['f0'] -= loc
+        x2['f0'] /= scale
+        kernel1 = self.kercls(loc=loc, scale=scale, **kw)
+        c1 = kernel1(x1, x1.T)
+        c2 = kernel(x2, x2.T)
+        util.assert_allclose(c1, c2, rtol=1e-12, atol=1e-13)
     
-    def test_weird_derivable(self):
-        for kw in self.kwargs_list:
-            kw = dict(kw)
-            kw.update(derivable=[1])
-            with pytest.raises(TypeError):
-                self.kernel_class(**kw)
-            kw.update(derivable=1.5)
-            with pytest.raises(ValueError):
-                self.kernel_class(**kw)
+    def test_weird_derivable(self, kw):
+        kw = dict(kw)
+        kw.update(derivable=[1])
+        with pytest.raises(TypeError):
+            self.kercls(**kw)
+        kw.update(derivable=1.5)
+        with pytest.raises(ValueError):
+            self.kercls(**kw)
     
-    def test_dim(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
-            x1 = self.random_x_nd(rng, 2, **kw)[:, None]
-            x2 = x1['f0']
-            # dtype = x1.dtype.fields['f0'][0]
-            # x3 = np.empty(x1.shape, [('f0', dtype, (1,))])
-            # x3['f0'] = x2[..., None]
-            x3 = self.make_x_nd_implicit(x1[['f0']])
-            covfun1 = self.kernel_class(dim='f0', **kw)
-            if covfun1.maxdim < 2:
-                continue
-            c1 = covfun1(x1, x1.T)
-            c2 = self.kernel_class(**kw)(x2, x2.T)
-            c3 = self.kernel_class(dim='f0', **kw)(x3, x3.T)
-            util.assert_equal(c1, c2)
-            util.assert_equal(c1, c3)
-            with pytest.raises(ValueError):
-                self.kernel_class(dim='f0', **kw)(x2, x2.T)
-            donesomething = True
-        if not donesomething:
+    def test_dim(self, ranx_nd, kw):
+        x1 = ranx_nd(2)[:, None]
+        x2 = x1['f0']
+        x3 = self.make_x_nd_implicit(x1[['f0']])
+        kernel1 = self.kercls(dim='f0', **kw)
+        if kernel1.maxdim < 2:
             pytest.skip()
+        c1 = kernel1(x1, x1.T)
+        c2 = self.kercls(**kw)(x2, x2.T)
+        c3 = self.kercls(dim='f0', **kw)(x3, x3.T)
+        util.assert_equal(c1, c2)
+        util.assert_equal(c1, c3)
+        with pytest.raises(ValueError):
+            self.kercls(dim='f0', **kw)(x2, x2.T)
     
-    def test_binary_type_error(self):
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            with pytest.raises(TypeError):
-                kernel = kernel + [0]
-            with pytest.raises(TypeError):
-                kernel = [0] + kernel
-            kernel = kernel.rescale(lambda x: 1, None) # make a _CrossKernel
-            with pytest.raises(TypeError):
-                kernel = kernel + [0]
-            with pytest.raises(TypeError):
-                kernel = [0] + kernel
+    def test_binary_type_error(self, kernel):
+        with pytest.raises(TypeError):
+            kernel = kernel + [0]
+        with pytest.raises(TypeError):
+            kernel = [0] + kernel
+        kernel = kernel.transf('rescale', lambda x: 1, None) # make a CrossKernel
+        with pytest.raises(TypeError):
+            kernel = kernel + [0]
+        with pytest.raises(TypeError):
+            kernel = [0] + kernel
     
-    def test_pow(self, rng):
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            with pytest.raises(TypeError):
-                kernel = kernel ** kernel
-            k1 = kernel ** 2
-            k2 = kernel * kernel
-            x = self.random_x(rng, **kw)[:, None]
-            c1 = k1(x, x.T)
-            c2 = k2(x, x.T)
-            util.assert_equal(c1, c2)
-        
-    def test_transf_noop(self):
-        meths = ['rescale', 'xtransf', 'diff', 'fourier', 'taylor']
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            for meth in meths:
-                assert kernel is getattr(kernel, meth)(None, None)
+    @mark.parametrize('name', ['rescale', 'xtransf', 'diff', 'loc', 'scale',
+        'dim', 'maxdim', 'derivable'])
+    def test_transf_noop(self, kernel, name):
+        assert kernel is kernel.transf(name, None)
     
-    def test_unknown_derivability(self):
-        for kw in self.kwargs_list:
+    def test_unknown_derivability(self, kw):
+        kw = dict(kw)
+        kw.update(derivable=None)
+        kernel = self.kercls(**kw)
+        assert kernel.derivable is None
+    
+    def test_invalid_input(self, kw):
+        if issubclass(self.kercls, _Kernel.StationaryKernel):
             kw = dict(kw)
-            kw.update(derivable=None)
-            kernel = self.kernel_class(**kw)
-            assert kernel.derivable is None
-    
-    def test_invalid_input(self):
-        kernel = self.kernel_class
-        if issubclass(kernel, _Kernel.StationaryKernel):
-            for kw in self.kwargs_list:
-                kw = dict(kw)
-                kw.update(input='cippa')
-                with pytest.raises(KeyError):
-                    kernel(**kw)
+            kw.update(input='cippa')
+            with pytest.raises(KeyError):
+                self.kercls(**kw)
         else:
             pytest.skip()
     
-    def test_soft_input(self, rng):
-        kernel = self.kernel_class
-        donesomething = False
-        if issubclass(kernel, _Kernel.StationaryKernel) and not issubclass(kernel, _Kernel.IsotropicKernel):
-            for kw in self.kwargs_list:
-                x1 = self.random_x(rng, **kw)
-                if not np.issubdtype(x1.dtype, np.inexact):
-                    continue
-                x2 = x1 - 1 / np.pi
-                if np.any(np.abs(x1 - x2) < 1e-6):
-                    pytest.xfail()
-                kw = dict(kw)
-                kw.update(input='signed')
-                c1 = kernel(**kw)(x1, x2)
-                kw.update(input='soft')
-                c2 = kernel(**kw)(x1, x2)
-                util.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
-                donesomething = True
-        if not donesomething:
-            pytest.skip()
-    
-    def test_where(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            
-            if kernel.maxdim < 2:
-                continue
-            
-            x = self.random_x_nd(rng, 2, **kw)
-            x0 = x['f0'][0]
-            cond = lambda x: x < x0
-            k1 = _Kernel.where(cond, kernel, 2 * kernel, dim='f0')
-            k2 = _Kernel.where(lambda x: cond(x['f0']), kernel, 2 * kernel)
-            c1 = k1(x[:, None], x[None, :])
-            c2 = k2(x[:, None], x[None, :])
-            
-            x = self.make_x_nd_implicit(x)
-            cond = lambda x: x['f0'][..., 0] < x0
-            k1 = _Kernel.where(cond, kernel, 2 * kernel, dim='f0')
-            k2 = _Kernel.where(cond, kernel, 2 * kernel)
-            c3 = k1(x[:, None], x[None, :])
-            c4 = k2(x[:, None], x[None, :])
-
-            util.assert_equal(c1, c2)
-            util.assert_equal(c3, c4)
-            util.assert_equal(c1, c3)
-            
-            x = self.random_x(rng, **kw)
-            with pytest.raises(ValueError):
-                k1(x, x)
-            
-            donesomething = True
-        if not donesomething:
-            pytest.skip()
-    
-    def test_rescale_swap(self, rng):
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            x = self.random_x(rng, **kw)[:, None]
-            y = self.random_x(rng, **kw)[None, :]
-            x0 = x[0]
-            f = lambda x: np.where(x < x0, -1, 1)
-            k1 = kernel.rescale(f, None)
-            k2 = kernel.rescale(None, f)
-            c1 = k1(x, y)
-            c2 = k2(y, x)
-            util.assert_equal(c1, c2)
-    
-    def test_fourier_swap(self, rng):
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            try:
-                kernel.fourier(True, None)
-            except NotImplementedError:
+    def test_soft_input(self, x_scalar, kw):
+        if issubclass(self.kercls, _Kernel.StationaryKernel) and not issubclass(self.kercls, _Kernel.IsotropicKernel):
+            x1 = x_scalar
+            if not np.issubdtype(x1.dtype, np.inexact):
                 pytest.skip()
-            x = self.random_x(rng, **kw)[:, None]
-            k = np.arange(1, 11)[None, :]
-            k1 = kernel.fourier(True, None)
-            k2 = kernel.fourier(None, True)
-            c1 = k1(k, x)
-            c2 = k2(x, k)
-            util.assert_equal(c1, c2)
-
-    def test_xtransf_swap(self, rng):
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            x = self.random_x(rng, **kw)
-            y = self.random_x(rng, **kw)[None, :]
-            xt = np.arange(len(x))
-            f = lambda xt: x[xt]
-            xt = xt[:, None]
-            k1 = kernel.xtransf(f, None)
-            k2 = kernel.xtransf(None, f)
-            c1 = k1(xt, y)
-            c2 = k2(y, xt)
-            util.assert_equal(c1, c2)
-    
-    def test_derivable(self):
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            d = kernel.derivable
-            with pytest.raises(RuntimeError):
-                kernel.diff(d + 1, d + 1)
-            with pytest.raises(RuntimeError):
-                kernel.diff(d + 1, None)
-            with pytest.raises(RuntimeError):
-                kernel.diff(None, d + 1)
-            if d == 0:
-                continue
-            d = min(d, 2)
-            kernel *= _kernels.White()
-            with pytest.warns(UserWarning):
-              kernel.diff(1, 1)
-            with pytest.warns(UserWarning):
-                kernel.diff(None, d)
-            with pytest.warns(UserWarning):
-                kernel.diff(d, None)
-    
-    def test_diff_errors(self, rng):
-        donesomething = False
-        for kw in self.kwargs_list:
+            x2 = x1 - 1 / np.pi
+            if np.any(np.abs(x1 - x2) < 1e-6):
+                pytest.xfail()
             kw = dict(kw)
-            kw.update(derivable=True)
-            kernel = self.kernel_class(**kw)
+            kw.update(input='signed')
+            c1 = self.kercls(**kw)(x1, x2)
+            kw.update(input='soft')
+            c2 = self.kercls(**kw)(x1, x2)
+            util.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
+    
+    def test_where(self, kernel, ranx_nd, x_scalar):
             
-            x = self.random_x(rng, **kw)
-            with pytest.raises(ValueError):
-                kernel.diff('f0', 'f0')(x, x)
-            
-            x = self.random_x_nd(rng, 2, **kw)
-            with pytest.raises(ValueError):
-                kernel.diff('a', 'a')(x, x)
-            
-            dtype = x.dtype.fields['f0'][0]
-            if not np.issubdtype(dtype, np.number):
-                with pytest.raises(TypeError):
-                    kernel.diff('f0', 'f0')(x, x)
-            
-            donesomething = True
-        if not donesomething:
+        if kernel.maxdim < 2:
             pytest.skip()
+        
+        x = ranx_nd(2)
+        x0 = x['f0'][0]
+        cond = lambda x: x < x0
+        k1 = _Kernel.where(cond, kernel, 2 * kernel, dim='f0')
+        k2 = _Kernel.where(lambda x: cond(x['f0']), kernel, 2 * kernel)
+        c1 = k1(x[:, None], x[None, :])
+        c2 = k2(x[:, None], x[None, :])
+        
+        x = self.make_x_nd_implicit(x)
+        cond = lambda x: x['f0'][..., 0] < x0
+        k1 = _Kernel.where(cond, kernel, 2 * kernel, dim='f0')
+        k2 = _Kernel.where(cond, kernel, 2 * kernel)
+        c3 = k1(x[:, None], x[None, :])
+        c4 = k2(x[:, None], x[None, :])
+
+        util.assert_equal(c1, c2)
+        util.assert_equal(c3, c4)
+        util.assert_equal(c1, c3)
+        
+        with pytest.raises(ValueError):
+            k1(x_scalar, x_scalar)
     
-    def test_fourier(self):
-        for kw in self.kwargs_list:
-            kernel = self.kernel_class(**kw)
-            try:
-                kernel.fourier(True, True)
-            except NotImplementedError:
-                pytest.skip()
-            
-            if isinstance(kernel, _kernels.Zeta) and kw['nu'] == 0:
-                continue
-            
-            x = np.linspace(0, 1, 100)
-            gp = (lgp.GP(kernel, posepsfac=200)
-                .defkernelop('F', 'fourier', True, lgp.GP.DefaultProcess)
-                .addx(x, 'x')
-                .addx(1, 's1', proc='F')
-                .addx(2, 'c1', proc='F')
-            )
-            ms, cs = gp.predfromdata(dict(s1=1, c1=0), 'x', raw=True)
-            mc, cc = gp.predfromdata(dict(c1=1, s1=0), 'x', raw=True)
-            util.assert_allclose(ms, np.sin(2 * np.pi * x), atol=1e-15)
-            util.assert_allclose(mc, np.cos(2 * np.pi * x), atol=1e-15)
-            util.assert_allclose(np.diag(cs), cs[0, 0], atol=1e-15)
-            util.assert_allclose(np.diag(cc), cc[0, 0], atol=1e-15)
+    def test_rescale_swap(self, kernel, x_scalar):
+        x = x_scalar[:x_scalar.size // 2, None]
+        y = x_scalar[None, x_scalar.size // 2:]
+        x0 = x[0]
+        f = lambda x: np.where(x < x0, -1, 1)
+        k1 = kernel.transf('rescale', f, None)
+        k2 = kernel.transf('rescale', None, f)
+        c1 = k1(x, y)
+        c2 = k2(y, x)
+        util.assert_equal(c1, c2)
     
-    @classmethod
-    def make_subclass(cls, kernel_class, kwargs_list=None, random_x_fun=None, eps=None):
-        name = 'Test' + kernel_class.__name__
-        subclass = type(cls)(name, (cls,), {
-            'kernel_class': property(lambda self: kernel_class)
-        })
-        if kwargs_list is not None:
-            subclass.kwargs_list = property(lambda self: kwargs_list)
-        if random_x_fun is not None:
-            subclass.random_x = lambda self, *args, **kw: random_x_fun(*args, **kw)
-        if eps is not None:
-            subclass.eps = eps
-        return subclass
+    def test_fourier_swap(self, kernel, x_scalar):
+        if not kernel.has_transf('fourier'):
+            pytest.skip()
+        x = x_scalar[:, None]
+        k = np.arange(1, 11)[None, :]
+        k1 = kernel.transf('fourier', True, None)
+        k2 = kernel.transf('fourier', None, True)
+        c1 = k1(k, x)
+        c2 = k2(x, k)
+        util.assert_equal(c1, c2)
 
-def matrix_square(A):
-    return A.T @ A
+    def test_xtransf_swap(self, rng, x_scalar, kernel):
+        x = x_scalar[:x_scalar.size // 2]
+        y = x_scalar[None, x_scalar.size // 2:]
+        xt = np.arange(len(x))
+        f = lambda xt: x[xt]
+        xt = xt[:, None]
+        k1 = kernel.transf('xtransf', f, None)
+        k2 = kernel.transf('xtransf', None, f)
+        c1 = k1(xt, y)
+        c2 = k2(y, xt)
+        util.assert_equal(c1, c2)
+    
+    def test_derivable(self, kernel):
+        d = kernel.derivable
+        if d is None:
+            pytest.skip()
+        with pytest.raises(RuntimeError):
+            kernel.transf('diff', d + 1, d + 1)
+        with pytest.raises(RuntimeError):
+            kernel.transf('diff', d + 1, None)
+        with pytest.raises(RuntimeError):
+            kernel.transf('diff', None, d + 1)
+    
+    def test_diff_errors(self, kw, x_scalar, ranx_nd):
+        kw = dict(kw)
+        kw.update(derivable=True)
+        kernel = self.kercls(**kw)
+        
+        with pytest.raises(ValueError):
+            kernel.transf('diff', 'f0', 'f0')(x_scalar, x_scalar)
+        
+        x = ranx_nd(2)
+        with pytest.raises(ValueError):
+            kernel.transf('diff', 'a', 'a')(x, x)
+        
+        dtype = x.dtype[0]
+        if not np.issubdtype(dtype, np.number):
+            with pytest.raises(TypeError):
+                kernel.transf('diff', 'f0', 'f0')(x, x)
+                
+    def test_fourier(self, kernel, kw):
+        if not kernel.has_transf('fourier'):
+            pytest.skip()
+        
+        if isinstance(kernel, _kernels.Zeta) and kw['nu'] == 0:
+            pytest.skip()
+        
+        x = np.linspace(0, 1, 100)
+        gp = (lgp.GP(kernel, posepsfac=200)
+            .defkerneltransf('F', 'fourier', True, lgp.GP.DefaultProcess)
+            .addx(x, 'x')
+            .addx(1, 's1', proc='F')
+            .addx(2, 'c1', proc='F')
+        )
+        ms, cs = gp.predfromdata(dict(s1=1, c1=0), 'x', raw=True)
+        mc, cc = gp.predfromdata(dict(c1=1, s1=0), 'x', raw=True)
+        util.assert_allclose(ms, np.sin(2 * np.pi * x), atol=1e-15)
+        util.assert_allclose(mc, np.cos(2 * np.pi * x), atol=1e-15)
+        util.assert_allclose(np.diag(cs), cs[0, 0], atol=1e-15)
+        util.assert_allclose(np.diag(cc), cc[0, 0], atol=1e-15)
 
-def random_nd(rng, size, ndim):
-    out = np.empty(size, dtype=[('xyz', float, (ndim,))])
-    out['xyz'] = rng.uniform(-5, 5, size=(size, ndim))
-    return out
-
-lipsum = """
-
-Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia
-odio sem nec elit. Curabitur blandit tempus porttitor. Sed posuere consectetur
-est at lobortis. Cras mattis consectetur purus sit amet fermentum.
-
-Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis
-consectetur purus sit amet fermentum. Lorem ipsum dolor sit amet, consectetur
-adipiscing elit. Donec ullamcorper nulla non metus auctor fringilla.
-
-Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec ullamcorper
-nulla non metus auctor fringilla. Praesent commodo cursus magna, vel
-scelerisque nisl consectetur et. Donec id elit non mi porta gravida at eget
-metus. Nullam id dolor id nibh ultricies vehicula ut id elit. Maecenas sed diam
-eget risus varius blandit sit amet non magna.
-
-Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Sed posuere
-consectetur est at lobortis. Donec ullamcorper nulla non metus auctor
-fringilla. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum
-nibh, ut fermentum massa justo sit amet risus. Lorem ipsum dolor sit amet,
-consectetur adipiscing elit. Vivamus sagittis lacus vel augue laoreet rutrum
-faucibus dolor auctor.
-
-"""
-
-lipsum_words = np.array(list(set(re.split(r'\s|[,.]', lipsum.lower()))))
-
-def bow_rand(rng, **kw):
-    return np.array([' '.join(rng.choice(lipsum_words, 10)) for _ in range(30)])
-
-rng = np.random.default_rng(202307302242)
-
-# Define a concrete subclass of KernelTestBase for each kernel.
-test_kwargs = {
-    _kernels.Matern: dict(kwargs_list=
+class TestMatern(KernelTestBase):
+    
+    @pytest.fixture(params=
         [dict(nu=v + 0.5 ) for v in range(   5)] +
         [dict(nu=v + 0.49) for v in range(   5)] +
         [dict(nu=v + 0.51) for v in range(   5)] +
         [dict(nu=v       ) for v in range(   5)] +
         [dict(nu=v - 0.01) for v in range(1, 5)] +
         [dict(nu=v + 0.01) for v in range(   5)]
-    ),
-    _kernels.Maternp: dict(kwargs_list=[dict(p=p) for p in range(10)]),
-    _kernels.Wendland: dict(kwargs_list=[
-        dict(k=k, alpha=a) for k in range(4) for a in np.linspace(1, 4, 10)
-    ], eps=1e3 * np.finfo(float).eps),
-    _kernels.Wiener: dict(random_x_fun=lambda rng, **kw: rng.uniform(0, 10, size=100)),
-    _kernels.WienerIntegral: dict(random_x_fun=lambda rng, **kw: rng.uniform(0, 10, size=100)),
-    _kernels.FracBrownian: dict(
-        random_x_fun=lambda rng, **kw: rng.uniform(-10, 10, size=100),
-        kwargs_list=[dict(H=H, K=K) for H in [0.1, 0.5, 1] for K in [0.1, 0.5, 1]],
-    ),
-    _kernels.BrownianBridge: dict(random_x_fun=lambda rng, **kw: rng.uniform(0, 1, size=100)),
-    _kernels.OrnsteinUhlenbeck: dict(random_x_fun=lambda rng, **kw: rng.uniform(0, 10, size=100)),
-    _kernels.Categorical: dict(kwargs_list=[
-        dict(cov=matrix_square(rng.standard_normal((10, 10))))
-    ], random_x_fun=lambda rng, **kw: rng.integers(10, size=100)),
-    _kernels.NNKernel: dict(eps=4 * np.finfo(float).eps),
-    _kernels.Zeta: dict(kwargs_list=[
-        dict(nu=v) for v in [0, 0.1, 1, 1.5, 4.9, 1000]
-    ]),
-    _kernels.Celerite: dict(kwargs_list=[
-        dict(), dict(gamma=1, B=1), dict(gamma=0, B=0), dict(gamma=10, B=0)
-    ]),
-    _kernels.Harmonic: dict(kwargs_list=[
-        dict(), dict(Q=0.01), dict(Q=0.25), dict(Q=0.75), dict(Q=0.99), dict(Q=1), dict(Q=1.01), dict(Q=2)
-    ]),
-    _kernels.BagOfWords: dict(random_x_fun=bow_rand),
-    _kernels.Gibbs: dict(kwargs_list=[dict(derivable=True)]),
-    _kernels.Rescaling: dict(kwargs_list=[dict(derivable=True)]),
-    _kernels.GammaExp: dict(kwargs_list=[dict(), dict(gamma=2)], eps=1e3 * np.finfo(float).eps),
-    _kernels.Bessel: dict(kwargs_list=[dict()] + [dict(nu=nu) for nu in range(5)] + [dict(nu=nu - 0.01) for nu in range(1, 5)] + [dict(nu=nu + 0.01) for nu in range(5)] + [dict(nu=nu + 0.5) for nu in range(5)]),
-    _kernels.Cauchy: dict(kwargs_list=[dict(alpha=a, beta=b) for a in [0.001, 0.5, 0.999, 1, 1.001, 1.5, 1.999, 2] for b in [0.001, 0.5, 1, 1.5, 2, 4, 8]]),
-    _kernels.CausalExpQuad: dict(kwargs_list=[dict(alpha=a) for a in [0, 1, 2]]),
-    _kernels.Decaying: dict(
-        random_x_fun=lambda rng, **_: rng.uniform(0, 5, size=100),
-        kwargs_list=[dict(alpha=a) for a in [0, .5, 1, 2]],
-    ),
-    _kernels.StationaryFracBrownian: dict(kwargs_list=[dict(H=H) for H in [0.1, 0.5, 1]]),
-    _kernels.Circular: dict(kwargs_list=[dict(c=c, tau=t) for c, t in [(0.1, 4), (0.5, 4), (0.5, 8)]]),
-    _kernels.MA: dict(
-        random_x_fun=lambda rng, **_: rng.integers(0, 100, 100),
-        kwargs_list=[dict(w=w) for w in [
-            [], [0], [1], [1, 1], [1, -1], [2, 1], [1, 2, 3, 4, 5], rng.standard_normal(30),
-        ]],
-    ),
-    _kernels.AR: dict(
-        random_x_fun=lambda rng, **_: rng.integers(0, 100, 100),
-        kwargs_list=[dict(phi=phi, maxlag=100) for phi in [
+    )
+    def kw(self, request):
+        return request.param
+
+class TestMaternp(KernelTestBase):
+
+    @pytest.fixture(params=list(range(10)))
+    def kw(self, request):
+        return dict(p=request.param)
+
+class TestWendland(KernelTestBase):
+
+    @pytest.fixture(params=
+        [dict(k=k, alpha=a) for k in range(4) for a in np.linspace(1, 4, 10)])
+    def kw(self, request):
+        return request.param
+
+    @pytest.fixture
+    def psdeps(self):
+        return 1e3 * np.finfo(float).eps
+
+class TestWiener(KernelTestBase):
+
+    @pytest.fixture
+    def ranx_scalar(self, rng):
+        return lambda size=100: rng.uniform(0, 10, size)
+
+class TestWienerIntegral(TestWiener): pass
+
+class TestOrnsteinUhlenbeck(TestWiener): pass
+
+class TestFracBrownian(KernelTestBase):
+
+    @pytest.fixture
+    def ranx_scalar(self, rng):
+        return lambda size=100: rng.uniform(-10, 10, size)
+
+    @pytest.fixture(params=[dict(H=H, K=K)
+        for H in [0.1, 0.5, 1]
+        for K in [0.1, 0.5, 1]])
+    def kw(self, request):
+        return request.param
+
+class TestBrownianBridge(KernelTestBase):
+
+    @pytest.fixture
+    def ranx_scalar(self, rng):
+        return lambda size=100: rng.uniform(0, 1, size)
+
+class TestCategorical(KernelTestBase):
+
+    N = 10
+
+    @pytest.fixture
+    def ranx_scalar(self, rng):
+        return lambda size=100: rng.integers(0, self.N, size)
+
+    @pytest.fixture
+    def kw(self, rng):
+        a = rng.standard_normal((self.N, self.N))
+        return dict(cov=a @ a.T)
+
+class TestNNKernel(KernelTestBase):
+
+    @pytest.fixture
+    def psdeps(self):
+        return 4 * np.finfo(float).eps
+
+class TestZeta(KernelTestBase):
+
+    @pytest.fixture(params=[0, 0.1, 1, 1.5, 4.9, 1000])
+    def kw(self, request):
+        return dict(nu=request.param)
+
+class TestCelerite(KernelTestBase):
+
+    @pytest.fixture(params=
+        [dict(), dict(gamma=1, B=1), dict(gamma=0, B=0), dict(gamma=10, B=0)])
+    def kw(self, request):
+        return request.param
+
+class TestHarmonic(KernelTestBase):
+
+    @pytest.fixture(params=[None, 0.01, 0.25, 0.75, 0.99, 1, 1.01, 2])
+    def kw(self, request):
+        Q = request.param
+        return {} if Q is None else dict(Q=Q)
+
+class TestBagOfWords(KernelTestBase):
+
+    lipsum = """
+
+    Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia
+    odio sem nec elit. Curabitur blandit tempus porttitor. Sed posuere consectetur
+    est at lobortis. Cras mattis consectetur purus sit amet fermentum.
+
+    Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis
+    consectetur purus sit amet fermentum. Lorem ipsum dolor sit amet, consectetur
+    adipiscing elit. Donec ullamcorper nulla non metus auctor fringilla.
+
+    Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec ullamcorper
+    nulla non metus auctor fringilla. Praesent commodo cursus magna, vel
+    scelerisque nisl consectetur et. Donec id elit non mi porta gravida at eget
+    metus. Nullam id dolor id nibh ultricies vehicula ut id elit. Maecenas sed diam
+    eget risus varius blandit sit amet non magna.
+
+    Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Sed posuere
+    consectetur est at lobortis. Donec ullamcorper nulla non metus auctor
+    fringilla. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum
+    nibh, ut fermentum massa justo sit amet risus. Lorem ipsum dolor sit amet,
+    consectetur adipiscing elit. Vivamus sagittis lacus vel augue laoreet rutrum
+    faucibus dolor auctor.
+
+    """
+
+    lipsum_words = np.array(list(set(re.split(r'\s|[,.]', lipsum.lower()))))
+
+    @pytest.fixture
+    def ranx_scalar(self, rng):
+        return lambda size=30: np.array([
+            ' '.join(rng.choice(self.lipsum_words, 10))
+            for _ in range(np.prod(size, dtype=int))
+        ]).reshape(size)
+
+class TestGibbs(KernelTestBase):
+
+    @pytest.fixture
+    def kw(self):
+        return dict(derivable=True)
+
+class TestRescaling(KernelTestBase):
+
+    @pytest.fixture
+    def kw(self):
+        return dict(derivable=True, maxdim=np.inf)
+
+class TestGammaExp(KernelTestBase):
+
+    @pytest.fixture(params=[dict(), dict(gamma=2)])
+    def kw(self, request):
+        return request.param
+
+    @pytest.fixture
+    def psdeps(self):
+        return 1e3 * np.finfo(float).eps
+
+class TestBessel(KernelTestBase):
+
+    @pytest.fixture(params=[dict()] +
+        [dict(nu=nu) for nu in range(5)] +
+        [dict(nu=nu - 0.01) for nu in range(1, 5)] +
+        [dict(nu=nu + 0.01) for nu in range(5)] +
+        [dict(nu=nu + 0.5) for nu in range(5)])
+    def kw(self, request):
+        return request.param
+
+class TestCauchy(KernelTestBase):
+
+    @pytest.fixture(params=[
+        dict(alpha=a, beta=b)
+        for a in [0.001, 0.5, 0.999, 1, 1.001, 1.5, 1.999, 2]
+        for b in [0.001, 0.5, 1, 1.5, 2, 4, 8]
+    ])
+    def kw(self, request):
+        return request.param
+
+class TestCausalExpQuad(KernelTestBase):
+
+    @pytest.fixture(params=[0, 1, 2])
+    def kw(self, request):
+        return dict(alpha=request.param)
+
+class TestDecaying(KernelTestBase):
+
+    @pytest.fixture(params=[0, .5, 1, 2])
+    def kw(self, request):
+        return dict(alpha=request.param)
+
+    @pytest.fixture
+    def ranx_scalar(self, rng):
+        return lambda size=100: rng.uniform(0, 5, size)
+
+class TestStationaryFracBrownian(KernelTestBase):
+
+    @pytest.fixture(params=[0.1, 0.5, 1])
+    def kw(self, request):
+        return dict(H=request.param)
+
+class TestCircular(KernelTestBase):
+
+    @pytest.fixture(params=[dict(c=c, tau=t)
+        for c, t in [(0.1, 4), (0.5, 4), (0.5, 8)]])
+    def kw(self, request):
+        return request.param
+
+class TestMA(KernelTestBase):
+
+    rng = np.random.default_rng([2023, 8, 25, 0, 25])
+
+    @pytest.fixture(params=[
+        [], [0], [1], [1, 1], [1, -1], [2, 1], [1, 2, 3, 4, 5],
+        rng.standard_normal(30),
+    ])
+    def kw(self, request):
+        return dict(w=request.param)
+
+    @pytest.fixture
+    def ranx_scalar(self, rng):
+        return lambda size=100: rng.integers(0, 100, size)
+
+class TestAR(KernelTestBase):
+
+    @pytest.fixture(params=[dict(phi=phi, maxlag=100) for phi in [
             [], [0], [-0.5], [0.5], [0.9], [-0.9], [0.5, 0], [0, 0.5], 3 * [0] + [0.5],
         ]] + [dict(gamma=gamma, maxlag=100) for gamma in [
             [0], [1], [1, 0], [1, 0.5], [1, 0.5, 0.25], [1, -0.9],
@@ -799,29 +738,55 @@ test_kwargs = {
             ([], [1/10 + 1j, 1/10 + 2j]),
             ([], [1/10 + 1j, 1/10 + 1j, 1/2 + 2j]),
             ([1/10, 1/10, -1/2], [1/10 + 1j, 1/10 + 1j, 1/2 + 2j]),
-        ]],
-    ),
-    _kernels.Color: dict(kwargs_list=[dict(n=n) for n in [2, 3, 4, 5, 6, 20]]),
-    _kernels.BART: dict(kwargs_list=[
-        dict(
-            splits=_kernels.BART.splits_from_coord(rng.standard_normal((10, 1))),
-            alpha=a,
-            beta=b,
-            maxd=d,
-            reset=r,
-        )
+        ]])
+    def kw(self, request):
+        return request.param
+
+    @pytest.fixture
+    def ranx_scalar(self, rng):
+        return lambda size=100: rng.integers(0, 100, size)
+
+class TestColor(KernelTestBase):
+
+    @pytest.fixture(params=[2, 3, 4, 5, 6, 20])
+    def kw(self, request):
+        return dict(n=request.param)
+
+class TestBART(KernelTestBase):
+
+    @pytest.fixture(params=[
+        dict(alpha=a, beta=b, maxd=d, reset=r)
         for a in [0., 1., 0.95]
         for b in [0, 1, 2, 10]
         for d in [0, 1, 2, 3]
         for r in [None, (d + 1) // 2]
-    ]),
-    # TODO I need a way to use nd splits only with nd x
-}
+    ])
+    def kw(self, request, rng):
+        splits = rng.standard_normal((10, 1))
+        return dict(**request.param, splits=_kernels.BART.splits_from_coord(splits))
 
-for kernel in kernels:
-    factory_kw = test_kwargs.get(kernel, {})
-    newclass = KernelTestBase.make_subclass(kernel, **factory_kw)
-    exec('{} = newclass'.format(newclass.__name__))
+    # TODO I need a way to use nd splits only with nd x
+
+class TestSinc(KernelTestBase):
+
+    @pytest.fixture
+    def psdeps(self):
+        return 10 * np.finfo(float).eps
+
+# Make list of Kernel concrete subclasses.
+kernels = {}
+for name, obj in vars(_kernels).items():
+    if inspect.isclass(obj) and issubclass(obj, _Kernel.Kernel):
+        assert obj not in (_Kernel.Kernel, _Kernel.StationaryKernel, _Kernel.IsotropicKernel), obj
+        if name.startswith('_'):
+            continue
+        kernels[name] = obj
+
+# Create default test classes for all kernels without a test already
+for name, kernel in kernels.items():
+    testname = 'Test' + name
+    if testname not in globals():
+        globals()[testname] = types.new_class(testname, (KernelTestBase,))
 
 def check_matern_half_integer(rng, deriv):
     """
@@ -833,8 +798,8 @@ def check_matern_half_integer(rng, deriv):
         y = x.T
         k = _kernels.Matern(nu=p + 1/2)
         d = min(k.derivable, deriv)
-        r1 = k.diff(d, d)(x, y)
-        r2 = _kernels.Maternp(p=p).diff(d, d)(x, y)
+        r1 = k.transf('diff', d, d)(x, y)
+        r2 = _kernels.Maternp(p=p).transf('diff', d, d)(x, y)
         util.assert_allclose(r1, r2, rtol=1e-9, atol=1e-16)
 
 def test_matern_half_integer_0(rng):
@@ -852,7 +817,7 @@ def test_wiener_integral(rng):
     """
     x, y = np.abs(rng.standard_normal((2, 100)))
     r1 = _kernels.Wiener()(x, y)
-    r2 = _kernels.WienerIntegral().diff(1, 1)(x, y)
+    r2 = _kernels.WienerIntegral().transf('diff', 1, 1)(x, y)
     util.assert_allclose(r1, r2)
 
 def test_celerite_harmonic(rng):
@@ -875,7 +840,7 @@ def check_harmonic_continuous(rng, deriv, Q0, Qderiv=False):
     x = rng.standard_normal(100)
     results = []
     for Q in Qs:
-        kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).diff(deriv, deriv)(x[None, :], x[:, None])
+        kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).transf('diff', deriv, deriv)(x[None, :], x[:, None])
         if Qderiv:
             kernelf = jax.jacfwd(kernelf)
         results.append(kernelf(Q, x))
@@ -914,17 +879,6 @@ def test_default_override():
 def test_kernel_decorator_error():
     with pytest.raises(ValueError):
         _Kernel.kernel(1, 2)
-
-def test_transf_not_implemented():
-    meths = ['fourier', 'taylor']
-    kernel = _kernels.Maternp(p=0)
-    for meth in meths:
-        with pytest.raises(NotImplementedError):
-            getattr(kernel, meth)(True, None)
-        with pytest.raises(NotImplementedError):
-            getattr(kernel, meth)(None, True)
-        with pytest.raises(NotImplementedError):
-            getattr(kernel, meth)(True, True)
 
 def test_maxdim():
     _Kernel.Kernel(lambda x, y: 1, maxdim=None)
@@ -969,24 +923,25 @@ util.skip(TestMA, 'test_normalized')
 
 # TODO These are isotropic kernels with the input='soft' option. The problems
 # arise where x == y. => use make_jaxpr to debug?
-util.xfail(TestWendland, 'test_positive_deriv2_nd')
+util.xfail(TestWendland, 'test_positive_nd_2')
 util.xfail(TestWendland, 'test_double_diff_nd_second_chopped')
-util.xfail(TestWendland, 'test_continuous_at_zero_2')
-util.xfail(TestWendland, 'test_jit_deriv2_nd') # seen xpassing, precision?
-util.xfail(TestCausalExpQuad, 'test_positive_deriv2_nd')
+util.xfail(TestWendland, 'test_continuous_in_zero_2')
+util.xfail(TestWendland, 'test_jit_nd_2') # seen xpassing, precision?
+util.xfail(TestCausalExpQuad, 'test_positive_nd_2')
 util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped')
-util.xfail(TestCausalExpQuad, 'test_continuous_at_zero_2')
+util.xfail(TestCausalExpQuad, 'test_continuous_in_zero_2')
+util.xfail(TestCausalExpQuad, 'test_jit_nd_2') # it's a divergence of the variance; mistake in derivability?
 
 # TODO some xpass, likely numerical precision problems
-util.xfail(TestWendland, 'test_positive_deriv2') # normally xpasses
-util.xfail(TestCausalExpQuad, 'test_positive_deriv2') # NOT 1 - erf cancel
+util.xfail(TestWendland, 'test_positive_scalar_2') # normally xpasses
+util.xfail(TestCausalExpQuad, 'test_positive_scalar_2') # NOT 1 - erf cancel
 
 # TODO This one should not fail, it's a first derivative! Probably it's the
 # case D = 1 that fails because that's the maximum dimensionality. For some
 # reason I don't catch it without taking a derivative. => This explanation is
 # likely wrong since the jit test fails too, without checking positivity.
-util.xfail(TestWendland, 'test_positive_deriv_nd') # seen xpassing in the wild
-util.xfail(TestWendland, 'test_jit_deriv_nd') # seen xpassing, precision?
+util.xfail(TestWendland, 'test_positive_nd_1') # seen xpassing in the wild
+util.xfail(TestWendland, 'test_jit_nd_1') # seen xpassing, precision?
 
 # TODO These are not isotropic kernels, what is the problem?
 util.xfail(TestTaylor, 'test_double_diff_nd_second') # numerical precision

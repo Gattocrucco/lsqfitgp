@@ -30,8 +30,9 @@ from . import _patch_jax
 from . import _patch_gvar
 
 from ._GP import *
-from ._Kernel import (CrossKernel, Kernel, StationaryKernel, IsotropicKernel,
-    where, kernel, stationarykernel, isotropickernel)
+from ._Kernel import (CrossKernel, Kernel, CrossStationaryKernel,
+    StationaryKernel, CrossIsotropicKernel, IsotropicKernel, where, kernel,
+    stationarykernel, isotropickernel)
 from ._kernels import *
 from ._array import *
 from ._fit import *

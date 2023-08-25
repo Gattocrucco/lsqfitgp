@@ -77,13 +77,13 @@ class GPProcesses(_base.GPBase):
             self.keys = keys
             self.deriv = deriv
 
-    class _ProcKernelOp(_Proc):
+    class _ProcKernelTransf(_Proc):
         """A process defined by an operation on the kernel of another process"""
     
-        def __init__(self, proc, method, arg):
-            """proc = proc key, method = Kernel method, arg = argument to method"""
+        def __init__(self, proc, transfname, arg):
+            """proc = proc key, transfname = Kernel transfname, arg = argument to transf """
             self.proc = proc
-            self.method = method
+            self.transfname = transfname
             self.arg = arg
         
     _zerokernel = _Kernel.Zero()
@@ -238,7 +238,7 @@ class GPProcesses(_base.GPBase):
         self._procs[key] = self._ProcLinTransf(transf, procs, deriv)
 
     @_base.newself
-    def defkernelop(self, key, method, arg, proc):
+    def defkerneltransf(self, key, transfname, arg, proc):
         """
         
         Define a new process as the transformation of an existing one.
@@ -247,24 +247,21 @@ class GPProcesses(_base.GPBase):
         ----------
         key : hashable
             Key for the new process.
-        method : str
-            A method of `Kernel` taking two arguments which returns a
-            transformed kernel.
-        arg : object
-            A valid argument to the method.
+        transfname : hashable
+            A transformation recognized by the `~CrossKernel.transf` method
+            of the kernel.
+        arg :
+            A valid argument to the transformation.
         proc : hashable
             Key of the process to be transformed.
         
         """
         
-        if not hasattr(_Kernel.Kernel, method):
-            raise ValueError(f'Kernel has not attribute {method!r}')
         if key in self._procs:
             raise KeyError(f'process key {key!r} already used in GP')
         if proc not in self._procs:
             raise KeyError(f'process {proc!r} not found')
-                
-        self._procs[key] = self._ProcKernelOp(proc, method, arg)
+        self._procs[key] = self._ProcKernelTransf(proc, transfname, arg)
     
     def defprocderiv(self, key, deriv, proc):
         """
@@ -290,7 +287,7 @@ class GPProcesses(_base.GPBase):
 
         """
         deriv = _Deriv.Deriv(deriv)
-        return self.defkernelop(key, 'diff', deriv, proc)
+        return self.defkerneltransf(key, 'diff', deriv, proc)
     
     def defprocxtransf(self, key, transf, proc):
         """
@@ -317,7 +314,7 @@ class GPProcesses(_base.GPBase):
 
         """
         assert callable(transf)
-        return self.defkernelop(key, 'xtransf', transf, proc)
+        return self.defkerneltransf(key, 'xtransf', transf, proc)
     
     def defprocrescale(self, key, scalefun, proc):
         """
@@ -343,7 +340,7 @@ class GPProcesses(_base.GPBase):
 
         """
         assert callable(scalefun)
-        return self.defkernelop(key, 'rescale', scalefun, proc)
+        return self.defkerneltransf(key, 'rescale', scalefun, proc)
     
     def _crosskernel(self, xpkey, ypkey):
         
@@ -366,11 +363,11 @@ class GPProcesses(_base.GPBase):
             kernel = self._crosskernel_lintransf_any(xpkey, ypkey)
         elif isinstance(yp, self._ProcLinTransf):
             kernel = self._crosskernel_lintransf_any(ypkey, xpkey)._swap()
-        elif isinstance(xp, self._ProcKernelOp):
-            kernel = self._crosskernel_op_any(xpkey, ypkey)
-        elif isinstance(yp, self._ProcKernelOp):
-            kernel = self._crosskernel_op_any(ypkey, xpkey)._swap()
-        else:
+        elif isinstance(xp, self._ProcKernelTransf):
+            kernel = self._crosskernel_kerneltransf_any(xpkey, ypkey)
+        elif isinstance(yp, self._ProcKernelTransf):
+            kernel = self._crosskernel_kerneltransf_any(ypkey, xpkey)._swap()
+        else: # pragma: no cover
             raise TypeError(f'unrecognized process types {type(xp)!r} and {type(yp)!r}')
         
         # Save cache.
@@ -384,7 +381,7 @@ class GPProcesses(_base.GPBase):
         yp = self._procs[ypkey]
         
         if xp is yp:
-            return xp.kernel.diff(xp.deriv, xp.deriv)
+            return xp.kernel.transf('diff', xp.deriv, xp.deriv)
         else:
             return self._zerokernel
     
@@ -401,14 +398,14 @@ class GPProcesses(_base.GPBase):
             
             if not callable(factor):
                 factor = (lambda f: lambda _: f)(factor)
-            kernel = kernel.rescale(factor, None)
+            kernel = kernel.transf('rescale', factor, None)
             
             if kernelsum is self._zerokernel:
                 kernelsum = kernel
             else:
                 kernelsum += kernel
                 
-        return kernelsum.diff(xp.deriv, 0)
+        return kernelsum.transf('diff', xp.deriv, 0)
     
     def _crosskernel_lintransf_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]
@@ -416,11 +413,11 @@ class GPProcesses(_base.GPBase):
         
         kernels = [self._crosskernel(pk, ypkey) for pk in xp.keys]
         kernel = _Kernel.CrossKernel._nary(xp.transf, kernels, _Kernel.CrossKernel._side.LEFT)
-        kernel = kernel.diff(xp.deriv, 0)
+        kernel = kernel.transf('diff', xp.deriv, 0)
         
         return kernel
     
-    def _crosskernel_op_any(self, xpkey, ypkey):
+    def _crosskernel_kerneltransf_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]
         yp = self._procs[ypkey]
         
@@ -436,7 +433,6 @@ class GPProcesses(_base.GPBase):
         if basekernel is self._zerokernel:
             return self._zerokernel
         elif xp is yp:
-            return getattr(basekernel, xp.method)(xp.arg, xp.arg)
+            return basekernel.transf(xp.transfname, xp.arg)
         else:
-            return getattr(basekernel, xp.method)(xp.arg, None)
-    
+            return basekernel.transf(xp.transfname, xp.arg, None)

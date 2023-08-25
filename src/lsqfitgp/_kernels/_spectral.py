@@ -22,7 +22,7 @@ from jax import numpy as jnp
 from .. import _special
 from .._Kernel import stationarykernel
 
-@stationarykernel(derivable=True, forcekron=True)
+@stationarykernel(derivable=True, maxdim=1)
 def Cos(delta):
     """
     Cosine kernel.
@@ -150,7 +150,7 @@ def Color(delta, n=2):
     assert int(n) == n and n >= 2, n
     return (n - 1) * _special.expn_imag(n, delta).real
     
-@stationarykernel(forcekron=True, derivable=True, input='soft')
+@stationarykernel(derivable=True, input='soft', maxdim=1)
 def Sinc(delta):
     """
     Sinc kernel.

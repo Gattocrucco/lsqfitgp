@@ -24,7 +24,7 @@ from . import _kernel
 def where(condfun, kernel1, kernel2, dim=None):
     """
 
-    Make the kernel of a process defined as a condition.
+    Make the kernel of the choice between two independent processes.
     
     Make a kernel(x, y) that yields:
     
@@ -40,19 +40,19 @@ def where(condfun, kernel1, kernel2, dim=None):
         Function that is applied on an array of points and must return
         a boolean array with the same shape.
     kernel1 : Kernel
-        Kernel of the process used where condfun yields True.
+        Kernel of the process used where `condfun` yields ``True``.
     kernel2 : Kernel
-        Kernel of the process used where condfun yields False.
+        Kernel of the process used where `condfun` yields ``False``.
     dim : str or None
-        If specified, when the input arrays are structured, ``condfun`` is
-        applied only to the field ``dim``. If the field has a shape, the
-        array passed to ``condfun`` still has ``dim`` as explicit field.
+        If specified, when the input arrays are structured, `condfun` is
+        applied only to the field `dim`. If the field has a shape, the
+        array passed to `condfun` still has `dim` as explicit field.
     
     Returns
     -------
     kernel : Kernel
-        If both kernel1 and kernel2 are IsotropicKernel, the class is
-        IsotropicKernel.
+        If both `kernel1` and `kernel2` are `IsotropicKernel`, the class is
+        `IsotropicKernel`.
     
     """
     assert isinstance(kernel1, _kernel.Kernel)
@@ -94,10 +94,6 @@ def where(condfun, kernel1, kernel2, dim=None):
             return jnp.where(xcond ^ ycond, 0, r)
         return kernel
     
-    # TODO when I implement double callable derivable, propagate it
-    # properly by overwriting it in the returned object since _binary will
-    # require both kernels to be derivable on a given point.
-    
     return kernel1._binary(kernel2, kernel_op)
 
 # TODO add a function `choose` to extend `where`. Interface:
@@ -106,3 +102,6 @@ def where(condfun, kernel1, kernel2, dim=None):
 # choose(lambda comp: comp, [kernel0, kernel1, kernel2, ...], dim='comp')
 # example where `comp` is a string field, and without using `dim`:
 # choose(lambda x: x['comp'], {'a': kernela, 'b': kernelb})
+
+# TODO consider making an extension of `transf` that allows multi-kernel
+# operations.

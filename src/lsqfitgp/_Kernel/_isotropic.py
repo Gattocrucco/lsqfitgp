@@ -28,12 +28,37 @@ from . import _crosskernel
 from . import _kernel
 from . import _stationary
 
-class IsotropicKernel(_stationary.StationaryKernel):
+class CrossIsotropicKernel(_stationary.CrossStationaryKernel):
+    """
     
-    # I thought about adding a `distance` parameter to pick arbitrary distances,
-    # but since the distance definition can not be changed arbitrarily, it is
-    # better to keep this class for the 2-norm and eventually add another if
-    # needed.
+    Subclass of `CrossStationaryKernel` for isotropic kernels.
+
+    Parameters
+    ----------
+    kernel : callable
+        A function taking one argument ``r2`` which is the squared distance
+        between x and y, plus optionally keyword arguments.
+    input : {'squared', 'hard', 'soft', 'raw'}
+        If 'squared' (default), ``kernel`` is passed the squared distance.
+        If 'hard', it is passed the distance (not squared). If 'soft', it
+        is passed the distance, and the distance of equal points is a small
+        number instead of zero. If 'raw', the kernel is passed both points
+        separately like non-stationary kernels.
+    scale : scalar
+        The distance is divided by ``scale``.
+    **kw
+        Additional keyword arguments are passed to the `Kernel` init.
+    
+    Notes
+    -----
+    The 'soft' option will cause problems with second derivatives in more
+    than one dimension.
+            
+    """
+     
+    # TODO add a `distance` parameter to pick arbitrary distances, but since the
+    # distance definition can not be changed arbitrarily, it may be better to
+    # keep this class for the 2-norm and eventually add another if needed.
     
     # TODO it is not efficient that the distance is computed separately for
     # each kernel in a kernel expression, but probably it would be difficult
@@ -43,32 +68,6 @@ class IsotropicKernel(_stationary.StationaryKernel):
     # called puts the distance there. Possible name: _cache.
     
     def __new__(cls, kernel, *, input='squared', scale=None, **kw):
-        """
-        
-        Subclass of :class:`Kernel` for isotropic kernels.
-    
-        Parameters
-        ----------
-        kernel : callable
-            A function taking one argument ``r2`` which is the squared distance
-            between x and y, plus optionally keyword arguments.
-        input : {'squared', 'hard', 'soft', 'raw'}
-            If 'squared' (default), ``kernel`` is passed the squared distance.
-            If 'hard', it is passed the distance (not squared). If 'soft', it
-            is passed the distance, and the distance of equal points is a small
-            number instead of zero. If 'raw', the kernel is passed both points
-            separately like non-stationary kernels.
-        scale : scalar
-            The distance is divided by ``scale``.
-        **kw
-            Additional keyword arguments are passed to the `Kernel` init.
-        
-        Notes
-        -----
-        The 'soft' option will cause problems with second derivatives in more
-        than one dimension.
-                
-        """
         if input == 'raw':
             return _kernel.Kernel.__new__(cls, kernel, scale=scale, **kw)
             
@@ -97,19 +96,45 @@ class IsotropicKernel(_stationary.StationaryKernel):
         
         return _kernel.Kernel.__new__(cls, function, **kw)
 
+class IsotropicKernel(CrossIsotropicKernel, _stationary.StationaryKernel):
+    pass
+
 _crosskernel.IsotropicKernel = IsotropicKernel
 
+# TODO put Constant here as superclass of Zero? Constant needs it Cross
+# version because it makes a difference, transf is not trivial
+
 class Zero(IsotropicKernel):
+    """
+
+    Represents a kernel that unconditionally yields zero.
+
+    """
 
     def __new__(cls):
         self = object.__new__(cls)
-        self._kernel = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
-        self._minderivable = (sys.maxsize, sys.maxsize)
-        self._maxderivable = (sys.maxsize, sys.maxsize)
         self.initargs = None
-        self._maxdim = sys.maxsize
+        self._core = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
+        self._derivable = sys.maxsize, sys.maxsize
+        self._maxdim = sys.maxsize, sys.maxsize
         return self
     
     _swap = lambda self: self
-    diff = lambda self, xderiv, yderiv: self
     batch = lambda self, maxnbytes: self
+    transf = lambda self, transfname, *args: self
+
+    def __add__(self, other):
+        if isinstance(other, _crosskernel.CrossKernel) or _util.is_numerical_scalar(other):
+            return other
+        else:
+            return NotImplemented
+
+    __radd__ = __add__
+
+    def __mul__(self, other):
+        if isinstance(other, _crosskernel.CrossKernel) or _util.is_numerical_scalar(other):
+            return self
+        else:
+            return NotImplemented
+
+    __rmul__ = __mul__

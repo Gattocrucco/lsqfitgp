@@ -18,12 +18,12 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import functools
-import textwrap
 
 import jax
 from jax import numpy as jnp
 
 from .. import _jaxext
+from .. import _utils
 
 class GPBase:
 
@@ -93,16 +93,12 @@ def newself(meth):
         return self
 
     # append return value description to docstring
-    doctail = textwrap.dedent("""
+    doctail = """\
     Returns
     -------
     gp : GP
         A new GP object with the applied modifications.
-    """)
-    methdoc = textwrap.dedent(meth.__doc__)
-    lineend = meth.__doc__.find('\n')
-    indented_lineend = methdoc.find('\n')
-    indent = meth.__doc__[:indented_lineend - lineend]
-    newmeth.__doc__ = textwrap.indent(methdoc + doctail, indent)
+    """
+    newmeth.__doc__ = _utils.append_to_docstring(meth.__doc__, doctail)
 
     return newmeth

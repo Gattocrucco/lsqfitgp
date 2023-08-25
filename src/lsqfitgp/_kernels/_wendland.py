@@ -27,7 +27,7 @@ def _wendland_derivable(k=0, **_):
 
 def _wendland_maxdim(k=0, alpha=1):
     with _jaxext.skipifabstract():
-        return jnp.floor(2 * alpha - 1)
+        return int(jnp.floor(2 * alpha - 1))
 
 @isotropickernel(input='soft', derivable=_wendland_derivable, maxdim=_wendland_maxdim)
 def Wendland(r, k=0, alpha=1):
