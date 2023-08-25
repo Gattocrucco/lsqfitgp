@@ -275,3 +275,5 @@ correlations it is necessary to put the process index in the domain such that
 kernel can manipulate it. We did this at the end of :ref:`multiout` when we
 introduced an anticorrelation between the random walk components by multiplying
 the kernel with ``lgp.Categorical(dim='coord', cov=[[1, -0.99], [-0.99, 1]])``.
+
+.. TODO this is too long for a tutorial. Do just the easy version.
