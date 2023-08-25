@@ -125,13 +125,14 @@ used to make a kernel that switches between two kernels based on a local
 condition.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.where">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">where</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">condfun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel.py#L980-L1055"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.where" title="Link to this definition">¶</a></dt>
-<dd><p>Make a kernel(x, y) that yields:</p>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">where</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">condfun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_where.py#L24-L97"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.where" title="Link to this definition">¶</a></dt>
+<dd><p>Make the kernel of the choice between two independent processes.</p>
+<p>Make a kernel(x, y) that yields:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>kernel1(x, y) where condfun(x) and condfun(y) are True</p></li>
-<li><p>kernel2(x, y) where condfun(x) and condfun(y) are False</p></li>
-<li><p>zero where condfun(x) is different from condfun(y)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel1(x,</span> <span class="pre">y)</span></code> where <code class="docutils literal notranslate"><span class="pre">condfun(x)</span> <span class="pre">&amp;</span> <span class="pre">condfun(y)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel2(x,</span> <span class="pre">y)</span></code> where <code class="docutils literal notranslate"><span class="pre">~condfun(x)</span> <span class="pre">&amp;</span> <span class="pre">~condfun(y)</span></code></p></li>
+<li><p>zero where <code class="docutils literal notranslate"><span class="pre">condfun(x)</span> <span class="pre">^</span> <span class="pre">condfun(y)</span></code></p></li>
 </ul>
 </div></blockquote>
 <dl class="field-list simple">
@@ -140,20 +141,20 @@ condition.</p>
 <dt><strong>condfun</strong><span class="classifier">callable</span></dt><dd><p>Function that is applied on an array of points and must return
 a boolean array with the same shape.</p>
 </dd>
-<dt><strong>kernel1</strong><span class="classifier">Kernel</span></dt><dd><p>Kernel used where condfun yields True.</p>
+<dt><strong>kernel1</strong><span class="classifier">Kernel</span></dt><dd><p>Kernel of the process used where <code class="xref py py-obj docutils literal notranslate"><span class="pre">condfun</span></code> yields <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </dd>
-<dt><strong>kernel2</strong><span class="classifier">Kernel</span></dt><dd><p>Kernel used where condfun yields False.</p>
+<dt><strong>kernel2</strong><span class="classifier">Kernel</span></dt><dd><p>Kernel of the process used where <code class="xref py py-obj docutils literal notranslate"><span class="pre">condfun</span></code> yields <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
 </dd>
-<dt><strong>dim</strong><span class="classifier">str or None</span></dt><dd><p>If specified, when the input arrays are structured, <code class="docutils literal notranslate"><span class="pre">condfun</span></code> is
-applied only to the field <code class="docutils literal notranslate"><span class="pre">dim</span></code>. If the field has a shape, the
-array passed to <code class="docutils literal notranslate"><span class="pre">condfun</span></code> still has <code class="docutils literal notranslate"><span class="pre">dim</span></code> as explicit field.</p>
+<dt><strong>dim</strong><span class="classifier">str or None</span></dt><dd><p>If specified, when the input arrays are structured, <code class="xref py py-obj docutils literal notranslate"><span class="pre">condfun</span></code> is
+applied only to the field <code class="xref py py-obj docutils literal notranslate"><span class="pre">dim</span></code>. If the field has a shape, the
+array passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">condfun</span></code> still has <code class="xref py py-obj docutils literal notranslate"><span class="pre">dim</span></code> as explicit field.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt>Kernel</dt><dd><p>If both kernel1 and kernel2 are IsotropicKernel, the class is
-IsotropicKernel.</p>
+<dt><strong>kernel</strong><span class="classifier">Kernel</span></dt><dd><p>If both <code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel1</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel2</span></code> are <a class="reference internal" href="kernel.html#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a>, the class is
+<a class="reference internal" href="kernel.html#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
@@ -188,7 +189,7 @@ IsotropicKernel.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

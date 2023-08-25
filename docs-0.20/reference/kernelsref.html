@@ -654,7 +654,7 @@ it is filled with a very large value.</p>
 <img alt="../_images/kernelsref-BART-samples.png" src="../_images/kernelsref-BART-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.BagOfWords">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">BagOfWords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L285-L314"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BagOfWords" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">BagOfWords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L288-L317"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BagOfWords" title="Link to this definition">¶</a></dt>
 <dd><p>Bag of words kernel.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}k(x, y) &amp;= \sum_{w \in \text{words}} c_w(x) c_w(y), \\
@@ -695,17 +695,17 @@ dimensions and derived up to <span class="math notranslate nohighlight">\(\lfloo
 <img alt="../_images/kernelsref-BrownianBridge-samples.png" src="../_images/kernelsref-BrownianBridge-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Categorical">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Categorical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L218-L239"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Categorical" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Categorical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L221-L242"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Categorical" title="Link to this definition">¶</a></dt>
 <dd><p>Categorical kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \texttt{cov}[x, y]\]</div>
-<p>A kernel over integers from 0 to N-1. The parameter <code class="docutils literal notranslate"><span class="pre">cov</span></code> is the covariance
+<p>A kernel over integers from 0 to N-1. The parameter <code class="xref py py-obj docutils literal notranslate"><span class="pre">cov</span></code> is the covariance
 matrix of the values.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Cauchy">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Cauchy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L334-L365"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Cauchy" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Cauchy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L337-L368"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Cauchy" title="Link to this definition">¶</a></dt>
 <dd><p>Generalized Cauchy kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(r) = \left(1 + \frac{r^\alpha}{\beta} \right)^{-\beta/\alpha},
@@ -725,7 +725,7 @@ for <span class="math notranslate nohighlight">\(\beta\to 0\)</span> to <code cl
 <img alt="../_images/kernelsref-Cauchy-samples.png" src="../_images/kernelsref-Cauchy-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.CausalExpQuad">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CausalExpQuad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L370-L387"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CausalExpQuad" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CausalExpQuad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L373-L390"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CausalExpQuad" title="Link to this definition">¶</a></dt>
 <dd><p>Causal exponential quadratic kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(r) = \big(1 - \operatorname{erf}(\alpha r/4)\big)
@@ -812,7 +812,7 @@ another kernel to introduce anticorrelations.</p>
 <img alt="../_images/kernelsref-Cos-samples.png" src="../_images/kernelsref-Cos-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Decaying">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Decaying</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L389-L407"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Decaying" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Decaying</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L392-L410"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Decaying" title="Link to this definition">¶</a></dt>
 <dd><p>Decaying kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) =
@@ -839,7 +839,7 @@ strongly suppressed over a certain distance.</p>
 <img alt="../_images/kernelsref-ExpQuad-samples.png" src="../_images/kernelsref-ExpQuad-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Expon">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Expon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L264-L281"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Expon" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Expon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L267-L284"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Expon" title="Link to this definition">¶</a></dt>
 <dd><p>Exponential kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(\Delta) = \exp(-|\Delta|)\]</div>
@@ -885,7 +885,7 @@ gets closer to 2 the variance of the non-derivable component goes to zero.</p>
 <img alt="../_images/kernelsref-GammaExp-samples.png" src="../_images/kernelsref-GammaExp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Gibbs">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x139cc18a0&gt;</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L164-L193"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Gibbs" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Gibbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scalefun=&lt;function</span> <span class="pre">&lt;lambda&gt;</span> <span class="pre">at</span> <span class="pre">0x134f789a0&gt;</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L167-L196"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Gibbs" title="Link to this definition">¶</a></dt>
 <dd><p>Gibbs kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
@@ -937,7 +937,7 @@ Astronomical Time Series</em>.</p>
 <img alt="../_images/kernelsref-Harmonic-samples.png" src="../_images/kernelsref-Harmonic-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.HoleEffect">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">HoleEffect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L318-L329"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.HoleEffect" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">HoleEffect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L321-L332"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.HoleEffect" title="Link to this definition">¶</a></dt>
 <dd><p>Hole effect kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(\Delta) = (1 - \Delta) \exp(-\Delta)\]</div>
@@ -960,7 +960,7 @@ Astronomical Time Series</em>.</p>
 <img alt="../_images/kernelsref-Linear-samples.png" src="../_images/kernelsref-Linear-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Log">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L409-L419"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Log" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L412-L422"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Log" title="Link to this definition">¶</a></dt>
 <dd><p>Log kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(r) = \log(1 + r) / r\]</div>
@@ -1024,7 +1024,7 @@ x = \sqrt{2\nu} r\end{split}\]</div>
 <img alt="../_images/kernelsref-Maternp-samples.png" src="../_images/kernelsref-Maternp-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.NNKernel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">NNKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L127-L162"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.NNKernel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">NNKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L127-L165"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.NNKernel" title="Link to this definition">¶</a></dt>
 <dd><p>Neural network kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \frac 2 \pi
@@ -1063,7 +1063,7 @@ is provided as <a class="reference internal" href="#lsqfitgp.Expon" title="lsqfi
 <img alt="../_images/kernelsref-OrnsteinUhlenbeck-samples.png" src="../_images/kernelsref-OrnsteinUhlenbeck-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Periodic">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Periodic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outerscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L195-L216"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Periodic" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Periodic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outerscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L198-L219"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Periodic" title="Link to this definition">¶</a></dt>
 <dd><p>Periodic Gaussian kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(\Delta) = \exp \left(
@@ -1072,9 +1072,9 @@ is provided as <a class="reference internal" href="#lsqfitgp.Expon" title="lsqfi
 \right)^2
 \right)\]</div>
 <p>A Gaussian kernel over a transformed periodic space. It represents a
-periodic process. The usual <code class="docutils literal notranslate"><span class="pre">scale</span></code> parameter sets the period, with the
-default <code class="docutils literal notranslate"><span class="pre">scale=1</span></code> giving a period of 2π, while the <code class="docutils literal notranslate"><span class="pre">outerscale</span></code> parameter
-sets the length scale of the correlations.</p>
+periodic process. The usual <code class="xref py py-obj docutils literal notranslate"><span class="pre">scale</span></code> parameter sets the period, with the
+default <code class="docutils literal notranslate"><span class="pre">scale=1</span></code> giving a period of 2π, while <code class="xref py py-obj docutils literal notranslate"><span class="pre">outerscale</span></code> sets the
+length scale of the correlations.</p>
 <p>Reference: Rasmussen and Williams (2006, p. 92).</p>
 </dd></dl>
 
@@ -1101,16 +1101,16 @@ it becomes white noise. Derivable one time.</p>
 <img alt="../_images/kernelsref-Pink-samples.png" src="../_images/kernelsref-Pink-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Rescaling">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Rescaling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stdfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L241-L262"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Rescaling" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Rescaling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stdfun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L244-L265"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Rescaling" title="Link to this definition">¶</a></dt>
 <dd><p>Outer product kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \texttt{stdfun}(x) \texttt{stdfun}(y)\]</div>
-<p>A totally correlated kernel with arbitrary variance. Parameter <code class="docutils literal notranslate"><span class="pre">stdfun</span></code>
+<p>A totally correlated kernel with arbitrary variance. Parameter <code class="xref py py-obj docutils literal notranslate"><span class="pre">stdfun</span></code>
 must be a function that takes <code class="docutils literal notranslate"><span class="pre">x</span></code> or <code class="docutils literal notranslate"><span class="pre">y</span></code> and computes the standard
 deviation at the point. It can yield negative values; points with the same
-sign of <code class="docutils literal notranslate"><span class="pre">fun</span></code> will be totally correlated, points with different sign will
+sign of <code class="xref py py-obj docutils literal notranslate"><span class="pre">stdfun</span></code> will be totally correlated, points with different sign will
 be totally anticorrelated. Use this kernel to modulate the variance of
-other kernels. By default <code class="docutils literal notranslate"><span class="pre">stdfun</span></code> returns a constant, so it is equivalent
+other kernels. By default <code class="xref py py-obj docutils literal notranslate"><span class="pre">stdfun</span></code> returns a constant, so it is equivalent
 to <a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Constant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Constant</span></code></a>.</p>
 </dd></dl>
 
@@ -1140,7 +1140,7 @@ to <a class="reference internal" href="#lsqfitgp.Constant" title="lsqfitgp.Const
 <img alt="../_images/kernelsref-StationaryFracBrownian-samples.png" src="../_images/kernelsref-StationaryFracBrownian-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Taylor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Taylor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L421-L445"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Taylor" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Taylor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_basic.py#L424-L448"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Taylor" title="Link to this definition">¶</a></dt>
 <dd><p>Exponential-like power series kernel.</p>
 <div class="math notranslate nohighlight">
 \[k(x, y) = \sum_{k=0}^\infty \frac {x^k}{k!} \frac {y^k}{k!}
@@ -1210,7 +1210,7 @@ kernel can be used in is <span class="math notranslate nohighlight">\(\lfloor 2\
 <img alt="../_images/kernelsref-WienerIntegral-samples.png" src="../_images/kernelsref-WienerIntegral-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Zeta">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Zeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_zeta.py#L31-L83"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Zeta" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Zeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_zeta.py#L34-L82"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Zeta" title="Link to this definition">¶</a></dt>
 <dd><p>Zeta kernel.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}k(\Delta)
@@ -1228,41 +1228,11 @@ independent priors on the coefficients with mean zero and variance
 <a class="reference internal" href="#lsqfitgp.Matern" title="lsqfitgp.Matern"><code class="xref py py-class docutils literal notranslate"><span class="pre">Matern</span></code></a>, the process is <span class="math notranslate nohighlight">\(\lceil\nu\rceil - 1\)</span> times
 derivable, and the highest derivative is continuous iff <span class="math notranslate nohighlight">\(\nu\bmod 1
 \ge 1/2\)</span>.</p>
-<p>Note that the <span class="math notranslate nohighlight">\(k = 0\)</span> term is not included in the summation, so the
-mean of the process over one period is forced to be zero.</p>
+<p>The <span class="math notranslate nohighlight">\(k = 0\)</span> term is not included in the summation, so the mean of the
+process over one period is forced to be zero.</p>
+<p>This kernel defines the transformation <code class="docutils literal notranslate"><span class="pre">'fourier'</span></code> to be used with
+<a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a>.</p>
 <p>Reference: Petrillo (2022).</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="lsqfitgp.Zeta.fourier">
-<span class="sig-name descname"><span class="pre">fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doy</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_zeta.py#L102-L135"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Zeta.fourier" title="Link to this definition">¶</a></dt>
-<dd><p>Compute the Fourier series of the kernel.</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}h(k, y) = \begin{cases}
-    \frac2T \int_0^T \mathrm dx\, k(x, y)
-    \cos\left(\frac{2\pi}T \frac k2 x\right)
-    &amp; \text{if $k$ is even} \\
-    \frac2T \int_0^T \mathrm dx\, k(x, y)
-    \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
-    &amp; \text{if $k$ is odd}
-\end{cases}\end{split}\]</div>
-<p>The period <span class="math notranslate nohighlight">\(T\)</span> is implicit in the definition of the kernel.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>dox, doy</strong><span class="classifier">bool</span></dt><dd><p>Specify if to compute the series w.r.t. x, y or both. If both are
-False, this is a no-op.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>h</strong><span class="classifier">Kernel-like</span></dt><dd><p>A Kernel-like object computing the Fourier series. If dox and
-doy are equal, it is a Kernel.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 <img alt="../_images/kernelsref-Zeta.png" src="../_images/kernelsref-Zeta.png" />
@@ -1296,7 +1266,7 @@ doy are equal, it is a Kernel.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

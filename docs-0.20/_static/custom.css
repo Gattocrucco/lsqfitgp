@@ -28,6 +28,10 @@ dl.py.class, dl.py.function {
     margin-bottom: 2.5em;
 }
 
+h2 + dl.py.class, h2 + dl.py.function {
+    margin-top: 1em;
+}
+
 dl.py.class > dd > p:first-child, dl.py.function > dd > p:first-child {
     margin-top: 0.8em;
 }

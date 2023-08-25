@@ -114,7 +114,6 @@
  | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
  | <a href="#W"><strong>W</strong></a>
- | <a href="#X"><strong>X</strong></a>
  | <a href="#Z"><strong>Z</strong></a>
  
 </div>
@@ -149,7 +148,7 @@
 </li>
       <li><a href="reference/bayestree.html#lsqfitgp.bayestree.bart">bart (class in lsqfitgp.bayestree)</a>
 </li>
-      <li><a href="reference/kernel.html#lsqfitgp.Kernel.batch">batch() (lsqfitgp.Kernel method)</a>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossKernel.batch">batch() (lsqfitgp.CrossKernel method)</a>
 </li>
       <li><a href="reference/bayestree.html#lsqfitgp.bayestree.bcf">bcf (class in lsqfitgp.bayestree)</a>
 </li>
@@ -183,10 +182,10 @@
 </li>
       <li><a href="reference/kernelsref.html#lsqfitgp.Circular">Circular (class in lsqfitgp)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/kernelsref.html#lsqfitgp.Color">Color (class in lsqfitgp)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/kernelsref.html#lsqfitgp.Constant">Constant (class in lsqfitgp)</a>
 </li>
       <li><a href="reference/copula.html#lsqfitgp.copula.Copula">Copula (class in lsqfitgp.copula)</a>
@@ -194,6 +193,12 @@
       <li><a href="reference/kernelsref.html#lsqfitgp.BART.correlation">correlation() (lsqfitgp.BART class method)</a>
 </li>
       <li><a href="reference/kernelsref.html#lsqfitgp.Cos">Cos (class in lsqfitgp)</a>
+</li>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossIsotropicKernel">CrossIsotropicKernel (class in lsqfitgp)</a>
+</li>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossKernel">CrossKernel (class in lsqfitgp)</a>
+</li>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossStationaryKernel">CrossStationaryKernel (class in lsqfitgp)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -211,7 +216,7 @@
 </li>
       <li><a href="reference/gp.html#lsqfitgp.GP.decompose">decompose() (lsqfitgp.GP class method)</a>
 </li>
-      <li><a href="reference/gp.html#lsqfitgp.GP.defkernelop">defkernelop() (lsqfitgp.GP method)</a>
+      <li><a href="reference/gp.html#lsqfitgp.GP.defkerneltransf">defkerneltransf() (lsqfitgp.GP method)</a>
 </li>
       <li><a href="reference/gp.html#lsqfitgp.GP.defproc">defproc() (lsqfitgp.GP method)</a>
 </li>
@@ -228,8 +233,6 @@
       <li><a href="reference/gp.html#lsqfitgp.GP.defprocxtransf">defprocxtransf() (lsqfitgp.GP method)</a>
 </li>
       <li><a href="reference/deriv.html#lsqfitgp.Deriv">Deriv (class in lsqfitgp)</a>
-</li>
-      <li><a href="reference/kernel.html#lsqfitgp.Kernel.diff">diff() (lsqfitgp.Kernel method)</a>
 </li>
       <li><a href="reference/copula.html#lsqfitgp.copula.dirichlet">dirichlet (class in lsqfitgp.copula)</a>
 </li>
@@ -261,12 +264,8 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="reference/kernel.html#lsqfitgp.Kernel.fourier">fourier() (lsqfitgp.Kernel method)</a>
-
-      <ul>
-        <li><a href="reference/kernelsref.html#lsqfitgp.Zeta.fourier">(lsqfitgp.Zeta method)</a>
+      <li><a href="reference/kernel.html#lsqfitgp.Kernel.forcekron">forcekron() (lsqfitgp.Kernel method)</a>
 </li>
-      </ul></li>
       <li><a href="reference/kernelsref.html#lsqfitgp.FracBrownian">FracBrownian (class in lsqfitgp)</a>
 </li>
   </ul></td>
@@ -320,6 +319,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/kernelsref.html#lsqfitgp.Harmonic">Harmonic (class in lsqfitgp)</a>
+</li>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossKernel.has_transf">has_transf() (lsqfitgp.CrossKernel class method)</a>
 </li>
       <li><a href="reference/kernelsref.html#lsqfitgp.HoleEffect">HoleEffect (class in lsqfitgp)</a>
 </li>
@@ -481,9 +482,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/raniter.html#lsqfitgp.raniter">raniter() (in module lsqfitgp)</a>
 </li>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossKernel.register_coretransf">register_coretransf() (lsqfitgp.CrossKernel class method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="reference/kernel.html#lsqfitgp.Kernel.rescale">rescale() (lsqfitgp.Kernel method)</a>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossKernel.register_transf">register_transf() (lsqfitgp.CrossKernel class method)</a>
+</li>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossKernel.register_xtransf">register_xtransf() (lsqfitgp.CrossKernel class method)</a>
 </li>
       <li><a href="reference/kernelsref.html#lsqfitgp.Rescaling">Rescaling (class in lsqfitgp)</a>
 </li>
@@ -521,7 +526,9 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="reference/kernel.html#lsqfitgp.Kernel.taylor">taylor() (lsqfitgp.Kernel method)</a>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossKernel.transf">transf() (lsqfitgp.CrossKernel method)</a>
+</li>
+      <li><a href="reference/kernel.html#lsqfitgp.CrossKernel.transf_help">transf_help() (lsqfitgp.CrossKernel class method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -556,14 +563,6 @@
   </ul></td>
 </tr></table>
 
-<h2 id="X">X</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="reference/kernel.html#lsqfitgp.Kernel.xtransf">xtransf() (lsqfitgp.Kernel method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
 <h2 id="Z">Z</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -591,7 +590,7 @@
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
     </div>
