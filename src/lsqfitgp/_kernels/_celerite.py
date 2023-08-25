@@ -31,7 +31,7 @@ def _Celerite_derivable(**kw):
     else:
         return False
 
-@stationarykernel(derivable=_Celerite_derivable, input='hard', maxdim=1)
+@stationarykernel(derivable=_Celerite_derivable, input='abs', maxdim=1)
 def Celerite(delta, gamma=1, B=0):
     """
     Celerite kernel.

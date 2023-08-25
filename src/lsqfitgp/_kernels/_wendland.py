@@ -29,7 +29,7 @@ def _wendland_maxdim(k=0, alpha=1):
     with _jaxext.skipifabstract():
         return int(jnp.floor(2 * alpha - 1))
 
-@isotropickernel(input='soft', derivable=_wendland_derivable, maxdim=_wendland_maxdim)
+@isotropickernel(input='posabs', derivable=_wendland_derivable, maxdim=_wendland_maxdim)
 def Wendland(r, k=0, alpha=1):
     """
     Wendland kernel.
@@ -105,7 +105,7 @@ def Wendland(r, k=0, alpha=1):
 #    let the user apply it to wendland => the problem is that the user would
 #    need to be careful with positiveness, while wendland checks it for him
 
-@stationarykernel(derivable=1, maxdim=1, input='soft')
+@stationarykernel(derivable=1, maxdim=1, input='posabs')
 def Circular(delta, tau=4, c=1/2):
     """
     Circular kernel.

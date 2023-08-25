@@ -27,12 +27,12 @@ from .. import _Kernel
 
 __all__ = ['Zeta']
 
-def zeta_derivable(nu=None):
+def zeta_derivable(*, nu):
     with _jaxext.skipifabstract():
-        return max(0, jnp.ceil(nu) - 1)
+        return int(max(0, jnp.ceil(nu) - 1))
 
-@_Kernel.stationarykernel(maxdim=1, derivable=zeta_derivable, saveargs=True)
-def Zeta(delta, nu=None):
+@_Kernel.stationarykernel(maxdim=1, derivable=zeta_derivable)
+def Zeta(delta, *, nu):
     r"""
     
     Zeta kernel.

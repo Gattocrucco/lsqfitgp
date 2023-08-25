@@ -44,8 +44,6 @@ class Kernel(_crosskernel.CrossKernel):
     ----------
     derivable : int or None
         The degree of differentiability of the function.
-    maxdim : int or None
-        Maximum dimensionality of the function input.
 
     See also
     --------
@@ -61,12 +59,7 @@ class Kernel(_crosskernel.CrossKernel):
     def derivable(self):
         assert self._derivable[0] == self._derivable[1]
         return self._derivable[0]
-    
-    @property
-    def maxdim(self):
-        assert self._maxdim[0] == self._maxdim[1]
-        return self._maxdim[0]
-        
+            
     def _binary(self, value, op):
         if _util.is_numerical_scalar(value):
             with _jaxext.skipifabstract():
@@ -89,17 +82,20 @@ class Kernel(_crosskernel.CrossKernel):
         """
 
         core = lambda x, y, core=self._core: _util.prod_recurse_dtype(core, x, y)
-        return self._clone(core=core, cls=__class__)
-
-    # TODO make some unit tests checking that Kernel classes are
-    # propagated properly
+        self = self._clone(core=core, cls=__class__)
+        return self
 
 _crosskernel.Kernel = Kernel
 
 def _asfloat(x):
     return x.astype(_jaxext.float_type(x))
 
-@Kernel.register_coretransf
+def rescale_argparser(fun):
+    if not callable(fun):
+        raise ValueError("argument to 'rescale' must be a function")
+    return fun
+
+@functools.partial(Kernel.register_coretransf, argparser=rescale_argparser)
 def rescale(core, xfun, yfun):
     r"""
     
@@ -154,25 +150,27 @@ def diff(self, xderiv, yderiv):
         if derivability is not None:
             # best case: only single variable order matters
             if deriv.max > derivability:
-                raise RuntimeError(f'maximum single-variable derivative order '
+                raise ValueError(f'maximum single-variable derivative order '
                     f'{max} greater than kernel derivability {derivability} '
                     f'for argument {i}')
             # worst case: total derivation order matters
             if deriv.order > derivability:
-                warnings.warn(f'total derivative order {order} greater than '
-                    f'kernel derivability {derivability} for argument {i}')
+                warnings.warn(f'total derivative order {deriv.order} greater '
+                    f'than kernel derivability {derivability} for argument {i}')
     
     # Check derivatives are ok for x and y.
-    def check(x, y):
+    def check_arg(x, deriv):
         if x.dtype.names is not None:
-            for deriv in xderiv, yderiv:
-                for dim in deriv:
-                    if dim not in x.dtype.names:
-                        raise ValueError(f'derivative along missing field {dim!r}')
-                    if not jnp.issubdtype(x.dtype.fields[dim][0], jnp.number):
-                        raise TypeError(f'derivative along non-numeric field {dim!r}')
-        elif not xderiv.implicit or not yderiv.implicit:
+            for dim in deriv:
+                if dim not in x.dtype.names:
+                    raise ValueError(f'derivative along missing field {dim!r}')
+                if not jnp.issubdtype(x.dtype[dim], jnp.number):
+                    raise TypeError(f'derivative along non-numeric field {dim!r}')
+        elif not deriv.implicit:
             raise ValueError('explicit derivatives with non-structured array')
+    def check(x, y):
+        check_arg(x, xderiv)
+        check_arg(y, yderiv)
     
     # Handle the non-structured case.
     if xderiv.implicit and yderiv.implicit:
@@ -245,6 +243,8 @@ def xtransf(fun):
         the kernel.
     
     """
+    if not callable(fun):
+        raise ValueError("argument to 'xtransf' must be a function")
     return fun
 
 @Kernel.register_xtransf
@@ -264,6 +264,8 @@ def dim(dim):
         Field names or lists of field names.
 
     """
+    if not isinstance(dim, (str, list)):
+        raise TypeError(f'dim must be a (list of) string, found {dim!r}')
     def fun(x):
         if x.dtype.names is None:
             raise ValueError(f'cannot get dim={dim!r} from non-structured input')
@@ -273,18 +275,8 @@ def dim(dim):
             return x[dim]
     return fun
 
-def maxdim_argparser(maxdim):
-    if maxdim is None:
-        return None
-    elif isinstance(maxdim, numbers.Integral):
-        return int(maxdim)
-    elif maxdim == numpy.inf:
-        return sys.maxsize
-    else:
-        raise ValueError(f'maximum dimensionality {maxdim!r} not valid')
-
-@functools.partial(Kernel.register_transf, argparser=maxdim_argparser)
-def maxdim(self, xmaxdim, ymaxdim):
+@Kernel.register_xtransf
+def maxdim(maxdim):
     """
 
     Restrict the process to a maximum input dimensionality.
@@ -293,20 +285,26 @@ def maxdim(self, xmaxdim, ymaxdim):
     ----------
     xmaxdim, ymaxdim: None, int
         Maximum dimensionality of the input.
+    
+    Notes
+    -----
+    Once applied a restriction, the check is hardcoded into the kernel core and
+    it is not possible to remove it by applying again `maxdim` with a larger
+    limit.
 
     """
-    def xtransf(maxdim):
-        def fun(x):
-            nd = _array._nd(x.dtype)
-            with _jaxext.skipifabstract():
-                if nd > maxdim:
-                    raise ValueError(f'kernel applied to input with {nd} '
-                        f'fields > maxdim={maxdim}')
-            return x
-        return None if maxdim is None else fun
-    self = self.transf('xtransf', xtransf(xmaxdim), xtransf(ymaxdim))
-    self._maxdim = xmaxdim, ymaxdim
-    return self
+    if not isinstance(maxdim, numbers.Integral) or maxdim < 0:
+        raise ValueError(f'maximum dimensionality {maxdim!r} not valid')
+
+    def fun(x):
+        nd = _array._nd(x.dtype)
+        with _jaxext.skipifabstract():
+            if nd > maxdim:
+                raise ValueError(f'kernel applied to input with {nd} '
+                    f'fields > maxdim={maxdim}')
+        return x
+    
+    return fun
 
 @Kernel.register_xtransf
 def loc(loc):
@@ -324,7 +322,7 @@ def loc(loc):
     """
     with _jaxext.skipifabstract():
         assert -jnp.inf < loc < jnp.inf, loc
-    return lambda x: _util.transf_recurse_dtype(lambda x: x - loc, x)
+    return lambda x: _util.ufunc_recurse_dtype(lambda x: x - loc, x)
 
 @Kernel.register_xtransf
 def scale(scale):
@@ -342,16 +340,13 @@ def scale(scale):
     """
     with _jaxext.skipifabstract():
         assert 0 < scale < jnp.inf, scale
-    return lambda x: _util.transf_recurse_dtype(lambda x: x / scale, x)
+    return lambda x: _util.ufunc_recurse_dtype(lambda x: x / scale, x)
 
 def derivable_argparser(derivable):
-    if derivable is None:
-        return None
-    elif isinstance(derivable, bool):
+    if isinstance(derivable, bool):
         return sys.maxsize if derivable else 0
-    elif (asint := int(derivable)) == derivable:
-        assert asint >= 0
-        return asint
+    elif isinstance(derivable, numbers.Integral) and derivable >= 0:
+        return int(derivable)
     else:
         raise ValueError(f'derivability degree {derivable!r} not valid')
 
@@ -370,4 +365,31 @@ def derivable(self, xderivable, yderivable):
     self._derivable = xderivable, yderivable
     return self
 
-# TODO transf 'normalize' to make a correlation function.
+    # TODO hardcode the derivability check into the core by inspecting jax
+    # tracers. This 1) makes diff and derivable coretransfs, 2) removes
+    # fuzziness from the derivability check. To support nd, use pytrees, since
+    # diff makes sure it is a StructuredArray.
+
+def normalize_argparser(do):
+    return do if do else None
+
+@functools.partial(Kernel.register_coretransf, argparser=normalize_argparser)
+def normalize(core, dox, doy):
+    r"""
+    Rescale the process to unit variance.
+
+    .. math::
+        T(f)(x) &= f(x) / \sqrt{\mathrm{Std}[f(x)]} \\
+                &= f(x) / \sqrt{\mathrm{kernel}(x, x)}
+
+    Parameters
+    ----------
+    dox, doy : bool
+        Whether to rescale.
+    """
+    if dox and doy:
+        return lambda x, y: core(x, y) / jnp.sqrt(core(x, x) * core(y, y))
+    elif dox:
+        return lambda x, y: core(x, y) / jnp.sqrt(core(x, x))
+    elif doy:
+        return lambda x, y: core(x, y) / jnp.sqrt(core(y, y))

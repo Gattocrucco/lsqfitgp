@@ -189,11 +189,14 @@ def test_broadcast(dtypes, shapes, rng):
         crosscheck_operation(op, array1, array2)
 
 def test_asarray(dtypes, shapes, rng):
-    def op(array):
-        return lgp.asarray(array)
     for dtype, shape in itertools.product(dtypes, shapes):
         array = random_array(shape, dtype, rng)
-        crosscheck_operation(op, array)
+        crosscheck_operation(lgp.asarray, array)
+
+def test_T(dtypes, shapes, rng):
+    for dtype, shape in itertools.product(dtypes, shapes):
+        array = random_array(shape, dtype, rng)
+        crosscheck_operation(lambda x: x.T, array)
 
 def test_multiindex(dtypes, shapes, rng):
     def op(a):

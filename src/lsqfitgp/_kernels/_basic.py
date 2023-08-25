@@ -31,7 +31,7 @@ from .. import _jaxext
 from .. import _Kernel
 from .._Kernel import kernel, stationarykernel, isotropickernel
 
-@isotropickernel(derivable=True, input='raw', maxdim=numpy.inf)
+@isotropickernel(derivable=True, input='raw')
 def Constant(x, y):
     """
     Constant kernel.
@@ -45,7 +45,7 @@ def Constant(x, y):
     """
     return jnp.ones(jnp.broadcast_shapes(x.shape, y.shape))
     
-@isotropickernel(derivable=False, input='raw', maxdim=numpy.inf)
+@isotropickernel(derivable=False, input='raw')
 def White(x, y):
     """
     White noise kernel.
@@ -59,7 +59,7 @@ def White(x, y):
     return _Kernel.prod_recurse_dtype(lambda x, y: x == y, x, y).astype(int)
     # TODO maybe StructuredArray should support equality and other operations
 
-@isotropickernel(derivable=True, maxdim=numpy.inf)
+@isotropickernel(derivable=True)
 def ExpQuad(r2):
     """
     Exponential quadratic kernel.
@@ -78,7 +78,7 @@ def ExpQuad(r2):
 def _dot(x, y):
     return _Kernel.sum_recurse_dtype(lambda x, y: x * y, x, y)
     
-@kernel(derivable=True, maxdim=numpy.inf)
+@kernel(derivable=True)
 def Linear(x, y):
     """
     Dot product kernel.
@@ -92,7 +92,7 @@ def Linear(x, y):
     """
     return _dot(x, y)
 
-@isotropickernel(derivable=lambda gamma=1: gamma == 2, maxdim=numpy.inf)
+@isotropickernel(derivable=lambda gamma=1: gamma == 2)
 def GammaExp(r2, gamma=1):
     """
     Gamma exponential kernel.
@@ -124,7 +124,7 @@ def GammaExp(r2, gamma=1):
     # TODO derivatives w.r.t. gamma at gamma==2 are probably broken, although
     # I guess they are not needed since it's on the boundary of the domain
     
-@kernel(derivable=True, maxdim=numpy.inf)
+@kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):
     """
     Neural network kernel.
@@ -164,7 +164,7 @@ def NNKernel(x, y, sigma0=1):
     # TODO if arcsin has positive taylor coefficients, this can be obtained as
     # arcsin(1 + linear) * rescaling.
 
-@kernel(maxdim=sys.maxsize)
+@kernel
 def Gibbs(x, y, scalefun=lambda x: 1):
     """
     Gibbs kernel.
@@ -264,7 +264,7 @@ def Rescaling(x, y, stdfun=None):
         # do not use x.dtype because it could be structured
     return stdfun(x) * stdfun(y)
 
-@stationarykernel(derivable=False, input='hard', maxdim=1)
+@stationarykernel(derivable=False, input='abs', maxdim=1)
 def Expon(delta):
     """
     Exponential kernel.
@@ -318,7 +318,7 @@ def BagOfWords(x, y):
 
 # TODO add bag of characters and maybe other text kernels
 
-@stationarykernel(derivable=False, input='hard', maxdim=1)
+@stationarykernel(derivable=False, input='abs', maxdim=1)
 def HoleEffect(delta):
     """
     
@@ -334,7 +334,7 @@ def HoleEffect(delta):
 def _cauchy_derivable(alpha=2, **_):
     return alpha == 2
 
-@isotropickernel(derivable=_cauchy_derivable, maxdim=jnp.inf)
+@isotropickernel(derivable=_cauchy_derivable)
 def Cauchy(r2, alpha=2, beta=2):
     r"""
     Generalized Cauchy kernel.
@@ -370,7 +370,7 @@ def Cauchy(r2, alpha=2, beta=2):
 def _causalexpquad_derivable(alpha=1):
     return alpha == 0
 
-@isotropickernel(derivable=_causalexpquad_derivable, input='soft', maxdim=jnp.inf)
+@isotropickernel(derivable=_causalexpquad_derivable, input='posabs')
 def CausalExpQuad(r, alpha=1):
     r"""
     Causal exponential quadratic kernel.
@@ -391,13 +391,13 @@ def CausalExpQuad(r, alpha=1):
 
 @kernel(derivable=True, maxdim=1)
 def Decaying(x, y, alpha=1):
-    """
+    r"""
     Decaying kernel.
     
     .. math::
         k(x, y) =
-        \\frac{1}{(1 + x + y)^\\alpha},
-        \\quad x, y, \\alpha \\ge 0
+        \frac{1}{(1 + x + y)^\alpha},
+        \quad x, y, \alpha \ge 0
         
     Reference: Swersky, Snoek and Adams (2014).
     """
@@ -409,7 +409,7 @@ def Decaying(x, y, alpha=1):
     # use x + y + 1 instead of 1 + x + y because the latter is less numerically
     # accurate and symmetric for small x and y
 
-@isotropickernel(derivable=False, input='soft', maxdim=jnp.inf)
+@isotropickernel(derivable=False, input='posabs')
 def Log(r):
     """
     Log kernel.

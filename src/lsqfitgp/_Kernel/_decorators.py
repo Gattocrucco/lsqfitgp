@@ -19,43 +19,32 @@
 
 import types
 import warnings
+import inspect
 
-from . import _crosskernel
 from . import _kernel
 from . import _stationary
 from . import _isotropic
 
-def _makekernelsubclass(kernel, superclass, **prekw):
+def makekernelsubclass(kernel, superclass, **prekw):
 
-    # get cross superclass
-    assert issubclass(superclass, _kernel.Kernel)
-    cross_superclass = next(
-        c for c in superclass.mro()
-        if not issubclass(c, _kernel.Kernel)
-    )
-    
-    if hasattr(kernel, 'pyfunc'): # np.vectorize objects
-        named_object = kernel.pyfunc
-    else:
-        named_object = kernel
-    
+    named_object = getattr(kernel, 'pyfunc', kernel) # np.vectorize objects
     name = getattr(named_object, '__name__', 'DecoratedKernel')
 
+    assert issubclass(superclass, _kernel.Kernel)
+    cross_superclass = next(superclass._crossmro())
     newcrossclass = types.new_class('Cross' + name, (cross_superclass,))
 
     def exec_body(ns):
         
-        prekwset = set(prekw)
         def __new__(cls, **kw):
             kwargs = prekw.copy()
-            shared_keys = prekwset & set(kw)
-            if shared_keys:
-                warnings.warn(f'overriding init argument(s) '
-                    f'{", ".join(shared_keys)} of kernel {name}, subclass '
-                    'may not be preserved')
             kwargs.update(kw)
+            if len(kwargs) < len(prekw) + len(kw):
+                shared_keys = set(prekw) & set(kw)
+                warnings.warn(f'overriding init argument(s) '
+                    f'{", ".join(shared_keys)} of kernel {name}')
             self = super(newclass, cls).__new__(cls, kernel, **kwargs)
-            if not shared_keys:
+            if set(kw).issubset(self.initargs):
                 self = self._clone(cls=cls)
             return self
         
@@ -64,11 +53,10 @@ def _makekernelsubclass(kernel, superclass, **prekw):
         ns['__doc__'] = named_object.__doc__
 
     newclass = types.new_class(name, (newcrossclass, superclass), exec_body=exec_body)
-
     return newclass
 
-def _kerneldecoratorimpl(cls, *args, **kw):
-    functional = lambda kernel: _makekernelsubclass(kernel, cls, **kw)
+def kerneldecoratorimpl(cls, *args, **kw):
+    functional = lambda kernel: makekernelsubclass(kernel, cls, **kw)
     if len(args) == 0:
         return functional
     elif len(args) == 1:
@@ -90,7 +78,7 @@ def kernel(*args, **kw):
 
     Returns
     -------
-    class_or_dec : callable or class
+    class_or_dec : callable or type
         If `args` is empty, a decorator ready to be applied, else the kernel
         class.
 
@@ -107,6 +95,12 @@ def kernel(*args, **kw):
 
     Notes
     -----
+    Arguments passed to the class constructor may modify the class. This
+    decorator enforces no class change due to the keyword arguments passed to
+    the decorator, and no class change due to keyword arguments passed at
+    instantiation if all those arguments are passed down to the decorated
+    function.
+
     The decorator also creates a class hierarchy on top of the new class.
     The first non-`Kernel`-subclass superclass of the the target superclass is
     used as superclass of a new class which is the first base of the returned
@@ -126,7 +120,7 @@ def kernel(*args, **kw):
                 return super().__new__(cls, lambda x, y: 0, **kw)
     
     """
-    return _kerneldecoratorimpl(_kernel.Kernel, *args, **kw)
+    return kerneldecoratorimpl(_kernel.Kernel, *args, **kw)
 
 def stationarykernel(*args, **kw):
     """
@@ -136,7 +130,7 @@ def stationarykernel(*args, **kw):
     Examples
     --------
     
-    >>> @lgp.stationarykernel(input='soft')
+    >>> @lgp.stationarykernel(input='posabs')
     ... def MyKernel(absdelta, cippa=1, lippa=42):
     ...     return cippa * sum(
     ...         jnp.exp(-absdelta[name] / lippa)
@@ -144,7 +138,7 @@ def stationarykernel(*args, **kw):
     ...     )
     
     """
-    return _kerneldecoratorimpl(_stationary.StationaryKernel, *args, **kw)
+    return kerneldecoratorimpl(_stationary.StationaryKernel, *args, **kw)
 
 def isotropickernel(*args, **kw):
     """
@@ -159,4 +153,4 @@ def isotropickernel(*args, **kw):
     ...     return cippa * jnp.exp(-distsquared) + lippa
     
     """
-    return _kerneldecoratorimpl(_isotropic.IsotropicKernel, *args, **kw)
+    return kerneldecoratorimpl(_isotropic.IsotropicKernel, *args, **kw)

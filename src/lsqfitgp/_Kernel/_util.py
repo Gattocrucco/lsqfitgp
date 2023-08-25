@@ -22,6 +22,7 @@ import operator
 
 import numpy
 from jax import numpy as jnp
+from jax import tree_util
 
 from .. import _array
 
@@ -33,6 +34,12 @@ def is_numerical_scalar(x):
     # do not use jnp.isscalar because it returns False for strongly
     # typed 0-dim arrays; do not use jnp.ndim(•) == 0 because it accepts
     # non-numerical types
+
+def is_integer_scalar(x):
+    return (
+        isinstance(x, numbers.Integral) or
+        (isinstance(x, (numpy.ndarray, jnp.ndarray)) and x.ndim == 0 and jnp.issubdtype(x.dtype, jnp.integer))
+    )
 
 # TODO reimplement with tree_reduce, closuring ndim to recognize shaped fields
 def _reduce_recurse_dtype(fun, args, reductor, npreductor, jnpreductor):
@@ -65,13 +72,17 @@ def sum_recurse_dtype(fun, *args):
 def prod_recurse_dtype(fun, *args):
     return _reduce_recurse_dtype(fun, args, operator.mul, numpy.prod, jnp.prod)
 
-# TODO reimplement with tree_map
-def transf_recurse_dtype(transf, x, *args):
+def ufunc_recurse_dtype(ufunc, x, *args):
+    """ apply an ufunc to all the leaf fields """
+    
+    allargs = (x, *args)
+    expected_shape = jnp.broadcast_shapes(*(x.shape for x in allargs))
+
     if x.dtype.names is None:
-        return transf(x, *args)
+        out = ufunc(*allargs)
     else:
-        x = _array.StructuredArray(x)
-        for name in x.dtype.names:
-            newargs = tuple(y[name] for y in args)
-            x = x.at[name].set(transf_recurse_dtype(transf, x[name], *newargs))
-        return x
+        args = map(_array.StructuredArray, allargs)
+        out = tree_util.tree_map(ufunc, *args)
+    
+    assert out.shape == expected_shape
+    return out

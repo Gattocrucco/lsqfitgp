@@ -26,7 +26,7 @@ from .._Kernel import isotropickernel
 def _maternp_derivable(p=None):
     return p
 
-@isotropickernel(derivable=_maternp_derivable, maxdim=jnp.inf)
+@isotropickernel(derivable=_maternp_derivable)
 def Maternp(r2, p=None):
     """
     Matérn kernel of half-integer order. 
@@ -51,9 +51,9 @@ def Maternp(r2, p=None):
 
 def _matern_derivable(nu=None):
     with _jaxext.skipifabstract():
-        return max(0, jnp.ceil(nu) - 1)
+        return int(max(0, jnp.ceil(nu) - 1))
 
-@isotropickernel(derivable=_matern_derivable, maxdim=jnp.inf)
+@isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
     """
     Matérn kernel of real order. 
@@ -97,7 +97,7 @@ def Matern(r2, nu=None):
 
 def _bessel_derivable(nu=0):
     with _jaxext.skipifabstract():
-        return nu // 2
+        return int(nu // 2)
 
 # TODO looking at the plot in the reference, it seems derivable also for nu = 0.
 # what's up? investigate numerically by overwriting the derivability. rasmussen

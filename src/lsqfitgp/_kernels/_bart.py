@@ -29,11 +29,7 @@ from .. import _jaxext
 from .. import _array
 from .._Kernel import kernel
 
-def _bart_maxdim(splits=None, indices=False, **_):
-    splits = BART._check_splits(splits, indices)
-    return splits[0].size
-
-@kernel(maxdim=_bart_maxdim, derivable=False, batchbytes=10e6)
+@kernel(derivable=False, batchbytes=10e6)
 # TODO maybe batching should be done automatically by GP instead of by the
 # kernels? But before doing that I need to support batching non-traceable
 # functions.
@@ -310,7 +306,9 @@ class BART(_BARTBase):
     @classmethod
     def _indices_from_coord(cls, x, checked_splits):
         x = cls._check_x(x)
-        assert x.shape[-1] == checked_splits[0].size
+        if x.shape[-1] != checked_splits[0].size:
+            raise ValueError(f'splitting grid is for {checked_splits[0].size} '
+                f'dimensions, found {x.shape[-1]}')
         return cls._searchsorted_vectorized(checked_splits[1], x)
     
     @classmethod

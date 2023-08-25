@@ -39,7 +39,7 @@ def Cos(delta):
     return jnp.cos(delta)
 
     
-@stationarykernel(maxdim=1, derivable=1, input='hard')
+@stationarykernel(maxdim=1, derivable=1, input='abs')
 def Pink(delta, dw=1):
     """
     Pink noise kernel.
@@ -73,7 +73,7 @@ def Pink(delta, dw=1):
 def _color_derivable(n=2):
     return n // 2 - 1
 
-@stationarykernel(maxdim=1, derivable=_color_derivable, input='hard')
+@stationarykernel(maxdim=1, derivable=_color_derivable, input='abs')
 def Color(delta, n=2):
     """
     Colored noise kernel.
@@ -150,7 +150,7 @@ def Color(delta, n=2):
     assert int(n) == n and n >= 2, n
     return (n - 1) * _special.expn_imag(n, delta).real
     
-@stationarykernel(derivable=True, input='soft', maxdim=1)
+@stationarykernel(derivable=True, input='posabs', maxdim=1)
 def Sinc(delta):
     """
     Sinc kernel.
@@ -164,4 +164,3 @@ def Sinc(delta):
     
     # TODO is this isotropic? My current guess is that it works up to some
     # dimension due to a coincidence but is not in general isotropic.
-

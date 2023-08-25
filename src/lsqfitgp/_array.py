@@ -184,6 +184,17 @@ class StructuredArray:
     def ndim(self):
         return len(self.shape)
 
+    @property
+    def T(self):
+        if self.ndim < 2:
+            return self
+        return self.swapaxes(self.ndim - 2, self.ndim - 1)
+
+    def swapaxes(self, i, j):
+        shape = jax.eval_shape(lambda: jnp.empty(self.shape).swapaxes(i, j)).shape
+        d = {k: v.swapaxes(i, j) for k, v in self._dict.items()}
+        return self._array(shape, self.dtype, d)
+
     def __len__(self):
         if self.shape:
             return self.shape[0]
@@ -688,3 +699,7 @@ def _append_fields(base, names, data, usemask=True):
         (name, array.dtype) for name, array in zip(names, data)
     ])
     return StructuredArray._array(base.shape, dtype, arrays)
+
+@StructuredArray._implements(numpy.swapaxes)
+def _swapaxes(x, i, j):
+    return x.swapaxes(i, j)

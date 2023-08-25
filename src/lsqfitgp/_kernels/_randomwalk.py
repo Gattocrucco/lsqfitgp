@@ -42,8 +42,7 @@ def Wiener(x, y):
 
 def _fracbrownian_derivable(H=1/2, K=1):
     return H == 1 and K == 1
-    # TODO fails under tracing, return None if not concrete, maybe silence
-    # derivability warnings under tracing
+    # TODO fails under tracing, return None if not concrete
 
 @kernel(derivable=_fracbrownian_derivable, maxdim=1)
 def FracBrownian(x, y, H=1/2, K=1):

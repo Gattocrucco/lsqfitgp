@@ -87,7 +87,7 @@ def cached(testpath):
     to distinguish different invocations.
 
     If the cache already exists, it is immutable. Delete the file to reset the
-    cache.
+    cache. The files are saved under tests/cached.
 
     Example usage:
     >>> def expensive_function(x):

@@ -66,21 +66,19 @@ class CrossKernel:
         actual argument.
     forcekron : bool, default False
         If True, apply `Kernel.forcekron` before the other transformations.
-    saveargs : bool, default False
-        If True, save the all the initialization arguments in a
-        dictionary under the attribute `initargs`.
     batchbytes : number, optional
         If specified, apply ``.batch(batchbytes)`` to the kernel.
     **kw
-        Additional keyword arguments are passed to `core`.
+        Additional keyword arguments are passed to `core` and saved as
+        `initargs` attribute.
     
     Attributes
     ----------
     derivable : pair of int or None
         How many times each function is (mean-square sense) derivable.
-        ``sys.maxsize`` if it is smooth. ``None`` mean unknown.
-    maxdim : pair of int or None
-        Maximum input dimensionality. ``None`` means unknown.
+        ``sys.maxsize`` if it is smooth. `None` mean unknown.
+    initargs : dict
+        The `kw` argument. Propagates when the kernel is transformed.
     
     Methods
     -------
@@ -110,27 +108,14 @@ class CrossKernel:
         forcekron=False,
         derivable=None,
         maxdim=None,
-        saveargs=False,
         batchbytes=None,
         **kw,
     ):
         self = super().__new__(cls)
                 
-        if saveargs:
-            self.initargs = dict(
-                dim=dim,
-                loc=loc,
-                scale=scale,
-                forcekron=forcekron,
-                derivable=derivable,
-                **kw,
-            )
-        else:
-            self.initargs = None
-        
+        self.initargs = kw        
         self._core = lambda x, y: core(x, y, **kw)
         self._derivable = None, None
-        self._maxdim = None, None
 
         if forcekron:
             self = self.forcekron()
@@ -167,16 +152,11 @@ class CrossKernel:
     def derivable(self):
         return self._derivable
 
-    @property
-    def maxdim(self):
-        return self._maxdim
-    
     def _clone(self, core=None, cls=None):
         newself = object.__new__(self.__class__ if cls is None else cls)
         newself.initargs = self.initargs
         newself._core = self._core if core is None else core
         newself._derivable = self._derivable
-        newself._maxdim = self._maxdim
         return newself
 
     @staticmethod
@@ -193,7 +173,6 @@ class CrossKernel:
         self.initargs = None
         self._core = core
         self._derivable = None, None
-        self._maxdim = None, None
         return self
     
     class _side(enum.Enum):
@@ -231,7 +210,6 @@ class CrossKernel:
             unary_op = lambda f: lambda x: op(f, lambda _: value)(x)
             out = self._nary(unary_op, [self], self._side.BOTH)
             out._derivable = self._derivable
-            out._maxdim = self._maxdim
             return out
         elif isinstance(value, __class__):
             return self._nary(op, [self, value], self._side.BOTH)
@@ -248,15 +226,18 @@ class CrossKernel:
     
     __rmul__ = __mul__
 
-    # TODO add back pow, but check it is an integer type. Make a function
-    # is_integer in _util. Add unit tests.
+    def __pow__(self, value):
+        if not _util.is_integer_scalar(value):
+            return NotImplemented
+        with _jaxext.skipifabstract():
+            assert value >= 0, value
+        return self._binary(value, lambda f, g: lambda x: f(x) ** g(x))
     
     def _swap(self):
         """ permute the arguments (cross kernels are not symmetric) """
         core = self._core
         self = self._clone(core=lambda x, y: core(y, x))
         self._derivable = self._derivable[::-1]
-        self._maxdim = self._maxdim[::-1]
         return self
 
     def batch(self, maxnbytes):
@@ -344,7 +325,7 @@ class CrossKernel:
         except KeyError as exc:
             if exc.args == (transfname,):
                 return False
-            else:
+            else: # pragma: no cover
                 raise
         else:
             return True
@@ -367,8 +348,9 @@ class CrossKernel:
             The `transfname` parameter to `transf` this transformation will
             be accessible under. If not specified, use the name of `transf`.
         argparser : callable, optional
-            A function applied to each of the arguments. It must return ``None``
-            if the operation is the identity.
+            A function applied to each of the arguments. It should return
+            `None` if the operation is the identity. Not called if the
+            argument is `None`.
         doc : str, optional
             The documentation of the transformation returned by `transf_help`.
             If not specified, use the docstring of `transf`.
@@ -386,7 +368,7 @@ class CrossKernel:
         Notes
         -----
         The function `transf` is called only if `arg1` or `arg2` is not
-        ``None`` before or after conversion with `argparser`.
+        `None` before or after conversion with `argparser`.
 
         See also
         --------
@@ -413,8 +395,8 @@ class CrossKernel:
         Transform the kernel to represent a transformation of the functions.
 
         .. math::
-            \mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), g(y)]
-            \mathrm{newkernel}(x, y) = \mathrm{Cov}[T_1(f)(x), T_2(g)(y)]
+            \mathrm{kernel}(x, y) &= \mathrm{Cov}[f(x), g(y)] \\
+            \mathrm{newkernel}(x, y) &= \mathrm{Cov}[T_1(f)(x), T_2(g)(y)]
 
         Parameters
         ----------
@@ -439,13 +421,15 @@ class CrossKernel:
                 error checking.
             'rescale' :
                 Multiply the function by another fixed function.
+            'normalize' :
+                Rescale the process to unit variance.
 
             Subclasses may define their own.
         *args :
             Two arguments that indicate how to transform each function. If both
             arguments represent the identity, this is a no-op. If there is only
             one argument, it is intended that the two arguments are equal.
-            ``None`` always represents the identity.
+            `None` always represents the identity.
 
         Returns
         -------
@@ -475,7 +459,8 @@ class CrossKernel:
         if all(a is None for a in args):
             return self
         if argparser:
-            args = tuple(map(argparser, args))
+            conv = lambda x: None if x is None else argparser(x)
+            args = tuple(map(conv, args))
         if all(a is None for a in args):
             return self
         
@@ -553,7 +538,7 @@ class CrossKernel:
         xtransf : callable
             A function ``xtransf(arg) -> (transf x: newx)`` that takes in a
             transformation argument and produces a function to transform the
-            input.
+            input. Not called if ``arg`` is `None`.
         transfname, doc :
             See `register_transf`. `argparser` is not provided because its
             functionality can be included in `xtransf`.
@@ -564,7 +549,7 @@ class CrossKernel:
             A method in the format of `register_transf` that wraps `xtransf`.
 
         """
-        # xtransf(arg) -> (transf(x) -> x)
+
         @functools.wraps(xtransf)
         def coretransf(core, xfun, yfun):
             if not xfun:
@@ -573,8 +558,15 @@ class CrossKernel:
                 return lambda x, y: core(xfun(x), y)
             else:
                 return lambda x, y: core(xfun(x), yfun(y))
+        
         return cls.register_coretransf(coretransf, transfname, xtransf, doc)
 
 # TODO add a method similar to transf but for kernel algebra transformations,
 # i.e., apply a function with nonnegative power series coefficients. atransf
-# for "algebraic transf".
+# for "algebraic transf". => Different plan: the current transf becomes linop.
+# transf becomes a more generic thing linop is a particular case of. algop is
+# the algebric subcase. Transformation names remain in the same pool, the kind
+# is saved with the transf and checked.
+
+# TODO a method inherit_transf to be used in stationary and isotropic to make
+# loc and scale preserve the subclass.

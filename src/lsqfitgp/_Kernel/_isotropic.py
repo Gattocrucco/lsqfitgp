@@ -33,29 +33,53 @@ class CrossIsotropicKernel(_stationary.CrossStationaryKernel):
     
     Subclass of `CrossStationaryKernel` for isotropic kernels.
 
+    An isotropic kernel depends only on the Euclidean distance between its two
+    arguments.
+
     Parameters
     ----------
     kernel : callable
         A function taking one argument ``r2`` which is the squared distance
         between x and y, plus optionally keyword arguments.
-    input : {'squared', 'hard', 'soft', 'raw'}
-        If 'squared' (default), ``kernel`` is passed the squared distance.
-        If 'hard', it is passed the distance (not squared). If 'soft', it
-        is passed the distance, and the distance of equal points is a small
-        number instead of zero. If 'raw', the kernel is passed both points
-        separately like non-stationary kernels.
-    scale : scalar
-        The distance is divided by ``scale``.
+    input : {'squared', 'abs', 'posabs', 'raw'}, default 'squared'
+        If ``'squared'``, `kernel` is passed the squared distance. If ``'abs'``,
+        it is passed the distance (not squared). If ``'posabs'``, it is passed
+        the distance, and the distance of equal points is a small number instead
+        of zero. If ``'raw'``, the kernel is passed both points separately like
+        non-stationary kernels.
     **kw
-        Additional keyword arguments are passed to the `Kernel` init.
+        Additional keyword arguments are passed to the `CrossKernel`
+        constructor.
     
     Notes
     -----
-    The 'soft' option will cause problems with second derivatives in more
-    than one dimension.
+    The ``input='posabs'`` option will cause problems with second derivatives in
+    more than one dimension.
             
     """
      
+    def __new__(cls, core, *, input='squared', **kw):
+        if input == 'raw':
+            return _crosskernel.CrossKernel.__new__(cls, core, **kw)
+        
+        if input in ('squared', 'abs'):
+            dist = lambda x, y: jnp.square(x - y)
+        elif input == 'posabs':
+            dist = lambda x, y: jnp.square(_stationary._softabs(x - y))
+        else:
+            raise KeyError(input)
+                
+        if input in ('posabs', 'abs'):
+            transf = jnp.sqrt
+        else:
+            transf = lambda ss: ss
+        
+        def newcore(x, y, **kwargs):
+            ss = _util.sum_recurse_dtype(dist, x, y)
+            return core(transf(ss), **kwargs)
+        
+        return _crosskernel.CrossKernel.__new__(cls, newcore, **kw)
+
     # TODO add a `distance` parameter to pick arbitrary distances, but since the
     # distance definition can not be changed arbitrarily, it may be better to
     # keep this class for the 2-norm and eventually add another if needed.
@@ -67,35 +91,6 @@ class CrossIsotropicKernel(_stationary.CrossStationaryKernel):
     # that kernels use to memoize things, the first IsotropicKernel that gets
     # called puts the distance there. Possible name: _cache.
     
-    def __new__(cls, kernel, *, input='squared', scale=None, **kw):
-        if input == 'raw':
-            return _kernel.Kernel.__new__(cls, kernel, scale=scale, **kw)
-            
-        if input in ('squared', 'hard'):
-            func = lambda x, y: (x - y) ** 2
-        elif input == 'soft':
-            func = lambda x, y: _stationary._softabs(x - y) ** 2
-        else:
-            raise KeyError(input)
-        
-        transf = lambda q: q
-        
-        if scale is not None:
-            with _jaxext.skipifabstract():
-                assert 0 < scale < jnp.inf
-            transf = lambda q: q / scale ** 2
-        
-        if input in ('soft', 'hard'):
-            transf = (lambda t: lambda q: jnp.sqrt(t(q)))(transf)
-            # I do square and then square root because I first have to
-            # compute the sum of squares
-        
-        def function(x, y, **kwargs):
-            q = _util.sum_recurse_dtype(func, x, y)
-            return kernel(transf(q), **kwargs)
-        
-        return _kernel.Kernel.__new__(cls, function, **kw)
-
 class IsotropicKernel(CrossIsotropicKernel, _stationary.StationaryKernel):
     pass
 
@@ -103,6 +98,9 @@ _crosskernel.IsotropicKernel = IsotropicKernel
 
 # TODO put Constant here as superclass of Zero? Constant needs it Cross
 # version because it makes a difference, transf is not trivial
+
+# TODO make a CrossZero and complicate the implementation to follow the usual
+# type logic.
 
 class Zero(IsotropicKernel):
     """
@@ -116,12 +114,12 @@ class Zero(IsotropicKernel):
         self.initargs = None
         self._core = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
         self._derivable = sys.maxsize, sys.maxsize
-        self._maxdim = sys.maxsize, sys.maxsize
         return self
     
     _swap = lambda self: self
     batch = lambda self, maxnbytes: self
     transf = lambda self, transfname, *args: self
+    forcekron = lambda self: self
 
     def __add__(self, other):
         if isinstance(other, _crosskernel.CrossKernel) or _util.is_numerical_scalar(other):
@@ -138,3 +136,11 @@ class Zero(IsotropicKernel):
             return NotImplemented
 
     __rmul__ = __mul__
+
+    def __pow__(self, other):
+        if _util.is_integer_scalar(other):
+            with _jaxext.skipifabstract():
+                assert other >= 0, other
+            return self
+        else:
+            return NotImplemented

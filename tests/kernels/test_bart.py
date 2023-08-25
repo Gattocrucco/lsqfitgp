@@ -366,6 +366,11 @@ def test_index_input(rng):
     c2 = lgp.BART(splits=splits, indices=True)(ix, iy)
     np.testing.assert_array_max_ulp(c1, c2, 0)
 
+def test_empty():
+    empty = np.array([], int)
+    c = lgp.BART.correlation(empty, empty, empty)
+    util.assert_equal(c, 1)
+
 # TODO
 # - increases at fixed n0 and ntot if the difference between nminus and nplus
 #   decreases (not completely sure)

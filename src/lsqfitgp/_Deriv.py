@@ -70,7 +70,8 @@ class Deriv:
             if isinstance(arg, cls):
                 return arg
             elif isinstance(arg, (int, np.integer)):
-                assert arg >= 0, arg
+                if arg < 0:
+                    raise ValueError(f'degree {arg} is negative')
                 if arg:
                     c.update({None: arg})
             elif isinstance(arg, str):

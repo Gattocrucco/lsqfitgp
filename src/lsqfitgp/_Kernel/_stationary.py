@@ -30,47 +30,41 @@ class CrossStationaryKernel(_crosskernel.CrossKernel):
     
     Subclass of `CrossKernel` for stationary kernels.
 
+    A stationary kernel depends only on the difference, dimension by dimension,
+    between its two arguments.
+
     Parameters
     ----------
-    kernel : callable
-        A function taking one argument ``delta`` which is the difference
-        between x and y, plus optionally keyword arguments.
-    input : {'signed', 'soft', 'hard'}
-        If 'signed' (default), `kernel` is passed the bare difference. If
-        'soft', `kernel` is passed the absolute value of the difference,
-        and the difference of equal points is a small number instead of
-        zero. If 'hard', the absolute value.
-    scale : scalar
-        The difference is divided by ``scale``.
+    core : callable
+        A function taking one positional argument ``delta = x - y`` and optional
+        keyword arguments.
+    input : {'signed', 'posabs', 'abs'}, default 'signed'
+        If ``'signed'``, `kernel` is passed the bare difference. If
+        ``'posabs'``, `kernel` is passed the absolute value of the difference,
+        and the difference of equal points is a small number instead of zero. If
+        ``'abs'``, the absolute value.
     **kw
-        Additional keyword arguments are passed to the `Kernel` init.
+        Additional keyword arguments are passed to the `CrossKernel`
+        constructor.
             
     """
 
-    def __new__(cls, kernel, *, input='signed', scale=None, **kw):
+    def __new__(cls, core, *, input='signed', **kw):
         
-        # TODO using 'signed', 'abs', 'posabs' as labels could be clearer.
-
-        if input == 'soft':
-            func = lambda x, y: _softabs(x - y)
+        if input == 'posabs':
+            dist = lambda x, y: _softabs(x - y)
         elif input == 'signed':
-            func = lambda x, y: x - y
-        elif input == 'hard':
-            func = lambda x, y: jnp.abs(x - y)
+            dist = lambda x, y: x - y
+        elif input == 'abs':
+            dist = lambda x, y: jnp.abs(x - y)
         else:
             raise KeyError(input)
         
-        transf = lambda q: q
-        if scale is not None:
-            with _jaxext.skipifabstract():
-                assert 0 < scale < jnp.inf
-            transf = lambda q : q / scale
+        def newcore(x, y, **kw):
+            q = _util.ufunc_recurse_dtype(dist, x, y)
+            return core(q, **kw)
         
-        def function(x, y, **kwargs):
-            q = _util.transf_recurse_dtype(func, x, y)
-            return kernel(transf(q), **kwargs)
-        
-        return _kernel.Kernel.__new__(cls, function, **kw)
+        return super().__new__(cls, newcore, **kw)
 
 class StationaryKernel(CrossStationaryKernel, _kernel.Kernel):
     pass
@@ -84,4 +78,3 @@ def _eps(x):
 
 def _softabs(x):
     return jnp.abs(x) + _eps(x)
-

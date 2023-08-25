@@ -118,3 +118,6 @@ going directly in the top-right direction is unfavored. ::
     fig.savefig('out3.png')
 
 .. image:: out3.png
+
+.. TODO move this after components.rst since using processes, maybe make the
+.. independent version with defproc

@@ -28,7 +28,7 @@ from .. import _jaxext
 from .._Kernel import stationarykernel
 
 # use positive delta because negative indices wrap around
-@stationarykernel(derivable=False, maxdim=1, input='hard')
+@stationarykernel(derivable=False, maxdim=1, input='abs')
 def MA(delta, w=None, norm=False):
     """
     Discrete moving average kernel.
@@ -66,7 +66,7 @@ def MA(delta, w=None, norm=False):
     else:
         return jnp.zeros(delta.shape)
 
-@stationarykernel(derivable=False, maxdim=1, input='hard')
+@stationarykernel(derivable=False, maxdim=1, input='abs')
 def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=False):
     """
     Discrete autoregressive kernel.
@@ -86,13 +86,13 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     slnr : (nr,) real
         The real roots of the characteristic polynomial, expressed in the
         following way: ``sign(slnr)`` is the sign of the root, and
-        ``abs(snlr)`` is the natural logarithm of the absolute value.
+        ``abs(slnr)`` is the natural logarithm of the absolute value.
     lnc : (nc,) complex
         The natural logarithm of the complex roots of the characteristic
         polynomial (:math:`\\log z = \\log|z| + i\\arg z`), where each root
         also stands for its paired conjugate.
     
-        In ``slnr`` and ``lnc``, the multiplicity of a root is expressed by
+        In `slnr` and `lnc`, the multiplicity of a root is expressed by
         repeating the root in the array (not necessarily next to each other).
         Only exact repetition counts; very close yet distinct roots are treated
         as separate and lead to numerical instability, in particular complex
@@ -100,10 +100,10 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
         like a pair of identical real roots. Two complex roots also count as
         equal if conjugate, and the argument is standardized to :math:`[0,
         2\\pi)`.
-    norm : bool
-        If True, normalize the autocovariance to be 1 at lag 0. If False
-        (default), normalize such that the variance of the generating noise is
-        1, or use the user-provided normalization if ``gamma`` is specified.
+    norm : bool, default False
+        If True, normalize the autocovariance to be 1 at lag 0. If False,
+        normalize such that the variance of the generating noise is 1, or use
+        the user-provided normalization if `gamma` is specified.
     
     Notes
     -----
@@ -144,18 +144,18 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     
     There are three alternative parametrization for this kernel.
     
-    If you specify ``phi``, the first terms of the covariance are computed
-    solving the Yule-Walker equation, and then evolved up to ``maxlag``. It
+    If you specify `phi`, the first terms of the covariance are computed
+    solving the Yule-Walker equation, and then evolved up to `maxlag`. It
     is necessary to specify `maxlag` instead of letting the code figure it out
     from the actual inputs for technical reasons.
     
-    Likewise, if you specify ``gamma``, the coefficients are obtained with
+    Likewise, if you specify `gamma`, the coefficients are obtained with
     Yule-Walker and then used to evolve the covariance. The only difference is
-    that the normalization can be different: starting from ``phi``, the variance
+    that the normalization can be different: starting from `phi`, the variance
     of the generating noise :math:`\\epsilon` is fixed to 1, while giving
-    ``gamma`` directly implies an arbitrary value.
+    `gamma` directly implies an arbitrary value.
     
-    Instead, if you specify the roots with ``slnr`` and ``lnc``, the coefficients
+    Instead, if you specify the roots with `slnr` and `lnc`, the coefficients
     are obtained from the polynomial defined in terms of the roots, and then
     the amplitudes :math:`a_{jl}` are computed by solving a linear system with
     the covariance (from YW) as RHS. Finally, the full covariance function is
@@ -468,7 +468,7 @@ class AR(_ARBase):
         slnr : (nr,) real
             The real roots of the characteristic polynomial, expressed in the
             following way: ``sign(slnr)`` is the sign of the root, and
-            ``abs(snlr)`` is the natural logarithm of the absolute value.
+            ``abs(slnr)`` is the natural logarithm of the absolute value.
         lnc : (nc,) complex
             The natural logarithm of the complex roots of the characteristic
             polynomial (:math:`\\log z = \\log|z| + i\\arg z`), where each root
@@ -578,4 +578,3 @@ class AR(_ARBase):
         lag = jnp.asarray(lag)
         assert jnp.issubdtype(lag, jnp.integer)
         return lag.astype(int)
-

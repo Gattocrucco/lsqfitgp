@@ -27,17 +27,6 @@ from ._spectral import *
 from ._wendland import *
 from ._zeta import *
 
-# TODO instead of adding forcekron by default to all 1D kernels, use maxdim=None
-# by default in CrossKernel, add maxdim=1 to all 1D kernels, and let the user
-# choose how to deal with nd (add option for sum-separation). Make an example
-# about this in `multidimensional input`. Implement tests for separability
-# on all kernels.
-
-# TODO maybe I could have a continuity check like derivable, but to be useful
-# it would be callable-only and take the derivation order. But I don't think
-# any potential user needs it.
-
-# TODO add explicit exponent parameter to infinitely divisible kernels, and
-# check the exponent is an int in __pow__.
+# TODO add explicit exponent parameter to all infinitely divisible kernels
 
 # TODO new kernels LM(formula) and LMER(formula).
