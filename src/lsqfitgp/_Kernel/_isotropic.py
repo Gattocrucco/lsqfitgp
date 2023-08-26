@@ -95,8 +95,12 @@ class IsotropicKernel(CrossIsotropicKernel, _stationary.StationaryKernel):
     pass
 
 _crosskernel.IsotropicKernel = IsotropicKernel
+_crosskernel.CrossIsotropicKernel = CrossIsotropicKernel
 
 # make these linops preserve the class IsotropicKernel
+IsotropicKernel.inherit_transf('add')
+IsotropicKernel.inherit_transf('mul')
+IsotropicKernel.inherit_transf('pow')
 IsotropicKernel.inherit_transf('rescale')
 IsotropicKernel.inherit_transf('loc')
 IsotropicKernel.inherit_transf('scale')
@@ -119,7 +123,7 @@ class Zero(IsotropicKernel):
 
     def __new__(cls):
         self = object.__new__(cls)
-        self.initargs = None
+        self._kw = None
         self._core = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
         self._derivable = sys.maxsize, sys.maxsize
         return self

@@ -102,7 +102,7 @@ def fourier(self, dox, doy):
 
     """
     
-    nu = self.initargs['nu']
+    nu = self._kw['nu']
     s = 1 + 2 * nu
     
     if dox and doy:
@@ -122,11 +122,12 @@ def fourier(self, dox, doy):
         if doy:
             core = lambda x, q, core=core: core(q, x)
     
-    return self._clone(core=core)
+    return self._clone(_core=core)
 
-# TODO I want to get rid of initargs.
-
-# 1) Restrict it to only the additional keyword arguments passed
-# to core.
-
-# 2) Somehow pass `nu` to the transformation code.
+# TODO the usual class logic here is not ok. This transf assumes that the core
+# is the one defined in the decorator above, but it is still possible to use
+# this transf after applying it once.
+#
+# Possible generic solution: register_linop uses the output class instead of
+# the input class to compute the class. In this way, transformations can tweak
+# the logic, while using _clone() behaves as usual.

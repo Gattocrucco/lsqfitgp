@@ -342,6 +342,11 @@ def test_derivability(constcore):
     with pytest.warns(UserWarning):
         kernel.linop('diff', (1, 'a', 1, 'b')) # soft boundary
 
+    # check that the operation system does not try to deduce derivability,
+    # it is in general impossible
+    kernel = lgp.Kernel(constcore, derivable=1) + lgp.Kernel(constcore, derivable=1)
+    assert kernel.derivable is None
+
 @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
 def test_invalid_input(cls, constcore):
     with pytest.raises(KeyError):
@@ -358,6 +363,7 @@ def test_where(rng):
     k2 = lgp.where(lambda x: cond(x['f0']), kernel, 2 * kernel)
     c1 = k1(x[:, None], x[None, :])
     c2 = k2(x[:, None], x[None, :])
+    assert isinstance(k1, lgp.Kernel)
     
     x = x.view([('', 'd', 2)])
     cond = lambda x: x['f0'][..., 0] < x0
@@ -418,27 +424,26 @@ def test_decorator_kw(dec, cls):
         assert A(input='posabs').__class__ is A
     assert A(scale=5).__class__ is cls
     assert A(loc=5).__class__ is cls
-    assert A(ciao=2).__class__ is A
-    assert A(dim='a').__class__ is lgp.Kernel
 
     @dec(loc=1)
     def B(delta, ciao=2):
         return ciao
     assert B(ciao=1).__class__ is B
 
-    @dec(dim='a')
-    def C(delta, ciao=2):
-        return ciao
-    assert C(ciao=1).__class__ is C
+    if cls is lgp.IsotropicKernel:
+        @dec(dim='a')
+        def C(delta, ciao=2):
+            return ciao
+        assert C(ciao=1).__class__ is lgp.StationaryKernel
 
 def test_callable_arg(constcore):
     kernel = lgp.Kernel(constcore, derivable=lambda d: d, d=6)
     assert kernel.derivable == 6
 
-def test_initargs(constcore):
+def test_init_kw(constcore):
     kernel = lgp.Kernel(constcore, saveargs=True, cippa=4)
     def check(k):
-        assert k.initargs['cippa'] == 4
+        assert k._kw['cippa'] == 4
     check(kernel._swap())
     check(kernel.linop('loc', 1, 2))
     check(kernel.forcekron())

@@ -94,7 +94,7 @@ def where(condfun, kernel1, kernel2, dim=None):
             return jnp.where(xcond ^ ycond, 0, r)
         return kernel
     
-    return kernel1._binary(kernel2, kernel_op)
+    return kernel1._nary(kernel_op, [kernel1, kernel2], kernel1._side.BOTH)._clone(_kernel.Kernel)
 
 # TODO add a function `choose` to extend `where`. Interface:
 # choose(keyfun, mapping)

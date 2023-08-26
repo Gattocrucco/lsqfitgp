@@ -44,7 +44,7 @@ def makekernelsubclass(kernel, superclass, **prekw):
                 warnings.warn(f'overriding init argument(s) '
                     f'{shared_keys} of kernel {name}')
             self = super(newclass, cls).__new__(cls, kernel, **kwargs)
-            if set(kw).issubset(self.initargs):
+            if isinstance(self, superclass) and set(kw).issubset(self._kw):
                 self = self._clone(cls=cls)
             return self
         
@@ -95,11 +95,11 @@ def kernel(*args, **kw):
 
     Notes
     -----
-    Arguments passed to the class constructor may modify the class. This
-    decorator enforces no class change due to the keyword arguments passed to
-    the decorator, and no class change due to keyword arguments passed at
-    instantiation if all those arguments are passed down to the decorated
-    function.
+    Arguments passed to the class constructor may modify the class. If the
+    object returned by the the constructor is a subclass of the superclass
+    targeted by the decorator, and all the arguments passed at instantiation
+    are passed down to the decorated function, the class of the object is
+    enforced to be the new class.
 
     The decorator also creates a class hierarchy on top of the new class.
     The first non-`Kernel`-subclass superclass of the the target superclass is

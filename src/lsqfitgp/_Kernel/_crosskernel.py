@@ -19,6 +19,7 @@
 
 import enum
 import functools
+import sys
 
 import numpy
 from jax import numpy as jnp
@@ -28,7 +29,7 @@ from .. import _jaxext
 
 from . import _util
 
-def _greatest_common_superclass(classes):
+def _least_common_superclass(classes):
     # from https://stackoverflow.com/a/25787091/3942284
     classes = [x.mro() for x in classes]
     for x in classes[0]: # pragma: no branch
@@ -69,16 +70,13 @@ class CrossKernel:
     batchbytes : number, optional
         If specified, apply ``.batch(batchbytes)`` to the kernel.
     **kw
-        Additional keyword arguments are passed to `core` and saved as
-        `initargs` attribute.
+        Additional keyword arguments are passed to `core`.
     
     Attributes
     ----------
     derivable : pair of int or None
         How many times each function is (mean-square sense) derivable.
         ``sys.maxsize`` if it is smooth. `None` mean unknown.
-    initargs : dict
-        The `kw` argument. Propagates when the kernel is transformed.
     
     Methods
     -------
@@ -98,21 +96,21 @@ class CrossKernel:
     
     """
 
-    __slots__ = '_core', 'initargs', '_derivable'
+    __slots__ = '_kw', '_core', '_derivable'
     
     def __new__(cls, core, *,
         dim=None,
         loc=None,
         scale=None,
-        forcekron=False,
         derivable=None,
         maxdim=None,
+        forcekron=False,
         batchbytes=None,
         **kw,
     ):
         self = super().__new__(cls)
                 
-        self.initargs = kw        
+        self._kw = kw        
         self._core = lambda x, y: core(x, y, **kw)
         self._derivable = None, None
 
@@ -151,29 +149,15 @@ class CrossKernel:
     def derivable(self):
         return self._derivable
 
-    def _clone(self, core=None, cls=None):
+    def _clone(self, cls=None, **attrs):
         newself = object.__new__(self.__class__ if cls is None else cls)
-        newself.initargs = self.initargs
-        newself._core = self._core if core is None else core
+        newself._kw = self._kw
+        newself._core = self._core
         newself._derivable = self._derivable
+        for k, v in attrs.items():
+            setattr(newself, k, v)
         return newself
 
-    @staticmethod
-    def _newkernel_from(core, kernels):
-        """
-        Make a new kernel object which is the result of an operation on the
-        kernels in `kernels`, with implementation callable `core`.
-        """
-        assert kernels
-        classes = (IsotropicKernel, *map(type, kernels))
-        cls = _greatest_common_superclass(classes)
-        assert issubclass(cls, __class__)
-        self = object.__new__(cls)
-        self.initargs = None
-        self._core = core
-        self._derivable = None, None
-        return self
-    
     class _side(enum.Enum):
         LEFT = 0
         RIGHT = 1
@@ -200,44 +184,32 @@ class CrossKernel:
             transformed = op(*wrapped)
             return transformed(arg(x, y))
         
-        return cls._newkernel_from(core, kernels)
+        return __class__(core)
 
-        # TODO the class logic of _newkernel_from makes sense only for algebric
-        # operations, while this can do more. When I have algop, move that logic
-        # there and reimplement _binary in terms of algop.
-    
-    def _binary(self, value, op):
-        if _util.is_numerical_scalar(value):
-            unary_op = lambda f: lambda x: op(f, lambda _: value)(x)
-            out = self._nary(unary_op, [self], self._side.BOTH)
-            out._derivable = self._derivable
-            return out
-        elif isinstance(value, __class__):
-            return self._nary(op, [self, value], self._side.BOTH)
-        else:
-            return NotImplemented
-    
-    def __add__(self, value):
-        return self._binary(value, lambda f, g: lambda x: f(x) + g(x))
-    
+        # TODO use Kernel if BOTH and all kernels are Kernel
+
+    def __add__(self, other):
+        return self.algop('add', other)
+
     __radd__ = __add__
-    
-    def __mul__(self, value):
-        return self._binary(value, lambda f, g: lambda x: f(x) * g(x))
-    
+
+    def __mul__(self, other):
+        return self.algop('mul', other)
+
     __rmul__ = __mul__
 
-    def __pow__(self, value):
-        if not _util.is_nonnegative_integer_scalar(value):
-            return NotImplemented
-        return self._binary(value, lambda f, g: lambda x: f(x) ** g(x))
+    def __pow__(self, other):
+        return self.algop('pow', exponent=other)
     
     def _swap(self):
         """ permute the arguments """
-        core = self._core
-        self = self._clone(core=lambda x, y: core(y, x))
-        self._derivable = self._derivable[::-1]
-        return self
+        return self._clone(
+            _core=lambda x, y, core=self._core: core(y, x),
+            _derivable=self._derivable[::-1],
+        )
+
+    # TODO reimplement _swap as a transformation that regresses the class to the
+    # last defining it because it can break other defined transformations.
 
     def batch(self, maxnbytes):
         """
@@ -259,13 +231,18 @@ class CrossKernel:
             The same kernel but with batched computations.
         """
         core = _jaxext.batchufunc(self._core, maxnbytes=maxnbytes)
-        return self._clone(core=core)
+        return self._clone(_core=core)
     
     _transf = {}
 
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
         cls._transf = {}
+
+    # TODO instead of proscribing transfs of Kernel subclasses, treat them
+    # normally and inherit the transformation explicitly. Add an "intermediates"
+    # option to inherit_transf. Keep _crossmro() for the decorators and use
+    # here a new method _transfmro().
 
     @classmethod
     def _crossmro(cls):
@@ -349,8 +326,8 @@ class CrossKernel:
         Parameters
         ----------
         func : callable
-            A function ``func(cls, self, *args) -> CrossKernel`` that returns
-            the new kernel. ``cls`` is the superclass that defines the
+            A function ``func(cls, self, *args, **kw) -> CrossKernel`` that
+            returns the new kernel. ``cls`` is the superclass that defines the
             transformation.
         transfname : hashable, optional.
             The `transfname` parameter to `transf` this transformation will
@@ -436,7 +413,7 @@ class CrossKernel:
         _, (_, doc) = cls._gettransf(transfname)
         return doc
 
-    def transf(self, transfname, *args):
+    def transf(self, transfname, *args, **kw):
         """
 
         Return a transformed kernel.
@@ -445,22 +422,22 @@ class CrossKernel:
         ----------
         transfname : hashable
             A name identifying the transformation.
-        *args :
+        *args, **kw :
             Arguments to the transformation.
 
         Returns
         -------
-        newkernel : CrossKernel
+        newkernel : object
             The transformed kernel. The class may differ from the original.
 
         See also
         --------
-        linop, transf_help, has_transf, register_transf, register_linop,
-        register_corelinop, register_xtransf
+        linop, algop, transf_help, has_transf, register_transf, register_linop,
+        register_corelinop, register_xtransf, register_algop
 
         """
         cls, (func, _) = self._gettransf(transfname)
-        return func(cls, self, *args)
+        return func(cls, self, *args, **kw)
 
     @classmethod
     def register_linop(cls, op, transfname=None, doc=None, argparser=None):
@@ -628,7 +605,7 @@ class CrossKernel:
         @functools.wraps(corefunc)
         def op(self, arg1, arg2):
             core = corefunc(self._core, arg1, arg2)
-            return self._clone(core=core)
+            return self._clone(_core=core)
         return cls.register_linop(op, transfname, doc, argparser)
 
     @classmethod
@@ -669,5 +646,115 @@ class CrossKernel:
         
         return cls.register_corelinop(corefunc, transfname, doc, xfunc)
 
-# TODO methods register_algop, algop for transformations that act only on the
-# value of the kernel according to the kernel algebra.
+    @classmethod
+    def register_algop(cls, op, transfname=None, doc=None):
+        """
+
+        Register a transformation for use with `algop`.
+
+        Parameters
+        ----------
+        func : callable
+            A function ``func(*kernels, **kw) -> CrossKernel | NotImplemented``
+            that returns the new kernel.
+        transfname, doc :
+            See `register_transf`.
+
+        Returns
+        -------
+        func : callable
+            A transformation in the format of `register_transf`.
+
+        See also
+        --------
+        transf
+
+        """
+        
+        @functools.wraps(op)
+        def func(cls, *operands, **kw):
+            
+            def classes():
+                for o in operands:
+                    if isinstance(o, __class__):
+                        yield o.__class__
+                    elif _util.is_nonnegative_scalar_trueontracer(o):
+                        yield IsotropicKernel
+                    elif _util.is_numerical_scalar(o):
+                        yield CrossIsotropicKernel
+                    else:
+                        raise TypeError(f'operands to algop {transfname} '
+                            f'must be CrossKernel or numbers, found {o!r}')
+            
+            lcs_ops = _least_common_superclass(classes())
+            lcs = _least_common_superclass([cls, lcs_ops])
+            
+            if issubclass(lcs_ops, Kernel):
+                mro = lcs_ops.mro()
+                pos = mro.index(lcs)
+                if pos > 0 and issubclass(mro[pos - 1], Kernel):
+                    lcs = mro[pos - 1]
+            
+            out = op(*operands, **kw)
+            if out is NotImplemented:
+                return out
+            else:
+                return out._clone(lcs, _derivable=(None, None))
+        
+        func._algopmark = True
+        return cls.register_transf(func, transfname, doc)
+
+    def algop(self, transfname, *operands, **kw):
+        r"""
+
+        Return a positive algebric transformation of the input kernels.
+
+        .. math::
+            \mathrm{newkernel}(x, y) &=
+                f(\mathrm{kernel}_1(x, y), \mathrm{kernel}_2(x, y), \ldots), \\
+            f(z_1, z_2, \ldots) &= \sum_{k_1,k_2,\ldots=0}^\infty
+                a_{k_1 k_2 \ldots} z_1^{k_1} z_2^{k_2} \ldots,
+            \quad a_* \ge 0.
+
+        Parameters
+        ----------
+        transfname : hashable
+            A name identifying the transformation.
+        *operands : CrossKernel, scalar
+            Arguments to the transformation in addition to self.
+        **kw :
+            Additional arguments to the transformation, not considered as
+            operands.
+
+        Returns
+        -------
+        newkernel : CrossKernel or NotImplemented
+            The transformed kernel, or NotImplemented if the operation is
+            not supported.
+
+        See also
+        --------
+        transf
+
+        Notes
+        -----
+        The class of `newkernel` is the least common superclass of all the
+        operands and the superclass (of self) that defines the transformation,
+        unless all operands are instances of `Kernel`, and the superclass
+        defined above appears right after a subclass of `Kernel` in the MRO of
+        their least common superclass, in which case the class is that subclass.
+
+        For class determination, scalars in the input count as `IsotropicKernel`
+        if nonnegative or traced by jax, else `CrossIsotropicKernel`.
+
+        """
+        cls, (func, _) = self._gettransf(transfname)
+        if not getattr(func, '_algopmark', False):
+            raise ValueError(f'the transformation {transfname!r} was not '
+                f'defined with register_algop and so can not be invoked '
+                f'by algop')
+        return func(cls, self, *operands, **kw)
+
+# TODO method list_transf to list all the available transformations together
+# with the class they are defined in and the kind. Instead of using markers in
+# algop and linop, save a third kind value in the transf dict.

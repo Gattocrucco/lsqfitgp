@@ -59,12 +59,6 @@ class Kernel(_crosskernel.CrossKernel):
     def derivable(self):
         assert self._derivable[0] == self._derivable[1]
         return self._derivable[0]
-            
-    def _binary(self, value, op):
-        if _util.is_numerical_scalar(value):
-            with _jaxext.skipifabstract():
-                assert 0 <= value < jnp.inf, value
-        return super()._binary(value, op)
 
     def forcekron(self):
         r"""
@@ -82,8 +76,7 @@ class Kernel(_crosskernel.CrossKernel):
         """
 
         core = lambda x, y, core=self._core: _util.prod_recurse_dtype(core, x, y)
-        self = self._clone(core=core, cls=__class__)
-        return self
+        return self._clone(__class__, _core=core)
 
 _crosskernel.Kernel = Kernel
 
@@ -225,7 +218,7 @@ def diff(self, xderiv, yderiv):
                 args.append(_asfloat(y[dim]))
             return f(x, y, *args)
     
-    return self._clone(core=core)
+    return self._clone(_core=core)
 
 @Kernel.register_xtransf
 def xtransf(fun):
@@ -393,3 +386,72 @@ def normalize(core, dox, doy):
         return lambda x, y: core(x, y) / jnp.sqrt(core(x, x))
     else:
         return lambda x, y: core(x, y) / jnp.sqrt(core(y, y))
+
+@Kernel.register_algop
+def add(self, other):
+    r"""
+    
+    Sum of kernels.
+    
+    .. math::
+        \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}(x, y), \\
+        \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}.
+    
+    Parameters
+    ----------
+    other : CrossKernel or scalar
+        The other kernel.
+    
+    """
+    if _util.is_numerical_scalar(other):
+        core = lambda x, y, core=self._core: core(x, y) + other
+    elif isinstance(other, _crosskernel.CrossKernel):
+        core = lambda x, y, core=self._core, other=other._core: core(x, y) + other(x, y)
+    else:
+        return NotImplemented
+    return self._clone(_core=core)
+
+@Kernel.register_algop
+def mul(self, other):
+    r"""
+    
+    Product of kernels.
+    
+    .. math::
+        \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}(x, y), \\
+        \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}.
+    
+    Parameters
+    ----------
+    other : CrossKernel or scalar
+        The other kernel.
+    
+    """
+    if _util.is_numerical_scalar(other):
+        core = lambda x, y, core=self._core: core(x, y) * other
+    elif isinstance(other, _crosskernel.CrossKernel):
+        core = lambda x, y, core=self._core, other=other._core: core(x, y) * other(x, y)
+    else:
+        return NotImplemented
+    return self._clone(_core=core)
+
+@Kernel.register_algop
+def pow(self, *, exponent):
+    r"""
+    
+    Power of the kernel.
+    
+    .. math::
+        \mathrm{newkernel}(x, y) = \mathrm{kernel}(x, y)^{\mathrm{exponent}}
+    
+    Parameters
+    ----------
+    exponent : nonnegative integer
+        The exponent. If traced by jax, it must have unsigned integer type.
+    
+    """
+    if _util.is_nonnegative_integer_scalar(exponent):
+        core = lambda x, y, core=self._core: core(x, y) ** exponent
+    else:
+        return NotImplemented
+    return self._clone(_core=core)
