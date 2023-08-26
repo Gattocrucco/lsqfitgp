@@ -426,17 +426,12 @@ we initially stated the problem as determining if a text is English, not if it
 is <em>a lot of</em> English. We set the datapoints to +1 and -1, Milton comes out as
 roughly -2, while Caesar is +6. So Caesar is… very Latin?</p>
 <p>We can fix this by normalizing the kernel such that the variance is always one.
-It is like replacing a covariance matrix with a correlation matrix. We’ll
-use the <a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.Rescaling" title="lsqfitgp.Rescaling"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rescaling</span></code></a> kernel:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kernel</span> <span class="o">=</span> <span class="n">CountLetters</span><span class="p">()</span>
-<span class="n">inv_sdev</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">kernel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
-<span class="n">norm</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">stdfun</span><span class="o">=</span><span class="n">inv_sdev</span><span class="p">)</span>
-<span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span> <span class="o">*</span> <span class="n">norm</span><span class="p">)</span>
+It is like replacing a covariance matrix with a correlation matrix:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">CountLetters</span><span class="p">()</span><span class="o">.</span><span class="n">transf</span><span class="p">(</span><span class="s1">&#39;normalize&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
 </pre></div>
 </div>
-<p>So, we instantiated our <code class="xref py py-class docutils literal notranslate"><span class="pre">CountLetters</span></code> kernel, wrote a function
-<code class="docutils literal notranslate"><span class="pre">inv_sdev</span></code> that computes the inverse of its standard deviation, and used this
-function to rescale the kernel. Now let’s run the fit:</p>
+<p>We used the <a class="reference internal" href="../reference/kernel.html#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a> method of <a class="reference internal" href="../reference/kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a> objects. It provides
+various predefined transformations. Now let’s run the fit:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
     <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">english_texts</span><span class="p">,</span> <span class="s1">&#39;english&#39;</span><span class="p">)</span>
     <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">latin_texts</span><span class="p">,</span> <span class="s1">&#39;latin&#39;</span><span class="p">)</span>
@@ -453,7 +448,7 @@ function to rescale the kernel. Now let’s run the fit:</p>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{&#39;caesar&#39;: array(0.729906033(12), dtype=object), &#39;milton&#39;: array(-1.267473517(25), dtype=object)}
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{&#39;caesar&#39;: array(0.7295438278(95), dtype=object), &#39;milton&#39;: array(-1.268045911(13), dtype=object)}
 </pre></div>
 </div>
 <p>This time both means are close to ±1.</p>

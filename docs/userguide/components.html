@@ -128,195 +128,65 @@ kernels with different scale, and the result effectively looked like the sum
 of two processes, because the kernel of a sum of processes is the sum of their
 kernels.</p>
 <p>When summing processes it is useful to get the fit result separately for each
-component. In <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> there are two main ways to do it, one long, and
-one short.</p>
-<p>The long way is using kernel tricks, multidimensional input and transformations.
-Let’s see. We first generate some data:</p>
+component. We first generate some data:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
 <span class="kn">import</span> <span class="nn">gvar</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
-<span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="o">+</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">kernel_long</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">kernel_short</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
-<span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;pinguini&#39;</span><span class="p">)</span>
-
-<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;pinguini&#39;</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
+<span class="n">fakedata</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel_long</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">))</span>
+<span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;short&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel_short</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">))</span>
+<span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;short&#39;</span><span class="p">]</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">)</span>
 
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">],</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;components1.png&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/components1.png" src="../_images/components1.png" />
-<p>We made a mixture of two exponential quadratics and took a sample from the
-prior as data. Generating fake data from the prior is a good way to make sure
-that the fit will make sense with the data.</p>
-<p>Now we setup a fit with an additional integer input dimension that indicates
-the component, similarly to what we did in <a class="reference internal" href="out.html#multiout"><span class="std std-ref">Multidimensional output</span></a>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([</span>
-    <span class="p">(</span><span class="s1">&#39;x&#39;</span>   <span class="p">,</span> <span class="nb">float</span><span class="p">),</span>
-    <span class="p">(</span><span class="s1">&#39;comp&#39;</span><span class="p">,</span> <span class="nb">int</span>  <span class="p">),</span>
-<span class="p">])</span>
-<span class="n">xcomp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span> <span class="n">xtype</span><span class="p">)</span>
-<span class="n">xcomp</span><span class="p">[</span><span class="s1">&#39;x&#39;</span>   <span class="p">]</span> <span class="o">=</span> <span class="n">x</span>  <span class="c1"># broadcasting aligns the last axes</span>
-<span class="n">xcomp</span><span class="p">[</span><span class="s1">&#39;comp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])[:,</span> <span class="kc">None</span><span class="p">]</span>
-</pre></div>
-</div>
-<p>We need to make a kernel that changes based on the value in the <code class="docutils literal notranslate"><span class="pre">'comp'</span></code>
-field. We can do that by using a <a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.Rescaling" title="lsqfitgp.Rescaling"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rescaling</span></code></a> that acts on <code class="docutils literal notranslate"><span class="pre">'comp'</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kernel1</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">kernel2</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-<span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel1</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">stdfun</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;comp&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">kernel</span> <span class="o">+=</span> <span class="n">kernel2</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">Rescaling</span><span class="p">(</span><span class="n">stdfun</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;comp&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
-
-<span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The boolean operation in the <code class="docutils literal notranslate"><span class="pre">stdfun</span></code> argument returns 0 or 1, and since
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">stdfun</span></code> is called on both arguments of the kernel, each component is nonzero
-only when acting on two points which have the same <code class="docutils literal notranslate"><span class="pre">'comp'</span></code>.</p>
-<p>Now we add separately the two components and sum them with
-<a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addtransf()</span></code></a>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
-    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xcomp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;longscale&#39;</span><span class="p">)</span>
-    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xcomp</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;shortscale&#39;</span><span class="p">)</span>
-    <span class="o">.</span><span class="n">addtransf</span><span class="p">({</span><span class="s1">&#39;shortscale&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;longscale&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="s1">&#39;sum&#39;</span><span class="p">)</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>This method is an alternative to <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a> that takes explicitly
-the coefficients of the linear transformation instead of a Python function
-implementing it. The equivalent <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a> invocation would be:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span><span class="o">.</span><span class="n">addlintransf</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span> <span class="n">s</span> <span class="o">+</span> <span class="n">l</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;shortscale&#39;</span><span class="p">,</span> <span class="s1">&#39;longscale&#39;</span><span class="p">],</span> <span class="s1">&#39;sum&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>We can now proceed as usual to get the posterior on other points:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">xtype</span><span class="p">)</span>
-<span class="n">xplot</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">xplot</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<span class="n">xplot</span><span class="p">[</span><span class="s1">&#39;comp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])[:,</span> <span class="kc">None</span><span class="p">]</span>
-
-<span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
-    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;longscale_plot&#39;</span><span class="p">)</span>
-    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;shortscale_plot&#39;</span><span class="p">)</span>
-    <span class="o">.</span><span class="n">addtransf</span><span class="p">({</span><span class="s1">&#39;longscale_plot&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;shortscale_plot&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="s1">&#39;sum_plot&#39;</span><span class="p">)</span>
-<span class="p">)</span>
-
-<span class="n">post</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;sum&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">})</span>
-
-<span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
-
-<span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">post</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
-    <span class="n">line</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;sum_plot&#39;</span><span class="p">])</span>
-    <span class="n">color</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;longscale_plot&#39;</span><span class="p">],</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;shortscale_plot&#39;</span><span class="p">],</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
-
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
-
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;components2.png&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<img alt="../_images/components2.png" src="../_images/components2.png" />
-<p>The uncertainty on the individual components comes out larger than the
-uncertainty on the total, because there are various possible combinations that
-give the same data.</p>
-<p>Writing this code was a bit tedious, I had to use <a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.Rescaling" title="lsqfitgp.Rescaling"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rescaling</span></code></a> for each
-kernel component, make a structured array and add separately the components,
-and then redo it again for the plotting points. I’ll now rewrite the code in a
-tidier way by defining a function and using <a class="reference internal" href="../reference/kernelop.html#lsqfitgp.where" title="lsqfitgp.where"><code class="xref py py-func docutils literal notranslate"><span class="pre">where()</span></code></a>. This time I’ll also
-generate data separately for each component, although the fit will be done only
-on the sum as before:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kernel</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;comp&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">kernel1</span><span class="p">,</span> <span class="n">kernel2</span><span class="p">)</span>
-<span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
-
-<span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;longscale&#39;</span><span class="p">,</span> <span class="s1">&#39;shortscale&#39;</span><span class="p">,</span> <span class="s1">&#39;sum&#39;</span><span class="p">]</span>
-
-<span class="k">def</span> <span class="nf">addxcomp</span><span class="p">(</span><span class="n">gp</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">basekey</span><span class="p">):</span>
-    <span class="n">xcomp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;comp&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">)])</span>
-    <span class="n">xcomp</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
-    <span class="n">xcomp</span><span class="p">[</span><span class="s1">&#39;comp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">gp</span>
-        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xcomp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">basekey</span> <span class="o">+</span> <span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xcomp</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">basekey</span> <span class="o">+</span> <span class="n">keys</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="o">.</span><span class="n">addtransf</span><span class="p">({</span>
-            <span class="n">basekey</span> <span class="o">+</span> <span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="n">basekey</span> <span class="o">+</span> <span class="n">keys</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="mi">1</span>
-        <span class="p">},</span> <span class="n">basekey</span> <span class="o">+</span> <span class="n">keys</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-    <span class="p">)</span>
-
-<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
-<span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
-
-<span class="n">gp</span> <span class="o">=</span> <span class="n">addxcomp</span><span class="p">(</span><span class="n">gp</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
-<span class="n">gp</span> <span class="o">=</span> <span class="n">addxcomp</span><span class="p">(</span><span class="n">gp</span><span class="p">,</span> <span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
-
-<span class="n">dataprior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">([</span><span class="s1">&#39;data&#39;</span> <span class="o">+</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">])</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">dataprior</span><span class="p">)</span>
-
-<span class="n">post</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span>
-    <span class="s1">&#39;datasum&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">[</span><span class="s1">&#39;datasum&#39;</span><span class="p">]</span>
-<span class="p">},</span> <span class="p">[</span><span class="s1">&#39;plot&#39;</span> <span class="o">+</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">])</span>
-
-<span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
-
-<span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">post</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
-    <span class="n">line</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;plotsum&#39;</span><span class="p">])</span>
-    <span class="n">color</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;plotlongscale&#39;</span><span class="p">],</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;plotshortscale&#39;</span><span class="p">],</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
-
-<span class="k">for</span> <span class="n">marker</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">],</span> <span class="n">keys</span><span class="p">):</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">[</span><span class="s1">&#39;data&#39;</span> <span class="o">+</span> <span class="n">key</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">marker</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;components3.png&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<img alt="../_images/components3.png" src="../_images/components3.png" />
-<p>This version of the code was shorter and less redundant than the one we started
-with, but it’s not very intuitive. We still have to take care manually of
-indicating which component we are using by setting appropriately the <code class="docutils literal notranslate"><span class="pre">'comp'</span></code>
-field in the <code class="docutils literal notranslate"><span class="pre">x</span></code> arrays each time, and each time, for each set of points we
-want to consider, we have to sum the two components after evaluating them
-separately.</p>
-<p>So here comes the short way. There is another set of methods in <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>
-designed to make this kind of thing quicker. We start by creating a <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a>
-object <em>without specifying a kernel</em>:</p>
+<p>We defined two processes with different correlation lengths, sampled from each,
+and summed the result to make our fake data. Generating fake data from the prior
+is a good way to test a statistical procedure.</p>
+<p>We also saved the data generated for each component. Our goal is to recover the
+components by using only the sum. We start by creating a <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a> object without
+specifying a kernel:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Then we add separately the two kernels to the object using <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproc" title="lsqfitgp.GP.defproc"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GP.defproc()</span></code></a>:</p>
+<p>Then we add separately the two kernels to the object using <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproc" title="lsqfitgp.GP.defproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.defproc</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
-    <span class="o">.</span><span class="n">defproc</span><span class="p">(</span><span class="s1">&#39;long&#39;</span><span class="p">,</span> <span class="n">kernel1</span><span class="p">)</span>
-    <span class="o">.</span><span class="n">defproc</span><span class="p">(</span><span class="s1">&#39;short&#39;</span><span class="p">,</span> <span class="n">kernel2</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">defproc</span><span class="p">(</span><span class="s1">&#39;long&#39;</span><span class="p">,</span> <span class="n">kernel_long</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">defproc</span><span class="p">(</span><span class="s1">&#39;short&#39;</span><span class="p">,</span> <span class="n">kernel_short</span><span class="p">)</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Now the two names <code class="docutils literal notranslate"><span class="pre">'long'</span></code> and <code class="docutils literal notranslate"><span class="pre">'short'</span></code> stand for <em>independent</em> processes
-with their respective kernels. These names reside in a namespace separate
-from the one used by <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a> and <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addtransf()</span></code></a>. Now we use
-these to define their sum <em>as a process</em> instead of summing them after
-evaluation on specific points:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">defproctransf</span><span class="p">(</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;long&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;short&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<p>Now the two names <code class="docutils literal notranslate"><span class="pre">'long'</span></code> and <code class="docutils literal notranslate"><span class="pre">'short'</span></code> stand for a priori independent
+processes with their respective kernels. These names reside in a namespace
+separate from the one used by <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addx</span></code></a>, <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addlintransf</span></code></a>, etc. Now we
+use these to define the sum as a process:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">defproclintransf</span><span class="p">(</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span>
+    <span class="k">lambda</span> <span class="n">l</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">l</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">s</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+    <span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">,</span> <span class="s1">&#39;short&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>The method <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproctransf" title="lsqfitgp.GP.defproctransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">defproctransf()</span></code></a> is analogous to <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addtransf" title="lsqfitgp.GP.addtransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addtransf()</span></code></a> but
-works for the whole process at once. What we are doing mathematically is the
+<p>The method <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproclintransf" title="lsqfitgp.GP.defproclintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">defproclintransf</span></code></a> is analogous to <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addlintransf</span></code></a> but works
+for a whole process at once. What we are doing mathematically is the
 following:</p>
 <div class="math notranslate nohighlight">
-\[\operatorname{sum}(x) \equiv 1 \cdot \operatorname{long}(x) +
-                             1 \cdot \operatorname{short}(x).\]</div>
-<p>There is also the analogous <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproclintransf" title="lsqfitgp.GP.defproclintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">defproclintransf()</span></code></a>, which takes a
-Python function like <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addlintransf()</span></code></a>. Now that we have defined the
-components, we evaluate them on the points:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
-<span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+\[\operatorname{sum}(x) \equiv \operatorname{long}(x) + \operatorname{short}(x).\]</div>
+<p>The second argument to the method is a function that takes in two functions,
+and outputs a new function. The third argument specifies which processes are to
+be transformed in such way.</p>
+<p>Now that we have defined all the processes we care about, we evaluate them on
+the points:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 
 <span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
     <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;datalong&#39;</span> <span class="p">,</span> <span class="n">proc</span><span class="o">=</span><span class="s1">&#39;long&#39;</span> <span class="p">)</span>
@@ -329,13 +199,10 @@ components, we evaluate them on the points:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>We specified the processes using the <code class="docutils literal notranslate"><span class="pre">proc</span></code> parameter of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-meth docutils literal notranslate"><span class="pre">addx()</span></code></a>.
-Then we continue as before:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dataprior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">([</span><span class="s1">&#39;datalong&#39;</span><span class="p">,</span> <span class="s1">&#39;datashort&#39;</span><span class="p">,</span> <span class="s1">&#39;datasum&#39;</span><span class="p">])</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">dataprior</span><span class="p">)</span>
-
-<span class="n">post</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span>
-    <span class="s1">&#39;datasum&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">[</span><span class="s1">&#39;datasum&#39;</span><span class="p">]</span>
+<p>We specified the processes using the <code class="xref py py-obj docutils literal notranslate"><span class="pre">proc</span></code> parameter of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addx</span></code></a>. Then we
+continue as usual:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">post</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span>
+    <span class="s1">&#39;datasum&#39;</span><span class="p">:</span> <span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">],</span>
 <span class="p">},</span> <span class="p">[</span><span class="s1">&#39;plotlong&#39;</span><span class="p">,</span> <span class="s1">&#39;plotshort&#39;</span><span class="p">,</span> <span class="s1">&#39;plotsum&#39;</span><span class="p">])</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
@@ -347,21 +214,19 @@ Then we continue as before:</p>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;plotshort&#39;</span><span class="p">],</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">marker</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">,</span> <span class="s1">&#39;short&#39;</span><span class="p">,</span> <span class="s1">&#39;sum&#39;</span><span class="p">]):</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">[</span><span class="s1">&#39;data&#39;</span> <span class="o">+</span> <span class="n">key</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">marker</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fakedata</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">marker</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
 <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;components4.png&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/components4.png" src="../_images/components4.png" />
-<p>If there was this more convenient way of dealing with latent components, why
-didn’t we explain first? The reason is that it is not as general as managing the
-components manually with an explicit field. <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproc" title="lsqfitgp.GP.defproc"><code class="xref py py-meth docutils literal notranslate"><span class="pre">defproc()</span></code></a> defines
-processes which are independent of each other; to have nontrivial a priori
-correlations it is necessary to put the process index in the domain such that
-kernel can manipulate it. We did this at the end of <a class="reference internal" href="out.html#multiout"><span class="std std-ref">Multidimensional output</span></a> when we
-introduced an anticorrelation between the random walk components by multiplying
-the kernel with <code class="docutils literal notranslate"><span class="pre">lgp.Categorical(dim='coord',</span> <span class="pre">cov=[[1,</span> <span class="pre">-0.99],</span> <span class="pre">[-0.99,</span> <span class="pre">1]])</span></code>.</p>
+<p><a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproc" title="lsqfitgp.GP.defproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.defproc</span></code></a> can only define a priori independent processes. To have a priori
+correlations it would be necessary to define a single process over an extended
+input, with an explicit index indicating the component, such that the kernel can
+act on it. We did this at the end of <a class="reference internal" href="out.html#multiout"><span class="std std-ref">Multidimensional output</span></a> when we introduced an
+anticorrelation between the random walk components by multiplying the kernel
+with <code class="docutils literal notranslate"><span class="pre">lgp.Categorical(dim='coord',</span> <span class="pre">cov=[[1,</span> <span class="pre">-0.99],</span> <span class="pre">[-0.99,</span> <span class="pre">1]])</span></code>.</p>
 </section>
 
 

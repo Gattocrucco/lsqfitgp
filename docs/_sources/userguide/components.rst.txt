@@ -30,205 +30,70 @@ of two processes, because the kernel of a sum of processes is the sum of their
 kernels.
 
 When summing processes it is useful to get the fit result separately for each
-component. In :mod:`lsqfitgp` there are two main ways to do it, one long, and
-one short.
-
-The long way is using kernel tricks, multidimensional input and transformations.
-Let's see. We first generate some data::
+component. We first generate some data::
 
     import numpy as np
     import lsqfitgp as lgp
     import gvar
     from matplotlib import pyplot as plt
     
-    gp = lgp.GP(10 * lgp.ExpQuad(scale=10) + lgp.ExpQuad(scale=1))
+    kernel_long = 10 * lgp.ExpQuad(scale=10)
+    kernel_short = lgp.ExpQuad(scale=1)
     
     x = np.linspace(-10, 10, 21)
-    gp = gp.addx(x, 'pinguini')
-    
-    prior = gp.prior('pinguini')
-    y = gvar.sample(prior)
+    fakedata = {}
+    fakedata['long'] = gvar.sample(lgp.GP(kernel_long).addx(x, 'A').prior('A'))
+    fakedata['short'] = gvar.sample(lgp.GP(kernel_short).addx(x, 'A').prior('A'))
+    fakedata['sum'] = fakedata['long'] + fakedata['short']
     
     fig, ax = plt.subplots(num='lsqfitgp example')
     
-    ax.plot(x, y, '.k')
+    ax.plot(x, fakedata['sum'], '.k')
     
     fig.savefig('components1.png')
 
 .. image:: components1.png
 
-We made a mixture of two exponential quadratics and took a sample from the
-prior as data. Generating fake data from the prior is a good way to make sure
-that the fit will make sense with the data.
+We defined two processes with different correlation lengths, sampled from each,
+and summed the result to make our fake data. Generating fake data from the prior
+is a good way to test a statistical procedure.
 
-Now we setup a fit with an additional integer input dimension that indicates
-the component, similarly to what we did in :ref:`multiout`::
-
-    xtype = np.dtype([
-        ('x'   , float),
-        ('comp', int  ),
-    ])
-    xcomp = np.empty((2, len(x)), xtype)
-    xcomp['x'   ] = x  # broadcasting aligns the last axes
-    xcomp['comp'] = np.array([0, 1])[:, None]
-
-We need to make a kernel that changes based on the value in the ``'comp'``
-field. We can do that by using a :class:`Rescaling` that acts on ``'comp'``::
-
-    kernel1 = 10 * lgp.ExpQuad(scale=10)
-    kernel2 = lgp.ExpQuad(scale=1)
-    
-    kernel = kernel1 * lgp.Rescaling(stdfun=lambda x: x['comp'] == 0)
-    kernel += kernel2 * lgp.Rescaling(stdfun=lambda x: x['comp'] == 1)
-    
-    gp = lgp.GP(kernel)
-
-The boolean operation in the ``stdfun`` argument returns 0 or 1, and since
-`stdfun` is called on both arguments of the kernel, each component is nonzero
-only when acting on two points which have the same ``'comp'``.
-
-Now we add separately the two components and sum them with
-:meth:`~GP.addtransf`::
-
-    gp = (gp
-        .addx(xcomp[0], 'longscale')
-        .addx(xcomp[1], 'shortscale')
-        .addtransf({'shortscale': 1, 'longscale': 1}, 'sum')
-    )
-
-This method is an alternative to :meth:`~GP.addlintransf` that takes explicitly
-the coefficients of the linear transformation instead of a Python function
-implementing it. The equivalent :meth:`~GP.addlintransf` invocation would be::
-
-   gp.addlintransf(lambda s, l: s + l, ['shortscale', 'longscale'], 'sum')
-
-We can now proceed as usual to get the posterior on other points::
-
-    xplot = np.empty((2, 200), dtype=xtype)
-    xplot['x'] = np.linspace(-10, 10, xplot.shape[1])
-    xplot['comp'] = np.array([0, 1])[:, None]
-    
-    gp = (gp
-        .addx(xplot[0], 'longscale_plot')
-        .addx(xplot[1], 'shortscale_plot')
-        .addtransf({'longscale_plot': 1, 'shortscale_plot': 1}, 'sum_plot')
-    )
-    
-    post = gp.predfromdata({'sum': y})
-    
-    ax.cla()
-    
-    for sample in gvar.raniter(post, 2):
-        line, = ax.plot(xplot[0]['x'], sample['sum_plot'])
-        color = line.get_color()
-        ax.plot(xplot[0]['x'], sample['longscale_plot'], '--', color=color)
-        ax.plot(xplot[0]['x'], sample['shortscale_plot'], ':', color=color)
-    
-    ax.plot(x, y, '.k')
-    
-    fig.savefig('components2.png')
-
-.. image:: components2.png
-
-The uncertainty on the individual components comes out larger than the
-uncertainty on the total, because there are various possible combinations that
-give the same data.
-
-Writing this code was a bit tedious, I had to use :class:`Rescaling` for each
-kernel component, make a structured array and add separately the components,
-and then redo it again for the plotting points. I'll now rewrite the code in a
-tidier way by defining a function and using :func:`where`. This time I'll also
-generate data separately for each component, although the fit will be done only
-on the sum as before::
-
-    kernel = lgp.where(lambda x: x['comp'] == 0, kernel1, kernel2)
-    gp = lgp.GP(kernel)
-    
-    keys = ['longscale', 'shortscale', 'sum']
-    
-    def addxcomp(gp, x, basekey):
-        xcomp = np.empty((2, len(x)), dtype=[('x', float), ('comp', int)])
-        xcomp['x'] = x
-        xcomp['comp'] = np.arange(2)[:, None]
-        return (gp
-            .addx(xcomp[0], basekey + keys[0])
-            .addx(xcomp[1], basekey + keys[1])
-            .addtransf({
-                basekey + keys[0]: 1,
-                basekey + keys[1]: 1
-            }, basekey + keys[2])
-        )
-    
-    x = np.linspace(-10, 10, 21)
-    xplot = np.linspace(-10, 10, 200)
-    
-    gp = addxcomp(gp, x, 'data')
-    gp = addxcomp(gp, xplot, 'plot')
-    
-    dataprior = gp.prior(['data' + k for k in keys])
-    y = gvar.sample(dataprior)
-    
-    post = gp.predfromdata({
-        'datasum': y['datasum']
-    }, ['plot' + k for k in keys])
-    
-    ax.cla()
-    
-    for sample in gvar.raniter(post, 2):
-        line, = ax.plot(xplot, sample['plotsum'])
-        color = line.get_color()
-        ax.plot(xplot, sample['plotlongscale'], '--', color=color)
-        ax.plot(xplot, sample['plotshortscale'], ':', color=color)
-    
-    for marker, key in zip(['x', '+', '.'], keys):
-        ax.plot(x, y['data' + key], color='black', marker=marker, label=key, linestyle='')
-    ax.legend()
-    
-    fig.savefig('components3.png')
-
-.. image:: components3.png
-
-This version of the code was shorter and less redundant than the one we started
-with, but it's not very intuitive. We still have to take care manually of
-indicating which component we are using by setting appropriately the ``'comp'``
-field in the ``x`` arrays each time, and each time, for each set of points we
-want to consider, we have to sum the two components after evaluating them
-separately. 
-
-So here comes the short way. There is another set of methods in :class:`GP`
-designed to make this kind of thing quicker. We start by creating a :class:`GP`
-object *without specifying a kernel*::
+We also saved the data generated for each component. Our goal is to recover the
+components by using only the sum. We start by creating a `GP` object without
+specifying a kernel::
 
     gp = lgp.GP()
 
-Then we add separately the two kernels to the object using :meth:`GP.defproc`::
+Then we add separately the two kernels to the object using `GP.defproc`::
 
     gp = (gp
-        .defproc('long', kernel1)
-        .defproc('short', kernel2)
+        .defproc('long', kernel_long)
+        .defproc('short', kernel_short)
     )
 
-Now the two names ``'long'`` and ``'short'`` stand for *independent* processes
-with their respective kernels. These names reside in a namespace separate
-from the one used by :meth:`~GP.addx` and :meth:`~GP.addtransf`. Now we use
-these to define their sum *as a process* instead of summing them after
-evaluation on specific points::
+Now the two names ``'long'`` and ``'short'`` stand for a priori independent
+processes with their respective kernels. These names reside in a namespace
+separate from the one used by `~GP.addx`, `~GP.addlintransf`, etc. Now we
+use these to define the sum as a process::
 
-    gp = gp.defproctransf('sum', {'long': 1, 'short': 1})
+    gp = gp.defproclintransf('sum',
+        lambda l, s: lambda x: l(x) + s(x),
+        ['long', 'short'])
 
-The method :meth:`~GP.defproctransf` is analogous to :meth:`~GP.addtransf` but
-works for the whole process at once. What we are doing mathematically is the
+The method `~GP.defproclintransf` is analogous to `~GP.addlintransf` but works
+for a whole process at once. What we are doing mathematically is the
 following:
 
 .. math::
-    \operatorname{sum}(x) \equiv 1 \cdot \operatorname{long}(x) +
-                                 1 \cdot \operatorname{short}(x).
+    \operatorname{sum}(x) \equiv \operatorname{long}(x) + \operatorname{short}(x).
 
-There is also the analogous :meth:`~GP.defproclintransf`, which takes a
-Python function like :meth:`~GP.addlintransf`. Now that we have defined the
-components, we evaluate them on the points::
+The second argument to the method is a function that takes in two functions,
+and outputs a new function. The third argument specifies which processes are to
+be transformed in such way.
 
-    x = np.linspace(-10, 10, 21)
+Now that we have defined all the processes we care about, we evaluate them on
+the points::
+
     xplot = np.linspace(-10, 10, 200)
     
     gp = (gp
@@ -241,14 +106,11 @@ components, we evaluate them on the points::
         .addx(xplot, 'plotsum'  , proc='sum'  )
     )
 
-We specified the processes using the ``proc`` parameter of :meth:`~GP.addx`.
-Then we continue as before::
+We specified the processes using the `proc` parameter of `~GP.addx`. Then we
+continue as usual::
 
-    dataprior = gp.prior(['datalong', 'datashort', 'datasum'])
-    y = gvar.sample(dataprior)
-    
     post = gp.predfromdata({
-        'datasum': y['datasum']
+        'datasum': fakedata['sum'],
     }, ['plotlong', 'plotshort', 'plotsum'])
     
     ax.cla()
@@ -260,20 +122,16 @@ Then we continue as before::
         ax.plot(xplot, sample['plotshort'], ':', color=color)
     
     for marker, key in zip(['x', '+', '.'], ['long', 'short', 'sum']):
-        ax.plot(x, y['data' + key], color='black', marker=marker, label=key, linestyle='')
+        ax.plot(x, fakedata[key], color='black', marker=marker, label=key, linestyle='')
     ax.legend()
     
     fig.savefig('components4.png')
 
 .. image:: components4.png
 
-If there was this more convenient way of dealing with latent components, why
-didn't we explain first? The reason is that it is not as general as managing the
-components manually with an explicit field. :meth:`~GP.defproc` defines
-processes which are independent of each other; to have nontrivial a priori
-correlations it is necessary to put the process index in the domain such that
-kernel can manipulate it. We did this at the end of :ref:`multiout` when we
-introduced an anticorrelation between the random walk components by multiplying
-the kernel with ``lgp.Categorical(dim='coord', cov=[[1, -0.99], [-0.99, 1]])``.
-
-.. TODO this is too long for a tutorial. Do just the easy version.
+`GP.defproc` can only define a priori independent processes. To have a priori
+correlations it would be necessary to define a single process over an extended
+input, with an explicit index indicating the component, such that the kernel can
+act on it. We did this at the end of :ref:`multiout` when we introduced an
+anticorrelation between the random walk components by multiplying the kernel
+with ``lgp.Categorical(dim='coord', cov=[[1, -0.99], [-0.99, 1]])``.

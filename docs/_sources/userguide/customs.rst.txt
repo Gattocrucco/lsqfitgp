@@ -350,17 +350,12 @@ is *a lot of* English. We set the datapoints to +1 and -1, Milton comes out as
 roughly -2, while Caesar is +6. So Caesar is... very Latin?
 
 We can fix this by normalizing the kernel such that the variance is always one.
-It is like replacing a covariance matrix with a correlation matrix. We'll
-use the :class:`Rescaling` kernel::
+It is like replacing a covariance matrix with a correlation matrix::
 
-    kernel = CountLetters()
-    inv_sdev = lambda x: 1 / np.sqrt(kernel(x, x))
-    norm = lgp.Rescaling(stdfun=inv_sdev)
-    gp = lgp.GP(kernel * norm)
+    gp = lgp.GP(CountLetters().transf('normalize', True))
 
-So, we instantiated our :class:`CountLetters` kernel, wrote a function
-``inv_sdev`` that computes the inverse of its standard deviation, and used this
-function to rescale the kernel. Now let's run the fit::
+We used the `~CrossKernel.transf` method of `Kernel` objects. It provides
+various predefined transformations. Now let's run the fit::
 
     gp = (gp
         .addx(english_texts, 'english')
@@ -380,7 +375,7 @@ Output:
 
 .. code-block:: text
 
-    {'caesar': array(0.729906033(12), dtype=object), 'milton': array(-1.267473517(25), dtype=object)}
+    {'caesar': array(0.7295438278(95), dtype=object), 'milton': array(-1.268045911(13), dtype=object)}
 
 This time both means are close to ±1.
 
