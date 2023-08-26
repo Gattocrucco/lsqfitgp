@@ -391,5 +391,5 @@ def normalize(core, dox, doy):
         return lambda x, y: core(x, y) / jnp.sqrt(core(x, x) * core(y, y))
     elif dox:
         return lambda x, y: core(x, y) / jnp.sqrt(core(x, x))
-    elif doy:
+    else:
         return lambda x, y: core(x, y) / jnp.sqrt(core(y, y))

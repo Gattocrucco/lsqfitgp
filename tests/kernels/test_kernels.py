@@ -167,7 +167,7 @@ class Base:
     
     # TODO test vmap
     
-    @pytest.fixture(params=[(0, 0), (1, 0), (1, 1), (2, 0), (2, 1), (2, 2)])
+    @pytest.fixture(params=[(0, 0)])
     def derivs(self, request):
         """ Pair of numbers of derivatives to take """
         return request.param
@@ -273,6 +273,10 @@ class Stationary(Base):
 class Deriv1(Base):
     """ Test class for kernels that may be derived at least one time """
 
+    @pytest.fixture(params=[(0, 0), (1, 0), (1, 1)])
+    def derivs(self, request):
+        return request.param
+
     @skiponmaxdim
     def test_positive_nd_1(self, kernel, x_nd, psdeps):
         self.impl_positive(kernel, 1, x_nd, psdeps)
@@ -309,6 +313,10 @@ class Deriv1(Base):
 
 class Deriv2(Deriv1):
     """ Test class for kernels that may be derived at least two times """
+
+    @pytest.fixture(params=[(0, 0), (1, 0), (1, 1), (2, 0), (2, 1), (2, 2)])
+    def derivs(self, request):
+        return request.param
 
     @skiponmaxdim
     def test_positive_nd_2(self, kernel, x_nd, psdeps):
@@ -654,21 +662,25 @@ class TestColor(Stationary, Deriv2):
 
 class TestBART(Base):
 
-    @pytest.fixture(params=[2, 5])
+    @pytest.fixture(params=[1, 5])
     def nd(self, request):
         return request.param
 
-    @pytest.fixture(params=[])
-    def x_scalar(self):
-        pass
+    @pytest.fixture
+    def x_scalar(self, nd, ranx_scalar):
+        if nd != 1:
+            pytest.skip(reason='scalar test, nd parameters')
+        return ranx_scalar()
 
     @pytest.fixture
     def x_nd(self, nd, ranx_nd):
+        if nd == 1:
+            pytest.skip(reason='nd tests, scalar parameters')
         return ranx_nd(nd)
 
     @pytest.fixture
-    def x(self, x_nd):
-        return x_nd
+    def x(self, nd, ranx_scalar, ranx_nd):
+        return ranx_scalar() if nd == 1 else ranx_nd(nd)
 
     @pytest.fixture(params=[
         dict(alpha=a, beta=b, maxd=d, reset=r)
@@ -680,8 +692,6 @@ class TestBART(Base):
     def kw(self, request, rng, nd):
         splits = rng.standard_normal((10, nd))
         return dict(**request.param, splits=_kernels.BART.splits_from_coord(splits))
-
-    # TODO instead of two different dims, test nd and scalar
 
 class TestSinc(Stationary, Deriv2):
 
