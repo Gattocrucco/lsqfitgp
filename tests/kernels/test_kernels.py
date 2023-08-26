@@ -354,6 +354,8 @@ class Deriv2(Deriv1):
         if kernel.derivable < 2:
             pytest.skip()
         x = x_nd[:, None]
+        if len(x.dtype) < 2:
+            pytest.skip(reason='test needs nd >= 2')
         f0, f1 = x.dtype.names[:2]
         r1 = kernel.transf('diff', (2, f0), (2, f1))(x, x.T)
         r2 = kernel.transf('diff', f0, f0).transf('diff', f1, f1)(x, x.T)
@@ -364,6 +366,8 @@ class Deriv2(Deriv1):
         if kernel.derivable < 2:
             pytest.skip()
         x = x_nd[:, None]
+        if len(x.dtype) < 2:
+            pytest.skip(reason='test needs nd >= 2')
         f0, f1 = x.dtype.names[:2]
         r1 = kernel.transf('diff', (2, f0), (2, f1))(x, x.T)
         r2 = kernel.transf('diff', f0, f1).transf('diff', f0, f1)(x, x.T)
@@ -428,6 +432,11 @@ class TestMaternp(Stationary, Deriv2):
         return dict(p=request.param)
 
 class TestWendland(Stationary, Deriv2):
+
+    @pytest.fixture
+    def x_nd(self, kw, ranx_nd):
+        nd = int(np.floor(2 * kw['alpha'] - 1))
+        return ranx_nd(nd)
 
     @pytest.fixture(params=
         [dict(k=k, alpha=a) for k in range(4) for a in np.linspace(1, 4, 10)])

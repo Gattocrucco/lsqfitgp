@@ -435,14 +435,13 @@ def Taylor(x, y):
     deviation 1/k!.
     """
     
-    # TODO reference? Maybe it's called bessel kernel in the literature?
-    # => nope, bessel kernel is the J_v one
-        
-    # TODO what is the "natural" extension of this to multidim? Is forcekron
-    # appropriate?
-    
-    # TODO probably the rescaled version of this (e^-x) makes more sense
-    
     mul = x * y
     val = 2 * jnp.sqrt(jnp.abs(mul))
     return jnp.where(mul >= 0, jspecial.i0(val), _special.j0(val))
+
+    # TODO reference? Maybe it's called bessel kernel in the literature?
+    # => nope, bessel kernel is the J_v one
+        
+    # TODO what is the "natural" extension of this to multidim?
+    
+    # TODO probably the rescaled version of this (e^-x) makes more sense
