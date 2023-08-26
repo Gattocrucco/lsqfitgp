@@ -367,10 +367,7 @@ def Cauchy(r2, alpha=2, beta=2):
     # TODO derivatives w.r.t. alpha at alpha==2 are probably broken, although
     # I guess they are not needed since it's on the boundary of the domain
     
-def _causalexpquad_derivable(alpha=1):
-    return alpha == 0
-
-@isotropickernel(derivable=_causalexpquad_derivable, input='posabs')
+@isotropickernel(derivable=lambda alpha=1: alpha == 0, input='posabs')
 def CausalExpQuad(r, alpha=1):
     r"""
     Causal exponential quadratic kernel.

@@ -845,22 +845,18 @@ util.xfail(TestWendland, 'test_double_diff_nd_second_chopped')
 util.xfail(TestWendland, 'test_continuous_in_zero_2')
 util.xfail(TestWendland, 'test_jit_nd_2') # seen xpassing, precision?
 util.xfail(TestCausalExpQuad, 'test_positive_nd_2')
-util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped')
 util.xfail(TestCausalExpQuad, 'test_continuous_in_zero_2')
 util.xfail(TestCausalExpQuad, 'test_jit_nd_2') # it's a divergence of the variance; mistake in derivability?
 
-# TODO some xpass, likely numerical precision problems
-util.xfail(TestWendland, 'test_positive_scalar_2') # normally xpasses
-util.xfail(TestCausalExpQuad, 'test_positive_scalar_2') # NOT 1 - erf cancel
+util.xfail(TestCausalExpQuad, 'test_positive_scalar_2')
+    # seems numerical precision problem, but it's not 1 - erf cancel
 
-# TODO This one should not fail, it's a first derivative! Probably it's the
-# case D = 1 that fails because that's the maximum dimensionality. For some
-# reason I don't catch it without taking a derivative. => This explanation is
-# likely wrong since the jit test fails too, without checking positivity.
-util.xfail(TestWendland, 'test_positive_nd_1') # seen xpassing in the wild
-util.xfail(TestWendland, 'test_jit_nd_1') # seen xpassing, precision?
+util.xfail(TestWendland, 'test_jit_nd_1') # The failures are on kw14, kw33,
+    # and involve integer multiples of the identity, with differences:
+    # 24 vs 25, 24 vs. 22.
 
-# TODO These are not isotropic kernels, what is the problem?
-util.xfail(TestTaylor, 'test_double_diff_nd_second') # numerical precision
-util.xfail(TestNNKernel, 'test_double_diff_nd_second') # large difference
-util.xfail(TestFracBrownian, 'test_double_diff_nd_second') # large difference
+# TODO These are not isotropic kernels, what is the problem? They are currently
+# skipped, there failures were with forcekron applied.
+# util.xfail(TestTaylor, 'test_double_diff_nd_second') # numerical precision
+# util.xfail(TestNNKernel, 'test_double_diff_nd_second') # large difference
+# util.xfail(TestFracBrownian, 'test_double_diff_nd_second') # large difference

@@ -75,7 +75,8 @@ def assert_array_equal(*args):
 
 def mark(cls, meth, mark):
     """
-    Function to mark a test method.
+    Function to mark a test method without marking the superclass if the
+    method is inherited.
     """
     impl = getattr(cls, meth)
     if not meth.startswith('test_'):
@@ -83,12 +84,12 @@ def mark(cls, meth, mark):
     marker = getattr(pytest.mark, mark)
     @marker
     @functools.wraps(impl) # `wraps` needed because pytest uses the method name
-    def newimpl(self):
+    def newimpl(self, *args, **kw):
         # wrap because otherwise the superclass method would be marked too,
         # but set the mark temporarily to allow introspection
         marker(impl)
         try:
-            impl(self)
+            impl(self, *args, **kw)
         finally:
             impl.pytestmark.pop()
     setattr(cls, meth, newimpl)
