@@ -135,7 +135,7 @@ are produced behind the scenes by <a class="reference internal" href="gp.html#ls
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.CrossKernel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CrossKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batchbytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L38-L576"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CrossKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batchbytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L38-L562"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel" title="Link to this definition">¶</a></dt>
 <dd><p>Base class to represent kernels, i.e., covariance functions.</p>
 <p>A kernel is a two-argument function that computes the covariance between
 two functions at some points according to some probability distribution:</p>
@@ -161,12 +161,10 @@ actual argument.</p>
 </dd>
 <dt><strong>forcekron</strong><span class="classifier">bool, default False</span></dt><dd><p>If True, apply <a class="reference internal" href="#lsqfitgp.Kernel.forcekron" title="lsqfitgp.Kernel.forcekron"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel.forcekron</span></code></a> before the other transformations.</p>
 </dd>
-<dt><strong>saveargs</strong><span class="classifier">bool, default False</span></dt><dd><p>If True, save the all the initialization arguments in a
-dictionary under the attribute <code class="xref py py-obj docutils literal notranslate"><span class="pre">initargs</span></code>.</p>
-</dd>
 <dt><strong>batchbytes</strong><span class="classifier">number, optional</span></dt><dd><p>If specified, apply <code class="docutils literal notranslate"><span class="pre">.batch(batchbytes)</span></code> to the kernel.</p>
 </dd>
-<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">core</span></code>.</p>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">core</span></code> and saved as
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">initargs</span></code> attribute.</p>
 </dd>
 </dl>
 </dd>
@@ -181,9 +179,9 @@ dictionary under the attribute <code class="xref py py-obj docutils literal notr
 <dt class="field-odd">Attributes<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>derivable</strong><span class="classifier">pair of int or None</span></dt><dd><p>How many times each function is (mean-square sense) derivable.
-<code class="docutils literal notranslate"><span class="pre">sys.maxsize</span></code> if it is smooth. <code class="docutils literal notranslate"><span class="pre">None</span></code> mean unknown.</p>
+<code class="docutils literal notranslate"><span class="pre">sys.maxsize</span></code> if it is smooth. <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code> mean unknown.</p>
 </dd>
-<dt><strong>maxdim</strong><span class="classifier">pair of int or None</span></dt><dd><p>Maximum input dimensionality. <code class="docutils literal notranslate"><span class="pre">None</span></code> means unknown.</p>
+<dt><strong>initargs</strong><span class="classifier">dict</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">kw</span></code> argument. Propagates when the kernel is transformed.</p>
 </dd>
 </dl>
 </dd>
@@ -213,7 +211,7 @@ dictionary under the attribute <code class="xref py py-obj docutils literal notr
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.CrossKernel.batch">
-<span class="sig-name descname"><span class="pre">batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">maxnbytes</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L262-L282"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.batch" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">maxnbytes</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L243-L263"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.batch" title="Link to this definition">¶</a></dt>
 <dd><p>Return a batched version of the kernel.</p>
 <p>The batched kernel processes its inputs in chunks to try to limit memory
 usage.</p>
@@ -237,7 +235,7 @@ not induced by the operations in the kernel.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.CrossKernel.has_transf">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L327-L350"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.has_transf" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L308-L331"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.has_transf" title="Link to this definition">¶</a></dt>
 <dd><p>Check if a transformation is registered.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -257,7 +255,7 @@ not induced by the operations in the kernel.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.CrossKernel.register_coretransf">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_coretransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coretransf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argparser</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L517-L543"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_coretransf" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_coretransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coretransf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argparser</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L502-L528"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_coretransf" title="Link to this definition">¶</a></dt>
 <dd><p>Register a transformation that acts only on the core.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -282,7 +280,7 @@ initialization.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.CrossKernel.register_transf">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argparser</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L352-L406"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_transf" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argparser</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L333-L388"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_transf" title="Link to this definition">¶</a></dt>
 <dd><p>Register a transformation for use with <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a>.</p>
 <p>The transformation is registered for the first non-<a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>-subclass in
 the MRO and for its subclasses.</p>
@@ -295,8 +293,9 @@ the new kernel.</p>
 <dt><strong>transfname</strong><span class="classifier">hashable, optional.</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">transfname</span></code> parameter to <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a> this transformation will
 be accessible under. If not specified, use the name of <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a>.</p>
 </dd>
-<dt><strong>argparser</strong><span class="classifier">callable, optional</span></dt><dd><p>A function applied to each of the arguments. It must return <code class="docutils literal notranslate"><span class="pre">None</span></code>
-if the operation is the identity.</p>
+<dt><strong>argparser</strong><span class="classifier">callable, optional</span></dt><dd><p>A function applied to each of the arguments. It should return
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code> if the operation is the identity. Not called if the
+argument is <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>.</p>
 </dd>
 <dt><strong>doc</strong><span class="classifier">str, optional</span></dt><dd><p>The documentation of the transformation returned by <a class="reference internal" href="#lsqfitgp.CrossKernel.transf_help" title="lsqfitgp.CrossKernel.transf_help"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf_help</span></code></a>.
 If not specified, use the docstring of <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a>.</p>
@@ -324,19 +323,19 @@ If not specified, use the docstring of <a class="reference internal" href="#lsqf
 </div>
 <p class="rubric">Notes</p>
 <p>The function <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a> is called only if <code class="xref py py-obj docutils literal notranslate"><span class="pre">arg1</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">arg2</span></code> is not
-<code class="docutils literal notranslate"><span class="pre">None</span></code> before or after conversion with <code class="xref py py-obj docutils literal notranslate"><span class="pre">argparser</span></code>.</p>
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code> before or after conversion with <code class="xref py py-obj docutils literal notranslate"><span class="pre">argparser</span></code>.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.CrossKernel.register_xtransf">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_xtransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtransf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L545-L576"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_xtransf" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_xtransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xtransf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L530-L562"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_xtransf" title="Link to this definition">¶</a></dt>
 <dd><p>Register a transformation that acts only on the input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>xtransf</strong><span class="classifier">callable</span></dt><dd><p>A function <code class="docutils literal notranslate"><span class="pre">xtransf(arg)</span> <span class="pre">-&gt;</span> <span class="pre">(transf</span> <span class="pre">x:</span> <span class="pre">newx)</span></code> that takes in a
 transformation argument and produces a function to transform the
-input.</p>
+input. Not called if <code class="docutils literal notranslate"><span class="pre">arg</span></code> is <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>.</p>
 </dd>
 <dt><strong>transfname, doc</strong></dt><dd><p>See <a class="reference internal" href="#lsqfitgp.CrossKernel.register_transf" title="lsqfitgp.CrossKernel.register_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_transf</span></code></a>. <code class="xref py py-obj docutils literal notranslate"><span class="pre">argparser</span></code> is not provided because its
 functionality can be included in <code class="xref py py-obj docutils literal notranslate"><span class="pre">xtransf</span></code>.</p>
@@ -354,11 +353,11 @@ functionality can be included in <code class="xref py py-obj docutils literal no
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.CrossKernel.transf">
-<span class="sig-name descname"><span class="pre">transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L410-L495"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.transf" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L392-L480"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.transf" title="Link to this definition">¶</a></dt>
 <dd><p>Transform the kernel to represent a transformation of the functions.</p>
 <div class="math notranslate nohighlight">
-\[\mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), g(y)]
-\mathrm{newkernel}(x, y) = \mathrm{Cov}[T_1(f)(x), T_2(g)(y)]\]</div>
+\[\begin{split}\mathrm{kernel}(x, y) &amp;= \mathrm{Cov}[f(x), g(y)] \\
+\mathrm{newkernel}(x, y) &amp;= \mathrm{Cov}[T_1(f)(x), T_2(g)(y)]\end{split}\]</div>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
@@ -382,13 +381,15 @@ error checking.</p>
 </dd>
 <dt>‘rescale’ :</dt><dd><p>Multiply the function by another fixed function.</p>
 </dd>
+<dt>‘normalize’ :</dt><dd><p>Rescale the process to unit variance.</p>
+</dd>
 </dl>
 <p>Subclasses may define their own.</p>
 </dd>
 <dt><strong>*args</strong></dt><dd><p>Two arguments that indicate how to transform each function. If both
 arguments represent the identity, this is a no-op. If there is only
 one argument, it is intended that the two arguments are equal.
-<code class="docutils literal notranslate"><span class="pre">None</span></code> always represents the identity.</p>
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code> always represents the identity.</p>
 </dd>
 </dl>
 </dd>
@@ -416,7 +417,7 @@ is not a subclass of <a class="reference internal" href="#lsqfitgp.Kernel" title
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.CrossKernel.transf_help">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transf_help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L497-L515"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.transf_help" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transf_help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L482-L500"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.transf_help" title="Link to this definition">¶</a></dt>
 <dd><p>Return the documentation of a transformation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -438,7 +439,7 @@ is not a subclass of <a class="reference internal" href="#lsqfitgp.Kernel" title
 
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Kernel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batchbytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_kernel.py#L35-L95"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Kernel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batchbytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_kernel.py#L35-L86"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Kernel" title="Link to this definition">¶</a></dt>
 <dd><p>Subclass of <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a> to represent the kernel of a single function:</p>
 <div class="math notranslate nohighlight">
 \[\mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), f(y)].\]</div>
@@ -453,14 +454,12 @@ is not a subclass of <a class="reference internal" href="#lsqfitgp.Kernel" title
 <dd class="field-odd"><dl class="simple">
 <dt><strong>derivable</strong><span class="classifier">int or None</span></dt><dd><p>The degree of differentiability of the function.</p>
 </dd>
-<dt><strong>maxdim</strong><span class="classifier">int or None</span></dt><dd><p>Maximum dimensionality of the function input.</p>
-</dd>
 </dl>
 </dd>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.Kernel.forcekron">
-<span class="sig-name descname"><span class="pre">forcekron</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_kernel.py#L76-L92"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Kernel.forcekron" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">forcekron</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_kernel.py#L69-L86"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Kernel.forcekron" title="Link to this definition">¶</a></dt>
 <dd><p>Force the kernel to be a separate product over dimensions:</p>
 <div class="math notranslate nohighlight">
 \[\mathrm{newkernel}(x, y) = \prod_i \mathrm{kernel}(x_i, y_i)\]</div>
@@ -478,22 +477,23 @@ is not a subclass of <a class="reference internal" href="#lsqfitgp.Kernel" title
 
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.CrossStationaryKernel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CrossStationaryKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'signed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_stationary.py#L28-L73"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossStationaryKernel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CrossStationaryKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'signed'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_stationary.py#L28-L67"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossStationaryKernel" title="Link to this definition">¶</a></dt>
 <dd><p>Subclass of <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a> for stationary kernels.</p>
+<p>A stationary kernel depends only on the difference, dimension by dimension,
+between its two arguments.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>kernel</strong><span class="classifier">callable</span></dt><dd><p>A function taking one argument <code class="docutils literal notranslate"><span class="pre">delta</span></code> which is the difference
-between x and y, plus optionally keyword arguments.</p>
+<dt><strong>core</strong><span class="classifier">callable</span></dt><dd><p>A function taking one positional argument <code class="docutils literal notranslate"><span class="pre">delta</span> <span class="pre">=</span> <span class="pre">x</span> <span class="pre">-</span> <span class="pre">y</span></code> and optional
+keyword arguments.</p>
 </dd>
-<dt><strong>input</strong><span class="classifier">{‘signed’, ‘soft’, ‘hard’}</span></dt><dd><p>If ‘signed’ (default), <a class="reference internal" href="kerneldec.html#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> is passed the bare difference. If
-‘soft’, <a class="reference internal" href="kerneldec.html#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> is passed the absolute value of the difference,
-and the difference of equal points is a small number instead of
-zero. If ‘hard’, the absolute value.</p>
+<dt><strong>input</strong><span class="classifier">{‘signed’, ‘posabs’, ‘abs’}, default ‘signed’</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">'signed'</span></code>, <a class="reference internal" href="kerneldec.html#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> is passed the bare difference. If
+<code class="docutils literal notranslate"><span class="pre">'posabs'</span></code>, <a class="reference internal" href="kerneldec.html#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> is passed the absolute value of the difference,
+and the difference of equal points is a small number instead of zero. If
+<code class="docutils literal notranslate"><span class="pre">'abs'</span></code>, the absolute value.</p>
 </dd>
-<dt><strong>scale</strong><span class="classifier">scalar</span></dt><dd><p>The difference is divided by <code class="docutils literal notranslate"><span class="pre">scale</span></code>.</p>
-</dd>
-<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a> init.</p>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>
+constructor.</p>
 </dd>
 </dl>
 </dd>
@@ -502,40 +502,41 @@ zero. If ‘hard’, the absolute value.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.StationaryKernel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">StationaryKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'signed'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_stationary.py#L75-L76"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.StationaryKernel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">StationaryKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'signed'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_stationary.py#L69-L70"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.StationaryKernel" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.CrossIsotropicKernel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CrossIsotropicKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'squared'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_isotropic.py#L31-L97"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossIsotropicKernel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CrossIsotropicKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'squared'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_isotropic.py#L31-L92"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossIsotropicKernel" title="Link to this definition">¶</a></dt>
 <dd><p>Subclass of <a class="reference internal" href="#lsqfitgp.CrossStationaryKernel" title="lsqfitgp.CrossStationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossStationaryKernel</span></code></a> for isotropic kernels.</p>
+<p>An isotropic kernel depends only on the Euclidean distance between its two
+arguments.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>kernel</strong><span class="classifier">callable</span></dt><dd><p>A function taking one argument <code class="docutils literal notranslate"><span class="pre">r2</span></code> which is the squared distance
 between x and y, plus optionally keyword arguments.</p>
 </dd>
-<dt><strong>input</strong><span class="classifier">{‘squared’, ‘hard’, ‘soft’, ‘raw’}</span></dt><dd><p>If ‘squared’ (default), <code class="docutils literal notranslate"><span class="pre">kernel</span></code> is passed the squared distance.
-If ‘hard’, it is passed the distance (not squared). If ‘soft’, it
-is passed the distance, and the distance of equal points is a small
-number instead of zero. If ‘raw’, the kernel is passed both points
-separately like non-stationary kernels.</p>
+<dt><strong>input</strong><span class="classifier">{‘squared’, ‘abs’, ‘posabs’, ‘raw’}, default ‘squared’</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">'squared'</span></code>, <a class="reference internal" href="kerneldec.html#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> is passed the squared distance. If <code class="docutils literal notranslate"><span class="pre">'abs'</span></code>,
+it is passed the distance (not squared). If <code class="docutils literal notranslate"><span class="pre">'posabs'</span></code>, it is passed
+the distance, and the distance of equal points is a small number instead
+of zero. If <code class="docutils literal notranslate"><span class="pre">'raw'</span></code>, the kernel is passed both points separately like
+non-stationary kernels.</p>
 </dd>
-<dt><strong>scale</strong><span class="classifier">scalar</span></dt><dd><p>The distance is divided by <code class="docutils literal notranslate"><span class="pre">scale</span></code>.</p>
-</dd>
-<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a> init.</p>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>
+constructor.</p>
 </dd>
 </dl>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>The ‘soft’ option will cause problems with second derivatives in more
-than one dimension.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">input='posabs'</span></code> option will cause problems with second derivatives in
+more than one dimension.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.IsotropicKernel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">IsotropicKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'squared'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_isotropic.py#L99-L100"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.IsotropicKernel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">IsotropicKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'squared'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_isotropic.py#L94-L95"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.IsotropicKernel" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </section>

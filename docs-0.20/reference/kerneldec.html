@@ -129,7 +129,7 @@
 <h2>Decorators<a class="headerlink" href="#decorators" title="Link to this heading">¶</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.kernel">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L79-L129"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.kernel" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L67-L123"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.kernel" title="Link to this definition">¶</a></dt>
 <dd><p>Decorator to convert a function to a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -142,7 +142,7 @@
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>class_or_dec</strong><span class="classifier">callable or class</span></dt><dd><p>If <code class="xref py py-obj docutils literal notranslate"><span class="pre">args</span></code> is empty, a decorator ready to be applied, else the kernel
+<dt><strong>class_or_dec</strong><span class="classifier">callable or type</span></dt><dd><p>If <code class="xref py py-obj docutils literal notranslate"><span class="pre">args</span></code> is empty, a decorator ready to be applied, else the kernel
 class.</p>
 </dd>
 </dl>
@@ -155,6 +155,11 @@ class.</p>
 </dl>
 </div>
 <p class="rubric">Notes</p>
+<p>Arguments passed to the class constructor may modify the class. This
+decorator enforces no class change due to the keyword arguments passed to
+the decorator, and no class change due to keyword arguments passed at
+instantiation if all those arguments are passed down to the decorated
+function.</p>
 <p>The decorator also creates a class hierarchy on top of the new class.
 The first non-<a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>-subclass superclass of the the target superclass is
 used as superclass of a new class which is the first base of the returned
@@ -183,10 +188,10 @@ class. The second base is the target superclass. In code, this:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.stationarykernel">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">stationarykernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L131-L147"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.stationarykernel" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">stationarykernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L125-L141"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.stationarykernel" title="Link to this definition">¶</a></dt>
 <dd><p>Like <a class="reference internal" href="#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a>.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">stationarykernel</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s1">&#39;soft&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">stationarykernel</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s1">&#39;posabs&#39;</span><span class="p">)</span>
 <span class="gp">... </span><span class="k">def</span> <span class="nf">MyKernel</span><span class="p">(</span><span class="n">absdelta</span><span class="p">,</span> <span class="n">cippa</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lippa</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
 <span class="gp">... </span>    <span class="k">return</span> <span class="n">cippa</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
 <span class="gp">... </span>        <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">absdelta</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">/</span> <span class="n">lippa</span><span class="p">)</span>
@@ -198,7 +203,7 @@ class. The second base is the target superclass. In code, this:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.isotropickernel">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">isotropickernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L149-L162"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.isotropickernel" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">isotropickernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L143-L156"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.isotropickernel" title="Link to this definition">¶</a></dt>
 <dd><p>Like <a class="reference internal" href="#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a>.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">isotropickernel</span><span class="p">(</span><span class="n">derivable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
