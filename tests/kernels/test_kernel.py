@@ -115,6 +115,35 @@ def test_pow(cls, rng):
     with pytest.raises(TypeError):
         traced(3, x, y)
 
+@mark.parametrize('op', [operator.add, operator.mul])
+@mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
+def test_binary_class(op, cls, constcore):
+    
+    assert op(cls(constcore), cls(constcore)).__class__ is cls
+    assert op(cls(constcore), lgp.Kernel(constcore)).__class__ is lgp.Kernel
+    assert op(lgp.Kernel(constcore), cls(constcore)).__class__ is lgp.Kernel
+    
+    sup = cls.mro()[1]
+    assert sup.__name__.startswith('Cross')
+    
+    assert op(sup(constcore), sup(constcore)).__class__ is sup
+    assert op(cls(constcore), sup(constcore)).__class__ is sup
+    assert op(sup(constcore), cls(constcore)).__class__ is sup
+    assert op(sup(constcore), lgp.Kernel(constcore)).__class__ is lgp.CrossKernel
+    assert op(sup(constcore), lgp.CrossKernel(constcore)).__class__ is lgp.CrossKernel
+
+    class A(cls): pass
+
+    assert op(A(constcore), A(constcore)).__class__ is cls
+    assert op(A(constcore), cls(constcore)).__class__ is cls
+    assert op(A(constcore), lgp.Kernel(constcore)).__class__ is lgp.Kernel
+
+@mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
+def test_pow_class(cls, constcore):
+    assert (cls(constcore) ** 1).__class__ is cls
+    class A(cls): pass
+    assert (A(constcore) ** 1).__class__ is cls
+
 def test_batch(rng):
     class A(lgp.CrossKernel): pass
     core = lambda x, y: 1.2 * x + 4.3 * y
@@ -286,6 +315,20 @@ def test_transf_invalid_arg(name, arg, constcore):
     with pytest.raises((ValueError, TypeError)):
         kernel.linop(name, None, arg)
 
+@mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
+@mark.parametrize('name,arg', [
+    ('rescale', jnp.cos),
+    ('loc', 0),
+    ('scale', 1),
+    ('maxdim', 1),
+    ('derivable', 1),
+    ('normalize', True),
+])
+def test_transf_class(cls, name, arg, constcore):
+    k = cls(constcore)
+    q = k.linop(name, arg)
+    assert q.__class__ is cls
+
 def test_derivability(constcore):
     kernel = lgp.Kernel(constcore)
     assert kernel.derivable is None
@@ -353,14 +396,18 @@ def test_distances(rng):
         pytest.xfail(reason='generated values too close')
     
     K = lgp.Expon
-    c1 = K(input='signed')(x1, x2)
-    c2 = K(input='abs')(x1, x2)
-    c3 = K(input='posabs')(x1, x2)
+    with pytest.warns(UserWarning, match='overriding'):
+        c1 = K(input='signed')(x1, x2)
+        c2 = K(input='abs')(x1, x2)
+        c3 = K(input='posabs')(x1, x2)
     util.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
     util.assert_allclose(c1, c3, atol=1e-14, rtol=1e-14)
 
-@mark.parametrize('dec', [lgp.stationarykernel, lgp.isotropickernel])
-def test_decorator_kw(dec):
+@mark.parametrize('dec,cls', [
+    (lgp.stationarykernel, lgp.StationaryKernel),
+    (lgp.isotropickernel, lgp.IsotropicKernel),
+])
+def test_decorator_kw(dec, cls):
 
     @dec(input='abs')
     def A(delta, ciao=3):
@@ -369,14 +416,20 @@ def test_decorator_kw(dec):
     assert A().__class__ is A
     with pytest.warns(UserWarning, match='overriding'):
         assert A(input='posabs').__class__ is A
-    assert A(scale=5).__class__ is lgp.Kernel
-    assert A(loc=5).__class__ is lgp.Kernel
+    assert A(scale=5).__class__ is cls
+    assert A(loc=5).__class__ is cls
     assert A(ciao=2).__class__ is A
+    assert A(dim='a').__class__ is lgp.Kernel
 
     @dec(loc=1)
     def B(delta, ciao=2):
         return ciao
     assert B(ciao=1).__class__ is B
+
+    @dec(dim='a')
+    def C(delta, ciao=2):
+        return ciao
+    assert C(ciao=1).__class__ is C
 
 def test_callable_arg(constcore):
     kernel = lgp.Kernel(constcore, derivable=lambda d: d, d=6)

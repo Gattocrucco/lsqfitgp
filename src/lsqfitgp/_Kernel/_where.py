@@ -104,4 +104,7 @@ def where(condfun, kernel1, kernel2, dim=None):
 # choose(lambda x: x['comp'], {'a': kernela, 'b': kernelb})
 
 # TODO consider making an extension of `transf` that allows multi-kernel
-# operations.
+# operations. where is a linop.
+#
+# Class rules: The condition for trying to make it a Kernel is that all
+# involved kernels must be instances of Kernel.

@@ -96,6 +96,14 @@ class IsotropicKernel(CrossIsotropicKernel, _stationary.StationaryKernel):
 
 _crosskernel.IsotropicKernel = IsotropicKernel
 
+# make these linops preserve the class IsotropicKernel
+IsotropicKernel.inherit_transf('rescale')
+IsotropicKernel.inherit_transf('loc')
+IsotropicKernel.inherit_transf('scale')
+IsotropicKernel.inherit_transf('maxdim')
+IsotropicKernel.inherit_transf('derivable')
+IsotropicKernel.inherit_transf('normalize')
+
 # TODO put Constant here as superclass of Zero? Constant needs it Cross
 # version because it makes a difference, transf is not trivial
 

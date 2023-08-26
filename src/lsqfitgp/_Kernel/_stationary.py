@@ -69,6 +69,14 @@ class CrossStationaryKernel(_crosskernel.CrossKernel):
 class StationaryKernel(CrossStationaryKernel, _kernel.Kernel):
     pass
 
+# make these linops preserve the class StationaryKernel
+StationaryKernel.inherit_transf('rescale')
+StationaryKernel.inherit_transf('loc')
+StationaryKernel.inherit_transf('scale')
+StationaryKernel.inherit_transf('maxdim')
+StationaryKernel.inherit_transf('derivable')
+StationaryKernel.inherit_transf('normalize')
+
 def _eps(x):
     if jnp.issubdtype(x.dtype, jnp.inexact):
         return jnp.finfo(x.dtype).eps

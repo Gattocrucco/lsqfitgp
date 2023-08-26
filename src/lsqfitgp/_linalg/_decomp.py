@@ -112,6 +112,8 @@ To compute a Fisher-vector product when there are many parameters, do
 # (or its pieces) and the arguments to the function. But how would this play
 # together with passing decomposition objects as pieces?
 
+# TODO split this file by class
+
 import abc
 import functools
 

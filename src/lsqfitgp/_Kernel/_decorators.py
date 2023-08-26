@@ -42,7 +42,7 @@ def makekernelsubclass(kernel, superclass, **prekw):
             if len(kwargs) < len(prekw) + len(kw):
                 shared_keys = set(prekw) & set(kw)
                 warnings.warn(f'overriding init argument(s) '
-                    f'{", ".join(shared_keys)} of kernel {name}')
+                    f'{shared_keys} of kernel {name}')
             self = super(newclass, cls).__new__(cls, kernel, **kwargs)
             if set(kw).issubset(self.initargs):
                 self = self._clone(cls=cls)

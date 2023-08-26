@@ -97,6 +97,8 @@ class CrossKernel:
     Kernel
     
     """
+
+    __slots__ = '_core', 'initargs', '_derivable'
     
     def __new__(cls, core, *,
         dim=None,
@@ -384,6 +386,56 @@ class CrossKernel:
         cls._transf[transfname] = func, doc
         return func
 
+    @classmethod
+    def inherit_transf(cls, transfname):
+        """
+        
+        Inherit a transformation from a superclass.
+
+        Parameters
+        ----------
+        transfname : hashable
+            The name of the transformation.
+
+        Raises
+        ------
+        KeyError :
+            The transformation was not found in any superclass, or the
+            transformation is already registered in the nearest non-`Kernel`
+            superclass.
+
+        See also
+        --------
+        transf
+
+        """
+        _, (func, doc) = cls._gettransf(transfname)
+        cls.register_transf(func, transfname, doc)
+
+    @classmethod
+    def transf_help(cls, transfname):
+        """
+        
+        Return the documentation of a transformation.
+
+        Parameters
+        ----------
+        transfname : hashable
+            The name of the transformation.
+
+        Returns
+        -------
+        doc : str
+            The documentation of the transformation.
+
+        See also
+        --------
+        transf
+
+        """
+        _, (_, doc) = cls._gettransf(transfname)
+        return doc
+
     def transf(self, transfname, *args):
         """
 
@@ -549,30 +601,6 @@ class CrossKernel:
         return func(cls, self, *args)
 
     @classmethod
-    def transf_help(cls, transfname):
-        """
-        
-        Return the documentation of a transformation.
-
-        Parameters
-        ----------
-        transfname : hashable
-            The name of the transformation.
-
-        Returns
-        -------
-        doc : str
-            The documentation of the transformation.
-
-        See also
-        --------
-        transf
-
-        """
-        _, (_, doc) = cls._gettransf(transfname)
-        return doc
-
-    @classmethod
     def register_corelinop(cls, corefunc, transfname=None, doc=None, argparser=None):
         """
 
@@ -643,6 +671,3 @@ class CrossKernel:
 
 # TODO methods register_algop, algop for transformations that act only on the
 # value of the kernel according to the kernel algebra.
-
-# TODO a method inherit_transf to be used in stationary and isotropic to make
-# loc and scale preserve the subclass.
