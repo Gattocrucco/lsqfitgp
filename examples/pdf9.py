@@ -192,22 +192,22 @@ def makegp(hp, **kw):
         if suffix != '':
             gp = gp.defproc('T' + suffix, kernel)
         gp = gp.defproc('f' + suffix, kernel_prim)
-        gp = gp.defprocderiv('V' + suffix, 1, 'f' + suffix)
+        gp = gp.defderiv('V' + suffix, 1, 'f' + suffix)
     
     # define xSigma
     gp = gp.defproc('f1', kernel)
     a = hp['alpha_Sigma']
-    gp = gp.defprocrescale('tf1', lambda x: x ** (a + 1) / (a + 2), 'f1')
-    gp = gp.defprocderiv('xSigma', 1, 'tf1')
+    gp = gp.defrescale('tf1', lambda x: x ** (a + 1) / (a + 2), 'f1')
+    gp = gp.defderiv('xSigma', 1, 'tf1')
     
     # define xg
     gp = gp.defproc('f2', kernel)
     b = hp['alpha_g']
-    gp = gp.defprocrescale('tf2', lambda x: x ** (b + 1) / (b + 2), 'f2')
-    gp = gp.defprocderiv('xg', 1, 'tf2')
+    gp = gp.defrescale('tf2', lambda x: x ** (b + 1) / (b + 2), 'f2')
+    gp = gp.defderiv('xg', 1, 'tf2')
     
     # define primitive of xSigma + xg
-    gp = gp.defproctransf('tf12', {'tf1': 1, 'tf2': 1})
+    gp = gp.deftransf('tf12', {'tf1': 1, 'tf2': 1})
     
     # definite integrals
     for proc in ['tf12', 'f', 'f3', 'f8', 'f15']:
@@ -227,10 +227,10 @@ def makegp(hp, **kw):
     gp = gp.addtransf({'datagrid': M}, 'datalatent', axes=2)
 
     # define flavor basis PDFs
-    gp = gp.defprocrescale('Sigma', lambda x: 1 / x, 'xSigma')
-    gp = gp.defprocrescale('g', lambda x: 1 / x, 'xg')
+    gp = gp.defrescale('Sigma', lambda x: 1 / x, 'xSigma')
+    gp = gp.defrescale('g', lambda x: 1 / x, 'xg')
     for qi, qproc in enumerate(qnames):
-        gp = gp.defproctransf(qproc, {
+        gp = gp.deftransf(qproc, {
             eproc: evtoq[qi, ei]
             for ei, eproc in enumerate(evnames)
         })

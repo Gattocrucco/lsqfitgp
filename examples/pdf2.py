@@ -47,9 +47,9 @@ gp = (lgp
     .GP()
 
     .defproc('h', kernel)
-    .defproctransf('primitive of f', {'h': 1}, deriv='x')
-    .defproctransf('f', {'h': 1}, deriv=(2, 'x'))
-    .defproctransf('primitive of xf(x)', {'primitive of f': lambda x: x['x'], 'h': -1})
+    .deftransf('primitive of f', {'h': 1}, deriv='x')
+    .deftransf('f', {'h': 1}, deriv=(2, 'x'))
+    .deftransf('primitive of xf(x)', {'primitive of f': lambda x: x['x'], 'h': -1})
 
     .addx(xdata, 'xdata', proc='f')
     .addtransf({'xdata': M}, 'data', axes=2)

@@ -97,9 +97,9 @@ def makegp(hp):
     kernel = makekernel(hp)
     gp = (gp
         .defproc('h', kernel)
-        .defproctransf('primitive', {'h': 1}, deriv='x'     )
-        .defproctransf('f'        , {'h': 1}, deriv=(2, 'x'))
-        .defproctransf('primitive of xf(x)', {
+        .deftransf('primitive', {'h': 1}, deriv='x'     )
+        .deftransf('f'        , {'h': 1}, deriv=(2, 'x'))
+        .deftransf('primitive of xf(x)', {
             'primitive': lambda x: x['x'],
             'h'        : -1,
         })

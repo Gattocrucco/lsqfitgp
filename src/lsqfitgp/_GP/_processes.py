@@ -119,7 +119,7 @@ class GPProcesses(_base.GPBase):
         self._procs[key] = self._ProcKernel(kernel, deriv)
     
     @_base.newself
-    def defproctransf(self, key, ops, *, deriv=0):
+    def deftransf(self, key, ops, *, deriv=0):
         """
         
         Define a new process as a linear combination of other processes.
@@ -156,8 +156,8 @@ class GPProcesses(_base.GPBase):
         
         self._procs[key] = self._ProcTransf(ops, deriv)
         
-        # we could implement defproctransf in terms of defproclintransf with
-        # the following code, but defproctransf has linear kernel building
+        # we could implement deftransf in terms of deflintransf with
+        # the following code, but deftransf has linear kernel building
         # cost so I'm leaving it around (probably not significant anyway)
         # functions = [
         #     op if callable(op)
@@ -172,10 +172,10 @@ class GPProcesses(_base.GPBase):
         #             out = this if out is None else out + this
         #         return out
         #     return fun
-        # self.defproclintransf(key, equivalent_lintransf, list(ops.keys()), deriv=deriv, checklin=False)
+        # self.deflintransf(key, equivalent_lintransf, list(ops.keys()), deriv=deriv, checklin=False)
     
     @_base.newself
-    def defproclintransf(self, key, transf, procs, *, deriv=0, checklin=False):
+    def deflintransf(self, key, transf, procs, *, deriv=0, checklin=False):
         """
         
         Define a new process as a linear combination of other processes.
@@ -238,7 +238,7 @@ class GPProcesses(_base.GPBase):
         self._procs[key] = self._ProcLinTransf(transf, procs, deriv)
 
     @_base.newself
-    def defkerneltransf(self, key, transfname, arg, proc):
+    def deflinop(self, key, transfname, arg, proc):
         """
         
         Define a new process as the transformation of an existing one.
@@ -263,7 +263,7 @@ class GPProcesses(_base.GPBase):
             raise KeyError(f'process {proc!r} not found')
         self._procs[key] = self._ProcKernelTransf(proc, transfname, arg)
     
-    def defprocderiv(self, key, deriv, proc):
+    def defderiv(self, key, deriv, proc):
         """
         
         Define a new process as the derivative of an existing one.
@@ -287,9 +287,9 @@ class GPProcesses(_base.GPBase):
 
         """
         deriv = _Deriv.Deriv(deriv)
-        return self.defkerneltransf(key, 'diff', deriv, proc)
+        return self.deflinop(key, 'diff', deriv, proc)
     
-    def defprocxtransf(self, key, transf, proc):
+    def defxtransf(self, key, transf, proc):
         """
         
         Define a new process by transforming the inputs of another one.
@@ -314,9 +314,9 @@ class GPProcesses(_base.GPBase):
 
         """
         assert callable(transf)
-        return self.defkerneltransf(key, 'xtransf', transf, proc)
+        return self.deflinop(key, 'xtransf', transf, proc)
     
-    def defprocrescale(self, key, scalefun, proc):
+    def defrescale(self, key, scalefun, proc):
         """
         
         Define a new process as a rescaling of an existing one.
@@ -340,7 +340,7 @@ class GPProcesses(_base.GPBase):
 
         """
         assert callable(scalefun)
-        return self.defkerneltransf(key, 'rescale', scalefun, proc)
+        return self.deflinop(key, 'rescale', scalefun, proc)
     
     def _crosskernel(self, xpkey, ypkey):
         
@@ -381,7 +381,7 @@ class GPProcesses(_base.GPBase):
         yp = self._procs[ypkey]
         
         if xp is yp:
-            return xp.kernel.transf('diff', xp.deriv, xp.deriv)
+            return xp.kernel.linop('diff', xp.deriv, xp.deriv)
         else:
             return self._zerokernel
     
@@ -398,14 +398,14 @@ class GPProcesses(_base.GPBase):
             
             if not callable(factor):
                 factor = (lambda f: lambda _: f)(factor)
-            kernel = kernel.transf('rescale', factor, None)
+            kernel = kernel.linop('rescale', factor, None)
             
             if kernelsum is self._zerokernel:
                 kernelsum = kernel
             else:
                 kernelsum += kernel
                 
-        return kernelsum.transf('diff', xp.deriv, 0)
+        return kernelsum.linop('diff', xp.deriv, 0)
     
     def _crosskernel_lintransf_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]
@@ -413,7 +413,7 @@ class GPProcesses(_base.GPBase):
         
         kernels = [self._crosskernel(pk, ypkey) for pk in xp.keys]
         kernel = _Kernel.CrossKernel._nary(xp.transf, kernels, _Kernel.CrossKernel._side.LEFT)
-        kernel = kernel.transf('diff', xp.deriv, 0)
+        kernel = kernel.linop('diff', xp.deriv, 0)
         
         return kernel
     
@@ -433,6 +433,6 @@ class GPProcesses(_base.GPBase):
         if basekernel is self._zerokernel:
             return self._zerokernel
         elif xp is yp:
-            return basekernel.transf(xp.transfname, xp.arg)
+            return basekernel.linop(xp.transfname, xp.arg)
         else:
-            return basekernel.transf(xp.transfname, xp.arg, None)
+            return basekernel.linop(xp.transfname, xp.arg, None)

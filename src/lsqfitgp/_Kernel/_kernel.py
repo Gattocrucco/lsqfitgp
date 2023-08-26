@@ -95,7 +95,7 @@ def rescale_argparser(fun):
         raise ValueError("argument to 'rescale' must be a function")
     return fun
 
-@functools.partial(Kernel.register_coretransf, argparser=rescale_argparser)
+@functools.partial(Kernel.register_corelinop, argparser=rescale_argparser)
 def rescale(core, xfun, yfun):
     r"""
     
@@ -121,7 +121,7 @@ def diff_argparser(deriv):
     deriv = _Deriv.Deriv(deriv)
     return deriv if deriv else None
 
-@functools.partial(Kernel.register_transf, argparser=diff_argparser)
+@functools.partial(Kernel.register_linop, argparser=diff_argparser)
 def diff(self, xderiv, yderiv):
     r"""
     
@@ -350,7 +350,7 @@ def derivable_argparser(derivable):
     else:
         raise ValueError(f'derivability degree {derivable!r} not valid')
 
-@functools.partial(Kernel.register_transf, argparser=derivable_argparser)
+@functools.partial(Kernel.register_linop, argparser=derivable_argparser)
 def derivable(self, xderivable, yderivable):
     """
     Specify the degree of derivability of the function.
@@ -373,7 +373,7 @@ def derivable(self, xderivable, yderivable):
 def normalize_argparser(do):
     return do if do else None
 
-@functools.partial(Kernel.register_coretransf, argparser=normalize_argparser)
+@functools.partial(Kernel.register_corelinop, argparser=normalize_argparser)
 def normalize(core, dox, doy):
     r"""
     Rescale the process to unit variance.

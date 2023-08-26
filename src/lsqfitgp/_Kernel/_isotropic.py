@@ -38,14 +38,14 @@ class CrossIsotropicKernel(_stationary.CrossStationaryKernel):
 
     Parameters
     ----------
-    kernel : callable
+    core : callable
         A function taking one argument ``r2`` which is the squared distance
         between x and y, plus optionally keyword arguments.
     input : {'squared', 'abs', 'posabs', 'raw'}, default 'squared'
-        If ``'squared'``, `kernel` is passed the squared distance. If ``'abs'``,
+        If ``'squared'``, `core` is passed the squared distance. If ``'abs'``,
         it is passed the distance (not squared). If ``'posabs'``, it is passed
         the distance, and the distance of equal points is a small number instead
-        of zero. If ``'raw'``, the kernel is passed both points separately like
+        of zero. If ``'raw'``, `core` is passed both points separately like
         non-stationary kernels.
     **kw
         Additional keyword arguments are passed to the `CrossKernel`
@@ -118,7 +118,7 @@ class Zero(IsotropicKernel):
     
     _swap = lambda self: self
     batch = lambda self, maxnbytes: self
-    transf = lambda self, transfname, *args: self
+    linop = lambda self, transfname, *args: self
     forcekron = lambda self: self
 
     def __add__(self, other):
@@ -138,9 +138,7 @@ class Zero(IsotropicKernel):
     __rmul__ = __mul__
 
     def __pow__(self, other):
-        if _util.is_integer_scalar(other):
-            with _jaxext.skipifabstract():
-                assert other >= 0, other
+        if _util.is_nonnegative_integer_scalar(other):
             return self
         else:
             return NotImplemented

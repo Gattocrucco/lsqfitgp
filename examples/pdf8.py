@@ -165,22 +165,22 @@ def makegp(hp, quick=False):
         if suffix != '':
             gp = gp.defproc('T' + suffix, kernel)
         gp = gp.defproc('f' + suffix, kernel_prim)
-        gp = gp.defproctransf('V' + suffix, {'f' + suffix: 1}, deriv=1)
+        gp = gp.deftransf('V' + suffix, {'f' + suffix: 1}, deriv=1)
     
     # define xSigma
     gp = gp.defproc('f1', kernel)
     a = hp['alpha_Sigma']
-    gp = gp.defproctransf('tf1', {'f1': lambda x: x ** (a + 1) / (a + 2)})
-    gp = gp.defproctransf('xSigma', {'tf1': 1}, deriv=1)
+    gp = gp.deftransf('tf1', {'f1': lambda x: x ** (a + 1) / (a + 2)})
+    gp = gp.deftransf('xSigma', {'tf1': 1}, deriv=1)
     
     # define xg
     gp = gp.defproc('f2', kernel)
     b = hp['alpha_g']
-    gp = gp.defproctransf('tf2', {'f2': lambda x: x ** (b + 1) / (b + 2)})
-    gp = gp.defproctransf('xg', {'tf2': 1}, deriv=1)
+    gp = gp.deftransf('tf2', {'f2': lambda x: x ** (b + 1) / (b + 2)})
+    gp = gp.deftransf('xg', {'tf2': 1}, deriv=1)
 
     # define primitive of xSigma + xg
-    gp = gp.defproctransf('tf12', {'tf1': 1, 'tf2': 1})
+    gp = gp.deftransf('tf12', {'tf1': 1, 'tf2': 1})
 
     # define a matrix of PDF values over the x grid
     for proc in tpnames:
@@ -206,10 +206,10 @@ def makegp(hp, quick=False):
         gp = gp.addtransf({'datagrid': M_mean}, 'data', axes=2)
     
         # define flavor basis PDFs
-        gp = gp.defproctransf('Sigma', {'xSigma': lambda x: 1 / x})
-        gp = gp.defproctransf('g', {'xg': lambda x: 1 / x})
+        gp = gp.deftransf('Sigma', {'xSigma': lambda x: 1 / x})
+        gp = gp.deftransf('g', {'xg': lambda x: 1 / x})
         for qi, qproc in enumerate(qnames):
-            gp = gp.defproctransf(qproc, {
+            gp = gp.deftransf(qproc, {
                 eproc: evtoq[qi, ei]
                 for ei, eproc in enumerate(evnames)
             })

@@ -81,7 +81,7 @@ def Zeta(delta, *, nu):
     # TODO use the bernoully version for integer even s, based on the type of
     # the input such that it's static, because it is much more accurate
 
-@functools.partial(Zeta.register_transf, argparser=bool)
+@functools.partial(Zeta.register_linop, argparser=bool)
 def fourier(self, dox, doy):
     r"""
 

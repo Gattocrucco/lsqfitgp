@@ -51,7 +51,7 @@ def test_cross_derivable(constcore):
     """ check that derivable of CrossKernel is duplicated """
     kernel = lgp.Kernel(constcore, derivable=4, maxdim=2)
     assert kernel.derivable == 4
-    kernel = kernel.transf('normalize', True, None)
+    kernel = kernel.linop('normalize', True, None)
     assert kernel.derivable == (4, 4)
 
 @mark.parametrize('op', [operator.add, operator.mul])
@@ -103,15 +103,17 @@ def test_pow(cls, rng):
         with pytest.raises(TypeError):
             cls(f) ** exp
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError):
         cls(f) ** -1
 
     @jax.jit
     def traced(exp, x, y):
         return (cls(f) ** exp)(x, y)
-    traced(3, x, y)
+    traced(jnp.uint64(3), x, y)
     with pytest.raises(TypeError):
         traced(3., x, y)
+    with pytest.raises(TypeError):
+        traced(3, x, y)
 
 def test_batch(rng):
     class A(lgp.CrossKernel): pass
@@ -137,48 +139,48 @@ def test_missing_transf(constcore, idtransf):
     kernel = lgp.Kernel(constcore)
     assert not kernel.has_transf('ciao')
     with pytest.raises(KeyError):
-        kernel.transf('ciao', None)
+        kernel.linop('ciao', None)
     class A(lgp.CrossKernel): pass
 
-    A.register_transf(idtransf, 'ciao')
+    A.register_linop(idtransf, 'ciao')
     assert A.has_transf('ciao')
     assert not lgp.CrossKernel.has_transf('ciao')
 
 def test_already_registered_transf(idtransf):
     with pytest.raises(KeyError):
-        lgp.Kernel.register_transf(idtransf, 'normalize')
+        lgp.Kernel.register_linop(idtransf, 'normalize')
 
     class A(lgp.CrossKernel): pass
     class B(A): pass
-    A.register_transf(idtransf, 'ciao')
-    B.register_transf(idtransf, 'ciao')
+    A.register_linop(idtransf, 'ciao')
+    B.register_linop(idtransf, 'ciao')
 
 def test_transf_nargs(idtransf):
     with pytest.raises(ValueError):
-        lgp.Kernel(lambda x, y: 1).transf('normalize', None, None, None)
+        lgp.Kernel(lambda x, y: 1).linop('normalize', None, None, None)
     with pytest.raises(ValueError):
-        lgp.Kernel(lambda x, y: 1).transf('normalize')
+        lgp.Kernel(lambda x, y: 1).linop('normalize')
 
 def test_no_argparser(constcore, idtransf):
     class A(lgp.CrossKernel): pass
-    A.register_transf(idtransf, 'ciao')
+    A.register_linop(idtransf, 'ciao')
     a = A(constcore)
-    b = a.transf('ciao', 1, 2)
+    b = a.linop('ciao', 1, 2)
     assert a is not b
     assert a._core is b._core
 
 def test_transfclass_nocrossparent(constcore, idtransf):
     class A(lgp.CrossKernel): pass
-    A.register_transf(idtransf, 'ciao')
+    A.register_linop(idtransf, 'ciao')
     class B(A): pass
     class C(B, lgp.Kernel): pass
     k = C(constcore)
-    q = k.transf('ciao', True)
+    q = k.linop('ciao', True)
     assert q.__class__ is A
 
 def test_transf_help(idtransf):
     class A(lgp.CrossKernel): pass
-    A.register_transf(idtransf)
+    A.register_linop(idtransf)
     assert A.transf_help('idtransf') == ' porco duo '
 
 def test_zero(rng, constcore):
@@ -186,7 +188,7 @@ def test_zero(rng, constcore):
     zero = lgp._Kernel.Zero()
     util.assert_allclose(zero(x, y), 0)
     
-    assert zero.transf('normalize', True) is zero
+    assert zero.linop('normalize', True) is zero
     assert zero._swap() is zero
     assert zero.batch(1) is zero
     assert zero.forcekron() is zero
@@ -210,7 +212,7 @@ def test_zero(rng, constcore):
         zero * 'gatto'
     with pytest.raises(TypeError):
         zero ** 1.
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError):
         zero ** -1
 
 @mark.parametrize('name,arg', [
@@ -231,12 +233,12 @@ def test_transf_swap_and_duplicate(name, arg, rng):
         xy = xy.astype([('', float)])
     x, y = xy
     
-    c1 = kernel.transf(name, arg, None)(x, y)
-    c2 = kernel._swap().transf(name, None, arg)._swap()(x, y)
+    c1 = kernel.linop(name, arg, None)(x, y)
+    c2 = kernel._swap().linop(name, None, arg)._swap()(x, y)
     util.assert_equal(c1, c2)
 
-    c1 = kernel.transf(name, arg)(x, y)
-    c2 = kernel.transf(name, arg, arg)(x, y)
+    c1 = kernel.linop(name, arg)(x, y)
+    c2 = kernel.linop(name, arg, arg)(x, y)
     util.assert_equal(c1, c2)
 
 @mark.parametrize('name,arg', [
@@ -254,8 +256,8 @@ def test_transf_swap_and_duplicate(name, arg, rng):
 ])
 def test_transf_noop(name, arg, constcore):
     kernel = lgp.Kernel(constcore)
-    assert kernel.transf(name, arg) is kernel
-    assert kernel.transf(name, arg, arg) is kernel
+    assert kernel.linop(name, arg) is kernel
+    assert kernel.linop(name, arg, arg) is kernel
 
 @mark.parametrize('name,arg', [
     ('rescale', 1),
@@ -276,26 +278,26 @@ def test_transf_noop(name, arg, constcore):
 def test_transf_invalid_arg(name, arg, constcore):
     kernel = lgp.Kernel(constcore)
     with pytest.raises((ValueError, TypeError)):
-        kernel.transf(name, arg)
+        kernel.linop(name, arg)
     with pytest.raises((ValueError, TypeError)):
-        kernel.transf(name, arg, arg)
+        kernel.linop(name, arg, arg)
     with pytest.raises((ValueError, TypeError)):
-        kernel.transf(name, arg, None)
+        kernel.linop(name, arg, None)
     with pytest.raises((ValueError, TypeError)):
-        kernel.transf(name, None, arg)
+        kernel.linop(name, None, arg)
 
 def test_derivability(constcore):
     kernel = lgp.Kernel(constcore)
     assert kernel.derivable is None
-    kernel.transf('diff', 1) # no check
+    kernel.linop('diff', 1) # no check
 
     kernel = lgp.Kernel(constcore, derivable=0)
     with pytest.raises(ValueError):
-        kernel.transf('diff', 1) # hard boundary
+        kernel.linop('diff', 1) # hard boundary
 
     kernel = lgp.Kernel(constcore, derivable=1)
     with pytest.warns(UserWarning):
-        kernel.transf('diff', (1, 'a', 1, 'b')) # soft boundary
+        kernel.linop('diff', (1, 'a', 1, 'b')) # soft boundary
 
 @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
 def test_invalid_input(cls, constcore):
@@ -334,15 +336,15 @@ def test_diff_errors(rng, constcore):
     
     x = rng.standard_normal(10)
     with pytest.raises(ValueError):
-        kernel.transf('diff', 'f0')(x, x)
+        kernel.linop('diff', 'f0')(x, x)
     
     x = rng.standard_normal((10, 2)).view('d,d').squeeze(-1)
     with pytest.raises(ValueError):
-        kernel.transf('diff', 'a')(x, x)
+        kernel.linop('diff', 'a')(x, x)
     
     x = ['abc', 'def']
     with pytest.raises(TypeError):
-        kernel.transf('diff', 1)(x, x)
+        kernel.linop('diff', 1)(x, x)
 
 def test_distances(rng):
     x1 = rng.standard_normal(10)
@@ -385,7 +387,7 @@ def test_initargs(constcore):
     def check(k):
         assert k.initargs['cippa'] == 4
     check(kernel._swap())
-    check(kernel.transf('loc', 1, 2))
+    check(kernel.linop('loc', 1, 2))
     check(kernel.forcekron())
 
 def test_nary():
@@ -395,14 +397,14 @@ def test_dim(rng):
     x = rng.standard_normal(10)[:, None]
     xs = lgp.StructuredArray.from_dict({'a': x, 'b': x})
     kernel = lgp.ExpQuad()
-    kernels = kernel.transf('dim', 'a')
+    kernels = kernel.linop('dim', 'a')
     c1 = kernel(x, x.T)
     c2 = kernels(xs, xs.T)
     util.assert_equal(c1, c2)
     with pytest.raises(ValueError):
         kernels(x, x.T)
     with pytest.raises(KeyError):
-        kernel.transf('dim', 'c')(xs, xs.T)
+        kernel.linop('dim', 'c')(xs, xs.T)
 
 def test_scale_int_nd(rng):
     """ test that conversion int -> float on division does not break structured

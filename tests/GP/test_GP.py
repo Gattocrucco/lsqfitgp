@@ -111,8 +111,8 @@ def test_compare_transfs():
     gp = (gp
         .addtransf({'ax': np.diag(fa(x)), 'bx': np.diag(fb(x))}, 0)
         .addlintransf(lambda a, b: fa(x) * a + fb(x) * b, ['ax', 'bx'], 1)
-        .defproctransf('ab1', {'a': fa, 'b': fb})
-        .defproclintransf('ab2', lambda a, b: lambda x: fa(x) * a(x) + fb(x) * b(x), ['a', 'b'])
+        .deftransf('ab1', {'a': fa, 'b': fb})
+        .deflintransf('ab2', lambda a, b: lambda x: fa(x) * a(x) + fb(x) * b(x), ['a', 'b'])
     )
     gp = finalizegp(gp)
     checkgp(gp)
@@ -121,8 +121,8 @@ def test_compare_transfs():
     gp = (preparegp()
         .addtransf({'ax': 2, 'bx': 3}, 0)
         .addlintransf(lambda a, b: 2 * a + 3 * b, ['ax', 'bx'], 1)
-        .defproctransf('ab1', {'a': 2, 'b': 3})
-        .defproclintransf('ab2', lambda a, b: lambda x: 2 * a(x) + 3 * b(x), ['a', 'b'])
+        .deftransf('ab1', {'a': 2, 'b': 3})
+        .deflintransf('ab2', lambda a, b: lambda x: 2 * a(x) + 3 * b(x), ['a', 'b'])
     )
     gp = finalizegp(gp)
     checkgp(gp)
@@ -158,20 +158,20 @@ def test_proclintransf_checks():
         )
     gp = makegp()
     with pytest.raises(KeyError):
-        gp.defproclintransf(0, lambda f, g: lambda x: f(x) + g(x), [0, 1])
+        gp.deflintransf(0, lambda f, g: lambda x: f(x) + g(x), [0, 1])
     with pytest.raises(KeyError):
-        gp.defproclintransf(2, lambda f, g: lambda x: f(x) + g(x), [0, 2])
+        gp.deflintransf(2, lambda f, g: lambda x: f(x) + g(x), [0, 2])
     with pytest.raises(RuntimeError):
-        gp.defproclintransf(2, lambda f, g: lambda x: 1, [0, 1], checklin=True)
+        gp.deflintransf(2, lambda f, g: lambda x: 1, [0, 1], checklin=True)
     with pytest.raises(RuntimeError):
-        gp.defproclintransf(2, lambda f, g: lambda x: 1 + f(x) + g(x), [0, 1], checklin=True)
+        gp.deflintransf(2, lambda f, g: lambda x: 1 + f(x) + g(x), [0, 1], checklin=True)
     with pytest.raises(RuntimeError):
-        gp.defproclintransf(2, lambda f, g: lambda x: f(x) + g(x)[None, :], [0, 1], checklin=True)
-    gp = gp.defproclintransf(2, lambda f, g: lambda x: 1 + f(x) + g(x), [0, 1])
-    gp = gp.defproclintransf(3, lambda f, g: lambda x: f(x) + g(x), [0, 1], checklin=True)
+        gp.deflintransf(2, lambda f, g: lambda x: f(x) + g(x)[None, :], [0, 1], checklin=True)
+    gp = gp.deflintransf(2, lambda f, g: lambda x: 1 + f(x) + g(x), [0, 1])
+    gp = gp.deflintransf(3, lambda f, g: lambda x: f(x) + g(x), [0, 1], checklin=True)
     gp = makegp(checklin=True)
     with pytest.raises(RuntimeError):
-        gp.defproclintransf(2, lambda f, g: lambda x: 1, [0, 1], checklin=None)
+        gp.deflintransf(2, lambda f, g: lambda x: 1, [0, 1], checklin=None)
 
 def test_proclintransf_mockup():
     def makegp(**kw):
@@ -181,8 +181,8 @@ def test_proclintransf_mockup():
         )
     gp = makegp()
     with pytest.raises(RuntimeError):
-        gp.defproclintransf(2, lambda f, g: lambda x: 1 + f(x['dim1']) + g(x['dim2']), [0, 1], checklin=True)
-    gp.defproclintransf(2, lambda f, g: lambda x: f(x['dim1']) + g(x['dim2']), [0, 1], checklin=True)
+        gp.deflintransf(2, lambda f, g: lambda x: 1 + f(x['dim1']) + g(x['dim2']), [0, 1], checklin=True)
+    gp.deflintransf(2, lambda f, g: lambda x: f(x['dim1']) + g(x['dim2']), [0, 1], checklin=True)
 
 def test_lintransf_matmul(rng):
     gp = lgp.GP(lgp.ExpQuad())
@@ -223,7 +223,7 @@ def test_kernelop():
     f = lambda x: x
     gp = (gp
         .defproc('b1', lgp.ExpQuad() * lgp.Rescaling(stdfun=f))
-        .defkerneltransf('b2', 'rescale', f, 'a')
+        .deflinop('b2', 'rescale', f, 'a')
     )
     x = np.arange(20)
     gp = (gp
@@ -258,27 +258,27 @@ def test_default_kernel():
 def test_no_proc():
     gp = lgp.GP()
     with pytest.raises(KeyError):
-        gp.defproctransf('b', {'a': 1})
+        gp.deftransf('b', {'a': 1})
 
 def test_invalid_factor():
     gp = (lgp.GP()
         .defproc('a', lgp.ExpQuad())
-        .defproctransf('b', {'a': 0.})
-        .defproctransf('c', {'a': np.array(0.)})
+        .deftransf('b', {'a': 0.})
+        .deftransf('c', {'a': np.array(0.)})
     )
     with pytest.raises(TypeError):
-        gp.defproctransf('d', {'a': None})
+        gp.deftransf('d', {'a': None})
 
 def test_existing_proc():
     gp = lgp.GP().defproc('a', lgp.ExpQuad())
     with pytest.raises(KeyError):
-        gp.defproctransf('a', {'a': 1})
+        gp.deftransf('a', {'a': 1})
 
 def test_empty_proc():
     x = np.arange(20)
     cov = (lgp.GP()
-        .defproctransf('a', {})
-        .defproclintransf('b', lambda: lambda x: 0, [])
+        .deftransf('a', {})
+        .deflintransf('b', lambda: lambda x: 0, [])
         .addx(x, 'ax', proc='a')
         .addx(x, 'bx', proc='b')
         .prior(raw=True)
@@ -289,18 +289,18 @@ def test_empty_proc():
 def test_already_defined():
     gp = lgp.GP().defproc('a', lgp.ExpQuad())
     with pytest.raises(KeyError):
-        gp.defkerneltransf('a', 'diff', 1, 'a')
+        gp.deflinop('a', 'diff', 1, 'a')
 
 def test_proc_not_found():
     gp = lgp.GP()
     with pytest.raises(KeyError):
-        gp.defkerneltransf('b', 'diff', 1, 'a')
+        gp.deflinop('b', 'diff', 1, 'a')
 
-def test_defprocderiv():
+def test_defderiv():
     x = np.arange(20)
     prior = (lgp
         .GP(lgp.ExpQuad())
-        .defprocderiv('a', 1, lgp.GP.DefaultProcess)
+        .defderiv('a', 1, lgp.GP.DefaultProcess)
         .addx(x, 0, proc='a')
         .addx(x, 1, deriv=1)
         .prior(raw=True)
@@ -308,13 +308,13 @@ def test_defprocderiv():
     util.assert_equal(prior[0, 0], prior[1, 1])
     util.assert_equal(prior[0, 0], prior[0, 1])
 
-def test_defprocxtransf():
+def test_defxtransf():
     f = lambda x: x ** 2
     x = np.linspace(0, 4, 20)
     prior = (lgp.GP()
         .defproc(0, lgp.ExpQuad())
-        .defprocxtransf('a', f, 0)
-        .defproclintransf('b', lambda g: lambda x: g(f(x)), [0])
+        .defxtransf('a', f, 0)
+        .deflintransf('b', lambda g: lambda x: g(f(x)), [0])
         .addx(x, 0, proc='a')
         .addx(x, 1, proc='b')
         .addx(f(x), 2, proc=0)
@@ -324,13 +324,13 @@ def test_defprocxtransf():
         for j in range(3):
             util.assert_equal(prior[0, 0], prior[i, j])
 
-def test_defprocrescale():
+def test_defrescale():
     s = lambda x: x ** 2
     x = np.linspace(0, 2, 20)
     prior = (lgp.GP()
         .defproc(0, lgp.ExpQuad())
-        .defprocrescale('a', s, 0)
-        .defproclintransf('b', lambda f: lambda x: s(x) * f(x), [0])
+        .defrescale('a', s, 0)
+        .deflintransf('b', lambda f: lambda x: s(x) * f(x), [0])
         .addx(x, 'base', proc=0)
         .addtransf({'base': s(x) * np.eye(len(x))}, 0)
         .addx(x, 1, proc='a')

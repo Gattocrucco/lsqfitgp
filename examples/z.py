@@ -35,7 +35,7 @@ import lsqfitgp as lgp
 gp = (lgp.GP()
     .defproc('short', lgp.ExpQuad(scale= 1))
     .defproc('long', lgp.ExpQuad(scale=10))
-    .defproctransf('sum', {'short': 0.3, 'long': 1})
+    .deftransf('sum', {'short': 0.3, 'long': 1})
 )
 
 time = np.arange(30)

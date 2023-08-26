@@ -30,8 +30,8 @@ import gvar
 
 gp = (lgp
     .GP(lgp.ExpQuad())
-    .defproclintransf('even', lambda f: lambda x: (f(x) + f(-x)) / 2, [lgp.GP.DefaultProcess])
-    .defproclintransf('odd', lambda f: lambda x: (f(x) - f(-x)) / 2, [lgp.GP.DefaultProcess])
+    .deflintransf('even', lambda f: lambda x: (f(x) + f(-x)) / 2, [lgp.GP.DefaultProcess])
+    .deflintransf('odd', lambda f: lambda x: (f(x) - f(-x)) / 2, [lgp.GP.DefaultProcess])
 )
 
 x1, y1 = 1, 1

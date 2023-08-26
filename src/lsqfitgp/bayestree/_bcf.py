@@ -406,7 +406,7 @@ class bcf:
             else:
                 gp = gpaux(hp, gp)
 
-            gp = gp.defproclintransf(
+            gp = gp.deflintransf(
                 gp.DefaultProcess,
                 lambda m, mu, tau, aux: lambda x:
                 m(x) + mu(x) + tau(x) * (x['z'] - hp['z_0']) + aux(x),

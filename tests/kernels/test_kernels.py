@@ -128,7 +128,7 @@ class Base:
         if kernel.derivable < deriv:
             pytest.skip()
         d = (deriv, 'f0') if x.dtype.names else deriv
-        cov = kernel.transf('diff', d, d)(x[None, :], x[:, None])
+        cov = kernel.linop('diff', d, d)(x[None, :], x[:, None])
         util.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7)
         eigv = linalg.eigvalsh(cov)
         assert np.min(eigv) >= -len(cov) * psdeps * np.max(eigv)
@@ -151,7 +151,7 @@ class Base:
             dtype = x.dtype
         if not np.issubdtype(dtype, np.number) and not dtype == bool:
             pytest.skip()
-        kernel = kernel.transf('diff', deriv, deriv)
+        kernel = kernel.linop('diff', deriv, deriv)
         cov1 = kernel(x[None, :], x[:, None])
         cov2 = jax.jit(kernel)(x[None, :], x[:, None])
         util.assert_allclose(cov2, cov1, rtol=1e-6, atol=1e-5)
@@ -185,8 +185,8 @@ class Base:
         if x.dtype.names:
             xderiv = xderiv, x.dtype.names[0]
             yderiv = yderiv, x.dtype.names[0]
-        b1 = kernel.transf('diff', xderiv, yderiv)(a, b)
-        b2 = kernel.transf('diff', yderiv, xderiv)(b, a)
+        b1 = kernel.linop('diff', xderiv, yderiv)(a, b)
+        b2 = kernel.linop('diff', yderiv, xderiv)(b, a)
         util.assert_allclose(b1, b2, atol=1e-10)
     
     @staticmethod
@@ -215,7 +215,7 @@ class Base:
         x2 = self.make_x_nd_implicit(x1)
         x2['f0'] -= loc
         x2['f0'] /= scale
-        kernel1 = kernel.transf('scale', scale).transf('loc', loc)
+        kernel1 = kernel.linop('scale', scale).linop('loc', loc)
         c1 = kernel1(x1, x1.T)
         c2 = kernel(x2, x2.T)
         util.assert_allclose(c1, c2, rtol=1e-12, atol=1e-13)
@@ -248,7 +248,7 @@ class Stationary(Base):
         if self.kercls is _kernels.Zeta and kw['nu'] - deriv < 0.5:
             pytest.skip()
         
-        kernel = kernel.transf('diff', deriv)
+        kernel = kernel.linop('diff', deriv)
         c0 = kernel(0, 0)
         c1 = kernel(0, 1e-15)
         util.assert_allclose(c1, c0, rtol=1e-10)
@@ -297,8 +297,8 @@ class Deriv1(Base):
     def test_double_diff_scalar_first(self, kernel, x_scalar):
         if kernel.derivable < 1:
             pytest.skip()
-        r1 = kernel.transf('diff', 1, 1)(x_scalar[None, :], x_scalar[:, None])
-        r2 = kernel.transf('diff', 1, 0).transf('diff', 0, 1)(x_scalar[None, :], x_scalar[:, None])
+        r1 = kernel.linop('diff', 1, 1)(x_scalar[None, :], x_scalar[:, None])
+        r2 = kernel.linop('diff', 1, 0).linop('diff', 0, 1)(x_scalar[None, :], x_scalar[:, None])
         util.assert_allclose(r1, r2)
     
     @skiponmaxdim
@@ -307,8 +307,8 @@ class Deriv1(Base):
             pytest.skip()
         x = x_nd[:, None]
         f0 = x.dtype.names[0]
-        r1 = kernel.transf('diff', f0, f0)(x, x.T)
-        r2 = kernel.transf('diff', f0, 0).transf('diff', 0, f0)(x, x.T)
+        r1 = kernel.linop('diff', f0, f0)(x, x.T)
+        r2 = kernel.linop('diff', f0, 0).linop('diff', 0, f0)(x, x.T)
         util.assert_allclose(r1, r2)
 
 class Deriv2(Deriv1):
@@ -338,15 +338,15 @@ class Deriv2(Deriv1):
     def test_double_diff_scalar_second(self, kernel, x_scalar):
         if kernel.derivable < 2:
             pytest.skip()
-        r1 = kernel.transf('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
-        r2 = kernel.transf('diff', 1, 1).transf('diff', 1, 1)(x_scalar[None, :], x_scalar[:, None])
+        r1 = kernel.linop('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
+        r2 = kernel.linop('diff', 1, 1).linop('diff', 1, 1)(x_scalar[None, :], x_scalar[:, None])
         util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-9)
     
     def test_double_diff_scalar_second_chopped(self, kernel, x_scalar):
         if kernel.derivable < 2:
             pytest.skip()
-        r1 = kernel.transf('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
-        r2 = kernel.transf('diff', 2, 0).transf('diff', 0, 2)(x_scalar[None, :], x_scalar[:, None])
+        r1 = kernel.linop('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
+        r2 = kernel.linop('diff', 2, 0).linop('diff', 0, 2)(x_scalar[None, :], x_scalar[:, None])
         util.assert_allclose(r1, r2)
     
     @skiponmaxdim
@@ -357,8 +357,8 @@ class Deriv2(Deriv1):
         if len(x.dtype) < 2:
             pytest.skip(reason='test needs nd >= 2')
         f0, f1 = x.dtype.names[:2]
-        r1 = kernel.transf('diff', (2, f0), (2, f1))(x, x.T)
-        r2 = kernel.transf('diff', f0, f0).transf('diff', f1, f1)(x, x.T)
+        r1 = kernel.linop('diff', (2, f0), (2, f1))(x, x.T)
+        r2 = kernel.linop('diff', f0, f0).linop('diff', f1, f1)(x, x.T)
         util.assert_allclose(r1, r2)
 
     @skiponmaxdim
@@ -369,8 +369,8 @@ class Deriv2(Deriv1):
         if len(x.dtype) < 2:
             pytest.skip(reason='test needs nd >= 2')
         f0, f1 = x.dtype.names[:2]
-        r1 = kernel.transf('diff', (2, f0), (2, f1))(x, x.T)
-        r2 = kernel.transf('diff', f0, f1).transf('diff', f0, f1)(x, x.T)
+        r1 = kernel.linop('diff', (2, f0), (2, f1))(x, x.T)
+        r2 = kernel.linop('diff', f0, f1).linop('diff', f0, f1)(x, x.T)
         util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-12)
 
 class Fourier(Base):
@@ -381,8 +381,8 @@ class Fourier(Base):
             pytest.skip()
         x = x_scalar[:, None]
         k = np.arange(1, 11)[None, :]
-        k1 = kernel.transf('fourier', True, None)
-        k2 = kernel.transf('fourier', None, True)
+        k1 = kernel.linop('fourier', True, None)
+        k2 = kernel.linop('fourier', None, True)
         c1 = k1(k, x)
         c2 = k2(x, k)
         util.assert_equal(c1, c2)
@@ -396,7 +396,7 @@ class Fourier(Base):
         
         x = np.linspace(0, 1, 100)
         gp = (lgp.GP(kernel, posepsfac=200)
-            .defkerneltransf('F', 'fourier', True, lgp.GP.DefaultProcess)
+            .deflinop('F', 'fourier', True, lgp.GP.DefaultProcess)
             .addx(x, 'x')
             .addx(1, 's1', proc='F')
             .addx(2, 'c1', proc='F')
@@ -733,8 +733,8 @@ def check_matern_half_integer(rng, deriv):
         y = x.T
         k = _kernels.Matern(nu=p + 1/2)
         d = min(k.derivable, deriv)
-        r1 = k.transf('diff', d, d)(x, y)
-        r2 = _kernels.Maternp(p=p).transf('diff', d, d)(x, y)
+        r1 = k.linop('diff', d, d)(x, y)
+        r2 = _kernels.Maternp(p=p).linop('diff', d, d)(x, y)
         util.assert_allclose(r1, r2, rtol=1e-9, atol=1e-16)
 
 def test_matern_half_integer_0(rng):
@@ -752,7 +752,7 @@ def test_wiener_integral(rng):
     """
     x, y = np.abs(rng.standard_normal((2, 100)))
     r1 = _kernels.Wiener()(x, y)
-    r2 = _kernels.WienerIntegral().transf('diff', 1, 1)(x, y)
+    r2 = _kernels.WienerIntegral().linop('diff', 1, 1)(x, y)
     util.assert_allclose(r1, r2)
 
 def test_celerite_harmonic(rng):
@@ -775,7 +775,7 @@ def check_harmonic_continuous(rng, deriv, Q0, Qderiv=False):
     x = rng.standard_normal(100)
     results = []
     for Q in Qs:
-        kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).transf('diff', deriv, deriv)(x[None, :], x[:, None])
+        kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).linop('diff', deriv, deriv)(x[None, :], x[:, None])
         if Qderiv:
             kernelf = jax.jacfwd(kernelf)
         results.append(kernelf(Q, x))
@@ -855,8 +855,8 @@ util.xfail(TestWendland, 'test_jit_nd_1') # The failures are on kw14, kw33,
     # and involve integer multiples of the identity, with differences:
     # 24 vs 25, 24 vs. 22.
 
-# TODO These are not isotropic kernels, what is the problem? They are currently
-# skipped, there failures were with forcekron applied.
+# TODO These are not isotropic kernels, what is the problem? Those commented are
+# currently skipped, the failures were with forcekron applied.
 # util.xfail(TestTaylor, 'test_double_diff_nd_second') # numerical precision
-# util.xfail(TestNNKernel, 'test_double_diff_nd_second') # large difference
 # util.xfail(TestFracBrownian, 'test_double_diff_nd_second') # large difference
+util.xfail(TestNNKernel, 'test_double_diff_nd_second') # large difference

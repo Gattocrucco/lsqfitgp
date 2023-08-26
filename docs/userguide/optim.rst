@@ -202,3 +202,7 @@ accuracy. You can reset `jax`'s default with:
 to get a speedup, but this will likely give problems when the number of
 datapoints is over 1000, and will break `empbayes_fit` unless you make an effort
 to tune the minimizer parameters to make it work at `float32` precision.
+
+.. TODO I expect that using many structured fields under jit slows down things
+.. compared to a single array field due to unrolling. Check this and if so make
+.. a section on it.

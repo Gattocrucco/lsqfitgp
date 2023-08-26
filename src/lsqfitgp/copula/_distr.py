@@ -540,11 +540,14 @@ class Distr(_base.DistrBase):
     __pos__ = _unary_method(numpy.positive, 'pos')
     __abs__ = _unary_method(numpy.absolute, 'abs')
 
+    # TODO add __getitem__ and __array_function__
+
 class UFunc:
     """ base class of objects representing ufuncs applied to Distr instances """
 
     def __new__(cls, *args):
         return super().__new__(cls, *args)
+        # this __new__ serves to forbid keyword arguments
 
     @classmethod
     def invfcn(cls, x, *args):
@@ -553,32 +556,13 @@ class UFunc:
     def _get_x_core_shape(self, *_):
         return (0,)
 
-    _jax_ufuncs = {}
-
     @classmethod
-    def _find_jax_ufunc(cls, ufunc):
-        out = cls._jax_ufuncs.get(ufunc)
-        if out is not None:
-            return out
-        out = getattr(jnp, ufunc.__name__)
-        cls._jax_ufuncs[ufunc] = out
-        return out
-
-    _ufunc_classes = {}
-
-    @classmethod
+    @functools.cache
     def make_subclass(cls, ufunc):
-        out = cls._ufunc_classes.get(ufunc)
-        if out is not None:
-            return out
-
         def exec_body(ns):
-            ns['_ufunc'] = cls._find_jax_ufunc(ufunc)
+            ns['_ufunc'] = getattr(jnp, ufunc.__name__)
             ns['signature'] = ','.join(['(0)'] + ufunc.nin * ['()']) + '->()'
-
-        out = types.new_class(ufunc.__name__, (__class__, Distr), exec_body=exec_body)
-        cls._ufunc_classes[ufunc] = out
-        return out
+        return types.new_class(ufunc.__name__, (__class__, Distr), exec_body=exec_body)
 
 def distribution(invfcn, signature=None, dtype=None):
     r"""
@@ -613,6 +597,7 @@ def distribution(invfcn, signature=None, dtype=None):
 
     >>> @functools.partial(lgp.copula.distribution, signature='(n,m)->(n)')
     ... def wishart(x):
+    ...     " this parametrization is terrible, do not use "
     ...     return x @ x.T
 
     """

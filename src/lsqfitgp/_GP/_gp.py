@@ -79,17 +79,17 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
         Introduce a set of user-provided prior covariance matrix blocks.
     defproc
         Define a new independent process with a kernel.
-    defproclintransf
+    deflintransf
         Define a pointwise linear transformation.
-    defproctransf
+    deftransf
         Define a pointwise linear transformation with explicit coefficients.
-    defkerneltransf
+    deflinop
         Define an arbitrary linear transformation through a kernel method.
-    defprocderiv
+    defderiv
         Define a process as the derivative of another one.
-    defprocxtransf
+    defxtransf
         Define a process with transformed inputs.
-    defprocrescale
+    defrescale
         Rescale a process.
     prior
         Compute the prior.
@@ -107,7 +107,7 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
     Attributes
     ----------
     DefaultProcess :
-        The unique process key used to represent the default process.
+        Key that identifies the default process.
     
     """
 
