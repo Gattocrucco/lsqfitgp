@@ -206,8 +206,8 @@ class CrossKernel:
             _derivable=self._derivable[::-1],
         )
 
-        # TODO reimplement _swap as a transf, but I want it to preserve the
-        # class unconditionally if it's a Kernel. Maybe first convert to CrossKernel unconditionally if not <= Kernel
+        # TODO reimplement _swap as a transf, preserve the class if <= Kernel,
+        # else regress to CrossKernel
 
     def batch(self, maxnbytes):
         """
@@ -730,6 +730,9 @@ class CrossKernel:
             return result._clone(lcs, _derivable=(None, None))
     
         return cls.register_transf(func, transfname, doc, 'algop')
+
+        # TODO delete _kw (also in linop) if there's more than one kernel
+        # operand or if the class changed?
 
     def algop(self, transfname, *operands, **kw):
         r"""

@@ -130,3 +130,4 @@ def fourier(self, dox, doy):
 # - CrossKernel.__new__ expands tuples in the op args as arguments to linop
 # - write Fourier versions as separate classes ZetaFourier and CrossZetaFourier
 # - implement 'fourier' as just returning the correct class
+# - define 'fourier' for CrossZetaFourier too

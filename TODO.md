@@ -48,19 +48,7 @@ they must be obtained with transformations) -user defined kernels => Also
 something on pseudoinverses and projectors, for when the data is incompatible
 with the model.
 
-In the kernel reference add automatically flags for all the supported
-transformations. For loc, scale and other standard stuff striket' them if not
-supported. To do this leanly, I need to have the transformation method raise
-NotImplementedError right away instead of letting the core callable do it: thus
-the implementation methods shall return NotImplemented in place of a callable
-to disable the transformations.
-
-In the kernels reference, generate automatically:
-
-  * random samples in 2D when maxdim > 1 (after removing default forcekron)
-  
-  * in the index, a flag D0, D1, ..., D∞, D? for the derivability with the
-    default parameters
+In the kernels reference show random samples in 2D when maxdim > 1
 
 Add an example with regression + gp
 
@@ -72,13 +60,6 @@ Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
 Check that float32 is respected. => may not be worth it since GP needs accuracy.
 
 Test recursive dtype support in CrossKernel
-
-The minimum derivability warnings are annoying because there are a lot of them
-when doing nontrivial things, maybe I should put a warnings filter in GP.pred
-such that at most only one warning is emitted per call. => Or maybe not => Add
-initialization parameter `verbose` that sets this kind of things. I imagine
-that the automatical solving strategy algorithm will emit lots of useful
-messages/warnings about what it has decided to do.
 
 Check that conditioning multiple times with zero errors does not change the
 result.
@@ -104,7 +85,7 @@ definitely wait for improvements.
 
 Check that lsqfitgp installs from scratch on a fresh system. I expect that it
 will fail on a python venv due to the need to compile gvar and lsqfit, but
-succeed under spyder because it uses conda.
+succeed under spyder because it uses conda. => convince lepage to do the wheels.
 
 ## Implementation details
 
