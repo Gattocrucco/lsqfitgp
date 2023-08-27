@@ -89,9 +89,6 @@ succeed under spyder because it uses conda. => convince lepage to do the wheels.
 
 ## Implementation details
 
-Chiamare GP -> `_GPBase` e poi fare una sottoclasse GP e mettere tutti i metodi
-di convenienza che non accedono a cose interne in GP.
-
 Fare una github action che carica la release su PyPI quando faccio la release
 su github. => Non è che però è un rischio? In questo modo il mio account github
 controllerebbe cosa finisce su PyPI perché dovrei metterci le chiavi di accesso
@@ -105,31 +102,7 @@ such that there is not need to add # pragma: no cover (I hope, try it)
 
 ## New functionality
 
-Add mean functions.
-
 A function to extract the sdev/var from a covariance dict/tensor.
-
-### More generic conditioning interface
-
-Other newer projects similar to mine (JuliaGaussianProcesses, tinygp) have a
-conditioning method returning a new GP object instead of returning directly the
-prediction. I hadn't done something like that because I want to keep the GP
-object monolithic to be able to apply nontrivial optimizations with multiple
-conditionings, but to add the sampling methods it would be very convenient to
-have something like that instead of duplicating everything.
-
-I could have a method addcond analogous to pred. Compared to caching, this
-solves the problem of not caching when the data errors are not defined in the
-GP. Then pred and sample can accept a cond label instead of a dictionary as
-given which points to a store with a cache. Internally both sample and pred
-would call an internal part of addcond that does not define an explicit
-variable.
-
-Or, once I have caching (see below in "optimization"), sample and pred could
-share a lot of internals and the cache would avoid decomposing matrices twice.
-
-=> I could make GP immutable, and .condition adds labels to an internal list,
-the calculation is always as if done all at once.
 
 ### Bayesian optimization
 
@@ -138,53 +111,34 @@ bayesian-optimization, but I'm not satisfied with it nor with its
 documentation. If I don't find out something better I'd like to study the
 matter and write something. => see the recent book "Surrogates"
 
-### Low-rank/regression
-
-Se ho un processo somma di due processi di cui uno ha basso rango, in altre
-parole gp + minimi quadrati lineare, che credo sia quello che si fa di solito
-nel kriging, posso risolvere più efficientemente che gp-style senza modifiche?
-E vorrei anche avere i valori dei parametri minimi quadrati. E voglio che
-funzioni anche se il priore sui parametri non è già diagonalizzato. E anche se
-il priore è uniforme (però rompe la marginal likelihood). (Ci dovrebbe essere
-su GPML.)
-
-aggiungere l'opzione per fittare roba di basso rango a parte usando woodsbury.
-Deve funzionare sia per regressione lineare con covariate e priore arbitrari,
-sia per una componente del kernel di basso rango... forse è chiedere troppo,
-per cominciare accontentiamoci di regressione. Interfaccia?? Visto che voglio
-mettere addkernel, potrei mettere addregres, e poi sommo con addtransf
-
-=> The regression can be implemented with addcov + addlintransf. Woodsbury
-should be used automatically whenever there is a shape bottleneck in the
-chain of transformations which implies low rank.
-
 ### New interfaces
 
-Long-term: move to a variable-oriented approach like gvar instead of the
-monolithic GP object I'm doing now. It should be doable because what I'm
-doing now with the keys is quite similar to a set of variables, but I have
-not clear ideas on the interface. It could be based on underlying default
-GP object, like gvar does with its hidden covariance matrix of all primary
-gvars.
+#### GP in-language
 
-Fare delle interfacce di alto livello che siano più specifiche, alcune
-verrebbero bene come sottoclassi di GP, altre come megafunzioni. Magari potrei
-fare anche l'interfaccia plugin per scitkit-learn.
+This could be implemented with a class that uses `GP` behind the scenes,
+imitating Stheno:
 
-per implementare delle variabili smart gp basandomi su un GP globale,
-posso fare un kernel che si aspetta un array strutturato in cui la prima
-componente è un indice che seleziona il kernel mentre la seconda contiene il
-tipo che serve all'utente. Wait il tipo può cambiare in base al gp... uff... ok
-basta mettere l'opzione in addx per non imporre che le x siano tutte dello
-stesso tipo. Poi bisogna avere il modo per cancellare/ridefinire le variabili
-in un GP per quando faccio assegnamenti temporanei. Le espressioni di gp
-chiamano addtransf. Aspetta: potrei voler fare espressioni sia su processi non
-valutati che valutati. Allora avrei bisogno di una sorta di abstractgp che si
-concretizza quando gli passo le x. Per condizionare uso una funzione globale
-perché devo poter mettere insieme vari gp.
+```python
+m = MGP()
+f = m.gp(ExpQuad())
+g = m.gp(ExpQuad())
+h = f + 2 * g.diff(1)
+y = f(x)
+z = g(x)
+q = y - 2 * z
+m2 = m | (q == [1, 2, 3], z[0] == 7)
+yc = y << m2
+yc.sample()
+yc.mean()
+yc.cov()
+y.mean()
+a = m.norm(cov)
+...
+```
 
-If I do the interface with a hidden global GP, use a context manager like
-pymc3. Maybe this would also be useful for gvar.
+The variable names would be set automatically internally, and be carried by
+the objects as attributes. The object does not refer directly to the GPs because
+it changes since it's immutable.
 
 ### Efficient sampling
 
@@ -201,25 +155,12 @@ modo diverso alla fine di scrivere quello che ho ricavato con schur e woodsbury
 direttamente sulle matrici, che se so invertire velocemente il priore sui test
 point allora sono a posto
 
-forse devo aggiungere a GP stesso i metodi per campionare da un
-posteriore/priore per usare le decomposizioni efficienti. Forse dovrei
-aggiungere un metodo "addcondition" che definisce una nuova variabile come
-condizionata? Pensarci. => O forse per non annegare nei metodi è meglio
-resistuire un oggetto "distribuzione" che è in grado di campionare e fare tante
-altre cose... però così ho solo spostato il problema perché già GP e le gvar
-dovrebbero svolgere questo ruolo.
-
 To sample efficiently from transformations, apply the transformations to the
 sample instead of decomposing the covariance matrix, only if the starting
 covariance matrix is smaller than the transformed one. More complex case:
 parts of these matrices have been already decomposed and are in cache.
 
 ### Nonlinear fit
-
-Per fare fit non lineari con lsqfitgp senza lsqfit potrei fare così: uso
-empbayes_fit e in makegp inserisco il jacobiano della trasformazione non
-lineare con addtransf. => No: dovrei sapere il jacobiano in funzione del
-risultato.
 
 voglio poter risolvere la seguente situazione: metto un *posteriore*
 di gp dentro a lsqfit e poi voglio prolungare. Mi sa che predfromfit non
@@ -247,7 +188,8 @@ to dicrete derivatives (very very slow with many hyperparameters!) => It is
 probably fine if I compute the derivative with the local linearization in the
 minimum, like I'm doing in lsqfitgp.empbayes_fit.
 
-Is there a reasonable way to support zero errors in prior/data?
+Is there a reasonable way to support zero errors in prior/data? =>
+scipy.optimize supports constraints.
 
 ### Hyperparameters
 
@@ -275,13 +217,6 @@ posto che anche sugli iperparametri ho usato Laplace? (I think not)
 In lsqfitgp.empbayes_fit, calcolare la marginal likelihood usando laplace al
 livello 2 come ho fatto in BartGP
 
-Option to set starting point (would be useful for Bayesian optimization to
-start from previous parameter values)
-
-summary method in empbayes_fit like lsqfit.nonlinear_fit
-
-last gp computed in minimization as meangp attribute in empbayes_fit
-
 The marginal likelihood minimization often complains about "loss of precision".
 I suspect this is due to the log determinant term. It is not well defined
 because the regularization I apply to the matrix changes its value, maybe
@@ -290,27 +225,15 @@ adding a swamp of white noise like GPy and pymc3? Maybe I could add white noise
 only for the logdet term. Most decompositions should support adding a multiple
 of the identity.
 
-Can I use Fisher scoring instead of the actual hessian and jacobian? => This
-might be known as "natural gradients" in the machine learning literature but
-I'm not sure.
-
 Consider PyBADS (minimization) and PyVBMC (variational posterior) for inference.
 They are mantained python packages implementing algorithms designed for
 expensive (> 0.1s) and inaccurate likelihood evaluations, with < 20 parameters.
 They won't be optimal because I also have the gradient, but at least they won't
 hang in places where the linalg error is large.
 
-### JAX
-
-I could write a function that converts a JAX function to a gvar function. Then
-I could do a version of lsqfit.nonlinear_fit that provides the gvar version of
-the jax function provided by the user.
-
 ### Weird input
 
-Accept xarray.DataSet and pandas.DataFrame as inputs.
-
-Also awkward arrays may be interesting as input format.
+Awkward arrays may be interesting as input format.
 
 Support taking derivatives in arbitrarily nested dtypes. Switch from the
 mess-tuple format to dictionaries dim->int. Dim can be (a tuple of) str, int,
@@ -335,6 +258,8 @@ GP.marginal_likelihood.
 Student-t processes. There are some limitations. Possible interface: a nu
 parameter in addx. Can I mix different nu in the same fit? Intepreting the
 result would be a bit obscure, raniter will always sample normal distributions.
+=> It's not really useful because it's equivalent to an additional variance
+scale hyper.
 
 ### Kernel operations
 
@@ -343,123 +268,21 @@ a Taylor series with nonnegative coefficients. (Got the idea from a seminar by
 Hensman, I think this thing should be standard anyway, although I don't
 remember reading it in Rasmussen's book.)
 
-I can do (positive scalar) ** kernel (=> implement Kernel.__rpow__). Also
-(positive kernel) ** kernel I think. => If (positive kernel) ** kernel was
-correct, it would mean that all positive kernels are infinitely divisible.
+I can do (positive scalar) ** kernel => implement Kernel.__rpow__.
 
 Standard functions with positive Taylor coefficients: tan, 1/sin, 1/cos, asin,
 acos, 1/(1-x), exp, -log(1-x), sinh, cosh, atanh, I_a (real a > -1), and their
-truncated versions (e^x - 1, e^x - 1 - x, etc.).
+truncated versions (e^x - 1, e^x - 1 - x, etc.). Hypergeom funcs.
 
 When doing kernel base power, or in general applying functions which have a
 narrow domain, the kernel must be within bounds. For weakly stationary kernels,
 or in general for bounded variance kernels, it is always possible to rescale
 the kernel into the domain, so it is not really a problem.
 
-How do I implement this? I could overload numpy operations, but not for
-example for 1/(1-x) or -log(1-x). I wouldn't like to entrust the user to do
-operations in the right sequence with a positive Taylor series at the end.
-Simplest way: add operations as Kernel methods. Some numpy ufuncs would
-even recognize this and so for example np.tan(kernel) would work.
-
 Turning bands operator (Gneiting 2002, p. 501). Applies to isotropic kernels,
 introduces negative correlations. Preserves support and derivability.
 
-Tentative coherent implementation of transformations and their compositions:
-Each transformation is implemented by a method of the kernel. Kernel provides
-three decorators for methods: unarytransf, binarytransf, outputtransf,
-inputtransf. The marked method shall return a callable that is used as the core
-kernel for the new Kernel object returned. unarytransf is for transformations
-that only act on the kernel output, as for example exp(k(x, y)). binarytransf
-likewise is for operations on two kernels at a time, like k(x, y) + q(x, y).
-outputtransf is for operations that correspond to linear transformations of the
-process defined by the kernel, like f(x)k(x, y)f(y). inputtransf is for
-transformations of the arguments of the kernel, k(f(x), f(y)). The difference
-between unary/binary/input and output is that the latter category actually
-needs two (three for cross-kernels) core implementations, acting only on one
-argument or on both arguments; so in practice the corresponding decorators
-actually need to be a family of decorators similar to @property. Example:
-
-```python
-class Cippa(Kernel):
-    @outputtransf
-    def mytransf(self):
-        f = lambda x: x ** 2
-        k = self._kernel
-        return lambda x, y: f(x) * f(y) * k(x, y)
-    @mytransf.left # raises if the method name is different from mytransf
-    def mytransf(self):
-        f = lambda x: x ** 2
-        k = self._kernel
-        return lambda x, y: f(x) * k(x, y)
-    # now transf.right is defined implicitly in terms of left if not given, but
-    # only on kernels and not on crosskernels
-```
-
-See `playground/methdec.py` for a sketch of the implementation. The next issue
-then is changing the transformations themselves as other transformations are
-applied. Example: apply a translation and then fourier. The translation must
-modify the fourier implementation to take into account the translation. Other
-example: non-linear + fourier. In this case the non-linear transf. should in
-some way disable the fourier transformation. To this end, I would define a
-class method that can be used within the implementation of the transformations
-to list the transformations defined and possibly wrap and redefine them. The
-class method would list through the methods and search for a store attribute
-set by the decorators, then fetch from it the implementations. The
-generic implementations can go in `_KernelBase`, then the basic versions are
-instantiated in `CrossKernel`. `Kernel` just acts as a "middleman" used to
-flag symmetric covariance functions.
-
-=> Actually, this interface is still crap. It does not support order and
-variable specifications like `diff`. So the method must take in the two
-arguments, and the decorator has a keyword argument for a class (or callable in
-general) used to preprocess the arguments and then do the no-op check (in any
-case None works). To support dimensions in `fourier` it is sufficient to use in
-the computation the variable we are acting on, assuming the kernel is separable
-(currently true for `Fourier`), and keep the other kernel factors unaltered.
-Logically, it should be the implementation of the `forcekron` inputtransf that
-modifies the `fourier` implementation to act separately. In general this works
-for any linear transformation that has a concept of applying to a subvariable,
-so maybe it should be a more specific category than `outputtransf`, maybe
-`diffliketransf`.
-
-Maybe for elegance and encapsulation the user-provided implementation function
-should take in the core kernel instead of `self`, and always be passed the
-keyword-only arguments used in the initialization of the kernel, updating the
-`__kwdefaults__` of the core. Tentative interface:
-
-```python
-class Cippa(Kernel):
-    @diffliketransf
-    def rescale(kernel, fx, fy, **kw):
-        if fy is None:
-            return lambda x, y: fx(x) * kernel(x, y)
-        if fx is None:
-            return lambda x, y: fy(y) * kernel(x, y)
-        return lambda x, y: fx(x) * fy(y) * kernel(x, y)
-    @diffliketransf(swap=True) # swap = if one is None, pass first the non-None
-    def rescale(kernel, fx, fy, **kw):
-        if fy is None:
-            return lambda x, y: fx(x) * kernel(x, y)
-        return lambda x, y: fx(x) * fy(y) * kernel(x, y)
-    @diffliketransf(incls=lambda f: (lambda x: 1) if f is None else f)
-    # incls = callable used to preprocess the arguments
-    def rescale(kernel, fx, fy, **kw):
-        return lambda x, y: fx(x) * fy(y) * kernel(x, y)
-```
-
-Instead of forbidding Kernel-CrossKernel operations, make Kernel a subclass
-of CrossKernel, implement a generic subclass permanence system in `_binary`
-and then let GP raise an error when it receives a CrossKernel. Maybe binary
-should be another decorator which I apply to __add__, __mult__ and __pow__.
-
-I can use `__kwdefaults__` to get the default values of kernel parameters
-when I decorate them, such that callable derivable and initargs would always
-know all the parameters.
-
 Replace `forcekron` with `forcesep` with possible values None, 'prod', 'sum'.
-This because I can make diff-like transformations act separately automatically
-in both cases.
 
 ### New specific kernels/kernel options
 
@@ -493,7 +316,7 @@ Also there was a library for graphs in python, I don't remember the name.
 
 Classes: RandomWalkKernel, PeriodicKernel (che non è una sottoclasse di
 StationaryKernel, perché in linea di principio può anche essere non
-stazionario, lo aggiungo con ereditarietà multipla solo come flag)
+stazionario, lo aggiungo con ereditarietà multipla solo come flag).
 
 Look in the kernels reference I highlighted in the GPML bibliography
 (Abrahamsen 1997). => Spherical (p. 40) Gives formulas in dimensions 1, 2, 3,
@@ -571,7 +394,7 @@ efficiency, like when using backprop vs. forward. Now I'm always doing
 forward. It should be feasible to do backward at least, for when the output
 has less axes than the inputs. The concrete recurring case would be
 sums/integrals constraints. => Maybe opt_einsum has algorithms to do more
-complicated optimization.
+complicated optimization. => I may use a qinfo library for tensor contraction.
 
 `pred` should notice when the conditioning is on a transformed variable that
 starts from a lower dimensional set of variables and thus the prior covariance
@@ -654,10 +477,6 @@ functions at some point.
 
 #### Replace `BufferDict` with pytrees
 
-BufferDicts would still be supported automatically because they are pytrees. The
-interface breaking change would happen with covariance matrices: they would be
-represented as dict-of-dicts instead of a dict with tuple keys.
-
 Useful functions: `jax.flatten_util.ravel_tree`, `jax.tree_util.tree_transpose`.
 
 ### Discrete likelihoods
@@ -729,33 +548,6 @@ about integrating this in the homemade replacement to lsqfit.
 For Poisson I can take the square root. How good is it? Ref. Casella-Berger,
 pag. 563, ex. 11.1-11. I also wrote something in gppdf.tex.
 
-### gvar improvements
-
-#### `BufferDict` distribution namespaces
-
-The global definitions of Gaussian copulas are a pain. I would like a local
-context where I can override previous definitions. However I would also like
-that pre-existing dictionaries entering the context preserved their definitions.
-This means that definitions must be carried around by `BufferDict`s. However the
-current mechanism allows to put the copulas into an ordinary dictionary, which
-is convenient. So the single `GVar` or array of `GVar`s returned by a copula
-factory (like `BufferDict.uniform`) must have a metadata attribute about the
-copula which is recognized by `BufferDict` on initialization or item setting,
-and which is preserved on item getting.
-
-All this can quickly grow confusing and badly defined. Array-likes of gvars are
-a problem.
-
-#### bidirectional copula transformations
-
-To set initial hyperparameter values, it would be convenient to have a map from
-untransformed to transformed values. I think it can be backward-compatible.
-Implementing it in `BufferDict.__getitem__` would be inefficient due to the
-linear search, I just need
-
-  * `BufferDict.fcn: dict[str, callable]`
-  * `BufferDict.add_distribution(name, invfcn, fcn=None)`
-
 ## Optimization
 
 ### `gvar`-related issues
@@ -768,51 +560,15 @@ gvar.make_fake_data seems to be using evalcov instead of evalcov_blocks,
 making it inefficient with many variables with a diagonal covariance matrix,
 which is a common case with data.
 
-Can I use jax pytrees to make a version of gvar which is compatible with jax?
-The difficulty is arrays of gvars, it requires a new array-like.
-
-#### sparse `evalcov`
-
-My `evalcov_blocks` code didn't make it into `gvar`, but I could recycle the
-`_evalcov_sparse` function, since now `gvar` depends on `scipy` so using
-`scipy.sparse.cs_matrix` publicly is possible. Interface:
-
-    evalcov_sparse(g, lower=None, halfdiag=False):
-        """
-        Computes the covariance matrix of GVars as a sparse matrix.
-        
-        Parameters
-        ----------
-        g : GVar or array-like
-            A collection of GVars.
-        lower : None or bool, optional
-            If None (default), the full covariance matrix is returned. If True,
-            only the lower triangular part. If False, only the upper triangular
-            part.
-        halfdiag : bool, optional
-            If True, the diagonal of the matrix (the variances) is divided by 2,
-            such that, if lower=True or lower=False, the full covariance
-            matrix can be recovered by C + C.T. Default is False.
-        
-        Returns
-        -------
-        C : scipy.sparse.cs_matrix
-            The (possibly lower/upper triangular part of) covariance matrix of
-            `g`.
-        
-        Raises
-        ------
-        ValueError
-            If `lower` is None and `halfdiag` is True.
-        """
+Make a jax-based rewrite of gvar, centered on an array-like which uses numpy
+protocols.
 
 #### Global covariance matrix
 
-In general gvar could benefit some core optimizations. The global covariance
-matrix is in LIL (list of lists) format, and the full matrix is stored despite
-being symmetrical. There are two main optimizations that can be implemented
-separately: using a compressed sparse format, and storing only the lower
-triangular part.
+The global covariance matrix is in LIL (list of lists) format, and the full
+matrix is stored despite being symmetrical. There are two main optimizations
+that can be implemented separately: using a compressed sparse format, and
+storing only the lower triangular part.
 
 If only the lower triangular part is stored, computing covariance matrices is
 still reasonably simple. Let `A` be the covariance matrix. Say `A = L + L^T`,
@@ -830,14 +586,6 @@ if only the lower triangular part is stored.
 
 Storing only the lower part should only have benefits. Using a compressed
 sparse format may not be worth it.
-
-Memory problem: gvar doesn't allow old correlation matrices which are not used
-anymore to be garbage collected, because they are all stored in the single
-global covariance matrix. switch_gvar doesn't solve this because it keeps a
-chronology of all the matrices, and anyway it can't be used if you have stopped
-using all gvars created to that point. => If one cares about efficiency, he
-probably won't use gvar in critical paths that are repeated over and over, so
-the point may be moot.
 
 ### Solvers
 
@@ -950,35 +698,15 @@ subalgebra.
 
 #### Kronecker
 
-Subclass GPKron where addx has a parameter `dim` and it accepts only
-non-structured arrays. Or, more flexible: make a class Lattice that is
-structured-array-like but different shapes for each field, and a field `_kronok`
-in Kernel update automatically when doing operations with kernels. Also, take a
-look at the pymc3 implementation. Can I use the kronecker optimization when the
-data covariance is non-null? -> Yes with a reasonable approximation of the
-marginal likelihood, but the data covariance must be diagonal. Other
-desiderata: separation along arbitrary subsets of the dimensions, it would be
-important when combining different keys with addtransf (I don't remember why).
-Can I implement a "kronecker" numpy array using the numpy internal interfaces
-so that I can let it roam around without changing the code and use autograd?
-Something like pydata/sparse (if that works).
+Can I use the kronecker optimization when the data covariance is non-null? ->
+Yes with a reasonable approximation of the marginal likelihood, but the data
+covariance must be diagonal. Other desiderata: separation along arbitrary
+subsets of the dimensions, it would be important when combining different keys
+with addtransf (I don't remember why).
 
 Option to compute only the diagonal of the output covariance matrix, and
 allow diagonal-only input covariance for data (will be fundamental for
 kronecker). For the output it already works implicitly when using gvars.
-
-Idea: make an array-like class to represent the tensor product of arrays
-without actually computing explicitly the product. Use this class to represent
-a lattice (may not be trivial since the input can be structured), then the
-kernels will operate on it like a numpy array and automatically the output will
-still be a tensor product if all the operations were separable. I think that
-ExpQuad is the only possible case where an apparently non-separable formula is
-actually separable, I could make a quick fix by using forcekron=True, or
-implement an ufunc that is understood by the tensor product class. A more
-elegant but somewhat complicated solution would be to have a sum of arrays
-array-like class that on any ufunc does explicitly the sum but for the
-exponential, and a sum of a tensor product array-like produces a sum of arrays
-array-like.
 
 Per Kronecker, fare come l'ho pensata per Toeplitz: cioè se ne occupa
 totalmente l'oggetto `GP`. C'è un metodo `addgrid` che sa che poi può tenere il
@@ -1005,8 +733,7 @@ block building method uses the sparsity pattern to make indices to select two
 1d arrays of x values, and to shape the result back into a sparse matrix.
 `LinTransf` should work as is if jax operations support sparse matrices (or
 should I apply `sparsify` automatically if all inputs are sparse?). Then
-add some solvers with sparse algorithms, adapt `Lanczos` and `LOBPCG` to avoid
-the dense conversion.
+add some solvers with sparse algorithms, lanczos and lobpcg.
 
 #### Sparse inverse (DAG)
 
