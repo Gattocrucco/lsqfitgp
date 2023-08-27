@@ -68,8 +68,8 @@ def diff_argparser(deriv):
     deriv = _Deriv.Deriv(deriv)
     return deriv if deriv else None
 
-@functools.partial(CrossKernel.register_linop, argparser=diff_argparser)
-def diff(self, xderiv, yderiv):
+@functools.partial(CrossKernel.register_corelinop, argparser=diff_argparser)
+def diff(core, xderiv, yderiv):
     r"""
     
     Derive the function.
@@ -89,23 +89,11 @@ def diff(self, xderiv, yderiv):
         
     """
 
+    # reconvert derivatives because they could be None
     xderiv = _Deriv.Deriv(xderiv)
     yderiv = _Deriv.Deriv(yderiv)
 
-    # Check kernel is derivable.
-    for i, (deriv, derivability) in enumerate(zip((xderiv, yderiv), self._derivable)):
-        if derivability is not None:
-            # best case: only single variable order matters
-            if deriv.max > derivability:
-                raise ValueError(f'maximum single-variable derivative order '
-                    f'{max} greater than kernel derivability {derivability} '
-                    f'for argument {i}')
-            # worst case: total derivation order matters
-            if deriv.order > derivability:
-                warnings.warn(f'total derivative order {deriv.order} greater '
-                    f'than kernel derivability {derivability} for argument {i}')
-    
-    # Check derivatives are ok for x and y.
+    # check derivatives are ok for actual input arrays
     def check_arg(x, deriv):
         if x.dtype.names is not None:
             for dim in deriv:
@@ -117,6 +105,7 @@ def diff(self, xderiv, yderiv):
             raise ValueError('explicit derivatives with non-structured array')
         elif not jnp.issubdtype(x.dtype, jnp.number):
             raise TypeError('derivative along non-numeric array')
+    
     def check(x, y):
         check_arg(x, xderiv)
         check_arg(y, yderiv)
@@ -124,13 +113,13 @@ def diff(self, xderiv, yderiv):
     # Handle the non-structured case.
     if xderiv.implicit and yderiv.implicit:
         
-        f = self._core
+        f = core
         for _ in range(xderiv.order):
             f = _jaxext.elementwise_grad(f, 0)
         for _ in range(yderiv.order):
             f = _jaxext.elementwise_grad(f, 1)
         
-        def core(x, y):
+        def newcore(x, y):
             check(x, y)
             if xderiv:
                 x = _asfloat(x)
@@ -142,7 +131,7 @@ def diff(self, xderiv, yderiv):
     else:
         
         # Wrap of kernel with derivable arguments only.
-        def f(x, y, *args, core=self._core):
+        def f(x, y, *args):
             i = -1
             for i, dim in enumerate(xderiv):
                 x = x.at[dim].set(args[i])
@@ -159,7 +148,7 @@ def diff(self, xderiv, yderiv):
             for _ in range(yderiv[dim]):
                 f = _jaxext.elementwise_grad(f, 2 + 1 + i + j)
         
-        def core(x, y):
+        def newcore(x, y):
             check(x, y)
                             
             # JAX-friendly wrap of structured arrays.
@@ -174,7 +163,10 @@ def diff(self, xderiv, yderiv):
                 args.append(_asfloat(y[dim]))
             return f(x, y, *args)
     
-    return self._clone(_core=core)
+    return newcore
+
+    # TODO this probably fails if one array is structured and the other is
+    # not.
 
 @CrossKernel.register_xtransf
 def xtransf(fun):
@@ -291,16 +283,8 @@ def scale(scale):
         assert 0 < scale < jnp.inf, scale
     return lambda x: _util.ufunc_recurse_dtype(lambda x: x / scale, x)
 
-def derivable_argparser(derivable):
-    if isinstance(derivable, bool):
-        return sys.maxsize if derivable else 0
-    elif isinstance(derivable, numbers.Integral) and derivable >= 0:
-        return int(derivable)
-    else:
-        raise ValueError(f'derivability degree {derivable!r} not valid')
-
-@functools.partial(CrossKernel.register_linop, argparser=derivable_argparser)
-def derivable(self, xderivable, yderivable):
+@CrossKernel.register_xtransf
+def derivable(derivable):
     """
     Specify the degree of derivability of the function.
 
@@ -310,14 +294,12 @@ def derivable(self, xderivable, yderivable):
         Degree of derivability of the function. None means unknown.
 
     """
-    self = self._clone()
-    self._derivable = xderivable, yderivable
-    return self
+    if isinstance(derivable, bool):
+        derivable = sys.maxsize if derivable else 0
+    elif not isinstance(derivable, numbers.Integral) or derivable < 0:
+        raise ValueError(f'derivability degree {derivable!r} not valid')
 
-    # TODO hardcode the derivability check into the core by inspecting jax
-    # tracers. This 1) makes diff and derivable coretransfs, 2) removes
-    # fuzziness from the derivability check. To support nd, use pytrees, since
-    # diff makes sure it is a StructuredArray.
+    return functools.partial(_jaxext.limit_derivatives, n=derivable)
 
 def normalize_argparser(do):
     return do if do else None

@@ -57,13 +57,6 @@ def test_forcekron(constcore):
     with pytest.raises(KeyError, match='forcekron'):
         lgp.CrossKernel(constcore, forcekron=True)
 
-def test_cross_derivable(constcore):
-    """ check that derivable of CrossKernel is duplicated """
-    kernel = lgp.Kernel(constcore, derivable=4, maxdim=2)
-    assert kernel.derivable == 4
-    kernel = kernel.linop('normalize', True, None)
-    assert kernel.derivable == (4, 4)
-
 @mark.parametrize('op', [operator.add, operator.mul])
 @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
 def test_binary_kernel(op, cls, rng):
@@ -351,23 +344,25 @@ def test_transf_class(cls, name, arg, constcore):
     q = k.linop(name, arg)
     assert q.__class__ is cls
 
-def test_derivability(constcore):
+def test_derivability(constcore, rng):
+    x = rng.standard_normal(10)
+
     kernel = lgp.Kernel(constcore)
-    assert kernel.derivable is None
-    kernel.linop('diff', 1) # no check
+    kernel.linop('diff', 1)(x, x)
 
     kernel = lgp.Kernel(constcore, derivable=0)
-    with pytest.raises(ValueError):
-        kernel.linop('diff', 1) # hard boundary
+    with pytest.raises(ValueError, match='derivatives'):
+        kernel.linop('diff', 1)(x, x)
 
     kernel = lgp.Kernel(constcore, derivable=1)
-    with pytest.warns(UserWarning):
-        kernel.linop('diff', (1, 'a', 1, 'b')) # soft boundary
+    kernel.linop('diff', 1)(x, x)
+    with pytest.raises(ValueError, match='derivatives'):
+        kernel.linop('diff', 2, 0)(x, x)
 
-    # check that the operation system does not try to deduce derivability,
-    # it is in general impossible
-    kernel = lgp.Kernel(constcore, derivable=1) + lgp.Kernel(constcore, derivable=1)
-    assert kernel.derivable is None
+    kernel = lgp.Kernel(constcore, derivable=(1, 0))
+    kernel.linop('diff', 1, 0)(x, x)
+    with pytest.raises(ValueError, match='derivatives'):
+        kernel.linop('diff', 0, 1)(x, x)
 
 @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
 def test_invalid_input(cls, constcore):
@@ -525,9 +520,11 @@ def test_decorator():
     with pytest.raises(ValueError):
         lgp.kernel(lambda x: 2, 'gatto')
 
-def test_callable_arg(constcore):
-    kernel = lgp.Kernel(constcore, derivable=lambda d: d, d=6)
-    assert kernel.derivable == 6
+def test_callable_arg(constcore, rng):
+    x = rng.standard_normal(10)
+    kernel = lgp.Kernel(constcore, derivable=lambda d: d, d=1)
+    with pytest.raises(ValueError, match='derivatives'):
+        kernel.linop('diff', 2)(x, x)
 
 def test_init_kw(constcore):
     kernel = lgp.Kernel(constcore, saveargs=True, cippa=4)

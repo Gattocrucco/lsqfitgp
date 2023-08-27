@@ -117,5 +117,4 @@ class Zero(IsotropicKernel):
         self = object.__new__(cls)
         self._kw = None
         self._core = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
-        self._derivable = sys.maxsize, sys.maxsize
         return self

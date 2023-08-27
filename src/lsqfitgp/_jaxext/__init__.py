@@ -162,3 +162,39 @@ def pure_callback_ufunc(callback, dtype, *args, excluded=None, **kwargs):
     return jax.pure_callback(callback, result, *padded_args, vectorized=True, **kwargs)
 
     # TODO when jax solves this, check version and piggyback on original if new
+
+def limit_derivatives(x, n, error_func=None):
+    """
+    Limit the number of derivatives that goes through a value.
+
+    Parameters
+    ----------
+    x : array_like
+        The value.
+    n : int
+        The maximum number of derivatives allowed. Must be an integer.
+    error_func : callable, optional
+        A function that takes (derivatives taken, n) and returns an exception.
+
+    Return
+    ------
+    x : array_like
+        The value, unchanged.
+    """
+    assert n == int(n)
+    if error_func is None:
+        def error_func(current, n):
+            return ValueError(f'took {current} derivatives > limit {n}')
+    return _limit_derivatives_impl(0, n, error_func, x)
+
+@functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1, 2))
+def _limit_derivatives_impl(current, limit, func, x):
+    if current > limit:
+        raise func(current, limit)
+    return x
+
+@_limit_derivatives_impl.defjvp
+def _limit_derivatives_impl_jvp(current, limit, func, primals, tangents):
+    x, = primals
+    xdot, = tangents
+    return _limit_derivatives_impl(current + 1, limit, func, x), xdot

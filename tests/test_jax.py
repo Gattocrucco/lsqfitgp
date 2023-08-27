@@ -17,11 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+
 import numpy as np
 import gvar
 import jax
 from jax import lax
 from jax import numpy as jnp
+import pytest
 from pytest import mark
 
 from lsqfitgp import _jaxext
@@ -212,3 +215,43 @@ def test_hash_numpy(rng):
     """ check numpy arrays do not break the hash """
     buf = genint(rng, 'u1', 2)
     _jaxext.fasthash64(buf, 12345)
+
+def test_limit_derivatives():
+    
+    class MyException(Exception):
+        pass
+    
+    def error_func(current, n):
+        return MyException
+    
+    def do(x, n, *ops):
+        f = functools.partial(_jaxext.limit_derivatives, n=n, error_func=error_func)
+        for op in ops:
+            f = op(f)
+        f(x)
+
+    ok_args = [
+        (0., 0),
+        (0., 1, jax.grad),
+        (lgp.StructuredArray(np.zeros(1, 'd,d')), 1, lambda f: jax.jacfwd(lambda x: x['f0'] + x['f1'])),
+        (0., 2, jax.grad, jax.grad),
+    ]
+
+    bad_args = [
+        (0., -1),
+        (0., 0, jax.grad),
+        (0., 1, jax.grad, jax.grad),
+        (0., 2, jax.grad, jax.jacfwd, jax.jacrev),
+        (0., 0, jax.value_and_grad),
+        (jnp.ones(1), 0, jax.grad, jax.vmap),
+        (jnp.ones(1), 0, jax.vmap, jax.grad),
+        (lgp.StructuredArray(np.zeros(1, 'd,d')), 0, jax.jacfwd),
+    ]
+    
+    for arg in ok_args:
+        do(*arg)
+
+    for arg in bad_args:
+        with pytest.raises(MyException):
+            do(*arg)
+

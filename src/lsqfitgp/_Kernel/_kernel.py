@@ -28,21 +28,11 @@ class Kernel(_crosskernel.CrossKernel):
     .. math::
         \mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), f(y)].
 
-    Attributes
-    ----------
-    derivable : int or None
-        The degree of differentiability of the function.
-
     Notes
     -----
     `Kernel` defines the ``'forcekron'`` transformation.
 
     """
-
-    @property
-    def derivable(self):
-        assert self._derivable[0] == self._derivable[1]
-        return self._derivable[0]
 
     def _swap(self):
         return self

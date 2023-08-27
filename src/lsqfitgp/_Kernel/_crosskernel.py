@@ -58,15 +58,15 @@ class CrossKernel:
         A function with signature ``core(x, y)``, where ``x`` and ``y``
         are two broadcastable numpy arrays, which computes the value of the
         kernel.
-    derivable, scale, loc, maxdim, dim :
+    scale, loc, derivable, maxdim, dim :
         If specified, these arguments are passed as arguments to the
-        correspondingly named operators, in the order listed here. See
-        `linop`. Briefly: the kernel selects only fields `dim` in the
-        input, checks the dimensionality against `maxdim`, transforms as
-        ``(x - loc) / scale``, then sets the degree of differentiability. If
-        any argument is callable, it is passed `**kw` and must return the
-        actual argument. If an argument is a tuple, it is interpreted as a pair
-        of arguments.
+        correspondingly named operators, in the order listed here. See `linop`.
+        Briefly: the kernel selects only fields `dim` in the input, checks the
+        dimensionality against `maxdim`, checks there are not too many
+        derivatives taken on the arguments, then transforms as ``(x - loc) /
+        scale``. If any argument is callable, it is passed `**kw` and must
+        return the actual argument. If an argument is a tuple, it is interpreted
+        as a pair of arguments.
     forcekron : bool, default False
         If True, apply ``.transf('forcekron')`` to the kernel, before the
         operations above. Available only for `Kernel`.
@@ -74,12 +74,6 @@ class CrossKernel:
         If specified, apply ``.batch(batchbytes)`` to the kernel.
     **kw
         Additional keyword arguments are passed to `core`.
-    
-    Attributes
-    ----------
-    derivable : pair of int or None
-        How many times each function is (mean-square sense) derivable.
-        ``sys.maxsize`` if it is smooth. `None` mean unknown.
     
     Methods
     -------
@@ -101,14 +95,14 @@ class CrossKernel:
     
     """
 
-    __slots__ = '_kw', '_core', '_derivable'
+    __slots__ = '_kw', '_core'
     
     def __new__(cls, core, *,
-        dim=None,
-        loc=None,
         scale=None,
+        loc=None,
         derivable=None,
         maxdim=None,
+        dim=None,
         forcekron=False,
         batchbytes=None,
         **kw,
@@ -117,15 +111,14 @@ class CrossKernel:
                 
         self._kw = kw        
         self._core = lambda x, y: core(x, y, **kw)
-        self._derivable = None, None
 
         if forcekron:
             self = self.transf('forcekron')
 
         linop_args = {
-            'derivable': derivable,
             'scale': scale,
             'loc': loc,
+            'derivable': derivable,
             'maxdim': maxdim,
             'dim': dim,
         }
@@ -152,15 +145,10 @@ class CrossKernel:
         assert result.shape == shape, (result.shape, shape)
         return result
 
-    @property
-    def derivable(self):
-        return self._derivable
-
     def _clone(self, cls=None, **attrs):
         newself = object.__new__(self.__class__ if cls is None else cls)
         newself._kw = self._kw
         newself._core = self._core
-        newself._derivable = self._derivable
         for k, v in attrs.items():
             setattr(newself, k, v)
         return newself
@@ -207,7 +195,6 @@ class CrossKernel:
         return self._clone(
             __class__,
             _core=lambda x, y, core=self._core: core(y, x),
-            _derivable=self._derivable[::-1],
         )
 
     def batch(self, maxnbytes):
@@ -734,7 +721,7 @@ class CrossKernel:
                 yield result.__class__
             
             lcs = _least_common_superclass(classes())
-            return result._clone(lcs, _derivable=(None, None))
+            return result._clone(lcs)
     
         return cls.register_transf(func, transfname, doc, 'algop')
 

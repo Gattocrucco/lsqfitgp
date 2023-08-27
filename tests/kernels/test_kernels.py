@@ -47,18 +47,23 @@ pytestmark = pytest.mark.filterwarnings(
 
 # TODO test higher dimensions.
 
-def skiponmaxdim(meth):
+def skipon(meth, exc, match):
+    """ decorator to make a unit test method skip on a certain exception """
+
     @functools.wraps(meth)
     def newmeth(self, *args, **kw):
         try:
             return meth(self, *args, **kw)
-        except ValueError as exc:
-            if '> maxdim=' in str(exc):
-                pytest.skip(reason=str(exc))
+        except exc as e:
+            if re.search(match, str(e)):
+                pytest.skip(reason=str(e))
             else:
                 raise
     return newmeth
-    
+
+skiponmaxdim = functools.partial(skipon, exc=ValueError, match=r'> maxdim=')
+skiponderivable = functools.partial(skipon, exc=ValueError, match=r'derivatives')
+
 class Base:
     """
     Base class to test kernels. Each subclass tests one specific kernel.
@@ -125,8 +130,6 @@ class Base:
         return np.finfo(float).eps
     
     def impl_positive(self, kernel, deriv, x, psdeps):
-        if kernel.derivable < deriv:
-            pytest.skip()
         d = (deriv, 'f0') if x.dtype.names else deriv
         cov = kernel.linop('diff', d, d)(x[None, :], x[:, None])
         util.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7)
@@ -141,8 +144,6 @@ class Base:
         self.impl_positive(kernel, 0, x_nd, psdeps)
 
     def impl_jit(self, kernel, deriv, x):
-        if kernel.derivable < deriv:
-            pytest.skip()
         if x.dtype.names:
             x = lgp.StructuredArray(x)
             dtype = np.result_type(*(x.dtype[name].base for name in x.dtype.names))
@@ -172,6 +173,7 @@ class Base:
         """ Pair of numbers of derivatives to take """
         return request.param
     
+    @skiponderivable
     def test_symmetric_offdiagonal(self, kernel, derivs, x):
         xderiv, yderiv = derivs
         if xderiv == yderiv:
@@ -180,8 +182,6 @@ class Base:
         else:
             a = x[:, None]
             b = a.T
-        if kernel.derivable < max(xderiv, yderiv):
-            pytest.skip()
         if x.dtype.names:
             xderiv = xderiv, x.dtype.names[0]
             yderiv = yderiv, x.dtype.names[0]
@@ -231,8 +231,6 @@ class Stationary(Base):
             pytest.skip()
         if not np.issubdtype(x_scalar.dtype, np.inexact):
             pytest.skip()
-        if kernel.derivable < deriv:
-            pytest.skip()
         
         # discontinuos kernels
         if self.kercls is _kernels.Cauchy and kw.get('alpha', 2) < 1:
@@ -278,33 +276,36 @@ class Deriv1(Base):
         return request.param
 
     @skiponmaxdim
+    @skiponderivable
     def test_positive_nd_1(self, kernel, x_nd, psdeps):
         self.impl_positive(kernel, 1, x_nd, psdeps)
 
+    @skiponderivable
     def test_positive_scalar_1(self, kernel, x_scalar, psdeps):
         self.impl_positive(kernel, 1, x_scalar, psdeps)
 
+    @skiponderivable
     def test_jit_scalar_1(self, kernel, x_scalar):
         self.impl_jit(kernel, 1, x_scalar)
 
     @skiponmaxdim
+    @skiponderivable
     def test_jit_nd_1(self, kernel, x_nd):
         self.impl_jit(kernel, 1, x_nd)
 
+    @skiponderivable
     def test_continuous_in_zero_1(self, kernel, x_scalar, kw):
         self.impl_continuous_in_zero(kernel, 1, x_scalar, kw)
 
+    @skiponderivable
     def test_double_diff_scalar_first(self, kernel, x_scalar):
-        if kernel.derivable < 1:
-            pytest.skip()
         r1 = kernel.linop('diff', 1, 1)(x_scalar[None, :], x_scalar[:, None])
         r2 = kernel.linop('diff', 1, 0).linop('diff', 0, 1)(x_scalar[None, :], x_scalar[:, None])
         util.assert_allclose(r1, r2)
     
     @skiponmaxdim
+    @skiponderivable
     def test_double_diff_nd_first(self, kernel, x_nd):
-        if kernel.derivable < 1:
-            pytest.skip()
         x = x_nd[:, None]
         f0 = x.dtype.names[0]
         r1 = kernel.linop('diff', f0, f0)(x, x.T)
@@ -319,40 +320,42 @@ class Deriv2(Deriv1):
         return request.param
 
     @skiponmaxdim
+    @skiponderivable
     def test_positive_nd_2(self, kernel, x_nd, psdeps):
         self.impl_positive(kernel, 2, x_nd, psdeps)
 
+    @skiponderivable
     def test_positive_scalar_2(self, kernel, x_scalar, psdeps):
         self.impl_positive(kernel, 2, x_scalar, psdeps)
 
+    @skiponderivable
     def test_jit_scalar_2(self, kernel, x_scalar):
         self.impl_jit(kernel, 2, x_scalar)
 
     @skiponmaxdim
+    @skiponderivable
     def test_jit_nd_2(self, kernel, x_nd):
         self.impl_jit(kernel, 2, x_nd)
 
+    @skiponderivable
     def test_continuous_in_zero_2(self, kernel, x_scalar, kw):
         self.impl_continuous_in_zero(kernel, 2, x_scalar, kw)
 
+    @skiponderivable
     def test_double_diff_scalar_second(self, kernel, x_scalar):
-        if kernel.derivable < 2:
-            pytest.skip()
         r1 = kernel.linop('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
         r2 = kernel.linop('diff', 1, 1).linop('diff', 1, 1)(x_scalar[None, :], x_scalar[:, None])
         util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-9)
     
+    @skiponderivable
     def test_double_diff_scalar_second_chopped(self, kernel, x_scalar):
-        if kernel.derivable < 2:
-            pytest.skip()
         r1 = kernel.linop('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
         r2 = kernel.linop('diff', 2, 0).linop('diff', 0, 2)(x_scalar[None, :], x_scalar[:, None])
         util.assert_allclose(r1, r2)
     
     @skiponmaxdim
+    @skiponderivable
     def test_double_diff_nd_second(self, kernel, x_nd):
-        if kernel.derivable < 2:
-            pytest.skip()
         x = x_nd[:, None]
         if len(x.dtype) < 2:
             pytest.skip(reason='test needs nd >= 2')
@@ -366,9 +369,8 @@ class Deriv2(Deriv1):
         return dict(atol=1e-15, rtol=1e-12)
 
     @skiponmaxdim
+    @skiponderivable
     def test_double_diff_nd_second_chopped(self, kernel, x_nd, ddtol):
-        if kernel.derivable < 2:
-            pytest.skip()
         x = x_nd[:, None]
         if len(x.dtype) < 2:
             pytest.skip(reason='test needs nd >= 2')
@@ -435,6 +437,20 @@ class TestMaternp(Stationary, Deriv2):
     def kw(self, request):
         return dict(p=request.param)
 
+    @mark.parametrize('deriv', [0, 1, 2])
+    def test_matern_half_integer(self, rng, deriv):
+        """
+        Check that the formula for half integer nu gives the same result of the
+        formula for real nu.
+        """
+        for p in range(deriv, 10):
+            x = 3 * rng.standard_normal((1, 100))
+            y = x.T
+            k = _kernels.Matern(nu=p + 1/2)
+            r1 = k.linop('diff', deriv)(x, y)
+            r2 = _kernels.Maternp(p=p).linop('diff', deriv)(x, y)
+            util.assert_allclose(r1, r2, rtol=1e-9, atol=1e-16)
+
 class TestWendland(Stationary, Deriv2):
 
     @pytest.fixture
@@ -451,13 +467,27 @@ class TestWendland(Stationary, Deriv2):
     def psdeps(self):
         return 1e3 * np.finfo(float).eps
 
+    def test_highk(self):
+        kernel = self.kercls(k=4)
+        with pytest.raises(NotImplementedError):
+            kernel(0, 0)
+
 class TestWiener(Base):
 
     @pytest.fixture
     def ranx_scalar(self, rng):
         return lambda size=100: rng.uniform(0, 10, size)
 
-class TestWienerIntegral(TestWiener, Deriv1): pass
+class TestWienerIntegral(TestWiener, Deriv1):
+
+    def test_wiener_integral(self, rng):
+        """
+        Test that the derivative of the Wiener integral is the Wiener.
+        """
+        x, y = np.abs(rng.standard_normal((2, 100)))
+        r1 = _kernels.Wiener()(x, y)
+        r2 = _kernels.WienerIntegral().linop('diff', 1, 1)(x, y)
+        util.assert_allclose(r1, r2)
 
 class TestOrnsteinUhlenbeck(TestWiener): pass
 
@@ -524,6 +554,37 @@ class TestHarmonic(Stationary, Deriv1):
         Q = request.param
         return {} if Q is None else dict(Q=Q)
 
+    @mark.parametrize('deriv', [0, 1])
+    @mark.parametrize('Q0', [1/2, 1])
+    @mark.parametrize('Qderiv', [False, True])
+    def test_harmonic_continuous(self, rng, deriv, Q0, Qderiv):
+        eps = 1e-10
+        Q0 = float(Q0)
+        Qs = [(1 - eps) * Q0, Q0, (1 + eps) * Q0]
+        x = rng.standard_normal(100)
+        results = []
+        for Q in Qs:
+            kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).linop('diff', deriv, deriv)(x[None, :], x[:, None])
+            if Qderiv:
+                kernelf = jax.jacfwd(kernelf)
+            results.append(kernelf(Q, x))
+        util.assert_allclose(results[0], results[2], atol=1e-5)
+        util.assert_allclose(results[0], results[1], atol=1e-5)
+        util.assert_allclose(results[1], results[2], atol=1e-5)
+
+    def test_celerite_harmonic(self, rng):
+        """
+        Check that the Celerite kernel is equivalent to the Harmonic kernel when
+        B == gamma.
+        """
+        x = rng.uniform(-1, 1, size=100)
+        Q = rng.uniform(1.1, 3)
+        eta = np.sqrt(1 - 1 / Q**2)
+        B = 1 / (eta * Q)
+        r1 = _kernels.Celerite(gamma=B, B=B)(x[:, None], x[None, :])
+        r2 = _kernels.Harmonic(Q=Q, scale=eta)(x[:, None], x[None, :])
+        util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-15)
+
 class TestBagOfWords(Base):
 
     lipsum = """
@@ -560,17 +621,8 @@ class TestBagOfWords(Base):
             for _ in range(np.prod(size, dtype=int))
         ]).reshape(size)
 
-class TestGibbs(Stationary, Deriv2):
-
-    @pytest.fixture
-    def kw(self):
-        return dict(derivable=True)
-
-class TestRescaling(Stationary, Deriv2):
-
-    @pytest.fixture
-    def kw(self):
-        return dict(derivable=True)
+class TestGibbs(Stationary, Deriv2): pass
+class TestRescaling(Stationary, Deriv2): pass
 
 class TestGammaExp(Stationary, Deriv2):
 
@@ -736,116 +788,6 @@ for name, kernel in kernels.items():
     testname = 'Test' + name
     if testname not in globals():
         globals()[testname] = types.new_class(testname, (All,))
-
-def check_matern_half_integer(rng, deriv):
-    """
-    Check that the formula for half integer nu gives the same result of the
-    formula for real nu.
-    """
-    for p in range(10):
-        x = 3 * rng.standard_normal((1, 100))
-        y = x.T
-        k = _kernels.Matern(nu=p + 1/2)
-        d = min(k.derivable, deriv)
-        r1 = k.linop('diff', d, d)(x, y)
-        r2 = _kernels.Maternp(p=p).linop('diff', d, d)(x, y)
-        util.assert_allclose(r1, r2, rtol=1e-9, atol=1e-16)
-
-def test_matern_half_integer_0(rng):
-    check_matern_half_integer(rng, 0)
-
-def test_matern_half_integer_1(rng):
-    check_matern_half_integer(rng, 1)
-
-def test_matern_half_integer_2(rng):
-    check_matern_half_integer(rng, 2)
-    
-def test_wiener_integral(rng):
-    """
-    Test that the derivative of the Wiener integral is the Wiener.
-    """
-    x, y = np.abs(rng.standard_normal((2, 100)))
-    r1 = _kernels.Wiener()(x, y)
-    r2 = _kernels.WienerIntegral().linop('diff', 1, 1)(x, y)
-    util.assert_allclose(r1, r2)
-
-def test_celerite_harmonic(rng):
-    """
-    Check that the Celerite kernel is equivalent to the Harmonic kernel when
-    B == gamma.
-    """
-    x = rng.uniform(-1, 1, size=100)
-    Q = rng.uniform(1.1, 3)
-    eta = np.sqrt(1 - 1 / Q**2)
-    B = 1 / (eta * Q)
-    r1 = _kernels.Celerite(gamma=B, B=B)(x[:, None], x[None, :])
-    r2 = _kernels.Harmonic(Q=Q, scale=eta)(x[:, None], x[None, :])
-    util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-15)
-
-def check_harmonic_continuous(rng, deriv, Q0, Qderiv=False):
-    eps = 1e-10
-    Q0 = float(Q0)
-    Qs = [(1 - eps) * Q0, Q0, (1 + eps) * Q0]
-    x = rng.standard_normal(100)
-    results = []
-    for Q in Qs:
-        kernelf = lambda Q, x: _kernels.Harmonic(Q=Q).linop('diff', deriv, deriv)(x[None, :], x[:, None])
-        if Qderiv:
-            kernelf = jax.jacfwd(kernelf)
-        results.append(kernelf(Q, x))
-    util.assert_allclose(results[0], results[2], atol=1e-5)
-    util.assert_allclose(results[0], results[1], atol=1e-5)
-    util.assert_allclose(results[1], results[2], atol=1e-5)
-
-def test_harmonic_continuous_12(rng):
-    check_harmonic_continuous(rng, 0, 1/2)
-def test_harmonic_continuous_1(rng):
-    check_harmonic_continuous(rng, 0, 1)
-def test_harmonic_deriv_continuous_12(rng):
-    check_harmonic_continuous(rng, 1, 1/2)
-def test_harmonic_deriv_continuous_1(rng):
-    check_harmonic_continuous(rng, 1, 1)
-def test_harmonic_derivQ_continuous_12(rng):
-    check_harmonic_continuous(rng, 0, 1/2, True)
-def test_harmonic_derivQ_continuous_1(rng):
-    check_harmonic_continuous(rng, 0, 1, True)
-def test_harmonic_deriv_derivQ_continuous_12(rng):
-    check_harmonic_continuous(rng, 1, 1/2, True)
-def test_harmonic_deriv_derivQ_continuous_1(rng):
-    check_harmonic_continuous(rng, 1, 1, True)
-
-def test_nonfloat_eps():
-    x = np.arange(20)
-    c1 = _kernels.Wendland()(x, x)
-    eps = np.finfo(float).eps
-    c2 = np.exp(-eps)
-    util.assert_allclose(c1, c2, rtol=eps, atol=eps)
-
-def test_default_override():
-    with pytest.warns(UserWarning):
-        _kernels.Maternp(p=0, derivable=17)
-
-def test_kernel_decorator_error():
-    with pytest.raises(ValueError):
-        _Kernel.kernel(1, 2)
-
-def test_nary():
-    kernel = _Kernel.Kernel(lambda x, y: np.maximum(0, 1 - np.abs(x - y)))
-    g = lambda x: 2 * x
-    k1 = _Kernel.Kernel._nary(lambda f: lambda x: g(x) * f(x), [kernel], kernel._side.LEFT)
-    k2 = _Kernel.Kernel._nary(lambda f: lambda y: g(y) * f(y), [kernel], kernel._side.RIGHT)
-    x = np.linspace(-5, 5, 30)
-    m1 = k1(x[:, None], x[None, :])
-    assert not np.allclose(m1, m1.T)
-    m2 = k2(x[:, None], x[None, :])
-    assert not np.allclose(m2, m2.T)
-    assert not np.allclose(m1, m2)
-    util.assert_close_matrices(m1, m2.T)
-
-def test_wendland_highk():
-    kernel = _kernels.Wendland(k=4)
-    with pytest.raises(NotImplementedError):
-        kernel(0, 0)
 
 #####################  XFAILS/SKIPS  #####################
 
