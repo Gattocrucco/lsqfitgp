@@ -417,7 +417,7 @@ def test_diff_errors(rng, constcore):
     
     # named deriv on scalar
     x = rng.standard_normal(10)
-    with pytest.raises(ValueError, match='explicit derivatives'):
+    with pytest.raises(ValueError, match='derivative on named'):
         kernel.linop('diff', 'f0')(x, x)
     
     # missing field
@@ -436,7 +436,7 @@ def test_diff_errors(rng, constcore):
     with pytest.raises(TypeError, match='non-numeric field'):
         kernel.linop('diff', 'f0')(x, x)
 
-def test_diff(rng):
+def test_diff_value(rng):
     derivs = {
         (0, 0): lambda x, y: x * y,
         (0, 1): lambda x, y: x * np.ones_like(y),
@@ -458,6 +458,17 @@ def test_diff(rng):
         k = kernel.linop('diff', (i, 'f0'), (j, 'f0'))
         x, y = rng.standard_normal((2, 10)).view([('', float)])
         util.assert_equal(k(x, y), wrapper(core)(x, y))
+
+def test_diff_cross_nd(rng):
+    """ test that diff works when one argument is scalar and the other
+    structured """
+    x = rng.standard_normal((10, 2)).view('d,d').squeeze(-1)
+    y = rng.standard_normal(10)
+    k1 = lgp.Kernel(lambda x, y: x['f0'] * y)
+    k2 = lgp.Kernel(lambda x, y: x * y)
+    c1 = k1.linop('diff', (1, 'f0'), 1)(x, y)
+    c2 = k2.linop('diff', 1, 1)(x['f0'], y)
+    util.assert_equal(c1, c2)
 
 def test_distances(rng):
     x1 = rng.standard_normal(10)

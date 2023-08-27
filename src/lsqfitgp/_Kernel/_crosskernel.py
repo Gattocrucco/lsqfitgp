@@ -92,6 +92,12 @@ class CrossKernel:
     See also
     --------
     Kernel
+
+    Notes
+    -----
+    The predefined class hierarchy and the class logic of the transformations
+    assume that each kernel class corresponds to a subalgebra, i.e., addition
+    and multiplication preserve the class.
     
     """
 

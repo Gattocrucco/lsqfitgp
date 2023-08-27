@@ -89,84 +89,82 @@ def diff(core, xderiv, yderiv):
         
     """
 
-    # reconvert derivatives because they could be None
+    # reparse derivatives because they could be None
     xderiv = _Deriv.Deriv(xderiv)
     yderiv = _Deriv.Deriv(yderiv)
 
-    # check derivatives are ok for actual input arrays
-    def check_arg(x, deriv):
-        if x.dtype.names is not None:
-            for dim in deriv:
-                if dim not in x.dtype.names:
-                    raise ValueError(f'derivative along missing field {dim!r}')
-                if not jnp.issubdtype(x.dtype[dim], jnp.number):
-                    raise TypeError(f'derivative along non-numeric field {dim!r}')
-        elif not deriv.implicit:
-            raise ValueError('explicit derivatives with non-structured array')
-        elif not jnp.issubdtype(x.dtype, jnp.number):
-            raise TypeError('derivative along non-numeric array')
-    
-    def check(x, y):
-        check_arg(x, xderiv)
-        check_arg(y, yderiv)
-    
-    # Handle the non-structured case.
-    if xderiv.implicit and yderiv.implicit:
-        
-        f = core
-        for _ in range(xderiv.order):
-            f = _jaxext.elementwise_grad(f, 0)
-        for _ in range(yderiv.order):
-            f = _jaxext.elementwise_grad(f, 1)
-        
-        def newcore(x, y):
-            check(x, y)
-            if xderiv:
-                x = _asfloat(x)
-            if yderiv:
-                y = _asfloat(y)
-            return f(x, y)
-    
-    # Structured case.
-    else:
-        
-        # Wrap of kernel with derivable arguments only.
-        def f(x, y, *args):
-            i = -1
+    # wrapper of kernel with derivable arguments unpacked
+    def f(x, y, *args):
+        i = -1
+        if not xderiv.implicit:
             for i, dim in enumerate(xderiv):
                 x = x.at[dim].set(args[i])
+        if not yderiv.implicit:
             for j, dim in enumerate(yderiv):
                 y = y.at[dim].set(args[1 + i + j])
-            return core(x, y)
-            
-        # Make derivatives.
-        i = -1
+        return core(x, y)
+    
+    # last x index in case iteration on x does not run but does on y
+    i = -1
+
+    # derive w.r.t. first argument
+    if xderiv.implicit:
+        for _ in range(xderiv.order):
+            f = _jaxext.elementwise_grad(f, 0)
+    else:
         for i, dim in enumerate(xderiv):
             for _ in range(xderiv[dim]):
                 f = _jaxext.elementwise_grad(f, 2 + i)
+
+    # derive w.r.t. second argument
+    if yderiv.implicit:
+        for _ in range(yderiv.order):
+            f = _jaxext.elementwise_grad(f, 1)
+    else:
         for j, dim in enumerate(yderiv):
             for _ in range(yderiv[dim]):
                 f = _jaxext.elementwise_grad(f, 2 + 1 + i + j)
-        
-        def newcore(x, y):
-            check(x, y)
+
+    # check derivatives are ok for actual input arrays, wrap structured arrays
+    def process_arg(x, deriv, pos):
+        if x.dtype.names is not None:
+            for dim in deriv:
+                if dim not in x.dtype.names:
+                    raise ValueError(f'derivative along missing field {dim!r} '
+                        f'on {pos} argument')
+                if not jnp.issubdtype(x.dtype[dim], jnp.number):
+                    raise TypeError(f'derivative along non-numeric field '
+                        f'{dim!r} on {pos} argument')
+            return _array.StructuredArray(x)
+        elif not deriv.implicit:
+            raise ValueError('derivative on named fields with non-structured '
+                f'array on {pos} argument')
+        elif not jnp.issubdtype(x.dtype, jnp.number):
+            raise TypeError(f'derivative along non-numeric array on '
+                f'{pos} argument')
+        return x
+    
+    def newcore(x, y):
+        x = process_arg(x, xderiv, 'left')
+        y = process_arg(y, yderiv, 'right')
                             
-            # JAX-friendly wrap of structured arrays.
-            x = _array.StructuredArray(x)
-            y = _array.StructuredArray(y)
-        
-            # Make argument list and call function.
-            args = []
+        args = []
+
+        if not xderiv.implicit:
             for dim in xderiv:
                 args.append(_asfloat(x[dim]))
+        elif xderiv:
+            x = _asfloat(x)
+        
+        if not yderiv.implicit:
             for dim in yderiv:
                 args.append(_asfloat(y[dim]))
-            return f(x, y, *args)
-    
-    return newcore
+        elif yderiv:
+            y = _asfloat(y)
 
-    # TODO this probably fails if one array is structured and the other is
-    # not.
+        return f(x, y, *args)
+
+    return newcore
 
 @CrossKernel.register_xtransf
 def xtransf(fun):
