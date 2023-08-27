@@ -76,11 +76,11 @@ processes with their respective kernels. These names reside in a namespace
 separate from the one used by `~GP.addx`, `~GP.addlintransf`, etc. Now we
 use these to define the sum as a process::
 
-    gp = gp.defproclintransf('sum',
+    gp = gp.deflintransf('sum',
         lambda l, s: lambda x: l(x) + s(x),
         ['long', 'short'])
 
-The method `~GP.defproclintransf` is analogous to `~GP.addlintransf` but works
+The method `~GP.deflintransf` is analogous to `~GP.addlintransf` but works
 for a whole process at once. What we are doing mathematically is the
 following:
 

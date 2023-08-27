@@ -171,12 +171,12 @@ specifying a kernel:</p>
 processes with their respective kernels. These names reside in a namespace
 separate from the one used by <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addx</span></code></a>, <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addlintransf</span></code></a>, etc. Now we
 use these to define the sum as a process:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">defproclintransf</span><span class="p">(</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">deflintransf</span><span class="p">(</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span>
     <span class="k">lambda</span> <span class="n">l</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">l</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">s</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
     <span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">,</span> <span class="s1">&#39;short&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>The method <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproclintransf" title="lsqfitgp.GP.defproclintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">defproclintransf</span></code></a> is analogous to <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addlintransf</span></code></a> but works
+<p>The method <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.deflintransf" title="lsqfitgp.GP.deflintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">deflintransf</span></code></a> is analogous to <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addlintransf</span></code></a> but works
 for a whole process at once. What we are doing mathematically is the
 following:</p>
 <div class="math notranslate nohighlight">
