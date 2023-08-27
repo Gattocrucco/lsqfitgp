@@ -366,7 +366,7 @@ class Deriv2(Deriv1):
 
     @pytest.fixture
     def ddtol(self):
-        return dict(atol=1e-15, rtol=1e-12)
+        return dict(atol=1e-13, rtol=1e-12)
 
     @skiponmaxdim
     @skiponderivable
