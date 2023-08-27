@@ -48,7 +48,7 @@ Kernel.inherit_transf('xtransf')
 Kernel.inherit_transf('diff')
 
 @Kernel.register_transf
-def forcekron(self):
+def forcekron(tcls, self):
     r"""
     
     Force the kernel to be a separate product over dimensions:
@@ -64,6 +64,6 @@ def forcekron(self):
     """
 
     core = lambda x, y, core=self._core: _util.prod_recurse_dtype(core, x, y)
-    return self._clone(_core=core)
+    return self._clone(tcls, _core=core)
 
 _crosskernel.Kernel = Kernel

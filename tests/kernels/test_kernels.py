@@ -500,6 +500,12 @@ class TestZeta(All):
     def kw(self, request):
         return dict(nu=request.param)
 
+    def test_double_fourier(self, kernel):
+        """ check that fourier is disabled after applying it once """
+        for args in [(True,), (True, None), (None, True)]:
+            q = kernel.linop('fourier', *args)
+            assert not q.has_transf('fourier')
+
 class TestCelerite(Stationary, Deriv1):
 
     @pytest.fixture(params=

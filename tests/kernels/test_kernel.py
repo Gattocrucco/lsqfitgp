@@ -37,16 +37,25 @@ from .. import util
 def constcore():
     return lambda x, y, **_: jnp.ones(jnp.broadcast_shapes(x.shape, y.shape))
 
-def test_forcekron_maxdim(constcore):
-    """ check that using forcekron and maxdim at initialization does not disable
-    maxdim, while using forcekron afterwards does """
+def test_forcekron(constcore):
+    # at initialization it's within maxdim
     kernel = lgp.Kernel(constcore, forcekron=True, maxdim=1)
     x = np.empty(1, 'f,f')
     with pytest.raises(ValueError, match='> maxdim='):
         kernel(x, x)
 
+    # after initialization it's not, no error
     kernel = kernel.transf('forcekron')
     kernel(x, x)
+
+    # promotes to Kernel since it changes the core
+    class A(lgp.Kernel): pass
+    a = A(constcore)
+    assert a.transf('forcekron').__class__ is lgp.Kernel
+
+    # not defined for CrossKernel
+    with pytest.raises(KeyError, match='forcekron'):
+        lgp.CrossKernel(constcore, forcekron=True)
 
 def test_cross_derivable(constcore):
     """ check that derivable of CrossKernel is duplicated """
@@ -245,6 +254,8 @@ def test_transf_help(idtransf):
     assert A.transf_help('idtransf') == ' porco duo '
     A.register_linop(idtransf, 'gatto', 'duo gatto')
     assert A.transf_help('gatto') == 'duo gatto'
+    A.register_algop(idtransf, 'gesu', '3')
+    assert A.transf_help('gesu') == '3'
 
 def test_zero(rng, constcore):
     x, y = rng.standard_normal((2, 10))
@@ -320,6 +331,10 @@ def test_transf_noop(name, arg, constcore):
     kernel = lgp.Kernel(constcore)
     assert kernel.linop(name, arg) is kernel
     assert kernel.linop(name, arg, arg) is kernel
+    class A(lgp.Kernel): pass
+    a = A(constcore)
+    assert a.linop(name, arg) is a
+    assert a.linop(name, arg, arg) is a
 
 @mark.parametrize('name,arg', [
     ('rescale', 1),
@@ -589,19 +604,43 @@ def test_transf_output_type_error():
     @lgp.kernel
     def A(x, y):
         return x * y
+
+    # generic transformations do not check errors
     @A.register_transf
-    def ciao(self):
+    def ciao(*_):
         return 'ciao'
     a = A()
-    with pytest.raises(TypeError):
-        a.transf('ciao')
+    a.transf('ciao')
+
+    # linop checks
+    @A.register_linop
+    def bau(*_):
+        return 'bau'
+    a = A()
+    with pytest.raises(TypeError, match="linop 'bau'"):
+        a.linop('bau', 1)
+
+    # algop checks
+    @A.register_algop
+    def miao(*_):
+        return 'miao'
+    a = A()
+    with pytest.raises(TypeError, match="algop 'miao'"):
+        a.algop('miao', 1)
+
+    # algop accepts NotImplemented
+    @A.register_algop
+    def piu(*_):
+        return NotImplemented
+    a = A()
+    assert a.algop('piu', 1) is NotImplemented
 
 def test_transf_kind_error():
     @lgp.kernel
     def A(x, y):
         return x * y
     @A.register_transf
-    def ciao(self, *_):
+    def ciao(_, self, *__):
         return self
     a = A()
     with pytest.raises(ValueError):

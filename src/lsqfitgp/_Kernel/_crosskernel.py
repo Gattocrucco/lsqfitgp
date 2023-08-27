@@ -206,8 +206,8 @@ class CrossKernel:
             _derivable=self._derivable[::-1],
         )
 
-    # TODO reimplement _swap as a transformation that regresses the class to the
-    # last defining it because it can break other defined transformations.
+        # TODO reimplement _swap as a transf, but I want it to preserve the
+        # class unconditionally if it's a Kernel. Maybe first convert to CrossKernel unconditionally if not <= Kernel
 
     def batch(self, maxnbytes):
         """
@@ -261,7 +261,7 @@ class CrossKernel:
         if transfname in cls._transf:
             raise KeyError(f'transformation {transfname!r} already registered '
                 f'for {cls.__name__}')
-        cls._transf[transfname] = transf
+        cls._transf[transfname] = cls._Transf(*transf)
 
     @classmethod
     def _gettransf(cls, transfname):
@@ -334,23 +334,22 @@ class CrossKernel:
         Parameters
         ----------
         func : callable
-            A method ``func(self, *args, **kw) -> CrossKernel | NotImplemented``
-            that returns a kernel.
+            A function ``func(tcls, self, *args, **kw) -> object`` implementing
+            the transformation, where ``tcls`` is the class that defines the
+            transformation.
         transfname : hashable, optional.
             The `transfname` parameter to `transf` this transformation will
             be accessible under. If not specified, use the name of `func`.
         doc : str, optional
-            The documentation of the transformation returned by `transf_help`.
-            If not specified, use the docstring of `func`.
+            The documentation of the transformation for `transf_help`. If not
+            specified, use the docstring of `func`.
         kind : object, optional
             An arbitrary marker.
 
         Returns
         -------
-        newfunc : callable
-            A wrapper of `func` implementing additional class logic, with
-            signature ``func(tcls, self, *args, **kw)``, where ``tcls`` is the
-            class defining the transformation.
+        func : callable
+            The `func` argument as is.
 
         Raises
         ------
@@ -362,35 +361,13 @@ class CrossKernel:
         --------
         transf
 
-        Notes
-        -----
-        The object returned by `func` will be copied with its class changed to
-        the least common superclass of itself and the class defining the
-        transformation, unless it has already that class.
-
         """
         if transfname is None:
             transfname = func.__name__
         if doc is None:
             doc = func.__doc__
-        
-        @functools.wraps(func)
-        def newfunc(tcls, self, *args, **kw):
-            result = func(self, *args, **kw)
-            if result is NotImplemented:
-                return NotImplemented
-            elif isinstance(result, __class__):
-                sup = _least_common_superclass([tcls, result.__class__])
-                if result.__class__ != sup:
-                    result = result._clone(sup)
-                return result
-            else:
-                raise TypeError(f'transformation {transfname!r} returned '
-                    f'object of type {result.__class__.__name__}, expected '
-                    f'{__class__.__name__} or NotImplemented')
-
-        cls._settransf(transfname, cls._Transf(newfunc, doc, kind))
-        return newfunc
+        cls._settransf(transfname, (func, doc, kind))
+        return func
 
     @classmethod
     def inherit_transf(cls, transfname, *, intermediates=False):
@@ -463,8 +440,8 @@ class CrossKernel:
 
         Returns
         -------
-        newkernel : CrossKernel or NotImplemented
-            The transformed kernel. The class may differ from the original.
+        newkernel : object
+            The output of the transformation.
 
         Raises
         ------
@@ -514,8 +491,11 @@ class CrossKernel:
 
         """
         
+        if transfname is None:
+            transfname = op.__name__ # for error message
+        
         @functools.wraps(op)
-        def func(self, *args):
+        def func(tcls, self, *args):
             
             if len(args) not in (1, 2):
                 raise ValueError(f'incorrect number of arguments {len(args)}, '
@@ -533,8 +513,19 @@ class CrossKernel:
                 arg1, arg2 = args
 
             result = op(self, arg1, arg2)
+
+            if not isinstance(result, __class__):
+                raise TypeError(f'linop {transfname!r} returned '
+                    f'object of type {result.__class__.__name__}, expected '
+                    f'subclass of {__class__.__name__}')
+            
+            rcls = result.__class__
             if isinstance(self, Kernel) and arg1 != arg2:
-                result = result._clone(next(result._crossmro()))
+                rcls = next(result._crossmro())
+            rcls = _least_common_superclass([tcls, rcls])
+            if result.__class__ is not rcls:
+                result = result._clone(rcls)
+            
             return result
 
         return cls.register_transf(func, transfname, doc, 'linop')
@@ -566,7 +557,9 @@ class CrossKernel:
             
             If the input object is an instance of `Kernel` and the two
             arguments differ, the output is enforced to have a class which
-            is not a subclass of `Kernel`.
+            is not a subclass of `Kernel`. After that, the least common
+            superclass between the result and the class defining the
+            transformation is enforced.
 
         Raises
         ------
@@ -704,15 +697,23 @@ class CrossKernel:
         transf
 
         """
+
+        if transfname is None:
+            transfname = op.__name__ # for error message
         
         @functools.wraps(op)
-        def func(*operands, **kw):
-            out = op(*operands, **kw)
+        def func(tcls, *operands, **kw):
+            result = op(*operands, **kw)
             
-            if out is NotImplemented:
-                return out
+            if result is NotImplemented:
+                return result
+            elif not isinstance(result, __class__):
+                raise TypeError(f'algop {transfname!r} returned '
+                    f'object of type {result.__class__.__name__}, expected '
+                    f'subclass of {__class__.__name__}')
             
             def classes():
+                yield tcls
                 for o in operands:
                     if isinstance(o, __class__):
                         yield o.__class__
@@ -723,10 +724,10 @@ class CrossKernel:
                     else:
                         raise TypeError(f'operands to algop {transfname!r} '
                             f'must be CrossKernel or numbers, found {o!r}')
-                yield out.__class__
+                yield result.__class__
             
             lcs = _least_common_superclass(classes())
-            return out._clone(lcs, _derivable=(None, None))
+            return result._clone(lcs, _derivable=(None, None))
     
         return cls.register_transf(func, transfname, doc, 'algop')
 

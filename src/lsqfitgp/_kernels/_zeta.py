@@ -81,7 +81,7 @@ def Zeta(delta, *, nu):
     # TODO use the bernoully version for integer even s, based on the type of
     # the input such that it's static, because it is much more accurate
 
-@functools.partial(Zeta.register_linop, argparser=bool)
+@functools.partial(Zeta.register_linop, argparser=lambda do: do if do else None)
 def fourier(self, dox, doy):
     r"""
 
@@ -122,12 +122,11 @@ def fourier(self, dox, doy):
         if doy:
             core = lambda x, q, core=core: core(q, x)
     
-    return self._clone(_core=core)
+    return self._clone(Zeta.__bases__[0], _core=core)
 
-# TODO the usual class logic here is not ok. This transf assumes that the core
-# is the one defined in the decorator above, but it is still possible to use
-# this transf after applying it once.
-#
-# Possible generic solution: register_linop uses the output class instead of
-# the input class to compute the class. In this way, transformations can tweak
-# the logic, while using _clone() behaves as usual.
+# TODO:
+# - remove automatic cross-superclass creation from the decorators
+# - make decorators for cross kernels
+# - CrossKernel.__new__ expands tuples in the op args as arguments to linop
+# - write Fourier versions as separate classes ZetaFourier and CrossZetaFourier
+# - implement 'fourier' as just returning the correct class
