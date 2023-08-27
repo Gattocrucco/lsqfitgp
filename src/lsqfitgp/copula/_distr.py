@@ -25,6 +25,7 @@ import collections
 import numbers
 import inspect
 import types
+import math
 
 import gvar
 import numpy
@@ -341,7 +342,7 @@ class Distr(_base.DistrBase):
         self._compute_in_shape()
 
     def _compute_in_shape(self):
-        in_size = numpy.prod(self._in_shape_1, dtype=int)
+        in_size = math.prod(self._in_shape_1)
         cache = set()
         for p in self.params:
             if isinstance(p, __class__):
@@ -355,7 +356,7 @@ class Distr(_base.DistrBase):
     def _compute_in_size(self, cache):
         if (out := super()._compute_in_size(cache)) is not None:
             return out
-        in_size = numpy.prod(self._in_shape_1, dtype=int)
+        in_size = math.prod(self._in_shape_1)
         for p in self.params:
             if isinstance(p, __class__):
                 in_size += p._compute_in_size(cache)
@@ -375,7 +376,7 @@ class Distr(_base.DistrBase):
             
             concrete_params.append(p)
 
-        in_size = numpy.prod(self._in_shape_1, dtype=int)
+        in_size = math.prod(self._in_shape_1)
         assert i + in_size <= x.size
         last = x[i:i + in_size].reshape(self._in_shape_1)
         

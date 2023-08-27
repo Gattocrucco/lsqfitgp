@@ -20,6 +20,7 @@
 import abc
 import functools
 import warnings
+import math
 
 import gvar
 import numpy
@@ -99,7 +100,7 @@ class GPElements(_base.GPBase):
     
         @property
         def size(self):
-            return numpy.prod(self.shape, dtype=int)
+            return math.prod(self.shape)
 
     class _Points(_Element):
         """Points where the process is evaluated"""
@@ -526,7 +527,7 @@ class GPElements(_base.GPBase):
                 raise KeyError(f'key {key!r} in decomps not found in diagonal blocks')
             if not isinstance(dec, _linalg.Decomposition):
                 raise TypeError(f'decomps[{key!r}] = {dec!r} is not a decomposition')
-            n = numpy.prod(shapes[key], dtype=int)
+            n = math.prod(shapes[key])
             if dec.n != n:
                 raise ValueError(f'decomposition matrix size {dec.n} != diagonal block size {n} for key {key!r}')
         
@@ -539,7 +540,7 @@ class GPElements(_base.GPBase):
                     raise ValueError(f'block {keys!r} not finite')
             xkey, ykey = keys
             if xkey == ykey:
-                size = numpy.prod(shapes[xkey], dtype=int)
+                size = math.prod(shapes[xkey])
                 blocks[keys] = block.reshape((size, size))
             else:
                 for key in keys:
@@ -548,8 +549,8 @@ class GPElements(_base.GPBase):
                 eshape = shapes[xkey] + shapes[ykey]
                 if block.shape != eshape:
                     raise ValueError(f'shape {block.shape!r} of block {keys!r} is not {eshape!r} as expected from diagonal blocks')
-                xsize = numpy.prod(shapes[xkey], dtype=int)
-                ysize = numpy.prod(shapes[ykey], dtype=int)
+                xsize = math.prod(shapes[xkey])
+                ysize = math.prod(shapes[ykey])
                 block = block.reshape((xsize, ysize))
                 blocks[keys] = block
                 revkeys = keys[::-1]

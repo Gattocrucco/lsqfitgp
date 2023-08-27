@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import functools
+import math
 
 from jax import lax
 from jax import numpy as jnp
@@ -56,7 +57,7 @@ def batchufunc(func, *, maxnbytes):
         if not shape or any(size == 0 for size in shape):
             return func(*args)
 
-        rowsize = numpy.prod(shape[1:], dtype=int)
+        rowsize = math.prod(shape[1:])
         rownbytes = rowsize * sum(arg.dtype.itemsize for arg in args)
         totalnbytes = shape[0] * rownbytes
         if totalnbytes <= maxnbytes:

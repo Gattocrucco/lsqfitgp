@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import warnings
+import math
 
 from jax import numpy as jnp
 import numpy
@@ -521,7 +522,7 @@ class GPCompute(_base.GPBase):
         head = m.shape[:half]
         tail = m.shape[half:]
         assert head == tail
-        n = numpy.prod(head, dtype=int)
+        n = math.prod(head)
         m = m.reshape(n, n)
         decompcls = cls._getdecomp(solver)
         return decompcls(m, **kw)

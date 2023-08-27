@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import textwrap
+import math
 
 import numpy
 from numpy.lib import recfunctions
@@ -178,7 +179,7 @@ class StructuredArray:
     
     @property
     def size(self):
-        return numpy.prod(self.shape, dtype=int)
+        return math.prod(self.shape)
     
     @property
     def ndim(self):
@@ -521,7 +522,7 @@ def _unstructured_to_structured_recursive(idx, shape, arr, dtype, copy, casting,
     for i, name in enumerate(dtype.names):
         base = dtype[i].base
         subshape = shape + dtype[i].shape
-        size = numpy.prod(dtype[i].shape, dtype=int)
+        size = math.prod(dtype[i].shape)
         stride = _nd(base)
         substrides = strides + ((size, stride),)
         if base.names is not None:
@@ -570,7 +571,7 @@ def _nd(dtype):
     """ Count the number of scalars in a dtype """
     base = dtype.base
     shape = dtype.shape
-    size = numpy.prod(shape, dtype=int)
+    size = math.prod(shape)
     if base.names is None:
         return size
     else:
@@ -581,7 +582,7 @@ def _structured_to_unstructured_recursive(idx, arr, out, *strides):
     for i, name in enumerate(dtype.names):
         subarr = arr[name]
         base = dtype[i].base
-        size = numpy.prod(dtype[i].shape, dtype=int)
+        size = math.prod(dtype[i].shape)
         stride = _nd(base)
         substrides = strides + ((size, stride),)
         if base.names is not None:
