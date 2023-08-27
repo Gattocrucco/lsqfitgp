@@ -88,9 +88,17 @@ def test_binary_scalar(op, cls, rng):
 @mark.parametrize('op', [operator.add, operator.mul])
 @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
 def test_binary_undef(op, cls, constcore):
+
+    # test that adding a string raises
     kernel = cls(constcore)
     with pytest.raises(TypeError):
         op(kernel, 'gatto')
+
+    # test that other classes are delegated
+    class A:
+        __add__ = lambda *_: 'ciao'
+        __mul__ = lambda *_: 'ciao'
+    assert op(A(), kernel) == 'ciao'
 
 @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
 def test_pow(cls, rng):

@@ -35,8 +35,8 @@ jvp = _jaxext.makejaxufunc(special.jvp, None, lambda v, z, n: jvp(v, z, n + 1), 
 kv = _jaxext.makejaxufunc(special.kv, None, lambda v, z: kvp(v, z, 1))
 kvp = _jaxext.makejaxufunc(special.kvp, None, lambda v, z, n: kvp(v, z, n + 1), None, excluded=(2,))
 
-# iv = _jaxext.makejaxufunc(special.iv, None, lambda v, z: ivp(v, z, 1))
-# ivp = _jaxext.makejaxufunc(special.ivp, None, lambda v, z, n: ivp(v, z, n + 1), None, excluded=(2,))
+iv = _jaxext.makejaxufunc(special.iv, None, lambda v, z: ivp(v, z, 1))
+ivp = _jaxext.makejaxufunc(special.ivp, None, lambda v, z, n: ivp(v, z, n + 1), None, excluded=(2,))
 
 # See jax #1870, #2466, #9956, #11002 and
 # https://github.com/josipd/jax/blob/master/jax/experimental/jambax.py

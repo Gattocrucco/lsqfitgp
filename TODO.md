@@ -268,12 +268,6 @@ a Taylor series with nonnegative coefficients. (Got the idea from a seminar by
 Hensman, I think this thing should be standard anyway, although I don't
 remember reading it in Rasmussen's book.)
 
-I can do (positive scalar) ** kernel => implement Kernel.__rpow__.
-
-Standard functions with positive Taylor coefficients: tan, 1/sin, 1/cos, asin,
-acos, 1/(1-x), exp, -log(1-x), sinh, cosh, atanh, I_a (real a > -1), and their
-truncated versions (e^x - 1, e^x - 1 - x, etc.). Hypergeom funcs.
-
 When doing kernel base power, or in general applying functions which have a
 narrow domain, the kernel must be within bounds. For weakly stationary kernels,
 or in general for bounded variance kernels, it is always possible to rescale

@@ -36,6 +36,25 @@ def test_sinc():
     s2 = _special.sinc(x)
     util.assert_allclose(s2, s1, atol=1e-15, rtol=1e-15)
 
+@mark.parametrize('name,wrap', [
+    ('j0', lambda f: lambda x: f(x)),
+    ('j1', lambda f: lambda x: f(x)),
+    ('jv', lambda f: lambda x: f(1, x)),
+    ('jvp', lambda f: lambda x: f(1, x, 1)),
+    ('kv', lambda f: lambda x: f(1, x)),
+    ('kvp', lambda f: lambda x: f(1, x, 1)),
+    ('iv', lambda f: lambda x: f(1, x)),
+    ('ivp', lambda f: lambda x: f(1, x, 1)),
+])
+def test_bessel(name, wrap):
+    x = np.linspace(0.5, 1.5, 10)
+    our = wrap(getattr(_special, name))
+    ref = wrap(getattr(special, name))
+    y1 = our(x)
+    y2 = ref(x)
+    util.assert_allclose(y1, y2)
+    test_util.check_grads(our, (x,), 2)
+
 def test_jvmodx2():
     nu = np.linspace(-5, 5, 20)
     x = np.linspace(1e-15, 0.1, 1000)

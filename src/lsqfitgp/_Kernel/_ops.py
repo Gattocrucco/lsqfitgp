@@ -17,11 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" register transformations on CrossKernel """
+""" register linops on CrossKernel """
 
 import functools
 import numbers
-import warnings
 import sys
 
 from jax import numpy as jnp
@@ -60,6 +59,47 @@ def rescale(core, xfun, yfun):
         return lambda x, y: xfun(x) * core(x, y)
     else:
         return lambda x, y: xfun(x) * yfun(y) * core(x, y)
+
+@CrossKernel.register_xtransf
+def derivable(derivable):
+    """
+    Specify the degree of derivability of the function.
+
+    Parameters
+    ----------
+    xderivable, yderivable: int or None
+        Degree of derivability of the function. None means unknown.
+
+    Notes
+    -----
+    The derivability check is hardcoded into the kernel core and it is not
+    possible to remove it afterwards by applying ``'derivable'`` again with a
+    higher limit.
+
+    """
+    if isinstance(derivable, bool):
+        derivable = sys.maxsize if derivable else 0
+    elif not isinstance(derivable, numbers.Integral) or derivable < 0:
+        raise ValueError(f'derivability degree {derivable!r} not valid')
+
+    def error_func(current, n):
+        raise ValueError(f'Took {current} derivatives > limit {n} on argument '
+            'of a kernel. This error may be spurious if there are '
+            'derivatives on values that define the input to the kernel, for '
+            'example if a hyperparameter enters the calculation of x. To '
+            'suppress the error, initialize the kernel with derivable=True.')
+
+    return functools.partial(_jaxext.limit_derivatives, n=derivable)
+
+    # TODO this system does not ignore additional derivatives that are not
+    # taken by .transf('diff'). Plan:
+    # - understand how to associate a jax transformation to a frame
+    # - make a context manager with a global stack
+    # - at initialization it takes the frames of the derivatives made by diff
+    # - the context is around calling core in diff.newcore
+    # - it adds the frames to the stack
+    # - derivable asks the context manager class to find the frames in x
+    # - raises if their number is above the limit
 
 def _asfloat(x):
     return x.astype(_jaxext.float_type(x))
@@ -281,30 +321,6 @@ def scale(scale):
         assert 0 < scale < jnp.inf, scale
     return lambda x: _util.ufunc_recurse_dtype(lambda x: x / scale, x)
 
-@CrossKernel.register_xtransf
-def derivable(derivable):
-    """
-    Specify the degree of derivability of the function.
-
-    Parameters
-    ----------
-    xderivable, yderivable: int or None
-        Degree of derivability of the function. None means unknown.
-
-    Notes
-    -----
-    The derivability check is hardcoded into the kernel core and it is not
-    possible to remove it afterwards by applying ``'derivable'`` again with a
-    higher limit.
-
-    """
-    if isinstance(derivable, bool):
-        derivable = sys.maxsize if derivable else 0
-    elif not isinstance(derivable, numbers.Integral) or derivable < 0:
-        raise ValueError(f'derivability degree {derivable!r} not valid')
-
-    return functools.partial(_jaxext.limit_derivatives, n=derivable)
-
 def normalize_argparser(do):
     return do if do else None
 
@@ -328,72 +344,3 @@ def normalize(core, dox, doy):
         return lambda x, y: core(x, y) / jnp.sqrt(core(x, x))
     else:
         return lambda x, y: core(x, y) / jnp.sqrt(core(y, y))
-
-@CrossKernel.register_algop
-def add(self, other):
-    r"""
-    
-    Sum of kernels.
-    
-    .. math::
-        \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}(x, y), \\
-        \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}.
-    
-    Parameters
-    ----------
-    other : CrossKernel or scalar
-        The other kernel.
-    
-    """
-    if _util.is_numerical_scalar(other):
-        core = lambda x, y, core=self._core: core(x, y) + other
-    elif isinstance(other, CrossKernel):
-        core = lambda x, y, core=self._core, other=other._core: core(x, y) + other(x, y)
-    else:
-        return NotImplemented
-    return self._clone(_core=core)
-
-@CrossKernel.register_algop
-def mul(self, other):
-    r"""
-    
-    Product of kernels.
-    
-    .. math::
-        \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}(x, y), \\
-        \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}.
-    
-    Parameters
-    ----------
-    other : CrossKernel or scalar
-        The other kernel.
-    
-    """
-    if _util.is_numerical_scalar(other):
-        core = lambda x, y, core=self._core: core(x, y) * other
-    elif isinstance(other, CrossKernel):
-        core = lambda x, y, core=self._core, other=other._core: core(x, y) * other(x, y)
-    else:
-        return NotImplemented
-    return self._clone(_core=core)
-
-@CrossKernel.register_algop
-def pow(self, *, exponent):
-    r"""
-    
-    Power of the kernel.
-    
-    .. math::
-        \mathrm{newkernel}(x, y) = \mathrm{kernel}(x, y)^{\mathrm{exponent}}
-    
-    Parameters
-    ----------
-    exponent : nonnegative integer
-        The exponent. If traced by jax, it must have unsigned integer type.
-    
-    """
-    if _util.is_nonnegative_integer_scalar(exponent):
-        core = lambda x, y, core=self._core: core(x, y) ** exponent
-    else:
-        return NotImplemented
-    return self._clone(_core=core)

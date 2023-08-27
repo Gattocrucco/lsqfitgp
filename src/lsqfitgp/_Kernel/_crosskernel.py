@@ -195,6 +195,9 @@ class CrossKernel:
 
     def __pow__(self, other):
         return self.algop('pow', exponent=other)
+
+    def __rpow__(self, other):
+        return self.algop('rpow', base=other)
     
     def _swap(self):
         """ permute the arguments """
@@ -444,7 +447,7 @@ class CrossKernel:
 
         See also
         --------
-        linop, algop, transf_help, has_transf, register_transf, register_linop, register_corelinop, register_xtransf, register_algop
+        linop, algop, transf_help, has_transf, register_transf, register_linop, register_corelinop, register_xtransf, register_algop, register_ufuncalgop
 
         """
         tcls, transf = self._gettransf(transfname)
@@ -538,8 +541,8 @@ class CrossKernel:
         to the functions.
 
         .. math::
-            \mathrm{kernel}(x, y) &= \mathrm{Cov}[f(x), g(y)] \\
-            \mathrm{newkernel}(x, y) &= \mathrm{Cov}[T_1(f)(x), T_2(g)(y)]
+            \text{kernel}(x, y) &= \mathrm{Cov}[f(x), g(y)] \\
+            \text{newkernel}(x, y) &= \mathrm{Cov}[T_1(f)(x), T_2(g)(y)]
 
         Parameters
         ----------
@@ -683,7 +686,8 @@ class CrossKernel:
         ----------
         func : callable
             A function ``func(*kernels, **kw) -> CrossKernel | NotImplemented``
-            that returns the new kernel.
+            that returns the new kernel. ``kernels`` may be scalars but for the
+            first argument.
         transfname, doc :
             See `register_transf`.
 
@@ -724,6 +728,8 @@ class CrossKernel:
                     else:
                         raise TypeError(f'operands to algop {transfname!r} '
                             f'must be CrossKernel or numbers, found {o!r}')
+                        # this type check comes after letting the implementation
+                        # return NotImplemented, to support overloading
                 yield result.__class__
             
             lcs = _least_common_superclass(classes())
@@ -733,6 +739,44 @@ class CrossKernel:
 
         # TODO delete _kw (also in linop) if there's more than one kernel
         # operand or if the class changed?
+
+    @classmethod
+    def register_ufuncalgop(cls, ufunc, transfname=None, doc=None):
+        """
+
+        Register an algebraic operation with a function that acts only on the
+        kernel value.
+
+        Parameters
+        ----------
+        corefunc : callable
+            A function ``ufunc(*values, **kw) -> value``, where ``values`` are
+            the values yielded by the operands.
+        transfname, doc :
+            See `register_transf`.
+
+        Returns
+        -------
+        func : callable
+            A function in the format of `register_transf` that wraps `corefunc`.
+
+        See also
+        --------
+        transf
+
+        """
+        @functools.wraps(ufunc)
+        def op(self, *operands, **kw):
+            cores = tuple(
+                o._core if isinstance(o, __class__)
+                else lambda x, y: o
+                for o in operands
+            )
+            def core(x, y):
+                values = (core(x, y) for core in cores)
+                return ufunc(*values, **kw)
+            return self._clone(_core=core)
+        return cls.register_algop(op, transfname, doc)
 
     def algop(self, transfname, *operands, **kw):
         r"""
