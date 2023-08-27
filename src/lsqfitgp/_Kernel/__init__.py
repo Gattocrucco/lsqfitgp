@@ -19,6 +19,7 @@
 
 from ._util import prod_recurse_dtype, sum_recurse_dtype, is_numerical_scalar
 from ._crosskernel import CrossKernel
+from . import _ops # keep right after CrossKernel
 from ._kernel import Kernel
 from ._stationary import CrossStationaryKernel, StationaryKernel
 from ._isotropic import CrossIsotropicKernel, IsotropicKernel, Zero

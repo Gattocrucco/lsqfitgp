@@ -97,16 +97,16 @@ class IsotropicKernel(CrossIsotropicKernel, _stationary.StationaryKernel):
 _crosskernel.IsotropicKernel = IsotropicKernel
 _crosskernel.CrossIsotropicKernel = CrossIsotropicKernel
 
-# make these linops preserve the class IsotropicKernel
-IsotropicKernel.inherit_transf('add')
-IsotropicKernel.inherit_transf('mul')
-IsotropicKernel.inherit_transf('pow')
-IsotropicKernel.inherit_transf('rescale')
-IsotropicKernel.inherit_transf('loc')
-IsotropicKernel.inherit_transf('scale')
-IsotropicKernel.inherit_transf('maxdim')
-IsotropicKernel.inherit_transf('derivable')
-IsotropicKernel.inherit_transf('normalize')
+# make these operations preserve the class IsotropicKernel and upwards
+IsotropicKernel.inherit_transf('add', intermediates=True)
+IsotropicKernel.inherit_transf('mul', intermediates=True)
+IsotropicKernel.inherit_transf('pow', intermediates=True)
+IsotropicKernel.inherit_transf('rescale', intermediates=True)
+IsotropicKernel.inherit_transf('loc', intermediates=True)
+IsotropicKernel.inherit_transf('scale', intermediates=True)
+IsotropicKernel.inherit_transf('maxdim', intermediates=True)
+IsotropicKernel.inherit_transf('derivable', intermediates=True)
+IsotropicKernel.inherit_transf('normalize', intermediates=True)
 
 # TODO put Constant here as superclass of Zero? Constant needs it Cross
 # version because it makes a difference, transf is not trivial
@@ -131,7 +131,6 @@ class Zero(IsotropicKernel):
     _swap = lambda self: self
     batch = lambda self, maxnbytes: self
     linop = lambda self, transfname, *args: self
-    forcekron = lambda self: self
 
     def __add__(self, other):
         if isinstance(other, _crosskernel.CrossKernel) or _util.is_numerical_scalar(other):

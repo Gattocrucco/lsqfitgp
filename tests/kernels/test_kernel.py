@@ -23,6 +23,7 @@ import sys
 import operator
 
 import numpy as np
+from numpy.lib import recfunctions
 import jax
 from jax import numpy as jnp
 from pytest import mark
@@ -44,7 +45,7 @@ def test_forcekron_maxdim(constcore):
     with pytest.raises(ValueError, match='> maxdim='):
         kernel(x, x)
 
-    kernel = kernel.forcekron()
+    kernel = kernel.transf('forcekron')
     kernel(x, x)
 
 def test_cross_derivable(constcore):
@@ -117,7 +118,7 @@ def test_pow(cls, rng):
 
 @mark.parametrize('op', [operator.add, operator.mul])
 @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
-def test_binary_class(op, cls, constcore):
+def test_binary_kernel_class(op, cls, constcore):
     
     assert op(cls(constcore), cls(constcore)).__class__ is cls
     assert op(cls(constcore), lgp.Kernel(constcore)).__class__ is lgp.Kernel
@@ -138,11 +139,42 @@ def test_binary_class(op, cls, constcore):
     assert op(A(constcore), cls(constcore)).__class__ is cls
     assert op(A(constcore), lgp.Kernel(constcore)).__class__ is lgp.Kernel
 
+@mark.parametrize('op', [operator.add, operator.mul])
+def test_binary_scalar_class(constcore, op):
+    k = lgp.Kernel(constcore)
+    convs = [
+        lambda x: int(x),
+        lambda x: float(x),
+        np.float64,
+        jnp.float64,
+        np.array,
+        jnp.array,
+    ]
+    @jax.jit
+    def check(x):
+        assert op(k, x).__class__ is lgp.Kernel
+    for c in convs:
+        assert op(k, c(1)).__class__ is lgp.Kernel
+        assert op(k, c(0)).__class__ is lgp.Kernel
+        assert op(k, c(-1)).__class__ is lgp.CrossKernel
+        check(c(1))
+        check(c(0))
+        check(c(-1))
+
 @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
 def test_pow_class(cls, constcore):
     assert (cls(constcore) ** 1).__class__ is cls
     class A(cls): pass
     assert (A(constcore) ** 1).__class__ is cls
+
+def test_algop_type_error(constcore):
+    A = lgp.kernel(constcore)
+    @A.register_algop
+    def ciao(self, *_):
+        return self
+    a = A()
+    with pytest.raises(TypeError):
+        a.algop('ciao', 'duo')
 
 def test_batch(rng):
     class A(lgp.CrossKernel): pass
@@ -190,12 +222,12 @@ def test_transf_nargs(idtransf):
     with pytest.raises(ValueError):
         lgp.Kernel(lambda x, y: 1).linop('normalize')
 
-def test_no_argparser(constcore, idtransf):
+def test_no_unnecessary_clones(constcore, idtransf):
     class A(lgp.CrossKernel): pass
     A.register_linop(idtransf, 'ciao')
     a = A(constcore)
     b = a.linop('ciao', 1, 2)
-    assert a is not b
+    assert a is b
     assert a._core is b._core
 
 def test_transfclass_nocrossparent(constcore, idtransf):
@@ -211,6 +243,8 @@ def test_transf_help(idtransf):
     class A(lgp.CrossKernel): pass
     A.register_linop(idtransf)
     assert A.transf_help('idtransf') == ' porco duo '
+    A.register_linop(idtransf, 'gatto', 'duo gatto')
+    assert A.transf_help('gatto') == 'duo gatto'
 
 def test_zero(rng, constcore):
     x, y = rng.standard_normal((2, 10))
@@ -220,7 +254,6 @@ def test_zero(rng, constcore):
     assert zero.linop('normalize', True) is zero
     assert zero._swap() is zero
     assert zero.batch(1) is zero
-    assert zero.forcekron() is zero
     
     assert zero + 1 == 1
     assert 1 + zero == 1
@@ -352,48 +385,95 @@ def test_invalid_input(cls, constcore):
     with pytest.raises(KeyError):
         cls(constcore, input='ciao')
 
+@mark.parametrize('dtype', [int, float, 'i,2i', 'd,2d'])
+def test_isotropic_input(rng, dtype):
+    def ssd(x, y):
+        if x.dtype.names is not None:
+            x = recfunctions.structured_to_unstructured(x)
+            y = recfunctions.structured_to_unstructured(y)
+            return np.sum((x - y) ** 2, axis=-1)
+        else:
+            return (x - y) ** 2
+    k1 = lgp.IsotropicKernel(lambda x, y: np.exp(-ssd(x, y)), input='raw')
+    k2 = lgp.IsotropicKernel(lambda r: np.exp(-r ** 2), input='abs')
+    k3 = lgp.IsotropicKernel(lambda r: np.exp(-r ** 2), input='posabs')
+    k4 = lgp.IsotropicKernel(lambda r2: np.exp(-r2), input='squared')
+    dtype = np.dtype(dtype)
+    if dtype.names is None:
+        x, y = rng.standard_normal((2, 10))
+    else:
+        size = sum(np.prod(f[1].shape, dtype=int)
+            for f in recfunctions.flatten_descr(dtype))
+        data = rng.standard_normal((2, 10, size))
+        x, y = recfunctions.unstructured_to_structured(data, dtype)
+    c1 = k1(x, y)
+    c2 = k2(x, y)
+    c3 = k3(x, y)
+    c4 = k4(x, y)
+    util.assert_allclose(c1, c2, atol=1e-16)
+    util.assert_allclose(c1, c3, atol=1e-15)
+    util.assert_allclose(c1, c4, atol=1e-16)
+
 def test_where(rng):
 
-    kernel = lgp.Kernel(lambda x, y: x * y).forcekron()
+    k = lgp.Kernel(lambda x, y: x * y).transf('forcekron')
         
     x = rng.standard_normal((10, 2)).view('d,d').squeeze(-1)
     x0 = x['f0'][0]
-    cond = lambda x: x < x0
-    k1 = lgp.where(cond, kernel, 2 * kernel, dim='f0')
-    k2 = lgp.where(lambda x: cond(x['f0']), kernel, 2 * kernel)
-    c1 = k1(x[:, None], x[None, :])
-    c2 = k2(x[:, None], x[None, :])
-    assert isinstance(k1, lgp.Kernel)
-    
-    x = x.view([('', 'd', 2)])
-    cond = lambda x: x['f0'][..., 0] < x0
-    k1 = lgp.where(cond, kernel, 2 * kernel, dim='f0')
-    k2 = lgp.where(cond, kernel, 2 * kernel)
-    c3 = k1(x[:, None], x[None, :])
-    c4 = k2(x[:, None], x[None, :])
-
+    x = x[:, None]
+    cond = lambda x: x['f0'] < x0
+    q = lgp.where(cond, k, 2 * k)
+    c1 = q(x, x.T)
+    c2 = np.where(cond(x) & cond(x.T), k(x, x.T),
+                  np.where(~cond(x) & ~cond(x.T), 2 * k(x, x.T), 0))
     util.assert_equal(c1, c2)
-    util.assert_equal(c3, c4)
-    util.assert_equal(c1, c3)
-    
-    x = rng.standard_normal(10)
-    with pytest.raises(ValueError):
-        k1(x, x)
 
 def test_diff_errors(rng, constcore):
     kernel = lgp.Kernel(constcore)
     
+    # named deriv on scalar
     x = rng.standard_normal(10)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='explicit derivatives'):
         kernel.linop('diff', 'f0')(x, x)
     
+    # missing field
     x = rng.standard_normal((10, 2)).view('d,d').squeeze(-1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='along missing field'):
         kernel.linop('diff', 'a')(x, x)
     
+    # derivative on non number
     x = ['abc', 'def']
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match='along non-numeric'):
         kernel.linop('diff', 1)(x, x)
+
+    # derivative on non number with fields
+    x = np.array(['abc', 'def'])
+    x = x.view([('', x.dtype)])
+    with pytest.raises(TypeError, match='non-numeric field'):
+        kernel.linop('diff', 'f0')(x, x)
+
+def test_diff(rng):
+    derivs = {
+        (0, 0): lambda x, y: x * y,
+        (0, 1): lambda x, y: x * np.ones_like(y),
+        (1, 0): lambda x, y: np.ones_like(x) * y,
+        (2, 0): lambda x, y: np.zeros_like(x * y),
+        (1, 1): lambda x, y: np.ones_like(x * y),
+        (0, 2): lambda x, y: np.zeros_like(x * y),
+    }
+
+    kernel = lgp.Kernel(derivs[0, 0], derivable=2)
+    for args, core in derivs.items():
+        k = kernel.linop('diff', *args)
+        x, y = rng.standard_normal((2, 10))
+        util.assert_equal(k(x, y), core(x, y))
+
+    wrapper = lambda core: lambda x, y: core(x['f0'], y['f0'])
+    kernel = lgp.Kernel(wrapper(derivs[0, 0]))
+    for (i, j), core in derivs.items():
+        k = kernel.linop('diff', (i, 'f0'), (j, 'f0'))
+        x, y = rng.standard_normal((2, 10)).view([('', float)])
+        util.assert_equal(k(x, y), wrapper(core)(x, y))
 
 def test_distances(rng):
     x1 = rng.standard_normal(10)
@@ -436,6 +516,23 @@ def test_decorator_kw(dec, cls):
             return ciao
         assert C(ciao=1).__class__ is lgp.StationaryKernel
 
+def test_decorator():
+    @lgp.kernel
+    def A(x, y):
+        return x * y
+
+    assert A().__class__ is A
+    assert A(scale=5).__class__ is lgp.Kernel
+    assert A(loc=5).__class__ is lgp.Kernel
+
+    sup = next(A._crossmro())
+    assert sup.__name__ == 'CrossA'
+    assert A.__bases__ == (sup, lgp.Kernel)
+    assert sup.__bases__ == (lgp.CrossKernel,)
+
+    with pytest.raises(ValueError):
+        lgp.kernel(lambda x: 2, 'gatto')
+
 def test_callable_arg(constcore):
     kernel = lgp.Kernel(constcore, derivable=lambda d: d, d=6)
     assert kernel.derivable == 6
@@ -446,10 +543,19 @@ def test_init_kw(constcore):
         assert k._kw['cippa'] == 4
     check(kernel._swap())
     check(kernel.linop('loc', 1, 2))
-    check(kernel.forcekron())
+    check(kernel.transf('forcekron'))
 
-def test_nary():
-    pass
+def test_nary(rng):
+    x, y = rng.standard_normal((2, 10))
+    a = lambda x, y: 2 * x + 3 * y
+    b = lambda x, y: 5 * x + 7 * y
+    ka = lgp.CrossKernel(a)
+    kb = lgp.CrossKernel(b)
+    op = lambda f, g: lambda x: f(9 * x) + g(11 * x)
+    k = ka._nary(op, [ka, kb], ka._side.LEFT)
+    util.assert_equal(k(x, y), a(9 * x, y) + b(11 * x, y))
+    k = ka._nary(op, [ka, kb], ka._side.RIGHT)
+    util.assert_equal(k(x, y), a(x, 9 * y) + b(x, 11 * y))
 
 def test_dim(rng):
     x = rng.standard_normal(10)[:, None]
@@ -478,3 +584,45 @@ def test_stationary_broadcast(rng):
     x = rng.integers(0, 10, 10)
     kernel = lgp.Expon()
     kernel(x[:, None], x[None, :])
+
+def test_transf_output_type_error():
+    @lgp.kernel
+    def A(x, y):
+        return x * y
+    @A.register_transf
+    def ciao(self):
+        return 'ciao'
+    a = A()
+    with pytest.raises(TypeError):
+        a.transf('ciao')
+
+def test_transf_kind_error():
+    @lgp.kernel
+    def A(x, y):
+        return x * y
+    @A.register_transf
+    def ciao(self, *_):
+        return self
+    a = A()
+    with pytest.raises(ValueError):
+        a.linop('ciao', None)
+    with pytest.raises(ValueError):
+        a.algop('ciao')
+
+def test_crossmro():
+    class A(lgp.CrossKernel): pass
+    class B(lgp.Kernel): pass
+    assert tuple(lgp.CrossKernel._crossmro()) == (lgp.CrossKernel,)
+    assert tuple(lgp.Kernel._crossmro()) == (lgp.CrossKernel,)
+    assert tuple(A._crossmro()) == (A, lgp.CrossKernel)
+    assert tuple(B._crossmro()) == (lgp.CrossKernel,)
+
+def test_dim_preserve_structure():
+    @lgp.kernel(dim='f0')
+    def A(x, y):
+        assert x.dtype.names == ('f0',)
+        assert y.dtype.names == ('f0',)
+        return x['f0'][..., 0] * y['f0'][..., 0]
+    x = np.zeros(10, '2d,d')
+    a = A()
+    a(x, x)

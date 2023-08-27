@@ -69,17 +69,9 @@ class CrossStationaryKernel(_crosskernel.CrossKernel):
 class StationaryKernel(CrossStationaryKernel, _kernel.Kernel):
     pass
 
-# make these transformations preserve the class StationaryKernel
-StationaryKernel.inherit_transf('add')
-StationaryKernel.inherit_transf('mul')
-StationaryKernel.inherit_transf('pow')
-StationaryKernel.inherit_transf('rescale')
-StationaryKernel.inherit_transf('loc')
-StationaryKernel.inherit_transf('scale')
-StationaryKernel.inherit_transf('maxdim')
-StationaryKernel.inherit_transf('derivable')
-StationaryKernel.inherit_transf('normalize')
-StationaryKernel.inherit_transf('dim')
+# make these transformations preserve the class StationaryKernel and upwards,
+# other transformations are added by IsotropicKernel
+StationaryKernel.inherit_transf('dim', intermediates=True)
 
 def _eps(x):
     if jnp.issubdtype(x.dtype, jnp.inexact):
