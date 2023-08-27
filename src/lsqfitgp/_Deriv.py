@@ -31,39 +31,39 @@ class Deriv:
     where the keys represent variables and values the derivation order. An
     empty Deriv means no derivatives. A Deriv with one single key None means
     that the variable is implicit.
-    """
+
+    Deriv(int) -> specified order derivative
     
+    Deriv(str) -> first derivative w.r.t. specified variable
+    
+    Deriv(iter of str) -> derivative w.r.t. specified variables
+    
+    Deriv(iter of int, str) -> an int before a str acts as a multiplier
+    
+    Deriv(Deriv) -> pass through
+    
+    Deriv(None) -> Deriv(0)
+    
+    Example: Deriv(['a', 'b', 'b', 'c']) is equivalent to
+    Deriv(['a', 2, 'b', 'c']).
+    
+    Raises
+    ------
+    TypeError
+        If ``*args`` is not of the specified form.
+    ValueError
+        If ``*args`` ends with an integer or if there are consecutive
+        integers.
+    
+    Attributes
+    ----------
+    implicit
+    order
+    max
+
+    """
+   
     def __new__(cls, *args):
-        """
-        Deriv(int) -> specified order derivative
-        
-        Deriv(str) -> first derivative w.r.t. specified variable
-        
-        Deriv(iter of str) -> derivative w.r.t. specified variables
-        
-        Deriv(iter of int, str) -> an int before a str acts as a multiplier
-        
-        Deriv(Deriv) -> pass through
-        
-        Deriv(None) -> Deriv(0)
-        
-        Example: Deriv(['a', 'b', 'b', 'c']) is equivalent to
-        Deriv(['a', 2, 'b', 'c']).
-        
-        Raises
-        ------
-        TypeError
-            If ``*args`` is not of the specified form.
-        ValueError
-            If ``*args`` ends with an integer or if there are consecutive
-            integers.
-        
-        Attributes
-        ----------
-        implicit
-        order
-        max
-        """
         c = collections.Counter()
         if len(args) == 1:
             arg = args[0]

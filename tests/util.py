@@ -73,7 +73,7 @@ def assert_array_equal(*args):
     else:
         np.testing.assert_equal(*args)
 
-def mark(cls, meth, mark):
+def mark(cls, meth, mark, **kw):
     """
     Function to mark a test method without marking the superclass if the
     method is inherited.
@@ -82,23 +82,23 @@ def mark(cls, meth, mark):
     if not meth.startswith('test_'):
         warnings.warn(f'method {cls.__name__}.{meth} not prefixed with test_')
     marker = getattr(pytest.mark, mark)
-    @marker
+    @marker(**kw)
     @functools.wraps(impl) # `wraps` needed because pytest uses the method name
     def newimpl(self, *args, **kw):
         # wrap because otherwise the superclass method would be marked too,
         # but set the mark temporarily to allow introspection
-        marker(impl)
+        marker(impl, **kw)
         try:
             impl(self, *args, **kw)
         finally:
             impl.pytestmark.pop()
     setattr(cls, meth, newimpl)
 
-def xfail(cls, meth):
-    mark(cls, meth, 'xfail')
+def xfail(cls, meth, **kw):
+    mark(cls, meth, 'xfail', **kw)
 
-def skip(cls, meth):
-    mark(cls, meth, 'skip')
+def skip(cls, meth, **kw):
+    mark(cls, meth, 'skip', **kw)
 
 # TODO drop tryagain because now I'm using a deterministic seed
 

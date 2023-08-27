@@ -291,6 +291,12 @@ def derivable(derivable):
     xderivable, yderivable: int or None
         Degree of derivability of the function. None means unknown.
 
+    Notes
+    -----
+    The derivability check is hardcoded into the kernel core and it is not
+    possible to remove it afterwards by applying ``'derivable'`` again with a
+    higher limit.
+
     """
     if isinstance(derivable, bool):
         derivable = sys.maxsize if derivable else 0

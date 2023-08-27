@@ -344,26 +344,6 @@ def test_transf_class(cls, name, arg, constcore):
     q = k.linop(name, arg)
     assert q.__class__ is cls
 
-def test_derivability(constcore, rng):
-    x = rng.standard_normal(10)
-
-    kernel = lgp.Kernel(constcore)
-    kernel.linop('diff', 1)(x, x)
-
-    kernel = lgp.Kernel(constcore, derivable=0)
-    with pytest.raises(ValueError, match='derivatives'):
-        kernel.linop('diff', 1)(x, x)
-
-    kernel = lgp.Kernel(constcore, derivable=1)
-    kernel.linop('diff', 1)(x, x)
-    with pytest.raises(ValueError, match='derivatives'):
-        kernel.linop('diff', 2, 0)(x, x)
-
-    kernel = lgp.Kernel(constcore, derivable=(1, 0))
-    kernel.linop('diff', 1, 0)(x, x)
-    with pytest.raises(ValueError, match='derivatives'):
-        kernel.linop('diff', 0, 1)(x, x)
-
 @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
 def test_invalid_input(cls, constcore):
     with pytest.raises(KeyError):
@@ -469,6 +449,78 @@ def test_diff_cross_nd(rng):
     c1 = k1.linop('diff', (1, 'f0'), 1)(x, y)
     c2 = k2.linop('diff', 1, 1)(x['f0'], y)
     util.assert_equal(c1, c2)
+
+def test_derivable(constcore, rng):
+
+    # default no derivability check
+    x = rng.standard_normal(10)
+    kernel = lgp.Kernel(constcore)
+    kernel.linop('diff', 1)(x, x)
+
+    # forbid derivatives
+    kernel = lgp.Kernel(constcore, derivable=0)
+    with pytest.raises(ValueError, match='derivatives'):
+        kernel.linop('diff', 1)(x, x)
+
+    # keeping total order within bound does not fool the checker
+    kernel = lgp.Kernel(constcore, derivable=1)
+    kernel.linop('diff', 1)(x, x)
+    with pytest.raises(ValueError, match='derivatives'):
+        kernel.linop('diff', 2, 0)(x, x)
+
+    # check is separate by argument
+    kernel = lgp.Kernel(constcore, derivable=(1, 0))
+    kernel.linop('diff', 1, 0)(x, x)
+    with pytest.raises(ValueError, match='derivatives'):
+        kernel.linop('diff', 0, 1)(x, x)
+
+    # check distinguishes different baked-in fields
+    k = lgp.Kernel(constcore, derivable=1, dim='f0')
+    q = lgp.Kernel(constcore, derivable=2, dim='f1')
+    n = k + q
+    y = rng.standard_normal((10, 2)).view('d,d').squeeze(-1)
+    n(y, y)
+    n.linop('diff', 'f0')(y, y)
+    n.linop('diff', (2, 'f1'))(y, y)
+    n.linop('diff', ('f0', 2, 'f1'))(y, y)
+    with pytest.raises(ValueError, match='derivatives'):
+        n.linop('diff', (2, 'f0'))(y, y)
+    with pytest.raises(ValueError, match='derivatives'):
+        n.linop('diff', (3, 'f1'))(y, y)
+
+    # check looks at all fields
+    k = lgp.Kernel(constcore, derivable=1)
+    k.linop('diff', 'f0')(y, y)
+    k.linop('diff', 'f1')(y, y)
+    with pytest.raises(ValueError, match='derivatives'):
+        k.linop('diff', (2, 'f0'))(y, y)
+        k.linop('diff', (2, 'f1'))(y, y)
+
+    # check looks at total order with nd inputs (TODO: document this behavior)
+    with pytest.raises(ValueError, match='derivatives'):
+        k.linop('diff', ('f0', 'f1'))(y, y)
+    with pytest.raises(ValueError, match='derivatives'):
+        k.linop('diff', ('f0', 'f1'), None)(y, y)
+
+@mark.xfail(reason='derivability check does not ignore extraneous derivatives')
+def test_derivable_foreign(rng):
+    """ test that it is possible to derive w.r.t. other stuff that goes through
+    x without triggering derivability checks """
+    
+    # pass derived quantities through init arguments
+    @jax.jacfwd
+    def f(val, x, y):
+        k = lgp.Kernel(lambda x, y: x * y, derivable=False, loc=val)
+        return k(x, y)
+    x, y = rng.standard_normal((2, 10))
+    f(1., x, y)
+
+    # pass derived quantities afterwards
+    @jax.jacfwd
+    def f(val, x, y):
+        k = lgp.Kernel(lambda x, y: x * y, derivable=False).linop('loc', val)
+        return k(x, y)
+    f(1., x, y)
 
 def test_distances(rng):
     x1 = rng.standard_normal(10)

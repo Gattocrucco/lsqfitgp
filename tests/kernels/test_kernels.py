@@ -366,7 +366,7 @@ class Deriv2(Deriv1):
 
     @pytest.fixture
     def ddtol(self):
-        return dict(atol=1e-13, rtol=1e-12)
+        return dict(atol=1e-15, rtol=1e-12)
 
     @skiponmaxdim
     @skiponderivable
@@ -799,20 +799,20 @@ util.skip(TestMA, 'test_normalized')
 util.xfail(TestWendland, 'test_positive_nd_2')
 util.xfail(TestWendland, 'test_double_diff_nd_second_chopped')
 util.xfail(TestWendland, 'test_continuous_in_zero_2')
-util.xfail(TestWendland, 'test_jit_nd_2') # seen xpassing, precision?
+util.xfail(TestWendland, 'test_jit_nd_2', reason="seen xpassing, numerical accuracy problem?")
 util.xfail(TestCausalExpQuad, 'test_positive_nd_2')
+util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped', reason="fails on macos, not on linux, with 1e15 variance")
 util.xfail(TestCausalExpQuad, 'test_continuous_in_zero_2')
-util.xfail(TestCausalExpQuad, 'test_jit_nd_2') # it's a divergence of the variance; mistake in derivability?
+util.xfail(TestCausalExpQuad, 'test_jit_nd_2', reason="it's a divergence of the variance; mistake in derivability?")
 
-util.xfail(TestCausalExpQuad, 'test_positive_scalar_2')
-    # seems numerical precision problem, but it's not 1 - erf cancel
+util.xfail(TestCausalExpQuad, 'test_positive_scalar_2', reason="seems numerical precision problem, but it's not 1 - erf cancel")
 
-util.xfail(TestWendland, 'test_jit_nd_1') # The failures are on kw14, kw33,
-    # and involve integer multiples of the identity, with differences:
-    # 24 vs 25, 24 vs. 22.
+util.xfail(TestWendland, 'test_jit_nd_1', reason="""the failures are on kw14, kw33,
+    and involve integer multiples of the identity, with differences:
+    24 vs 25, 24 vs. 22.""")
 
 # TODO These are not isotropic kernels, what is the problem? Those commented are
 # currently skipped, the failures were with forcekron applied.
 # util.xfail(TestTaylor, 'test_double_diff_nd_second') # numerical precision
 # util.xfail(TestFracBrownian, 'test_double_diff_nd_second') # large difference
-util.xfail(TestNNKernel, 'test_double_diff_nd_second') # large difference
+util.xfail(TestNNKernel, 'test_double_diff_nd_second', reason="large difference")
