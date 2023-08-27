@@ -108,17 +108,9 @@ IsotropicKernel.inherit_transf('maxdim', intermediates=True)
 IsotropicKernel.inherit_transf('derivable', intermediates=True)
 IsotropicKernel.inherit_transf('normalize', intermediates=True)
 
-# TODO put Constant here as superclass of Zero? Constant needs it Cross
-# version because it makes a difference, transf is not trivial
-
-# TODO make a CrossZero and complicate the implementation to follow the usual
-# type logic.
-
 class Zero(IsotropicKernel):
     """
-
     Represents a kernel that unconditionally yields zero.
-
     """
 
     def __new__(cls):
@@ -127,29 +119,3 @@ class Zero(IsotropicKernel):
         self._core = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
         self._derivable = sys.maxsize, sys.maxsize
         return self
-    
-    _swap = lambda self: self
-    batch = lambda self, maxnbytes: self
-    linop = lambda self, transfname, *args: self
-
-    def __add__(self, other):
-        if isinstance(other, _crosskernel.CrossKernel) or _util.is_numerical_scalar(other):
-            return other
-        else:
-            return NotImplemented
-
-    __radd__ = __add__
-
-    def __mul__(self, other):
-        if isinstance(other, _crosskernel.CrossKernel) or _util.is_numerical_scalar(other):
-            return self
-        else:
-            return NotImplemented
-
-    __rmul__ = __mul__
-
-    def __pow__(self, other):
-        if _util.is_nonnegative_integer_scalar(other):
-            return self
-        else:
-            return NotImplemented

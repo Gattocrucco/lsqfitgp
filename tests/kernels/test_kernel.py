@@ -261,32 +261,6 @@ def test_zero(rng, constcore):
     x, y = rng.standard_normal((2, 10))
     zero = lgp._Kernel.Zero()
     util.assert_allclose(zero(x, y), 0)
-    
-    assert zero.linop('normalize', True) is zero
-    assert zero._swap() is zero
-    assert zero.batch(1) is zero
-    
-    assert zero + 1 == 1
-    assert 1 + zero == 1
-    assert zero * 1 is zero
-    assert 1 * zero is zero
-    assert zero ** 1 is zero
-
-    other = lgp.Kernel(constcore)
-    assert zero + other is other
-    assert other + zero is other
-    assert zero * other is zero
-    assert other * zero is zero
-    # TODO test that this works when other is not a superclass of Zero.
-
-    with pytest.raises(TypeError):
-        zero + 'gatto'
-    with pytest.raises(TypeError):
-        zero * 'gatto'
-    with pytest.raises(TypeError):
-        zero ** 1.
-    with pytest.raises(TypeError):
-        zero ** -1
 
 @mark.parametrize('name,arg', [
     ('rescale', jnp.cos),
@@ -504,11 +478,11 @@ def test_distances(rng):
     util.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
     util.assert_allclose(c1, c3, atol=1e-14, rtol=1e-14)
 
-@mark.parametrize('dec,cls,crcls', [
-    (lgp.stationarykernel, lgp.StationaryKernel, lgp.CrossStationaryKernel),
-    (lgp.isotropickernel, lgp.IsotropicKernel, lgp.CrossIsotropicKernel),
+@mark.parametrize('dec,cls,crdec,crcls', [
+    (lgp.stationarykernel, lgp.StationaryKernel, lgp.crossstationarykernel, lgp.CrossStationaryKernel),
+    (lgp.isotropickernel, lgp.IsotropicKernel, lgp.crossisotropickernel, lgp.CrossIsotropicKernel),
 ])
-def test_decorator_kw(dec, cls, crcls):
+def test_decorator_kw(dec, cls, crdec, crcls):
 
     @dec(input='abs')
     def A(delta, ciao=3):
@@ -527,11 +501,17 @@ def test_decorator_kw(dec, cls, crcls):
         return ciao
     assert B(ciao=1).__class__ is B
 
-    if cls is lgp.IsotropicKernel:
+    if cls in (lgp.IsotropicKernel, lgp.CrossIsotropicKernel):
         @dec(dim='a')
         def C(delta, ciao=2):
             return ciao
-        assert C(ciao=1).__class__ is lgp.StationaryKernel
+        assert C(ciao=1).__class__ in (lgp.StationaryKernel, lgp.CrossStationaryKernel)
+
+    @crdec
+    def C(delta):
+        return 0
+    assert C().__class__ is C
+    assert isinstance(C(), crcls)
 
 def test_decorator():
     @lgp.kernel
