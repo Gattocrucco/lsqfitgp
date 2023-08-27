@@ -352,7 +352,7 @@ roughly -2, while Caesar is +6. So Caesar is... very Latin?
 We can fix this by normalizing the kernel such that the variance is always one.
 It is like replacing a covariance matrix with a correlation matrix::
 
-    gp = lgp.GP(CountLetters().transf('normalize', True))
+    gp = lgp.GP(CountLetters().linop('normalize', True))
 
 We used the `~CrossKernel.transf` method of `Kernel` objects. It provides
 various predefined transformations. Now let's run the fit::

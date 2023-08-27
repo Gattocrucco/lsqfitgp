@@ -120,23 +120,31 @@
             
   <section id="kernel-decorators">
 <span id="kerneldec"></span><h1>Kernel decorators<a class="headerlink" href="#kernel-decorators" title="Link to this heading">¶</a></h1>
-<p>These decorators are the preferred way to create subclasses of <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>.</p>
+<p>These decorators are the preferred way to create subclasses of <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
 <section id="index">
 <h2>Index<a class="headerlink" href="#index" title="Link to this heading">¶</a></h2>
-<p><a class="reference internal" href="#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a>, <a class="reference internal" href="#lsqfitgp.stationarykernel" title="lsqfitgp.stationarykernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stationarykernel</span></code></a>, <a class="reference internal" href="#lsqfitgp.isotropickernel" title="lsqfitgp.isotropickernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isotropickernel</span></code></a></p>
+<p><a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.crossstationarykernel" title="lsqfitgp.crossstationarykernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crossstationarykernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.stationarykernel" title="lsqfitgp.stationarykernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stationarykernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.crossisotropickernel" title="lsqfitgp.crossisotropickernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crossisotropickernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.isotropickernel" title="lsqfitgp.isotropickernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isotropickernel</span></code></a></p>
 </section>
 <section id="decorators">
 <h2>Decorators<a class="headerlink" href="#decorators" title="Link to this heading">¶</a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="lsqfitgp.kernel">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L67-L123"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.kernel" title="Link to this definition">¶</a></dt>
-<dd><p>Decorator to convert a function to a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>.</p>
+<dt class="sig sig-object py" id="lsqfitgp.crosskernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">crosskernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L57-L102"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.crosskernel" title="Link to this definition">¶</a></dt>
+<dd><p>Decorator to convert a function to a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>*args</strong></dt><dd><p>Either a function to decorate, or no arguments.</p>
+<dt><strong>*args</strong></dt><dd><p>Either a function to decorate, or no arguments. The function is used
+as the <code class="xref py py-obj docutils literal notranslate"><span class="pre">core</span></code> argument to <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
 </dd>
-<dt><strong>**kw</strong></dt><dd><p>Additional arguments are passed to <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>.</p>
+<dt><strong>base</strong><span class="classifier">type, optional</span></dt><dd><p>The base of the new class. If not specified, use <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional arguments are passed to <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
@@ -148,36 +156,24 @@ class.</p>
 </dl>
 </dd>
 </dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><a class="reference internal" href="#lsqfitgp.stationarykernel" title="lsqfitgp.stationarykernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stationarykernel</span></code></a>, <a class="reference internal" href="#lsqfitgp.isotropickernel" title="lsqfitgp.isotropickernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isotropickernel</span></code></a></dt><dd></dd>
-</dl>
-</div>
 <p class="rubric">Notes</p>
-<p>Arguments passed to the class constructor may modify the class. This
-decorator enforces no class change due to the keyword arguments passed to
-the decorator, and no class change due to keyword arguments passed at
-instantiation if all those arguments are passed down to the decorated
-function.</p>
-<p>The decorator also creates a class hierarchy on top of the new class.
-The first non-<a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>-subclass superclass of the the target superclass is
-used as superclass of a new class which is the first base of the returned
-class. The second base is the target superclass. In code, this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@lgp</span><span class="o">.&lt;</span><span class="n">kind</span><span class="o">&gt;</span><span class="n">kernel</span>
-<span class="k">def</span> <span class="nf">Pino</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-    <span class="k">return</span> <span class="mi">0</span>
+<p>Arguments passed to the class constructor may modify the class. If the
+object returned by the the constructor is a subclass of the superclass
+targeted by the decorator, and all the arguments passed at instantiation
+are passed down to the decorated function, the class of the object is
+enforced to be the new class.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">crosskernel</span><span class="p">(</span><span class="n">derivable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">MyKernel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>is equivalent to:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">CrossPino</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">Cross</span><span class="o">&lt;</span><span class="n">kind</span><span class="o">&gt;</span><span class="n">Kernel</span><span class="p">):</span>
-    <span class="k">pass</span>
+</dd></dl>
 
-<span class="k">class</span> <span class="nc">Pino</span><span class="p">(</span><span class="n">CrossPino</span><span class="p">,</span> <span class="n">lgp</span><span class="o">.&lt;</span><span class="n">kind</span><span class="o">&gt;</span><span class="n">Kernel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
-</pre></div>
-</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.kernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L104-L117"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">kernel</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># the default loc will be 10</span>
 <span class="gp">... </span><span class="k">def</span> <span class="nf">MyKernel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cippa</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lippa</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
@@ -187,9 +183,15 @@ class. The second base is the target superclass. In code, this:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.crossstationarykernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">crossstationarykernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L119-L125"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.crossstationarykernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.CrossStationaryKernel" title="lsqfitgp.CrossStationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossStationaryKernel</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.stationarykernel">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">stationarykernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L125-L141"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.stationarykernel" title="Link to this definition">¶</a></dt>
-<dd><p>Like <a class="reference internal" href="#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a>.</p>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">stationarykernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L127-L143"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.stationarykernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a>.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">stationarykernel</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s1">&#39;posabs&#39;</span><span class="p">)</span>
 <span class="gp">... </span><span class="k">def</span> <span class="nf">MyKernel</span><span class="p">(</span><span class="n">absdelta</span><span class="p">,</span> <span class="n">cippa</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lippa</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
@@ -202,9 +204,15 @@ class. The second base is the target superclass. In code, this:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.crossisotropickernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">crossisotropickernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L145-L151"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.crossisotropickernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.CrossIsotropicKernel" title="lsqfitgp.CrossIsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossIsotropicKernel</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.isotropickernel">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">isotropickernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L143-L156"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.isotropickernel" title="Link to this definition">¶</a></dt>
-<dd><p>Like <a class="reference internal" href="#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a>.</p>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">isotropickernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L153-L166"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.isotropickernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a>.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">isotropickernel</span><span class="p">(</span><span class="n">derivable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="gp">... </span><span class="k">def</span> <span class="nf">MyKernel</span><span class="p">(</span><span class="n">distsquared</span><span class="p">,</span> <span class="n">cippa</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lippa</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>

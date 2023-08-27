@@ -122,11 +122,12 @@
 <span id="derivspec"></span><h1>Derivative specification<a class="headerlink" href="#derivative-specification" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.Deriv">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Deriv.py#L28-L148"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Deriv" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Deriv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Deriv.py#L28-L148"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Deriv" title="Link to this definition">¶</a></dt>
 <dd><p>Class for specifying derivatives. Behaves like a dictionary str -&gt; int,
 where the keys represent variables and values the derivation order. An
 empty Deriv means no derivatives. A Deriv with one single key None means
 that the variable is implicit.</p>
+<p>Deriv(int) -&gt; specified order derivative</p>
 <p>Deriv(str) -&gt; first derivative w.r.t. specified variable</p>
 <p>Deriv(iter of str) -&gt; derivative w.r.t. specified variables</p>
 <p>Deriv(iter of int, str) -&gt; an int before a str acts as a multiplier</p>

@@ -24,18 +24,24 @@
 Kernel decorators
 =================
 
-These decorators are the preferred way to create subclasses of `Kernel`.
+These decorators are the preferred way to create subclasses of `CrossKernel`.
 
 Index
 -----
 
-`kernel`, `stationarykernel`, `isotropickernel`
+`crosskernel`,
+`kernel`,
+`crossstationarykernel`,
+`stationarykernel`,
+`crossisotropickernel`,
+`isotropickernel`
 
 Decorators
 ----------
 
+.. autofunction:: crosskernel
 .. autofunction:: kernel
-
+.. autofunction:: crossstationarykernel
 .. autofunction:: stationarykernel
-
+.. autofunction:: crossisotropickernel
 .. autofunction:: isotropickernel
