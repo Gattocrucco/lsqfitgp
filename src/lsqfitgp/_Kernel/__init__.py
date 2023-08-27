@@ -23,5 +23,6 @@ from . import _ops # keep right after CrossKernel
 from ._kernel import Kernel
 from ._stationary import CrossStationaryKernel, StationaryKernel
 from ._isotropic import CrossIsotropicKernel, IsotropicKernel, Zero
-from ._decorators import kernel, stationarykernel, isotropickernel
+from ._decorators import (crosskernel, kernel, crossstationarykernel,
+    stationarykernel, crossisotropickernel, isotropickernel)
 from ._where import where

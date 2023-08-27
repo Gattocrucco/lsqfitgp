@@ -81,6 +81,25 @@ def Zeta(delta, *, nu):
     # TODO use the bernoully version for integer even s, based on the type of
     # the input such that it's static, because it is much more accurate
 
+@_Kernel.kernel(maxdim=1, derivable=False)
+def ZetaFourier(k, q, *, nu):
+    s = 1 + 2 * nu
+    order = jnp.ceil(k / 2)
+    denom = order ** s * _special.zeta(s)
+    return jnp.where((k == q) & (k > 0), 1 / denom, 0)
+
+def crosszeta_derivable(*, nu):
+    return 0, zeta_derivable(nu=nu)
+
+@_Kernel.crosskernel(maxdim=1, derivable=crosszeta_derivable)
+def CrossZetaFourier(k, y, *, nu):
+    s = 1 + 2 * nu
+    order = jnp.ceil(k / 2)
+    denom = order ** s * _special.zeta(s)
+    odd = k % 2
+    arg = 2 * jnp.pi * order * y
+    return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)
+
 @functools.partial(Zeta.register_linop, argparser=lambda do: do if do else None)
 def fourier(self, dox, doy):
     r"""
@@ -103,31 +122,10 @@ def fourier(self, dox, doy):
     """
     
     nu = self._kw['nu']
-    s = 1 + 2 * nu
     
     if dox and doy:
-        def core(k, q):
-            order = jnp.ceil(k / 2)
-            denom = order ** s * _special.zeta(s)
-            return jnp.where((k == q) & (k > 0), 1 / denom, 0)
-    
+        return ZetaFourier(nu=nu)    
+    elif dox:
+        return CrossZetaFourier(nu=nu)
     else:
-        def core(k, y):
-            order = jnp.ceil(k / 2)
-            denom = order ** s * _special.zeta(s)
-            odd = k % 2
-            arg = 2 * jnp.pi * order * y
-            return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)
-    
-        if doy:
-            core = lambda x, q, core=core: core(q, x)
-    
-    return self._clone(Zeta.__bases__[0], _core=core)
-
-# TODO:
-# - remove automatic cross-superclass creation from the decorators
-# - make decorators for cross kernels
-# - CrossKernel.__new__ expands tuples in the op args as arguments to linop
-# - write Fourier versions as separate classes ZetaFourier and CrossZetaFourier
-# - implement 'fourier' as just returning the correct class
-# - define 'fourier' for CrossZetaFourier too
+        return CrossZetaFourier(nu=nu)._swap()

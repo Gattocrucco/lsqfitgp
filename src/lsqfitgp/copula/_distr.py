@@ -557,7 +557,7 @@ class UFunc:
         return (0,)
 
     @classmethod
-    @functools.cache
+    @functools.lru_cache(maxsize=None) # functools.cache not available in 3.8
     def make_subclass(cls, ufunc):
         def exec_body(ns):
             ns['_ufunc'] = getattr(jnp, ufunc.__name__)

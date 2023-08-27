@@ -29,16 +29,28 @@ __version__ = '0.20.dev0'
 from . import _patch_jax
 from . import _patch_gvar
 
-from ._GP import *
-from ._Kernel import (CrossKernel, Kernel, CrossStationaryKernel,
-    StationaryKernel, CrossIsotropicKernel, IsotropicKernel, where, kernel,
-    stationarykernel, isotropickernel)
-from ._kernels import *
 from ._array import *
-from ._fit import *
-from ._Deriv import *
-from ._fastraniter import *
-from ._gvarext import *
+from ._Deriv import Deriv
+from ._Kernel import (
+    CrossKernel,
+    Kernel,
+    CrossStationaryKernel,
+    StationaryKernel,
+    CrossIsotropicKernel,
+    IsotropicKernel,
+    where,
+    crosskernel,
+    kernel,
+    crossstationarykernel,
+    stationarykernel,
+    crossisotropickernel,
+    isotropickernel,
+)
+from ._kernels import *
+from ._gvarext import jacobian, from_jacobian, gvar_gufunc, switchgvar
+from ._GP import GP
+from ._fit import empbayes_fit
+from ._fastraniter import raniter, sample
 
 from . import copula
 from . import bayestree

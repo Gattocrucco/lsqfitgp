@@ -44,8 +44,12 @@ class Kernel(_crosskernel.CrossKernel):
         assert self._derivable[0] == self._derivable[1]
         return self._derivable[0]
 
+    def _swap(self):
+        return self
+
 Kernel.inherit_transf('xtransf')
 Kernel.inherit_transf('diff')
+# other transformations are registered by IsotropicKernel
 
 @Kernel.register_transf
 def forcekron(tcls, self):

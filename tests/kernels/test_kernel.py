@@ -504,11 +504,11 @@ def test_distances(rng):
     util.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
     util.assert_allclose(c1, c3, atol=1e-14, rtol=1e-14)
 
-@mark.parametrize('dec,cls', [
-    (lgp.stationarykernel, lgp.StationaryKernel),
-    (lgp.isotropickernel, lgp.IsotropicKernel),
+@mark.parametrize('dec,cls,crcls', [
+    (lgp.stationarykernel, lgp.StationaryKernel, lgp.CrossStationaryKernel),
+    (lgp.isotropickernel, lgp.IsotropicKernel, lgp.CrossIsotropicKernel),
 ])
-def test_decorator_kw(dec, cls):
+def test_decorator_kw(dec, cls, crcls):
 
     @dec(input='abs')
     def A(delta, ciao=3):
@@ -519,6 +519,8 @@ def test_decorator_kw(dec, cls):
         assert A(input='posabs').__class__ is A
     assert A(scale=5).__class__ is cls
     assert A(loc=5).__class__ is cls
+    assert A(loc=(1, 1)).__class__ is cls
+    assert A(loc=(1, 2)).__class__ is crcls
 
     @dec(loc=1)
     def B(delta, ciao=2):
@@ -539,11 +541,6 @@ def test_decorator():
     assert A().__class__ is A
     assert A(scale=5).__class__ is lgp.Kernel
     assert A(loc=5).__class__ is lgp.Kernel
-
-    sup = next(A._crossmro())
-    assert sup.__name__ == 'CrossA'
-    assert A.__bases__ == (sup, lgp.Kernel)
-    assert sup.__bases__ == (lgp.CrossKernel,)
 
     with pytest.raises(ValueError):
         lgp.kernel(lambda x: 2, 'gatto')
@@ -665,3 +662,12 @@ def test_dim_preserve_structure():
     x = np.zeros(10, '2d,d')
     a = A()
     a(x, x)
+
+def test_swap():
+    class A(lgp.Kernel): pass
+    a = A(constcore)
+    assert a._swap() is a
+
+    class B(lgp.CrossKernel): pass
+    b = B(constcore)
+    assert b._swap().__class__ is lgp.CrossKernel

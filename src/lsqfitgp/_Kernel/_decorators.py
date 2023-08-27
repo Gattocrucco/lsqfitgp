@@ -21,18 +21,17 @@ import types
 import warnings
 import inspect
 
+from . import _crosskernel
 from . import _kernel
 from . import _stationary
 from . import _isotropic
 
-def makekernelsubclass(kernel, superclass, **prekw):
+def makekernelsubclass(core, base, **prekw):
 
-    named_object = getattr(kernel, 'pyfunc', kernel) # np.vectorize objects
+    named_object = getattr(core, 'pyfunc', core) # np.vectorize objects
     name = getattr(named_object, '__name__', 'DecoratedKernel')
 
-    assert issubclass(superclass, _kernel.Kernel)
-    cross_superclass = next(superclass._crossmro())
-    newcrossclass = types.new_class('Cross' + name, (cross_superclass,))
+    assert issubclass(base, _crosskernel.CrossKernel)
 
     def exec_body(ns):
         
@@ -40,41 +39,35 @@ def makekernelsubclass(kernel, superclass, **prekw):
             kwargs = prekw.copy()
             kwargs.update(kw)
             if len(kwargs) < len(prekw) + len(kw):
-                shared_keys = set(prekw) & set(kw)
+                shared_keys = set(prekw).intersection(kw)
                 warnings.warn(f'overriding init argument(s) '
                     f'{shared_keys} of kernel {name}')
-            self = super(newclass, cls).__new__(cls, kernel, **kwargs)
-            if isinstance(self, superclass) and set(kw).issubset(self._kw):
-                self = self._clone(cls=cls)
+            self = super(newclass, cls).__new__(cls, core, **kwargs)
+            if isinstance(self, base) and set(kw).issubset(self._kw):
+                self = self._clone(cls)
             return self
         
         ns['__new__'] = __new__
         ns['__wrapped__'] = named_object
         ns['__doc__'] = named_object.__doc__
 
-    newclass = types.new_class(name, (newcrossclass, superclass), exec_body=exec_body)
+    newclass = types.new_class(name, (base,), exec_body=exec_body)
     return newclass
 
-def kerneldecoratorimpl(cls, *args, **kw):
-    functional = lambda kernel: makekernelsubclass(kernel, cls, **kw)
-    if len(args) == 0:
-        return functional
-    elif len(args) == 1:
-        return functional(*args)
-    else:
-        raise ValueError(len(args))
-
-def kernel(*args, **kw):
+def crosskernel(*args, base=None, **kw):
     """
     
-    Decorator to convert a function to a subclass of `Kernel`.
+    Decorator to convert a function to a subclass of `CrossKernel`.
 
     Parameters
     ----------
     *args :
-        Either a function to decorate, or no arguments.
+        Either a function to decorate, or no arguments. The function is used
+        as the `core` argument to `CrossKernel`.
+    base : type, optional
+        The base of the new class. If not specified, use `CrossKernel`.
     **kw :
-        Additional arguments are passed to `Kernel`.
+        Additional arguments are passed to `CrossKernel`.
 
     Returns
     -------
@@ -85,13 +78,9 @@ def kernel(*args, **kw):
     Examples
     --------
     
-    >>> @lgp.kernel(loc=10) # the default loc will be 10
-    ... def MyKernel(x, y, cippa=1, lippa=42):
-    ...     return cippa * (x * y) ** lippa
-
-    See also
-    --------
-    stationarykernel, isotropickernel
+    >>> @lgp.crosskernel(derivable=True)
+    ... def MyKernel(x, y, a=0, b=0):
+    ...     return (x - a) * (y - b)
 
     Notes
     -----
@@ -100,32 +89,45 @@ def kernel(*args, **kw):
     targeted by the decorator, and all the arguments passed at instantiation
     are passed down to the decorated function, the class of the object is
     enforced to be the new class.
-
-    The decorator also creates a class hierarchy on top of the new class.
-    The first non-`Kernel`-subclass superclass of the the target superclass is
-    used as superclass of a new class which is the first base of the returned
-    class. The second base is the target superclass. In code, this::
-
-        @lgp.<kind>kernel
-        def Pino(x, y):
-            return 0
-
-    is equivalent to::
-
-        class CrossPino(lgp.Cross<kind>Kernel):
-            pass
-
-        class Pino(CrossPino, lgp.<kind>Kernel):
-            def __new__(cls, **kw):
-                return super().__new__(cls, lambda x, y: 0, **kw)
     
     """
-    return kerneldecoratorimpl(_kernel.Kernel, *args, **kw)
+    if base is None:
+        base = _crosskernel.CrossKernel
+    functional = lambda core: makekernelsubclass(core, base, **kw)
+    if len(args) == 0:
+        return functional
+    elif len(args) == 1:
+        return functional(*args)
+    else:
+        raise ValueError(len(args))
+
+def kernel(*args, **kw):
+    """
+    
+    Like `crosskernel` but makes a subclass of `Kernel`.
+
+    Examples
+    --------
+    
+    >>> @lgp.kernel(loc=10) # the default loc will be 10
+    ... def MyKernel(x, y, cippa=1, lippa=42):
+    ...     return cippa * (x * y) ** lippa
+    
+    """
+    return crosskernel(*args, base=_kernel.Kernel, **kw)
+
+def crossstationarykernel(*args, **kw):
+    """
+    
+    Like `crosskernel` but makes a subclass of `CrossStationaryKernel`.
+    
+    """
+    return crosskernel(*args, base=_stationary.CrossStationaryKernel, **kw)
 
 def stationarykernel(*args, **kw):
     """
     
-    Like `kernel` but makes a subclass of `StationaryKernel`.
+    Like `crosskernel` but makes a subclass of `StationaryKernel`.
 
     Examples
     --------
@@ -138,12 +140,20 @@ def stationarykernel(*args, **kw):
     ...     )
     
     """
-    return kerneldecoratorimpl(_stationary.StationaryKernel, *args, **kw)
+    return crosskernel(*args, base=_stationary.StationaryKernel, **kw)
+
+def crossisotropickernel(*args, **kw):
+    """
+    
+    Like `crosskernel` but makes a subclass of `CrossIsotropicKernel`.
+    
+    """
+    return crosskernel(*args, base=_isotropic.CrossIsotropicKernel, **kw)
 
 def isotropickernel(*args, **kw):
     """
     
-    Like `kernel` but makes a subclass of `IsotropicKernel`.
+    Like `crosskernel` but makes a subclass of `IsotropicKernel`.
 
     Examples
     --------
@@ -153,4 +163,4 @@ def isotropickernel(*args, **kw):
     ...     return cippa * jnp.exp(-distsquared) + lippa
     
     """
-    return kerneldecoratorimpl(_isotropic.IsotropicKernel, *args, **kw)
+    return crosskernel(*args, base=_isotropic.IsotropicKernel, **kw)

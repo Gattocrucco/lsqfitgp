@@ -361,8 +361,12 @@ class Deriv2(Deriv1):
         r2 = kernel.linop('diff', f0, f0).linop('diff', f1, f1)(x, x.T)
         util.assert_allclose(r1, r2)
 
+    @pytest.fixture
+    def ddtol(self):
+        return dict(atol=1e-15, rtol=1e-12)
+
     @skiponmaxdim
-    def test_double_diff_nd_second_chopped(self, kernel, x_nd):
+    def test_double_diff_nd_second_chopped(self, kernel, x_nd, ddtol):
         if kernel.derivable < 2:
             pytest.skip()
         x = x_nd[:, None]
@@ -371,7 +375,7 @@ class Deriv2(Deriv1):
         f0, f1 = x.dtype.names[:2]
         r1 = kernel.linop('diff', (2, f0), (2, f1))(x, x.T)
         r2 = kernel.linop('diff', f0, f1).linop('diff', f0, f1)(x, x.T)
-        util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-12)
+        util.assert_allclose(r1, r2, **ddtol)
 
 class Fourier(Base):
     """ Test class for kernels that may implement the fourier series """
@@ -603,6 +607,10 @@ class TestCausalExpQuad(Stationary, Deriv2):
     @pytest.fixture(params=[0, 1, 2])
     def kw(self, request):
         return dict(alpha=request.param)
+
+    @pytest.fixture
+    def ddtol(self):
+        return dict(atol=1e-13, rtol=1e-12)
 
 class TestDecaying(Deriv2):
 

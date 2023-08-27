@@ -65,7 +65,8 @@ class CrossKernel:
         input, checks the dimensionality against `maxdim`, transforms as
         ``(x - loc) / scale``, then sets the degree of differentiability. If
         any argument is callable, it is passed `**kw` and must return the
-        actual argument.
+        actual argument. If an argument is a tuple, it is interpreted as a pair
+        of arguments.
     forcekron : bool, default False
         If True, apply ``.transf('forcekron')`` to the kernel, before the
         operations above. Available only for `Kernel`.
@@ -131,7 +132,9 @@ class CrossKernel:
         for transfname, arg in linop_args.items():
             if callable(arg):
                 arg = arg(**kw)
-            if arg is not None:
+            if isinstance(arg, tuple):
+                self = self.linop(transfname, *arg)
+            else:
                 self = self.linop(transfname, arg)
 
         if batchbytes is not None:
@@ -202,12 +205,10 @@ class CrossKernel:
     def _swap(self):
         """ permute the arguments """
         return self._clone(
+            __class__,
             _core=lambda x, y, core=self._core: core(y, x),
             _derivable=self._derivable[::-1],
         )
-
-        # TODO reimplement _swap as a transf, preserve the class if <= Kernel,
-        # else regress to CrossKernel
 
     def batch(self, maxnbytes):
         """
@@ -450,8 +451,7 @@ class CrossKernel:
 
         See also
         --------
-        linop, algop, transf_help, has_transf, register_transf, register_linop,
-        register_corelinop, register_xtransf, register_algop
+        linop, algop, transf_help, has_transf, register_transf, register_linop, register_corelinop, register_xtransf, register_algop
 
         """
         tcls, transf = self._gettransf(transfname)
@@ -503,14 +503,22 @@ class CrossKernel:
 
             if argparser:
                 conv = lambda x: None if x is None else argparser(x)
-                args = tuple(map(conv, args))
-            if all(a is None for a in args):
-                return self
+            else:
+                conv = lambda x: x
             
             if len(args) == 1:
-                arg1, = arg2, = args
+                arg = conv(*args)
+                different = False
+                arg1 = arg2 = arg
             else:
                 arg1, arg2 = args
+                different = arg1 is not arg2
+                arg1 = conv(arg1)
+                arg2 = conv(arg2)
+                different &= arg1 is not arg2
+
+            if arg1 is None and arg2 is None:
+                return self
 
             result = op(self, arg1, arg2)
 
@@ -520,7 +528,7 @@ class CrossKernel:
                     f'subclass of {__class__.__name__}')
             
             rcls = result.__class__
-            if isinstance(self, Kernel) and arg1 != arg2:
+            if isinstance(self, Kernel) and different:
                 rcls = next(result._crossmro())
             rcls = _least_common_superclass([tcls, rcls])
             if result.__class__ is not rcls:
@@ -554,12 +562,6 @@ class CrossKernel:
         -------
         newkernel : CrossKernel
             The transformed kernel.
-            
-            If the input object is an instance of `Kernel` and the two
-            arguments differ, the output is enforced to have a class which
-            is not a subclass of `Kernel`. After that, the least common
-            superclass between the result and the class defining the
-            transformation is enforced.
 
         Raises
         ------
@@ -572,6 +574,11 @@ class CrossKernel:
 
         Notes
         -----
+        If the input object is an instance of `Kernel` and the two arguments are
+        not identical, `newkernel` is enforced to have a class which is not a
+        subclass of `Kernel`. After that, the least common superclass between
+        the result and the class defining the operation is enforced.
+        
         `CrossKernel` defines the following operations:
 
         'xtransf' :
@@ -639,7 +646,7 @@ class CrossKernel:
     def register_xtransf(cls, xfunc, transfname=None, doc=None):
         """
 
-        Register a transformation that acts only on the input.
+        Register a linear operator that acts only on the input.
 
         Parameters
         ----------
@@ -737,7 +744,7 @@ class CrossKernel:
     def algop(self, transfname, *operands, **kw):
         r"""
 
-        Return a positive algebric transformation of the input kernels.
+        Return a positive algebraic transformation of the input kernels.
 
         .. math::
             \mathrm{newkernel}(x, y) &=
@@ -774,6 +781,15 @@ class CrossKernel:
 
         For class determination, scalars in the input count as `IsotropicKernel`
         if nonnegative or traced by jax, else `CrossIsotropicKernel`.
+
+        `CrossKernel` defines the following operations:
+
+        'add' :
+            Binary addition.
+        'mul' :
+            Binary multiplication.
+        'pow' :
+            Exponentiation to nonnegative integer.
 
         """
         tcls, transf = self._gettransf(transfname)
