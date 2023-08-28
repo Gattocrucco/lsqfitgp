@@ -55,7 +55,7 @@ def test_transf_scalar():
     gp = gp.addx(x, 'x')
     cov1 = gp.prior('x', raw=True)
     
-    gp = lgp.GP(lgp.where(lambda x: x['f0'], lgp.ExpQuad(dim='f1'), lgp.Cauchy(dim='f1')))
+    gp = lgp.GP(lgp.ExpQuad(dim='f1').linop('cond', lgp.Cauchy(dim='f1'), lambda x: x['f0']))
     y = np.empty((2, len(x)), '?,f8')
     y['f0'] = np.reshape([0, 1], (2, 1))
     y['f1'] = x

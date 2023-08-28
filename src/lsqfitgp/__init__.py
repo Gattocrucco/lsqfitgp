@@ -38,7 +38,6 @@ from ._Kernel import (
     StationaryKernel,
     CrossIsotropicKernel,
     IsotropicKernel,
-    where,
     crosskernel,
     kernel,
     crossstationarykernel,

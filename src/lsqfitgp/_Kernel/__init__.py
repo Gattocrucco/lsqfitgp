@@ -26,4 +26,3 @@ from ._stationary import CrossStationaryKernel, StationaryKernel
 from ._isotropic import CrossIsotropicKernel, IsotropicKernel, Zero
 from ._decorators import (crosskernel, kernel, crossstationarykernel,
     stationarykernel, crossisotropickernel, isotropickernel)
-from ._where import where

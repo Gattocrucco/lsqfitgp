@@ -344,3 +344,35 @@ def normalize(core, dox, doy):
         return lambda x, y: core(x, y) / jnp.sqrt(core(x, x))
     else:
         return lambda x, y: core(x, y) / jnp.sqrt(core(y, y))
+
+@CrossKernel.register_corelinop
+def cond(core, cond1, cond2, other):
+    r"""
+
+    Switch between two independent processes based on a condition.
+
+    .. math::
+        T(f, g)(x) = \begin{cases}
+            f(x) & \text{if $\mathrm{cond}(x)$,} \\
+            g(x) & \text{otherwise.}
+        \end{cases}
+        
+    Parameters
+    ----------
+    cond1, cond2 : callable
+        Function that is applied on an array of points and must return
+        a boolean array with the same shape.
+    other :
+        Kernel of the process used where the condition is false.
+    
+    """
+    def newcore(x, y):        
+        xcond = cond1(x)
+        ycond = cond2(y)
+        r = jnp.where(xcond & ycond, core(x, y), other(x, y))
+        return jnp.where(xcond ^ ycond, 0, r)
+    
+    return newcore
+
+    # TODO add a function `choose` to extend `cond`,
+    # kernel0.linop('choose', kernel1, kernel2, ..., lambda x: x['index'])

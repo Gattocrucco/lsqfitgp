@@ -451,7 +451,7 @@ class TestLinOp:
         q = k.linop(name, arg)
         assert q.__class__ is cls
 
-    def test_where(self, rng):
+    def test_cond(self, rng):
 
         k = lgp.Kernel(lambda x, y: x * y).transf('forcekron')
             
@@ -459,7 +459,7 @@ class TestLinOp:
         x0 = x['f0'][0]
         x = x[:, None]
         cond = lambda x: x['f0'] < x0
-        q = lgp.where(cond, k, 2 * k)
+        q = k.linop('cond', 2 * k, cond)
         c1 = q(x, x.T)
         c2 = np.where(cond(x) & cond(x.T), k(x, x.T),
                       np.where(~cond(x) & ~cond(x.T), 2 * k(x, x.T), 0))

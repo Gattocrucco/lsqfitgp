@@ -21,8 +21,8 @@
 
                             EXAMPLE W.
 
-    Where, with limited success, we recover the identity of two
-    mixed functions knowing their speed of variation.
+    Manually split a process as a sum of two processes, using an additional
+    index in the input space.
 
 """
 
@@ -46,7 +46,7 @@ def makex(time, comp):
 
 kshort = lgp.ExpQuad(scale=1, dim='time')
 klong = lgp.ExpQuad(scale=10, dim='time')
-kernel = lgp.where(lambda x: x['comp'] == 'short', kshort, klong)
+kernel = kshort.linop('cond', klong, lambda x: x['comp'] == 'short')
 gp = lgp.GP(kernel)
 
 def addcomps(gp, key, time):
