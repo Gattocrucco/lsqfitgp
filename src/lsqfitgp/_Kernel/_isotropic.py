@@ -104,6 +104,7 @@ IsotropicKernel.inherit_transf('scale', intermediates=True)
 IsotropicKernel.inherit_transf('maxdim', intermediates=True)
 IsotropicKernel.inherit_transf('derivable', intermediates=True)
 IsotropicKernel.inherit_transf('normalize', intermediates=True)
+IsotropicKernel.inherit_transf('cond', intermediates=True)
 
 # algops
 IsotropicKernel.inherit_all_algops(intermediates=True)

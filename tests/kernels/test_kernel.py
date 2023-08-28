@@ -437,18 +437,19 @@ class TestLinOp:
         lgp.CrossIsotropicKernel,
         lgp.IsotropicKernel,
     ])
-    @mark.parametrize('name,arg', [
-        ('rescale', jnp.cos),
-        ('loc', 0),
-        ('scale', 1),
-        ('maxdim', 1),
-        ('derivable', 1),
-        ('normalize', True),
+    @mark.parametrize('name,arg,nops', [
+        ('rescale', jnp.cos, 0),
+        ('loc', 0, 0),
+        ('scale', 1, 0),
+        ('maxdim', 1, 0),
+        ('derivable', 1, 0),
+        ('normalize', True, 0),
+        ('cond', lambda: None, 1),
     ])
-    def test_isotropic_ops(self, cls, name, arg, constcore):
+    def test_isotropic_ops(self, cls, name, arg, nops, constcore):
         """ check that these ops preserve IsotropicKernel and its ancestors """
         k = cls(constcore)
-        q = k.linop(name, arg)
+        q = k.linop(name, *nops * [k], arg)
         assert q.__class__ is cls
 
     def test_cond(self, rng):
