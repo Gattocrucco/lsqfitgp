@@ -292,81 +292,6 @@ class CrossKernel:
         raise KeyError(transfname)
 
     @classmethod
-    def has_transf(cls, transfname):
-        """
-        Check if a transformation is registered.
-
-        Parameters
-        ----------
-        transfname : hashable
-            The transformation name.
-
-        Returns
-        -------
-        has_transf : bool
-            Whether the transformation is registered.
-
-        See also
-        --------
-        transf
-        """
-        try:
-            cls._gettransf(transfname)
-        except KeyError as exc:
-            if exc.args == (transfname,):
-                return False
-            else: # pragma: no cover
-                raise
-        else:
-            return True
-
-    @classmethod
-    def register_transf(cls, func, transfname=None, doc=None, kind=None):
-        """
-        
-        Register a transformation for use with `transf`.
-
-        The transformation will be accessible to subclasses.
-
-        Parameters
-        ----------
-        func : callable
-            A function ``func(tcls, self, *args, **kw) -> object`` implementing
-            the transformation, where ``tcls`` is the class that defines the
-            transformation.
-        transfname : hashable, optional.
-            The `transfname` parameter to `transf` this transformation will
-            be accessible under. If not specified, use the name of `func`.
-        doc : str, optional
-            The documentation of the transformation for `transf_help`. If not
-            specified, use the docstring of `func`.
-        kind : object, optional
-            An arbitrary marker.
-
-        Returns
-        -------
-        func : callable
-            The `func` argument as is.
-
-        Raises
-        ------
-        KeyError :
-            The name is already in use for another transformation in the same
-            class.
-
-        See also
-        --------
-        transf
-
-        """
-        if transfname is None:
-            transfname = func.__name__
-        if doc is None:
-            doc = func.__doc__
-        cls._settransf(transfname, (func, doc, kind))
-        return func
-
-    @classmethod
     def inherit_transf(cls, transfname, *, intermediates=False):
         """
         
@@ -398,6 +323,38 @@ class CrossKernel:
                 if c is tcls:
                     break
                 c._settransf(transfname, transf)
+
+    # TODO method inherit_all_algops, useful for classes which represent
+    # subalgebras.
+
+    @classmethod
+    def has_transf(cls, transfname):
+        """
+        Check if a transformation is registered.
+
+        Parameters
+        ----------
+        transfname : hashable
+            The transformation name.
+
+        Returns
+        -------
+        has_transf : bool
+            Whether the transformation is registered.
+
+        See also
+        --------
+        transf
+        """
+        try:
+            cls._gettransf(transfname)
+        except KeyError as exc:
+            if exc.args == (transfname,):
+                return False
+            else: # pragma: no cover
+                raise
+        else:
+            return True
 
     @classmethod
     def transf_help(cls, transfname):
@@ -453,106 +410,29 @@ class CrossKernel:
         tcls, transf = self._gettransf(transfname)
         return transf.func(tcls, self, *args, **kw)
 
-    @classmethod
-    def register_linop(cls, op, transfname=None, doc=None, argparser=None):
-        """
-        
-        Register a transformation for use with `linop`.
-
-        Parameters
-        ----------
-        op : callable
-            A method ``op(self, arg1, arg2) -> CrossKernel`` that returns
-            the new kernel.
-        transfname, doc : optional
-            See `register_transf`.
-        argparser : callable, optional
-            A function applied to each of the arguments. It should return
-            `None` if the operation is the identity. Not called if the
-            argument is `None`.
-
-        Returns
-        -------
-        func : callable
-            A transformation in the format required by `register_transf`.
-
-        Notes
-        -----
-        The function `op` is called only if `arg1` or `arg2` is not `None`
-        after potential conversion with `argparser`.
-
-        See also
-        --------
-        transf
-
-        """
-        
-        if transfname is None:
-            transfname = op.__name__ # for error message
-        
-        @functools.wraps(op)
-        def func(tcls, self, *args):
-            
-            if len(args) not in (1, 2):
-                raise ValueError(f'incorrect number of arguments {len(args)}, '
-                    'expected 1 or 2')
-
-            if argparser:
-                conv = lambda x: None if x is None else argparser(x)
-            else:
-                conv = lambda x: x
-            
-            if len(args) == 1:
-                arg = conv(*args)
-                different = False
-                arg1 = arg2 = arg
-            else:
-                arg1, arg2 = args
-                different = arg1 is not arg2
-                arg1 = conv(arg1)
-                arg2 = conv(arg2)
-                different &= arg1 is not arg2
-
-            if arg1 is None and arg2 is None:
-                return self
-
-            result = op(self, arg1, arg2)
-
-            if not isinstance(result, __class__):
-                raise TypeError(f'linop {transfname!r} returned '
-                    f'object of type {result.__class__.__name__}, expected '
-                    f'subclass of {__class__.__name__}')
-            
-            rcls = result.__class__
-            if isinstance(self, Kernel) and different:
-                rcls = next(result._crossmro())
-            rcls = _least_common_superclass([tcls, rcls])
-            if result.__class__ is not rcls:
-                result = result._clone(rcls)
-            
-            return result
-
-        return cls.register_transf(func, transfname, doc, 'linop')
-
     def linop(self, transfname, *args):
         r"""
 
-        Transform the kernel to represent the application of a linear operator
-        to the functions.
+        Transform kernels to represent the application of a linear operator.
 
         .. math::
-            \text{kernel}(x, y) &= \mathrm{Cov}[f(x), g(y)] \\
-            \text{newkernel}(x, y) &= \mathrm{Cov}[T_1(f)(x), T_2(g)(y)]
+            \text{kernel_1}(x, y) &= \mathrm{Cov}[f_1(x), g_1(y)], \\
+            \text{kernel_2}(x, y) &= \mathrm{Cov}[f_2(x), g_2(y)], \\
+            &\ldots \\
+            \text{newkernel}(x, y) &=
+                \mathrm{Cov}[T_f(f_1, f_2, \ldots)(x), T_g(g_1, g_2, \ldots)(y)]
 
         Parameters
         ----------
         transfname : hashable
             The name of the transformation.
         *args :
-            Two arguments that indicate how to transform each function. If both
-            arguments represent the identity, this is a no-op. If there is only
-            one argument, it is intended that the two arguments are equal.
-            `None` always represents the identity.
+            A sequence of `CrossKernel` instances, representing the operands,
+            followed by one or two non-kernel arguments, indicating how to act
+            on each side of the kernels. If both arguments represent the
+            identity, this is a no-op. If there is only one argument, it is
+            intended that the two arguments are equal. `None` always represents
+            the identity.
 
         Returns
         -------
@@ -570,10 +450,15 @@ class CrossKernel:
 
         Notes
         -----
-        If the input object is an instance of `Kernel` and the two arguments are
-        not identical, `newkernel` is enforced to have a class which is not a
-        subclass of `Kernel`. After that, the least common superclass between
-        the result and the class defining the operation is enforced.
+        The linear operator is defined on the function the kernel represents the
+        distribution of, not in full generality on the kernel itself. When
+        multiple kernels are involved, their distributions may be considered
+        independent or not, depending on the specific operation.
+
+        If the result is a subclass of the class defining the transformation,
+        the result is casted to the latter. Then, if the result and all the
+        operands are instances of `Kernel`, but the two operator arguments
+        differ, the result is casted to it first non-`Kernel` superclass.
         
         `CrossKernel` defines the following operations:
 
@@ -601,11 +486,228 @@ class CrossKernel:
         
         """
         tcls, transf = self._gettransf(transfname)
-        if transf.kind != 'linop':
+        if transf.kind is not self._linopmarker:
             raise ValueError(f'the transformation {transfname!r} was not '
                 f'defined with register_linop and so can not be invoked '
                 f'by linop')
         return transf.func(tcls, self, *args)
+
+    def algop(self, transfname, *operands, **kw):
+        r"""
+
+        Return a nonnegative algebraic transformation of the input kernels.
+
+        .. math::
+            \mathrm{newkernel}(x, y) &=
+                f(\mathrm{kernel}_1(x, y), \mathrm{kernel}_2(x, y), \ldots), \\
+            f(z_1, z_2, \ldots) &= \sum_{k_1,k_2,\ldots=0}^\infty
+                a_{k_1 k_2 \ldots} z_1^{k_1} z_2^{k_2} \ldots,
+            \quad a_* \ge 0.
+
+        Parameters
+        ----------
+        transfname : hashable
+            A name identifying the transformation.
+        *operands : CrossKernel, scalar
+            Arguments to the transformation in addition to self.
+        **kw :
+            Additional arguments to the transformation, not considered as
+            operands.
+
+        Returns
+        -------
+        newkernel : CrossKernel or NotImplemented
+            The transformed kernel, or NotImplemented if the operation is
+            not supported.
+
+        See also
+        --------
+        transf
+
+        Notes
+        -----
+        The class of `newkernel` is the least common superclass of: the
+        "natural" output of the operation, the class defining the
+        transformation, and the classes of the operands.
+
+        For class determination, scalars in the input count as `IsotropicKernel`
+        if nonnegative or traced by jax, else `CrossIsotropicKernel`.
+
+        `CrossKernel` defines the following operations:
+
+        'add' :
+            Binary addition.
+        'mul' :
+            Binary multiplication.
+        'pow' :
+            Exponentiation to nonnegative integer.
+        TODO :
+            LIST OTHER OPERATIONS
+
+        """
+        tcls, transf = self._gettransf(transfname)
+        if transf.kind is not self._algopmarker:
+            raise ValueError(f'the transformation {transfname!r} was not '
+                f'defined with register_algop and so can not be invoked '
+                f'by algop')
+        return transf.func(tcls, self, *operands, **kw)
+
+    @classmethod
+    def register_transf(cls, func, transfname=None, doc=None, kind=None):
+        """
+        
+        Register a transformation for use with `transf`.
+
+        The transformation will be accessible to subclasses.
+
+        Parameters
+        ----------
+        func : callable
+            A function ``func(tcls, self, *args, **kw) -> object`` implementing
+            the transformation, where ``tcls`` is the class that defines the
+            transformation.
+        transfname : hashable, optional.
+            The `transfname` parameter to `transf` this transformation will
+            be accessible under. If not specified, use the name of `func`.
+        doc : str, optional
+            The documentation of the transformation for `transf_help`. If not
+            specified, use the docstring of `func`.
+        kind : object, optional
+            An arbitrary marker.
+
+        Returns
+        -------
+        func : callable
+            The `func` argument as is.
+
+        Raises
+        ------
+        KeyError :
+            The name is already in use for another transformation in the same
+            class.
+
+        See also
+        --------
+        transf
+
+        """
+        if transfname is None:
+            transfname = func.__name__
+        if doc is None:
+            doc = func.__doc__
+        cls._settransf(transfname, (func, doc, kind))
+        return func
+
+    @classmethod
+    def register_linop(cls, op, transfname=None, doc=None, argparser=None):
+        """
+        
+        Register a transformation for use with `linop`.
+
+        Parameters
+        ----------
+        op : callable
+            A method ``op(self, arg1, arg2, *operands) -> CrossKernel`` that
+            returns the new kernel, where ``arg1`` and ``arg2`` represent the
+            operators acting on each side of the kernels, and ``operands`` are
+            the other kernels beyond ``self``.
+        transfname, doc : optional
+            See `register_transf`.
+        argparser : callable, optional
+            A function applied to ``arg1`` and ``arg2``. Not called if the
+            argument is `None`. It should map the identity to `None`.
+
+        Returns
+        -------
+        func : callable
+            A function in the format required by `register_transf`, implementing
+            the additional argument parsing and output class logic of `linop`.
+
+        Notes
+        -----
+        The function `op` is called only if ``arg1`` or ``arg2`` is not `None`
+        after potential conversion with `argparser`.
+
+        See also
+        --------
+        transf
+
+        """
+        
+        if transfname is None:
+            transfname = op.__name__ # for result type error message
+        
+        @functools.wraps(op)
+        def func(tcls, self, *args):
+
+            # split the arguments in kernels and non-kernels
+            for pos, arg in enumerate(args):
+                if not isinstance(arg, __class__):
+                    break
+            else:
+                pos = len(args)
+            operands = args[:pos]
+            args = args[pos:]
+            
+            # check the arguments from the first non-kernel onwards are 1 or 2
+            if len(args) not in (1, 2):
+                raise ValueError(f'incorrect number of non-kernel tail '
+                    f'arguments {len(args)}, expected 1 or 2')
+
+            # wrap argument parser to enforce preserving None
+            if argparser:
+                conv = lambda x: None if x is None else argparser(x)
+            else:
+                conv = lambda x: x
+            
+            # determine if the two arguments count as "identical" or not
+            if len(args) == 1:
+                arg = conv(*args)
+                different = False
+                arg1 = arg2 = arg
+            else:
+                arg1, arg2 = args
+                different = arg1 is not arg2
+                arg1 = conv(arg1)
+                arg2 = conv(arg2)
+                different &= arg1 is not arg2
+                    # they must be not identical both before and after to handle
+                    # these cases:
+                    #  - if the user passes identical arguments, but argparser
+                    #    makes copies, it must still count as identical
+                    #  - if the user passes arguments which are not identical,
+                    #    but argparser sends them to the same object, then they
+                    #    surely represent the same transf
+
+            # handle no-op case
+            if arg1 is None and arg2 is None:
+                return self
+
+            # invoke implementation
+            result = op(self, arg1, arg2, *operands)
+
+            # check result is a kernel
+            if not isinstance(result, __class__):
+                raise TypeError(f'linop {transfname!r} returned '
+                    f'object of type {result.__class__.__name__}, expected '
+                    f'subclass of {__class__.__name__}')
+            
+            # modify class of the result
+            rcls = result.__class__
+            if issubclass(rcls, tcls):
+                rcls = tcls
+            all_operands_kernel = all(isinstance(o, Kernel) for o in operands)
+            if isinstance(self, Kernel) and all_operands_kernel and different:
+                rcls = next(rcls._crossmro())
+            if rcls is not result.__class__:
+                result = result._clone(rcls)
+            
+            return result
+
+        return cls.register_transf(func, transfname, doc, cls._linopmarker)
+
+    class _LinOpMarker(str): pass
+    _linopmarker = _LinOpMarker('linop')
 
     @classmethod
     def register_corelinop(cls, corefunc, transfname=None, doc=None, argparser=None):
@@ -616,9 +718,9 @@ class CrossKernel:
         Parameters
         ----------
         corefunc : callable
-            A function ``corefunc(core, arg1, arg2) -> newcore``, where
+            A function ``corefunc(core, arg1, arg2, *cores) -> newcore``, where
             ``core`` is the function that implements the kernel passed at
-            initialization.
+            initialization, and ``cores`` for other operands.
         transfname, doc, argparser :
             See `register_linop`.
 
@@ -633,8 +735,9 @@ class CrossKernel:
 
         """
         @functools.wraps(corefunc)
-        def op(self, arg1, arg2):
-            core = corefunc(self._core, arg1, arg2)
+        def op(self, arg1, arg2, *operands):
+            cores = (o._core for o in operands)
+            core = corefunc(self._core, arg1, arg2, *cores)
             return self._clone(_core=core)
         return cls.register_linop(op, transfname, doc, argparser)
 
@@ -647,9 +750,10 @@ class CrossKernel:
         Parameters
         ----------
         xfunc : callable
-            A function ``xfunc(arg) -> (transf x: newx)`` that takes in a
-            transformation argument and produces a function to transform the
-            input. Not called if ``arg`` is `None`.
+            A function ``xfunc(arg) -> (lambda x: newx)`` that takes in a
+            `linop` argument and produces a function to transform the input. Not
+            called if ``arg`` is `None`. To indicate the identity, return
+            `None`.
         transfname, doc :
             See `register_linop`. `argparser` is not provided because its
             functionality can be included in `xfunc`.
@@ -735,10 +839,13 @@ class CrossKernel:
             lcs = _least_common_superclass(classes())
             return result._clone(lcs)
     
-        return cls.register_transf(func, transfname, doc, 'algop')
+        return cls.register_transf(func, transfname, doc, cls._algopmarker)
 
         # TODO delete _kw (also in linop) if there's more than one kernel
         # operand or if the class changed?
+
+    class _AlgOpMarker(str): pass
+    _algopmarker = _AlgOpMarker('algop')
 
     @classmethod
     def register_ufuncalgop(cls, ufunc, transfname=None, doc=None):
@@ -777,64 +884,6 @@ class CrossKernel:
                 return ufunc(*values, **kw)
             return self._clone(_core=core)
         return cls.register_algop(op, transfname, doc)
-
-    def algop(self, transfname, *operands, **kw):
-        r"""
-
-        Return a positive algebraic transformation of the input kernels.
-
-        .. math::
-            \mathrm{newkernel}(x, y) &=
-                f(\mathrm{kernel}_1(x, y), \mathrm{kernel}_2(x, y), \ldots), \\
-            f(z_1, z_2, \ldots) &= \sum_{k_1,k_2,\ldots=0}^\infty
-                a_{k_1 k_2 \ldots} z_1^{k_1} z_2^{k_2} \ldots,
-            \quad a_* \ge 0.
-
-        Parameters
-        ----------
-        transfname : hashable
-            A name identifying the transformation.
-        *operands : CrossKernel, scalar
-            Arguments to the transformation in addition to self.
-        **kw :
-            Additional arguments to the transformation, not considered as
-            operands.
-
-        Returns
-        -------
-        newkernel : CrossKernel or NotImplemented
-            The transformed kernel, or NotImplemented if the operation is
-            not supported.
-
-        See also
-        --------
-        transf
-
-        Notes
-        -----
-        The class of `newkernel` is the least common superclass of: the
-        "natural" output of the operation, the class defining the
-        transformation, and the classes of the operands.
-
-        For class determination, scalars in the input count as `IsotropicKernel`
-        if nonnegative or traced by jax, else `CrossIsotropicKernel`.
-
-        `CrossKernel` defines the following operations:
-
-        'add' :
-            Binary addition.
-        'mul' :
-            Binary multiplication.
-        'pow' :
-            Exponentiation to nonnegative integer.
-
-        """
-        tcls, transf = self._gettransf(transfname)
-        if transf.kind != 'algop':
-            raise ValueError(f'the transformation {transfname!r} was not '
-                f'defined with register_algop and so can not be invoked '
-                f'by algop')
-        return transf.func(tcls, self, *operands, **kw)
 
 # TODO method list_transf to list all the available transformations together
 # with the class they are defined in and the kind.

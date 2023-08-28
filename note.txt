@@ -5785,3 +5785,60 @@ methods like kernel. Make an abc that defines the shared interface.
 ...........
 
 Todo: continue pytest --kw and fix the kernel overhaul.
+
+2023-08-28
+==========
+
+linop currently has signature
+linop(name, arg12)
+linop(name, arg1, arg2)
+where the arguments refer to the two kernel indices. How should I operate
+to add other kernels?
+
+linop(name, arg12, kernel1, kernel2, ...)
+linop(name, arg1, arg2, kernel1, kernel2, ...)
+
+or
+
+linop(name, kernel1, kernel2, ..., arg12)
+linop(name, kernel1, kernel2, ..., arg1, arg2)
+
+The enforced argument parsing would be:
+- find all kernels in the operands
+- impose they are either all on the left or the right
+- the remaining part must be one or two arguments
+
+Should I allow instead to have kernels as arguments? Is there a useful op where
+it is a kernel which identifies a linear operation? Such operations would be
+convolutions: kernel1 @ kernel @ kernel1.T. However the things on the left and
+right need not be pos def in general, so it's not their natural category.
+
+I want to enforce that kernels are not operator arguments for clarity.
+
+What if there is a scalar? I'm bent towards requiring wrapping non-kernels as
+kernels. I expect constant kernels to be a rare thing in actual models under a
+nary linop, and using Constant is clearer.
+
+So I choose
+
+linop(name, kernel1, kernel2, ..., (arg12 | arg1, arg2))
+
+The parsing is: collect al kernels, the rest must be arg12
+
+The implementation has signature (self, arg1, arg2, *operands).
+
+What is the rule to determine the class of the output?
+
+rcls = class of the result
+If LCS(operands) <= Kernel and arg1 != arg2:
+    rcls = next(rcls.crossmro())
+rcls = LCS(rcls, tcls)
+
+Kernels to the left or to the right? 'where' would be more readable with kernels
+to the right:
+kernel1.linop('where', lambda x: x > 0, kernel2)
+
+But I also like that all kernels stand together close to self. I can rename
+'where' to remove the implicit expectation about argument position:
+
+kernel1.linop('cond', kernel2, lambda x: x > 0).

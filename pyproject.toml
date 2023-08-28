@@ -127,7 +127,7 @@ filterwarnings = [
 addopts = [
     "-r xXfE",
     "--pdbcls=IPython.terminal.debugger:TerminalPdb",
-    "--durations=10",
+    "--durations=3",
 ]
 
 # I wanted to use `--import-mode=importlib`, but it breaks importing submodules,
