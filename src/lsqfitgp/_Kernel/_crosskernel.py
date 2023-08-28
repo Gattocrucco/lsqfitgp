@@ -261,6 +261,15 @@ class CrossKernel:
         cls._transf[transfname] = cls._Transf(*transf)
 
     @classmethod
+    def _alltransf(cls):
+        """ list all accessible transfs as dict name -> (tcls, transf) """
+        transfs = {}
+        for tcls in cls._transfmro():
+            for name, transf in tcls._transf.items():
+                transfs.setdefault(name, (tcls, transf))
+        return transfs
+
+    @classmethod
     def _gettransf(cls, transfname):
         """
         Find a transformation.
@@ -326,6 +335,36 @@ class CrossKernel:
 
     # TODO method inherit_all_algops, useful for classes which represent
     # subalgebras.
+
+    @classmethod
+    def inherit_all_algops(cls, intermediates=False):
+        """
+
+        Inherit all algebraic operations from superclasses.
+
+        This makes sense if the class represents a subalgebra, i.e., it
+        should be preserved by addition and multiplication.
+
+        Parameters
+        ----------
+        intermediates : bool, default False
+            If True, make all superclasses up to the one definining the
+            transformation inherit it too.
+
+        Raises
+        ------
+        KeyError :
+            An algebraic operation is already registered for one of the target
+            classes.
+
+        See also
+        --------
+        transf
+
+        """
+        for name, (_, transf) in cls._alltransf().items():
+            if transf.kind is cls._algopmarker:
+                cls.inherit_transf(name, intermediates=intermediates)
 
     @classmethod
     def has_transf(cls, transfname):
@@ -843,6 +882,11 @@ class CrossKernel:
 
         # TODO delete _kw (also in linop) if there's more than one kernel
         # operand or if the class changed?
+
+        # TODO consider adding an option domains=callable, returns list of
+        # domains from the operands, or list of tuples right away, and the
+        # impl checks at runtime (if not traced) that the output values are in
+        # the domains, with an informative error message
 
     class _AlgOpMarker(str): pass
     _algopmarker = _AlgOpMarker('algop')

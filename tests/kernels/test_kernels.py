@@ -40,7 +40,7 @@ pytestmark = pytest.mark.filterwarnings(
     r'ignore:Output seems independent of input',
 )
 
-# mirrors the inheritance list in _Kernel/_isotropic.py
+# list of all the ops in _Kernel/_alg.py
 unary_algops = [
     ('rpow', (-np.inf, np.inf), dict(base=1.5)),
     ('tan', (-np.pi / 2, np.pi / 2), {}),
