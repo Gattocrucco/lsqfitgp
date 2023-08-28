@@ -40,17 +40,27 @@ Classes
 .. autoclass:: CrossKernel
     :members:
 
+----
+
 .. autoclass:: Kernel
     :members:
+
+----
 
 .. autoclass:: CrossStationaryKernel
     :members:
 
+----
+
 .. autoclass:: StationaryKernel
     :members:
 
+----
+
 .. autoclass:: CrossIsotropicKernel
     :members:
+
+----
 
 .. autoclass:: IsotropicKernel
     :members:

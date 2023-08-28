@@ -30,7 +30,6 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     kernelsref.rst
     kernel.rst
     kerneldec.rst
-    kernelop.rst
     deriv.rst
     gp.rst
     array.rst
@@ -39,5 +38,3 @@ a shell with ``import lsqfitgp; help(lsqfitgp)``.
     copula.rst
     bayestree.rst
     gvarext.rst
-
-.. TODO decompositions reference under "Linear Algebra"

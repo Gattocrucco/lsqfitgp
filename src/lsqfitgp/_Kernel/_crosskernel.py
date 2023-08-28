@@ -333,9 +333,6 @@ class CrossKernel:
                     break
                 c._settransf(transfname, transf)
 
-    # TODO method inherit_all_algops, useful for classes which represent
-    # subalgebras.
-
     @classmethod
     def inherit_all_algops(cls, intermediates=False):
         """
@@ -362,9 +359,30 @@ class CrossKernel:
         transf
 
         """
-        for name, (_, transf) in cls._alltransf().items():
+        mro = cls._transfmro()
+        next(mro)
+        for name, (_, transf) in next(mro)._alltransf().items():
             if transf.kind is cls._algopmarker:
                 cls.inherit_transf(name, intermediates=intermediates)
+
+    @classmethod
+    def list_transf(cls):
+        """
+        List all the available transformations.
+
+        Returns
+        -------
+        transfs: dict of tuples
+            The dictionary keys are the transformation names, the values are
+            tuples ``(tcls, kind, impl, doc)`` where ``tcls`` is the class
+            defining the transformation, ``kind`` is the kind of transformation,
+            ``impl`` is the implementation with signature ``impl(tcls, self,
+            *args, **kw)``, ``doc`` is the docstring.
+        """
+        return {
+            name: (tcls, transf.kind, transf.func, transf.doc)
+            for name, (tcls, transf) in cls._alltransf().items()
+        }
 
     @classmethod
     def has_transf(cls, transfname):
@@ -455,8 +473,8 @@ class CrossKernel:
         Transform kernels to represent the application of a linear operator.
 
         .. math::
-            \text{kernel_1}(x, y) &= \mathrm{Cov}[f_1(x), g_1(y)], \\
-            \text{kernel_2}(x, y) &= \mathrm{Cov}[f_2(x), g_2(y)], \\
+            \text{kernel}_1(x, y) &= \mathrm{Cov}[f_1(x), g_1(y)], \\
+            \text{kernel}_2(x, y) &= \mathrm{Cov}[f_2(x), g_2(y)], \\
             &\ldots \\
             \text{newkernel}(x, y) &=
                 \mathrm{Cov}[T_f(f_1, f_2, \ldots)(x), T_g(g_1, g_2, \ldots)(y)]
@@ -497,7 +515,7 @@ class CrossKernel:
         If the result is a subclass of the class defining the transformation,
         the result is casted to the latter. Then, if the result and all the
         operands are instances of `Kernel`, but the two operator arguments
-        differ, the result is casted to it first non-`Kernel` superclass.
+        differ, the result is casted to its first non-`Kernel` superclass.
         
         `CrossKernel` defines the following operations:
 
@@ -928,6 +946,3 @@ class CrossKernel:
                 return ufunc(*values, **kw)
             return self._clone(_core=core)
         return cls.register_algop(op, transfname, doc)
-
-# TODO method list_transf to list all the available transformations together
-# with the class they are defined in and the kind.

@@ -21,6 +21,7 @@
 
 import sys
 import operator
+import functools
 
 import numpy as np
 from numpy.lib import recfunctions
@@ -214,6 +215,17 @@ class TestAlgOp:
         a = lgp.Kernel(constcore).algop('1/cos')
         util.assert_allclose(a(0, 0), 1 / np.cos(1))
 
+    def test_inherit_all_algops(self):
+
+        # check that inherit_all_algops does not try to inherit from itself
+        class A(lgp.CrossKernel): pass
+        A.register_algop(lambda self: self, 'ciao')
+        A.inherit_all_algops()
+
+        # check that CrossKernel can't inherit
+        with pytest.raises(StopIteration):
+            lgp.CrossKernel.inherit_all_algops()
+
 @pytest.fixture
 def idtransf():
     def idtransf(self, a, b):
@@ -320,6 +332,16 @@ class TestTransf:
         # not defined for CrossKernel
         with pytest.raises(KeyError, match='forcekron'):
             lgp.CrossKernel(constcore, forcekron=True)
+
+    def test_list_transf(self):
+        class A(lgp.CrossKernel): pass
+        @functools.partial(A.register_transf, kind=7)
+        def ciao(self, *_):
+            """ciao"""
+            pass
+        t = A.list_transf()
+        assert t['ciao'] == (A, 7, ciao, 'ciao')
+        assert 'add' in t
 
 class TestLinOp:
 
