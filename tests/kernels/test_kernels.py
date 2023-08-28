@@ -27,7 +27,7 @@ import functools
 import pytest
 from pytest import mark
 import numpy as np
-from scipy import linalg
+from scipy import linalg, optimize
 import jax
 
 import lsqfitgp as lgp
@@ -40,12 +40,44 @@ pytestmark = pytest.mark.filterwarnings(
     r'ignore:Output seems independent of input',
 )
 
-# TODO a test taking first and second derivatives w.r.t. loc and scale, which
-# would apply also to non-derivable kernels. Make sure to have distances both 0
-# and very near 0. Add a test option for testing a certain list of parameters,
-# which defaults to loc and scale.
+# mirrors the inheritance list in _Kernel/_isotropic.py
+unary_algops = [
+    ('rpow', (-np.inf, np.inf), dict(base=1.5)),
+    ('tan', (-np.pi / 2, np.pi / 2), {}),
+    # ('1/sinc', (-np.pi, np.pi), {}),         # <--- TODO fix this, what's wrong?
+    ('1/cos', (-np.pi / 2, np.pi / 2), {}),
+    ('arcsin', (-1, 1), {}),
+    ('1/arccos', (-1, 1), {}),
+    ('1/(1-x)', (-np.inf, 1), {}),      # the convergence circle is in (-1, 1), but
+    ('exp', (-np.inf, np.inf), {}),     # if cov <= 1 then also cov >= -1, so it's
+    ('-log1p(-x)', (-np.inf, 1), {}),   # automatically satisfied.
+    ('expm1', (-np.inf, np.inf), {}),
+    ('expm1x', (-np.inf, np.inf), {}),
+    ('sinh', (-np.inf, np.inf), {}),
+    ('cosh', (-np.inf, np.inf), {}),
+    ('arctanh', (-1, 1), {}),
+    ('i0', (-np.inf, np.inf), {}),
+    ('i1', (-np.inf, np.inf), {}),
+    # ('iv', (0, np.inf), dict(order=2.5)), # seems to work but too inaccurate
+]
 
-# TODO test higher dimensions.
+def find_pos_rescale_to_fit(l, r, a, b, L, R):
+    """
+    (l, r) = target domain
+    (a, b) = current range
+    find z, f >= 0 s.t.
+    z + f * (a, b) is contained in (l, r) and (L, R)
+    and f is maximum
+    return z, f
+    """
+    C = [0, -1]
+    A = [[-1, -a], [1, b]]
+    B = [min(-l, -L), min(r, R)]
+    res = optimize.linprog(C, A, B, bounds=2 * [(0, 10)])
+    assert res.success, res.message
+    return res.x
+
+# TODO test higher dimensions and derivatives?
 
 def skipon(meth, exc, match):
     """ decorator to make a unit test method skip on a certain exception """
@@ -128,16 +160,28 @@ class Base:
     def psdeps(self):
         """ Relative tolerance for the smallest eigenvalue to be negative """
         return np.finfo(float).eps
-    
-    def impl_positive(self, kernel, deriv, x, psdeps):
-        d = (deriv, 'f0') if x.dtype.names else deriv
-        cov = kernel.linop('diff', d, d)(x[None, :], x[:, None])
+
+    def check_sym_and_psd(self, cov, psdeps):
         util.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7)
         eigv = linalg.eigvalsh(cov)
         assert np.min(eigv) >= -len(cov) * psdeps * np.max(eigv)
 
+    def impl_positive(self, kernel, deriv, x, psdeps, doops=False):
+        d = (deriv, 'f0') if x.dtype.names else deriv
+        k = kernel.linop('diff', d, d)
+        cov = k(x[None, :], x[:, None])
+        self.check_sym_and_psd(cov, psdeps)
+
+        if not doops:
+            return
+        for op, (l, r), kw in unary_algops:
+            a, b = np.min(cov), np.max(cov)
+            z, f = find_pos_rescale_to_fit(l + 0.01, r - 0.01, a, b, -5, 5)
+            mat = lgp.Kernel(lambda *_: (z + f * cov)).algop(op, **kw)(x[None, :], x[:, None])
+            self.check_sym_and_psd(mat, psdeps)
+
     def test_positive_scalar_0(self, kernel, x_scalar, psdeps):
-        self.impl_positive(kernel, 0, x_scalar, psdeps)
+        self.impl_positive(kernel, 0, x_scalar, psdeps, True)
 
     @skiponmaxdim
     def test_positive_nd_0(self, kernel, x_nd, psdeps):
@@ -393,7 +437,8 @@ class Fourier(Base):
         c2 = k2(x, k)
         util.assert_equal(c1, c2)
 
-    def test_fourier(self, kernel, kw):
+    def test_fourier_inference(self, kernel, kw):
+        """ test that removing a mode leaves the other in the posterior mean """
         if not kernel.has_transf('fourier'):
             pytest.skip()
         
@@ -636,6 +681,10 @@ class TestGammaExp(Stationary, Deriv2):
 
 class TestBessel(Stationary, Deriv2):
 
+    @pytest.fixture
+    def psdeps(self):
+        return 4 * np.finfo(float).eps
+
     @pytest.fixture(params=[dict()] +
         [dict(nu=nu) for nu in range(5)] +
         [dict(nu=nu - 0.01) for nu in range(1, 5)] +
@@ -675,6 +724,10 @@ class TestDecaying(Deriv2):
         return lambda size=100: rng.uniform(0, 5, size)
 
 class TestStationaryFracBrownian(Stationary, Deriv2):
+
+    @pytest.fixture
+    def psdeps(self):
+        return 8 * np.finfo(float).eps
 
     @pytest.fixture(params=[0.1, 0.5, 1])
     def kw(self, request):
@@ -799,17 +852,20 @@ util.skip(TestMA, 'test_normalized')
 util.xfail(TestWendland, 'test_positive_nd_2')
 util.xfail(TestWendland, 'test_double_diff_nd_second_chopped')
 util.xfail(TestWendland, 'test_continuous_in_zero_2')
-util.xfail(TestWendland, 'test_jit_nd_2', reason="seen xpassing, numerical accuracy problem?")
+util.xfail(TestWendland, 'test_jit_nd_2', reason="seen xpassing, numerical "
+    "accuracy problem?")
 util.xfail(TestCausalExpQuad, 'test_positive_nd_2')
-util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped', reason="fails on macos, not on linux, with 1e15 variance")
+util.xfail(TestCausalExpQuad, 'test_double_diff_nd_second_chopped', reason=
+    "fails on macos, not on linux, with 1e15 variance")
 util.xfail(TestCausalExpQuad, 'test_continuous_in_zero_2')
-util.xfail(TestCausalExpQuad, 'test_jit_nd_2', reason="it's a divergence of the variance; mistake in derivability?")
+util.xfail(TestCausalExpQuad, 'test_jit_nd_2', reason="it's a divergence of "
+    "the variance; mistake in derivability?")
+util.xfail(TestCausalExpQuad, 'test_positive_scalar_2', reason="seems numerical"
+    " precision problem, but it's not 1 - erf cancel")
 
-util.xfail(TestCausalExpQuad, 'test_positive_scalar_2', reason="seems numerical precision problem, but it's not 1 - erf cancel")
-
-util.xfail(TestWendland, 'test_jit_nd_1', reason="""the failures are on kw14, kw33,
-    and involve integer multiples of the identity, with differences:
-    24 vs 25, 24 vs. 22.""")
+util.xfail(TestWendland, 'test_jit_nd_1', reason="the failures are on kw14, "
+    "kw33, and involve integer multiples of the identity, with differences: "
+    "24 vs 25, 24 vs. 22.")
 
 # TODO These are not isotropic kernels, what is the problem? Those commented are
 # currently skipped, the failures were with forcekron applied.

@@ -89,7 +89,7 @@ def derivable(derivable):
             'example if a hyperparameter enters the calculation of x. To '
             'suppress the error, initialize the kernel with derivable=True.')
 
-    return functools.partial(_jaxext.limit_derivatives, n=derivable)
+    return functools.partial(_jaxext.limit_derivatives, n=derivable, error_func=error_func)
 
     # TODO this system does not ignore additional derivatives that are not
     # taken by .transf('diff'). Plan:

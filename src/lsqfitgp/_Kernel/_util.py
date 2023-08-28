@@ -52,21 +52,24 @@ def is_nonnegative_integer_scalar(x):
             return jnp.issubdtype(x.dtype, jnp.unsignedinteger)
     return False
 
-def is_nonnegative_scalar_trueontracer(x):
-    if isinstance(x, numbers.Number) and x >= 0:
+def is_scalar_cond_trueontracer(x, cond):
+    if isinstance(x, numbers.Number) and cond(x):
         # python scalars and numpy scalars
         return True
-    if isinstance(x, numpy.ndarray) and x.ndim == 0 and numpy.issubdtype(x.dtype, numpy.number) and x.item() >= 0:
+    if isinstance(x, numpy.ndarray) and x.ndim == 0 and numpy.issubdtype(x.dtype, numpy.number) and cond(x.item()):
         # 0-dim numpy arrays
         return True
     if isinstance(x, jnp.ndarray) and x.ndim == 0 and jnp.issubdtype(x.dtype, jnp.number):
         try:
             # concrete jax arrays
-            return x.item() >= 0
+            return cond(x.item())
         except jax.errors.ConcretizationTypeError:
             # jax tracers
             return True
     return False
+
+def is_nonnegative_scalar_trueontracer(x):
+    return is_scalar_cond_trueontracer(x, lambda x: x >= 0)
 
 # TODO reimplement with tree_reduce, closuring ndim to recognize shaped fields
 def _reduce_recurse_dtype(fun, args, reductor, npreductor, jnpreductor):

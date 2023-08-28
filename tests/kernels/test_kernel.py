@@ -85,7 +85,7 @@ def test_binary_scalar(op, cls, rng):
         util.assert_equal(result, expected)
         args = tuple(reversed(args))
 
-@mark.parametrize('op', [operator.add, operator.mul])
+@mark.parametrize('op', [operator.add, operator.mul, operator.pow])
 @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
 def test_binary_undef(op, cls, constcore):
 
@@ -93,12 +93,14 @@ def test_binary_undef(op, cls, constcore):
     kernel = cls(constcore)
     with pytest.raises(TypeError):
         op(kernel, 'gatto')
+    with pytest.raises(TypeError):
+        op('gatto', kernel)
 
     # test that other classes are delegated
     class A:
-        __add__ = lambda *_: 'ciao'
-        __mul__ = lambda *_: 'ciao'
+        __add__ = __radd__ = __mul__ = __rmul__ = __pow__ = __rpow__ = lambda *_: 'ciao'
     assert op(A(), kernel) == 'ciao'
+    assert op(kernel, A()) == 'ciao'
 
 @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
 def test_pow(cls, rng):
@@ -125,6 +127,33 @@ def test_pow(cls, rng):
         traced(3., x, y)
     with pytest.raises(TypeError):
         traced(3, x, y)
+
+@mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
+def test_rpow(cls, rng):
+    f = lambda x, y: 1.2 * x + 8.9 * y
+
+    def convs(x):
+        yield x
+        yield np.float64(x)
+        yield jnp.float64(x)
+        yield np.array(x)
+        yield jnp.array(x)
+
+    for base in convs(1.0):
+        kernel = base ** cls(f)
+        x, y = rng.standard_normal((2, 5))
+        result = kernel(x, y)
+        expected = base ** f(x, y)
+        util.assert_equal(result, expected)
+
+    @jax.jit
+    def traced(base, x, y):
+        return (base ** cls(f))(x, y)
+
+    for base in convs(0.9999):
+        with pytest.raises(TypeError):
+            base ** cls(f)
+        traced(base, x, y) # no bound check under tracing
 
 @mark.parametrize('op', [operator.add, operator.mul])
 @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
@@ -185,6 +214,10 @@ def test_algop_type_error(constcore):
     a = A()
     with pytest.raises(TypeError):
         a.algop('ciao', 'duo')
+
+def test_ufunc_algop(constcore):
+    a = lgp.Kernel(constcore).algop('1/cos')
+    util.assert_allclose(a(0, 0), 1 / np.cos(1))
 
 def test_batch(rng):
     class A(lgp.CrossKernel): pass

@@ -770,7 +770,7 @@ class CrossKernel:
             cores = tuple(
                 o._core if isinstance(o, __class__)
                 else lambda x, y: o
-                for o in operands
+                for o in (self, *operands)
             )
             def core(x, y):
                 values = (core(x, y) for core in cores)

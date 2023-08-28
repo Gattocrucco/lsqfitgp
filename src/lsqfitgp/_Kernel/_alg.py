@@ -107,21 +107,21 @@ def rpow(self, *, base):
     
     Parameters
     ----------
-    base : nonnegative scalar
-        The base. If traced by jax, the sign is not checked.
+    base : scalar
+        A number >= 1. If traced by jax, the value is not checked.
     
     """
-    if _util.is_nonnegative_scalar_trueontracer(base):
+    if _util.is_scalar_cond_trueontracer(base, lambda x: x >= 1):
         core = lambda x, y, core=self._core: base ** core(x, y)
     else:
         return NotImplemented
     return self._clone(_core=core)
 
 CrossKernel.register_ufuncalgop(jnp.tan)
-CrossKernel.register_ufuncalgop(lambda x: 1 / jnp.sinc(x), '1/sinc')
+# CrossKernel.register_ufuncalgop(lambda x: 1 / jnp.sinc(x), '1/sinc')
 CrossKernel.register_ufuncalgop(lambda x: 1 / jnp.cos(x), '1/cos')
 CrossKernel.register_ufuncalgop(jnp.arcsin)
-CrossKernel.register_ufuncalgop(jnp.arccos)
+CrossKernel.register_ufuncalgop(lambda x: 1 / jnp.arccos(x), '1/arccos')
 CrossKernel.register_ufuncalgop(lambda x: 1 / (1 - x), '1/(1-x)')
 CrossKernel.register_ufuncalgop(jnp.exp)
 CrossKernel.register_ufuncalgop(lambda x: -jnp.log1p(-x), '-log1p(-x)')
@@ -132,10 +132,10 @@ CrossKernel.register_ufuncalgop(jnp.cosh)
 CrossKernel.register_ufuncalgop(jnp.arctanh)
 CrossKernel.register_ufuncalgop(jspecial.i0)
 CrossKernel.register_ufuncalgop(jspecial.i1)
-@CrossKernel.register_ufuncalgop
-def iv(x, *, order):
-    assert _util.is_nonnegative_scalar_trueontracer(order)
-    return jspecial.iv(order, x)
+# @CrossKernel.register_ufuncalgop
+# def iv(x, *, order):
+#     assert _util.is_nonnegative_scalar_trueontracer(order)
+#     return _special.iv(order, x)
 
 # TODO other unary algop:
 # - hypergeom (wrap the scipy impl in _special)

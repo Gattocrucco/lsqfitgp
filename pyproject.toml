@@ -125,8 +125,9 @@ filterwarnings = [
     'ignore:The problem size .+? minus the constraints size .+? is too small',
 ]
 addopts = [
-    "-rxXfE",
+    "-r xXfE",
     "--pdbcls=IPython.terminal.debugger:TerminalPdb",
+    "--durations=10",
 ]
 
 # I wanted to use `--import-mode=importlib`, but it breaks importing submodules,

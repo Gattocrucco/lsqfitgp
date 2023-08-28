@@ -97,16 +97,37 @@ class IsotropicKernel(CrossIsotropicKernel, _stationary.StationaryKernel):
 _crosskernel.IsotropicKernel = IsotropicKernel
 _crosskernel.CrossIsotropicKernel = CrossIsotropicKernel
 
-# make these operations preserve the class IsotropicKernel and upwards
-IsotropicKernel.inherit_transf('add', intermediates=True)
-IsotropicKernel.inherit_transf('mul', intermediates=True)
-IsotropicKernel.inherit_transf('pow', intermediates=True)
+# linops
 IsotropicKernel.inherit_transf('rescale', intermediates=True)
 IsotropicKernel.inherit_transf('loc', intermediates=True)
 IsotropicKernel.inherit_transf('scale', intermediates=True)
 IsotropicKernel.inherit_transf('maxdim', intermediates=True)
 IsotropicKernel.inherit_transf('derivable', intermediates=True)
 IsotropicKernel.inherit_transf('normalize', intermediates=True)
+
+# binary algops
+IsotropicKernel.inherit_transf('add', intermediates=True)
+IsotropicKernel.inherit_transf('mul', intermediates=True)
+
+# unary algops
+IsotropicKernel.inherit_transf('pow', intermediates=True)
+IsotropicKernel.inherit_transf('rpow', intermediates=True)
+IsotropicKernel.inherit_transf('tan', intermediates=True)
+# IsotropicKernel.inherit_transf('1/sinc', intermediates=True)
+IsotropicKernel.inherit_transf('1/cos', intermediates=True)
+IsotropicKernel.inherit_transf('arcsin', intermediates=True)
+IsotropicKernel.inherit_transf('1/arccos', intermediates=True)
+IsotropicKernel.inherit_transf('1/(1-x)', intermediates=True)
+IsotropicKernel.inherit_transf('exp', intermediates=True)
+IsotropicKernel.inherit_transf('-log1p(-x)', intermediates=True)
+IsotropicKernel.inherit_transf('expm1', intermediates=True)
+IsotropicKernel.inherit_transf('expm1x', intermediates=True)
+IsotropicKernel.inherit_transf('sinh', intermediates=True)
+IsotropicKernel.inherit_transf('cosh', intermediates=True)
+IsotropicKernel.inherit_transf('arctanh', intermediates=True)
+IsotropicKernel.inherit_transf('i0', intermediates=True)
+IsotropicKernel.inherit_transf('i1', intermediates=True)
+# IsotropicKernel.inherit_transf('iv', intermediates=True)
 
 class Zero(IsotropicKernel):
     """
