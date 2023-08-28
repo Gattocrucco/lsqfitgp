@@ -114,7 +114,7 @@ for name, tlist in transfs.items():
     columns['Classes'].append(get_classes(tlist))
 table = pl.DataFrame(columns).sort('Method', 'Name')
 
-# write table to text
+# write index table to text
 index_table = table.select('Method', 'Name', 'Classes').to_dict()
 out += tabulate.tabulate(index_table, headers='keys', tablefmt='rst')
 
@@ -124,6 +124,39 @@ Transformations
 ---------------
 """
 
+# define how to deduce signature
+def get_sig(name, tlist):
+    t = tlist[0]
+    sig = inspect.signature(t.func)
+    ps = list(sig.parameters.values())
+
+    if t.kind == 'linop':
+        if len(ps) == 1: # xtransf
+            p = ps[0]
+            ps = [
+                inspect.Parameter(prefix + p.name, p.kind)
+                for prefix in 'xy'
+            ]
+        else:
+            ps = ps[3:] + ps[1:3] # drop self, switch order
+    
+    elif t.kind == 'algop':
+        if not t.func.__module__.startswith('lsqfitgp'): # external ufunc
+            ps = []
+        elif len(ps) == 1: # ufunc
+            ps = []
+        else:
+            ps = ps[1:] # drop self
+    
+    else:
+        ps = ps[2:] # drop tcls, self
+
+    s = str(inspect.Signature(ps)).strip('()')
+    if t.kind == 'linop':
+        s, last = s.rsplit(',', 1)
+        s = s + f'[, {last}]'
+    return f"('{name}', {s})"
+
 # format each transformation
 for name, tlist in table.select('name', 'tlist').iter_rows():
     tlist = transfs[name]
@@ -131,7 +164,7 @@ for name, tlist in table.select('name', 'tlist').iter_rows():
     meth = kind[t.kind]
     out += f"""
 .. _{name}:
-.. method:: CrossKernel.{meth}('{name}')
+.. method:: CrossKernel.{meth}{get_sig(name, tlist)}
     :no-index:
 """
     if t.doc:
