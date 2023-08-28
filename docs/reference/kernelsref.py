@@ -26,6 +26,19 @@ import numpy as np
 from matplotlib import pyplot as plt
 import lsqfitgp as lgp
 
+figdir = pathlib.Path(__file__).with_suffix('')
+figdir.mkdir(exist_ok=True)
+
+def make_figpath(name):
+    path = figdir / name
+    path = path.with_suffix('.png')
+    path = path.relative_to(pathlib.Path().absolute())
+    return path
+
+def make_figref(name):
+    path = figdir.relative_to(pathlib.Path(__file__).parent) / name
+    return path.with_suffix('.png')
+
 classes = (lgp.IsotropicKernel, lgp.StationaryKernel, lgp.Kernel     )
 titles  = ('Isotropic kernels', 'Stationary kernels', 'Other kernels')
 
@@ -37,7 +50,7 @@ for name, obj in vars(lgp).items():
 kernels.sort()
 
 out = """\
-.. file generated automatically by lsqfitgp/docs/kernelsref.py
+.. file generated automatically by lsqfitgp/docs/reference/kernelsref.py
 
 .. currentmodule:: lsqfitgp
 
@@ -239,11 +252,10 @@ for kernel in kernels2:
     else:
         ax.set_ylabel("x'")
         fig.colorbar(im, label="Cov[f(x), f(x')]")
-    figname = f'kernelsref-{kernel}.png'
-    fig.savefig(pathlib.Path(__file__).with_name(figname))
+    fig.savefig(make_figpath(kernel))
     
     out += f"""\
-.. image:: {figname}
+.. image:: {make_figref(kernel)}
 """
     
     fig.clf()
@@ -273,11 +285,11 @@ for kernel in kernels2:
     ax.set_title('Samples')
     ax.set_xlabel('x')
     ax.set_ylabel('f(x)')
-    figname = f'kernelsref-{kernel}-samples.png'
-    fig.savefig(pathlib.Path(__file__).with_name(figname))
+    figname = f'{kernel}-samples'
+    fig.savefig(make_figpath(figname))
 
     out += f"""\
-.. image:: {figname}
+.. image:: {make_figref(figname)}
 """
 
 outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())

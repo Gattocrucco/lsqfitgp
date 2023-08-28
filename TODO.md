@@ -52,6 +52,8 @@ In the kernels reference show random samples in 2D when maxdim > 1
 
 Add an example with regression + gp
 
+Add a brief head "Example" section in the README
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu

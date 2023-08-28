@@ -19,6 +19,8 @@
 
 .. currentmodule:: lsqfitgp
 
+.. _generickernel:
+
 Generic kernel classes
 ======================
 
@@ -28,6 +30,9 @@ are produced behind the scenes by `GP`.
 
 The generic classes can be used standalone. To ease subclassing, use the
 :ref:`decorators <kerneldec>`.
+
+.. TODO show the inheritance diagram of IsotropicKernel with
+.. sphinx.ext.inheritance_diagram
 
 Index
 -----

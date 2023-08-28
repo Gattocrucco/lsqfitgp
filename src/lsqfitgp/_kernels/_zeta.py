@@ -58,9 +58,6 @@ def Zeta(delta, *, nu):
     The :math:`k = 0` term is not included in the summation, so the mean of the
     process over one period is forced to be zero.
 
-    This kernel defines the transformation ``'fourier'`` to be used with
-    `~CrossKernel.transf`.
-    
     Reference: Petrillo (2022).
     
     """

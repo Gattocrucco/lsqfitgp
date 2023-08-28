@@ -17,8 +17,8 @@
 .. You should have received a copy of the GNU General Public License
 .. along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-User guide
-==========
+Guide
+=====
 
 This guide is intended for an audience that has little to none experience with
 Gaussian processes, and a basic knowledge of Python and Numpy. It is

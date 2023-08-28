@@ -17,7 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Test the generic kernel machinery """
+""" Test the generic kernel machinery. This file covers at 100% the _Kernel
+submodule. """
 
 import sys
 import operator
@@ -334,14 +335,22 @@ class TestTransf:
             lgp.CrossKernel(constcore, forcekron=True)
 
     def test_list_transf(self):
+
+        # register a transf on a new class
         class A(lgp.CrossKernel): pass
         @functools.partial(A.register_transf, kind=7)
         def ciao(self, *_):
             """ciao"""
             pass
+
+        # check the transf is there, and also those of the superclass
         t = A.list_transf()
         assert t['ciao'] == (A, 7, ciao, 'ciao')
         assert 'add' in t
+
+        # check only that transf is in the new class
+        t = A.list_transf(superclasses=False)
+        assert len(t) == 1 and 'ciao' in t
 
 class TestLinOp:
 

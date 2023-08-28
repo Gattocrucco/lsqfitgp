@@ -74,8 +74,12 @@ possibly related `Distr` objects and is intended for direct use.
 .. autoclass:: DistrBase
     :members:
 
+--------
+
 .. autoclass:: Distr
     :members:
+
+--------
 
 .. autoclass:: Copula
     :members:
@@ -84,6 +88,8 @@ Utilities
 ---------
 
 .. autofunction:: makedict
+
+--------
 
 .. autofunction:: distribution
 
@@ -106,6 +112,9 @@ for name in sorted(distrs):
     out += f"""\
 .. autoclass:: {name}{sig}
 """
+
+# TODO make a table instead of listing the classes, columns: signature in
+# lsqfitgp, name in scipy (with ref), wikipedia page name (with link), Notes
 
 outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
 print(f'writing to {outfile}...')

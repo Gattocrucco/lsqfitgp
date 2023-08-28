@@ -83,7 +83,10 @@ docs/examplesref.rst: docs/examplesref.py src/lsqfitgp/*.py src/lsqfitgp/*/*.py
 docs/reference/kernelsref.rst: docs/reference/kernelsref.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_jaxext/*.py src/lsqfitgp/_special/*.py
 	$(DOCSPY) --append $<
 
-docs: docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst
+docs/reference/kernelop.rst: docs/reference/kernelop.py src/lsqfitgp/_Kernel/*.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_jaxext/*.py src/lsqfitgp/_special/*.py
+	$(DOCSPY) --append $<
+
+docs: docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst docs/reference/kernelop.rst
 	make -C docs html
 	@echo
 	@echo "Now open docs/_build/html/index.html"

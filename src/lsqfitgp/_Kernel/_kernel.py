@@ -28,10 +28,6 @@ class Kernel(_crosskernel.CrossKernel):
     .. math::
         \mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), f(y)].
 
-    Notes
-    -----
-    `Kernel` defines the ``'forcekron'`` transformation.
-
     """
 
     def _swap(self):

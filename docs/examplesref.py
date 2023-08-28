@@ -83,8 +83,8 @@ Short index
 -----------
 {shortindex}
 
-Long index
-----------
+Index with figures
+------------------
 {longindex}
 """
 

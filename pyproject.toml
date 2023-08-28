@@ -79,6 +79,7 @@ dev = [ # to work locally on lsqfitgp
     "build",
     "statsmodels",
     "tqdm",
+    "tabulate",
 ]
 
 tests = [ # to run the unit tests on CI
@@ -111,6 +112,7 @@ docs = [ # to run examples, documentation code, and build documentation on CI
     "statsmodels",
     "pyarrow",
     "tqdm",
+    "tabulate",
 ]
 
 [tool.pytest.ini_options]

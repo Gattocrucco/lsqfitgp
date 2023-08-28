@@ -366,23 +366,36 @@ class CrossKernel:
                 cls.inherit_transf(name, intermediates=intermediates)
 
     @classmethod
-    def list_transf(cls):
+    def list_transf(cls, superclasses=True):
         """
         List all the available transformations.
 
+        Parameters
+        ----------
+        superclasses : bool, default True
+            Include transformations defined in superclasses.
+
         Returns
         -------
-        transfs: dict of tuples
+        transfs: dict of Transf
             The dictionary keys are the transformation names, the values are
-            tuples ``(tcls, kind, impl, doc)`` where ``tcls`` is the class
+            named tuples ``(tcls, kind, impl, doc)`` where ``tcls`` is the class
             defining the transformation, ``kind`` is the kind of transformation,
             ``impl`` is the implementation with signature ``impl(tcls, self,
             *args, **kw)``, ``doc`` is the docstring.
         """
+        if superclasses:
+            source = cls._alltransf().items
+        else:
+            def source():
+                for name, transf in cls._transf.items():
+                    yield name, (cls, transf)
         return {
-            name: (tcls, transf.kind, transf.func, transf.doc)
-            for name, (tcls, transf) in cls._alltransf().items()
+            name: cls.Transf(tcls, transf.kind, transf.func, transf.doc)
+            for name, (tcls, transf) in source()
         }
+
+    Transf = collections.namedtuple('Transf', ['tcls', 'kind', 'func', 'doc'])
 
     @classmethod
     def has_transf(cls, transfname):
@@ -517,30 +530,6 @@ class CrossKernel:
         operands are instances of `Kernel`, but the two operator arguments
         differ, the result is casted to its first non-`Kernel` superclass.
         
-        `CrossKernel` defines the following operations:
-
-        'xtransf' :
-            Arbitrary input transformation.
-        'loc' :
-            Input translation.
-        'scale' :
-            Input rescaling.
-        'dim' :
-            Consider only a subset of dimensions of the input.
-        'maxdim' :
-            Restrict maximum input dimensionality.
-        'diff' :
-            Derivative.
-        'derivable' :
-            Set the degree of differentiability, used by ``'diff'`` for
-            error checking.
-        'rescale' :
-            Multiply the function by another fixed function.
-        'normalize' :
-            Rescale the process to unit variance.
-
-        Subclasses may define their own.
-        
         """
         tcls, transf = self._gettransf(transfname)
         if transf.kind is not self._linopmarker:
@@ -589,17 +578,6 @@ class CrossKernel:
 
         For class determination, scalars in the input count as `IsotropicKernel`
         if nonnegative or traced by jax, else `CrossIsotropicKernel`.
-
-        `CrossKernel` defines the following operations:
-
-        'add' :
-            Binary addition.
-        'mul' :
-            Binary multiplication.
-        'pow' :
-            Exponentiation to nonnegative integer.
-        TODO :
-            LIST OTHER OPERATIONS
 
         """
         tcls, transf = self._gettransf(transfname)
