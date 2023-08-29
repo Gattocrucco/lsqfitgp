@@ -14,9 +14,8 @@ additional arguments. Example::
     K = lgp.ExpQuad()
     Q = (K
         .linop('scale', 2)   # rescale the input
-        .linop('diff', 1, 0) # derive w.r.t. the first argument
         .algop('expm1')      # amplify positive correlations
-        .transf('forcekron') # force the kernel to be a product over dimensions
+        .linop('diff', 1, 0) # derive w.r.t. the first argument
     )
 
 A kernel can access all transformations defined in its superclasses. However,
@@ -26,7 +25,7 @@ superclass which actually defines the transformation. Example::
     K = lgp.ExpQuad()
     assert isinstance(K, lgp.IsotropicKernel)
     Q = K.linop('dim', 'a') # consider only dimension 'a' of the input
-    assert not isinstance(Q, lgp.IsotropicKernel))
+    assert not isinstance(Q, lgp.IsotropicKernel)
 
 Index
 -----
@@ -92,7 +91,7 @@ Transformations
 
         Sum of kernels.
 
-        .. math::
+        .. math:
             \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}(x, y), \\
             \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}.
 
@@ -270,7 +269,7 @@ Transformations
 
         Defined as,
 
-        .. math::
+        .. math:
             I_0(x) = \sum_{k=0}^\infty \frac{(x^2/4)^k}{(k!)^2} = J_0(\imath x),
 
         where :math:`J_0` is the Bessel function of the first kind of order 0.
@@ -305,7 +304,7 @@ Transformations
 
         Defined as,
 
-        .. math::
+        .. math:
             I_1(x) = \frac{1}{2}x \sum_{k=0}^\infty \frac{(x^2/4)^k}{k! (k + 1)!}
                    = -\imath J_1(\imath x),
 
@@ -335,7 +334,7 @@ Transformations
 
         Product of kernels.
 
-        .. math::
+        .. math:
             \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}(x, y), \\
             \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}.
 
@@ -353,7 +352,7 @@ Transformations
 
         Power of the kernel.
 
-        .. math::
+        .. math:
             \mathrm{newkernel}(x, y) = \mathrm{kernel}(x, y)^{\mathrm{exponent}}
 
         Parameters
@@ -370,7 +369,7 @@ Transformations
 
         Exponentiation of the kernel.
 
-        .. math::
+        .. math:
             \text{newkernel}(x, y) = \text{base}^{\text{kernel}(x, y)}
 
         Parameters
@@ -450,7 +449,7 @@ Transformations
 
         Switch between two independent processes based on a condition.
 
-        .. math::
+        .. math:
             T(f, g)(x) = \begin{cases}
                 f(x) & \text{if $\mathrm{cond}(x)$,} \\
                 g(x) & \text{otherwise.}
@@ -493,7 +492,7 @@ Transformations
 
         Derive the function.
 
-        .. math::
+        .. math:
             T(f)(x) = \frac{\partial^n f}{\partial x^n} (x)
 
         Parameters
@@ -513,7 +512,7 @@ Transformations
 
     .. code-block:: text
 
-        Restrict the function to a field of a structured input::
+        Restrict the function to a field of a structured input:
 
             T(f)(x) = f(x[dim])
 
@@ -535,7 +534,7 @@ Transformations
 
         Compute the Fourier series transform of the function.
 
-        .. math::
+        .. math:
 
             T(f)(k) = \begin{cases}
                     \frac2T \int_0^T \mathrm dx\, f(x)
@@ -557,7 +556,7 @@ Transformations
 
         Translate the process inputs:
 
-        .. math::
+        .. math:
             T(f)(x) = f(x - \mathrm{loc})
 
         Parameters
@@ -594,7 +593,7 @@ Transformations
 
         Rescale the process to unit variance.
 
-        .. math::
+        .. math:
             T(f)(x) &= f(x) / \sqrt{\mathrm{Std}[f(x)]} \\
                     &= f(x) / \sqrt{\mathrm{kernel}(x, x)}
 
@@ -612,7 +611,7 @@ Transformations
 
         Rescale the output of the function.
 
-        .. math::
+        .. math:
             T(f)(x) = \mathrm{xfun}(x) f(x)
 
         Parameters
@@ -629,7 +628,7 @@ Transformations
 
         Rescale the process inputs:
 
-        .. math::
+        .. math:
             T(f)(x) = f(x / \mathrm{scale})
 
         Parameters
@@ -646,7 +645,7 @@ Transformations
 
         Transform the inputs of the function.
 
-        .. math::
+        .. math:
             T(f)(x) = f(\mathrm{fun}(x))
 
         Parameters
@@ -664,7 +663,7 @@ Transformations
 
         Force the kernel to be a separate product over dimensions:
 
-        .. math::
+        .. math:
             \mathrm{newkernel}(x, y) = \prod_i \mathrm{kernel}(x_i, y_i)
 
         Returns
