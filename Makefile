@@ -38,7 +38,7 @@ all:
 	@echo " 1) remove .devN suffix from version in src/lsqfitgp/__init__.py"
 	@echo " 2) describe release in docs/development/changelog.md"
 	@echo " 3) link versioned docs in docs/index.rst"
-	@echo " 4) push and check CI completes"
+	@echo " 4) commit, push and check CI completes"
 	@echo " 5) $$ make release"
 	@echo " 6) $$ make upload"
 	@echo " 7) publish the github release"

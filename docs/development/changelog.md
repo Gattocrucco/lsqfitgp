@@ -24,6 +24,35 @@
 # Changelog
 
 
+## 0.20. Kernels, kernels, kernels. All you can think about is covariance functions. I am sick of your kernels. I am sick of cleaning the leftover eigenspaces you leave on the carpet when you come home, late in the night, after spending all day hewing positive semidefinite operators. I am sick of hearing your breath, the stale unique acrid smell that fills the algebraists' workrooms, wafting through the linen to my nostrils. Go away. Go away from here and rest with your beloved kernels! (2023-08-29)
+
+### Release highlights
+
+  * Improvements to the kernel system.
+  * `GP` objects are immutable.
+
+### Kernels
+
+  * Coherent logic to determine the class of the result of operations on kernels.
+  * Each generic class has it own `Cross*` superclass representing crosskernels.
+  * Decorators to make crosskernels.
+  * Transformation system with clear semantics for linear operators and algebraic operations.
+  * Exponentiation `scalar ** kernel`.
+  * Replaced `diff` and `where` with linear operators.
+  * Hardcoded non-fuzzy derivability check. May yield false positives when additional derivatives are taken by an outer context, but disabling it is easy.
+  * Fix derivation on crosskernels when one input is scalar and the other is structured.
+
+### GP
+
+  * GP objects are immutable: operations can only return a new, different object. This makes them more compatible with jax and reduces chances of errors.
+  * Change name and signature of methods to define processes: the prefix is `def` instead of `add`, and the first argument is always the key of the new process.
+  * GP methods that return dictionaries use ordinary Python `dict`s instead of `gvar.BufferDict`.
+
+### gvar-related
+
+  * Context manager `switchgvar` to avoid accumulating gvars in memory in long running loops.
+
+
 ## 0.19. Miss the Forest for Two Forests and an Auxiliary Regression Term (2023-08-22)
 
 ### Release highlights

@@ -157,29 +157,52 @@ def get_sig(name, tlist):
         s = s + f'[, {last}]'
     return f"('{name}', {s})"
 
+TRY_NATIVE = False
+
 # format each transformation
 for name, tlist in table.select('name', 'tlist').iter_rows():
     tlist = transfs[name]
     t = tlist[0]
     meth = kind[t.kind]
-    out += f"""
+
+    if TRY_NATIVE:
+        if t.func.__name__ == '<lambda>':
+            continue
+        if not t.func.__module__.startswith('lsqfitgp'):
+            continue
+        out += f"""
+.. autofunction:: {t.func.__module__}.{t.func.__name__}
+"""
+
+    else:
+        out += f"""
 .. _{name}:
 .. method:: CrossKernel.{meth}{get_sig(name, tlist)}
     :no-index:
 """
-    if t.doc:
-        doc = textwrap.dedent(t.doc).strip()
-        doc = textwrap.indent(doc, '        ')
-        out += f"""
+        if t.doc:
+            doc = textwrap.dedent(t.doc).strip()
+            doc = textwrap.indent(doc, '        ')
+            out += f"""
     .. code-block:: text
 
 {doc}
 
 """
 
-# TODO maybe I can use https://www.sphinx-doc.org/en/master/extdev/appapi.html#sphinx.application.Sphinx.add_object_type
-
 # write file
 outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
 print(f'writing to {outfile}...')
 outfile.write_text(out)
+
+# TODO make the doc proper. I need to reference actual functions.
+# - have to use autofunction to let numpydoc do its thing to the docstring
+# - there must be an actual named internal object to be referenced, so no
+#   external ufuncs and no lambdas in the definitions
+# - Instead of module_path.name(..., I want lsqfitgp.CrossKernel.transf('name', ...)
+# - Can I do that with sphinx templates? If I can, can I make that happen
+#   only at specific places?
+# - Can I brute force postprocess something which is still purely semantical
+#   that comes before the html? => I see no text files in _build post-facto
+# => Perhaps the best way would be reading Sphinxe's customization manual from
+# start to finish.

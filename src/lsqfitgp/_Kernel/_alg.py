@@ -96,6 +96,10 @@ def pow(self, *, exponent):
         return NotImplemented
     return self._clone(_core=core)
 
+    # TODO this will raise TypeError on negative integers. It should stop
+    # method search and raise ValueError. Same for rpow. Check if it is a
+    # scalar, then check if it satisfies the bound.
+
 @CrossKernel.register_algop
 def rpow(self, *, base):
     r"""
@@ -103,7 +107,7 @@ def rpow(self, *, base):
     Exponentiation of the kernel.
     
     .. math::
-        \text{newkernel}(x, y) = \text{base}^\text{kernel}(x, y)
+        \text{newkernel}(x, y) = \text{base}^{\text{kernel}(x, y)}
     
     Parameters
     ----------
