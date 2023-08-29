@@ -47,7 +47,7 @@
 
 <h3>Navigation</h3>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="userguide.html">User guide</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="userguide.html">Guide</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="installation.html">1. Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sine.html">2. First example: a sine</a></li>
 <li class="toctree-l2"><a class="reference internal" href="kernels.html">3. More on kernels</a></li>
@@ -64,7 +64,7 @@
 <li class="toctree-l2"><a class="reference internal" href="optim.html">14. Optimization</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../reference/reference.html">Reference manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/reference.html">Reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../development/development.html">Development</a></li>
 </ul>
@@ -73,7 +73,7 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-  <li><a href="userguide.html">User guide</a><ul>
+  <li><a href="userguide.html">Guide</a><ul>
       <li>Previous: <a href="components.html" title="previous chapter"><span class="section-number">10. </span>Splitting components</a></li>
       <li>Next: <a href="hyperstruct.html" title="next chapter"><span class="section-number">12. </span>Hyperparameters in the input</a></li>
   </ul></li>
@@ -169,11 +169,11 @@ hyperparameters.</p>
 <p>Then we specified a “hyperprior” for the hyperparameters (if you want to fit
 something you need a prior on it, there’s no way out of this). The function
 <code class="docutils literal notranslate"><span class="pre">makegp</span></code> extracts a key <code class="docutils literal notranslate"><span class="pre">'scale'</span></code> from the dictionary, but in the
-hyperprior we used <code class="docutils literal notranslate"><span class="pre">'log(scale)'</span></code>. This is a general feature of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.12)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>,
+hyperprior we used <code class="docutils literal notranslate"><span class="pre">'log(scale)'</span></code>. This is a general feature of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.13)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>,
 that it can automatically apply the inverse of the transformation specified in
 the key. It doesn’t work out of the box with any function: by default only the
 logarithm is supported; you can add other functions with
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v11.11.12)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution()</span></code></a>, or use the <a class="reference internal" href="../reference/copula.html#module-lsqfitgp.copula" title="lsqfitgp.copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copula</span></code></a> module to define
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v11.11.13)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution()</span></code></a>, or use the <a class="reference internal" href="../reference/copula.html#module-lsqfitgp.copula" title="lsqfitgp.copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copula</span></code></a> module to define
 them automatically.</p>
 <p>This means that the parameter we are actually fitting is the logarithm of the
 scale. Something like this is necessary because the scale must be a positive
@@ -529,7 +529,7 @@ period 6.280(18)
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.4</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Kernel operations &#8212; lsqfitgp documentation</title>
+    <title>Kernel transformations &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
     <script src="../_static/documentation_options.js?v=1b5e2a23"></script>
@@ -46,12 +46,12 @@
 
 <h3>Navigation</h3>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">User guide</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference manual</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="kernelsref.html">Predefined kernels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="kernel.html">Generic kernel classes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="kerneldec.html">Kernel decorators</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Kernel operations</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Kernel transformations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays</a></li>
@@ -70,7 +70,7 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-  <li><a href="reference.html">Reference manual</a><ul>
+  <li><a href="reference.html">Reference</a><ul>
       <li>Previous: <a href="kerneldec.html" title="previous chapter">Kernel decorators</a></li>
       <li>Next: <a href="deriv.html" title="next chapter">Derivative specification</a></li>
   </ul></li>
@@ -118,44 +118,750 @@
 
           <div class="body" role="main">
             
-  <section id="kernel-operations">
-<span id="kernelop"></span><h1>Kernel operations<a class="headerlink" href="#kernel-operations" title="Link to this heading">¶</a></h1>
-<p>Beside addition, multiplication and power, the function <a class="reference internal" href="#lsqfitgp.where" title="lsqfitgp.where"><code class="xref py py-func docutils literal notranslate"><span class="pre">where()</span></code></a> can be
-used to make a kernel that switches between two kernels based on a local
-condition.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="lsqfitgp.where">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">where</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">condfun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel2</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_where.py#L24-L66"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.where" title="Link to this definition">¶</a></dt>
-<dd><p>Make the kernel of the choice between two independent processes.</p>
-<p>Make a kernel(x, y) that yields:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">kernel1(x,</span> <span class="pre">y)</span></code> where <code class="docutils literal notranslate"><span class="pre">condfun(x)</span> <span class="pre">&amp;</span> <span class="pre">condfun(y)</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">kernel2(x,</span> <span class="pre">y)</span></code> where <code class="docutils literal notranslate"><span class="pre">~condfun(x)</span> <span class="pre">&amp;</span> <span class="pre">~condfun(y)</span></code></p></li>
-<li><p>zero where <code class="docutils literal notranslate"><span class="pre">condfun(x)</span> <span class="pre">^</span> <span class="pre">condfun(y)</span></code></p></li>
-</ul>
-</div></blockquote>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>condfun</strong><span class="classifier">callable</span></dt><dd><p>Function that is applied on an array of points and must return
-a boolean array with the same shape.</p>
-</dd>
-<dt><strong>kernel1</strong><span class="classifier">Kernel</span></dt><dd><p>Kernel of the process used where <code class="xref py py-obj docutils literal notranslate"><span class="pre">condfun</span></code> yields <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
-</dd>
-<dt><strong>kernel2</strong><span class="classifier">Kernel</span></dt><dd><p>Kernel of the process used where <code class="xref py py-obj docutils literal notranslate"><span class="pre">condfun</span></code> yields <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>kernel</strong><span class="classifier">Kernel</span></dt><dd><p>The conditional kernel.</p>
-</dd>
-</dl>
-</dd>
-</dl>
+  <section id="kernel-transformations">
+<h1>Kernel transformations<a class="headerlink" href="#kernel-transformations" title="Link to this heading">¶</a></h1>
+<p>Kernel transformations are applied through the <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a> methods
+<a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a>, <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a>, <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a>. A
+transformation returns a new kernel object derived from the input ones and
+additional arguments. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
+<span class="n">K</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">()</span>
+<span class="n">Q</span> <span class="o">=</span> <span class="p">(</span><span class="n">K</span>
+    <span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>   <span class="c1"># rescale the input</span>
+    <span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;diff&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># derive w.r.t. the first argument</span>
+    <span class="o">.</span><span class="n">algop</span><span class="p">(</span><span class="s1">&#39;expm1&#39;</span><span class="p">)</span>      <span class="c1"># amplify positive correlations</span>
+    <span class="o">.</span><span class="n">transf</span><span class="p">(</span><span class="s1">&#39;forcekron&#39;</span><span class="p">)</span> <span class="c1"># force the kernel to be a product over dimensions</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>A kernel can access all transformations defined in its superclasses. However,
+most transformations will regress the class of the output at least to the
+superclass which actually defines the transformation. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">K</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">()</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">lgp</span><span class="o">.</span><span class="n">IsotropicKernel</span><span class="p">)</span>
+<span class="n">Q</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;dim&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="c1"># consider only dimension &#39;a&#39; of the input</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">lgp</span><span class="o">.</span><span class="n">IsotropicKernel</span><span class="p">))</span>
+</pre></div>
+</div>
+<section id="index">
+<h2>Index<a class="headerlink" href="#index" title="Link to this heading">¶</a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Classes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#log1p-x">-log1p(-x)</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#x">1/(1-x)</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#arccos">1/arccos</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#cos">1/cos</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#add">add</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#arcsin">arcsin</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#arctanh">arctanh</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#cosh">cosh</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#exp">exp</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#expm1">expm1</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#expm1x">expm1x</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#i0">i0</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#i1">i1</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#mul">mul</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#pow">pow</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#rpow">rpow</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#sinh">sinh</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#tan">tan</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#cond">cond</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#derivable">derivable</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#diff">diff</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>, <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#dim">dim</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>, <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>, <a class="reference internal" href="kernel.html#lsqfitgp.CrossStationaryKernel" title="lsqfitgp.CrossStationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossStationaryKernel</span></code></a>, <a class="reference internal" href="kernel.html#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#fourier">fourier</a></p></td>
+<td><p><a class="reference internal" href="kernelsref.html#lsqfitgp.Zeta" title="lsqfitgp.Zeta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Zeta</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#loc">loc</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#maxdim">maxdim</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#normalize">normalize</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#rescale">rescale</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#scale">scale</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#generickernel"><span class="std std-ref">All generic classes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a></p></td>
+<td><p><a class="reference internal" href="#xtransf">xtransf</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>, <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></p></td>
+<td><p><a class="reference internal" href="#forcekron">forcekron</a></p></td>
+<td><p><a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="transformations">
+<h2>Transformations<a class="headerlink" href="#transformations" title="Link to this heading">¶</a></h2>
+<dl class="py method" id="log1p-x">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'-log1p(-x)'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd></dd></dl>
+
+<dl class="py method" id="x">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'1/(1-x)'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd></dd></dl>
+
+<dl class="py method" id="arccos">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'1/arccos'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd></dd></dl>
+
+<dl class="py method" id="cos">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'1/cos'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd></dd></dl>
+
+<dl class="py method" id="add">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'add'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Sum of kernels.
+
+.. math::
+    \mathrm{newkernel}(x, y) &amp;= \mathrm{kernel}(x, y) + \mathrm{other}(x, y), \\
+    \mathrm{newkernel}(x, y) &amp;= \mathrm{kernel}(x, y) + \mathrm{other}.
+
+Parameters
+----------
+other : CrossKernel or scalar
+    The other kernel.
+</pre></div>
+</div>
 </dd></dl>
 
+<dl class="py method" id="arcsin">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'arcsin'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Inverse sine, element-wise.
+
+LAX-backend implementation of :func:`numpy.arcsin`.
+
+*Original docstring below.*
+
+Parameters
+----------
+x : array_like
+    `y`-coordinate on the unit circle.
+
+Returns
+-------
+angle : ndarray
+    The inverse sine of each element in `x`, in radians and in the
+    closed interval ``[-pi/2, pi/2]``.
+    This is a scalar if `x` is a scalar.
+
+References
+----------
+Abramowitz, M. and Stegun, I. A., *Handbook of Mathematical Functions*,
+10th printing, New York: Dover, 1964, pp. 79ff.
+https://personal.math.ubc.ca/~cbm/aands/page_79.htm
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="arctanh">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'arctanh'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Inverse hyperbolic tangent element-wise.
+
+LAX-backend implementation of :func:`numpy.arctanh`.
+
+*Original docstring below.*
+
+Parameters
+----------
+x : array_like
+    Input array.
+
+Returns
+-------
+out : ndarray or scalar
+    Array of the same shape as `x`.
+    This is a scalar if `x` is a scalar.
+
+References
+----------
+.. [1] M. Abramowitz and I.A. Stegun, &quot;Handbook of Mathematical Functions&quot;,
+       10th printing, 1964, pp. 86.
+       https://personal.math.ubc.ca/~cbm/aands/page_86.htm
+.. [2] Wikipedia, &quot;Inverse hyperbolic function&quot;,
+       https://en.wikipedia.org/wiki/Arctanh
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="cosh">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'cosh'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Hyperbolic cosine, element-wise.
+
+LAX-backend implementation of :func:`numpy.cosh`.
+
+*Original docstring below.*
+
+Equivalent to ``1/2 * (np.exp(x) + np.exp(-x))`` and ``np.cos(1j*x)``.
+
+Parameters
+----------
+x : array_like
+    Input array.
+
+Returns
+-------
+out : ndarray or scalar
+    Output array of same shape as `x`.
+    This is a scalar if `x` is a scalar.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="exp">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'exp'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Calculate the exponential of all elements in the input array.
+
+LAX-backend implementation of :func:`numpy.exp`.
+
+*Original docstring below.*
+
+Parameters
+----------
+x : array_like
+    Input values.
+
+Returns
+-------
+out : ndarray or scalar
+    Output array, element-wise exponential of `x`.
+    This is a scalar if `x` is a scalar.
+
+References
+----------
+.. [1] Wikipedia, &quot;Exponential function&quot;,
+       https://en.wikipedia.org/wiki/Exponential_function
+.. [2] M. Abramovitz and I. A. Stegun, &quot;Handbook of Mathematical Functions
+       with Formulas, Graphs, and Mathematical Tables,&quot; Dover, 1964, p. 69,
+       https://personal.math.ubc.ca/~cbm/aands/page_69.htm
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="expm1">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'expm1'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Calculate ``exp(x) - 1`` for all elements in the array.
+
+LAX-backend implementation of :func:`numpy.expm1`.
+
+*Original docstring below.*
+
+Parameters
+----------
+x : array_like
+    Input values.
+
+Returns
+-------
+out : ndarray or scalar
+    Element-wise exponential minus one: ``out = exp(x) - 1``.
+    This is a scalar if `x` is a scalar.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="expm1x">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'expm1x'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Compute accurately exp(x) - 1 - x = x^2/2 1F1(1, 3, x).
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="i0">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'i0'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Modified Bessel function of order 0.
+
+LAX-backend implementation of :func:`scipy.special.i0`.
+
+*Original docstring below.*
+
+Defined as,
+
+.. math::
+    I_0(x) = \sum_{k=0}^\infty \frac{(x^2/4)^k}{(k!)^2} = J_0(\imath x),
+
+where :math:`J_0` is the Bessel function of the first kind of order 0.
+
+Parameters
+----------
+x : array_like
+    Argument (float)
+
+Returns
+-------
+I : scalar or ndarray
+    Value of the modified Bessel function of order 0 at `x`.
+
+References
+----------
+.. [1] Cephes Mathematical Functions Library,
+       http://www.netlib.org/cephes/
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="i1">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'i1'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Modified Bessel function of order 1.
+
+LAX-backend implementation of :func:`scipy.special.i1`.
+
+*Original docstring below.*
+
+Defined as,
+
+.. math::
+    I_1(x) = \frac{1}{2}x \sum_{k=0}^\infty \frac{(x^2/4)^k}{k! (k + 1)!}
+           = -\imath J_1(\imath x),
+
+where :math:`J_1` is the Bessel function of the first kind of order 1.
+
+Parameters
+----------
+x : array_like
+    Argument (float)
+
+Returns
+-------
+I : scalar or ndarray
+    Value of the modified Bessel function of order 1 at `x`.
+
+References
+----------
+.. [1] Cephes Mathematical Functions Library,
+       http://www.netlib.org/cephes/
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="mul">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'mul'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Product of kernels.
+
+.. math::
+    \mathrm{newkernel}(x, y) &amp;= \mathrm{kernel}(x, y) \cdot \mathrm{other}(x, y), \\
+    \mathrm{newkernel}(x, y) &amp;= \mathrm{kernel}(x, y) \cdot \mathrm{other}.
+
+Parameters
+----------
+other : CrossKernel or scalar
+    The other kernel.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="pow">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'pow'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Power of the kernel.
+
+.. math::
+    \mathrm{newkernel}(x, y) = \mathrm{kernel}(x, y)^{\mathrm{exponent}}
+
+Parameters
+----------
+exponent : nonnegative integer
+    The exponent. If traced by jax, it must have unsigned integer type.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="rpow">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'rpow'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Exponentiation of the kernel.
+
+.. math::
+    \text{newkernel}(x, y) = \text{base}^\text{kernel}(x, y)
+
+Parameters
+----------
+base : scalar
+    A number &gt;= 1. If traced by jax, the value is not checked.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="sinh">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'sinh'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Hyperbolic sine, element-wise.
+
+LAX-backend implementation of :func:`numpy.sinh`.
+
+*Original docstring below.*
+
+Equivalent to ``1/2 * (np.exp(x) - np.exp(-x))`` or
+``-1j * np.sin(1j*x)``.
+
+Parameters
+----------
+x : array_like
+    Input array.
+
+Returns
+-------
+y : ndarray
+    The corresponding hyperbolic sine values.
+    This is a scalar if `x` is a scalar.
+
+References
+----------
+M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions.
+New York, NY: Dover, 1972, pg. 83.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="tan">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'tan'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Compute tangent element-wise.
+
+LAX-backend implementation of :func:`numpy.tan`.
+
+*Original docstring below.*
+
+Equivalent to ``np.sin(x)/np.cos(x)`` element-wise.
+
+Parameters
+----------
+x : array_like
+    Input array.
+
+Returns
+-------
+y : ndarray
+    The corresponding tangent values.
+    This is a scalar if `x` is a scalar.
+
+References
+----------
+M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions.
+New York, NY: Dover, 1972.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="cond">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'cond'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Switch between two independent processes based on a condition.
+
+.. math::
+    T(f, g)(x) = \begin{cases}
+        f(x) &amp; \text{if $\mathrm{cond}(x)$,} \\
+        g(x) &amp; \text{otherwise.}
+    \end{cases}
+
+Parameters
+----------
+cond1, cond2 : callable
+    Function that is applied on an array of points and must return
+    a boolean array with the same shape.
+other :
+    Kernel of the process used where the condition is false.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="derivable">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'derivable'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Specify the degree of derivability of the function.
+
+Parameters
+----------
+xderivable, yderivable: int or None
+    Degree of derivability of the function. None means unknown.
+
+Notes
+-----
+The derivability check is hardcoded into the kernel core and it is not
+possible to remove it afterwards by applying ``&#39;derivable&#39;`` again with a
+higher limit.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="diff">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'diff'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Derive the function.
+
+.. math::
+    T(f)(x) = \frac{\partial^n f}{\partial x^n} (x)
+
+Parameters
+----------
+xderiv, yderiv : Deriv_like
+    A `Deriv` or something that can be converted to a `Deriv`.
+
+Raises
+------
+RuntimeError
+    The derivative orders are greater than the `derivative` attribute.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="dim">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'dim'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Restrict the function to a field of a structured input::
+
+    T(f)(x) = f(x[dim])
+
+If the array is not structured, an exception is raised. If the field for
+name `dim` has a nontrivial shape, the array passed to the kernel is still
+structured but has only field `dim`.
+
+Parameters
+----------
+xdim, ydim: None, str, list of str
+    Field names or lists of field names.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="fourier">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'fourier'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Compute the Fourier series transform of the function.
+
+.. math::
+
+    T(f)(k) = \begin{cases}
+            \frac2T \int_0^T \mathrm dx\, f(x)
+            \cos\left(\frac{2\pi}T \frac k2 x\right)
+            &amp; \text{if $k$ is even} \\
+            \frac2T \int_0^T \mathrm dx\, f(x)
+            \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
+            &amp; \text{if $k$ is odd}
+        \end{cases}
+
+The period :math:`T` is 1.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="loc">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'loc'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Translate the process inputs:
+
+.. math::
+    T(f)(x) = f(x - \mathrm{loc})
+
+Parameters
+----------
+xloc, yloc: None, number
+    Translations.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="maxdim">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'maxdim'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Restrict the process to a maximum input dimensionality.
+
+Parameters
+----------
+xmaxdim, ymaxdim: None, int
+    Maximum dimensionality of the input.
+
+Notes
+-----
+Once applied a restriction, the check is hardcoded into the kernel core and
+it is not possible to remove it by applying again `maxdim` with a larger
+limit.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="normalize">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'normalize'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Rescale the process to unit variance.
+
+.. math::
+    T(f)(x) &amp;= f(x) / \sqrt{\mathrm{Std}[f(x)]} \\
+            &amp;= f(x) / \sqrt{\mathrm{kernel}(x, x)}
+
+Parameters
+----------
+dox, doy : bool
+    Whether to rescale.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="rescale">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'rescale'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Rescale the output of the function.
+
+.. math::
+    T(f)(x) = \mathrm{xfun}(x) f(x)
+
+Parameters
+----------
+xfun, yfun : callable or None
+    Functions from the type of the arguments of the kernel to scalar.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="scale">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'scale'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Rescale the process inputs:
+
+.. math::
+    T(f)(x) = f(x / \mathrm{scale})
+
+Parameters
+----------
+xscale, yscale: None, number
+    Rescaling factors.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="xtransf">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'xtransf'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Transform the inputs of the function.
+
+.. math::
+    T(f)(x) = f(\mathrm{fun}(x))
+
+Parameters
+----------
+xfun, yfun : callable or None
+    Functions mapping a new kind of input to the kind of input accepted by
+    the kernel.
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method" id="forcekron">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'forcekron'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L453-L481"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Force the kernel to be a separate product over dimensions:
+
+.. math::
+    \mathrm{newkernel}(x, y) = \prod_i \mathrm{kernel}(x_i, y_i)
+
+Returns
+-------
+newkernel : Kernel
+    The transformed kernel.
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
 </section>
 
 
@@ -184,7 +890,7 @@ a boolean array with the same shape.</p>
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.4</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

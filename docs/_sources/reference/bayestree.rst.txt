@@ -55,11 +55,13 @@ Index
 -----
 `bart`, `bcf`
 
-Documentation
--------------
+Classes
+-------
 
 .. autoclass:: lsqfitgp.bayestree.bart
     :members:
+
+--------
 
 .. autoclass:: lsqfitgp.bayestree.bcf
     :members:

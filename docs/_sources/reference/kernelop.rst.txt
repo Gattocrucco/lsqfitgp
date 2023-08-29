@@ -1,31 +1,674 @@
-.. lsqfitgp/docs/reference/kernelop.rst
-..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
-..
-.. This file is part of lsqfitgp.
-..
-.. lsqfitgp is free software: you can redistribute it and/or modify
-.. it under the terms of the GNU General Public License as published by
-.. the Free Software Foundation, either version 3 of the License, or
-.. (at your option) any later version.
-..
-.. lsqfitgp is distributed in the hope that it will be useful,
-.. but WITHOUT ANY WARRANTY; without even the implied warranty of
-.. MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-.. GNU General Public License for more details.
-..
-.. You should have received a copy of the GNU General Public License
-.. along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+.. file generated automatically by lsqfitgp/docs/reference/kernelop.py
 
 .. currentmodule:: lsqfitgp
 
-.. _kernelop:
+Kernel transformations
+======================
 
-Kernel operations
-=================
+Kernel transformations are applied through the `CrossKernel` methods
+`~CrossKernel.transf`, `~CrossKernel.linop`, `~CrossKernel.algop`. A
+transformation returns a new kernel object derived from the input ones and
+additional arguments. Example::
 
-Beside addition, multiplication and power, the function :func:`where` can be
-used to make a kernel that switches between two kernels based on a local
-condition.
+    import lsqfitgp as lgp
+    K = lgp.ExpQuad()
+    Q = (K
+        .linop('scale', 2)   # rescale the input
+        .linop('diff', 1, 0) # derive w.r.t. the first argument
+        .algop('expm1')      # amplify positive correlations
+        .transf('forcekron') # force the kernel to be a product over dimensions
+    )
 
-.. autofunction:: where
+A kernel can access all transformations defined in its superclasses. However,
+most transformations will regress the class of the output at least to the
+superclass which actually defines the transformation. Example::
+
+    K = lgp.ExpQuad()
+    assert isinstance(K, lgp.IsotropicKernel)
+    Q = K.linop('dim', 'a') # consider only dimension 'a' of the input
+    assert not isinstance(Q, lgp.IsotropicKernel))
+
+Index
+-----
+=====================  =============  ====================================================================
+Method                 Name           Classes
+=====================  =============  ====================================================================
+`~CrossKernel.algop`   `-log1p(-x)`_  :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `1/(1-x)`_     :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `1/arccos`_    :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `1/cos`_       :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `add`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `arcsin`_      :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `arctanh`_     :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `cosh`_        :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `exp`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `expm1`_       :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `expm1x`_      :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `i0`_          :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `i1`_          :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `mul`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `pow`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `rpow`_        :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `sinh`_        :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `tan`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `cond`_        :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `derivable`_   :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `diff`_        `CrossKernel`, `Kernel`
+`~CrossKernel.linop`   `dim`_         `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`
+`~CrossKernel.linop`   `fourier`_     `Zeta`
+`~CrossKernel.linop`   `loc`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `maxdim`_      :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `normalize`_   :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `rescale`_     :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `scale`_       :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `xtransf`_     `CrossKernel`, `Kernel`
+`~CrossKernel.transf`  `forcekron`_   `Kernel`
+=====================  =============  ====================================================================
+
+Transformations
+---------------
+
+.. _-log1p(-x):
+.. method:: CrossKernel.algop('-log1p(-x)')
+    :no-index:
+
+.. _1/(1-x):
+.. method:: CrossKernel.algop('1/(1-x)')
+    :no-index:
+
+.. _1/arccos:
+.. method:: CrossKernel.algop('1/arccos')
+    :no-index:
+
+.. _1/cos:
+.. method:: CrossKernel.algop('1/cos')
+    :no-index:
+
+.. _add:
+.. method:: CrossKernel.algop('add')
+    :no-index:
+
+    .. code-block:: text
+
+        Sum of kernels.
+
+        .. math::
+            \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}(x, y), \\
+            \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}.
+
+        Parameters
+        ----------
+        other : CrossKernel or scalar
+            The other kernel.
+
+
+.. _arcsin:
+.. method:: CrossKernel.algop('arcsin')
+    :no-index:
+
+    .. code-block:: text
+
+        Inverse sine, element-wise.
+
+        LAX-backend implementation of :func:`numpy.arcsin`.
+
+        *Original docstring below.*
+
+        Parameters
+        ----------
+        x : array_like
+            `y`-coordinate on the unit circle.
+
+        Returns
+        -------
+        angle : ndarray
+            The inverse sine of each element in `x`, in radians and in the
+            closed interval ``[-pi/2, pi/2]``.
+            This is a scalar if `x` is a scalar.
+
+        References
+        ----------
+        Abramowitz, M. and Stegun, I. A., *Handbook of Mathematical Functions*,
+        10th printing, New York: Dover, 1964, pp. 79ff.
+        https://personal.math.ubc.ca/~cbm/aands/page_79.htm
+
+
+.. _arctanh:
+.. method:: CrossKernel.algop('arctanh')
+    :no-index:
+
+    .. code-block:: text
+
+        Inverse hyperbolic tangent element-wise.
+
+        LAX-backend implementation of :func:`numpy.arctanh`.
+
+        *Original docstring below.*
+
+        Parameters
+        ----------
+        x : array_like
+            Input array.
+
+        Returns
+        -------
+        out : ndarray or scalar
+            Array of the same shape as `x`.
+            This is a scalar if `x` is a scalar.
+
+        References
+        ----------
+        .. [1] M. Abramowitz and I.A. Stegun, "Handbook of Mathematical Functions",
+               10th printing, 1964, pp. 86.
+               https://personal.math.ubc.ca/~cbm/aands/page_86.htm
+        .. [2] Wikipedia, "Inverse hyperbolic function",
+               https://en.wikipedia.org/wiki/Arctanh
+
+
+.. _cosh:
+.. method:: CrossKernel.algop('cosh')
+    :no-index:
+
+    .. code-block:: text
+
+        Hyperbolic cosine, element-wise.
+
+        LAX-backend implementation of :func:`numpy.cosh`.
+
+        *Original docstring below.*
+
+        Equivalent to ``1/2 * (np.exp(x) + np.exp(-x))`` and ``np.cos(1j*x)``.
+
+        Parameters
+        ----------
+        x : array_like
+            Input array.
+
+        Returns
+        -------
+        out : ndarray or scalar
+            Output array of same shape as `x`.
+            This is a scalar if `x` is a scalar.
+
+
+.. _exp:
+.. method:: CrossKernel.algop('exp')
+    :no-index:
+
+    .. code-block:: text
+
+        Calculate the exponential of all elements in the input array.
+
+        LAX-backend implementation of :func:`numpy.exp`.
+
+        *Original docstring below.*
+
+        Parameters
+        ----------
+        x : array_like
+            Input values.
+
+        Returns
+        -------
+        out : ndarray or scalar
+            Output array, element-wise exponential of `x`.
+            This is a scalar if `x` is a scalar.
+
+        References
+        ----------
+        .. [1] Wikipedia, "Exponential function",
+               https://en.wikipedia.org/wiki/Exponential_function
+        .. [2] M. Abramovitz and I. A. Stegun, "Handbook of Mathematical Functions
+               with Formulas, Graphs, and Mathematical Tables," Dover, 1964, p. 69,
+               https://personal.math.ubc.ca/~cbm/aands/page_69.htm
+
+
+.. _expm1:
+.. method:: CrossKernel.algop('expm1')
+    :no-index:
+
+    .. code-block:: text
+
+        Calculate ``exp(x) - 1`` for all elements in the array.
+
+        LAX-backend implementation of :func:`numpy.expm1`.
+
+        *Original docstring below.*
+
+        Parameters
+        ----------
+        x : array_like
+            Input values.
+
+        Returns
+        -------
+        out : ndarray or scalar
+            Element-wise exponential minus one: ``out = exp(x) - 1``.
+            This is a scalar if `x` is a scalar.
+
+
+.. _expm1x:
+.. method:: CrossKernel.algop('expm1x')
+    :no-index:
+
+    .. code-block:: text
+
+        Compute accurately exp(x) - 1 - x = x^2/2 1F1(1, 3, x).
+
+
+.. _i0:
+.. method:: CrossKernel.algop('i0')
+    :no-index:
+
+    .. code-block:: text
+
+        Modified Bessel function of order 0.
+
+        LAX-backend implementation of :func:`scipy.special.i0`.
+
+        *Original docstring below.*
+
+        Defined as,
+
+        .. math::
+            I_0(x) = \sum_{k=0}^\infty \frac{(x^2/4)^k}{(k!)^2} = J_0(\imath x),
+
+        where :math:`J_0` is the Bessel function of the first kind of order 0.
+
+        Parameters
+        ----------
+        x : array_like
+            Argument (float)
+
+        Returns
+        -------
+        I : scalar or ndarray
+            Value of the modified Bessel function of order 0 at `x`.
+
+        References
+        ----------
+        .. [1] Cephes Mathematical Functions Library,
+               http://www.netlib.org/cephes/
+
+
+.. _i1:
+.. method:: CrossKernel.algop('i1')
+    :no-index:
+
+    .. code-block:: text
+
+        Modified Bessel function of order 1.
+
+        LAX-backend implementation of :func:`scipy.special.i1`.
+
+        *Original docstring below.*
+
+        Defined as,
+
+        .. math::
+            I_1(x) = \frac{1}{2}x \sum_{k=0}^\infty \frac{(x^2/4)^k}{k! (k + 1)!}
+                   = -\imath J_1(\imath x),
+
+        where :math:`J_1` is the Bessel function of the first kind of order 1.
+
+        Parameters
+        ----------
+        x : array_like
+            Argument (float)
+
+        Returns
+        -------
+        I : scalar or ndarray
+            Value of the modified Bessel function of order 1 at `x`.
+
+        References
+        ----------
+        .. [1] Cephes Mathematical Functions Library,
+               http://www.netlib.org/cephes/
+
+
+.. _mul:
+.. method:: CrossKernel.algop('mul')
+    :no-index:
+
+    .. code-block:: text
+
+        Product of kernels.
+
+        .. math::
+            \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}(x, y), \\
+            \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}.
+
+        Parameters
+        ----------
+        other : CrossKernel or scalar
+            The other kernel.
+
+
+.. _pow:
+.. method:: CrossKernel.algop('pow')
+    :no-index:
+
+    .. code-block:: text
+
+        Power of the kernel.
+
+        .. math::
+            \mathrm{newkernel}(x, y) = \mathrm{kernel}(x, y)^{\mathrm{exponent}}
+
+        Parameters
+        ----------
+        exponent : nonnegative integer
+            The exponent. If traced by jax, it must have unsigned integer type.
+
+
+.. _rpow:
+.. method:: CrossKernel.algop('rpow')
+    :no-index:
+
+    .. code-block:: text
+
+        Exponentiation of the kernel.
+
+        .. math::
+            \text{newkernel}(x, y) = \text{base}^\text{kernel}(x, y)
+
+        Parameters
+        ----------
+        base : scalar
+            A number >= 1. If traced by jax, the value is not checked.
+
+
+.. _sinh:
+.. method:: CrossKernel.algop('sinh')
+    :no-index:
+
+    .. code-block:: text
+
+        Hyperbolic sine, element-wise.
+
+        LAX-backend implementation of :func:`numpy.sinh`.
+
+        *Original docstring below.*
+
+        Equivalent to ``1/2 * (np.exp(x) - np.exp(-x))`` or
+        ``-1j * np.sin(1j*x)``.
+
+        Parameters
+        ----------
+        x : array_like
+            Input array.
+
+        Returns
+        -------
+        y : ndarray
+            The corresponding hyperbolic sine values.
+            This is a scalar if `x` is a scalar.
+
+        References
+        ----------
+        M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions.
+        New York, NY: Dover, 1972, pg. 83.
+
+
+.. _tan:
+.. method:: CrossKernel.algop('tan')
+    :no-index:
+
+    .. code-block:: text
+
+        Compute tangent element-wise.
+
+        LAX-backend implementation of :func:`numpy.tan`.
+
+        *Original docstring below.*
+
+        Equivalent to ``np.sin(x)/np.cos(x)`` element-wise.
+
+        Parameters
+        ----------
+        x : array_like
+            Input array.
+
+        Returns
+        -------
+        y : ndarray
+            The corresponding tangent values.
+            This is a scalar if `x` is a scalar.
+
+        References
+        ----------
+        M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions.
+        New York, NY: Dover, 1972.
+
+
+.. _cond:
+.. method:: CrossKernel.linop('cond')
+    :no-index:
+
+    .. code-block:: text
+
+        Switch between two independent processes based on a condition.
+
+        .. math::
+            T(f, g)(x) = \begin{cases}
+                f(x) & \text{if $\mathrm{cond}(x)$,} \\
+                g(x) & \text{otherwise.}
+            \end{cases}
+
+        Parameters
+        ----------
+        cond1, cond2 : callable
+            Function that is applied on an array of points and must return
+            a boolean array with the same shape.
+        other :
+            Kernel of the process used where the condition is false.
+
+
+.. _derivable:
+.. method:: CrossKernel.linop('derivable')
+    :no-index:
+
+    .. code-block:: text
+
+        Specify the degree of derivability of the function.
+
+        Parameters
+        ----------
+        xderivable, yderivable: int or None
+            Degree of derivability of the function. None means unknown.
+
+        Notes
+        -----
+        The derivability check is hardcoded into the kernel core and it is not
+        possible to remove it afterwards by applying ``'derivable'`` again with a
+        higher limit.
+
+
+.. _diff:
+.. method:: CrossKernel.linop('diff')
+    :no-index:
+
+    .. code-block:: text
+
+        Derive the function.
+
+        .. math::
+            T(f)(x) = \frac{\partial^n f}{\partial x^n} (x)
+
+        Parameters
+        ----------
+        xderiv, yderiv : Deriv_like
+            A `Deriv` or something that can be converted to a `Deriv`.
+
+        Raises
+        ------
+        RuntimeError
+            The derivative orders are greater than the `derivative` attribute.
+
+
+.. _dim:
+.. method:: CrossKernel.linop('dim')
+    :no-index:
+
+    .. code-block:: text
+
+        Restrict the function to a field of a structured input::
+
+            T(f)(x) = f(x[dim])
+
+        If the array is not structured, an exception is raised. If the field for
+        name `dim` has a nontrivial shape, the array passed to the kernel is still
+        structured but has only field `dim`.
+
+        Parameters
+        ----------
+        xdim, ydim: None, str, list of str
+            Field names or lists of field names.
+
+
+.. _fourier:
+.. method:: CrossKernel.linop('fourier')
+    :no-index:
+
+    .. code-block:: text
+
+        Compute the Fourier series transform of the function.
+
+        .. math::
+
+            T(f)(k) = \begin{cases}
+                    \frac2T \int_0^T \mathrm dx\, f(x)
+                    \cos\left(\frac{2\pi}T \frac k2 x\right)
+                    & \text{if $k$ is even} \\
+                    \frac2T \int_0^T \mathrm dx\, f(x)
+                    \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
+                    & \text{if $k$ is odd}
+                \end{cases}
+
+        The period :math:`T` is 1.
+
+
+.. _loc:
+.. method:: CrossKernel.linop('loc')
+    :no-index:
+
+    .. code-block:: text
+
+        Translate the process inputs:
+
+        .. math::
+            T(f)(x) = f(x - \mathrm{loc})
+
+        Parameters
+        ----------
+        xloc, yloc: None, number
+            Translations.
+
+
+.. _maxdim:
+.. method:: CrossKernel.linop('maxdim')
+    :no-index:
+
+    .. code-block:: text
+
+        Restrict the process to a maximum input dimensionality.
+
+        Parameters
+        ----------
+        xmaxdim, ymaxdim: None, int
+            Maximum dimensionality of the input.
+
+        Notes
+        -----
+        Once applied a restriction, the check is hardcoded into the kernel core and
+        it is not possible to remove it by applying again `maxdim` with a larger
+        limit.
+
+
+.. _normalize:
+.. method:: CrossKernel.linop('normalize')
+    :no-index:
+
+    .. code-block:: text
+
+        Rescale the process to unit variance.
+
+        .. math::
+            T(f)(x) &= f(x) / \sqrt{\mathrm{Std}[f(x)]} \\
+                    &= f(x) / \sqrt{\mathrm{kernel}(x, x)}
+
+        Parameters
+        ----------
+        dox, doy : bool
+            Whether to rescale.
+
+
+.. _rescale:
+.. method:: CrossKernel.linop('rescale')
+    :no-index:
+
+    .. code-block:: text
+
+        Rescale the output of the function.
+
+        .. math::
+            T(f)(x) = \mathrm{xfun}(x) f(x)
+
+        Parameters
+        ----------
+        xfun, yfun : callable or None
+            Functions from the type of the arguments of the kernel to scalar.
+
+
+.. _scale:
+.. method:: CrossKernel.linop('scale')
+    :no-index:
+
+    .. code-block:: text
+
+        Rescale the process inputs:
+
+        .. math::
+            T(f)(x) = f(x / \mathrm{scale})
+
+        Parameters
+        ----------
+        xscale, yscale: None, number
+            Rescaling factors.
+
+
+.. _xtransf:
+.. method:: CrossKernel.linop('xtransf')
+    :no-index:
+
+    .. code-block:: text
+
+        Transform the inputs of the function.
+
+        .. math::
+            T(f)(x) = f(\mathrm{fun}(x))
+
+        Parameters
+        ----------
+        xfun, yfun : callable or None
+            Functions mapping a new kind of input to the kind of input accepted by
+            the kernel.
+
+
+.. _forcekron:
+.. method:: CrossKernel.transf('forcekron')
+    :no-index:
+
+    .. code-block:: text
+
+        Force the kernel to be a separate product over dimensions:
+
+        .. math::
+            \mathrm{newkernel}(x, y) = \prod_i \mathrm{kernel}(x_i, y_i)
+
+        Returns
+        -------
+        newkernel : Kernel
+            The transformed kernel.
+

@@ -15,8 +15,8 @@ Short index
 -----------
 a_ acic_ b_ bart_ barteasy_ c_ d_ dft_ doubleint_ e_ even_ f_ fourier_ g_ h_ i_ j_ k_ l_ m_ n_ o_ pdf1_ pdf2_ pdf3_ pdf4_ pdf5_ pdf6_ pdf7_ pdf8_ pdf9_ q_ r_ s_ t_ u_ v_ w_ x_ y_ z_ 
 
-Long index
-----------
+Index with figures
+------------------
 
 .. _a:
 
@@ -332,8 +332,8 @@ Long index
 
   * `w.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/w.py>`_: EXAMPLE W.
 
-    Where, with limited success, we recover the identity of two
-    mixed functions knowing their speed of variation.
+    Manually split a process as a sum of two processes, using an additional
+    index in the input space.
     
     .. image:: ../examples/plot/w.png
 
