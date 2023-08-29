@@ -21,6 +21,8 @@
 <!--- This changelog is written in Markdown and without line splits to make it
   copy-pastable to github releases. -->
 
+<!--- TODO: have sphinx process the dollars as latex --->
+
 # Changelog
 
 

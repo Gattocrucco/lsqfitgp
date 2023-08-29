@@ -40,9 +40,10 @@ all:
 	@echo " 3) link versioned docs in docs/index.rst"
 	@echo " 4) commit, push and check CI completes"
 	@echo " 5) $$ make release"
-	@echo " 6) $$ make upload"
-	@echo " 7) publish the github release"
-	@echo " 8) bump version number and add .dev0 suffix"
+	@echo " 6) repeat 4 and 5 until everything goes smoothly"
+	@echo " 7) $$ make upload"
+	@echo " 8) publish the github release"
+	@echo " 9) bump version number and add .dev0 suffix"
 
 upload:
 	python3 -m twine upload dist/*
@@ -82,6 +83,10 @@ docs/reference/kernelsref.rst: docs/reference/kernelsref.py src/lsqfitgp/_kernel
 
 docs/reference/kernelop.rst: docs/reference/kernelop.py src/lsqfitgp/_Kernel/*.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_jaxext/*.py src/lsqfitgp/_special/*.py
 	$(DOCSPY) --append $<
+
+## TODO: since I'm appending to .coverage.docs, delete it when I start a
+##  release. How do I tell make to first delete a file but do not re-delete it
+##  for each target?
 
 .PHONY: gendocs
 gendocs: docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst docs/reference/kernelop.rst
