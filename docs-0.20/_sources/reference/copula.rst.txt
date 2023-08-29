@@ -41,8 +41,12 @@ possibly related `Distr` objects and is intended for direct use.
 .. autoclass:: DistrBase
     :members:
 
+--------
+
 .. autoclass:: Distr
     :members:
+
+--------
 
 .. autoclass:: Copula
     :members:
@@ -51,6 +55,8 @@ Utilities
 ---------
 
 .. autofunction:: makedict
+
+--------
 
 .. autofunction:: distribution
 
