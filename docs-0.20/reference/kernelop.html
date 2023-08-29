@@ -128,9 +128,8 @@ additional arguments. Example:</p>
 <span class="n">K</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">()</span>
 <span class="n">Q</span> <span class="o">=</span> <span class="p">(</span><span class="n">K</span>
     <span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>   <span class="c1"># rescale the input</span>
-    <span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;diff&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># derive w.r.t. the first argument</span>
     <span class="o">.</span><span class="n">algop</span><span class="p">(</span><span class="s1">&#39;expm1&#39;</span><span class="p">)</span>      <span class="c1"># amplify positive correlations</span>
-    <span class="o">.</span><span class="n">transf</span><span class="p">(</span><span class="s1">&#39;forcekron&#39;</span><span class="p">)</span> <span class="c1"># force the kernel to be a product over dimensions</span>
+    <span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;diff&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># derive w.r.t. the first argument</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -140,7 +139,7 @@ superclass which actually defines the transformation. Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">K</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">()</span>
 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">lgp</span><span class="o">.</span><span class="n">IsotropicKernel</span><span class="p">)</span>
 <span class="n">Q</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;dim&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="c1"># consider only dimension &#39;a&#39; of the input</span>
-<span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">lgp</span><span class="o">.</span><span class="n">IsotropicKernel</span><span class="p">))</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">lgp</span><span class="o">.</span><span class="n">IsotropicKernel</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="index">
@@ -303,7 +302,7 @@ superclass which actually defines the transformation. Example:</p>
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'add'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Sum of kernels.
 
-.. math::
+.. math:
     \mathrm{newkernel}(x, y) &amp;= \mathrm{kernel}(x, y) + \mathrm{other}(x, y), \\
     \mathrm{newkernel}(x, y) &amp;= \mathrm{kernel}(x, y) + \mathrm{other}.
 
@@ -474,7 +473,7 @@ LAX-backend implementation of :func:`scipy.special.i0`.
 
 Defined as,
 
-.. math::
+.. math:
     I_0(x) = \sum_{k=0}^\infty \frac{(x^2/4)^k}{(k!)^2} = J_0(\imath x),
 
 where :math:`J_0` is the Bessel function of the first kind of order 0.
@@ -508,7 +507,7 @@ LAX-backend implementation of :func:`scipy.special.i1`.
 
 Defined as,
 
-.. math::
+.. math:
     I_1(x) = \frac{1}{2}x \sum_{k=0}^\infty \frac{(x^2/4)^k}{k! (k + 1)!}
            = -\imath J_1(\imath x),
 
@@ -537,7 +536,7 @@ References
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'mul'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Product of kernels.
 
-.. math::
+.. math:
     \mathrm{newkernel}(x, y) &amp;= \mathrm{kernel}(x, y) \cdot \mathrm{other}(x, y), \\
     \mathrm{newkernel}(x, y) &amp;= \mathrm{kernel}(x, y) \cdot \mathrm{other}.
 
@@ -554,7 +553,7 @@ other : CrossKernel or scalar
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'pow'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exponent</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Power of the kernel.
 
-.. math::
+.. math:
     \mathrm{newkernel}(x, y) = \mathrm{kernel}(x, y)^{\mathrm{exponent}}
 
 Parameters
@@ -570,7 +569,7 @@ exponent : nonnegative integer
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'rpow'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L541-L588"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Exponentiation of the kernel.
 
-.. math::
+.. math:
     \text{newkernel}(x, y) = \text{base}^{\text{kernel}(x, y)}
 
 Parameters
@@ -647,7 +646,7 @@ New York, NY: Dover, 1972.
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'cond'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond1</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">cond2</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Switch between two independent processes based on a condition.
 
-.. math::
+.. math:
     T(f, g)(x) = \begin{cases}
         f(x) &amp; \text{if $\mathrm{cond}(x)$,} \\
         g(x) &amp; \text{otherwise.}
@@ -688,7 +687,7 @@ higher limit.
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'diff'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xderiv</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">yderiv</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Derive the function.
 
-.. math::
+.. math:
     T(f)(x) = \frac{\partial^n f}{\partial x^n} (x)
 
 Parameters
@@ -707,7 +706,7 @@ RuntimeError
 <dl class="py method" id="dim">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'dim'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdim</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">ydim</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Restrict the function to a field of a structured input::
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Restrict the function to a field of a structured input:
 
     T(f)(x) = f(x[dim])
 
@@ -728,7 +727,7 @@ xdim, ydim: None, str, list of str
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'fourier'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dox</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">doy</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Compute the Fourier series transform of the function.
 
-.. math::
+.. math:
 
     T(f)(k) = \begin{cases}
             \frac2T \int_0^T \mathrm dx\, f(x)
@@ -749,7 +748,7 @@ The period :math:`T` is 1.
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'loc'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xloc</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">yloc</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Translate the process inputs:
 
-.. math::
+.. math:
     T(f)(x) = f(x - \mathrm{loc})
 
 Parameters
@@ -784,7 +783,7 @@ limit.
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'normalize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dox</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">doy</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Rescale the process to unit variance.
 
-.. math::
+.. math:
     T(f)(x) &amp;= f(x) / \sqrt{\mathrm{Std}[f(x)]} \\
             &amp;= f(x) / \sqrt{\mathrm{kernel}(x, x)}
 
@@ -801,7 +800,7 @@ dox, doy : bool
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'rescale'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xfun</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">yfun</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Rescale the output of the function.
 
-.. math::
+.. math:
     T(f)(x) = \mathrm{xfun}(x) f(x)
 
 Parameters
@@ -817,7 +816,7 @@ xfun, yfun : callable or None
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'scale'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xscale</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">yscale</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Rescale the process inputs:
 
-.. math::
+.. math:
     T(f)(x) = f(x / \mathrm{scale})
 
 Parameters
@@ -833,7 +832,7 @@ xscale, yscale: None, number
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'xtransf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xfun</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">yfun</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L483-L539"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Transform the inputs of the function.
 
-.. math::
+.. math:
     T(f)(x) = f(\mathrm{fun}(x))
 
 Parameters
@@ -850,7 +849,7 @@ xfun, yfun : callable or None
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'forcekron'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20/src/lsqfitgp/_Kernel/_crosskernel.py#L453-L481"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Force the kernel to be a separate product over dimensions:
 
-.. math::
+.. math:
     \mathrm{newkernel}(x, y) = \prod_i \mathrm{kernel}(x_i, y_i)
 
 Returns
