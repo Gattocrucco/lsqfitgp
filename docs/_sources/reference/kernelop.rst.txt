@@ -69,23 +69,23 @@ Transformations
 ---------------
 
 .. _-log1p(-x):
-.. method:: CrossKernel.algop('-log1p(-x)')
+.. method:: CrossKernel.algop('-log1p(-x)', )
     :no-index:
 
 .. _1/(1-x):
-.. method:: CrossKernel.algop('1/(1-x)')
+.. method:: CrossKernel.algop('1/(1-x)', )
     :no-index:
 
 .. _1/arccos:
-.. method:: CrossKernel.algop('1/arccos')
+.. method:: CrossKernel.algop('1/arccos', )
     :no-index:
 
 .. _1/cos:
-.. method:: CrossKernel.algop('1/cos')
+.. method:: CrossKernel.algop('1/cos', )
     :no-index:
 
 .. _add:
-.. method:: CrossKernel.algop('add')
+.. method:: CrossKernel.algop('add', other)
     :no-index:
 
     .. code-block:: text
@@ -103,7 +103,7 @@ Transformations
 
 
 .. _arcsin:
-.. method:: CrossKernel.algop('arcsin')
+.. method:: CrossKernel.algop('arcsin', )
     :no-index:
 
     .. code-block:: text
@@ -134,7 +134,7 @@ Transformations
 
 
 .. _arctanh:
-.. method:: CrossKernel.algop('arctanh')
+.. method:: CrossKernel.algop('arctanh', )
     :no-index:
 
     .. code-block:: text
@@ -166,7 +166,7 @@ Transformations
 
 
 .. _cosh:
-.. method:: CrossKernel.algop('cosh')
+.. method:: CrossKernel.algop('cosh', )
     :no-index:
 
     .. code-block:: text
@@ -192,7 +192,7 @@ Transformations
 
 
 .. _exp:
-.. method:: CrossKernel.algop('exp')
+.. method:: CrossKernel.algop('exp', )
     :no-index:
 
     .. code-block:: text
@@ -224,7 +224,7 @@ Transformations
 
 
 .. _expm1:
-.. method:: CrossKernel.algop('expm1')
+.. method:: CrossKernel.algop('expm1', )
     :no-index:
 
     .. code-block:: text
@@ -248,16 +248,16 @@ Transformations
 
 
 .. _expm1x:
-.. method:: CrossKernel.algop('expm1x')
+.. method:: CrossKernel.algop('expm1x', )
     :no-index:
 
     .. code-block:: text
 
-        Compute accurately exp(x) - 1 - x = x^2/2 1F1(1, 3, x).
+        Compute accurately :math:`e^x - 1 - x = x^2/2 {}_1F_1(1, 3, x)`.
 
 
 .. _i0:
-.. method:: CrossKernel.algop('i0')
+.. method:: CrossKernel.algop('i0', )
     :no-index:
 
     .. code-block:: text
@@ -292,7 +292,7 @@ Transformations
 
 
 .. _i1:
-.. method:: CrossKernel.algop('i1')
+.. method:: CrossKernel.algop('i1', )
     :no-index:
 
     .. code-block:: text
@@ -328,7 +328,7 @@ Transformations
 
 
 .. _mul:
-.. method:: CrossKernel.algop('mul')
+.. method:: CrossKernel.algop('mul', other)
     :no-index:
 
     .. code-block:: text
@@ -346,7 +346,7 @@ Transformations
 
 
 .. _pow:
-.. method:: CrossKernel.algop('pow')
+.. method:: CrossKernel.algop('pow', *, exponent)
     :no-index:
 
     .. code-block:: text
@@ -363,7 +363,7 @@ Transformations
 
 
 .. _rpow:
-.. method:: CrossKernel.algop('rpow')
+.. method:: CrossKernel.algop('rpow', *, base)
     :no-index:
 
     .. code-block:: text
@@ -371,7 +371,7 @@ Transformations
         Exponentiation of the kernel.
 
         .. math::
-            \text{newkernel}(x, y) = \text{base}^\text{kernel}(x, y)
+            \text{newkernel}(x, y) = \text{base}^{\text{kernel}(x, y)}
 
         Parameters
         ----------
@@ -380,7 +380,7 @@ Transformations
 
 
 .. _sinh:
-.. method:: CrossKernel.algop('sinh')
+.. method:: CrossKernel.algop('sinh', )
     :no-index:
 
     .. code-block:: text
@@ -412,7 +412,7 @@ Transformations
 
 
 .. _tan:
-.. method:: CrossKernel.algop('tan')
+.. method:: CrossKernel.algop('tan', )
     :no-index:
 
     .. code-block:: text
@@ -443,7 +443,7 @@ Transformations
 
 
 .. _cond:
-.. method:: CrossKernel.linop('cond')
+.. method:: CrossKernel.linop('cond', other, cond1[,  cond2])
     :no-index:
 
     .. code-block:: text
@@ -466,7 +466,7 @@ Transformations
 
 
 .. _derivable:
-.. method:: CrossKernel.linop('derivable')
+.. method:: CrossKernel.linop('derivable', xderivable[,  yderivable])
     :no-index:
 
     .. code-block:: text
@@ -486,7 +486,7 @@ Transformations
 
 
 .. _diff:
-.. method:: CrossKernel.linop('diff')
+.. method:: CrossKernel.linop('diff', xderiv[,  yderiv])
     :no-index:
 
     .. code-block:: text
@@ -508,7 +508,7 @@ Transformations
 
 
 .. _dim:
-.. method:: CrossKernel.linop('dim')
+.. method:: CrossKernel.linop('dim', xdim[,  ydim])
     :no-index:
 
     .. code-block:: text
@@ -528,7 +528,7 @@ Transformations
 
 
 .. _fourier:
-.. method:: CrossKernel.linop('fourier')
+.. method:: CrossKernel.linop('fourier', dox[,  doy])
     :no-index:
 
     .. code-block:: text
@@ -550,7 +550,7 @@ Transformations
 
 
 .. _loc:
-.. method:: CrossKernel.linop('loc')
+.. method:: CrossKernel.linop('loc', xloc[,  yloc])
     :no-index:
 
     .. code-block:: text
@@ -567,7 +567,7 @@ Transformations
 
 
 .. _maxdim:
-.. method:: CrossKernel.linop('maxdim')
+.. method:: CrossKernel.linop('maxdim', xmaxdim[,  ymaxdim])
     :no-index:
 
     .. code-block:: text
@@ -587,7 +587,7 @@ Transformations
 
 
 .. _normalize:
-.. method:: CrossKernel.linop('normalize')
+.. method:: CrossKernel.linop('normalize', dox[,  doy])
     :no-index:
 
     .. code-block:: text
@@ -605,7 +605,7 @@ Transformations
 
 
 .. _rescale:
-.. method:: CrossKernel.linop('rescale')
+.. method:: CrossKernel.linop('rescale', xfun[,  yfun])
     :no-index:
 
     .. code-block:: text
@@ -622,7 +622,7 @@ Transformations
 
 
 .. _scale:
-.. method:: CrossKernel.linop('scale')
+.. method:: CrossKernel.linop('scale', xscale[,  yscale])
     :no-index:
 
     .. code-block:: text
@@ -639,7 +639,7 @@ Transformations
 
 
 .. _xtransf:
-.. method:: CrossKernel.linop('xtransf')
+.. method:: CrossKernel.linop('xtransf', xfun[,  yfun])
     :no-index:
 
     .. code-block:: text
@@ -657,7 +657,7 @@ Transformations
 
 
 .. _forcekron:
-.. method:: CrossKernel.transf('forcekron')
+.. method:: CrossKernel.transf('forcekron', )
     :no-index:
 
     .. code-block:: text
