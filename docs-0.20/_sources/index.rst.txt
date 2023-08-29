@@ -56,6 +56,7 @@ Manual for older versions
 -------------------------
 
   * `Latest development version <https://gattocrucco.github.io/lsqfitgp/docs/index.html>`_
+  * `0.20 <https://gattocrucco.github.io/lsqfitgp/docs-0.20/index.html>`_
   * `0.19 <https://gattocrucco.github.io/lsqfitgp/docs-0.19/index.html>`_
   * `0.18 <https://gattocrucco.github.io/lsqfitgp/docs-0.18/index.html>`_
   * `0.17 <https://gattocrucco.github.io/lsqfitgp/docs-0.17/index.html>`_
