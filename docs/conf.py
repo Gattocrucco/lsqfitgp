@@ -63,6 +63,11 @@ extensions = [
     'myst_parser', # markdown support
 ]
 
+myst_enable_extensions = [
+    # "amsmath",
+    "dollarmath",
+]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

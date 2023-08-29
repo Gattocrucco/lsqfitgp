@@ -59,6 +59,9 @@ la documentazione online è rotta perché i source link puntano al nuovo tag che
 non esiste. La cosa migliore sarebbe mostrare di default l'ultima versione
 rilasciata anziché master.
 
+Rename all the single letter example scripts and gift them a communicative
+description
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
