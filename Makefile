@@ -71,9 +71,6 @@ EXAMPLES := $(filter-out examples/pdf9.py, $(EXAMPLES)) # slow
 examples: $(EXAMPLES)
 	$(EXAMPLESPY) examples/runexamples.py $(EXAMPLES)
 
-docscode:
-	$(DOCSPY) docs/runcode.py docs/*.rst docs/*/*.rst
-
 docs/reference/copula.rst: docs/reference/copula.py src/lsqfitgp/copula/*.py
 	$(DOCSPY) --append $<
 
@@ -86,7 +83,13 @@ docs/reference/kernelsref.rst: docs/reference/kernelsref.py src/lsqfitgp/_kernel
 docs/reference/kernelop.rst: docs/reference/kernelop.py src/lsqfitgp/_Kernel/*.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_jaxext/*.py src/lsqfitgp/_special/*.py
 	$(DOCSPY) --append $<
 
-docs: docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst docs/reference/kernelop.rst
+.PHONY: gendocs
+gendocs: docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst docs/reference/kernelop.rst
+
+docscode: gendocs
+	$(DOCSPY) docs/runcode.py docs/*.rst docs/*/*.rst
+
+docs: gendocs
 	make -C docs html
 	@echo
 	@echo "Now open docs/_build/html/index.html"

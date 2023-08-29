@@ -23,6 +23,7 @@ import inspect
 import pathlib
 import collections
 import textwrap
+import re
 
 import numpy as np
 import lsqfitgp as lgp
@@ -46,9 +47,8 @@ additional arguments. Example::
     K = lgp.ExpQuad()
     Q = (K
         .linop('scale', 2)   # rescale the input
-        .linop('diff', 1, 0) # derive w.r.t. the first argument
         .algop('expm1')      # amplify positive correlations
-        .transf('forcekron') # force the kernel to be a product over dimensions
+        .linop('diff', 1, 0) # derive w.r.t. the first argument
     )
 
 A kernel can access all transformations defined in its superclasses. However,
@@ -58,7 +58,7 @@ superclass which actually defines the transformation. Example::
     K = lgp.ExpQuad()
     assert isinstance(K, lgp.IsotropicKernel)
     Q = K.linop('dim', 'a') # consider only dimension 'a' of the input
-    assert not isinstance(Q, lgp.IsotropicKernel))
+    assert not isinstance(Q, lgp.IsotropicKernel)
 
 Index
 -----
@@ -181,7 +181,8 @@ for name, tlist in table.select('name', 'tlist').iter_rows():
     :no-index:
 """
         if t.doc:
-            doc = textwrap.dedent(t.doc).strip()
+            doc = re.sub(r'(\w+?)::\n', lambda m: f'{m.group(1)}:\n', t.doc)
+            doc = textwrap.dedent(doc).strip()
             doc = textwrap.indent(doc, '        ')
             out += f"""
     .. code-block:: text

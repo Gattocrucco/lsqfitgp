@@ -54,6 +54,11 @@ Add an example with regression + gp
 
 Add a brief head "Example" section in the README
 
+fare in modo che quando sto preparando una release non ci sia un periodo in cui
+la documentazione online è rotta perché i source link puntano al nuovo tag che
+non esiste. La cosa migliore sarebbe mostrare di default l'ultima versione
+rilasciata anziché master.
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu
