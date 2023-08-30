@@ -19,10 +19,14 @@
 
 import textwrap
 
-def append_to_docstring(docs, doctail):
+def append_to_docstring(docs, doctail, front=False):
     doctail = textwrap.dedent(doctail)
     dedocs = textwrap.dedent(docs)
     lineend = docs.find('\n')
     indented_lineend = dedocs.find('\n')
     indent = docs[:indented_lineend - lineend]
-    return textwrap.indent(dedocs + doctail, indent)
+    if front:
+        newdocs = doctail + dedocs
+    else:
+        newdocs = dedocs + doctail
+    return textwrap.indent(newdocs, indent)

@@ -105,7 +105,8 @@ def WienerIntegral(x, y):
     """
     
     # TODO can I generate this algorithmically for arbitrary integration order?
-    # If I don't find a closed formula I can use sympy.
+    # If I don't find a closed formula I can use sympy. =>
+    # JuliaGaussianProcesses implements it, copy their code
     
     with _jaxext.skipifabstract():
         assert jnp.all(x >= 0)

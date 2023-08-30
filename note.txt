@@ -5842,3 +5842,71 @@ But I also like that all kernels stand together close to self. I can rename
 'where' to remove the implicit expectation about argument position:
 
 kernel1.linop('cond', kernel2, lambda x: x > 0).
+
+2023-08-29
+==========
+
+In Zeta, make the Fourier transformation preserved under loc, scale,
+multiplication by scalar, addition of scalar. I need to mark down the values
+into the object. Two options: reimplement those transformations for Zeta only,
+or make it a general feature. The simplest version would be to accumulate scale,
+loc and variance in additional slots. I need to make scale and loc aware of each
+other to accumulate properly, and the attributes must not be copied by default,
+because many transfs would break the chain. Algops would copy them instead, but
+not the variance.
+
+Is there a way to make this more self-contained and generic instead of
+plumbing a lot of custom logic everywhere?
+
+I could have a class Rescaled that keeps track of these things. The loc,
+scale, add, mul of CrossKernel would cast to a new class made on the fly with
+bases (<normal output class>, Rescaled). Rescaled defines only the
+transformations within its scope, almost the generic ones but for not creating
+the subclass. (I could instead inherit the generic impl, and add an
+isinstance(out, Rescaled) veto before subclassing.)
+
+Alternative: instead of grafting Rescaled by default, I could let subclasses
+decide to adopt it as a second base. However, to be convenient I'd need
+a `bases` arg in the decorators. Not really user-friendly.
+
+Does this make sense with the class logic?
+
+If the transformation is not defined by Rescaled, and it is in a superclass,
+then the output class would not be Rescaled and so would lose any additional
+attribute, because the generic impl of _clone does not look dynamically for
+additional attrs. So the generic implementation would restart accumulating
+stuff with Rescaled on the next op, but losing subclasses and memory, and
+what I need is just preserving subclasses + affine factors together such that
+the transformations of subclasses can use them.
+
+If the transformation is defined by the first base, then Rescaled is preserved
+as a superclass with the default behavior of cloning self, but not when
+implementing linops with one class per kernel. Rescaled._clone will preserve
+its attributes.
+
+This I do not want. I want:
+1) that Rescaled is preserved only if the transf is Rescaled-aware
+2) that the subclass transf is called only if it can handle Rescaled,
+   otherwise that subclass should not have been preserved
+
+This strongly points toward the behavior being non-default.
+
+Tentative final plan:
+    - make a class AffineTracked
+        - it redefines 'loc', 'scale', 'mul' and 'add' to accumulate
+          translations and scalings on the inputs and output
+        - these are accessible in a dict attr _affine
+        - ovverrides _clone to copy _affine
+    - change the `superclass` param of `kernel` to `bases` to allow passing
+      additional classes, AffineTracked in particular
+        - a more user-friendly alternative would be an option just for
+          affine tracking, hiding the class as implementation detail.
+    - make Zeta an AffineTracked subclass
+        - rewrite the 'fourier' linop to use the _affine attribute
+    - make various tests that everything propagates or not as it should
+        - transf that are not affine must not preserve the class
+        - transf that are must
+            - unless the subclass redefines them AND does something nontrivial
+              instead of using self._clone
+
+=> Plan copied to _zeta.py.

@@ -183,6 +183,10 @@ class CrossKernel:
         
         return __class__(core)
 
+    # TODO move in the binary op methods the logic that decides wether to
+    # return NotImplemented, while the algops will raise an exception if the
+    # argument is not to their liking
+
     def __add__(self, other):
         return self.algop('add', other)
 
@@ -205,6 +209,8 @@ class CrossKernel:
             __class__,
             _core=lambda x, y, core=self._core: core(y, x),
         )
+
+        # TODO make _swap a transf inherited by CrossIsotropicKernel.
 
     def batch(self, maxnbytes):
         """
@@ -884,6 +890,12 @@ class CrossKernel:
         # impl checks at runtime (if not traced) that the output values are in
         # the domains, with an informative error message
 
+        # TODO consider escalating to ancestor definitions of the transf
+        # until an impl does not return NotImplemented, and then raise an
+        # an error instead of letting the NotImplemented escape. This would be
+        # useful to partial behavior ovverride in subclasses, e.g, handle
+        # multiplication by scalar to rewire transformations.
+
     class _AlgOpMarker(str): pass
     _algopmarker = _AlgOpMarker('algop')
 
@@ -924,3 +936,176 @@ class CrossKernel:
                 return ufunc(*values, **kw)
             return self._clone(_core=core)
         return cls.register_algop(op, transfname, doc)
+
+    @classmethod
+    def make_linop_family(cls, transfname, leftker, bothker, *,
+        doc=None, argparser=None, argname=None, rightname=None, inverse=None):
+        """
+        
+        Form a family of kernels classes related by linear operators.
+
+        The class this method is called on is the seed class. A new
+        trasformation is registered to obtain other classes from the seed class
+        by applying a newly defined linop transformation.
+
+        Parameters
+        ----------
+        transfname : str
+            The name of the new transformation.
+        leftker, bothker : CrossKernel
+            The kernel classes to be obtained by applying the operator to a seed
+            class object respectively on the left side and on both sides. All
+            classes are assumed to require no positional arguments at
+            construction, and recognize the same set of keyword arguments, plus
+            an additional argument in `keftker` and `bothker` indicating the
+            linop argument or a pair of linop arguments respectively.
+        doc, argparser : callable, optional
+            See `register_linop`.
+        argname : str, optional
+            The name of the arguments of the operator. If not specified, find
+            the additional keyword argument in the signature of `bothker`
+            respect to the seed class.
+        rightname : str, optional
+            The name of a newly created class to represent application of the
+            operator on the right side, implemented by constructing `leftker`
+            and transposing it. If not specified, use ``Cross<seed name><both
+            name>``. The new class is created with the same bases of `leftker`.
+        inverse : str, optional
+            If specified, an operation is registered under this name on
+            the non-seed classes that implements the inverse.
+
+        Examples
+        --------
+
+        >>> @lgp.kernel
+        ... def A(x, y, *, gatto):
+        ...     ''' The reknown A kernel of order gatto '''
+        ...     return ...
+        ...
+        >>> @lgp.crosskernel
+        ... def CrossTA(n, x, *, gatto, op):
+        ...     ''' The cross covariance between the Topo series of an A
+        ...         process of order gatto and the process itself '''
+        ...     return ...
+        ...
+        >>> @lgp.kernel
+        ... def T(n, m, *, gatto, op):
+        ...     ''' The kernel of the Topo series of an A process of order
+        ...         gatto '''
+        ...     op1, op2 = op
+        ...     return ...
+        ...
+        >>> A.make_linop_family('topo', T, CrossTA)
+        >>> a = A(gatto=7)
+        >>> ta = A.linop('topo', True, None)
+        >>> at = A.linop('topo', None, True)
+        >>> t = A.linop('topo', True)
+
+        See also
+        --------
+        transf
+
+        """
+        
+        # determine the name of rightker
+        if rightname is None:
+            rightname = f'Cross{cls.__name__}{bothker.__name__}'
+
+        # define how to set up rightker
+        def exec_body(ns):
+            
+            if leftker.__doc__:
+                header = 'Automatically generated transposed version of:\n\n'
+                ns['__doc__'] = _utils.append_docstring(leftker.__doc__, header, front=True)
+            
+            @functools.wraps(leftker.__new__)
+            def __new__(cls, *args, **kw):
+                self = leftker.__new__(cls, *args, **kw)
+                if self.__class__ is cls:
+                    return self._swap()._clone(cls)
+                else:
+                    return self._swap()
+            
+            ns['__new__'] = __new__
+
+        # create rightker, evil twin of leftker separated at birth
+        rightker = types.new_class(rightname, leftker.__bases__, exec_body=exec_body)
+
+        # determine argument name to pass on op argument to sibling classes
+        if argname is None:
+
+            # assert signature of kernel class is as expect by a class created
+            # with the kernel decorators
+            def assert_expected_signature(sig):
+                ps = list(sig.parameters.values())
+                assert len(ps) >= 2
+                for p in ps[:2]
+                    assert p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
+                    assert p.default is p.empty
+                for p in ps[2:]
+                    assert p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
+                    assert p.kind == p.KEYWORD_ONLY or p.default is not p.empty
+            
+            # convert assertions to a readable error message
+            def check_signature(sig, name):
+                try:
+                    assert_expected_signature(sig)
+                except AssertionError:
+                    raise ValueError(f'to determine automatically `argname`, '
+                        f'the signature of `{name}` has to be '
+                        f'{name}(x, y, a=1, b=2, ..., *, c, d, ...), found '
+                        f'{sig}')
+
+            # get and check signatures
+            sig = inspect.signature(cls)
+            bsig = inspect.signature(bothker)
+            check_signature(sig, cls.__name__)
+            check_signature(bsig, bothker.__name__)
+            
+            # find the additional keyword argument in bothker
+            additional = set(bsig.parameters[2:]).difference(sig.parameters[2:])
+            if len(additional) != 1:
+                raise ValueError(f'could not determine automatically `argname` '
+                    f'because the signature of `{bothker.__name__}` has '
+                    f'{len(additional)} additional parameters compared to '
+                    f'`{cls.__name__}`, expected 1')
+            argname = additional.pop()
+
+        # register linop mapping cls to either leftker, rightker or bothker
+        @functools.partial(cls.register_linop, transfname=transfname, argparser=argparser)
+        def op_seed_to_siblings(self, arg1, arg2):
+            kw = dict(self._kw)
+            if arg2 is None:
+                kw[argname] = arg1
+                return leftker(**kw)
+            elif arg1 is None:
+                kw[argname] = arg2
+                return rightker(**kw)
+            else:
+                kw[argname] = (arg1, arg2)
+                return bothker(**kw)
+
+        # register linop mapping leftker to bothker
+        @functools.partial(leftker.register_linop, transfname=transfname, argparser=argparser)
+        def op_left_to_both(self, arg1, arg2):
+            kw = dict(self._kw)
+            if arg2 is None:
+                kw[argname] = arg1
+                return bothker(**kw)
+            elif arg1 is None:
+                kw[argname] = arg2
+                return self
+            else:
+                kw[argname] = (arg1, arg2)
+                return bothker(**kw)
+        
+        cls.register_linop(op, name, f'{name}({argname}, {rightname})')
+        cls.register_linop(op, inverse, f'{inverse}({rightname}, {argname})')
+
+# TODO a new method
+# CrossKernel.make_linop_family(cls, name, leftker, bothker, argname=None, rightname=None, inverse=None)
+# Example: A.make_linop_family(CrossTA, T)
+# - register coherent linops on CrossTA and CrossAT
+# - if inverse is not None, use it as name to register operations that undo
+#   those defined above
+# use this method for Zeta and for Taylor.

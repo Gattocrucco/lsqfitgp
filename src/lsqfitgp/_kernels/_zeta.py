@@ -61,10 +61,6 @@ def Zeta(delta, *, nu):
     Reference: Petrillo (2022).
     
     """
-    # TODO ND version. The separable product is not equivalent I think.
-    
-    # TODO the derivative w.r.t. nu is probably broken
-    
     with _jaxext.skipifabstract():
         assert 0 <= nu < jnp.inf, nu
         
@@ -78,6 +74,10 @@ def Zeta(delta, *, nu):
     # TODO use the bernoully version for integer even s, based on the type of
     # the input such that it's static, because it is much more accurate
 
+    # TODO ND version. The separable product is not equivalent I think.
+    
+    # TODO the derivative w.r.t. nu is probably broken
+    
 @_Kernel.kernel(maxdim=1, derivable=False)
 def ZetaFourier(k, q, *, nu):
     s = 1 + 2 * nu
@@ -126,3 +126,23 @@ def fourier(self, dox, doy):
         return CrossZetaFourier(nu=nu)
     else:
         return CrossZetaFourier(nu=nu)._swap()
+
+# TODO preserve the fourier transf under affine transformations
+# - apply the proposed changes to NotImplemented behavior in algop and
+#   binary operators, because I'll need to ovverride add and mul
+# - make a class AffineTracked
+#     - it redefines 'loc', 'scale', 'mul' and 'add' to accumulate
+#       translations and scalings on the inputs and output
+#     - these are accessible in a dict attr _affine
+#     - ovverrides _clone to copy _affine
+# - change the `superclass` param of `kernel` to `bases` to allow passing
+#   additional classes, AffineTracked in particular
+#     - a more user-friendly alternative would be an option just for
+#       affine tracking, hiding the class as implementation detail.
+# - make Zeta an AffineTracked subclass
+#     - rewrite the 'fourier' linop to use the _affine attribute
+# - make various tests that everything propagates or not as it should
+#     - transf that are not affine must not preserve the class
+#     - transf that are must
+#         - unless the subclass redefines them AND does something nontrivial
+#           instead of using self._clone
