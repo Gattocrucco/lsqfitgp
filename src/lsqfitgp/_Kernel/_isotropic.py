@@ -94,10 +94,7 @@ class CrossIsotropicKernel(_stationary.CrossStationaryKernel):
 class IsotropicKernel(CrossIsotropicKernel, _stationary.StationaryKernel):
     pass
 
-_crosskernel.IsotropicKernel = IsotropicKernel
-_crosskernel.CrossIsotropicKernel = CrossIsotropicKernel
-
-# linops
+IsotropicKernel.inherit_all_algops(intermediates=True)
 IsotropicKernel.inherit_transf('rescale', intermediates=True)
 IsotropicKernel.inherit_transf('loc', intermediates=True)
 IsotropicKernel.inherit_transf('scale', intermediates=True)
@@ -106,8 +103,14 @@ IsotropicKernel.inherit_transf('derivable', intermediates=True)
 IsotropicKernel.inherit_transf('normalize', intermediates=True)
 IsotropicKernel.inherit_transf('cond', intermediates=True)
 
-# algops
-IsotropicKernel.inherit_all_algops(intermediates=True)
+class CrossConstant(CrossIsotropicKernel):
+    pass
+
+class Constant(CrossConstant, _kernel.Kernel):
+    pass
+
+def zero(x, y):
+    return jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
 
 class Zero(IsotropicKernel):
     """
@@ -115,7 +118,9 @@ class Zero(IsotropicKernel):
     """
 
     def __new__(cls):
-        self = object.__new__(cls)
-        self._kw = None
-        self._core = lambda x, y: jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
-        return self
+        return super().__new__(cls, zero, input='raw')
+
+_crosskernel.IsotropicKernel = IsotropicKernel
+_crosskernel.CrossIsotropicKernel = CrossIsotropicKernel
+_crosskernel.Constant = Constant
+_crosskernel.CrossConstant = CrossConstant

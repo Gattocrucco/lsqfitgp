@@ -138,7 +138,7 @@ class Copula(_base.DistrBase):
     class _Dict(dict):
 
         def tree_flatten_with_keys(self):
-            treedef = {k: None for k in self}
+            treedef = dict.fromkeys(self)
             keys_values = [(tree_util.DictKey(k), v) for k, v in self.items()]
             return keys_values, treedef
 

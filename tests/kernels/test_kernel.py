@@ -206,7 +206,7 @@ class TestAlgOp:
     def test_algop_type_error(self, constcore):
         A = lgp.kernel(constcore)
         @A.register_algop
-        def ciao(self, *_):
+        def ciao(tcls, self, *_):
             return self
         a = A()
         with pytest.raises(TypeError):
@@ -220,7 +220,7 @@ class TestAlgOp:
 
         # check that inherit_all_algops does not try to inherit from itself
         class A(lgp.CrossKernel): pass
-        A.register_algop(lambda self: self, 'ciao')
+        A.register_algop(lambda tcls, self: self, 'ciao')
         A.inherit_all_algops()
 
         # check that CrossKernel can't inherit
@@ -229,7 +229,7 @@ class TestAlgOp:
 
 @pytest.fixture
 def idtransf():
-    def idtransf(self, a, b):
+    def idtransf(tcls, self, a, b):
         """ porco duo """
         return self
     return idtransf
@@ -352,6 +352,20 @@ class TestTransf:
         t = A.list_transf(superclasses=False)
         assert len(t) == 1 and 'ciao' in t
 
+    def test_super(self, constcore):
+        class A(lgp.Kernel): pass
+        class B(A): pass
+        @A.register_transf
+        def ciao(tcls, self, *args):
+            return ' '.join(map(str, args))
+        @B.register_transf
+        def ciao(tcls, self, *args):
+            return 'ciao ' + tcls.super_transf('ciao', self, *args)
+        a = A(constcore)
+        b = B(constcore)
+        assert a.transf('ciao', 1, 2) == '1 2'
+        assert b.transf('ciao', 1, 2) == 'ciao 1 2'
+
 class TestLinOp:
 
     def test_args_errors(self, idtransf):
@@ -366,7 +380,7 @@ class TestLinOp:
         a = A(constcore)
         b = a.linop('ciao', 1, 2)
         assert a is b
-        assert a._core is b._core
+        assert a._corecore is b._corecore
 
     def test_class_goes_to_cross_parent(self, constcore, idtransf):
         class A(lgp.CrossKernel): pass
@@ -383,7 +397,7 @@ class TestLinOp:
         class A(lgp.CrossKernel): pass
         class B(lgp.CrossKernel): pass
         @A.register_linop
-        def op(self, arg1, arg2):
+        def op(tcls, self, arg1, arg2):
             return B(constcore)
         assert A(constcore).linop('op', 1, 2).__class__ is B
 
@@ -651,6 +665,74 @@ class TestLinOp:
         a = A()
         a(x, x)
 
+    @mark.parametrize('rightname,doc,argname', [
+        (None, None, None),
+        ('gatto', 'miao', 'bau'),
+    ])
+    def test_make_linop_family(self, rng, rightname, doc, argname):
+
+        @lgp.kernel
+        def A(x, y, *, gatto):
+            return gatto * x * y
+
+        @lgp.crosskernel
+        def CrossBA(a, y, *, gatto, bau=1):
+            return (gatto + bau) * a * y
+
+        if doc:
+            CrossBA.__doc__ = doc
+
+        @lgp.kernel
+        def B(a, b, *, gatto, bau=(1, 1)):
+            return (gatto + bau[0] + bau[1]) * a * b
+
+        A.make_linop_family('ciao', CrossBA, B, rightname=rightname, argname=argname)
+
+        # produce instances
+        aa = A(gatto=3)
+        bb = aa.linop('ciao', 2, 2)
+        ba = aa.linop('ciao', 2, None)
+        bb1 = ba.linop('ciao', None, 2)
+        ab = aa.linop('ciao', None, 2)
+        bb2 = ab.linop('ciao', 2, None)
+        
+        # check classes of instances
+        assert aa.__class__ is A
+        assert ba.__class__ is CrossBA
+        assert bb.__class__ is B
+        assert bb1.__class__ is B
+        assert bb2.__class__ is B
+        
+        # check instance with automatically defined class
+        CrossAB = ab.__class__
+        assert CrossAB.__name__ == rightname if rightname else 'CrossAB'
+        assert CrossAB.__bases__ == (CrossBA,)
+        if doc:
+            assert CrossAB.__doc__ == """\
+Automatically generated transposed version of:
+
+miao"""
+        
+        # check that automatically generated class is not peremptorily enforced
+        assert CrossAB(dim='a').__class__ is lgp.CrossKernel
+
+        # check keyword argument passing
+        assert aa(1, 1) == 3
+        assert ab(1, 1) == 4 + bool(argname)
+        assert ba(1, 1) == 4 + bool(argname)
+        assert bb(1, 1) == 5 + 2 * bool(argname)
+        assert bb1(1, 1) == 5 + 2 * bool(argname)
+        assert bb2(1, 1) == 5 + 2 * bool(argname)
+
+        # check errors on double transformation
+        with pytest.raises(ValueError, match='cannot further transform'):
+            ab.linop('ciao', None, 1)
+        with pytest.raises(ValueError, match='cannot further transform'):
+            ba.linop('ciao', 1, None)
+
+        # check there's not transf on last object
+        assert not bb.has_transf('ciao')
+
 class TestStationaryIsotropic:
 
     @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
@@ -769,6 +851,19 @@ class TestDecorator:
             return 0
         assert C().__class__ is C
         assert isinstance(C(), crcls)
+
+class TestAffineTracked:
+
+    def test_preserved_class(self, constcore):
+        """ test that affine operations preserve the specific subclass """
+        class A(lgp._Kernel.AffineSpan, lgp.IsotropicKernel): pass
+        a = A(constcore)
+        assert a.linop('loc', 0).__class__ is A
+        assert a.linop('scale', 1).__class__ is A
+        assert (a + 0).__class__ is A
+        assert (0 + a).__class__ is A
+        assert (a * 1).__class__ is A
+        assert (1 * a).__class__ is A
 
 def test_callable_arg(constcore, rng):
     x = rng.standard_normal(10)

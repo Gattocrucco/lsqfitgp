@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" register linops on CrossKernel """
+""" register linops on CrossKernel and AffineSpan """
 
 import functools
 import numbers
@@ -31,7 +31,7 @@ from .. import _Deriv
 from .. import _array
 
 from . import _util
-from ._crosskernel import CrossKernel
+from ._crosskernel import CrossKernel, AffineSpan
 
 def rescale_argparser(fun):
     if not callable(fun):
@@ -45,7 +45,7 @@ def rescale(core, xfun, yfun):
     Rescale the output of the function.
     
     .. math::
-        T(f)(x) = \mathrm{xfun}(x) f(x)
+        T(f)(x) = \mathrm{fun}(x) f(x)
     
     Parameters
     ----------
@@ -54,11 +54,11 @@ def rescale(core, xfun, yfun):
     
     """
     if not xfun:
-        return lambda x, y: yfun(y) * core(x, y)
+        return lambda x, y: core(x, y) * yfun(y)
     elif not yfun:
         return lambda x, y: xfun(x) * core(x, y)
     else:
-        return lambda x, y: xfun(x) * yfun(y) * core(x, y)
+        return lambda x, y: xfun(x) * core(x, y) * yfun(y)
 
 @CrossKernel.register_xtransf
 def derivable(derivable):
@@ -376,3 +376,23 @@ def cond(core, cond1, cond2, other):
 
     # TODO add a function `choose` to extend `cond`,
     # kernel0.linop('choose', kernel1, kernel2, ..., lambda x: x['index'])
+
+AffineSpan.inherit_transf('maxdim')
+AffineSpan.inherit_transf('derivable')
+
+@functools.partial(AffineSpan.register_linop, transfname='loc')
+def affine_loc(tcls, self, xloc, yloc):
+    dynkw = dict(self._dynkw)
+    newself = tcls.super_transf('loc', self, xloc, yloc)
+    ploc = dynkw['loc']
+    pscale = dynkw['scale']
+    dynkw['loc'] = (ploc[0] + xloc * pscale[0], ploc[1] + yloc * pscale[1])
+    return newself._clone(self.__class__, _dynkw=dynkw)
+
+@functools.partial(AffineSpan.register_linop, transfname='scale')
+def affine_scale(tcls, self, xscale, yscale):
+    dynkw = dict(self._dynkw)
+    newself = tcls.super_transf('scale', self, xscale, yscale)
+    pscale = dynkw['scale']
+    dynkw['scale'] = (pscale[0] * xscale, pscale[1] * yscale)
+    return newself._clone(self.__class__, _dynkw=dynkw)

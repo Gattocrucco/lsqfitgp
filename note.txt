@@ -5910,3 +5910,91 @@ Tentative final plan:
               instead of using self._clone
 
 => Plan copied to _zeta.py.
+
+Problem: I need to access the affine parameters from the core, and those
+change with the instance.
+   - AffineTracked.__new__, after invoking super(), moves _core to _corecore
+        - also sets _affine=dict(loc=0, scale=1, offset=0, ampl=1)
+   - _affine is a property
+        - setter sets _core to a wrapper of _corecore with **_affine expanded
+   - propagate _corecore in _clone (possibly make the generic _clone copy all
+     vars)
+
+The map is: K -> (x -> offset + ampl * K((x - loc) / scale)).
+
+2023-08-30
+==========
+
+Night is the mother of counsel.
+
+- Instead of using _affine, implement a generic _dynkw attr in CrossKernel (DONE)
+- put the logic of specialized transformations in methods to allow override (SKIP)
+- set __slots__ to [] to avoid bugs since I'm assuming no additional attrs (DONE)
+- in AffineTracked, override xtransf to preserve _dynkw (SKIP)
+
+=> No ok bad idea. That would have allowed all kinds of forbidden transfs.
+
+What I really want is that I want to inherit the implementations of dim, maxdim,
+derivable, but passing _dynkw. Not for other transformations.
+
+Probably the best thing is not adding any generic logic, but modifying the
+registration methods to return the unwrapped callable, and use it again in
+another definition. (DONE)
+
+........
+
+Current problem: add/mul do not preserve subclasses of Affine as intended,
+ecause scalars count as (Cross)IsotropicKernel, which is not a subclass of the
+Affine subclass, and so the result class regresses.
+
+The clean solution is respecting the algebra with the classes: constants are a
+subalgebra of all Affine spans. I have to define (Cross)Constant, subclass of
+(Cross)Isotropic, and make it behave as a subclass of all Affine subclasses.
+
+Problem: this is not possible with actual inheritance. I can override
+the behavior of issubclass, but that won't change the calculation of the
+least common superclass.
+
+Read on the Python guide and then search for someone who has already
+implemented it, this sounds like standard programming stuff
+
+I should make Affine an abc, since its logic does not make sense to have
+generic instances; they would remain Affine when combined even though they are
+not an affine span of something anymore.
+
+Once it's an abc, I have Affine.register to register virtual subclasses, i.e.,
+they will be considered such by issubclass and isinstance. Even better:
+__subclasshook__.
+
+What is the difference between mro() and __mro__? => mro() is called to set
+__mro__, so I think I can always use __mro__ if I'm not doing very weird
+stuff with metaclasses.
+
+__mro_entries__ allows to define objects that are not classes but that can be
+used in class definitions to define dynamically the list of bases. Nice to know,
+but I can't use this to put Constant under all subclasses of Affine.
+
+__set_name__ is called on objects in a class namespace to let them know which
+name they are set to.
+
+Descriptors' __get__ is called as __get__(self, instance, owner) where owner is
+the class where it resides. This means that I can implement transformations
+with descriptors. I need to check that owner is changed based on actual owner
+and not lexically scoped. => It works, but one must be careful that getting the
+attribute returns what the descriptor wants instead of the descriptor, it must
+be fetched through the class __dict__.
+
+I still need to find how to find the last common subclass with virtual
+subclassing. I'll first skim all the stdlib modules. => Nothing found. => Google
+turns up nothing. => Stackoverflow nothing. => GPT-3 can't do it, although he's
+not bad at trying. (Maybe I should pay for GPT-4.)
+
+Brute force and correct approach:
+  - set join all the mros, plus an optional set of additional classes (to add
+    virtual superclasses)
+  - compute issubclass for all pairs in both directions
+        - possibly use a cached func, although this will break if the thing is
+          called when the class hierarchy is incomplete
+        - gets a directed graph
+
+=> No, bad idea. Make it recursive two classes at a time.

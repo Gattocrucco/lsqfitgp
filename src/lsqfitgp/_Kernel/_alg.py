@@ -17,7 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" register algops on CrossKernel """
+""" register algops on CrossKernel and AffineSpan """
+
+import functools
 
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
@@ -25,10 +27,10 @@ from jax.scipy import special as jspecial
 from .. import _special
 
 from . import _util
-from ._crosskernel import CrossKernel
+from ._crosskernel import CrossKernel, AffineSpan
 
 @CrossKernel.register_algop
-def add(self, other):
+def add(tcls, self, other):
     r"""
     
     Sum of kernels.
@@ -44,15 +46,15 @@ def add(self, other):
     
     """
     if _util.is_numerical_scalar(other):
-        core = lambda x, y, core=self._core: core(x, y) + other
+        core = (lambda core: lambda x, y: core(x, y) + other)(self._core)
     elif isinstance(other, CrossKernel):
-        core = lambda x, y, core=self._core, other=other._core: core(x, y) + other(x, y)
+        core = (lambda core, other: lambda x, y: core(x, y) + other(x, y))(self._core, other._core)
     else:
         return NotImplemented
     return self._clone(_core=core)
 
 @CrossKernel.register_algop
-def mul(self, other):
+def mul(tcls, self, other):
     r"""
     
     Product of kernels.
@@ -68,15 +70,15 @@ def mul(self, other):
     
     """
     if _util.is_numerical_scalar(other):
-        core = lambda x, y, core=self._core: core(x, y) * other
+        core = (lambda core: lambda x, y: core(x, y) * other)(self._core)
     elif isinstance(other, CrossKernel):
-        core = lambda x, y, core=self._core, other=other._core: core(x, y) * other(x, y)
+        core = (lambda core, other: lambda x, y: core(x, y) * other(x, y))(self._core, other._core)
     else:
         return NotImplemented
     return self._clone(_core=core)
 
 @CrossKernel.register_algop
-def pow(self, *, exponent):
+def pow(tcls, self, *, exponent):
     r"""
     
     Power of the kernel.
@@ -91,7 +93,7 @@ def pow(self, *, exponent):
     
     """
     if _util.is_nonnegative_integer_scalar(exponent):
-        core = lambda x, y, core=self._core: core(x, y) ** exponent
+        core = (lambda core: lambda x, y: core(x, y) ** exponent)(self._core)
     else:
         return NotImplemented
     return self._clone(_core=core)
@@ -101,7 +103,7 @@ def pow(self, *, exponent):
     # scalar, then check if it satisfies the bound.
 
 @CrossKernel.register_algop
-def rpow(self, *, base):
+def rpow(tcls, self, *, base):
     r"""
     
     Exponentiation of the kernel.
@@ -116,7 +118,7 @@ def rpow(self, *, base):
     
     """
     if _util.is_scalar_cond_trueontracer(base, lambda x: x >= 1):
-        core = lambda x, y, core=self._core: base ** core(x, y)
+        core = (lambda core: lambda x, y: base ** core(x, y))(self._core)
     else:
         return NotImplemented
     return self._clone(_core=core)
@@ -143,3 +145,24 @@ CrossKernel.register_ufuncalgop(jspecial.i1)
 
 # TODO other unary algop:
 # - hypergeom (wrap the scipy impl in _special)
+
+@functools.partial(AffineSpan.register_algop, transfname='add')
+def affine_add(tcls, self, other):
+    newself = tcls.super_transf('add', self, other)
+    if _util.is_numerical_scalar(other):
+        dynkw = dict(self._dynkw)
+        dynkw['offset'] = dynkw['offset'] + other
+        return newself._clone(self.__class__, _dynkw=dynkw)
+    else:
+        return newself
+
+@functools.partial(AffineSpan.register_algop, transfname='mul')
+def affine_mul(tcls, self, other):
+    newself = tcls.super_transf('mul', self, other)
+    if _util.is_numerical_scalar(other):
+        dynkw = dict(self._dynkw)
+        dynkw['offset'] = other * dynkw['offset']
+        dynkw['ampl'] = other * dynkw['ampl']
+        return newself._clone(self.__class__, _dynkw=dynkw)
+    else:
+        return newself

@@ -8,7 +8,7 @@ Python module to do inference with Gaussian processes. Features:
   * Interoperates with [gvar](https://github.com/gplepage/gvar) and
     [lsqfit](https://github.com/gplepage/lsqfit) to facilitate inexpert users.
   * Recursively structured covariates.
-  * Apply arbitrary linear transformations to the process, finite and
+  * Apply arbitrary linear transformations to the processes, finite and
     infinite.
   * Small [PPL based on Gaussian
     copulas](https://gattocrucco.github.io/lsqfitgp/docs/reference/copula.html)

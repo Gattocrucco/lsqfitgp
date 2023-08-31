@@ -423,10 +423,8 @@ class GPProcesses(_base.GPBase):
         
         if xp is yp:
             basekernel = self._crosskernel(xp.proc, xp.proc)
-            # In principle I could avoid handling this case separately but it
-            # will probably allow simplifications in how I implement nontrivial
-            # transformations in Kernel: I won't need to support taking a
-            # transformation in two steps.
+            # I could avoid handling this case separately but it allows to
+            # skip defining two-step transformations A -> CrossAT -> T
         else:
             basekernel = self._crosskernel(xp.proc, ypkey)
         
