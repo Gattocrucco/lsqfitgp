@@ -403,7 +403,7 @@ class TestLinOp:
         a = A(constcore)
         b = a.linop('ciao', 1, 2)
         assert a is b
-        assert a._corecore is b._corecore
+        assert a._core is b._core
 
     def test_class_goes_to_cross_parent(self, constcore, idtransf):
         class A(lgp.CrossKernel): pass
@@ -688,36 +688,36 @@ class TestLinOp:
         a = A()
         a(x, x)
 
-    @mark.parametrize('rightname,doc,argname', [
+    @mark.parametrize('rightname,doc,argnames', [
         (None, None, None),
-        ('gatto', 'miao', 'bau'),
+        ('gatto', 'miao', ('xbau', 'ybau')),
     ])
-    def test_make_linop_family(self, rng, rightname, doc, argname):
+    def test_make_linop_family(self, rng, rightname, doc, argnames):
 
         @lgp.kernel
         def A(x, y, *, gatto):
             return gatto * x * y
 
         @lgp.crosskernel
-        def CrossBA(a, y, *, gatto, bau=1):
-            return (gatto + bau) * a * y
+        def CrossBA(a, y, *, gatto, xbau=2, ybau=3):
+            return gatto * xbau * ybau * a * y
 
         if doc:
             CrossBA.__doc__ = doc
 
         @lgp.kernel
-        def B(a, b, *, gatto, bau=(1, 1)):
-            return (gatto + bau[0] + bau[1]) * a * b
+        def B(a, b, *, gatto, xbau=5, ybau=7):
+            return gatto * xbau * ybau * a * b
 
-        A.make_linop_family('ciao', CrossBA, B, rightname=rightname, argname=argname)
+        A.make_linop_family('ciao', CrossBA, B, rightname=rightname, argnames=argnames)
 
         # produce instances
-        aa = A(gatto=3)
-        bb = aa.linop('ciao', 2, 2)
-        ba = aa.linop('ciao', 2, None)
-        bb1 = ba.linop('ciao', None, 2)
-        ab = aa.linop('ciao', None, 2)
-        bb2 = ab.linop('ciao', 2, None)
+        aa = A(gatto=11)
+        bb = aa.linop('ciao', 13, 13)
+        ba = aa.linop('ciao', 13, None)
+        bb1 = ba.linop('ciao', None, 13)
+        ab = aa.linop('ciao', None, 13)
+        bb2 = ab.linop('ciao', 13, None)
         
         # check classes of instances
         assert aa.__class__ is A
@@ -726,6 +726,14 @@ class TestLinOp:
         assert bb1.__class__ is B
         assert bb2.__class__ is B
         
+        # check keyword argument passing
+        assert aa(1, 1) == 11
+        assert ab(1, 1) == (11 * 2 * 13 if argnames else 11 * 2 * 3)
+        assert ba(1, 1) == (11 * 13 * 3 if argnames else 11 * 2 * 3)
+        assert bb(1, 1) == (11 * 13 * 13 if argnames else 11 * 5 * 7)
+        assert bb1(1, 1) == (11 * 13 * 13 if argnames else 11 * 5 * 7)
+        assert bb2(1, 1) == (11 * 13 * 13 if argnames else 11 * 5 * 7)
+
         # check instance with automatically defined class
         CrossAB = ab.__class__
         assert CrossAB.__name__ == rightname if rightname else 'CrossAB'
@@ -738,14 +746,6 @@ miao"""
         
         # check that automatically generated class is not peremptorily enforced
         assert CrossAB(dim='a').__class__ is lgp.CrossKernel
-
-        # check keyword argument passing
-        assert aa(1, 1) == 3
-        assert ab(1, 1) == 4 + bool(argname)
-        assert ba(1, 1) == 4 + bool(argname)
-        assert bb(1, 1) == 5 + 2 * bool(argname)
-        assert bb1(1, 1) == 5 + 2 * bool(argname)
-        assert bb2(1, 1) == 5 + 2 * bool(argname)
 
         # check errors on double transformation
         with pytest.raises(ValueError, match='cannot further transform'):
@@ -917,6 +917,36 @@ class TestAffineSpan:
         class B(lgp._Kernel.AffineSpan, lgp.CrossKernel): pass
         b = B(constcore)
         assert op(b, -1).__class__ is B
+
+    def test_calc(self, constcore, rng):
+        class A(lgp._Kernel.AffineSpan, lgp.CrossKernel): pass
+        a0 = A(constcore)
+
+        x, y = rng.standard_normal((2, 10))
+
+        # apply affine transformations
+        a = a0 + 2
+        a = a * 3
+        a = a + 5
+        a = a * 7
+        a = a.linop('scale', 2, 3)
+        a = a.linop('loc', 5, 7)
+        a = a.linop('scale', 11, 13)
+        a = a.linop('loc', 17, 19)
+        
+        # compare accumulated coefficients with manual calculation
+        assert a._dynkw['offset'] == (2 * 3 + 5) * 7
+        assert a._dynkw['ampl'] == 3 * 7
+        assert a._dynkw['loc'] == (2 * (5 + 11 * 17), 3 * (7 + 13 * 19))
+        assert a._dynkw['scale'] == (2 * 11, 3 * 13)
+
+        # compare result with specification of coefficients
+        c1 = a(x, y)
+        c2 = a._dynkw['offset'] + a._dynkw['ampl'] * a0(
+            (x - a._dynkw['loc'][0]) / a._dynkw['scale'][0],
+            (y - a._dynkw['loc'][1]) / a._dynkw['scale'][1],
+        )
+        util.assert_allclose(c1, c2)
 
 def test_callable_arg(constcore, rng):
     x = rng.standard_normal(10)

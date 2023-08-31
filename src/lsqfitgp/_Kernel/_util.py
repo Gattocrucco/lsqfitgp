@@ -72,15 +72,15 @@ def is_nonnegative_scalar_trueontracer(x):
     return is_scalar_cond_trueontracer(x, lambda x: x >= 0)
 
 # TODO reimplement with tree_reduce, closuring ndim to recognize shaped fields
-def _reduce_recurse_dtype(fun, args, reductor, npreductor, jnpreductor):
+def _reduce_recurse_dtype(fun, args, reductor, npreductor, jnpreductor, **kw):
     x = args[0]
     if x.dtype.names is None:
-        return fun(*args)
+        return fun(*args, **kw)
     else:
         acc = None
         for name in x.dtype.names:
             recargs = tuple(arg[name] for arg in args)
-            result = _reduce_recurse_dtype(fun, recargs, reductor, npreductor, jnpreductor)
+            result = _reduce_recurse_dtype(fun, recargs, reductor, npreductor, jnpreductor, **kw)
             
             dtype = x.dtype[name]
             if dtype.ndim:
@@ -96,11 +96,11 @@ def _reduce_recurse_dtype(fun, args, reductor, npreductor, jnpreductor):
         assert acc.shape == _array.broadcast(*args).shape
         return acc
 
-def sum_recurse_dtype(fun, *args):
-    return _reduce_recurse_dtype(fun, args, operator.add, numpy.sum, jnp.sum)
+def sum_recurse_dtype(fun, *args, **kw):
+    return _reduce_recurse_dtype(fun, args, operator.add, numpy.sum, jnp.sum, **kw)
 
-def prod_recurse_dtype(fun, *args):
-    return _reduce_recurse_dtype(fun, args, operator.mul, numpy.prod, jnp.prod)
+def prod_recurse_dtype(fun, *args, **kw):
+    return _reduce_recurse_dtype(fun, args, operator.mul, numpy.prod, jnp.prod, **kw)
 
 def ufunc_recurse_dtype(ufunc, x, *args):
     """ apply an ufunc to all the leaf fields """

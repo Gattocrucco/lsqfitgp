@@ -34,8 +34,8 @@ def batchufunc(func, *, maxnbytes):
     Parameters
     ----------
     func : callable
-        A jax-traceable universal function. All arguments are assumed to be
-        arrays which are broadcasted to determine the shape.
+        A jax-traceable universal function. All positional arguments are assumed
+        to be arrays which are broadcasted to determine the shape.
     maxnbytes : number
         The maximum number of bytes in each input chunck over all input arrays
         after broadcasting.
@@ -43,7 +43,8 @@ def batchufunc(func, *, maxnbytes):
     Return
     ------
     batched_func : callable
-        The batched version of `func`. Does not accept keyword arguments.
+        The batched version of `func`. Keywords arguments are passed as-is to
+        the function.
 
     """
 
@@ -51,7 +52,7 @@ def batchufunc(func, *, maxnbytes):
     assert maxnbytes > 0
 
     @functools.wraps(func)
-    def batched_func(*args):
+    def batched_func(*args, **kw):
 
         shape = jnp.broadcast_shapes(*(arg.shape for arg in args))
         if not shape or any(size == 0 for size in shape):
@@ -93,7 +94,7 @@ def batchufunc(func, *, maxnbytes):
                 assert all(arg.ndim == len(shape) - 1 for arg in short_args)
                 assert all(arg.ndim == len(shape) for arg in batched_args)
                 args = combine_args(short_args, batched_args)
-                out = func(*args)
+                out = func(*args, **kw)
                 assert out.shape == (batchsize,) + shape[1:]
                 return short_args, out
             _, out = lax.scan(scan_loop_body, short_args, batched_args)
@@ -113,7 +114,7 @@ def batchufunc(func, *, maxnbytes):
             def scan_loop_body(short_args, long_args):
                 args = combine_args(short_args, long_args)
                 assert all(arg.ndim == len(shape) - 1 for arg in args)
-                out = batched_func(*args)
+                out = batched_func(*args, **kw)
                 assert out.shape == shape[1:]
                 return short_args, out
             _, out = lax.scan(scan_loop_body, short_args, long_args)

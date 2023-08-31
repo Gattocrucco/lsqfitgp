@@ -54,11 +54,11 @@ def rescale(core, xfun, yfun):
     
     """
     if not xfun:
-        return lambda x, y: core(x, y) * yfun(y)
+        return lambda x, y, **kw: core(x, y, **kw) * yfun(y)
     elif not yfun:
-        return lambda x, y: xfun(x) * core(x, y)
+        return lambda x, y, **kw: xfun(x) * core(x, y, **kw)
     else:
-        return lambda x, y: xfun(x) * core(x, y) * yfun(y)
+        return lambda x, y, **kw: xfun(x) * core(x, y, **kw) * yfun(y)
 
 @CrossKernel.register_xtransf
 def derivable(derivable):
@@ -134,7 +134,7 @@ def diff(core, xderiv, yderiv):
     yderiv = _Deriv.Deriv(yderiv)
 
     # wrapper of kernel with derivable arguments unpacked
-    def f(x, y, *args):
+    def f(x, y, *args, **kw):
         i = -1
         if not xderiv.implicit:
             for i, dim in enumerate(xderiv):
@@ -142,7 +142,7 @@ def diff(core, xderiv, yderiv):
         if not yderiv.implicit:
             for j, dim in enumerate(yderiv):
                 y = y.at[dim].set(args[1 + i + j])
-        return core(x, y)
+        return core(x, y, **kw)
     
     # last x index in case iteration on x does not run but does on y
     i = -1
@@ -184,7 +184,7 @@ def diff(core, xderiv, yderiv):
                 f'{pos} argument')
         return x
     
-    def newcore(x, y):
+    def newcore(x, y, **kw):
         x = process_arg(x, xderiv, 'left')
         y = process_arg(y, yderiv, 'right')
                             
@@ -202,7 +202,7 @@ def diff(core, xderiv, yderiv):
         elif yderiv:
             y = _asfloat(y)
 
-        return f(x, y, *args)
+        return f(x, y, *args, **kw)
 
     return newcore
 
@@ -339,11 +339,11 @@ def normalize(core, dox, doy):
         Whether to rescale.
     """
     if dox and doy:
-        return lambda x, y: core(x, y) / jnp.sqrt(core(x, x) * core(y, y))
+        return lambda x, y, **kw: core(x, y, **kw) / jnp.sqrt(core(x, x, **kw) * core(y, y, **kw))
     elif dox:
-        return lambda x, y: core(x, y) / jnp.sqrt(core(x, x))
+        return lambda x, y, **kw: core(x, y, **kw) / jnp.sqrt(core(x, x, **kw))
     else:
-        return lambda x, y: core(x, y) / jnp.sqrt(core(y, y))
+        return lambda x, y, **kw: core(x, y, **kw) / jnp.sqrt(core(y, y, **kw))
 
 @CrossKernel.register_corelinop
 def cond(core, cond1, cond2, other):
@@ -366,10 +366,10 @@ def cond(core, cond1, cond2, other):
         Kernel of the process used where the condition is false.
     
     """
-    def newcore(x, y):        
+    def newcore(x, y, **kw):        
         xcond = cond1(x)
         ycond = cond2(y)
-        r = jnp.where(xcond & ycond, core(x, y), other(x, y))
+        r = jnp.where(xcond & ycond, core(x, y, **kw), other(x, y, **kw))
         return jnp.where(xcond ^ ycond, 0, r)
     
     return newcore

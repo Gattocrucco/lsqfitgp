@@ -45,13 +45,15 @@ def add(tcls, self, other):
         The other kernel.
     
     """
+    core = self._core
     if _util.is_numerical_scalar(other):
-        core = (lambda core: lambda x, y: core(x, y) + other)(self._core)
+        newcore = lambda x, y, **kw: core(x, y, **kw) + other
     elif isinstance(other, CrossKernel):
-        core = (lambda core, other: lambda x, y: core(x, y) + other(x, y))(self._core, other._core)
+        other = other._core
+        newcore = lambda x, y, **kw: core(x, y, **kw) + other(x, y, **kw)
     else:
         return NotImplemented
-    return self._clone(_core=core)
+    return self._clone(_core=newcore)
 
 @CrossKernel.register_algop
 def mul(tcls, self, other):
@@ -69,13 +71,15 @@ def mul(tcls, self, other):
         The other kernel.
     
     """
+    core = self._core
     if _util.is_numerical_scalar(other):
-        core = (lambda core: lambda x, y: core(x, y) * other)(self._core)
+        newcore = lambda x, y, **kw: core(x, y, **kw) * other
     elif isinstance(other, CrossKernel):
-        core = (lambda core, other: lambda x, y: core(x, y) * other(x, y))(self._core, other._core)
+        other = other._core
+        newcore = lambda x, y, **kw: core(x, y, **kw) * other(x, y, **kw)
     else:
         return NotImplemented
-    return self._clone(_core=core)
+    return self._clone(_core=newcore)
 
 @CrossKernel.register_algop
 def pow(tcls, self, *, exponent):
@@ -93,10 +97,11 @@ def pow(tcls, self, *, exponent):
     
     """
     if _util.is_nonnegative_integer_scalar(exponent):
-        core = (lambda core: lambda x, y: core(x, y) ** exponent)(self._core)
+        core = self._core
+        newcore = lambda x, y, **kw: core(x, y, **kw) ** exponent
+        return self._clone(_core=newcore)
     else:
         return NotImplemented
-    return self._clone(_core=core)
 
     # TODO this will raise TypeError on negative integers. It should stop
     # method search and raise ValueError. Same for rpow. Check if it is a
@@ -118,10 +123,11 @@ def rpow(tcls, self, *, base):
     
     """
     if _util.is_scalar_cond_trueontracer(base, lambda x: x >= 1):
-        core = (lambda core: lambda x, y: base ** core(x, y))(self._core)
+        core = self._core
+        newcore = lambda x, y, **kw: base ** core(x, y, **kw)
+        return self._clone(_core=newcore)
     else:
         return NotImplemented
-    return self._clone(_core=core)
 
 CrossKernel.register_ufuncalgop(jnp.tan)
 # CrossKernel.register_ufuncalgop(lambda x: 1 / jnp.sinc(x), '1/sinc')

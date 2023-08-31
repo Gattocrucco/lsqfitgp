@@ -33,13 +33,6 @@ from .. import _utils
 
 from . import _util
 
-# def least_common_superclass(*classes):
-#     # from https://stackoverflow.com/a/25787091/3942284
-#     classes = [x.mro() for x in classes]
-#     for x in classes[0]: # pragma: no branch
-#         if all(x in mro for mro in classes):
-#             return x
-
 @functools.lru_cache(maxsize=None)
 def least_common_superclass(*classes):
     """
@@ -128,16 +121,8 @@ class CrossKernel:
     
     """
 
-    __slots__ = '_kw', '_dynkw', '_corecore'
+    __slots__ = '_kw', '_dynkw', '_core'
 
-    @property
-    def _core(self):
-        return lambda x, y: self._corecore(x, y, **self._dynkw)
-
-    @_core.setter
-    def _core(self, core):
-        self._corecore = core
-    
     def __new__(cls, core, *,
         scale=None,
         loc=None,
@@ -153,7 +138,7 @@ class CrossKernel:
                 
         self._kw = kw
         self._dynkw = dynkw
-        self._core = lambda x, y: core(x, y, **kw)
+        self._core = lambda x, y, **dynkw: core(x, y, **kw, **dynkw)
 
         if forcekron:
             self = self.transf('forcekron')
@@ -182,7 +167,7 @@ class CrossKernel:
         x = _array.asarray(x)
         y = _array.asarray(y)
         shape = _array.broadcast(x, y).shape
-        result = self._core(x, y)
+        result = self._core(x, y, **self._dynkw)
         assert isinstance(result, (numpy.ndarray, jnp.number, jnp.ndarray))
         assert jnp.issubdtype(result.dtype, jnp.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
@@ -205,26 +190,26 @@ class CrossKernel:
     def _nary(cls, op, kernels, side):
         
         if side is cls._side.LEFT:
-            wrapper = lambda c, _, y: lambda x: c(x, y)
+            wrapper = lambda c, _, y, **kw: lambda x: c(x, y, **kw)
             arg = lambda x, _: x
         elif side is cls._side.RIGHT:
-            wrapper = lambda c, x, _: lambda y: c(x, y)
+            wrapper = lambda c, x, _, **kw: lambda y: c(x, y, **kw)
             arg = lambda _, y: y
         else: # pragma: no cover
             raise KeyError(side)
         
         cores = [k._core for k in kernels]
-        def core(x, y):
-            wrapped = [wrapper(c, x, y) for c in cores]
+        def core(x, y, **kw):
+            wrapped = [wrapper(c, x, y, **kw) for c in cores]
             transformed = op(*wrapped)
             return transformed(arg(x, y))
         
         return __class__(core)
 
         # TODO instead of wrapping the cores just by closing over an argument,
-        # define a `PartialKernel` object that has algop and linop defined, the
-        # latter with one arg fixed to None, and __call__ that closes over
-        # an argument. This way I could apply ops directly with deflintransf.
+        # define a `PartialKernel` object that has linop defined, with one arg
+        # fixed to None, and __call__ that closes over an argument. This way I
+        # could apply ops directly with deflintransf.
 
     # TODO move in the binary op methods the logic that decides wether to
     # return NotImplemented, while the algops will raise an exception if the
@@ -248,9 +233,10 @@ class CrossKernel:
     
     def _swap(self):
         """ permute the arguments """
+        core = self._core
         return self._clone(
             __class__,
-            _core=(lambda core: lambda x, y: core(y, x))(self._core),
+            _core=lambda x, y, **kw: core(y, x, **kw),
         )
 
         # TODO make _swap a transf inherited by CrossIsotropicKernel => messes
@@ -893,11 +879,11 @@ class CrossKernel:
         @functools.wraps(xfunc)
         def corefunc(core, xfun, yfun):
             if not xfun:
-                return lambda x, y: core(x, yfun(y))
+                return lambda x, y, **kw: core(x, yfun(y), **kw)
             elif not yfun:
-                return lambda x, y: core(xfun(x), y)
+                return lambda x, y, **kw: core(xfun(x), y, **kw)
             else:
-                return lambda x, y: core(xfun(x), yfun(y))
+                return lambda x, y, **kw: core(xfun(x), yfun(y), **kw)
         
         cls.register_corelinop(corefunc, transfname, doc, xfunc)
         return xfunc
@@ -1013,8 +999,8 @@ class CrossKernel:
                 else lambda x, y: o
                 for o in (self, *operands)
             )
-            def core(x, y):
-                values = (core(x, y) for core in cores)
+            def core(x, y, **kw):
+                values = (core(x, y, **kw) for core in cores)
                 return ufunc(*values, **kw)
             return self._clone(_core=core)
         cls.register_algop(op, transfname, doc)
@@ -1022,7 +1008,7 @@ class CrossKernel:
 
     @classmethod
     def make_linop_family(cls, transfname, leftker, bothker, *,
-        doc=None, argparser=None, argname=None, rightname=None):
+        doc=None, argparser=None, rightname=None, argnames=None):
         """
         
         Form a family of kernels classes related by linear operators.
@@ -1042,15 +1028,21 @@ class CrossKernel:
             construction, and recognize the same set of keyword arguments.
         doc, argparser : callable, optional
             See `register_linop`.
-        argname : str, optional
-            If specified, `leftker` is passed an additional keyword argument
-            with name `argname` that specifies the argument of the operator,
-            and `bothker` similarly is passed a pair of operator arguments.
         rightname : str, optional
-            The name of a newly created class to represent application of the
-            operator on the right side, implemented by constructing `leftker`
-            and transposing it. If not specified, use ``Cross<seed name><both
-            name>``. The new class is a subclass of `leftker`.
+            The name of a newly created class `rightker` to represent
+            application of the operator on the right side, implemented by
+            constructing `leftker` and transposing it. If not specified, use
+            ``Cross<seed name><both name>``. `rightker` is a subclass of
+            `leftker`.
+        argnames : pair of str, optional
+            If specified, `leftker` is passed an additional keyword argument
+            with name ``argnames[0]`` that specifies the argument of the
+            operator, `rightker` is passed ``argnames[1]``, and `bothker`
+            similarly is passed both.
+
+            Since `leftker` is used to implement `rightker`, it must accept
+            both arguments, and may use them to determine if it is being invoked
+            as `leftker` or `rightker`.
 
         Examples
         --------
@@ -1109,28 +1101,32 @@ class CrossKernel:
         rightker = types.new_class(rightname, (leftker,), exec_body=exec_body)
 
         # function to produce the arguments to the transformed objects
-        def makekw(self, arg):
-            if argname is None:
-                return self._kw
-            else:
-                return {**self._kw, argname: arg}
+        def makekw(self, arg1, arg2):
+            kw = dict(dynkw=self._dynkw, **self._kw)
+            if argnames is not None:
+                if arg1 is not None:
+                    kw = dict(**kw, **{argnames[0]: arg1})
+                if arg2 is not None:
+                    kw = dict(**kw, **{argnames[1]: arg2})
+            return kw
 
         # register linop mapping cls to either leftker, rightker or bothker
         regkw = dict(transfname=transfname, doc=doc, argparser=argparser)
         @functools.partial(cls.register_linop, **regkw)
         def op_seed_to_siblings(_, self, arg1, arg2):
+            kw = makekw(self, arg1, arg2)
             if arg2 is None:
-                return leftker(**makekw(self, arg1))
+                return leftker(**kw)
             elif arg1 is None:
-                return rightker(**makekw(self, arg2))
+                return rightker(**kw)
             else:
-                return bothker(**makekw(self, (arg1, arg2)))
+                return bothker(**kw)
 
         # register linop mapping leftker to bothker
         @functools.partial(leftker.register_linop, **regkw)
         def op_left_to_both(_, self, arg1, arg2):
             if arg1 is None:
-                return bothker(**makekw(self, (self._kw.get(argname), arg2)))
+                return bothker(**makekw(self, arg1, arg2))
             else:
                 raise ValueError(f'cannot further transform '
                     f'`{leftker.__name__}` on left side with linop '
@@ -1140,7 +1136,7 @@ class CrossKernel:
         @functools.partial(rightker.register_linop, **regkw)
         def op_right_to_both(_, self, arg1, arg2):
             if arg2 is None:
-                return bothker(**makekw(self, (arg1, self._kw.get(argname))))
+                return bothker(**makekw(self, arg1, arg2))
             else:
                 raise ValueError(f'cannot further transform '
                     f'`{rightker.__name__}` on right side with linop '

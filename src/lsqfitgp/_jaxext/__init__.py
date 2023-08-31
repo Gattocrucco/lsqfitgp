@@ -80,12 +80,12 @@ def makejaxufunc(ufunc, *derivs, excluded=None):
 def elementwise_grad(fun, argnum=0):
     assert int(argnum) == argnum and argnum >= 0, argnum
     @functools.wraps(fun)
-    def funderiv(*args):
+    def funderiv(*args, **kw):
         preargs = args[:argnum]
         postargs = args[argnum + 1:]
         def oneargfun(arg):
             args = preargs + (arg,) + postargs
-            return fun(*args)
+            return fun(*args, **kw)
         primal = args[argnum]
         shape = getattr(primal, 'shape', ())
         dtype = getattr(primal, 'dtype', type(primal))
