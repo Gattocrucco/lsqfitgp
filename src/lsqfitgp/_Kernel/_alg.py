@@ -148,7 +148,7 @@ CrossKernel.register_ufuncalgop(jspecial.i1)
 
 @functools.partial(AffineSpan.register_algop, transfname='add')
 def affine_add(tcls, self, other):
-    newself = tcls.super_transf('add', self, other)
+    newself = AffineSpan.super_transf('add', self, other)
     if _util.is_numerical_scalar(other):
         dynkw = dict(self._dynkw)
         dynkw['offset'] = dynkw['offset'] + other
@@ -158,7 +158,7 @@ def affine_add(tcls, self, other):
 
 @functools.partial(AffineSpan.register_algop, transfname='mul')
 def affine_mul(tcls, self, other):
-    newself = tcls.super_transf('mul', self, other)
+    newself = AffineSpan.super_transf('mul', self, other)
     if _util.is_numerical_scalar(other):
         dynkw = dict(self._dynkw)
         dynkw['offset'] = other * dynkw['offset']

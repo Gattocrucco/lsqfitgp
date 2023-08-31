@@ -323,7 +323,7 @@ class CrossKernel:
         return transfs
 
     @classmethod
-    def _gettransf(cls, transfname):
+    def _gettransf(cls, transfname, transfmro=None):
         """
         Find a transformation.
 
@@ -346,7 +346,9 @@ class CrossKernel:
         KeyError :
             The transformation was not found.
         """
-        for c in cls._transfmro():
+        if transfmro is None:
+            transfmro = cls._transfmro()
+        for c in transfmro:
             try:
                 return c, c._transf[transfname]
             except KeyError:
@@ -541,7 +543,7 @@ class CrossKernel:
 
         This is equivalent to `transf` but is invoked on a class and the
         object is passed explicitly. The definition of the transformation is
-        searched starting from the superclass.
+        searched starting from the next class in the MRO of `self`.
 
         Parameters
         ----------
@@ -556,10 +558,9 @@ class CrossKernel:
             The output of the transformation.
 
         """
-        mro = cls._transfmro()
-        assert next(mro) is cls
-        sup = next(mro)
-        tcls, transf = sup._gettransf(transfname)
+        mro = list(self._transfmro())
+        idx = mro.index(cls)
+        tcls, transf = self._gettransf(transfname, mro[idx + 1:])
         return transf.func(tcls, self, *args, **kw)
 
     def linop(self, transfname, *args, **kw):

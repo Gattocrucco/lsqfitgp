@@ -366,6 +366,29 @@ class TestTransf:
         assert a.transf('ciao', 1, 2) == '1 2'
         assert b.transf('ciao', 1, 2) == 'ciao 1 2'
 
+    def test_super_multiple_inheritance(constcore):
+
+        # class D has mro C, B, A
+        class A(lgp.Kernel): pass
+        class B(A): pass
+        class C(A): pass
+        class D(C, B): pass
+
+        # set up transformations that return the class name
+        @A.register_transf
+        def who(tcls, self):
+            return tcls
+        B.inherit_transf('who')
+
+        # make the transf on D invoke superclasses
+        @D.register_transf
+        def who(tcls, self):
+            return tcls.super_transf('who', self)
+
+        # check the MRO is respected
+        d = D(constcore)
+        assert d.transf('who') is B
+
 class TestLinOp:
 
     def test_args_errors(self, idtransf):
@@ -856,7 +879,7 @@ class TestAffineTracked:
 
     def test_preserved_class(self, constcore):
         """ test that affine operations preserve the specific subclass """
-        class A(lgp._Kernel.AffineSpan, lgp.IsotropicKernel): pass
+        class A(lgp._Kernel.AffineSpan, lgp.Kernel): pass
         a = A(constcore)
         assert a.linop('loc', 0).__class__ is A
         assert a.linop('scale', 1).__class__ is A
@@ -864,6 +887,16 @@ class TestAffineTracked:
         assert (0 + a).__class__ is A
         assert (a * 1).__class__ is A
         assert (1 * a).__class__ is A
+
+    def test_scalar_only(self, constcore):
+        class A(lgp._Kernel.AffineSpan, lgp.Kernel): pass
+        a = A(constcore)
+        assert (a + a).__class__ is lgp.Kernel
+        assert (a * a).__class__ is lgp.Kernel
+
+    def test_no_instance(self, constcore):
+        with pytest.raises(TypeError, match='cannot instantiate'):
+            lgp._Kernel.AffineSpan(constcore)
 
 def test_callable_arg(constcore, rng):
     x = rng.standard_normal(10)
