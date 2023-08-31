@@ -1157,6 +1157,9 @@ class AffineSpan(CrossKernel, abc.ABC):
     `AffineSpan` and it subclasses are preserved by the transformations
     'scale', 'loc', 'add' (with scalar) and 'mul' (with scalar).
 
+    `AffineSpan` can not be instantiated directly or used as standalone
+    superclass. It must be the first base before concrete superclasses.
+
     """
     
     _affine_dynkw = dict(loc=(0, 0), scale=(1, 1), offset=0, ampl=1)
@@ -1226,6 +1229,9 @@ class AffineSpan(CrossKernel, abc.ABC):
 
     @classmethod
     def __subclasshook__(cls, sub):
+        if cls is __class__:
+            return NotImplemented
+                # to avoid algops promoting to unqualified AffineSpan
         if issubclass(cls, Kernel):
             if issubclass(sub, Constant):
                 return True
@@ -1240,3 +1246,8 @@ class AffineSpan(CrossKernel, abc.ABC):
     # this a subclass of those three. AffineOut would also allow keeping the
     # class when adding two objects without keyword arguments in _kw and _dynkw
     # beyond those managed by Affine.
+
+    # TODO when I reimplement transformations as methods, make AffineSpan not
+    # a subclass of CrossKernel. Right now I have to to avoid routing around
+    # the assumption that all classes in the MRO implement the transformation
+    # management logic.

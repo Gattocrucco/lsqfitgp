@@ -86,7 +86,7 @@ class TestAlgOp:
     @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_binary_undef(self, op, cls, constcore):
 
-        # test that adding a string raises
+        # test that adding a string raises through Python's mechanism
         kernel = cls(constcore)
         with pytest.raises(TypeError):
             op(kernel, 'gatto')
@@ -875,7 +875,7 @@ class TestDecorator:
         assert C().__class__ is C
         assert isinstance(C(), crcls)
 
-class TestAffineTracked:
+class TestAffineSpan:
 
     def test_preserved_class(self, constcore):
         """ test that affine operations preserve the specific subclass """
@@ -888,15 +888,35 @@ class TestAffineTracked:
         assert (a * 1).__class__ is A
         assert (1 * a).__class__ is A
 
-    def test_scalar_only(self, constcore):
+    def test_preserved_class_scalar_only(self, constcore):
+        """ test that algebraic operations on pairs do not preserve the class """
         class A(lgp._Kernel.AffineSpan, lgp.Kernel): pass
         a = A(constcore)
         assert (a + a).__class__ is lgp.Kernel
         assert (a * a).__class__ is lgp.Kernel
 
+    def test_class_regression(self, constcore):
+        """ check that regressing the underlying class is not prevented """
+        class A(lgp._Kernel.AffineSpan, lgp.IsotropicKernel): pass
+        a = A(constcore)
+        assert a.linop('loc', 0).__class__ is A
+        assert a.linop('dim', 'a').__class__ is lgp.StationaryKernel
+
     def test_no_instance(self, constcore):
         with pytest.raises(TypeError, match='cannot instantiate'):
             lgp._Kernel.AffineSpan(constcore)
+
+    @mark.parametrize('op', [operator.add, operator.mul])
+    def test_negative_scalar(self, constcore, op):
+        
+        class A(lgp._Kernel.AffineSpan, lgp.Kernel): pass
+        a = A(constcore)
+        assert op(a, 0).__class__ is A
+        assert op(a, -1).__class__ is lgp.CrossKernel
+
+        class B(lgp._Kernel.AffineSpan, lgp.CrossKernel): pass
+        b = B(constcore)
+        assert op(b, -1).__class__ is B
 
 def test_callable_arg(constcore, rng):
     x = rng.standard_normal(10)
