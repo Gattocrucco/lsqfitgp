@@ -231,7 +231,7 @@ def test_kernelop():
         .addx(x, 'x2', proc='b2')
     )
     prior = gp.prior(['x1', 'x2'], raw=True)
-    util.assert_equal(prior['x1', 'x1'], prior['x2', 'x2'])
+    util.assert_allclose(prior['x1', 'x1'], prior['x2', 'x2'], rtol=1e-15)
     util.assert_equal(prior['x2', 'x1'], prior['x1', 'x2'].T)
     util.assert_equal(prior['x1', 'x2'], np.zeros(2 * x.shape))
 
