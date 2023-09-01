@@ -98,7 +98,7 @@ def CrossZetaFourier(k, y, *, nu):
     return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)
 
 @functools.partial(Zeta.register_linop, argparser=lambda do: do if do else None)
-def fourier(self, dox, doy):
+def fourier(_, self, dox, doy):
     r"""
 
     Compute the Fourier series transform of the function.
@@ -118,7 +118,7 @@ def fourier(self, dox, doy):
 
     """
     
-    nu = self._kw['nu']
+    nu = self.initkw['nu']
     
     if dox and doy:
         return ZetaFourier(nu=nu)    

@@ -87,10 +87,21 @@ class CrossKernel:
         If specified, apply ``.batch(batchbytes)`` to the kernel.
     dynkw : dict, optional
         Additional keyword arguments passed to `core` that can be modified
-        by transformations.
-    **kw :
+        by transformations. Deleted by transformations by default.
+    **initkw :
         Additional keyword arguments passed to `core` that can be read but not
         changed by transformations.
+
+    Attributes
+    ----------
+    initkw : dict
+        The `initkw` argument.
+    dynkw : dict
+        The `dynkw` argument, or a modification of it if the object has been
+        transformed.
+    core : callable
+        The `core` argument partially evaluated on `initkw`, or another
+        function wrapping it if the object has been transformed.
     
     Methods
     -------
@@ -108,6 +119,7 @@ class CrossKernel:
     has_transf
     list_transf
     super_transf
+    make_linop_family
 
     See also
     --------
@@ -121,7 +133,20 @@ class CrossKernel:
     
     """
 
-    __slots__ = '_kw', '_dynkw', '_core'
+    __slots__ = '_initkw', '_dynkw', '_core'
+        # only __new__ and _clone shall access these attributes
+
+    @property
+    def initkw(self):
+        return types.MappingProxyType(self._initkw)
+
+    @property
+    def dynkw(self):
+        return types.MappingProxyType(self._dynkw)
+
+    @property
+    def core(self):
+        return self._core
 
     def __new__(cls, core, *,
         scale=None,
@@ -132,13 +157,13 @@ class CrossKernel:
         forcekron=False,
         batchbytes=None,
         dynkw={},
-        **kw,
+        **initkw,
     ):
         self = super().__new__(cls)
                 
-        self._kw = kw
-        self._dynkw = dynkw
-        self._core = lambda x, y, **dynkw: core(x, y, **kw, **dynkw)
+        self._initkw = initkw
+        self._dynkw = dict(dynkw)
+        self._core = lambda x, y, **dynkw: core(x, y, **initkw, **dynkw)
 
         if forcekron:
             self = self.transf('forcekron')
@@ -152,7 +177,7 @@ class CrossKernel:
         }
         for transfname, arg in linop_args.items():
             if callable(arg):
-                arg = arg(**kw)
+                arg = arg(**initkw)
             if isinstance(arg, tuple):
                 self = self.linop(transfname, *arg)
             else:
@@ -167,19 +192,17 @@ class CrossKernel:
         x = _array.asarray(x)
         y = _array.asarray(y)
         shape = _array.broadcast(x, y).shape
-        result = self._core(x, y, **self._dynkw)
+        result = self.core(x, y, **self.dynkw)
         assert isinstance(result, (numpy.ndarray, jnp.number, jnp.ndarray))
         assert jnp.issubdtype(result.dtype, jnp.number), result.dtype
         assert result.shape == shape, (result.shape, shape)
         return result
 
-    def _clone(self, cls=None, **attrs):
+    def _clone(self, cls=None, *, initkw=None, dynkw=None, core=None):
         newself = object.__new__(self.__class__ if cls is None else cls)
-        newself._kw = self._kw
-        newself._dynkw = {}
-        newself._core = self._core
-        for k, v in attrs.items():
-            setattr(newself, k, v)
+        newself._initkw = self._initkw if initkw is None else dict(initkw)
+        newself._dynkw = {} if dynkw is None else dict(dynkw)
+        newself._core = self._core if core is None else core
         return newself
 
     class _side(enum.Enum):
@@ -198,7 +221,7 @@ class CrossKernel:
         else: # pragma: no cover
             raise KeyError(side)
         
-        cores = [k._core for k in kernels]
+        cores = [k.core for k in kernels]
         def core(x, y, **kw):
             wrapped = [wrapper(c, x, y, **kw) for c in cores]
             transformed = op(*wrapped)
@@ -233,10 +256,10 @@ class CrossKernel:
     
     def _swap(self):
         """ permute the arguments """
-        core = self._core
+        core = self.core
         return self._clone(
             __class__,
-            _core=lambda x, y, **kw: core(y, x, **kw),
+            core=lambda x, y, **kw: core(y, x, **kw),
         )
 
         # TODO make _swap a transf inherited by CrossIsotropicKernel => messes
@@ -263,8 +286,8 @@ class CrossKernel:
         batched_kernel : CrossKernel
             The same kernel but with batched computations.
         """
-        core = _jaxext.batchufunc(self._core, maxnbytes=maxnbytes)
-        return self._clone(_core=core)
+        core = _jaxext.batchufunc(self.core, maxnbytes=maxnbytes)
+        return self._clone(core=core)
     
     @classmethod
     def _crossmro(cls):
@@ -842,9 +865,9 @@ class CrossKernel:
         """
         @functools.wraps(corefunc)
         def op(_, self, arg1, arg2, *operands):
-            cores = (o._core for o in operands)
-            core = corefunc(self._core, arg1, arg2, *cores)
-            return self._clone(_core=core)
+            cores = (o.core for o in operands)
+            core = corefunc(self.core, arg1, arg2, *cores)
+            return self._clone(core=core)
         cls.register_linop(op, transfname, doc, argparser)
         return corefunc
 
@@ -950,7 +973,7 @@ class CrossKernel:
         cls.register_transf(func, transfname, doc, cls._algopmarker)
         return op
 
-        # TODO delete _kw (also in linop) if there's more than one kernel
+        # TODO delete initkw (also in linop) if there's more than one kernel
         # operand or if the class changed?
 
         # TODO consider adding an option domains=callable, returns list of
@@ -995,14 +1018,14 @@ class CrossKernel:
         @functools.wraps(ufunc)
         def op(_, self, *operands, **kw):
             cores = tuple(
-                o._core if isinstance(o, __class__)
+                o.core if isinstance(o, __class__)
                 else lambda x, y: o
                 for o in (self, *operands)
             )
             def core(x, y, **kw):
                 values = (core(x, y, **kw) for core in cores)
                 return ufunc(*values, **kw)
-            return self._clone(_core=core)
+            return self._clone(core=core)
         cls.register_algop(op, transfname, doc)
         return ufunc
 
@@ -1102,7 +1125,7 @@ class CrossKernel:
 
         # function to produce the arguments to the transformed objects
         def makekw(self, arg1, arg2):
-            kw = dict(dynkw=self._dynkw, **self._kw)
+            kw = dict(dynkw=self.dynkw, **self.initkw)
             if argnames is not None:
                 if arg1 is not None:
                     kw = dict(**kw, **{argnames[0]: arg1})
@@ -1240,8 +1263,8 @@ class AffineSpan(CrossKernel, abc.ABC):
 
     # TODO I could do separately AffineLeft, AffineRight, AffineOut, and make
     # this a subclass of those three. AffineOut would also allow keeping the
-    # class when adding two objects without keyword arguments in _kw and _dynkw
-    # beyond those managed by Affine.
+    # class when adding two objects without keyword arguments in initkw and
+    # dynkw beyond those managed by Affine.
 
     # TODO when I reimplement transformations as methods, make AffineSpan not
     # a subclass of CrossKernel. Right now I have to to avoid routing around

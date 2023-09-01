@@ -45,15 +45,15 @@ def add(tcls, self, other):
         The other kernel.
     
     """
-    core = self._core
+    core = self.core
     if _util.is_numerical_scalar(other):
         newcore = lambda x, y, **kw: core(x, y, **kw) + other
     elif isinstance(other, CrossKernel):
-        other = other._core
+        other = other.core
         newcore = lambda x, y, **kw: core(x, y, **kw) + other(x, y, **kw)
     else:
         return NotImplemented
-    return self._clone(_core=newcore)
+    return self._clone(core=newcore)
 
 @CrossKernel.register_algop
 def mul(tcls, self, other):
@@ -71,15 +71,15 @@ def mul(tcls, self, other):
         The other kernel.
     
     """
-    core = self._core
+    core = self.core
     if _util.is_numerical_scalar(other):
         newcore = lambda x, y, **kw: core(x, y, **kw) * other
     elif isinstance(other, CrossKernel):
-        other = other._core
+        other = other.core
         newcore = lambda x, y, **kw: core(x, y, **kw) * other(x, y, **kw)
     else:
         return NotImplemented
-    return self._clone(_core=newcore)
+    return self._clone(core=newcore)
 
 @CrossKernel.register_algop
 def pow(tcls, self, *, exponent):
@@ -97,9 +97,9 @@ def pow(tcls, self, *, exponent):
     
     """
     if _util.is_nonnegative_integer_scalar(exponent):
-        core = self._core
+        core = self.core
         newcore = lambda x, y, **kw: core(x, y, **kw) ** exponent
-        return self._clone(_core=newcore)
+        return self._clone(core=newcore)
     else:
         return NotImplemented
 
@@ -123,9 +123,9 @@ def rpow(tcls, self, *, base):
     
     """
     if _util.is_scalar_cond_trueontracer(base, lambda x: x >= 1):
-        core = self._core
+        core = self.core
         newcore = lambda x, y, **kw: base ** core(x, y, **kw)
-        return self._clone(_core=newcore)
+        return self._clone(core=newcore)
     else:
         return NotImplemented
 
@@ -156,9 +156,9 @@ CrossKernel.register_ufuncalgop(jspecial.i1)
 def affine_add(tcls, self, other):
     newself = AffineSpan.super_transf('add', self, other)
     if _util.is_numerical_scalar(other):
-        dynkw = dict(self._dynkw)
+        dynkw = dict(self.dynkw)
         dynkw['offset'] = dynkw['offset'] + other
-        return newself._clone(self.__class__, _dynkw=dynkw)
+        return newself._clone(self.__class__, dynkw=dynkw)
     else:
         return newself
 
@@ -166,9 +166,9 @@ def affine_add(tcls, self, other):
 def affine_mul(tcls, self, other):
     newself = AffineSpan.super_transf('mul', self, other)
     if _util.is_numerical_scalar(other):
-        dynkw = dict(self._dynkw)
+        dynkw = dict(self.dynkw)
         dynkw['offset'] = other * dynkw['offset']
         dynkw['ampl'] = other * dynkw['ampl']
-        return newself._clone(self.__class__, _dynkw=dynkw)
+        return newself._clone(self.__class__, dynkw=dynkw)
     else:
         return newself

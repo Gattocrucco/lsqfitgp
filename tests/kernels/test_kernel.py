@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Test the generic kernel machinery. This file covers at 100% the _Kernel
+""" Test the generic kernel machinery. This file shall cover at 100% the _Kernel
 submodule. """
 
 import sys
@@ -403,7 +403,7 @@ class TestLinOp:
         a = A(constcore)
         b = a.linop('ciao', 1, 2)
         assert a is b
-        assert a._core is b._core
+        assert a.core is b.core
 
     def test_class_goes_to_cross_parent(self, constcore, idtransf):
         class A(lgp.CrossKernel): pass
@@ -935,16 +935,16 @@ class TestAffineSpan:
         a = a.linop('loc', 17, 19)
         
         # compare accumulated coefficients with manual calculation
-        assert a._dynkw['offset'] == (2 * 3 + 5) * 7
-        assert a._dynkw['ampl'] == 3 * 7
-        assert a._dynkw['loc'] == (2 * (5 + 11 * 17), 3 * (7 + 13 * 19))
-        assert a._dynkw['scale'] == (2 * 11, 3 * 13)
+        assert a.dynkw['offset'] == (2 * 3 + 5) * 7
+        assert a.dynkw['ampl'] == 3 * 7
+        assert a.dynkw['loc'] == (2 * (5 + 11 * 17), 3 * (7 + 13 * 19))
+        assert a.dynkw['scale'] == (2 * 11, 3 * 13)
 
         # compare result with specification of coefficients
         c1 = a(x, y)
-        c2 = a._dynkw['offset'] + a._dynkw['ampl'] * a0(
-            (x - a._dynkw['loc'][0]) / a._dynkw['scale'][0],
-            (y - a._dynkw['loc'][1]) / a._dynkw['scale'][1],
+        c2 = a.dynkw['offset'] + a.dynkw['ampl'] * a0(
+            (x - a.dynkw['loc'][0]) / a.dynkw['scale'][0],
+            (y - a.dynkw['loc'][1]) / a.dynkw['scale'][1],
         )
         util.assert_allclose(c1, c2)
 
@@ -957,7 +957,7 @@ def test_callable_arg(constcore, rng):
 def test_init_kw_preserved(constcore):
     kernel = lgp.Kernel(constcore, cippa=4)
     def check(k):
-        assert k._kw['cippa'] == 4
+        assert k.initkw['cippa'] == 4
     check(kernel._swap())
     check(kernel.linop('loc', 1, 2))
     check(kernel.transf('forcekron'))

@@ -53,8 +53,8 @@ def forcekron(tcls, self):
 
     """
 
-    core = self._core
+    core = self.core
     newcore = lambda x, y, **kw: _util.prod_recurse_dtype(core, x, y, **kw)
-    return self._clone(tcls, _core=newcore)
+    return self._clone(tcls, core=newcore)
 
 _crosskernel.Kernel = Kernel
