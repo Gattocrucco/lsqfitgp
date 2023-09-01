@@ -176,8 +176,13 @@ class TestAlgOp:
         assert op(A(constcore), lgp.Kernel(constcore)).__class__ is lgp.Kernel
 
     @mark.parametrize('op', [operator.add, operator.mul])
-    def test_binary_scalar_class(self, constcore, op):
-        k = lgp.Kernel(constcore)
+    @mark.parametrize('cls,crosscls', [
+        (lgp.Kernel, lgp.CrossKernel),
+        (lgp.StationaryKernel, lgp.CrossStationaryKernel),
+        (lgp.IsotropicKernel, lgp.CrossIsotropicKernel),
+    ])
+    def test_binary_scalar_class(self, constcore, op, cls, crosscls):
+        k = cls(constcore)
         convs = [
             lambda x: int(x),
             lambda x: float(x),
@@ -188,11 +193,11 @@ class TestAlgOp:
         ]
         @jax.jit
         def check(x):
-            assert op(k, x).__class__ is lgp.Kernel
+            assert op(k, x).__class__ is cls
         for c in convs:
-            assert op(k, c(1)).__class__ is lgp.Kernel
-            assert op(k, c(0)).__class__ is lgp.Kernel
-            assert op(k, c(-1)).__class__ is lgp.CrossKernel
+            assert op(k, c(1)).__class__ is cls
+            assert op(k, c(0)).__class__ is cls
+            assert op(k, c(-1)).__class__ is crosscls
             check(c(1))
             check(c(0))
             check(c(-1))

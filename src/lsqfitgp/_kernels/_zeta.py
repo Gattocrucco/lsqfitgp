@@ -127,22 +127,12 @@ def fourier(_, self, dox, doy):
     else:
         return CrossZetaFourier(nu=nu)._swap()
 
-# TODO preserve the fourier transf under affine transformations
-# - apply the proposed changes to NotImplemented behavior in algop and
-#   binary operators, because I'll need to ovverride add and mul
-# - make a class AffineTracked
-#     - it redefines 'loc', 'scale', 'mul' and 'add' to accumulate
-#       translations and scalings on the inputs and output
-#     - these are accessible in a dict attr _affine
-#     - ovverrides _clone to copy _affine
+# TODO
+# - use make_linop_family
 # - change the `superclass` param of `kernel` to `bases` to allow passing
-#   additional classes, AffineTracked in particular
+#   additional classes, AffineSpan in particular
 #     - a more user-friendly alternative would be an option just for
-#       affine tracking, hiding the class as implementation detail.
-# - make Zeta an AffineTracked subclass
-#     - rewrite the 'fourier' linop to use the _affine attribute
-# - make various tests that everything propagates or not as it should
-#     - transf that are not affine must not preserve the class
-#     - transf that are must
-#         - unless the subclass redefines them AND does something nontrivial
-#           instead of using self._clone
+#       affine span, hiding the class as implementation detail.
+# - make Zeta an AffineSpan subclass
+# - implement the scaling and phases of the fourier series
+# - consider renaming fourier to fourier_series

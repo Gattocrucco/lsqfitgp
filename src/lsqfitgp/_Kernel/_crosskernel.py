@@ -1165,6 +1165,9 @@ class CrossKernel:
                     f'`{rightker.__name__}` on right side with linop '
                     f'{transfname!r}')
 
+        # TODO emit a single warning if the classes do not respect the pattern
+        # Kernel, not Kernel, Kernel.
+
 class AffineSpan(CrossKernel, abc.ABC):
     """
 

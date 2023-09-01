@@ -106,7 +106,7 @@ IsotropicKernel.inherit_transf('cond', intermediates=True)
 class CrossConstant(CrossIsotropicKernel):
     pass
 
-class Constant(CrossConstant, _kernel.Kernel):
+class Constant(CrossConstant, IsotropicKernel):
     pass
 
 def zero(x, y):
