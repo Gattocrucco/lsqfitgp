@@ -23,6 +23,7 @@ import sys
 import collections
 import types
 import abc
+import warnings
 
 import numpy
 from jax import numpy as jnp
@@ -1030,8 +1031,8 @@ class CrossKernel:
         return ufunc
 
     @classmethod
-    def make_linop_family(cls, transfname, leftker, bothker, *,
-        doc=None, argparser=None, rightname=None, argnames=None):
+    def make_linop_family(cls, transfname, bothker, leftker, rightker=None, *,
+        doc=None, argparser=None, argnames=None, translkw=None):
         """
         
         Form a family of kernels classes related by linear operators.
@@ -1044,28 +1045,30 @@ class CrossKernel:
         ----------
         transfname : str
             The name of the new transformation.
-        leftker, bothker : CrossKernel
+        bothker, leftker, rightker : CrossKernel
             The kernel classes to be obtained by applying the operator to a seed
-            class object respectively on the left side and on both sides. All
-            classes are assumed to require no positional arguments at
-            construction, and recognize the same set of keyword arguments.
+            class object respectively on both sides, only left, or only right.
+            All classes are assumed to require no positional arguments at
+            construction, and recognize the same set of keyword arguments. If
+            `rightker` is not specified, it is defined by subclassing `leftker`
+            and transposing the kernel on object construction.
         doc, argparser : callable, optional
             See `register_linop`.
-        rightname : str, optional
-            The name of a newly created class `rightker` to represent
-            application of the operator on the right side, implemented by
-            constructing `leftker` and transposing it. If not specified, use
-            ``Cross<seed name><both name>``. `rightker` is a subclass of
-            `leftker`.
         argnames : pair of str, optional
             If specified, `leftker` is passed an additional keyword argument
             with name ``argnames[0]`` that specifies the argument of the
             operator, `rightker` is passed ``argnames[1]``, and `bothker`
             similarly is passed both.
 
-            Since `leftker` is used to implement `rightker`, it must accept
-            both arguments, and may use them to determine if it is being invoked
-            as `leftker` or `rightker`.
+            If `leftker` is used to implement `rightker`, it must accept both
+            arguments, and may use them to determine if it is being invoked as
+            `leftker` or `rightker`.
+        translkw : callable, optional
+            A function with signature ``translkw(dynkw, <argnames>, **initkw) ->
+            dict`` that determines the constructor arguments for a new object
+            starting from the ones of the object to be transformed. By default,
+            ``initkw`` is passed over, and an error is raised if ``dynkw`` is
+            not empty.
 
         Examples
         --------
@@ -1075,12 +1078,6 @@ class CrossKernel:
         ...     ''' The reknown A kernel of order gatto '''
         ...     return ...
         ...
-        >>> @lgp.crosskernel
-        ... def CrossTA(n, x, *, gatto, op):
-        ...     ''' The cross covariance between the Topo series of an A
-        ...         process of order gatto and the process itself '''
-        ...     return ...
-        ...
         >>> @lgp.kernel
         ... def T(n, m, *, gatto, op):
         ...     ''' The kernel of the Topo series of an A process of order
@@ -1088,7 +1085,13 @@ class CrossKernel:
         ...     op1, op2 = op
         ...     return ...
         ...
-        >>> A.make_linop_family('topo', CrossTA, T)
+        >>> @lgp.crosskernel
+        ... def CrossTA(n, x, *, gatto, op):
+        ...     ''' The cross covariance between the Topo series of an A
+        ...         process of order gatto and the process itself '''
+        ...     return ...
+        ...
+        >>> A.make_linop_family('topo', T, CrossTA)
         >>> a = A(gatto=7)
         >>> ta = A.linop('topo', True, None)
         >>> at = A.linop('topo', None, True)
@@ -1100,28 +1103,56 @@ class CrossKernel:
 
         """
         
-        # determine the name of rightker
-        if rightname is None:
+        if rightker is None:
+
+            # invent a name for rightker
             rightname = f'Cross{cls.__name__}{bothker.__name__}'
 
-        # define how to set up rightker
-        def exec_body(ns):
-            
-            if leftker.__doc__:
-                header = 'Automatically generated transposed version of:\n\n'
-                ns['__doc__'] = _utils.append_to_docstring(leftker.__doc__, header, front=True)
-            
-            def __new__(cls, *args, **kw):
-                self = super(rightker, cls).__new__(cls, *args, **kw)
-                if self.__class__ is cls:
-                    return self._swap()._clone(cls)
-                else:
-                    return self._swap()
-            
-            ns['__new__'] = __new__
+            # define how to set up rightker
+            def exec_body(ns):
+                
+                if leftker.__doc__:
+                    header = 'Automatically generated transposed version of:\n\n'
+                    ns['__doc__'] = _utils.append_to_docstring(leftker.__doc__, header, front=True)
+                
+                def __new__(cls, *args, **kw):
+                    self = super(rightker, cls).__new__(cls, *args, **kw)
+                    
+                    if self.__class__ is cls:
+                        self = self._swap()
+                        if not isinstance(self, leftker):
+                            raise TypeError(f'newly created instance of '
+                                f'automatically defined {rightker.__name__} is not an '
+                                f'instance of {leftker.__name__} after '
+                                f'transposition. Either define transposition '
+                                f'for {leftker.__name__}, or define '
+                                f'{rightker.__name__} manually')
+                        return self._clone(cls)
 
-        # create rightker, evil twin of leftker separated at birth
-        rightker = types.new_class(rightname, (leftker,), exec_body=exec_body)
+                    else:
+                        return self._swap()
+
+                ns['__new__'] = __new__
+
+            # create rightker, evil twin of leftker separated at birth
+            rightker = types.new_class(rightname, (leftker,), exec_body=exec_body)
+
+        # check which classes are symmetric
+        classes = cls, bothker, leftker, rightker
+        sym = tuple(issubclass(c, Kernel) for c in classes)
+        exp = True, True, False, False
+        if sym != exp:
+            desc = lambda t: 'Kernel' if t else 'non-Kernel'
+            warnings.warn(f'Expected classes pattern {", ".join(map(desc, exp))}, '
+                f'found {", ".join(map(desc, sym))}')
+
+        # set translkw if not specified
+        if translkw is None:
+            def translkw(*, dynkw, **initkw):
+                if dynkw:
+                    raise ValueError('found non-empty `dynkw`, the default '
+                        'implementation of `translkw` does not support it')
+                return initkw
 
         # function to produce the arguments to the transformed objects
         def makekw(self, arg1, arg2):
@@ -1131,7 +1162,7 @@ class CrossKernel:
                     kw = dict(**kw, **{argnames[0]: arg1})
                 if arg2 is not None:
                     kw = dict(**kw, **{argnames[1]: arg2})
-            return kw
+            return translkw(**kw)
 
         # register linop mapping cls to either leftker, rightker or bothker
         regkw = dict(transfname=transfname, doc=doc, argparser=argparser)
@@ -1165,9 +1196,6 @@ class CrossKernel:
                     f'`{rightker.__name__}` on right side with linop '
                     f'{transfname!r}')
 
-        # TODO emit a single warning if the classes do not respect the pattern
-        # Kernel, not Kernel, Kernel.
-
 class AffineSpan(CrossKernel, abc.ABC):
     """
 
@@ -1185,12 +1213,18 @@ class AffineSpan(CrossKernel, abc.ABC):
     """
     
     _affine_dynkw = dict(loc=(0, 0), scale=(1, 1), offset=0, ampl=1)
+
+    # TODO split the pairs into pairs of arguments, such that I can implement
+    # left/right keeping the same param layout
     
     def __new__(cls, *args, dynkw={}, **kw):
         if cls is __class__:
             raise TypeError(f'cannot instantiate {__class__.__name__} directly')
         dynkw = dict(**dynkw, **cls._affine_dynkw)
         return super().__new__(cls, *args, dynkw=dynkw, **kw)
+
+        # TODO instead of imposing _affine_dynkw, update it with the user dynkw,
+        # to allow transformations to propagate something easily
 
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
@@ -1267,7 +1301,8 @@ class AffineSpan(CrossKernel, abc.ABC):
     # TODO I could do separately AffineLeft, AffineRight, AffineOut, and make
     # this a subclass of those three. AffineOut would also allow keeping the
     # class when adding two objects without keyword arguments in initkw and
-    # dynkw beyond those managed by Affine.
+    # dynkw beyond those managed by Affine. => Make only AffineSide and have it
+    # switch side on _swap.
 
     # TODO when I reimplement transformations as methods, make AffineSpan not
     # a subclass of CrossKernel. Right now I have to to avoid routing around

@@ -23,6 +23,8 @@ submodule. """
 import sys
 import operator
 import functools
+import warnings
+import contextlib
 
 import numpy as np
 from numpy.lib import recfunctions
@@ -693,28 +695,48 @@ class TestLinOp:
         a = A()
         a(x, x)
 
-    @mark.parametrize('rightname,doc,argnames', [
-        (None, None, None),
-        ('gatto', 'miao', ('xbau', 'ybau')),
-    ])
-    def test_make_linop_family(self, rng, rightname, doc, argnames):
+    @mark.parametrize('rightker', [False, True])
+    @mark.parametrize('doc', [None, 'miao'])
+    @mark.parametrize('argnames', [None, ('xbau', 'ybau')])
+    @mark.parametrize('nonsym', [False, True])
+    def test_make_linop_family(self, rng, rightker, doc, argnames, nonsym):
 
-        @lgp.kernel
+        @lgp.crosskernel if nonsym else lgp.kernel
         def A(x, y, *, gatto):
             return gatto * x * y
-
-        @lgp.crosskernel
-        def CrossBA(a, y, *, gatto, xbau=2, ybau=3):
-            return gatto * xbau * ybau * a * y
-
-        if doc:
-            CrossBA.__doc__ = doc
 
         @lgp.kernel
         def B(a, b, *, gatto, xbau=5, ybau=7):
             return gatto * xbau * ybau * a * b
 
-        A.make_linop_family('ciao', CrossBA, B, rightname=rightname, argnames=argnames)
+        @lgp.crosskernel
+        def CrossBA(a, y, *, gatto, xbau=2, ybau=3):
+            return gatto * xbau * ybau * a * y
+        CrossBA._swap = lambda self: super(CrossBA, self)._swap()._clone(CrossBA)
+        if doc:
+            CrossBA.__doc__ = doc
+        
+        if rightker:
+            @lgp.crosskernel
+            def CrossAB(y, a, *, gatto, xbau=2, ybau=3):
+                return gatto * ybau * xbau * y * a
+        else:
+            CrossAB = None
+
+        if nonsym:
+            @contextlib.contextmanager
+            def context():
+                with pytest.warns(UserWarning, match='non-Kernel, Kernel, non-Kernel, non-Kernel') as w:
+                    yield w
+        else:
+            @contextlib.contextmanager
+            def context():
+                with warnings.catch_warnings():
+                    warnings.simplefilter('error')
+                    yield
+
+        with context():
+            A.make_linop_family('ciao', B, CrossBA, CrossAB, argnames=argnames)
 
         # produce instances
         aa = A(gatto=11)
@@ -740,17 +762,18 @@ class TestLinOp:
         assert bb2(1, 1) == (11 * 13 * 13 if argnames else 11 * 5 * 7)
 
         # check instance with automatically defined class
-        CrossAB = ab.__class__
-        assert CrossAB.__name__ == rightname if rightname else 'CrossAB'
-        assert CrossAB.__bases__ == (CrossBA,)
-        if doc:
-            assert CrossAB.__doc__ == """\
+        if not rightker:
+            CrossAB = ab.__class__
+            assert CrossAB.__name__ == 'CrossAB'
+            assert CrossAB.__bases__ == (CrossBA,)
+            if doc:
+                assert CrossAB.__doc__ == """\
 Automatically generated transposed version of:
 
 miao"""
         
-        # check that automatically generated class is not peremptorily enforced
-        assert CrossAB(dim='a').__class__ is lgp.CrossKernel
+            # check that automatically generated class is not peremptorily enforced
+            assert CrossAB(dim='a').__class__ is lgp.CrossKernel
 
         # check errors on double transformation
         with pytest.raises(ValueError, match='cannot further transform'):
