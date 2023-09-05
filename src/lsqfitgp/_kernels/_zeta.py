@@ -27,7 +27,12 @@ from .. import _Kernel
 
 __all__ = ['Zeta']
 
+def check_nu(nu):
+    with _jaxext.skipifabstract():
+        assert 0 <= nu < jnp.inf, nu
+        
 def zeta_derivable(*, nu):
+    check_nu(nu)
     with _jaxext.skipifabstract():
         return int(max(0, jnp.ceil(nu) - 1))
 
@@ -61,9 +66,7 @@ def Zeta(delta, *, nu):
     Reference: Petrillo (2022).
     
     """
-    with _jaxext.skipifabstract():
-        assert 0 <= nu < jnp.inf, nu
-        
+    check_nu(nu)
     s = 1 + 2 * nu
     nupos = _special.periodic_zeta(delta, s) / _special.zeta(s)
     nuzero = jnp.where(delta % 1, 0, 1)
@@ -80,6 +83,7 @@ def Zeta(delta, *, nu):
     
 @_Kernel.kernel(maxdim=1, derivable=False)
 def ZetaFourier(k, q, *, nu):
+    check_nu(nu)
     s = 1 + 2 * nu
     order = jnp.ceil(k / 2)
     denom = order ** s * _special.zeta(s)
@@ -88,8 +92,9 @@ def ZetaFourier(k, q, *, nu):
 def crosszeta_derivable(*, nu):
     return 0, zeta_derivable(nu=nu)
 
-@_Kernel.crosskernel(maxdim=1, derivable=crosszeta_derivable)
+@_Kernel.crosskernel(bases=(_Kernel.PreservedBySwap, _Kernel.CrossKernel), maxdim=1, derivable=crosszeta_derivable)
 def CrossZetaFourier(k, y, *, nu):
+    check_nu(nu)
     s = 1 + 2 * nu
     order = jnp.ceil(k / 2)
     denom = order ** s * _special.zeta(s)
@@ -97,42 +102,31 @@ def CrossZetaFourier(k, y, *, nu):
     arg = 2 * jnp.pi * order * y
     return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)
 
-@functools.partial(Zeta.register_linop, argparser=lambda do: do if do else None)
-def fourier(_, self, dox, doy):
-    r"""
+fourier_doc = r"""
 
-    Compute the Fourier series transform of the function.
+Compute the Fourier series transform of the function.
 
-    .. math::
+.. math::
 
-        T(f)(k) = \begin{cases}
-                \frac2T \int_0^T \mathrm dx\, f(x)
-                \cos\left(\frac{2\pi}T \frac k2 x\right)
-                & \text{if $k$ is even} \\
-                \frac2T \int_0^T \mathrm dx\, f(x)
-                \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
-                & \text{if $k$ is odd}
-            \end{cases}
-        
-    The period :math:`T` is 1.
-
-    """
+    T(f)(k) = \begin{cases}
+            \frac2T \int_0^T \mathrm dx\, f(x)
+            \cos\left(\frac{2\pi}T \frac k2 x\right)
+            & \text{if $k$ is even} \\
+            \frac2T \int_0^T \mathrm dx\, f(x)
+            \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
+            & \text{if $k$ is odd}
+        \end{cases}
     
-    nu = self.initkw['nu']
-    
-    if dox and doy:
-        return ZetaFourier(nu=nu)    
-    elif dox:
-        return CrossZetaFourier(nu=nu)
-    else:
-        return CrossZetaFourier(nu=nu)._swap()
+The period :math:`T` is 1.
+
+"""
+
+def fourier_argparser(do):
+    return do if do else None
+
+Zeta.make_linop_family('fourier', ZetaFourier, CrossZetaFourier, doc=fourier_doc, argparser=fourier_argparser)
 
 # TODO
-# - use make_linop_family
-# - change the `superclass` param of `kernel` to `bases` to allow passing
-#   additional classes, AffineSpan in particular
-#     - a more user-friendly alternative would be an option just for
-#       affine span, hiding the class as implementation detail.
 # - make Zeta an AffineSpan subclass
 # - implement the scaling and phases of the fourier series
 # - consider renaming fourier to fourier_series

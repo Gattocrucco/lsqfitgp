@@ -18,7 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 from ._util import prod_recurse_dtype, sum_recurse_dtype, is_numerical_scalar
-from ._crosskernel import CrossKernel, AffineSpan
+from ._crosskernel import CrossKernel, AffineSpan, PreservedBySwap
 from . import _ops # keep first
 from . import _alg # keep first
 from ._kernel import Kernel

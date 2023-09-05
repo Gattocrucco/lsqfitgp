@@ -1304,3 +1304,16 @@ class AffineSpan(CrossKernel, abc.ABC):
     # a subclass of CrossKernel. Right now I have to to avoid routing around
     # the assumption that all classes in the MRO implement the transformation
     # management logic.
+
+class PreservedBySwap(CrossKernel):
+
+    def __new__(cls, *args, **kw):
+        if cls is __class__:
+            raise TypeError(f'cannot instantiate {__class__.__name__} directly')
+        return super().__new__(cls, *args, **kw)
+
+    def _swap(self):
+        return super()._swap()._clone(self.__class__)
+
+    # TODO when I implement transformations with methods, make this not an
+    # instance of CrossKernel.

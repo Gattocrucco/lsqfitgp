@@ -26,12 +26,12 @@ from . import _kernel
 from . import _stationary
 from . import _isotropic
 
-def makekernelsubclass(core, base, **prekw):
+def makekernelsubclass(core, bases, **prekw):
 
     named_object = getattr(core, 'pyfunc', core) # np.vectorize objects
     name = getattr(named_object, '__name__', 'DecoratedKernel')
 
-    assert issubclass(base, _crosskernel.CrossKernel)
+    bases = tuple(bases)
 
     def exec_body(ns):
         
@@ -43,7 +43,7 @@ def makekernelsubclass(core, base, **prekw):
                 warnings.warn(f'overriding init argument(s) '
                     f'{shared_keys} of kernel {name}')
             self = super(newclass, cls).__new__(cls, core, **kwargs)
-            if isinstance(self, base) and set(kw).issubset(self.initkw):
+            if isinstance(self, bases[-1]) and set(kw).issubset(self.initkw):
                 self = self._clone(cls)
             return self
         
@@ -51,10 +51,11 @@ def makekernelsubclass(core, base, **prekw):
         ns['__wrapped__'] = named_object
         ns['__doc__'] = named_object.__doc__
 
-    newclass = types.new_class(name, (base,), exec_body=exec_body)
+    newclass = types.new_class(name, bases, exec_body=exec_body)
+    assert issubclass(newclass, _crosskernel.CrossKernel)
     return newclass
 
-def crosskernel(*args, base=None, **kw):
+def crosskernel(*args, bases=None, **kw):
     """
     
     Decorator to convert a function to a subclass of `CrossKernel`.
@@ -64,8 +65,8 @@ def crosskernel(*args, base=None, **kw):
     *args :
         Either a function to decorate, or no arguments. The function is used
         as the `core` argument to `CrossKernel`.
-    base : type, optional
-        The base of the new class. If not specified, use `CrossKernel`.
+    bases : tuple of types, optional
+        The bases of the new class. If not specified, use `CrossKernel`.
     **kw :
         Additional arguments are passed to `CrossKernel`.
 
@@ -91,9 +92,9 @@ def crosskernel(*args, base=None, **kw):
     enforced to be the new class.
     
     """
-    if base is None:
-        base = _crosskernel.CrossKernel
-    functional = lambda core: makekernelsubclass(core, base, **kw)
+    if bases is None:
+        bases = _crosskernel.CrossKernel,
+    functional = lambda core: makekernelsubclass(core, bases, **kw)
     if len(args) == 0:
         return functional
     elif len(args) == 1:
@@ -114,7 +115,7 @@ def kernel(*args, **kw):
     ...     return cippa * (x * y) ** lippa
     
     """
-    return crosskernel(*args, base=_kernel.Kernel, **kw)
+    return crosskernel(*args, bases=(_kernel.Kernel,), **kw)
 
 def crossstationarykernel(*args, **kw):
     """
@@ -122,7 +123,7 @@ def crossstationarykernel(*args, **kw):
     Like `crosskernel` but makes a subclass of `CrossStationaryKernel`.
     
     """
-    return crosskernel(*args, base=_stationary.CrossStationaryKernel, **kw)
+    return crosskernel(*args, bases=(_stationary.CrossStationaryKernel,), **kw)
 
 def stationarykernel(*args, **kw):
     """
@@ -140,7 +141,7 @@ def stationarykernel(*args, **kw):
     ...     )
     
     """
-    return crosskernel(*args, base=_stationary.StationaryKernel, **kw)
+    return crosskernel(*args, bases=(_stationary.StationaryKernel,), **kw)
 
 def crossisotropickernel(*args, **kw):
     """
@@ -148,7 +149,7 @@ def crossisotropickernel(*args, **kw):
     Like `crosskernel` but makes a subclass of `CrossIsotropicKernel`.
     
     """
-    return crosskernel(*args, base=_isotropic.CrossIsotropicKernel, **kw)
+    return crosskernel(*args, bases=(_isotropic.CrossIsotropicKernel,), **kw)
 
 def isotropickernel(*args, **kw):
     """
@@ -163,4 +164,4 @@ def isotropickernel(*args, **kw):
     ...     return cippa * jnp.exp(-distsquared) + lippa
     
     """
-    return crosskernel(*args, base=_isotropic.IsotropicKernel, **kw)
+    return crosskernel(*args, bases=(_isotropic.IsotropicKernel,), **kw)

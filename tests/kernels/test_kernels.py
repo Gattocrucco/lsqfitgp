@@ -437,6 +437,25 @@ class Fourier(Base):
         c2 = k2(x, k)
         util.assert_equal(c1, c2)
 
+    def test_fourier_chained(self, kernel, kw):
+        if not kernel.has_transf('fourier'):
+            pytest.skip()
+        
+        if isinstance(kernel, _kernels.Zeta) and kw['nu'] == 0:
+            pytest.skip()
+        
+        f0 = kernel.linop('fourier', True)
+        f1 = kernel.linop('fourier', True, None).linop('fourier', None, True)
+        f2 = kernel.linop('fourier', None, True).linop('fourier', True, None)
+
+        k = np.arange(100)[:, None]
+        c0 = f0(k, k.T)
+        c1 = f1(k, k.T)
+        c2 = f2(k, k.T)
+
+        util.assert_allclose(c0, c1)
+        util.assert_allclose(c0, c2)
+
     def test_fourier_inference(self, kernel, kw):
         """ test that removing a mode leaves the other in the posterior mean """
         if not kernel.has_transf('fourier'):
@@ -446,7 +465,8 @@ class Fourier(Base):
             pytest.skip()
         
         x = np.linspace(0, 1, 100)
-        gp = (lgp.GP(kernel, posepsfac=200)
+        gp = (lgp
+            .GP(kernel, posepsfac=200)
             .deflinop('F', 'fourier', True, lgp.GP.DefaultProcess)
             .addx(x, 'x')
             .addx(1, 's1', proc='F')
@@ -578,12 +598,6 @@ class TestZeta(All):
     @pytest.fixture(params=[0, 0.1, 1, 1.5, 4.9, 1000])
     def kw(self, request):
         return dict(nu=request.param)
-
-    def test_double_fourier(self, kernel):
-        """ check that fourier is disabled after applying it once """
-        for args in [(True,), (True, None), (None, True)]:
-            q = kernel.linop('fourier', *args)
-            assert not q.has_transf('fourier')
 
 class TestCelerite(Stationary, Deriv1):
 

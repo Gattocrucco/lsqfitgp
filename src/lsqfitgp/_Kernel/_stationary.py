@@ -66,6 +66,27 @@ class CrossStationaryKernel(_crosskernel.CrossKernel):
         
         return super().__new__(cls, newcore, **kw)
 
+    # TODO this class requires that, on both inputs, the thing depends only on
+    # the distance. However, when transforming a stationary kernel, I often have
+    # the property only on either side. Making a left/right class interferes
+    # with _swap, because it is not clean to switch classes in the ancestors,
+    # so there would be a class for a single side with a property.
+    #
+    # Maybe the elegant way to keep left/right properties separated is having
+    # separate classes for the two processes.
+    #
+    # Drop the whole generic hierarchy. Keep a single class Kernel. Have two
+    # attributes left and right which are instances of Process. Linops are
+    # applied as methods on left and right, which operate on a partial
+    # evaluation of the core. Kernel.__getattr__ sees if the missing attribute
+    # is a method defined on both left and right and calls both of them; this
+    # allows potential overrides for the joint transformation.
+    #
+    # The class logic operates on left/right. Linops looks one process at a
+    # time. Algops are defined on the whole kernel but need somehow to indicate
+    # how to change the classes of processes. Maybe a list of class-preserving
+    # algops in the process.
+
 class StationaryKernel(CrossStationaryKernel, _kernel.Kernel):
     pass
 
