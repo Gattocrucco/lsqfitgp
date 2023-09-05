@@ -82,25 +82,38 @@ def Zeta(delta, *, nu, **_):
     # TODO the derivative w.r.t. nu is probably broken
     
 @_Kernel.kernel(maxdim=1, derivable=False)
-def ZetaFourier(k, q, *, nu):
+def ZetaFourier(k, q, *, nu, lloc, rloc, lscale, rscale, offset, ampl):
     check_nu(nu)
     s = 1 + 2 * nu
-    order = jnp.ceil(k / 2)
-    denom = order ** s * _special.zeta(s)
-    return jnp.where((k == q) & (k > 0), 1 / denom, 0)
+    lorder = jnp.ceil(k / 2)
+    rorder = jnp.ceil(q / 2)
+    lodd = k % 2
+    rodd = q % 2
+    var = ampl / (lorder ** s * _special.zeta(s))
+    arg = 2 * jnp.pi * lorder * (lloc / lscale - rloc / rscale)
+    return jnp.where(lorder == rorder,
+        jnp.where(lodd == rodd,
+            jnp.where(lorder, var * jnp.cos(arg), offset),
+            var * jnp.sin(arg) * jnp.where(lodd, 1, -1),
+        ),
+        0,
+    )
 
-def crosszeta_derivable(*, nu):
+def crosszeta_derivable(*, nu, **_):
     return 0, zeta_derivable(nu=nu)
 
 @_Kernel.crosskernel(bases=(_Kernel.PreservedBySwap, _Kernel.CrossKernel), maxdim=1, derivable=crosszeta_derivable)
-def CrossZetaFourier(k, y, *, nu):
+def CrossZetaFourier(k, y, *, nu, lloc, rloc, lscale, rscale, offset, ampl):
     check_nu(nu)
     s = 1 + 2 * nu
     order = jnp.ceil(k / 2)
-    denom = order ** s * _special.zeta(s)
     odd = k % 2
-    arg = 2 * jnp.pi * order * y
-    return jnp.where(k > 0, jnp.where(odd, jnp.sin(arg), jnp.cos(arg)) / denom, 0)
+    var = ampl / (order ** s * _special.zeta(s))
+    arg = 2 * jnp.pi * order * (lloc / lscale + (y - rloc) / rscale)
+    return jnp.where(odd,
+        var * jnp.sin(arg),
+        jnp.where(order, var * jnp.cos(arg), offset),
+    )
 
 fourier_doc = r"""
 
@@ -125,10 +138,13 @@ def fourier_argparser(do):
     return do if do else None
 
 def translkw(*, dynkw, **initkw):
-    return initkw
+    return dict(**dynkw, **initkw)
 
 Zeta.make_linop_family('fourier', ZetaFourier, CrossZetaFourier, translkw=translkw, doc=fourier_doc, argparser=fourier_argparser)
 
 # TODO
-# - implement the scaling and phases of the fourier series
+# - test the transf with rescalings (what cross check can I do?)
+# - track affine transf in CrossZetaFourier too
+# - make Zeta support non-sym affine ops (I think I need to define CrossZeta
+#    then subclass to Zeta(CrossZeta, Kernel)
 # - consider renaming fourier to fourier_series when I rewrite transf system
