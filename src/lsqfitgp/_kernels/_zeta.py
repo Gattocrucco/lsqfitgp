@@ -36,8 +36,8 @@ def zeta_derivable(*, nu):
     with _jaxext.skipifabstract():
         return int(max(0, jnp.ceil(nu) - 1))
 
-@_Kernel.stationarykernel(maxdim=1, derivable=zeta_derivable)
-def Zeta(delta, *, nu):
+@_Kernel.crosskernel(bases=(_Kernel.AffineSpan, _Kernel.StationaryKernel,), maxdim=1, derivable=zeta_derivable)
+def Zeta(delta, *, nu, **_):
     r"""
     
     Zeta kernel.
@@ -124,9 +124,11 @@ The period :math:`T` is 1.
 def fourier_argparser(do):
     return do if do else None
 
-Zeta.make_linop_family('fourier', ZetaFourier, CrossZetaFourier, doc=fourier_doc, argparser=fourier_argparser)
+def translkw(*, dynkw, **initkw):
+    return initkw
+
+Zeta.make_linop_family('fourier', ZetaFourier, CrossZetaFourier, translkw=translkw, doc=fourier_doc, argparser=fourier_argparser)
 
 # TODO
-# - make Zeta an AffineSpan subclass
 # - implement the scaling and phases of the fourier series
-# - consider renaming fourier to fourier_series
+# - consider renaming fourier to fourier_series when I rewrite transf system

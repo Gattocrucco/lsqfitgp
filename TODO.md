@@ -462,7 +462,9 @@ family of random access sequences of coefficients is ok.
 
 In general I could write a method "diagonalization" that generates
 cross-covariances with a numerable basis that diagonalizes a kernel. This would
-be useful for sparse approximations.
+be useful for sparse approximations. => Actually what I need is any
+symmetric decomposition of the covariance operator, need not be a full blown
+diagonalization.
 
 RatQuad is a gamma scale mixture of ExpQuad, so I could implement the
 corresponding transformation easily. In general series of kernels support this.
