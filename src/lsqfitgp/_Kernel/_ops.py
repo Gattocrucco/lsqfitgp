@@ -384,15 +384,14 @@ AffineSpan.inherit_transf('derivable')
 def affine_loc(tcls, self, xloc, yloc):
     dynkw = dict(self.dynkw)
     newself = tcls.super_transf('loc', self, xloc, yloc)
-    ploc = dynkw['loc']
-    pscale = dynkw['scale']
-    dynkw['loc'] = (ploc[0] + xloc * pscale[0], ploc[1] + yloc * pscale[1])
+    dynkw['lloc'] = dynkw['lloc'] + xloc * dynkw['lscale']
+    dynkw['rloc'] = dynkw['rloc'] + yloc * dynkw['rscale']
     return newself._clone(self.__class__, dynkw=dynkw)
 
 @functools.partial(AffineSpan.register_linop, transfname='scale')
 def affine_scale(tcls, self, xscale, yscale):
     dynkw = dict(self.dynkw)
     newself = tcls.super_transf('scale', self, xscale, yscale)
-    pscale = dynkw['scale']
-    dynkw['scale'] = (pscale[0] * xscale, pscale[1] * yscale)
+    dynkw['lscale'] = dynkw['lscale'] * xscale
+    dynkw['rscale'] = dynkw['rscale'] * yscale
     return newself._clone(self.__class__, dynkw=dynkw)

@@ -1212,19 +1212,14 @@ class AffineSpan(CrossKernel, abc.ABC):
 
     """
     
-    _affine_dynkw = dict(loc=(0, 0), scale=(1, 1), offset=0, ampl=1)
+    _affine_dynkw = dict(lloc=0, rloc=0, lscale=1, rscale=1, offset=0, ampl=1)
 
-    # TODO split the pairs into pairs of arguments, such that I can implement
-    # left/right keeping the same param layout
-    
     def __new__(cls, *args, dynkw={}, **kw):
         if cls is __class__:
             raise TypeError(f'cannot instantiate {__class__.__name__} directly')
-        dynkw = dict(**dynkw, **cls._affine_dynkw)
-        return super().__new__(cls, *args, dynkw=dynkw, **kw)
-
-        # TODO instead of imposing _affine_dynkw, update it with the user dynkw,
-        # to allow transformations to propagate something easily
+        new_dynkw = dict(cls._affine_dynkw)
+        new_dynkw.update(dynkw)
+        return super().__new__(cls, *args, dynkw=new_dynkw, **kw)
 
     def __init_subclass__(cls, **kw):
         super().__init_subclass__(**kw)
@@ -1263,14 +1258,15 @@ class AffineSpan(CrossKernel, abc.ABC):
         # decorator with attributed subdecorators for other members:
         #
         # @linop_family('T')
-        # @Kernel
+        # @kernel
         # def A(...)
         # @A.left('arg')
-        # @CrossKernel
+        # @crosskernel
         # def CrossTA(...)
         # @A.right # optional, generated from left if not specified
+        # ...
         # @A.both('arg1', 'arg2')
-        # @Kernel
+        # @kernel
         # def T(...)
         #
         # Can also be stacked on top of left/right/both to chain families. Works

@@ -930,12 +930,8 @@ class TestAffineSpan:
         assert a.linop('loc', 0).__class__ is A
         assert a.linop('dim', 'a').__class__ is lgp.StationaryKernel
 
-    def test_no_instance(self, constcore):
-        with pytest.raises(TypeError, match='cannot instantiate'):
-            lgp._Kernel.AffineSpan(constcore)
-
     @mark.parametrize('op', [operator.add, operator.mul])
-    def test_negative_scalar(self, constcore, op):
+    def test_class_negative_scalar(self, constcore, op):
         
         class A(lgp._Kernel.AffineSpan, lgp.Kernel): pass
         a = A(constcore)
@@ -945,6 +941,10 @@ class TestAffineSpan:
         class B(lgp._Kernel.AffineSpan, lgp.CrossKernel): pass
         b = B(constcore)
         assert op(b, -1).__class__ is B
+
+    def test_no_instance(self, constcore):
+        with pytest.raises(TypeError, match='cannot instantiate'):
+            lgp._Kernel.AffineSpan(constcore)
 
     def test_calc(self, constcore, rng):
         class A(lgp._Kernel.AffineSpan, lgp.CrossKernel): pass
@@ -965,14 +965,16 @@ class TestAffineSpan:
         # compare accumulated coefficients with manual calculation
         assert a.dynkw['offset'] == (2 * 3 + 5) * 7
         assert a.dynkw['ampl'] == 3 * 7
-        assert a.dynkw['loc'] == (2 * (5 + 11 * 17), 3 * (7 + 13 * 19))
-        assert a.dynkw['scale'] == (2 * 11, 3 * 13)
+        assert a.dynkw['lloc'] == 2 * (5 + 11 * 17)
+        assert a.dynkw['rloc'] == 3 * (7 + 13 * 19)
+        assert a.dynkw['lscale'] == 2 * 11
+        assert a.dynkw['rscale'] == 3 * 13
 
         # compare result with specification of coefficients
         c1 = a(x, y)
         c2 = a.dynkw['offset'] + a.dynkw['ampl'] * a0(
-            (x - a.dynkw['loc'][0]) / a.dynkw['scale'][0],
-            (y - a.dynkw['loc'][1]) / a.dynkw['scale'][1],
+            (x - a.dynkw['lloc']) / a.dynkw['lscale'],
+            (y - a.dynkw['rloc']) / a.dynkw['rscale'],
         )
         util.assert_allclose(c1, c2)
 
