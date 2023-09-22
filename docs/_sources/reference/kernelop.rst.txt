@@ -29,14 +29,14 @@ superclass which actually defines the transformation. Example::
 
 Index
 -----
-=====================  =============  ====================================================================
+=====================  =============  =======================================================================================================================
 Method                 Name           Classes
-=====================  =============  ====================================================================
+=====================  =============  =======================================================================================================================
 `~CrossKernel.algop`   `-log1p(-x)`_  :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `1/(1-x)`_     :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `1/arccos`_    :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `1/cos`_       :ref:`All generic classes <generickernel>`
-`~CrossKernel.algop`   `add`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `add`_         `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
 `~CrossKernel.algop`   `arcsin`_      :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `arctanh`_     :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `cosh`_        :ref:`All generic classes <generickernel>`
@@ -45,24 +45,24 @@ Method                 Name           Classes
 `~CrossKernel.algop`   `expm1x`_      :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `i0`_          :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `i1`_          :ref:`All generic classes <generickernel>`
-`~CrossKernel.algop`   `mul`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `mul`_         `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
 `~CrossKernel.algop`   `pow`_         :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `rpow`_        :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `sinh`_        :ref:`All generic classes <generickernel>`
 `~CrossKernel.algop`   `tan`_         :ref:`All generic classes <generickernel>`
 `~CrossKernel.linop`   `cond`_        :ref:`All generic classes <generickernel>`
-`~CrossKernel.linop`   `derivable`_   :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `derivable`_   `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
 `~CrossKernel.linop`   `diff`_        `CrossKernel`, `Kernel`
 `~CrossKernel.linop`   `dim`_         `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`
 `~CrossKernel.linop`   `fourier`_     `Zeta`
-`~CrossKernel.linop`   `loc`_         :ref:`All generic classes <generickernel>`
-`~CrossKernel.linop`   `maxdim`_      :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `loc`_         `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
+`~CrossKernel.linop`   `maxdim`_      `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
 `~CrossKernel.linop`   `normalize`_   :ref:`All generic classes <generickernel>`
 `~CrossKernel.linop`   `rescale`_     :ref:`All generic classes <generickernel>`
-`~CrossKernel.linop`   `scale`_       :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `scale`_       `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
 `~CrossKernel.linop`   `xtransf`_     `CrossKernel`, `Kernel`
 `~CrossKernel.transf`  `forcekron`_   `Kernel`
-=====================  =============  ====================================================================
+=====================  =============  =======================================================================================================================
 
 Transformations
 ---------------
@@ -84,7 +84,7 @@ Transformations
     :no-index:
 
 .. _add:
-.. method:: CrossKernel.algop('add', other)
+.. method:: CrossKernel.algop('add', self, other)
     :no-index:
 
     .. code-block:: text
@@ -327,7 +327,7 @@ Transformations
 
 
 .. _mul:
-.. method:: CrossKernel.algop('mul', other)
+.. method:: CrossKernel.algop('mul', self, other)
     :no-index:
 
     .. code-block:: text
@@ -345,7 +345,7 @@ Transformations
 
 
 .. _pow:
-.. method:: CrossKernel.algop('pow', *, exponent)
+.. method:: CrossKernel.algop('pow', self, *, exponent)
     :no-index:
 
     .. code-block:: text
@@ -362,7 +362,7 @@ Transformations
 
 
 .. _rpow:
-.. method:: CrossKernel.algop('rpow', *, base)
+.. method:: CrossKernel.algop('rpow', self, *, base)
     :no-index:
 
     .. code-block:: text
@@ -527,7 +527,7 @@ Transformations
 
 
 .. _fourier:
-.. method:: CrossKernel.linop('fourier', dox[,  doy])
+.. method:: CrossKernel.linop('fourier', arg2, self[,  arg1])
     :no-index:
 
     .. code-block:: text
@@ -612,7 +612,7 @@ Transformations
         Rescale the output of the function.
 
         .. math:
-            T(f)(x) = \mathrm{xfun}(x) f(x)
+            T(f)(x) = \mathrm{fun}(x) f(x)
 
         Parameters
         ----------

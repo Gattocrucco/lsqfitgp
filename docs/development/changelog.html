@@ -5,12 +5,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Changelog &#8212; lsqfitgp 0.20 documentation</title>
+    <title>Changelog &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
-    <script src="../_static/documentation_options.js?v=0144e382"></script>
+    <script src="../_static/documentation_options.js?v=841cbeb9"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Licensed sources" href="sources.html" />
@@ -26,7 +28,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">lsqfitgp 0.20</a></h1>
+<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
 
 
 
@@ -130,7 +132,7 @@
 -->
 <!--- This changelog is written in Markdown and without line splits to make it
   copy-pastable to github releases. -->
-<section id="changelog">
+<section class="tex2jax_ignore mathjax_ignore" id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
 <section id="kernels-kernels-kernels-all-you-can-think-about-is-covariance-functions-i-am-sick-of-your-kernels-i-am-sick-of-cleaning-the-leftover-eigenspaces-you-leave-on-the-carpet-when-you-come-home-late-in-the-night-after-spending-all-day-hewing-positive-semidefinite-operators-i-am-sick-of-hearing-your-breath-the-stale-unique-acrid-smell-that-fills-the-algebraists-workrooms-wafting-through-the-linen-to-my-nostrils-go-away-go-away-from-here-and-rest-with-your-beloved-kernels-2023-08-29">
 <h2>0.20. Kernels, kernels, kernels. All you can think about is covariance functions. I am sick of your kernels. I am sick of cleaning the leftover eigenspaces you leave on the carpet when you come home, late in the night, after spending all day hewing positive semidefinite operators. I am sick of hearing your breath, the stale unique acrid smell that fills the algebraists’ workrooms, wafting through the linen to my nostrils. Go away. Go away from here and rest with your beloved kernels! (2023-08-29)<a class="headerlink" href="#kernels-kernels-kernels-all-you-can-think-about-is-covariance-functions-i-am-sick-of-your-kernels-i-am-sick-of-cleaning-the-leftover-eigenspaces-you-leave-on-the-carpet-when-you-come-home-late-in-the-night-after-spending-all-day-hewing-positive-semidefinite-operators-i-am-sick-of-hearing-your-breath-the-stale-unique-acrid-smell-that-fills-the-algebraists-workrooms-wafting-through-the-linen-to-my-nostrils-go-away-go-away-from-here-and-rest-with-your-beloved-kernels-2023-08-29" title="Link to this heading">¶</a></h2>
@@ -264,7 +266,7 @@
 </section>
 <section id="eurocim-special-edition-10-exclusive-bugs-for-the-first-500-users-download-now-2023-04-17">
 <h2>0.15. EUROCIM special edition, 10 exclusive bugs for the first 500 users, download now (2023-04-17)<a class="headerlink" href="#eurocim-special-edition-10-exclusive-bugs-for-the-first-500-users-download-now-2023-04-17" title="Link to this heading">¶</a></h2>
-<p>This release mostly features further improvements to the BART kernel. According to the benchmarks I am going to show at EUROCIM 2023, GP regression with this kernel and hyperparameter tuning beats the original cross-validated BART MCMC both in statistical and computational performance. Following the ACIC challenge 2022 results, this implies that it’s probably SoTA on the standard causal inference in decounfounded observational study setting with $n&lt;10000$, although that is still to be verified.</p>
+<p>This release mostly features further improvements to the BART kernel. According to the benchmarks I am going to show at EUROCIM 2023, GP regression with this kernel and hyperparameter tuning beats the original cross-validated BART MCMC both in statistical and computational performance. Following the ACIC challenge 2022 results, this implies that it’s probably SoTA on the standard causal inference in decounfounded observational study setting with <span class="math notranslate nohighlight">\(n&lt;10000\)</span>, although that is still to be verified.</p>
 <section id="bart">
 <h3>BART<a class="headerlink" href="#bart" title="Link to this heading">¶</a></h3>
 <ul class="simple">
@@ -283,7 +285,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">covariance</span></code> to set how to estimate the posterior covariance matrix</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">fix</span></code> to fix some hyperparameters to the initial values</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">mlkw</span></code> to pass additional keyword arguments to <code class="docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">forward</span></code> to use forward autodiff for the likelihood gradient; it uses a partially reverse autodiff calculation to avoid the $O(n^3d)$ complexity of full-forward mode</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">forward</span></code> to use forward autodiff for the likelihood gradient; it uses a partially reverse autodiff calculation to avoid the <span class="math notranslate nohighlight">\(O(n^3d)\)</span> complexity of full-forward mode</p></li>
 </ul>
 </li>
 <li><p>Removed the <code class="docutils literal notranslate"><span class="pre">'hessian'</span></code> and <code class="docutils literal notranslate"><span class="pre">'hessmod'</span></code> values of parameter <code class="docutils literal notranslate"><span class="pre">method</span></code>. Use <code class="docutils literal notranslate"><span class="pre">'fisher'</span></code> instead. <strong>&lt;– BREAKING CHANGE</strong></p></li>
@@ -616,7 +618,7 @@
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

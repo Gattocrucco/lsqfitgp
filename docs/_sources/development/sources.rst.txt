@@ -30,3 +30,4 @@ This software contains code adapted from the following sources:
   * `gvar <https://github.com/gplepage/gvar>`_ by Peter Lepage (GPL license)
   * `scipy <https://github.com/scipy/scipy>`_ (BSD-3 License)
   * `numpy <https://github.com/numpy/numpy>`_ (BSD-3 License)
+  * `GSL <https://www.gnu.org/software/gsl>`_ (GPL license)

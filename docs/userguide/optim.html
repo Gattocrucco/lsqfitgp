@@ -5,13 +5,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>14. Optimization &#8212; lsqfitgp 0.20 documentation</title>
+    <title>14. Optimization &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
-    <script src="../_static/documentation_options.js?v=0144e382"></script>
+    <script src="../_static/documentation_options.js?v=841cbeb9"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Reference" href="../reference/reference.html" />
@@ -27,7 +28,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">lsqfitgp 0.20</a></h1>
+<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
 
 
 
@@ -266,7 +267,7 @@ provided after the fit in the attribute <code class="docutils literal notranslat
 <h2><span class="section-number">14.4. </span>Floating point 32 vs. 64 bit<a class="headerlink" href="#floating-point-32-vs-64-bit" title="Link to this heading">¶</a></h2>
 <p><code class="xref py py-obj docutils literal notranslate"><span class="pre">jax</span></code> by default uses the <code class="xref py py-obj docutils literal notranslate"><span class="pre">float32</span></code> data type for all floating point arrays and
 calculations. Upon initialization, <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> configures <code class="xref py py-obj docutils literal notranslate"><span class="pre">jax</span></code> to use <code class="xref py py-obj docutils literal notranslate"><span class="pre">float64</span></code>
-instead, like <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.25)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy</span></code></a>. Although operations with 32 bit floats are about twice as
+instead, like <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.26)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy</span></code></a>. Although operations with 32 bit floats are about twice as
 fast, Gaussian process regression is particularly sensitive to numerical
 accuracy. You can reset <code class="xref py py-obj docutils literal notranslate"><span class="pre">jax</span></code>’s default with:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s1">&#39;jax_enable_x64&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -304,7 +305,7 @@ to tune the minimizer parameters to make it work at <code class="xref py py-obj 
       &copy;2020-2023, Giacomo Petrillo.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
