@@ -75,7 +75,7 @@ for name, obj in vars(lgp).items():
 for name, tlist in transfs.items():
     t0 = tlist[0]
     for t in tlist[1:]:
-        assert t.doc == t0.doc
+        assert t.doc is None or t.doc == t0.doc
         assert t.kind == t0.kind
 
 # define how to print method in table
