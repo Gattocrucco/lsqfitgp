@@ -5998,3 +5998,52 @@ Brute force and correct approach:
         - gets a directed graph
 
 => No, bad idea. Make it recursive two classes at a time.
+
+2023-09-21
+==========
+
+Jax 0.4.16 broke periodic_zeta, it outputs nan. The problem seems to be in
+_periodic_zeta_smalls(..., imag=False).
+
+=> It's in _hurwitz_zeta_series.
+
+=> It's zeta producing a nan for 0 < s < 1.
+
+=> It's _zeta_right(4e-16, 0)
+
+=> jspecial.zeta does not allow anymore stuff < 1.
+
+The reflection formula sends stuff in [0, 1] to [0, 1], so I need to compute
+the zeta there.
+
+Long version: port the GSL implementation.
+
+Short version: expand the zeta around 0 or 1.
+
+=> Maybe if I multiply by (1 - eps) instead of (1 + eps) I'll get on the right
+side of 1?
+
+I can't use (1 - eps) in general because I have to keep s > 1.
+
+The function nans only for even <= s < odd.
+
+=> It can't possibly work since the function is broken on arbitrary s, not just
+integers.
+
+2023-09-22
+==========
+
+Additional problem: the last jax update broke float64 precision in zeta, I have
+to reimplement the complete range.
+
+..........
+
+The problem is very likely in gamma_incr alone. The variable gammaln is computed
+inaccurately. The coefficients entering into the polynomial are accurate.
+polyval behaves ok elsewhere. The behavior is the same under jit.
+
+=> The problem appears to be in polygamma. Maybe only some coefficients are
+inaccurate, or there is a smaller systematic error that accumulates.
+
+=> Yes it's polygamma. Opened a jax issue. Probably due to polygamma using zeta
+in the implementation.

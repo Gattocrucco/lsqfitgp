@@ -24,4 +24,4 @@ from ._expint import *
 from ._gamma import *
 from ._sinc import *
 from ._taylor import *
-from ._zeta import *
+from ._zeta import zeta, hurwitz_zeta, periodic_zeta, zeta_zero, zeta_series_power_diff
