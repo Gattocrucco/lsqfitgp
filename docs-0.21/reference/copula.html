@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Gaussian copulas &#8212; lsqfitgp documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
+    <script src="../_static/documentation_options.js?v=841cbeb9"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="BART" href="bayestree.html" />
+    <link rel="prev" title="Random sampling" href="raniter.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">Predefined kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">Generic kernel classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelop.html">Kernel transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fit.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="raniter.html">Random sampling</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Gaussian copulas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayestree.html">BART</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gvarext.html">Gvar extensions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/development.html">Development</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="reference.html">Reference</a><ul>
+      <li>Previous: <a href="raniter.html" title="previous chapter">Random sampling</a></li>
+      <li>Next: <a href="bayestree.html" title="next chapter">BART</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="raniter.html" title="Previous document">Random sampling</a>
+        </li>
+        <li>
+          <a href="bayestree.html" title="Next document">BART</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="gaussian-copulas">
+<span id="module-lsqfitgp.copula"></span><h1>Gaussian copulas<a class="headerlink" href="#gaussian-copulas" title="Link to this heading">¶</a></h1>
+<p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">copula</span></code> submodule provides classes to define probability distributions and
+reparametrize them such that the joint distribution is Normal. This is useful to
+define priors for the hyperparameters of a Gaussian process, but can also be
+used on its own.</p>
+<p>To define a variable, use one of the subclasses of <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> listed under
+<a class="reference internal" href="#families"><span class="std std-ref">Predefined families</span></a>. Combine the variables together to define a model by putting
+them in a <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> object. See <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> for examples.</p>
+<p>To represent at once concrete values of the variables and their transformed
+parametrization, put them in a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> using <a class="reference internal" href="#lsqfitgp.copula.makedict" title="lsqfitgp.copula.makedict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">makedict</span></code></a>. To apply
+the transformation manually, use <a class="reference internal" href="#lsqfitgp.copula.DistrBase.partial_invfcn" title="lsqfitgp.copula.DistrBase.partial_invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>I define “Gaussian copula” to mean a representation of an arbitrary random
+variable as the transformation of a multivariate Normal random variable, as
+explained, e.g., <a class="reference external" href="https://blogs.sas.com/content/iml/2021/07/05/introduction-copulas.html">here</a>.
+This is different from another common usage, which is representing a
+bivariate Normal as the transformation of uniform variables, as <a class="reference external" href="https://en.wikipedia.org/wiki/Copula_(probability_theory)#Gaussian_copula">“Gaussian
+copula” on wikipedia</a>.</p>
+</div>
+<section id="generic-classes">
+<h2>Generic classes<a class="headerlink" href="#generic-classes" title="Link to this heading">¶</a></h2>
+<p>The class <a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a> defines basic functionality shared by <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> and
+<a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a>, and can not be instantiated. <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> represents a probability
+distribution on a numerical tensor; it can not be instantied, use its concrete
+subclasses <a class="reference internal" href="#families"><span class="std std-ref">listed below</span></a>. <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> represents a collection of
+possibly related <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> objects and is intended for direct use.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.DistrBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">DistrBase</span></span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_base.py#L29-L187"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.DistrBase" title="Link to this definition">¶</a></dt>
+<dd><p>Abstract base class to represent (trees of) probability distributions.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a>, <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>in_shape</strong><span class="classifier">tuple of int</span></dt><dd><p>The core shape of the input array to <a class="reference internal" href="#lsqfitgp.copula.DistrBase.partial_invfcn" title="lsqfitgp.copula.DistrBase.partial_invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code></a>.</p>
+</dd>
+<dt><strong>shape</strong><span class="classifier">(tree of) tuple of int</span></dt><dd><p>The core shape of the output array of <a class="reference internal" href="#lsqfitgp.copula.DistrBase.partial_invfcn" title="lsqfitgp.copula.DistrBase.partial_invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code></a>.</p>
+</dd>
+<dt><strong>dtype</strong><span class="classifier">(tree of) dtype</span></dt><dd><p>The dtype of the output array of <a class="reference internal" href="#lsqfitgp.copula.DistrBase.partial_invfcn" title="lsqfitgp.copula.DistrBase.partial_invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code></a>.</p>
+</dd>
+<dt><strong>distrshape</strong><span class="classifier">(tree of) tuple of int</span></dt><dd><p>The sub-core shape of the output array of <a class="reference internal" href="#lsqfitgp.copula.DistrBase.partial_invfcn" title="lsqfitgp.copula.DistrBase.partial_invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code></a> that
+represents the atomic shape of the distribution.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.copula.DistrBase.partial_invfcn" title="lsqfitgp.copula.DistrBase.partial_invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code></a>(x)</p></td>
+<td><p>Map independent Normal variables to the desired distribution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.copula.DistrBase.add_distribution" title="lsqfitgp.copula.DistrBase.add_distribution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_distribution</span></code></a>(name)</p></td>
+<td><p>Register the distribution for usage with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.copula.DistrBase.gvars" title="lsqfitgp.copula.DistrBase.gvars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvars</span></code></a>()</p></td>
+<td><p>Return an array of gvars intended as value in a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.copula.DistrBase.add_distribution">
+<span class="sig-name descname"><span class="pre">add_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_base.py#L101-L135"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.DistrBase.add_distribution" title="Link to this definition">¶</a></dt>
+<dd><p>Register the distribution for usage with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>The name to use for the distribution. It must be globally unique,
+and it should not contain parentheses. To redefine a distribution
+with the same name, use <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.del_distribution" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.del_distribution</span></code></a> first.
+However, it is allowed to reuse the name if the distribution family,
+shape and parameters are identical to those used for the existing
+definition.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution</span></code></a>, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.del_distribution" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.del_distribution</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.copula.DistrBase.gvars">
+<span class="sig-name descname"><span class="pre">gvars</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_base.py#L137-L150"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.DistrBase.gvars" title="Link to this definition">¶</a></dt>
+<dd><p>Return an array of gvars intended as value in a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gvars</strong><span class="classifier">array of gvars</span></dt><dd><p>An array of i.i.d. standard Normal primary gvars with shape
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">in_shape</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.copula.DistrBase.partial_invfcn">
+<span class="sig-name descname"><span class="pre">partial_invfcn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_base.py#L72-L92"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.DistrBase.partial_invfcn" title="Link to this definition">¶</a></dt>
+<dd><p>Map independent Normal variables to the desired distribution.</p>
+<p>This function is a generalized ufunc. It is jax traceable and
+differentiable one time. It supports arrays of gvars as input. The
+attributes <code class="xref py py-obj docutils literal notranslate"><span class="pre">in_shape</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code> give the core shapes.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>x</strong><span class="classifier"><code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">*in_shape)</span></code> array</span></dt><dd><p>An array of values representing draws of i.i.d. Normal variates.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl>
+<dt><strong>y</strong><span class="classifier">(tree of) <code class="docutils literal notranslate"><span class="pre">(...,</span> <span class="pre">*shape)</span></code> array</span></dt><dd><p>An array of values representing draws of the desired distribution.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.Distr">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">Distr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_distr.py#L78-L544"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.Distr" title="Link to this definition">¶</a></dt>
+<dd><p>Abstract base class to represent probability distributions.</p>
+<p>A <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> object represents a probability distribution of a variable in
+<span class="math notranslate nohighlight">\(\mathbb R^n\)</span>, and provides a transformation function from a
+(multivariate) Normal variable to the target random variable.</p>
+<p>The main functionality is defined in <a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a>. The additional attributes
+and methods <code class="xref py py-obj docutils literal notranslate"><span class="pre">params</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">signature</span></code>, and <a class="reference internal" href="#lsqfitgp.copula.Distr.invfcn" title="lsqfitgp.copula.Distr.invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code></a> are not intended for common
+usage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>*params</strong><span class="classifier">tuple of scalar, array or Distr</span></dt><dd><p>The parameters of the distribution. If the parameters have leading axes
+other than those required, the distribution is repeated i.i.d.
+over those axes. If a parameter is an instance of <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> itself, it
+is a random parameter and its distribution is accounted for.</p>
+</dd>
+<dt><strong>shape</strong><span class="classifier">int or tuple of int</span></dt><dd><p>The shape of the array of i.i.d. variables to be represented, scalar by
+default. If the variable is multivariate, this shape adds as leading
+axes in the array. This shape broadcasts with the non-core shapes of the
+parameters.</p>
+</dd>
+<dt><strong>name</strong><span class="classifier">str, optional</span></dt><dd><p>If specified, the distribution is defined for usage with
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> using <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution</span></code></a>, and for
+convenience the constructor returns an array of gvars with the
+appropriate shape instead of the <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> object. See <code class="xref py py-obj docutils literal notranslate"><span class="pre">add_distribution</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>If <code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code> is None (default):</dt><dd></dd>
+<dt><strong>distr</strong><span class="classifier">Distr</span></dt><dd><p>An object representing the distribution.</p>
+</dd>
+<dt>Else:</dt><dd></dd>
+<dt><strong>gvars</strong><span class="classifier">array of gvars</span></dt><dd><p>An array of primary gvars that can be set as value in a
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> under a key that uses the just defined name.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a>, <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a>, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.uniform" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.uniform</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Notes</p>
+<p>Concrete subclasses must define <a class="reference internal" href="#lsqfitgp.copula.Distr.invfcn" title="lsqfitgp.copula.Distr.invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code></a>, and define the class attribute
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">signature</span></code> to the numpy signature string of <a class="reference internal" href="#lsqfitgp.copula.Distr.invfcn" title="lsqfitgp.copula.Distr.invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code></a>, unless <a class="reference internal" href="#lsqfitgp.copula.Distr.invfcn" title="lsqfitgp.copula.Distr.invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code></a> is an
+ufunc and its number of parameters can be inferred. <a class="reference internal" href="#lsqfitgp.copula.Distr.invfcn" title="lsqfitgp.copula.Distr.invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code></a> must be
+vectorized.</p>
+<p class="rubric">Examples</p>
+<p>Use directly with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> by setting <code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">copula</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">BufferDict</span><span class="p">({</span>
+<span class="gp">... </span>    <span class="s1">&#39;A(x)&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;A&#39;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="s1">&#39;B(y)&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">),</span>
+<span class="gp">... </span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">copula</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+<span class="go">0.50(40)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">copula</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="go">0.36(18)</span>
+</pre></div>
+</div>
+<p>Corresponding “unrolled” usage:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="o">.</span><span class="n">add_distribution</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="o">.</span><span class="n">add_distribution</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">copula</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">BufferDict</span><span class="p">({</span>
+<span class="gp">... </span>    <span class="s1">&#39;A(x)&#39;</span><span class="p">:</span> <span class="n">A</span><span class="o">.</span><span class="n">gvars</span><span class="p">(),</span>
+<span class="gp">... </span>    <span class="s1">&#39;B(y)&#39;</span><span class="p">:</span> <span class="n">B</span><span class="o">.</span><span class="n">gvars</span><span class="p">(),</span>
+<span class="gp">... </span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Notice that, although the name used for <code class="xref py py-obj docutils literal notranslate"><span class="pre">add_distribution</span></code> must be globally
+unique, for convenience it is permitted to redefine the same distribution
+family with the same parameters, even from another <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> instance.</p>
+<p>To generate automatically sensible names and avoid repeating them twice, use
+<a class="reference internal" href="#lsqfitgp.copula.makedict" title="lsqfitgp.copula.makedict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">makedict</span></code></a>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">makedict</span><span class="p">({</span>
+<span class="gp">... </span>    <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+<span class="gp">... </span><span class="p">})</span>
+<span class="go">BufferDict({&#39;__copula_beta{1, 1}(x)&#39;: 0.0(1.0), &#39;__copula_beta{3, 5}(y)&#39;: 0.0(1.0)})</span>
+</pre></div>
+</div>
+<p>Define a distribution with a random parameter:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">X</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">halfnorm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">invgamma</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span>
+<span class="go">halfnorm(sqrt(invgamma(1, 1)))</span>
+</pre></div>
+</div>
+<p>Now <code class="xref py py-obj docutils literal notranslate"><span class="pre">X</span></code> represents the model</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\sigma^2 &amp;\sim \mathrm{InvGamma}(1, 1), \\
+X \mid \sigma &amp;\sim \mathrm{HalfNorm}(\sigma).\end{split}\]</div>
+<p>In general it is possible to transform a <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> with <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.26)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy</span></code></a> ufuncs and
+continuous arithmetic operations.</p>
+<p>Repeated usage of <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> instances for random parameters will share
+those parameters in the distributions. The following code:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sigma2</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">invgamma</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">halfnorm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sigma2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">halfcauchy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sigma2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Corresponds to the model</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\sigma^2 &amp;\sim \mathrm{InvGamma}(1, 1), \\
+X \mid \sigma &amp;\sim \mathrm{HalfNorm}(\sigma), \\
+Y \mid \sigma &amp;\sim \mathrm{HalfCauchy}(\sigma),\end{split}\]</div>
+<p>with the same parameter <span class="math notranslate nohighlight">\(\sigma^2\)</span> shared between the two
+distributions. However, if the distributions are now put into a
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>, with</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sigma2</span><span class="o">.</span><span class="n">add_distribution</span><span class="p">(</span><span class="s1">&#39;distr_sigma2&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="o">.</span><span class="n">add_distribution</span><span class="p">(</span><span class="s1">&#39;distr_X&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span><span class="o">.</span><span class="n">add_distribution</span><span class="p">(</span><span class="s1">&#39;distr_Y&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">BufferDict</span><span class="p">({</span>
+<span class="gp">... </span>    <span class="s1">&#39;distr_sigma2(sigma2)&#39;</span><span class="p">:</span> <span class="n">sigma2</span><span class="o">.</span><span class="n">gvars</span><span class="p">(),</span>
+<span class="gp">... </span>    <span class="s1">&#39;distr_X(X)&#39;</span><span class="p">:</span> <span class="n">X</span><span class="o">.</span><span class="n">gvars</span><span class="p">(),</span>
+<span class="gp">... </span>    <span class="s1">&#39;distr_Y(Y)&#39;</span><span class="p">:</span> <span class="n">Y</span><span class="o">.</span><span class="n">gvars</span><span class="p">(),</span>
+<span class="gp">... </span><span class="p">})</span>
+</pre></div>
+</div>
+<p>then this relationship breaks down; the model represented by the dictionary
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">bd</span></code> is</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\sigma^2 &amp;\sim \mathrm{InvGamma}(1, 1), \\
+X \mid \sigma_X &amp;\sim \mathrm{HalfNorm}(\sigma_X), \quad
+    &amp; \sigma_X^2 &amp;\sim \mathrm{InvGamma}(1, 1), \\
+Y \mid \sigma_Y &amp;\sim \mathrm{HalfCauchy}(\sigma_Y), \quad
+    &amp; \sigma_Y^2 &amp;\sim \mathrm{InvGamma}(1, 1),\end{split}\]</div>
+<p>with separate, independent parameters <span class="math notranslate nohighlight">\(\sigma,\sigma_X,\sigma_Y\)</span>,
+because each dictionary entry is evaluated separately. Indeed, trying to do
+this with <a class="reference internal" href="#lsqfitgp.copula.makedict" title="lsqfitgp.copula.makedict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">makedict</span></code></a> will raise an error:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">makedict</span><span class="p">({</span><span class="s1">&#39;sigma2&#39;</span><span class="p">:</span> <span class="n">sigma2</span><span class="p">,</span> <span class="s1">&#39;X&#39;</span><span class="p">:</span> <span class="n">X</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">:</span> <span class="n">Y</span><span class="p">})</span>
+<span class="go">ValueError: cross-key occurrences of object(s):</span>
+<span class="go">invgamma with id 6201535248: &lt;sigma2&gt;, &lt;X.0.0&gt;, &lt;Y.0.0&gt;</span>
+</pre></div>
+</div>
+<p>To use all the distributions at once while preserving the relationships,
+put them into a container of choice and wrap it as a <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> object:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sigmaXY</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">Copula</span><span class="p">({</span><span class="s1">&#39;sigma2&#39;</span><span class="p">:</span> <span class="n">sigma2</span><span class="p">,</span> <span class="s1">&#39;X&#39;</span><span class="p">:</span> <span class="n">X</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">:</span> <span class="n">Y</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> provides a <code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code> function to map Normal variables
+to a structure, with the same layout as the input one, of desired variates.
+The whole <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> can be used in <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">makedict</span><span class="p">({</span><span class="s1">&#39;sigmaXY&#39;</span><span class="p">:</span> <span class="n">sigmaXY</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span>
+<span class="go">BufferDict({&quot;__copula_{&#39;sigma2&#39;: invgamma{1, 1}, &#39;X&#39;: halfnorm{sqrt{_Path{path=[{DictKey{key=&#39;sigma2&#39;},}]}}}, &#39;Y&#39;: halfcauchy{sqrt{_Path{path=[{DictKey{key=&#39;sigma2&#39;},}]}}}}(sigmaXY)&quot;: array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span><span class="p">[</span><span class="s1">&#39;sigmaXY&#39;</span><span class="p">]</span>
+<span class="go">{&#39;sigma2&#39;: 1.4(1.7), &#39;X&#39;: 0.81(89), &#39;Y&#39;: 1.2(1.7)}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gvar</span><span class="o">.</span><span class="n">corr</span><span class="p">(</span><span class="n">bd</span><span class="p">[</span><span class="s1">&#39;sigmaXY&#39;</span><span class="p">][</span><span class="s1">&#39;X&#39;</span><span class="p">],</span> <span class="n">bd</span><span class="p">[</span><span class="s1">&#39;sigmaXY&#39;</span><span class="p">][</span><span class="s1">&#39;Y&#39;</span><span class="p">])</span>
+<span class="go">0.21950577757757836</span>
+</pre></div>
+</div>
+<p>Although the actual dictionary value is a flat array, getting the unwrapped
+key reproduces the original structure.</p>
+<p>To apply arbitrary transformations, use manually <a class="reference internal" href="#lsqfitgp.copula.Distr.invfcn" title="lsqfitgp.copula.Distr.invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code></a>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">gvar_gufunc</span><span class="p">,</span> <span class="n">signature</span><span class="o">=</span><span class="s1">&#39;(n)-&gt;(n)&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nd">@functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">vectorize</span><span class="p">,</span> <span class="n">signature</span><span class="o">=</span><span class="s1">&#39;(n)-&gt;(n)&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">model_invfcn</span><span class="p">(</span><span class="n">normal_params</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">sigma2</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">invgamma</span><span class="o">.</span><span class="n">invfcn</span><span class="p">(</span><span class="n">normal_params</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">sigma</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sigma2</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">X</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">halfnorm</span><span class="o">.</span><span class="n">invfcn</span><span class="p">(</span><span class="n">normal_params</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">sigma</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">Y</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">halfcauchy</span><span class="o">.</span><span class="n">invfcn</span><span class="p">(</span><span class="n">normal_params</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">sigma</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">sigma</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The <a class="reference external" href="https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.vectorize.html#jax.numpy.vectorize" title="(in JAX)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jax.numpy.vectorize</span></code></a> decorator makes <code class="xref py py-obj docutils literal notranslate"><span class="pre">model_invfcn</span></code> support
+broadcasting on additional input axes, while <code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar_gufunc</span></code> makes it accept
+gvars as input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>params</strong><span class="classifier">tuple</span></dt><dd><p>The parameters as passed to the constructor.</p>
+</dd>
+<dt><strong>signature</strong><span class="classifier">Signature</span></dt><dd><p>An object representing the signature of <a class="reference internal" href="#lsqfitgp.copula.Distr.invfcn" title="lsqfitgp.copula.Distr.invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code></a>. This is a class
+attribute.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.copula.Distr.invfcn" title="lsqfitgp.copula.Distr.invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code></a>(x, *params)</p></td>
+<td><p>Normal to desired distribution transformation.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.copula.Distr.invfcn">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">invfcn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_distr.py#L282-L308"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.Distr.invfcn" title="Link to this definition">¶</a></dt>
+<dd><p>Normal to desired distribution transformation.</p>
+<p>Maps a (multivariate) Normal variable to a variable with the desired
+marginal distribution. In symbols: <span class="math notranslate nohighlight">\(y = F^{-1}(\Phi(x))\)</span>. This
+function is a generalized ufunc, jax traceable, vmappable one time, and
+differentiable one time. The signature is accessible through the
+class attribute <code class="xref py py-obj docutils literal notranslate"><span class="pre">signature</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x</strong><span class="classifier">array_like</span></dt><dd><p>The input Normal variable.</p>
+</dd>
+<dt><strong>*params</strong><span class="classifier">array_like</span></dt><dd><p>The parameters of the distribution.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>y</strong><span class="classifier">array_like</span></dt><dd><p>The output variable with the desired marginal distribution.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.Copula">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">Copula</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variables</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_copula.py#L34-L283"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.Copula" title="Link to this definition">¶</a></dt>
+<dd><p>Represents a tree of probability distributions.</p>
+<p>By “tree” it is intended an arbitrarily nested structure of containers
+(e.g., <code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>) where each leaf node is either a <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> object or
+another <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a>.</p>
+<p>The function of a <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> is to keep into account the relationships
+between all the <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> objects when defining the function <code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code>
+that maps Normal variates to the desired random variable. The same <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a>
+object appearing in multiple places will not be sampled more than once.</p>
+<p>This class inherits the functionality defined in <a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a> without
+additions. The attributes <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">distrshape</span></code>, that represents
+properties of the output of <code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code>, are trees matching the
+structure of the tree of variables. The same holds for the output of
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code>. <code class="xref py py-obj docutils literal notranslate"><span class="pre">in_shape</span></code> instead is an ordinary array shape, indicating
+that the input Normal variables are a raveled single array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>variables</strong><span class="classifier">tree of Distr or Copula</span></dt><dd><p>The tree of distributions to wrap. The containers are copied, so
+successive modifications will not be reflected on the <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a>, <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a>, <a class="reference external" href="https://jax.readthedocs.io/en/latest/jax.tree_util.html#module-jax.tree_util" title="(in JAX)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jax.tree_util</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<p>Define a model into a dictionary one piece at a time, then wrap it as a
+<a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">halfnorm</span><span class="p">(</span><span class="mf">1.5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">halfcauchy</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+<span class="gp">... </span>    <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">]),</span>
+<span class="gp">... </span>    <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]),</span>
+<span class="gp">... </span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cop</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">Copula</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cop</span>
+<span class="go">Copula({&#39;a&#39;: halfnorm(1.5),</span>
+<span class="go"> &#39;b&#39;: halfcauchy(2),</span>
+<span class="go"> &#39;c&#39;: [uniform(&lt;a&gt;, &lt;b&gt;), uniform(&lt;b&gt;, &lt;a&gt;)]})</span>
+</pre></div>
+</div>
+<p>Notice how, when showing the object on the REPL, multiple appearances of
+the same variables are replaced by identifiers derived from the dictionary
+keys.</p>
+<p>The model may then be extended to create a variant. This does not affect
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">cop</span></code>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">invgamma</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cop2</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">Copula</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cop2</span>
+<span class="go">Copula({&#39;a&#39;: halfnorm(1.5),</span>
+<span class="go"> &#39;b&#39;: halfcauchy(2),</span>
+<span class="go"> &#39;c&#39;: [uniform(&lt;a&gt;, &lt;b&gt;), uniform(&lt;b&gt;, &lt;a&gt;)],</span>
+<span class="go"> &#39;d&#39;: invgamma(&lt;c.0&gt;, &lt;c.1&gt;)})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cop</span>
+<span class="go">Copula({&#39;a&#39;: halfnorm(1.5),</span>
+<span class="go"> &#39;b&#39;: halfcauchy(2),</span>
+<span class="go"> &#39;c&#39;: [uniform(&lt;a&gt;, &lt;b&gt;), uniform(&lt;b&gt;, &lt;a&gt;)]})</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<section id="utilities">
+<h2>Utilities<a class="headerlink" href="#utilities" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.copula.makedict">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">makedict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'__copula_'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_makedict.py#L26-L141"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.makedict" title="Link to this definition">¶</a></dt>
+<dd><p>Expand distributions in a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>variables</strong><span class="classifier">dict</span></dt><dd><p>A dictionary representing a collection of probability distribution. If a
+value is an instance of <a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a>, the key is converted to mark a
+transformation and the value is replaced with new primary gvars.</p>
+</dd>
+<dt><strong>prefix</strong><span class="classifier">str</span></dt><dd><p>A prefix to make the transformation names unique.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>out</strong><span class="classifier">BufferDict</span></dt><dd><p>The transformed dictionary. Recognizes the same keys as <code class="xref py py-obj docutils literal notranslate"><span class="pre">variables</span></code>,
+but squashes the values through the transformation that sends a Normal
+to the desired distribution.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>ValueError</dt><dd><p>If any <a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a> object appears under different keys.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Put a <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> into a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v11.11.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">makedict</span><span class="p">({</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span>
+<span class="go">BufferDict({&#39;__copula_beta{1, 1}(x)&#39;: 0.0(1.0)})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+<span class="go">0.50(40)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span><span class="p">[</span><span class="s1">&#39;__copula_beta{1, 1}(x)&#39;</span><span class="p">]</span>
+<span class="go">0.0(1.0)</span>
+</pre></div>
+</div>
+<p>You can also put an entire <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">makedict</span><span class="p">({</span>
+<span class="gp">... </span>    <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">Copula</span><span class="p">({</span>
+<span class="gp">... </span>        <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">gamma</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">invgamma</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">}),</span>
+<span class="gp">... </span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span>
+<span class="go">BufferDict({&quot;__copula_{&#39;y&#39;: gamma{2, 0.5}, &#39;z&#39;: invgamma{2, 2}}(x)&quot;: array([0.0(1.0), 0.0(1.0)], dtype=object)})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+<span class="go">{&#39;y&#39;: 3.4(2.5), &#39;z&#39;: 1.19(90)}</span>
+</pre></div>
+</div>
+<p>Other entries and transformations are left alone:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">makedict</span><span class="p">({</span>
+<span class="gp">... </span>    <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="s1">&#39;log(y)&#39;</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">dirichlet</span><span class="p">(</span><span class="mf">1.5</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span>
+<span class="gp">... </span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span>
+<span class="go">BufferDict({&#39;x&#39;: 3.00(20), &#39;log(y)&#39;: 0.0(1.0), &#39;__copula_dirichlet{1.5, [1, 2, 3], shape=3}(z)&#39;: array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span>
+<span class="go">array([0.06(20), 0.31(49), 0.63(51)], dtype=object)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="go">1.0(1.0)</span>
+</pre></div>
+</div>
+<p>Since shared <a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a> objects represent statistical dependency, it is
+forbidden to have the same object appear under different keys, as that
+would make it impossible to take the dependencies into account:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">makedict</span><span class="p">({</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">})</span>
+<span class="go">ValueError: cross-key occurrences of object(s):</span>
+<span class="go">beta with id 10952248976: &lt;x&gt;, &lt;y.1&gt;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.copula.distribution">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">invfcn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_distr.py#L568-L613"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.distribution" title="Link to this definition">¶</a></dt>
+<dd><p>Decorator to define a distribution from a transformation function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>invfcn</strong><span class="classifier">function</span></dt><dd><p>The transformation function from a (multivariate) standard Normal
+variable to the target random variable. The signature must be
+<code class="docutils literal notranslate"><span class="pre">invfcn(x,</span> <span class="pre">*params)</span></code>. It must be jax-traceable. It does not need to
+be vectorized.</p>
+</dd>
+<dt><strong>signature</strong><span class="classifier">str, optional</span></dt><dd><p>The signature of <code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code>, as a numpy signature string. If not
+specified, <code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code> is assumed to take and output scalars.</p>
+</dd>
+<dt><strong>dtype</strong><span class="classifier">dtype, optional</span></dt><dd><p>The dtype of the output of <code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code>. If not specified, it is assumed to
+be floating point.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>cls</strong><span class="classifier">Distr</span></dt><dd><p>The new distribution class.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">distribution</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">uniform</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="n">jax</span><span class="o">.</span><span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">distribution</span><span class="p">,</span> <span class="n">signature</span><span class="o">=</span><span class="s1">&#39;(n,m)-&gt;(n)&#39;</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">wishart</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="s2">&quot; this parametrization is terrible, do not use &quot;</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">x</span> <span class="o">@</span> <span class="n">x</span><span class="o">.</span><span class="n">T</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<section id="predefined-families">
+<span id="families"></span><h2>Predefined families<a class="headerlink" href="#predefined-families" title="Link to this heading">¶</a></h2>
+<p>The parametrizations follow Wikipedia, while the class names are as in
+<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/stats.html#module-scipy.stats" title="(in SciPy v1.11.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.stats</span></code></a>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.beta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">beta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_copulas.py#L43-L50"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.beta" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Beta_distribution">https://en.wikipedia.org/wiki/Beta_distribution</a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.dirichlet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">dirichlet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_copulas.py#L52-L93"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.dirichlet" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Dirichlet_distribution">https://en.wikipedia.org/wiki/Dirichlet_distribution</a></p>
+<p>This uses the <span class="math notranslate nohighlight">\((\alpha, \mathbf n)\)</span> parametrization, such that the
+standard one is</p>
+<div class="math notranslate nohighlight">
+\[\boldsymbol\alpha = \frac{\alpha \mathbf n}{\sum_i n_i}.\]</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.gamma">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">gamma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_copulas.py#L95-L120"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.gamma" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Gamma_distribution">https://en.wikipedia.org/wiki/Gamma_distribution</a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.halfcauchy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">halfcauchy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_copulas.py#L186-L204"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.halfcauchy" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Cauchy_distribution">https://en.wikipedia.org/wiki/Cauchy_distribution</a>, <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.halfcauchy.html#scipy.stats.halfcauchy" title="(in SciPy v1.11.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.stats.halfcauchy</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.halfnorm">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">halfnorm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_copulas.py#L206-L233"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.halfnorm" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Half-normal_distribution">https://en.wikipedia.org/wiki/Half-normal_distribution</a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.invgamma">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">invgamma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_copulas.py#L153-L175"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.invgamma" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Inverse-gamma_distribution">https://en.wikipedia.org/wiki/Inverse-gamma_distribution</a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.loggamma">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">loggamma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_copulas.py#L122-L151"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.loggamma" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Gamma_distribution">https://en.wikipedia.org/wiki/Gamma_distribution</a>, <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.loggamma.html#scipy.stats.loggamma" title="(in SciPy v1.11.2)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.stats.loggamma</span></code></a></p>
+<p>This is the distribution of the logarithm of a Gamma variable. The naming
+convention is the opposite of lognorm, which is the distribution of the
+exponential of a Normal variable.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.copula.uniform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.copula.</span></span><span class="sig-name descname"><span class="pre">uniform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_copulas.py#L235-L242"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.uniform" title="Link to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Continuous_uniform_distribution">https://en.wikipedia.org/wiki/Continuous_uniform_distribution</a></p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="raniter.html" title="Previous document">Random sampling</a>
+        </li>
+        <li>
+          <a href="bayestree.html" title="Next document">BART</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020-2023, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/reference/copula.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

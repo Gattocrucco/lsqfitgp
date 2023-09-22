@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Kernel decorators &#8212; lsqfitgp documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
+    <script src="../_static/documentation_options.js?v=841cbeb9"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Kernel transformations" href="kernelop.html" />
+    <link rel="prev" title="Generic kernel classes" href="kernel.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">Predefined kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernel.html">Generic kernel classes</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelop.html">Kernel transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fit.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="raniter.html">Random sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="copula.html">Gaussian copulas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayestree.html">BART</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gvarext.html">Gvar extensions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/development.html">Development</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="reference.html">Reference</a><ul>
+      <li>Previous: <a href="kernel.html" title="previous chapter">Generic kernel classes</a></li>
+      <li>Next: <a href="kernelop.html" title="next chapter">Kernel transformations</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernel.html" title="Previous document">Generic kernel classes</a>
+        </li>
+        <li>
+          <a href="kernelop.html" title="Next document">Kernel transformations</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="kernel-decorators">
+<span id="kerneldec"></span><h1>Kernel decorators<a class="headerlink" href="#kernel-decorators" title="Link to this heading">¶</a></h1>
+<p>These decorators are the preferred way to create subclasses of <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
+<section id="index">
+<h2>Index<a class="headerlink" href="#index" title="Link to this heading">¶</a></h2>
+<p><a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.crossstationarykernel" title="lsqfitgp.crossstationarykernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crossstationarykernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.stationarykernel" title="lsqfitgp.stationarykernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stationarykernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.crossisotropickernel" title="lsqfitgp.crossisotropickernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crossisotropickernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.isotropickernel" title="lsqfitgp.isotropickernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isotropickernel</span></code></a></p>
+</section>
+<section id="decorators">
+<h2>Decorators<a class="headerlink" href="#decorators" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.crosskernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">crosskernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bases</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L58-L103"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.crosskernel" title="Link to this definition">¶</a></dt>
+<dd><p>Decorator to convert a function to a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>*args</strong></dt><dd><p>Either a function to decorate, or no arguments. The function is used
+as the <code class="xref py py-obj docutils literal notranslate"><span class="pre">core</span></code> argument to <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
+</dd>
+<dt><strong>bases</strong><span class="classifier">tuple of types, optional</span></dt><dd><p>The bases of the new class. If not specified, use <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional arguments are passed to <a class="reference internal" href="kernel.html#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>class_or_dec</strong><span class="classifier">callable or type</span></dt><dd><p>If <code class="xref py py-obj docutils literal notranslate"><span class="pre">args</span></code> is empty, a decorator ready to be applied, else the kernel
+class.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Arguments passed to the class constructor may modify the class. If the
+object returned by the the constructor is a subclass of the superclass
+targeted by the decorator, and all the arguments passed at instantiation
+are passed down to the decorated function, the class of the object is
+enforced to be the new class.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">crosskernel</span><span class="p">(</span><span class="n">derivable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">MyKernel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.kernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L105-L118"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">kernel</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># the default loc will be 10</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">MyKernel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cippa</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lippa</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">cippa</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">**</span> <span class="n">lippa</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.crossstationarykernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">crossstationarykernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L120-L126"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.crossstationarykernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.CrossStationaryKernel" title="lsqfitgp.CrossStationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossStationaryKernel</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.stationarykernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">stationarykernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L128-L144"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.stationarykernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a>.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">stationarykernel</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s1">&#39;posabs&#39;</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">MyKernel</span><span class="p">(</span><span class="n">absdelta</span><span class="p">,</span> <span class="n">cippa</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lippa</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">cippa</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">absdelta</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">/</span> <span class="n">lippa</span><span class="p">)</span>
+<span class="gp">... </span>        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">absdelta</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span>
+<span class="gp">... </span>    <span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.crossisotropickernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">crossisotropickernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L146-L152"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.crossisotropickernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.CrossIsotropicKernel" title="lsqfitgp.CrossIsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossIsotropicKernel</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lsqfitgp.isotropickernel">
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">isotropickernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L154-L167"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.isotropickernel" title="Link to this definition">¶</a></dt>
+<dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a>.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">isotropickernel</span><span class="p">(</span><span class="n">derivable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">MyKernel</span><span class="p">(</span><span class="n">distsquared</span><span class="p">,</span> <span class="n">cippa</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lippa</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">cippa</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">distsquared</span><span class="p">)</span> <span class="o">+</span> <span class="n">lippa</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernel.html" title="Previous document">Generic kernel classes</a>
+        </li>
+        <li>
+          <a href="kernelop.html" title="Next document">Kernel transformations</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020-2023, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/reference/kerneldec.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
