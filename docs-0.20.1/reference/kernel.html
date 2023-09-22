@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Generic kernel classes &#8212; lsqfitgp 0.20.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
+    <script src="../_static/documentation_options.js?v=1154e574"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Kernel decorators" href="kerneldec.html" />
+    <link rel="prev" title="Predefined kernels" href="kernelsref.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">lsqfitgp 0.20.1</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="kernelsref.html">Predefined kernels</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Generic kernel classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kerneldec.html">Kernel decorators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernelop.html">Kernel transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deriv.html">Derivative specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gp.html">Gaussian process class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array.html">Structured arrays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fit.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="raniter.html">Random sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="copula.html">Gaussian copulas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bayestree.html">BART</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gvarext.html">Gvar extensions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/development.html">Development</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="reference.html">Reference</a><ul>
+      <li>Previous: <a href="kernelsref.html" title="previous chapter">Predefined kernels</a></li>
+      <li>Next: <a href="kerneldec.html" title="next chapter">Kernel decorators</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernelsref.html" title="Previous document">Predefined kernels</a>
+        </li>
+        <li>
+          <a href="kerneldec.html" title="Next document">Kernel decorators</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="generic-kernel-classes">
+<span id="generickernel"></span><h1>Generic kernel classes<a class="headerlink" href="#generic-kernel-classes" title="Link to this heading">¶</a></h1>
+<p>All kernels in <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> are subclasses of <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>. The user should
+almost exclusively deal with its subclass <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>, as <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a> objects
+are produced behind the scenes by <a class="reference internal" href="gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a>.</p>
+<p>The generic classes can be used standalone. To ease subclassing, use the
+<a class="reference internal" href="kerneldec.html#kerneldec"><span class="std std-ref">decorators</span></a>.</p>
+<section id="index">
+<h2>Index<a class="headerlink" href="#index" title="Link to this heading">¶</a></h2>
+<p><a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>, <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossStationaryKernel" title="lsqfitgp.CrossStationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossStationaryKernel</span></code></a>, <a class="reference internal" href="#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a>,
+<a class="reference internal" href="#lsqfitgp.CrossIsotropicKernel" title="lsqfitgp.CrossIsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossIsotropicKernel</span></code></a>, <a class="reference internal" href="#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a></p>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CrossKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batchbytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">initkw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L54-L1197"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel" title="Link to this definition">¶</a></dt>
+<dd><p>Base class to represent kernels, i.e., covariance functions.</p>
+<p>A kernel is a two-argument function that computes the covariance between
+two functions at some points according to some probability distribution:</p>
+<div class="math notranslate nohighlight">
+\[\mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), g(y)].\]</div>
+<p><a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a> objects are callable, the signature is <code class="docutils literal notranslate"><span class="pre">obj(x,</span> <span class="pre">y)</span></code>, and
+they can be summed and multiplied between them and with scalars. They
+are immutable; all operations return new objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>core</strong><span class="classifier">callable</span></dt><dd><p>A function with signature <code class="docutils literal notranslate"><span class="pre">core(x,</span> <span class="pre">y)</span></code>, where <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>
+are two broadcastable numpy arrays, which computes the value of the
+kernel.</p>
+</dd>
+<dt><strong>scale, loc, derivable, maxdim, dim</strong></dt><dd><p>If specified, these arguments are passed as arguments to the
+correspondingly named operators, in the order listed here. See <a class="reference internal" href="#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a>.
+Briefly: the kernel selects only fields <code class="xref py py-obj docutils literal notranslate"><span class="pre">dim</span></code> in the input, checks the
+dimensionality against <code class="xref py py-obj docutils literal notranslate"><span class="pre">maxdim</span></code>, checks there are not too many
+derivatives taken on the arguments, then transforms as <code class="docutils literal notranslate"><span class="pre">(x</span> <span class="pre">-</span> <span class="pre">loc)</span> <span class="pre">/</span>
+<span class="pre">scale</span></code>. If any argument is callable, it is passed <code class="xref py py-obj docutils literal notranslate"><span class="pre">**kw</span></code> and must
+return the actual argument. If an argument is a tuple, it is interpreted
+as a pair of arguments.</p>
+</dd>
+<dt><strong>forcekron</strong><span class="classifier">bool, default False</span></dt><dd><p>If True, apply <code class="docutils literal notranslate"><span class="pre">.transf('forcekron')</span></code> to the kernel, before the
+operations above. Available only for <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>.</p>
+</dd>
+<dt><strong>batchbytes</strong><span class="classifier">number, optional</span></dt><dd><p>If specified, apply <code class="docutils literal notranslate"><span class="pre">.batch(batchbytes)</span></code> to the kernel.</p>
+</dd>
+<dt><strong>dynkw</strong><span class="classifier">dict, optional</span></dt><dd><p>Additional keyword arguments passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">core</span></code> that can be modified
+by transformations. Deleted by transformations by default.</p>
+</dd>
+<dt><strong>**initkw</strong></dt><dd><p>Additional keyword arguments passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">core</span></code> that can be read but not
+changed by transformations.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Notes</p>
+<p>The predefined class hierarchy and the class logic of the transformations
+assume that each kernel class corresponds to a subalgebra, i.e., addition
+and multiplication preserve the class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>initkw</strong><span class="classifier">dict</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">initkw</span></code> argument.</p>
+</dd>
+<dt><strong>dynkw</strong><span class="classifier">dict</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">dynkw</span></code> argument, or a modification of it if the object has been
+transformed.</p>
+</dd>
+<dt><strong>core</strong><span class="classifier">callable</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">core</span></code> argument partially evaluated on <code class="xref py py-obj docutils literal notranslate"><span class="pre">initkw</span></code>, or another
+function wrapping it if the object has been transformed.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.batch" title="lsqfitgp.CrossKernel.batch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code></a>(maxnbytes)</p></td>
+<td><p>Return a batched version of the kernel.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a>(transfname, *args, **kw)</p></td>
+<td><p>Transform kernels to represent the application of a linear operator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a>(transfname, *operands, **kw)</p></td>
+<td><p>Return a nonnegative algebraic transformation of the input kernels.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a>(transfname, *args, **kw)</p></td>
+<td><p>Return a transformed kernel.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.register_transf" title="lsqfitgp.CrossKernel.register_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_transf</span></code></a>(func[, transfname, doc, kind])</p></td>
+<td><p>Register a transformation for use with <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.register_linop" title="lsqfitgp.CrossKernel.register_linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_linop</span></code></a>(op[, transfname, doc, argparser])</p></td>
+<td><p>Register a transformation for use with <a class="reference internal" href="#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.register_corelinop" title="lsqfitgp.CrossKernel.register_corelinop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_corelinop</span></code></a>(corefunc[, transfname, ...])</p></td>
+<td><p>Register a linear operator with a function that acts only on the core.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.register_xtransf" title="lsqfitgp.CrossKernel.register_xtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_xtransf</span></code></a>(xfunc[, transfname, doc])</p></td>
+<td><p>Register a linear operator that acts only on the input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.register_algop" title="lsqfitgp.CrossKernel.register_algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_algop</span></code></a>(op[, transfname, doc])</p></td>
+<td><p>Register a transformation for use with <a class="reference internal" href="#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.register_ufuncalgop" title="lsqfitgp.CrossKernel.register_ufuncalgop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_ufuncalgop</span></code></a>(ufunc[, transfname, doc])</p></td>
+<td><p>Register an algebraic operation with a function that acts only on the kernel value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.transf_help" title="lsqfitgp.CrossKernel.transf_help"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf_help</span></code></a>(transfname)</p></td>
+<td><p>Return the documentation of a transformation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.has_transf" title="lsqfitgp.CrossKernel.has_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_transf</span></code></a>(transfname)</p></td>
+<td><p>Check if a transformation is registered.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.list_transf" title="lsqfitgp.CrossKernel.list_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_transf</span></code></a>([superclasses])</p></td>
+<td><p>List all the available transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.super_transf" title="lsqfitgp.CrossKernel.super_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">super_transf</span></code></a>(transfname, self, *args, **kw)</p></td>
+<td><p>Transform the kernel using a superclass transformation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.CrossKernel.make_linop_family" title="lsqfitgp.CrossKernel.make_linop_family"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_linop_family</span></code></a>(transfname, bothker, leftker)</p></td>
+<td><p>Form a family of kernels classes related by linear operators.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.Transf">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tcls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.Transf" title="Link to this definition">¶</a></dt>
+<dd><p>Create new instance of Transf(tcls, kind, func, doc)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.Transf.doc">
+<span class="sig-name descname"><span class="pre">doc</span></span><a class="headerlink" href="#lsqfitgp.CrossKernel.Transf.doc" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.Transf.func">
+<span class="sig-name descname"><span class="pre">func</span></span><a class="headerlink" href="#lsqfitgp.CrossKernel.Transf.func" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.Transf.kind">
+<span class="sig-name descname"><span class="pre">kind</span></span><a class="headerlink" href="#lsqfitgp.CrossKernel.Transf.kind" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.Transf.tcls">
+<span class="sig-name descname"><span class="pre">tcls</span></span><a class="headerlink" href="#lsqfitgp.CrossKernel.Transf.tcls" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.algop">
+<span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">operands</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.algop" title="Link to this definition">¶</a></dt>
+<dd><p>Return a nonnegative algebraic transformation of the input kernels.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\mathrm{newkernel}(x, y) &amp;=
+    f(\mathrm{kernel}_1(x, y), \mathrm{kernel}_2(x, y), \ldots), \\
+f(z_1, z_2, \ldots) &amp;= \sum_{k_1,k_2,\ldots=0}^\infty
+    a_{k_1 k_2 \ldots} z_1^{k_1} z_2^{k_2} \ldots,
+\quad a_* \ge 0.\end{split}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transfname</strong><span class="classifier">hashable</span></dt><dd><p>A name identifying the transformation.</p>
+</dd>
+<dt><strong>*operands</strong><span class="classifier">CrossKernel, scalar</span></dt><dd><p>Arguments to the transformation in addition to self.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional arguments to the transformation, not considered as
+operands.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>newkernel</strong><span class="classifier">CrossKernel or NotImplemented</span></dt><dd><p>The transformed kernel, or NotImplemented if the operation is
+not supported.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Notes</p>
+<p>The class of <code class="xref py py-obj docutils literal notranslate"><span class="pre">newkernel</span></code> is the least common superclass of: the
+“natural” output of the operation, the class defining the
+transformation, and the classes of the operands.</p>
+<p>For class determination, scalars in the input count as <a class="reference internal" href="kernelsref.html#lsqfitgp.Constant" title="lsqfitgp.Constant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Constant</span></code></a>
+if nonnegative or traced by jax, else <code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossConstant</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.batch">
+<span class="sig-name descname"><span class="pre">batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">maxnbytes</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L271-L291"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.batch" title="Link to this definition">¶</a></dt>
+<dd><p>Return a batched version of the kernel.</p>
+<p>The batched kernel processes its inputs in chunks to try to limit memory
+usage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>maxnbytes</strong><span class="classifier">number</span></dt><dd><p>The maximum number of input bytes per chunk, counted after
+broadcasting the input shapes. Actual broadcasting may not occur if
+not induced by the operations in the kernel.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>batched_kernel</strong><span class="classifier">CrossKernel</span></dt><dd><p>The same kernel but with batched computations.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.has_transf">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L465-L492"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.has_transf" title="Link to this definition">¶</a></dt>
+<dd><p>Check if a transformation is registered.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transfname</strong><span class="classifier">hashable</span></dt><dd><p>The transformation name.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>has_transf</strong><span class="classifier">bool</span></dt><dd><p>Whether the transformation is registered.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.inherit_all_algops">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inherit_all_algops</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">intermediates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L401-L431"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.inherit_all_algops" title="Link to this definition">¶</a></dt>
+<dd><p>Inherit all algebraic operations from superclasses.</p>
+<p>This makes sense if the class represents a subalgebra, i.e., it
+should be preserved by addition and multiplication.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>intermediates</strong><span class="classifier">bool, default False</span></dt><dd><p>If True, make all superclasses up to the one definining the
+transformation inherit it too.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>KeyError</dt><dd><p>An algebraic operation is already registered for one of the target
+classes.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.inherit_transf">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inherit_transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intermediates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L368-L399"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.inherit_transf" title="Link to this definition">¶</a></dt>
+<dd><p>Inherit a transformation from a superclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transfname</strong><span class="classifier">hashable</span></dt><dd><p>The name of the transformation.</p>
+</dd>
+<dt><strong>intermediates</strong><span class="classifier">bool, default False</span></dt><dd><p>If True, make all superclasses up to the one definining the
+transformation inherit it too.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>KeyError</dt><dd><p>The transformation was not found in any superclass, or the
+transformation is already registered on any of the target classes.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.linop">
+<span class="sig-name descname"><span class="pre">linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L576-L632"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.linop" title="Link to this definition">¶</a></dt>
+<dd><p>Transform kernels to represent the application of a linear operator.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{kernel}_1(x, y) &amp;= \mathrm{Cov}[f_1(x), g_1(y)], \\
+\text{kernel}_2(x, y) &amp;= \mathrm{Cov}[f_2(x), g_2(y)], \\
+&amp;\ldots \\
+\text{newkernel}(x, y) &amp;=
+    \mathrm{Cov}[T_f(f_1, f_2, \ldots)(x), T_g(g_1, g_2, \ldots)(y)]\end{split}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transfname</strong><span class="classifier">hashable</span></dt><dd><p>The name of the transformation.</p>
+</dd>
+<dt><strong>*args</strong></dt><dd><p>A sequence of <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a> instances, representing the operands,
+followed by one or two non-kernel arguments, indicating how to act
+on each side of the kernels. If both arguments represent the
+identity, this is a no-op. If there is only one argument, it is
+intended that the two arguments are equal. <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code> always represents
+the identity.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>newkernel</strong><span class="classifier">CrossKernel</span></dt><dd><p>The transformed kernel.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>ValueError</dt><dd><p>The transformation exists but was not defined by <a class="reference internal" href="#lsqfitgp.CrossKernel.register_linop" title="lsqfitgp.CrossKernel.register_linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_linop</span></code></a>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Notes</p>
+<p>The linear operator is defined on the function the kernel represents the
+distribution of, not in full generality on the kernel itself. When
+multiple kernels are involved, their distributions may be considered
+independent or not, depending on the specific operation.</p>
+<p>If the result is a subclass of the class defining the transformation,
+the result is casted to the latter. Then, if the result and all the
+operands are instances of <a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a>, but the two operator arguments
+differ, the result is casted to its first non-<a class="reference internal" href="#lsqfitgp.Kernel" title="lsqfitgp.Kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kernel</span></code></a> superclass.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.list_transf">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">superclasses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L433-L461"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.list_transf" title="Link to this definition">¶</a></dt>
+<dd><p>List all the available transformations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>superclasses</strong><span class="classifier">bool, default True</span></dt><dd><p>Include transformations defined in superclasses.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>transfs: dict of Transf</dt><dd><p>The dictionary keys are the transformation names, the values are
+named tuples <code class="docutils literal notranslate"><span class="pre">(tcls,</span> <span class="pre">kind,</span> <span class="pre">impl,</span> <span class="pre">doc)</span></code> where <code class="docutils literal notranslate"><span class="pre">tcls</span></code> is the class
+defining the transformation, <code class="docutils literal notranslate"><span class="pre">kind</span></code> is the kind of transformation,
+<code class="docutils literal notranslate"><span class="pre">impl</span></code> is the implementation with signature <code class="docutils literal notranslate"><span class="pre">impl(tcls,</span> <span class="pre">self,</span>
+<span class="pre">*args,</span> <span class="pre">**kw)</span></code>, <code class="docutils literal notranslate"><span class="pre">doc</span></code> is the docstring.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.make_linop_family">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">make_linop_family</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bothker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">leftker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rightker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argparser</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argnames</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">translkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L1033-L1197"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.make_linop_family" title="Link to this definition">¶</a></dt>
+<dd><p>Form a family of kernels classes related by linear operators.</p>
+<p>The class this method is called on is the seed class. A new
+trasformation is registered to obtain other classes from the seed class
+by applying a newly defined linop transformation.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>transfname</strong><span class="classifier">str</span></dt><dd><p>The name of the new transformation.</p>
+</dd>
+<dt><strong>bothker, leftker, rightker</strong><span class="classifier">CrossKernel</span></dt><dd><p>The kernel classes to be obtained by applying the operator to a seed
+class object respectively on both sides, only left, or only right.
+All classes are assumed to require no positional arguments at
+construction, and recognize the same set of keyword arguments. If
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">rightker</span></code> is not specified, it is defined by subclassing <code class="xref py py-obj docutils literal notranslate"><span class="pre">leftker</span></code>
+and transposing the kernel on object construction.</p>
+</dd>
+<dt><strong>doc, argparser</strong><span class="classifier">callable, optional</span></dt><dd><p>See <a class="reference internal" href="#lsqfitgp.CrossKernel.register_linop" title="lsqfitgp.CrossKernel.register_linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_linop</span></code></a>.</p>
+</dd>
+<dt><strong>argnames</strong><span class="classifier">pair of str, optional</span></dt><dd><p>If specified, <code class="xref py py-obj docutils literal notranslate"><span class="pre">leftker</span></code> is passed an additional keyword argument
+with name <code class="docutils literal notranslate"><span class="pre">argnames[0]</span></code> that specifies the argument of the
+operator, <code class="xref py py-obj docutils literal notranslate"><span class="pre">rightker</span></code> is passed <code class="docutils literal notranslate"><span class="pre">argnames[1]</span></code>, and <code class="xref py py-obj docutils literal notranslate"><span class="pre">bothker</span></code>
+similarly is passed both.</p>
+<p>If <code class="xref py py-obj docutils literal notranslate"><span class="pre">leftker</span></code> is used to implement <code class="xref py py-obj docutils literal notranslate"><span class="pre">rightker</span></code>, it must accept both
+arguments, and may use them to determine if it is being invoked as
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">leftker</span></code> or <code class="xref py py-obj docutils literal notranslate"><span class="pre">rightker</span></code>.</p>
+</dd>
+<dt><strong>translkw</strong><span class="classifier">callable, optional</span></dt><dd><p>A function with signature <code class="docutils literal notranslate"><span class="pre">translkw(dynkw,</span> <span class="pre">&lt;argnames&gt;,</span> <span class="pre">**initkw)</span> <span class="pre">-&gt;</span>
+<span class="pre">dict</span></code> that determines the constructor arguments for a new object
+starting from the ones of the object to be transformed. By default,
+<code class="docutils literal notranslate"><span class="pre">initkw</span></code> is passed over, and an error is raised if <code class="docutils literal notranslate"><span class="pre">dynkw</span></code> is
+not empty.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">kernel</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">gatto</span><span class="p">):</span>
+<span class="gp">... </span><span class="w">    </span><span class="sd">&#39;&#39;&#39; The reknown A kernel of order gatto &#39;&#39;&#39;</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="o">...</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">kernel</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">T</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">gatto</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
+<span class="gp">... </span><span class="w">    </span><span class="sd">&#39;&#39;&#39; The kernel of the Topo series of an A process of order</span>
+<span class="gp">... </span><span class="sd">        gatto &#39;&#39;&#39;</span>
+<span class="gp">... </span>    <span class="n">op1</span><span class="p">,</span> <span class="n">op2</span> <span class="o">=</span> <span class="n">op</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="o">...</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">crosskernel</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">CrossTA</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">gatto</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
+<span class="gp">... </span><span class="w">    </span><span class="sd">&#39;&#39;&#39; The cross covariance between the Topo series of an A</span>
+<span class="gp">... </span><span class="sd">        process of order gatto and the process itself &#39;&#39;&#39;</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="o">...</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="o">.</span><span class="n">make_linop_family</span><span class="p">(</span><span class="s1">&#39;topo&#39;</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">CrossTA</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">A</span><span class="p">(</span><span class="n">gatto</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ta</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;topo&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">at</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;topo&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">linop</span><span class="p">(</span><span class="s1">&#39;topo&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.register_algop">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L915-L989"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_algop" title="Link to this definition">¶</a></dt>
+<dd><p>Register a transformation for use with <a class="reference internal" href="#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>op</strong><span class="classifier">callable</span></dt><dd><p>A function <code class="docutils literal notranslate"><span class="pre">op(tcls,</span> <span class="pre">*kernels,</span> <span class="pre">**kw)</span> <span class="pre">-&gt;</span> <span class="pre">CrossKernel</span> <span class="pre">|</span>
+<span class="pre">NotImplemented</span></code> that returns the new kernel. <code class="docutils literal notranslate"><span class="pre">kernels</span></code> may be
+scalars but for the first argument.</p>
+</dd>
+<dt><strong>transfname, doc</strong></dt><dd><p>See <a class="reference internal" href="#lsqfitgp.CrossKernel.register_transf" title="lsqfitgp.CrossKernel.register_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_transf</span></code></a>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>op</strong><span class="classifier">callable</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">op</span></code> argument as is.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.register_corelinop">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_corelinop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corefunc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argparser</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L842-L873"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_corelinop" title="Link to this definition">¶</a></dt>
+<dd><p>Register a linear operator with a function that acts only on the core.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>corefunc</strong><span class="classifier">callable</span></dt><dd><p>A function <code class="docutils literal notranslate"><span class="pre">corefunc(core,</span> <span class="pre">arg1,</span> <span class="pre">arg2,</span> <span class="pre">*cores)</span> <span class="pre">-&gt;</span> <span class="pre">newcore</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">core</span></code> is the function that implements the kernel passed at
+initialization, and <code class="docutils literal notranslate"><span class="pre">cores</span></code> for other operands.</p>
+</dd>
+<dt><strong>transfname, doc, argparser</strong></dt><dd><p>See <a class="reference internal" href="#lsqfitgp.CrossKernel.register_linop" title="lsqfitgp.CrossKernel.register_linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_linop</span></code></a>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>corefunc</strong><span class="classifier">callable</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">corefunc</span></code> argument as is.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.register_linop">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_linop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argparser</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L731-L837"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_linop" title="Link to this definition">¶</a></dt>
+<dd><p>Register a transformation for use with <a class="reference internal" href="#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>op</strong><span class="classifier">callable</span></dt><dd><p>A function <code class="docutils literal notranslate"><span class="pre">op(tcls,</span> <span class="pre">self,</span> <span class="pre">arg1,</span> <span class="pre">arg2,</span> <span class="pre">*operands)</span> <span class="pre">-&gt;</span> <span class="pre">CrossKernel</span></code>
+that returns the new kernel, where <code class="docutils literal notranslate"><span class="pre">arg1</span></code> and <code class="docutils literal notranslate"><span class="pre">arg2</span></code> represent
+the operators acting on each side of the kernels, and <code class="docutils literal notranslate"><span class="pre">operands</span></code>
+are the other kernels beyond <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p>
+</dd>
+<dt><strong>transfname, doc</strong><span class="classifier">optional</span></dt><dd><p>See <a class="reference internal" href="#lsqfitgp.CrossKernel.register_transf" title="lsqfitgp.CrossKernel.register_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_transf</span></code></a>.</p>
+</dd>
+<dt><strong>argparser</strong><span class="classifier">callable, optional</span></dt><dd><p>A function applied to <code class="docutils literal notranslate"><span class="pre">arg1</span></code> and <code class="docutils literal notranslate"><span class="pre">arg2</span></code>. Not called if the
+argument is <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>. It should map the identity to <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>op</strong><span class="classifier">callable</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">op</span></code> argument as is.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+<p class="rubric">Notes</p>
+<p>The function <code class="xref py py-obj docutils literal notranslate"><span class="pre">op</span></code> is called only if <code class="docutils literal notranslate"><span class="pre">arg1</span></code> or <code class="docutils literal notranslate"><span class="pre">arg2</span></code> is not <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>
+after potential conversion with <code class="xref py py-obj docutils literal notranslate"><span class="pre">argparser</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.register_transf">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L683-L729"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_transf" title="Link to this definition">¶</a></dt>
+<dd><p>Register a transformation for use with <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a>.</p>
+<p>The transformation will be accessible to subclasses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>func</strong><span class="classifier">callable</span></dt><dd><p>A function <code class="docutils literal notranslate"><span class="pre">func(tcls,</span> <span class="pre">self,</span> <span class="pre">*args,</span> <span class="pre">**kw)</span> <span class="pre">-&gt;</span> <span class="pre">object</span></code> implementing
+the transformation, where <code class="docutils literal notranslate"><span class="pre">tcls</span></code> is the class that defines the
+transformation.</p>
+</dd>
+<dt><strong>transfname</strong><span class="classifier">hashable, optional.</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">transfname</span></code> parameter to <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a> this transformation will
+be accessible under. If not specified, use the name of <code class="xref py py-obj docutils literal notranslate"><span class="pre">func</span></code>.</p>
+</dd>
+<dt><strong>doc</strong><span class="classifier">str, optional</span></dt><dd><p>The documentation of the transformation for <a class="reference internal" href="#lsqfitgp.CrossKernel.transf_help" title="lsqfitgp.CrossKernel.transf_help"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf_help</span></code></a>. If not
+specified, use the docstring of <code class="xref py py-obj docutils literal notranslate"><span class="pre">func</span></code>.</p>
+</dd>
+<dt><strong>kind</strong><span class="classifier">object, optional</span></dt><dd><p>An arbitrary marker.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>func</strong><span class="classifier">callable</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">func</span></code> argument as is.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>KeyError</dt><dd><p>The name is already in use for another transformation in the same
+class.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.register_ufuncalgop">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_ufuncalgop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ufunc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L994-L1031"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_ufuncalgop" title="Link to this definition">¶</a></dt>
+<dd><p>Register an algebraic operation with a function that acts only on the
+kernel value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>corefunc</strong><span class="classifier">callable</span></dt><dd><p>A function <code class="docutils literal notranslate"><span class="pre">ufunc(*values,</span> <span class="pre">**kw)</span> <span class="pre">-&gt;</span> <span class="pre">value</span></code>, where <code class="docutils literal notranslate"><span class="pre">values</span></code> are
+the values yielded by the operands.</p>
+</dd>
+<dt><strong>transfname, doc</strong></dt><dd><p>See <a class="reference internal" href="#lsqfitgp.CrossKernel.register_transf" title="lsqfitgp.CrossKernel.register_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_transf</span></code></a>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>ufunc</strong><span class="classifier">callable</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">ufunc</span></code> argument as is.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.register_xtransf">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_xtransf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xfunc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transfname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L875-L913"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.register_xtransf" title="Link to this definition">¶</a></dt>
+<dd><p>Register a linear operator that acts only on the input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>xfunc</strong><span class="classifier">callable</span></dt><dd><p>A function <code class="docutils literal notranslate"><span class="pre">xfunc(arg)</span> <span class="pre">-&gt;</span> <span class="pre">(lambda</span> <span class="pre">x:</span> <span class="pre">newx)</span></code> that takes in a
+<a class="reference internal" href="#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a> argument and produces a function to transform the input. Not
+called if <code class="docutils literal notranslate"><span class="pre">arg</span></code> is <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>. To indicate the identity, return
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+<dt><strong>transfname, doc</strong></dt><dd><p>See <a class="reference internal" href="#lsqfitgp.CrossKernel.register_linop" title="lsqfitgp.CrossKernel.register_linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_linop</span></code></a>. <code class="xref py py-obj docutils literal notranslate"><span class="pre">argparser</span></code> is not provided because its
+functionality can be included in <code class="xref py py-obj docutils literal notranslate"><span class="pre">xfunc</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>xfunc</strong><span class="classifier">callable</span></dt><dd><p>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">xfunc</span></code> argument as is.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.super_transf">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">super_transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L548-L574"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.super_transf" title="Link to this definition">¶</a></dt>
+<dd><p>Transform the kernel using a superclass transformation.</p>
+<p>This is equivalent to <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a> but is invoked on a class and the
+object is passed explicitly. The definition of the transformation is
+searched starting from the next class in the MRO of <code class="xref py py-obj docutils literal notranslate"><span class="pre">self</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transfname, *args, **kw</strong></dt><dd><p>See <a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a>.</p>
+</dd>
+<dt><strong>self</strong><span class="classifier">CrossKernel</span></dt><dd><p>The object to transform.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>newkernel</strong><span class="classifier">object</span></dt><dd><p>The output of the transformation.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.transf">
+<span class="sig-name descname"><span class="pre">transf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L518-L546"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.transf" title="Link to this definition">¶</a></dt>
+<dd><p>Return a transformed kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transfname</strong><span class="classifier">hashable</span></dt><dd><p>A name identifying the transformation.</p>
+</dd>
+<dt><strong>*args, **kw</strong></dt><dd><p>Arguments to the transformation.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>newkernel</strong><span class="classifier">object</span></dt><dd><p>The output of the transformation.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>KeyError</dt><dd><p>The transformation is not defined in this class or any superclass.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.linop" title="lsqfitgp.CrossKernel.linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">linop</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.algop" title="lsqfitgp.CrossKernel.algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">algop</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.transf_help" title="lsqfitgp.CrossKernel.transf_help"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf_help</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.has_transf" title="lsqfitgp.CrossKernel.has_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_transf</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.list_transf" title="lsqfitgp.CrossKernel.list_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_transf</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.super_transf" title="lsqfitgp.CrossKernel.super_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">super_transf</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.register_transf" title="lsqfitgp.CrossKernel.register_transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_transf</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.register_linop" title="lsqfitgp.CrossKernel.register_linop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_linop</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.register_corelinop" title="lsqfitgp.CrossKernel.register_corelinop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_corelinop</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.register_xtransf" title="lsqfitgp.CrossKernel.register_xtransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_xtransf</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.register_algop" title="lsqfitgp.CrossKernel.register_algop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_algop</span></code></a>, <a class="reference internal" href="#lsqfitgp.CrossKernel.register_ufuncalgop" title="lsqfitgp.CrossKernel.register_ufuncalgop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_ufuncalgop</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lsqfitgp.CrossKernel.transf_help">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">transf_help</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transfname</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_crosskernel.py#L494-L516"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossKernel.transf_help" title="Link to this definition">¶</a></dt>
+<dd><p>Return the documentation of a transformation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transfname</strong><span class="classifier">hashable</span></dt><dd><p>The name of the transformation.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>doc</strong><span class="classifier">str</span></dt><dd><p>The documentation of the transformation.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#lsqfitgp.CrossKernel.transf" title="lsqfitgp.CrossKernel.transf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transf</span></code></a></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.Kernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">derivable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxdim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forcekron</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batchbytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">initkw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_kernel.py#L23-L34"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.Kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Subclass of <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a> to represent the kernel of a single function:</p>
+<div class="math notranslate nohighlight">
+\[\mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), f(y)].\]</div>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.CrossStationaryKernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CrossStationaryKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'signed'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_stationary.py#L28-L88"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossStationaryKernel" title="Link to this definition">¶</a></dt>
+<dd><p>Subclass of <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a> for stationary kernels.</p>
+<p>A stationary kernel depends only on the difference, dimension by dimension,
+between its two arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>core</strong><span class="classifier">callable</span></dt><dd><p>A function taking one positional argument <code class="docutils literal notranslate"><span class="pre">delta</span> <span class="pre">=</span> <span class="pre">x</span> <span class="pre">-</span> <span class="pre">y</span></code> and optional
+keyword arguments.</p>
+</dd>
+<dt><strong>input</strong><span class="classifier">{‘signed’, ‘posabs’, ‘abs’}, default ‘signed’</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">'signed'</span></code>, <a class="reference internal" href="kerneldec.html#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> is passed the bare difference. If
+<code class="docutils literal notranslate"><span class="pre">'posabs'</span></code>, <a class="reference internal" href="kerneldec.html#lsqfitgp.kernel" title="lsqfitgp.kernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kernel</span></code></a> is passed the absolute value of the difference,
+and the difference of equal points is a small number instead of zero. If
+<code class="docutils literal notranslate"><span class="pre">'abs'</span></code>, the absolute value.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>
+constructor.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.StationaryKernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">StationaryKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'signed'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_stationary.py#L90-L91"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.StationaryKernel" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.CrossIsotropicKernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">CrossIsotropicKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'squared'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_isotropic.py#L31-L92"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.CrossIsotropicKernel" title="Link to this definition">¶</a></dt>
+<dd><p>Subclass of <a class="reference internal" href="#lsqfitgp.CrossStationaryKernel" title="lsqfitgp.CrossStationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossStationaryKernel</span></code></a> for isotropic kernels.</p>
+<p>An isotropic kernel depends only on the Euclidean distance between its two
+arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>core</strong><span class="classifier">callable</span></dt><dd><p>A function taking one argument <code class="docutils literal notranslate"><span class="pre">r2</span></code> which is the squared distance
+between x and y, plus optionally keyword arguments.</p>
+</dd>
+<dt><strong>input</strong><span class="classifier">{‘squared’, ‘abs’, ‘posabs’, ‘raw’}, default ‘squared’</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">'squared'</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">core</span></code> is passed the squared distance. If <code class="docutils literal notranslate"><span class="pre">'abs'</span></code>,
+it is passed the distance (not squared). If <code class="docutils literal notranslate"><span class="pre">'posabs'</span></code>, it is passed
+the distance, and the distance of equal points is a small number instead
+of zero. If <code class="docutils literal notranslate"><span class="pre">'raw'</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">core</span></code> is passed both points separately like
+non-stationary kernels.</p>
+</dd>
+<dt><strong>**kw</strong></dt><dd><p>Additional keyword arguments are passed to the <a class="reference internal" href="#lsqfitgp.CrossKernel" title="lsqfitgp.CrossKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossKernel</span></code></a>
+constructor.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">input='posabs'</span></code> option will cause problems with second derivatives in
+more than one dimension.</p>
+</dd></dl>
+
+<hr class="docutils" />
+<dl class="py class">
+<dt class="sig sig-object py" id="lsqfitgp.IsotropicKernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">IsotropicKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'squared'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_Kernel/_isotropic.py#L94-L95"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.IsotropicKernel" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernelsref.html" title="Previous document">Predefined kernels</a>
+        </li>
+        <li>
+          <a href="kerneldec.html" title="Next document">Kernel decorators</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020-2023, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/reference/kernel.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

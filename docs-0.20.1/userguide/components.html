@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>10. Splitting components &#8212; lsqfitgp 0.20.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
+    <script src="../_static/documentation_options.js?v=1154e574"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="11. Hyperparameters" href="hyper.html" />
+    <link rel="prev" title="9. Multidimensional output" href="out.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">lsqfitgp 0.20.1</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="userguide.html">Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">1. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sine.html">2. First example: a sine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html">3. More on kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivatives.html">4. Taking derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrals.html">5. Taking integrals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customs.html">6. A custom kernel: text classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="in.html">7. Multidimensional input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="partial.html">8. Partial derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="out.html">9. Multidimensional output</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">10. Splitting components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyper.html">11. Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyperstruct.html">12. Hyperparameters in the input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nonlinear.html">13. Nonlinear models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optim.html">14. Optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/reference.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/development.html">Development</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="userguide.html">Guide</a><ul>
+      <li>Previous: <a href="out.html" title="previous chapter"><span class="section-number">9. </span>Multidimensional output</a></li>
+      <li>Next: <a href="hyper.html" title="next chapter"><span class="section-number">11. </span>Hyperparameters</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="out.html" title="Previous document"><span class="section-number">9. </span>Multidimensional output</a>
+        </li>
+        <li>
+          <a href="hyper.html" title="Next document"><span class="section-number">11. </span>Hyperparameters</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="splitting-components">
+<span id="components"></span><h1><span class="section-number">10. </span>Splitting components<a class="headerlink" href="#splitting-components" title="Link to this heading">¶</a></h1>
+<p>In <a class="reference internal" href="kernels.html#kernelexpl"><span class="std std-ref">More on kernels</span></a> we saw an example where we summed two <a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a>
+kernels with different scale, and the result effectively looked like the sum
+of two processes, because the kernel of a sum of processes is the sum of their
+kernels.</p>
+<p>When summing processes it is useful to get the fit result separately for each
+component. We first generate some data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
+<span class="kn">import</span> <span class="nn">gvar</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="n">kernel_long</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">kernel_short</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+<span class="n">fakedata</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel_long</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">))</span>
+<span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;short&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel_short</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">))</span>
+<span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;short&#39;</span><span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">],</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;components1.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="../_images/components1.png" src="../_images/components1.png" />
+<p>We defined two processes with different correlation lengths, sampled from each,
+and summed the result to make our fake data. Generating fake data from the prior
+is a good way to test a statistical procedure.</p>
+<p>We also saved the data generated for each component. Our goal is to recover the
+components by using only the sum. We start by creating a <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP</span></code></a> object without
+specifying a kernel:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Then we add separately the two kernels to the object using <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproc" title="lsqfitgp.GP.defproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.defproc</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
+    <span class="o">.</span><span class="n">defproc</span><span class="p">(</span><span class="s1">&#39;long&#39;</span><span class="p">,</span> <span class="n">kernel_long</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">defproc</span><span class="p">(</span><span class="s1">&#39;short&#39;</span><span class="p">,</span> <span class="n">kernel_short</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Now the two names <code class="docutils literal notranslate"><span class="pre">'long'</span></code> and <code class="docutils literal notranslate"><span class="pre">'short'</span></code> stand for a priori independent
+processes with their respective kernels. These names reside in a namespace
+separate from the one used by <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addx</span></code></a>, <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addlintransf</span></code></a>, etc. Now we
+use these to define the sum as a process:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">deflintransf</span><span class="p">(</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span>
+    <span class="k">lambda</span> <span class="n">l</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">l</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">s</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+    <span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">,</span> <span class="s1">&#39;short&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The method <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.deflintransf" title="lsqfitgp.GP.deflintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">deflintransf</span></code></a> is analogous to <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addlintransf" title="lsqfitgp.GP.addlintransf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addlintransf</span></code></a> but works
+for a whole process at once. What we are doing mathematically is the
+following:</p>
+<div class="math notranslate nohighlight">
+\[\operatorname{sum}(x) \equiv \operatorname{long}(x) + \operatorname{short}(x).\]</div>
+<p>The second argument to the method is a function that takes in two functions,
+and outputs a new function. The third argument specifies which processes are to
+be transformed in such way.</p>
+<p>Now that we have defined all the processes we care about, we evaluate them on
+the points:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+
+<span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;datalong&#39;</span> <span class="p">,</span> <span class="n">proc</span><span class="o">=</span><span class="s1">&#39;long&#39;</span> <span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;datashort&#39;</span><span class="p">,</span> <span class="n">proc</span><span class="o">=</span><span class="s1">&#39;short&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;datasum&#39;</span>  <span class="p">,</span> <span class="n">proc</span><span class="o">=</span><span class="s1">&#39;sum&#39;</span>  <span class="p">)</span>
+
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plotlong&#39;</span> <span class="p">,</span> <span class="n">proc</span><span class="o">=</span><span class="s1">&#39;long&#39;</span> <span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plotshort&#39;</span><span class="p">,</span> <span class="n">proc</span><span class="o">=</span><span class="s1">&#39;short&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plotsum&#39;</span>  <span class="p">,</span> <span class="n">proc</span><span class="o">=</span><span class="s1">&#39;sum&#39;</span>  <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>We specified the processes using the <code class="xref py py-obj docutils literal notranslate"><span class="pre">proc</span></code> parameter of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.addx" title="lsqfitgp.GP.addx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">addx</span></code></a>. Then we
+continue as usual:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">post</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span>
+    <span class="s1">&#39;datasum&#39;</span><span class="p">:</span> <span class="n">fakedata</span><span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">],</span>
+<span class="p">},</span> <span class="p">[</span><span class="s1">&#39;plotlong&#39;</span><span class="p">,</span> <span class="s1">&#39;plotshort&#39;</span><span class="p">,</span> <span class="s1">&#39;plotsum&#39;</span><span class="p">])</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">post</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+    <span class="n">line</span><span class="p">,</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;plotsum&#39;</span><span class="p">])</span>
+    <span class="n">color</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;plotlong&#39;</span><span class="p">],</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">[</span><span class="s1">&#39;plotshort&#39;</span><span class="p">],</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">marker</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;long&#39;</span><span class="p">,</span> <span class="s1">&#39;short&#39;</span><span class="p">,</span> <span class="s1">&#39;sum&#39;</span><span class="p">]):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fakedata</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">marker</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;components4.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="../_images/components4.png" src="../_images/components4.png" />
+<p><a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.defproc" title="lsqfitgp.GP.defproc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.defproc</span></code></a> can only define a priori independent processes. To have a priori
+correlations it would be necessary to define a single process over an extended
+input, with an explicit index indicating the component, such that the kernel can
+act on it. We did this at the end of <a class="reference internal" href="out.html#multiout"><span class="std std-ref">Multidimensional output</span></a> when we introduced an
+anticorrelation between the random walk components by multiplying the kernel
+with <code class="docutils literal notranslate"><span class="pre">lgp.Categorical(dim='coord',</span> <span class="pre">cov=[[1,</span> <span class="pre">-0.99],</span> <span class="pre">[-0.99,</span> <span class="pre">1]])</span></code>.</p>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="out.html" title="Previous document"><span class="section-number">9. </span>Multidimensional output</a>
+        </li>
+        <li>
+          <a href="hyper.html" title="Next document"><span class="section-number">11. </span>Hyperparameters</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020-2023, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/userguide/components.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
