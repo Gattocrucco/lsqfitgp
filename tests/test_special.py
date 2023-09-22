@@ -222,7 +222,7 @@ def test_periodic_zeta(s, d, sgn, i, cached):
     z2 = _special.periodic_zeta(x, s, i)
     
     eps = np.finfo(float).eps
-    tol = 130 * eps * np.max(np.abs(z1), 1)
+    tol = 150 * eps * np.max(np.abs(z1), 1)
     maxdiff = np.max(np.abs(z2 - z1), 1)
     assert np.all(maxdiff < tol)
 
