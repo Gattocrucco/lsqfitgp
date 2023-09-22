@@ -701,7 +701,8 @@ class TestLinOp:
     @mark.parametrize('nonsym', [False, True])
     def test_make_linop_family(self, rng, rightker, doc, argnames, nonsym):
 
-        @lgp.crosskernel if nonsym else lgp.kernel
+        decorator = lgp.crosskernel if nonsym else lgp.kernel
+        @decorator
         def A(x, y, *, gatto):
             return gatto * x * y
 
