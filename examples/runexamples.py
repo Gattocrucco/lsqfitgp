@@ -32,13 +32,12 @@ import gvar
 import lsqfitgp as lgp
 
 warnings.filterwarnings('ignore', r'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure\.')
+warnings.filterwarnings('ignore', r'FigureCanvasAgg is non-interactive, and thus cannot be shown')
 
 for file in sys.argv[1:]:
 
     file = pathlib.Path(file)
-
-    # load source file
-    print('\nrunexamples.py: running {}...'.format(file))
+    print(f'\nrunexamples.py: running {file}...')
     
     # reset working environment and run
     with lgp.switchgvar():
