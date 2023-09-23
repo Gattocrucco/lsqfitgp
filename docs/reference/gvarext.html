@@ -5,10 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Gvar extensions &#8212; lsqfitgp 0.20.1 documentation</title>
+    <title>Gvar extensions &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
-    <script src="../_static/documentation_options.js?v=1154e574"></script>
+    <script src="../_static/documentation_options.js?v=841cbeb9"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -26,7 +26,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">lsqfitgp 0.20.1</a></h1>
+<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
 
 
 
@@ -122,7 +122,7 @@
 <h1>Gvar extensions<a class="headerlink" href="#gvar-extensions" title="Link to this heading">¶</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.gvar_gufunc">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">gvar_gufunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_gvarext.py#L218-L306"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.gvar_gufunc" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">gvar_gufunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext.py#L218-L306"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.gvar_gufunc" title="Link to this definition">¶</a></dt>
 <dd><p>Wraps a jax-traceable generalized ufunc with one argument to support gvars.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -153,7 +153,7 @@ returns gvars.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.switchgvar">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">switchgvar</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_gvarext.py#L308-L345"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.switchgvar" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">switchgvar</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext.py#L308-L345"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.switchgvar" title="Link to this definition">¶</a></dt>
 <dd><p>Context manager to keep new gvars in a separate pool.</p>
 <p>Creating new primary gvars fills up memory permanently. This context manager
 keeps the gvars created within its context in a separate pool that is freed
@@ -190,7 +190,7 @@ reflected in the global <a class="reference external" href="https://gvar.readthe
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.jacobian">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">jacobian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_gvarext.py#L60-L91"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.jacobian" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">jacobian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext.py#L60-L91"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.jacobian" title="Link to this definition">¶</a></dt>
 <dd><p>Extract the jacobian of gvars w.r.t. primary gvars.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -220,7 +220,7 @@ global covariance matrix.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.from_jacobian">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">from_jacobian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jac</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.1/src/lsqfitgp/_gvarext.py#L93-L126"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.from_jacobian" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">from_jacobian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jac</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext.py#L93-L126"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.from_jacobian" title="Link to this definition">¶</a></dt>
 <dd><p>Create new gvars from a jacobian w.r.t. primary gvars.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

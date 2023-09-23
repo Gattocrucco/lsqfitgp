@@ -69,10 +69,11 @@ The parametrizations follow Wikipedia, while the class names are as in
 `scipy.stats`.
 
 .. autoclass:: beta(alpha, beta)
-.. autoclass:: dirichlet(alpha, n)
+.. autoclass:: dirichlet(alpha)
 .. autoclass:: gamma(alpha, beta)
 .. autoclass:: halfcauchy(gamma)
 .. autoclass:: halfnorm(sigma)
 .. autoclass:: invgamma(alpha, beta)
 .. autoclass:: loggamma(alpha)
+.. autoclass:: lognorm(mu, sigma)
 .. autoclass:: uniform(a, b)
