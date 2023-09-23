@@ -36,7 +36,7 @@ def _normcdf(x):
     x = x.astype(_jaxext.float_type(x))
     return jspecial.ndtr(x)
 
-    # In jax < 0.??.?, jax.scipy.stats.norm.sf is implemented as 1 - cdf(x)
+    # In jax < 0.?.?, jax.scipy.stats.norm.sf is implemented as 1 - cdf(x)
     # instead of cdf(-x), defeating the purpose of numerical accuracy. Use
     # _normcdf(-x) instead. See https://github.com/google/jax/issues/17199
 
@@ -50,24 +50,14 @@ class beta(_distr.Distr):
         return _beta.beta.ppf(_normcdf(x), a=alpha, b=beta)
 
 class dirichlet(_distr.Distr):
-    r"""
+    """
     https://en.wikipedia.org/wiki/Dirichlet_distribution
-
-    This uses the :math:`(\alpha, \mathbf n)` parametrization, such that the
-    standard one is
-
-    .. math::
-        \boldsymbol\alpha = \frac{\alpha \mathbf n}{\sum_i n_i}.
     """
 
-    # TODO when I implement array_like Distr, use the standard parametrization;
-    # the separate scalar parameter is mostly useful to make it random.
-
-    signature = '(n),(),(n)->(n)'
+    signature = '(n),(n)->(n)'
     
     @classmethod
-    def invfcn(cls, x, alpha, n):
-        alpha = alpha[..., None] * n / jnp.sum(n, axis=-1, keepdims=True)
+    def invfcn(cls, x, alpha):
         lny = loggamma.invfcn(x, alpha)
         norm = jspecial.logsumexp(lny, axis=-1, keepdims=True)
         return jnp.exp(lny - norm)
@@ -111,6 +101,11 @@ class gamma(_distr.Distr):
         boundary = cls._boundary(x)
         return _piecewise_multiarg(
             [x < 0, x < boundary, x >= boundary],
+                # TODO the x < 0 case is probably never considered because
+                # piecewise evaluates from the right and x < boundary is
+                # satisfied too. Why are the tests not uncovering the
+                # inaccuracy? First find whether it's accurate the same or if
+                # the tests are lacking, then correct the conditionals.
             [
                 lambda x, a: _gamma.gamma.ppf(_normcdf(x), a),
                 lambda x, a: _gamma.gamma.isf(_normcdf(-x), a),
@@ -240,3 +235,12 @@ class uniform(_distr.Distr):
     @staticmethod
     def invfcn(x, a, b):
         return a + (b - a) * _normcdf(x)
+
+class lognorm(_distr.Distr):
+    """
+    https://en.wikipedia.org/wiki/Log-normal_distribution
+    """
+    
+    @staticmethod
+    def invfcn(x, mu, sigma):
+        return jnp.exp(mu + sigma * x)

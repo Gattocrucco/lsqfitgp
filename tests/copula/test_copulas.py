@@ -295,16 +295,13 @@ class TestBeta(DistrTestBase):
     recparams = 'invgamma', 'halfcauchy'
 
 class TestDirichlet(DistrTestBase):
-    params = 1.2, [1, 4, 3]
-    recparams = 'gamma', [1, 1, 1, 1, 1]
-    
-    def scipy_params(alpha, n):
-        alpha = np.asarray(alpha)
-        n = np.asarray(n)
-        return alpha[..., None] * n / n.sum(axis=-1, keepdims=True),
+    params = [1, 4, 3],
+    recparams = params
+    # recparams = 'gamma' <shape=5>
+        # TODO make the recparams system support shapes conveniently
 
-    def rvs(cls, alpha, n, size=(), random_state=None):
-        alpha, = cls.scipy_params(alpha, n)
+    def rvs(cls, alpha, size=(), random_state=None):
+        alpha = np.asarray(alpha)
         rng = np.random.default_rng(random_state)
         shape = np.broadcast_shapes(alpha.shape[:-1], size) + alpha.shape[-1:]
         alpha = np.broadcast_to(alpha, shape)
@@ -408,8 +405,8 @@ def test_staticdescr_repr():
     x = lgp.copula.beta([[1, 2], [3, 4]], [1, 2])
     assert repr(x._staticdescr) == 'beta([[1, 2], [3, 4]], [1, 2], shape=(2, 2))'
 
-    x = lgp.copula.dirichlet(lgp.copula.invgamma(1, 1, shape=4), [1, 1, 1])
-    assert repr(x._staticdescr) == 'dirichlet(invgamma(1, 1, shape=4), [1, 1, 1], shape=(4, 3))'
+    x = lgp.copula.dirichlet(lgp.copula.invgamma(1, 1, shape=(4, 1)) * np.array([1, 1, 1]))
+    assert repr(x._staticdescr) == 'dirichlet(multiply(invgamma(1, 1, shape=(4, 1)), [1, 1, 1], shape=(4, 3)), shape=(4, 3))'
 
     x = lgp.copula.beta(np.array([1, 2.]), 3)
     assert repr(x._staticdescr) == 'beta([1.0, 2.0], 3, shape=2)'
@@ -434,8 +431,8 @@ def test_repr():
     x = lgp.copula.beta([[1, 2], [3, 4]], [1, 2])
     assert repr(x) == 'beta([[1, 2], [3, 4]], [1, 2], shape=(2, 2))'
 
-    x = lgp.copula.dirichlet(lgp.copula.invgamma(1, 1, shape=4), [1, 1, 1])
-    assert repr(x) == 'dirichlet(invgamma(1, 1, shape=4), [1, 1, 1], shape=(4, 3))'
+    x = lgp.copula.dirichlet(lgp.copula.invgamma(1, 1, shape=4))
+    assert repr(x) == 'dirichlet(invgamma(1, 1, shape=4), shape=4)'
 
     x = lgp.copula.beta(np.array([1, 2.]), 3)
     assert repr(x) == 'beta(Array[2], 3, shape=2)'
@@ -507,13 +504,13 @@ def test_shared_shapes(rng):
     """ test that a shared variable is not duplicated, with complex hierachy
     and shapes """
 
-    a = lgp.copula.invgamma(2, 2, shape=2)     # 2
-    x = lgp.copula.invgamma(1, 1, shape=3)     # 3
-    y = lgp.copula.halfnorm(x)                 # 3
-    z = lgp.copula.halfcauchy(x)               # 3
-    q = lgp.copula.uniform(y, z, shape=(2, 3)) # 6
-    r = lgp.copula.beta(q, x)                  # 6
-    s = lgp.copula.dirichlet(a, r)             # 6
+    a = lgp.copula.invgamma(2, 2, shape=(2, 1)) # 2
+    x = lgp.copula.invgamma(1, 1, shape=3)      # 3
+    y = lgp.copula.halfnorm(x)                  # 3
+    z = lgp.copula.halfcauchy(x)                # 3
+    q = lgp.copula.uniform(y, z, shape=(2, 3))  # 6
+    r = lgp.copula.beta(q, x)                   # 6
+    s = lgp.copula.dirichlet(a * r)             # 6
 
     assert a.in_shape == (2,)
     assert x.in_shape == (3,)
@@ -525,13 +522,13 @@ def test_shared_shapes(rng):
 
     @functools.partial(jnp.vectorize, signature='(29)->(2,3)')
     def s_invfcn(n):
-        a = lgp.copula.invgamma.invfcn(n[0:2], 2, 2)
+        a = lgp.copula.invgamma.invfcn(n[0:2].reshape(2, 1), 2, 2)
         x = lgp.copula.invgamma.invfcn(n[2:5], 1, 1)
         y = lgp.copula.halfnorm.invfcn(n[5:8], x)
         z = lgp.copula.halfcauchy.invfcn(n[8:11], x)
         q = lgp.copula.uniform.invfcn(n[11:17].reshape(2, 3), y, z)
         r = lgp.copula.beta.invfcn(n[17:23].reshape(2, 3), q, x)
-        return lgp.copula.dirichlet.invfcn(n[23:29].reshape(2, 3), a, r)
+        return lgp.copula.dirichlet.invfcn(n[23:29].reshape(2, 3), a * r)
 
     shape = (100,)
     samples = rng.standard_normal(shape + s.in_shape)
