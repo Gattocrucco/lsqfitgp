@@ -24,6 +24,11 @@
 # Changelog
 
 
+## 0.20.1 I beg to insist it was not my fault (2023-09-22)
+
+This release pins `jax` and `jaxlib` to <0.4.16 to avoid a new inaccurate implementation of the special functions zeta and polygamma.
+
+
 ## 0.20. Kernels, kernels, kernels. All you can think about is covariance functions. I am sick of your kernels. I am sick of cleaning the leftover eigenspaces you leave on the carpet when you come home, late in the night, after spending all day hewing positive semidefinite operators. I am sick of hearing your breath, the stale unique acrid smell that fills the algebraists' workrooms, wafting through the linen to my nostrils. Go away. Go away from here and rest with your beloved kernels! (2023-08-29)
 
 ### Release highlights
