@@ -48,7 +48,7 @@ Cons:
 
   * May use more memory.
 
-Overall, this version should tipycally be a better choice than the R packages if
+Overall, this version should typically be a better choice than the R packages if
 you have at most 10000 datapoints.
 
 Index
