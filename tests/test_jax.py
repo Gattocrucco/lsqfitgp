@@ -223,35 +223,38 @@ def test_limit_derivatives():
     
     def error_func(current, n):
         return MyException
+
+    def ld(n):
+        return functools.partial(_jaxext.limit_derivatives, n=n, error_func=error_func)
     
-    def do(x, n, *ops):
-        f = functools.partial(_jaxext.limit_derivatives, n=n, error_func=error_func)
-        for op in ops:
-            f = op(f)
-        f(x)
+    def do(args):
+        return args[0](*args[1:])
 
     ok_args = [
-        (0., 0),
-        (0., 1, jax.grad),
-        (lgp.StructuredArray(np.zeros(1, 'd,d')), 1, lambda f: jax.jacfwd(lambda x: x['f0'] + x['f1'])),
-        (0., 2, jax.grad, jax.grad),
+        (ld(0), 0.),
+        (jax.grad(ld(1)), 0.),
+        (jax.jacfwd(lambda x: ld(1)(dict(a=x, b=1.))), 0.),
+        (jax.jacfwd(lambda x: ld(1)(dict(a=x, b=x))), 0.),
+        (jax.jacfwd(jax.jacfwd(lambda x, y: ld(2)(dict(a=x, b=y))), 1), 0., 0.),
+        (jax.grad(jax.grad(ld(2))), 0.),
     ]
 
     bad_args = [
-        (0., -1),
-        (0., 0, jax.grad),
-        (0., 1, jax.grad, jax.grad),
-        (0., 2, jax.grad, jax.jacfwd, jax.jacrev),
-        (0., 0, jax.value_and_grad),
-        (jnp.ones(1), 0, jax.grad, jax.vmap),
-        (jnp.ones(1), 0, jax.vmap, jax.grad),
-        (lgp.StructuredArray(np.zeros(1, 'd,d')), 0, jax.jacfwd),
+        (ld(-1), 0.),
+        (jax.grad(ld(0)), 0.),
+        (jax.grad(jax.grad(ld(1))), 0.),
+        (jax.grad(jax.jacfwd(jax.jacrev(ld(2)))), 0.),
+        (jax.value_and_grad(ld(0)), 0.),
+        (jax.grad(jax.vmap(ld(0))), jnp.ones(1)),
+        (jax.vmap(jax.grad(ld(0))), jnp.ones(1)),
+        (jax.jacfwd(lambda x: ld(0)(dict(a=x, b=1.))), 0.),
+        (jax.jacfwd(lambda x: ld(0)(dict(a=x, b=x))), 0.),
+        (jax.jacfwd(jax.jacfwd(lambda x, y: ld(1)(dict(a=x, b=y))), 1), 0., 0.),
     ]
     
-    for arg in ok_args:
-        do(*arg)
+    for args in ok_args:
+        do(args)
 
-    for arg in bad_args:
+    for args in bad_args:
         with pytest.raises(MyException):
-            do(*arg)
-
+            do(args)

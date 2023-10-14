@@ -6058,3 +6058,82 @@ array([3.10984844e-14, 2.86596430e-14, 2.86297238e-14, 2.87780273e-14,
        2.87927179e-14, 2.87787912e-14, 2.876447...217e-14,
        2.87491595e-14, 2.87460497e-14, 2.87444021e-14, 2.87435475e-14,
        2.87431099e-14, 2.87428878e-14]))
+
+2023-10-09
+==========
+
+jax 0.4.17 breaks something in many places about structured arrays. => It's
+custom_jvp that does not accept them any more. The first errors I see are
+limit_derivatives (the implementation of derivable) in the BART kernel.
+
+I would like kernels to continue supporting direct numpy structured array
+input. The only general solution I see is converting structured arrays to
+StructuredArray in CrossKernel.__call__. However, I also don't like that user
+defined kernels will receive something different they may not need or work with.
+
+Or maybe the problem is in the "derivable" logic. The inputs need not be jax
+arrays, but whatever, so non-jax things should be passed through. Under
+derivation, they would be jax arrays in any case.
+
+How could I implement that?
+
+(Question to set aside now: implementation in derivable or in limit_derivatives)
+
+I can't just check if it's a jax array because it could be a pytree.
+
+I can piggyback completely by checking there's no jax type exception, but this
+would also catch any user exceptions of the same kind inside the thing, right?
+=> No, limit_derivatives just passes through an array, so if there's an
+exception it's unlikely to be nested in user code.
+
+The behavior would still not make sense though. Suppose I'm passing a
+StructuredArray with 1 integer field and 1 float field, limit_derivatives does
+not look at it because the integer field makes it raise a type exception, then
+there's actually a derivative taken on the float field which does not get
+checked.
+
+=> On my current hypothetical understanding of the new behavior of custom_jvp, I
+have to tree_map limit_derivatives.
+
+So first I'll check if I got the behavior right. (file:
+playground/jax/newcustomjvp.py)
+
+=> Nope, integers/bools are fine. It's just non-jax types that upset it, it
+wants purely jax arrays in the input.
+
+Note: the custom_jvp still passes any ok object through, without enforcing it
+to be a jax array.
+
+So, proposed solution:
+
+* tree_map limit_derivatives
+* check for a "not valid jax type" TypeError, if there is, pass the object
+  through
+
+2023-10-13
+==========
+
+Problem: I still don't have the semantics clear in my head in the first place.
+What happens when derivatives are taken on multiple leaves of a pytree? Do they
+count separately? I guess so because they are different tapes.
+
+If I pytree-map, this won't turn up an error. Two roads:
+
+1) Find a way to reimplement the current semantics
+    I am not able to do this. If I summed the count of derivatives over the
+    pytree, I would overcount the same tape appearing in multiple leaves. It
+    boils down to not being able to detect tapes.
+2) Keep the implementation and change the semantics, non-jax types are not
+   accepted, full stop
+    This requires a workaround for broken code paths. Currently I only know
+    about structured numpy arrays with the BART kernel. What's the way to fix
+    that that better generalizes?
+        - Converting all structured arrays to StructuredArray in GP: won't cover
+        the whole user surface of kernels.
+        - Converting all structured arrays to StructuredArray in
+        CrossKernel.__call__: works, but I don't like that user kernels that do
+        not need to deal with this get their inputs converted.
+        - Converting in derivable: best idea so far => DONE
+        - Converting in limit_derivatives: I don't like the ad-hockery and
+          interdependency with another library component, _jaxext should be
+          upstream of everything else

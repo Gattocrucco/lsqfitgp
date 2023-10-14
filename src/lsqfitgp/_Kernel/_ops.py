@@ -89,7 +89,20 @@ def derivable(derivable):
             'example if a hyperparameter enters the calculation of x. To '
             'suppress the error, initialize the kernel with derivable=True.')
 
-    return functools.partial(_jaxext.limit_derivatives, n=derivable, error_func=error_func)
+    def xtransf(x):
+        if hasattr(x, 'dtype'):
+            # this branch handles limit_derivatives not accepting non-jax types
+            # because of being based on jax.custom_jvp; this restriction on
+            # custom_jvp appeared in jax 0.4.16
+            if x.dtype.names is not None:
+                x = _array.StructuredArray(x) # structured arrays are not
+                    # compatible with jax but common in lsqfitgp, so I wrap them
+            elif not _jaxext.is_jax_type(x.dtype):
+                return x # since anyway there would be an error if a derivative
+                    # tried to pass through a non-jax type
+        return _jaxext.limit_derivatives(x, n=derivable, error_func=error_func)
+
+    return xtransf
 
     # TODO this system does not ignore additional derivatives that are not
     # taken by .transf('diff'). Plan:

@@ -142,6 +142,16 @@ def float_type(*args):
     # numpy does this with common_type, but that supports only arrays, not
     # dtypes in the input. jnp.common_type is not defined.
 
+def is_jax_type(dtype):
+    dtype = jnp.dtype(dtype)
+    try:
+        jnp.empty(0, dtype)
+        return True
+    except TypeError as e:
+        if 'JAX only supports number and bool dtypes' in str(e):
+            return False
+        raise
+
 def pure_callback_ufunc(callback, dtype, *args, excluded=None, **kwargs):
     """ version of jax.pure_callback that deals correctly with ufuncs,
     see https://github.com/google/jax/issues/17187 """
