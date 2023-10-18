@@ -26,7 +26,7 @@ from jax import numpy as jnp
 from ._batcher import batchufunc
 from ._fasthash import fasthash64, fasthash32
 
-def makejaxufunc(ufunc, *derivs, excluded=None):
+def makejaxufunc(ufunc, *derivs, excluded=None, floatcast=False):
     """
     
     Wrap a numpy ufunc to add jax support.
@@ -42,6 +42,8 @@ def makejaxufunc(ufunc, *derivs, excluded=None):
         There must be as many derivatives as the arguments to `ufunc`.
     excluded : sequence of int, optional
         The indices of arguments that are not broadcasted.
+    floatcast : bool, default False
+        If True, cast all arguments to float before calling the ufunc.
     
     Return
     ------
@@ -56,6 +58,9 @@ def makejaxufunc(ufunc, *derivs, excluded=None):
     @functools.partial(jax.custom_jvp, nondiff_argnums=nondiff_argnums)
     def func(*args):
         args = tuple(map(jnp.asarray, args))
+        if floatcast:
+            flt = float_type(*args)
+            args = tuple(a.astype(flt) for a in args)
         return pure_callback_ufunc(ufunc, jnp.result_type(*args), *args, excluded=excluded)
 
     @func.defjvp

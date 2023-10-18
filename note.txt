@@ -6137,3 +6137,9 @@ If I pytree-map, this won't turn up an error. Two roads:
         - Converting in limit_derivatives: I don't like the ad-hockery and
           interdependency with another library component, _jaxext should be
           upstream of everything else
+
+2023-10-18
+==========
+
+Instead of wasting my time re-implementing polygamma, I can wrap the scipy
+implementation, since hopefully it's a temporary problem.

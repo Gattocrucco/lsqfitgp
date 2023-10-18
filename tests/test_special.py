@@ -21,6 +21,7 @@
 
 import jax
 from jax import test_util
+from jax.scipy import special as jspecial
 import numpy as np
 from scipy import special, linalg
 import pytest
@@ -426,3 +427,12 @@ def test_expn(rng, cached):
 
 def test_kvp():
     test_util.check_grads(lambda z: _special.kv(3.2, z), (1.5,), 2)
+
+@mark.xfail
+@mark.parametrize('func', ['zeta', 'polygamma'])
+def test_jax_zeta_polygamma(func):
+    # jax 0.4.16 introduces a new implementation of zeta and polygamma that
+    # only provides 32 bit precision. This test is a canary to see when they
+    # start working again. Meanwhile I'm using a port of the GSL implementation
+    # for zeta and wrapping scipy for polygamma.
+    np.testing.assert_array_max_ulp(getattr(special, func)(2, 1), getattr(jspecial, func)(2, 1), 1024)
