@@ -38,10 +38,12 @@ classifiers = [
 ]
 dependencies = [
     'numpy>=1.20', # first version with broadcast_shapes
-    'scipy>=1.5', # oldest supported by jax
-    'jax>=0.4.6,<0.4.16', # first with optimized vectorize (for BART)
-    'jaxlib>=0.4.6,<0.4.16', # 0.4.16 breaks some special functions
-    'gvar>=11.10.1,!=11.11.3', # 11.10.1 first supporting gvar.gvar(x, cov) with readonly cov, 11.11.3 gives problems to lsqfit
+    'scipy>=1.5', # oldest supported by jax 0.4.6
+    'jax>=0.4.6', # first with optimized jnp.vectorize (for BART)
+    'jaxlib>=0.4.6',
+    'gvar>=11.10.1,!=11.11.3',
+        # 11.10.1 first supporting gvar.gvar(x, cov) with readonly cov
+        # 11.11.3 gives problems to lsqfit
 ]
 dynamic = ["version"]
 
