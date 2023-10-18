@@ -93,7 +93,7 @@ def derivable(derivable):
         if hasattr(x, 'dtype'):
             # this branch handles limit_derivatives not accepting non-jax types
             # because of being based on jax.custom_jvp; this restriction on
-            # custom_jvp appeared in jax 0.4.16
+            # custom_jvp appeared in jax 0.4.17
             if x.dtype.names is not None:
                 x = _array.StructuredArray(x) # structured arrays are not
                     # compatible with jax but common in lsqfitgp, so I wrap them
