@@ -24,6 +24,16 @@
 # Changelog
 
 
+## 0.20.2 This release marks a detente in the ongoing lsqfitgp-jax conflict (2023-10-18)
+
+Recent versions of jax are now supported using scipy's polygamma in place of the one provided by jax. Other changes:
+
+  * Solved an incompatibility with `jax >= 0.4.17`.
+  * `copula.dirichlet` now uses the standard parametrization.
+  * Added `copula.lognorm`.
+  * New example script `pdf10.py`.
+
+
 ## 0.20.1 I beg to insist it was not my fault (2023-09-22)
 
 This release pins `jax` and `jaxlib` to <0.4.16 to avoid a new inaccurate implementation of the special functions zeta and polygamma.
