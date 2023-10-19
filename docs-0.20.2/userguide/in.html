@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>7. Multidimensional input &#8212; lsqfitgp 0.20.2 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
+    <script src="../_static/documentation_options.js?v=26ac6f1e"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="8. Partial derivatives" href="partial.html" />
+    <link rel="prev" title="6. A custom kernel: text classification" href="customs.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">lsqfitgp 0.20.2</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="userguide.html">Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">1. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sine.html">2. First example: a sine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html">3. More on kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivatives.html">4. Taking derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrals.html">5. Taking integrals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customs.html">6. A custom kernel: text classification</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">7. Multidimensional input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="partial.html">8. Partial derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="out.html">9. Multidimensional output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components.html">10. Splitting components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyper.html">11. Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyperstruct.html">12. Hyperparameters in the input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nonlinear.html">13. Nonlinear models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optim.html">14. Optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/reference.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/development.html">Development</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="userguide.html">Guide</a><ul>
+      <li>Previous: <a href="customs.html" title="previous chapter"><span class="section-number">6. </span>A custom kernel: text classification</a></li>
+      <li>Next: <a href="partial.html" title="next chapter"><span class="section-number">8. </span>Partial derivatives</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="customs.html" title="Previous document"><span class="section-number">6. </span>A custom kernel: text classification</a>
+        </li>
+        <li>
+          <a href="partial.html" title="Next document"><span class="section-number">8. </span>Partial derivatives</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="multidimensional-input">
+<span id="multiin"></span><h1><span class="section-number">7. </span>Multidimensional input<a class="headerlink" href="#multidimensional-input" title="Link to this heading">¶</a></h1>
+<p><a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> supports multidimensional input through <a class="reference external" href="https://numpy.org/doc/stable/user/basics.rec.html">numpy structured
+arrays</a>. Elements of
+structured arrays have named fields:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+
+<span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">)])</span>
+<span class="n">xy</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">xy</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+</pre></div>
+</div>
+<p>Here we used a bit of Numpy indexing and broadcasting to fill a 30x30 array
+<code class="docutils literal notranslate"><span class="pre">xy</span></code> with a grid of x, y coordinates. We specified a data type <code class="docutils literal notranslate"><span class="pre">[('x',</span>
+<span class="pre">float),</span> <span class="pre">('y',</span> <span class="pre">float)]</span></code> for the array <code class="docutils literal notranslate"><span class="pre">xy</span></code>, this means that each element of
+<code class="docutils literal notranslate"><span class="pre">xy</span></code> is a pair of numbers. We specified a shape <code class="docutils literal notranslate"><span class="pre">(len(x),</span> <span class="pre">len(y))</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are the two linspaces, and then filled separately the <code class="docutils literal notranslate"><span class="pre">'x'</span></code>
+and <code class="docutils literal notranslate"><span class="pre">'y'</span></code> fields of the <code class="docutils literal notranslate"><span class="pre">xy</span></code> elements with the linspaces. <code class="docutils literal notranslate"><span class="pre">xy</span></code> is a 2D
+array, while <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are 1D, so using <code class="docutils literal notranslate"><span class="pre">None</span></code> we added a dummy
+dimension along which the copying is repeated. The colons <code class="docutils literal notranslate"><span class="pre">:</span></code> are empty slices
+and leave the dimension untouched.</p>
+<p>It is not important for <code class="docutils literal notranslate"><span class="pre">xy</span></code> to be a 2D array because we are using
+bidimensional points, it is just a convenience for building a rectangular grid.
+Do not confuse the number of dimensions of the array with the number of fields
+in its elements.</p>
+<p>We only used 30 points for the side of the grid. This is because 30x30 = 900 and
+at around 1000 datapoints <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> starts being slow. This is an inherent
+limitation of Gaussian processes, which can be overcome only with approximations
+or specialized algorithms.</p>
+<p>Now we put <code class="docutils literal notranslate"><span class="pre">xy</span></code> into a <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> as usual and extract a sample from the
+prior.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
+<span class="kn">import</span> <span class="nn">gvar</span>
+
+<span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="n">sample</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We plot the sample in 3d:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">,</span> <span class="n">subplot_kw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">))</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xy</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">xy</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;in1.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="../_images/in1.png" src="../_images/in1.png" />
+<p>We got a nice random surface. The <a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a> kernel just worked out of
+the box with multidimensional input. What kernel are we using really?
+<a class="reference internal" href="../reference/kernelsref.html#lsqfitgp.ExpQuad" title="lsqfitgp.ExpQuad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExpQuad</span></code></a> is a subclass of <a class="reference internal" href="../reference/kernel.html#lsqfitgp.IsotropicKernel" title="lsqfitgp.IsotropicKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">IsotropicKernel</span></code></a>. This means it only
+depends on the distance between points, i.e., it doesn’t care what the input is
+as long as it can apply Pythagoras’ theorem. So the kernel we used is:</p>
+<div class="math notranslate nohighlight">
+\[k(x_1, y_1, x_2, y_2)
+= \exp \left( -\frac {(x_1 - x_2)^2 + (y_1 - y_2)^2} 2 \right).\]</div>
+<p>We can do more sophisticated things if we control how the kernel acts on each
+dimension. Let’s use a random walk along <span class="math notranslate nohighlight">\(x\)</span> and an exponential
+quadratic along <span class="math notranslate nohighlight">\(y\)</span>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">Wiener</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=-</span><span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="n">sample</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xy</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">xy</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;in2.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="../_images/in2.png" src="../_images/in2.png" />
+<p>Uhm, quite unelegant. I don’t like random walks any more. We used the <code class="docutils literal notranslate"><span class="pre">dim</span></code>
+keyword to specify the dimension, and <code class="docutils literal notranslate"><span class="pre">loc=-3</span></code> to translate the random walk
+(it raises an error if it gets negative input points).</p>
+<p>In many dimensions it can get tedious to specify all the field names, it would
+be simpler if multidimensional input was implemented with arrays. Luckily
+<a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.26)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> supports array data types in fields. Let’s redo the first example,
+this time without named fields:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="mi">2</span><span class="p">)])</span>
+<span class="n">xy</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">xy</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+</pre></div>
+</div>
+<p>Ok, I lied a bit, there’s still a field name around. It is needed because
+otherwise <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> would not know that the last axis with size 2 is a
+2-dimensional point instead of a pair of points, so we encapsulate it in a
+field. <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.26)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> treats the ellipsis <code class="docutils literal notranslate"><span class="pre">...</span></code> as a string of colons <code class="docutils literal notranslate"><span class="pre">:</span></code> of
+the appropriate length.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="n">sample</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xy</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">xy</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;in3.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="../_images/in3.png" src="../_images/in3.png" />
+<p>However, with this method, it is not possible to apply a kernel only along a
+specific dimension. A kernel can be applied only on everything or on a single
+whole named field. By splitting your dimensions in named fields with different
+shapes this should still be flexible enough. To do arbitrary manipulations,
+write your own kernel.</p>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="customs.html" title="Previous document"><span class="section-number">6. </span>A custom kernel: text classification</a>
+        </li>
+        <li>
+          <a href="partial.html" title="Next document"><span class="section-number">8. </span>Partial derivatives</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2020-2023, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/userguide/in.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
