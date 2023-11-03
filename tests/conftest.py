@@ -40,6 +40,15 @@ def rng(request):
     seed = np.array([nodeid], np.bytes_).view(np.uint8)
     return np.random.default_rng(seed)
 
+@pytest.fixture(autouse=True)
+def reset_random_seeds(rng):
+    """ Set seeds of global state random generators for tests that still use
+    them. Prefer `rng` for new tests. """
+    seed = rng.bit_generator.seed_seq
+    s1, s2 = seed.spawn(2)
+    np.random.seed(s1.generate_state(2))
+    gvar.ranseed(s2.generate_state(2))
+
 class JSONEncoder(json.JSONEncoder):
     
     def default(self, obj):

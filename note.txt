@@ -6329,10 +6329,11 @@ hyperparameters in the user-facing format, i.e., transformed.
 
 To unit-test it, I can
 - add a flat loss and check the function value does not change, get it through
-  the optimizer result, fixing the minimization method
-- add a loss that pulls in a certain direction, check the result moves there,
+  the optimizer result, fixing the minimization method (DONE)
+- add a loss that pulls in a certain direction, check the result moves there 
+  (DONE)
 - likewise, but additionally make the loss negative (max 0) and check the
-  resulting function value decreases compared to the unconstrained max
+  resulting function value decreases compared to the unconstrained max (DONE)
 
 Then bcf does the following:
 - takes a parameter transf=(from_data, to_data) where to_data is the inverse of

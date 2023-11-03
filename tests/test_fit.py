@@ -236,3 +236,121 @@ def test_data():
         p = fits[0].minresult.x
         for fit in fits[1:]:
             util.assert_allclose(fit.minresult.x, p, atol=1e-6)
+
+def test_loss_zero():
+    """ check that adding a zero loss function does not change the result """
+    
+    hp = gvar.BufferDict({
+        'log(sdev)': gvar.log(gvar.gvar(1, 1))
+    })
+    x = np.linspace(0, 5, 10)
+    def gpfactory(hp):
+        return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
+    
+    truehp = gvar.sample(hp)
+    truegp = gpfactory(truehp)
+    trueprior = truegp.prior()
+    data = gvar.sample(trueprior)
+
+    common_args = dict(
+        hyperprior=hp,
+        gpfactory=gpfactory,
+        data=data,
+        minkw=dict(method='bfgs'),
+            # for backward compatibility when I change the default to l-bfgs-b
+    )
+    varying_args = [
+        dict(),
+        dict(additional_loss=lambda _: 0.),
+    ]
+
+    fits = []
+    for kw in varying_args:
+        fits.append(lgp.empbayes_fit(**common_args, **kw, **FITKW))
+
+    f0 = fits[0].minresult.fun
+    for fit in fits[1:]:
+        util.assert_allclose(fit.minresult.fun, f0)
+
+def test_loss_offset():
+    """ check that adding a constant loss function changes the function value
+    but not the location of the minimum """
+    
+    hp = gvar.BufferDict({
+        'log(sdev)': gvar.log(gvar.gvar(1, 1))
+    })
+    x = np.linspace(0, 5, 10)
+    def gpfactory(hp):
+        return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
+    
+    truehp = gvar.sample(hp)
+    truegp = gpfactory(truehp)
+    trueprior = truegp.prior()
+    data = gvar.sample(trueprior)
+
+    common_args = dict(
+        hyperprior=hp,
+        gpfactory=gpfactory,
+        data=data,
+        minkw=dict(method='bfgs'),
+            # for backward compatibility when I change the default to l-bfgs-b
+    )
+    
+    offset = 100.
+    fit0 = lgp.empbayes_fit(**common_args, **FITKW)
+    fit1 = lgp.empbayes_fit(**common_args, additional_loss=lambda _: offset, **FITKW)
+
+    util.assert_allclose(fit0.minresult.fun + offset, fit1.minresult.fun, rtol=1e-13)
+    util.assert_allclose(fit0.minresult.x, fit1.minresult.x, rtol=1e-13)
+
+def test_loss_shrinkage():
+    """ check that a loss with minimum in a different position moves the
+    result towards there """
+    
+    hp = gvar.BufferDict({
+        'log(sdev)': gvar.log(gvar.gvar(1, 1))
+    })
+    x = np.linspace(0, 5, 10)
+    def gpfactory(hp):
+        return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
+    
+    truehp = gvar.sample(hp)
+    truegp = gpfactory(truehp)
+    trueprior = truegp.prior()
+    data = gvar.sample(trueprior)
+
+    common_args = dict(
+        hyperprior=hp,
+        gpfactory=gpfactory,
+        data=data,
+        minkw=dict(method='bfgs'),
+            # for backward compatibility when I change the default to l-bfgs-b
+    )
+
+    fit0 = lgp.empbayes_fit(**common_args, **FITKW)
+    loc = fit0.pmean['log(sdev)'] + 10
+    def loss(hp):
+        return (hp['log(sdev)'] - loc) ** 2
+    fit1 = lgp.empbayes_fit(**common_args, additional_loss=loss, **FITKW)
+
+    assert fit1.minresult.fun > fit0.minresult.fun
+    dist = lambda x, y: np.linalg.norm(x - y)
+    assert dist(fit1.minresult.x, loc) < dist(fit0.minresult.x, loc)
+
+def test_loss_fisher():
+    """ check that using fisher with a user loss raises """
+    
+    hp = gvar.BufferDict({
+        'log(sdev)': gvar.log(gvar.gvar(1, 1))
+    })
+    x = np.linspace(0, 5, 10)
+    def gpfactory(hp):
+        return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
+    
+    truehp = gvar.sample(hp)
+    truegp = gpfactory(truehp)
+    trueprior = truegp.prior()
+    data = gvar.sample(trueprior)
+
+    with pytest.raises(NotImplementedError):
+        fit = lgp.empbayes_fit(hp, gpfactory, data, method='fisher', additional_loss=lambda _: 0., **FITKW)
