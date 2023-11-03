@@ -6372,3 +6372,6 @@ Then bcf does the following:
     - remove data-dependent locations and scales
     - add transformation system, using empbayes_fit support
     - make default transformation be weighted standardization
+
+(Maybe empbayes_fit should have the transformation thing itself, but I won't
+deal with that right now. It could also be another layer on top of it.)

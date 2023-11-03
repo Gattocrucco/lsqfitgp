@@ -19,7 +19,7 @@
 
 """ modifications to the global state of jax """
 
-from jax.config import config
+from jax import config
 from jax import tree_util
 import gvar
 import numpy
@@ -82,4 +82,5 @@ tree_util.register_pytree_node(gvar.BufferDict, BufferDictPyTreeDef.flatten, Buf
 # proper pytree but also compatible with tracing.
 
 # TODO try to drop BufferDict altogether. Currently I use it only in bcf and
-# bart.
+# bart to pass stuff to a precompiled function. In empbayes_fit it is rebuilt
+# by custom code.
