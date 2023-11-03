@@ -179,10 +179,10 @@ class bcf:
         .. math::
             y_i &= m + {} \\
                 &\phantom{{}={}} +
-                    \lambda_\mu\,\mathrm{std}(\mathbf y)
+                    S \lambda_\mu
                     \mu(\mathbf x^\mu_i, \hat\pi_i?) + {} \\
                 &\phantom{{}={}} +
-                    \lambda_\tau\,\mathrm{std}(\mathbf y)
+                    S \lambda_\tau
                     \tau(\mathbf x^\tau_i, \hat\pi_i?) (z_i - z_0) + {} \\
                 &\phantom{{}={}} +
                     \mathrm{aux}(i, z_i, \mathbf x^\mu_i, \mathbf x^\tau_i,
@@ -191,14 +191,10 @@ class bcf:
                     \varepsilon_i, \\
             \varepsilon_i &\sim
                 N(0, \sigma^2 / w_i), \\
-            m &\sim N(
-                (\max(\mathbf y) + \min(\mathbf y)) / 2,
-                (\max(\mathbf y) - \min(\mathbf y))^2 / 4
-            ), \\
-            \log \sigma^2 &\sim N(
-                \log(\overline{w(y - \bar y)^2}),
-                4
-            ), \\
+            m &\sim N(L, S^2), \\
+            L &= \frac{\sum_{i=1}^n w_i y_i}{\sum_{i=1}^n w_i}, \qquad
+            S^2 = \frac{\sum_{i=1}^n w_i (y_i - L)^2}{\sum_{i=1}^n w_i}, \\
+            \log \sigma^2 &\sim N(\log(\bar w S^2), 4), \\
             \lambda_\mu
                 &\sim \mathrm{HalfCauchy}(2), \\
             \lambda_\tau
@@ -329,19 +325,20 @@ class bcf:
             i_tau = self._toindices(x_tau, splits_tau)
 
         # data-dependent prior parameters
-        ymin = jnp.min(y)
-        ymax = jnp.max(y)
-        ystd = jnp.std(y)
-        mu_mu = (ymax + ymin) / 2
-        k_sigma_mu = (ymax - ymin) / 2
-        squares = (y - y.mean()) ** 2
-        if weights is not None:
-            squares *= weights
-        sigma2_priormean = numpy.mean(squares)
+        if weights is None:
+            ymean = jnp.mean(y)
+            yvar = jnp.var(y)
+            ystd = jnp.sqrt(yvar)
+            sigma2_priormean = yvar
+        else:
+            ymean = jnp.average(y, weights=weights)
+            yvar = jnp.average((y - ymean) ** 2, weights=weights)
+            ystd = jnp.sqrt(yvar)
+            sigma2_priormean = yvar * jnp.mean(weights)
 
         # prior on hyperparams
         hyperprior = copula.makedict({
-            'm': gvar.gvar(mu_mu, k_sigma_mu),
+            'm': gvar.gvar(ymean, ystd),
             'sigma^2': copula.lognorm(numpy.log(sigma2_priormean), 2),
             'lambda_mu': copula.halfcauchy(2),
             'lambda_tau': copula.halfnorm(1.48),
@@ -363,7 +360,7 @@ class bcf:
 
         # GP factory
         def makegp(hp, *, z, i_mu, i_tau, pihat, x_aux, weights,
-            splits_mu, splits_tau, ystd, k_sigma_mu, **_):
+            splits_mu, splits_tau, ystd, **_):
             
             # TODO maybe I should pass kernelkw_* as arguments, but they may not
             # be jittable. I need jitkw in empbayes_fit for that.
@@ -398,7 +395,7 @@ class bcf:
             if 'm' in hp:
                 kernel_mean = 0 * _kernels.Constant()
             else:
-                kernel_mean = k_sigma_mu ** 2 * _kernels.Constant()
+                kernel_mean = ystd ** 2 * _kernels.Constant()
             gp = gp.defproc('m', kernel_mean)
 
             if gpaux is None:
@@ -422,8 +419,8 @@ class bcf:
             )
 
         # data factory
-        def info(hp, *, y, mu_mu, **_):
-            return {'train': y - hp.get('m', mu_mu)}
+        def info(hp, *, y, ymean, **_):
+            return {'train': y - hp.get('m', ymean)}
 
         # fit hyperparameters
         gpkw = dict(
@@ -437,8 +434,7 @@ class bcf:
             splits_mu=splits_mu,
             splits_tau=splits_tau,
             ystd=ystd,
-            mu_mu=mu_mu,
-            k_sigma_mu=k_sigma_mu,
+            ymean=ymean,
         )
         options = dict(
             verbosity=3,
@@ -451,7 +447,7 @@ class bcf:
         fit = _fit.empbayes_fit(hyperprior, makegp, info, **options)
         
         # extract hyperparameters from minimization result
-        self.m = fit.p.get('m', mu_mu)
+        self.m = fit.p.get('m', ymean)
         self.sigma = gvar.sqrt(fit.p['sigma^2'])
         self.sdev_mu = fit.p['lambda_mu'] * ystd
         self.sdev_tau = fit.p['lambda_tau'] * ystd
@@ -745,7 +741,7 @@ class bcf:
             if not error:
                 label += 'mean'
             outmean, outcov = gp.predfromdata(data, label, raw=True)
-            return outmean + hp.get('m', gpfactorykw['mu_mu']), outcov
+            return outmean + hp.get('m', gpfactorykw['ymean']), outcov
 
         # TODO make everything pure and jit this per class instead of per
         # instance

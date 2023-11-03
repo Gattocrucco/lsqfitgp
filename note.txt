@@ -6457,4 +6457,21 @@ Take 3 (or 4, boh):
   if so raise an error explaining it can be done and to open an issue on github
   if you need it (DONE)
 
-I checked that the unit tests pass. Now I need to test the new functionality.
+I checked that the unit tests pass. Now I need to test the new functionality. 
+(DONE)
+
+Now I have to use it in bcf. I take yesterday's note and summarize them:
+
+- change all data-dependent locations and scales to weighted average and sdev 
+  (DONE)
+- check everything still works fine (DONE)
+- remove data-dependent locations and scales
+    but keep the code commented to use it in the next steps
+- add transformation system, using empbayes_fit support
+    - put the data transformation into the data factory function
+    - takes a parameter transf=(from_data, to_data) where to_data is the inverse
+      of from_data, they have signatures from_data(hp, y), to_data(hp, eta) and
+      are ufuncs over the second parameter. Strings define predefined values.
+    - take the elementwise derivative of from_data w.r.t. the second argument.
+    - use it to define the additional loss.
+- make default transformation be weighted standardization
