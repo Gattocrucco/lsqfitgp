@@ -31,6 +31,9 @@ __all__ = [
 
 # TODO support jax tracing and jax random sampling
 
+# TODO I should have a vectorized sampler, that returns an array of samples
+# right away.
+
 def _toslice(s):
     if isinstance(s, slice):
         return s
@@ -123,6 +126,6 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
 
 def sample(*args, **kw):
     """
-    Shortcut for ``next(raniter(...))``.
+    Shortcut for ``next(raniter(..., n=1))``.
     """
     return next(raniter(*args, n=1, **kw))

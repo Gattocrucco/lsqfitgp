@@ -6143,3 +6143,232 @@ If I pytree-map, this won't turn up an error. Two roads:
 
 Instead of wasting my time re-implementing polygamma, I can wrap the scipy
 implementation, since hopefully it's a temporary problem.
+
+...........
+
+With jax 0.4.14 -> 0.4.18, the tests on Windows go from crashing at 20% to 86%.
+
+2023-10-20
+==========
+
+I want to move forward with the BART simulation. Looking at the current state of
+track2.py, I think the best decision is using my bcf as I'm currently doing it
+and run it on all datasets.
+
+Is there anything I could do that I forgot?
+
+Maybe putting the pre-treatment trend as covariate? Looks like an obvious
+choice.
+
+=> I added the pre-treatment trend. The results are a bit worse. However, it
+looks very reasonable on principle so I'm inclined to keep it. Is there any
+mistake I could be doing?
+
+The only thing that comes to my mind is that I could be overfitting the
+propensity score, if Y2 - Y1 is a good predictor of treatment (I am confident
+it is). Uhm, if it is a good predictor, then a more separated PS should be fine
+however. The PS distribution does not look so different from the one without
+trend, so it's probably fine.
+
+This brings to my mind something I'm ignoring and that I would actually do in a
+real data analysis context, which is doing some checks. Which checks could I do
+here? It's stuff I don't have experience with, so they do not come natural to
+me.
+
+- residuals
+    - prediction band - data vs. PS
+    - * vs. data sorted ascending
+    - brute force: * vs. each covariate
+- distributions
+    - check the histogram of expected residuals, should be about Normal
+    - should I expect something about the expected latent mean?
+- train-test split
+    - look at everything listed here, but out of sample
+- goodness of fit metrics
+    I don't know. This is a gaping hole in my statistics knowledge, what
+    should I compute? I should read BDA sometime. I try to make up something.
+    - estimated error variance vs. data variance (should be smaller)
+    - log p(data) --- what to do with this? what should the value be?
+- sensitivity analysis
+    I've already tried to change various things, is there something else
+    obvious I should do?
+
+To save time, I should set up another script with only my preferred method. 
+(DONE)
+
+.........
+
+Potential polars bug: DataFrame.drop silently no-ops on missing column,
+surprising (ISSUED)
+
+2023-10-27
+==========
+
+Should I use Laplace sampling to look at diagnostics? Yeah I should, better to
+stay consistent.
+
+.........
+
+I want to propagate a covariance with jax. What's the most functional way of
+doing it at once?
+
+    jvp(f, x, dx) -> f, df
+
+dx has to have the shape as x, so I can't put the covariance matrix there. I
+have to use vmap. I can tell vmap to operate just over dx, can I do the same for
+the outputs? => Yes.
+
+    propagate = jax.vmap(jax.jvp, in_axes=(None, None, 1), out_axes=(None, 1))
+
+Not tested this, I realized I don't need it.
+
+........
+
+Why does polars allow to drop columns in place? I should investigate and open an
+issue. => It allows a lot of inplace operations.
+
+........
+
+I forgot that for the diagnostics I need both yobs and ymis. It's 1400 total so
+sampling all of them should not be a problem, it takes 50 ms to sample.
+
+I made the fit and residuals plot vs. PS. They do not look illuminating. There
+are a few outliers. Things I can think of:
+
+- make a histogram of residual / (width of bar pointing towards data)
+- see if there's a cluster of outliers there
+- select the outliers / the worst N
+- explore their covariates in some way
+    - should probably do that interactively with seaborn
+    - ideas?
+
+2023-11-02
+==========
+
+Looking at the above list with fresh eyes, I see the following problems:
+
+- The outliers are not stark. It's probably not gonna matter.
+- I can't do this manually for each dataset, so I must find a general procedure
+that I always apply verbatim.
+    - I would probably not be able to infer the relevant features of the set of
+    covariates with outliers that would allow me to recognize the set a priori
+    on each simulated dataset.
+- The outliers are always with data > fit
+    - I guess it's the skewness of the marginal data distribution
+        - I renounced transforming the data because it would mess up averaging
+            - I'd need to find a R -> R transform that corrects skewness
+                - fit a parameter of the transf as hyperparameter
+            - Find a way to recover inference on averages conveniently
+
+I try to find a way to write the model with a transformation.
+
+    y = f(u; alpha)         transf. to correct the skewness of y
+    u ~ GP
+
+.......
+
+I could take more normal samples per hyper sample since it's not expensive, to
+improve a bit the accuracy of the quantiles. If the hyperparameters do not
+change too much the posterior relative to its width (realistic since we are
+looking at the stuff closer to the data), then the improvement could be large
+actually. I could do that right now before going on with the analysis.
+
+=> The outlier residuals are a bit more moderate. I was expecting this because
+the sampling variance increases the chance of seeing things further away.
+
+.......
+
+On my paper notebook under date 2023-10-24, I checked that there is no
+statistical misstep in doing the intuitive thing here, even if alpha is
+dependent with the other hyperparameters a priori.
+
+So I just have to use as log marginal posterior + offset of the hypers
+
+    (usual log posterior) · ∏_i(f^-1)'(y_i; alpha)
+
+Ok, I should follow usual glm notation:
+
+    eta = g(y; alpha)
+    eta ~ GP
+
+    p(alpha, theta | y) ∝ (usual log posterior) · ∏_i g'(y_i; alpha)
+
+    log p(alpha, theta | y) = (usual) + ∑_i log g'(y_i; alpha)
+
+What about the averages then? The y are averages. I want to obtain the average.
+Taking the model at face value, I do that in practice by sampling eta from its
+posterior, transforming it to samples on y, and then doing the average sample by
+sample.
+
+The problem is if this is breaking the interpretation of the result as average
+causal effect.
+
+Unconfoundedness is already approximate at this level because it holds exactly
+given all individual covariates, while I'm using summaries of the covariates in
+the averaged groups.
+
+Does the transformation make the situation worse?
+
+Y(z) ⟂ Z | X iff g(Y(z)) ⟂ Z | X for invertible g, so it should be the same
+thing really. I compute the posterior on Y and then take the averages there.
+Since I already gave in to taking samples, there's no more advantage in not
+transforming the data.
+
+Implementation: this requires poking into bayestree.bcf.
+
+Actually, it requires poking into lsqfitgp.empbayes_fit. Although I always gave
+the possibility of generating the data with a function, I never took into
+account any statistical properties. It's just a function that produces the data.
+Indeed, the data-producing function is not a transformation of something, it
+takes as input only the hyperparameters.
+
+For the time being, I think the interface that best generalizes is adding to
+lsqfitgp.empbayes_fit a user-specified function that's added to the minus log
+posteriory. Call it additional_loss or likewise. It takes as input the
+hyperparameters in the user-facing format, i.e., transformed.
+
+To unit-test it, I can
+- add a flat loss and check the function value does not change, get it through
+  the optimizer result, fixing the minimization method
+- add a loss that pulls in a certain direction, check the result moves there,
+- likewise, but additionally make the loss negative (max 0) and check the
+  resulting function value decreases compared to the unconstrained max
+
+Then bcf does the following:
+- takes a parameter transf=(from_data, to_data) where to_data is the inverse of
+  from_data, they have signatures from_data(hp, y), to_data(hp, eta) and are
+  ufuncs over the second parameter. Later on, I can add strings that represent
+  predefined bijections.
+- take the elementwise derivative of from_data w.r.t. the first argument.
+- use it to define the additional loss.
+- put the data transformation into the data factory function
+    Problem: where do I put the mean? Currently I'm passing y - m or y - avg(y)
+    if the mean parameter is marginalized. Should I apply the transform to y or
+    to y - avg(y)?
+
+    To the user, the most transparent behavior is applying his transform to his
+    data, without automatic hidden steps.
+
+    On the other hand, if the transform is the identity, it would be nice that
+    bcf did center the data.
+
+    If I marginalize the intercept, I have to do that after transforming the
+    data. So the natural thing would be to transform after that. On the other
+    hand, right now I'm using the data average and variance to set the prior on
+    the intercept. Solutions?
+
+    Set the prior locations and scales to 0 and 1, the default transformation is
+    centering and scaling w/ or w/o location hyper depending on marginalization
+    setting, and if the user supplies her own transformation then she has to do
+    centering herself if she wants it. If marginalization is off and the user
+    specifies a transform, do not define the mean hyperparam. In general
+    pre-defined transformations come with both the function and a set of
+    hyperparameters.
+
+    Take 2:
+    - change all data-dependent locatinos and scales to weighted average and
+      sdev
+    - check everything still works fine
+    - remove data-dependent locations and scales
+    - add transformation system, using empbayes_fit support
+    - make default transformation be weighted standardization

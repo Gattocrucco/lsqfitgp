@@ -148,7 +148,7 @@ class bcf:
             with fields:
 
             'train' : bool
-                Indicates wether the data is training set (the one passed on
+                Indicates whether the data is training set (the one passed on
                 initialization) or test set (the one passed to `pred` or `gp`).
             'i' : int
                 Index of the flattened array.
@@ -342,7 +342,7 @@ class bcf:
         # prior on hyperparams
         hyperprior = copula.makedict({
             'm': gvar.gvar(mu_mu, k_sigma_mu),
-            'log(sigma^2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
+            'sigma^2': copula.lognorm(numpy.log(sigma2_priormean), 2),
             'lambda_mu': copula.halfcauchy(2),
             'lambda_tau': copula.halfnorm(1.48),
             'alpha_mu': copula.beta(2, 1),

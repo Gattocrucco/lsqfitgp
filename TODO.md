@@ -57,7 +57,10 @@ Add a brief head "Example" section in the README
 fare in modo che quando sto preparando una release non ci sia un periodo in cui
 la documentazione online è rotta perché i source link puntano al nuovo tag che
 non esiste. La cosa migliore sarebbe mostrare di default l'ultima versione
-rilasciata anziché master.
+rilasciata anziché master. => I could make a dev branch that uploads docs to the
+docs-dev directory, work on that by default, merge into master only when the
+version string is release prime, and link docs-dev as first entry in the
+versions of the manual list.
 
 Rename all the single letter example scripts and gift them a communicative
 description
@@ -551,8 +554,18 @@ Polya-Gamma. Reading Rasmussen, Laplace does not seem to work well, I should
 consider only EP instead. Maybe Polya-Gamma is better though. I should think
 about integrating this in the homemade replacement to lsqfit.
 
+=> The GPyTorch docs show a similar method, ostensibly modified to avoid the
+problem, see Milios et al. (2018), "Dirichlet-based Gaussian Processes for
+Large-scale Calibrated Classification".
+
 For Poisson I can take the square root. How good is it? Ref. Casella-Berger,
 pag. 563, ex. 11.1-11. I also wrote something in gppdf.tex.
+
+### gvar formatting
+
+gvar 12.0 introduced custom formatting rules. I can put into lsqfitgp my
+favorite formatting function and add something to set it as gvar formatter
+conveniently, although I do not want to make it the default.
 
 ## Optimization
 
