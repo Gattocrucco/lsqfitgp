@@ -6324,7 +6324,7 @@ takes as input only the hyperparameters.
 
 For the time being, I think the interface that best generalizes is adding to
 lsqfitgp.empbayes_fit a user-specified function that's added to the minus log
-posteriory. Call it additional_loss or likewise. It takes as input the
+posterior. Call it additional_loss or likewise. It takes as input the
 hyperparameters in the user-facing format, i.e., transformed.
 
 To unit-test it, I can
@@ -6375,3 +6375,85 @@ Then bcf does the following:
 
 (Maybe empbayes_fit should have the transformation thing itself, but I won't
 deal with that right now. It could also be another layer on top of it.)
+
+2023-11-03
+==========
+
+I want to add the additional loss to empbayes_fit.
+
+Problem: since the loss takes the hyperparameters in the user format, the
+natural place to compute it is in make_decomp, to avoid making the conversion
+twice or to having it cross jit boundaries.
+
+No actually I only jit the full function at the end, so I can return what I want
+from make_decomp, including the hyperparameters in user format. If then I
+compute it when combining the likelihood and prior, in what bin does it get
+timed?
+
+Its input is user hypers, so it's not been checkpointed by the timer. Its
+output passes the last checkpoint with the rest of the minimizer target. So it
+can be spread arbitrarily within any of the bins.
+
+=> Not exactly, I was confused: its input does pass the initial checkpoint. That
+said, the conclusion is the same.
+
+I'm also not checkpointing properly the prior, by the way. Maybe I should just
+not care for the time being.
+
+I can either:
+- return the loss from make_decomp, propagate it through grad tricks
+- return the unpacked hypers from make_decomp, propagate etc.
+- start timer and unpack the hypers in each function, make_decomp takes them
+  unpacked
+
+My instinct tells me the latter, even though it adds more code. Ok. => Problem:
+I need make_decomp to have p as argument to compute the derivatives.
+
+Other option: re-unpack the hypers.
+
+My new favorite: percolate user hp out of make_decomp.
+
+Nooo: I have to take derivatives on the additional loss too. Furthermore, I
+can't compute its Fisher matrix. One of the points of Fisher is that it does not
+require second derivatives, so I do not want to compute the hessian. However, I
+can't ignore the curvature of the loss, it can be quite relevant.
+
+I have to add a parameter to let the user pass his hessian for the loss, or a
+string indicating how to deal with it (ignore or hessian with jax).
+
+Also, the hessian may not be p.s.d. I can't take the hessian automatically, it's
+not safe. If the user wants to ignore the problem, he shall pass the hessian or
+a function returning 0.
+
+Ok, new take:
+- since the usage of the loss function and its derivatives matches that of
+prior, put it there
+- percolate user hypers out of make_decomp
+- have prior take user hypers too
+
+Problem: I need the gradient and fisher matrix in terms of p, not hp. So I can't
+just use the user's Fisher as is, and I have to take derivatives over the
+unpacking when taking the gradient.
+
+This is becoming too complicated. I can do that, but it's not a priority. I'll
+make it raise an error if fisher is used and there's a user loss.
+
+For the gradient, the efficient thing is to return the loss from make_decomp,
+and take derivatives together with derivatives of the likelihood.
+
+(I rerun fit unit tests to be sure I did not mess up anything before embarking
+on the big edit.)
+
+Take 3 (or 4, boh):
+- compute loss in make_decomp (DONE)
+    - if not given, return 0
+- take derivatives of loss together with likelihood (DONE)
+    - in forward case, add it to the derived part of the return value
+    - in backward case, add a last grad call around the current derivatives,
+      moving everything else to aux
+- add loss (DONE)
+- in fisher, do not add loss, instead check if additional_loss is specified and
+  if so raise an error explaining it can be done and to open an issue on github
+  if you need it (DONE)
+
+I checked that the unit tests pass. Now I need to test the new functionality.

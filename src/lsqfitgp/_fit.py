@@ -37,10 +37,6 @@ from . import _jaxext
 from . import _gvarext
 from . import _array
 
-__all__ = [
-    'empbayes_fit',
-]
-
 # TODO the following token_ thing functionality may be provided by jax in the
 # future, follow the developments
 
@@ -100,7 +96,7 @@ class Logger:
         print(self._indent(message, level))
 
     class _LogLevel:
-        """shared context manager to indent messages"""
+        """ shared context manager to indent messages """
         
         _level = 0
                 
@@ -135,6 +131,7 @@ class empbayes_fit(Logger):
         fix=None,
         mlkw={},
         forward=False,
+        additional_loss=None,
     ):
         """
     
@@ -151,10 +148,10 @@ class empbayes_fit(Logger):
             hyperparameters.
         gpfactory : callable
             A function with signature gpfactory(hyperparams) -> GP object. The
-            argument ``hyperparams`` has the same structure of the empbayes_fit
-            argument ``hyperprior``. gpfactory must be JAX-friendly, i.e.,
-            use jax.numpy and jax.scipy instead of plain numpy/scipy and avoid
-            assignments to arrays.
+            argument ``hyperparams`` has the same structure of the
+            `empbayes_fit` argument ``hyperprior``. gpfactory must be
+            JAX-friendly, i.e., use `jax.numpy` and `jax.scipy` instead of plain
+            `numpy`/`scipy` and avoid assignments to arrays.
         data : dict, tuple or callable
             Dictionary of data that is passed to `GP.marginal_likelihood` on
             the GP object returned by ``gpfactory``. If a tuple, it contains the
@@ -169,17 +166,17 @@ class empbayes_fit(Logger):
             values specified by `empbayes_fit`.
         gpfactorykw : dict, optional
             Keyword arguments passed to ``gpfactory``, and also to ``data`` if
-            it is a callable. If ``jit``, ``gpfactorykw`` crosses a JAX jit
-            boundary, so it must contain objects understandable by JAX.
+            it is a callable. If ``jit``, ``gpfactorykw`` crosses a `jax.jit`
+            boundary, so it must contain objects understandable by `jax`.
         jit : bool
-            If True (default), use jax's jit to compile the minimization target.
+            If True (default), use `jax.jit` to compile the minimization target.
         method : str
             Minimization strategy. Options:
         
             'nograd'
                 Use a gradient-free method.
-            'gradient'
-                Use a gradient-only method (default).
+            'gradient' (default)
+                Use a gradient-only method.
             'fisher'
                 Use a Newton method with the Fisher information matrix plus
                 the hyperprior precision matrix.
@@ -187,16 +184,16 @@ class empbayes_fit(Logger):
             Starting point for the minimization, matching the format of
             ``hyperprior``, or one of the following options:
             
-            'priormean'
-                Start from the hyperprior mean (default).
+            'priormean' (default)
+                Start from the hyperprior mean.
             'priorsample'
                 Take a random sample from the hyperprior.
         verbosity : int
             An integer indicating how much information is printed on the
             terminal:
     
-            0
-                No logging (default).
+            0 (default)
+                No logging.
             1
                 Minimal report.
             2
@@ -219,7 +216,7 @@ class empbayes_fit(Logger):
             'none'
                 Do not estimate the covariance matrix.
             'auto' (default)
-                'minhess' if applicable, 'none' otherwise.
+                ``'minhess'`` if applicable, ``'none'`` otherwise.
         fix : scalar, array or dictionary of scalars/arrays
             A set of booleans, with the same format as ``hyperprior``,
             indicating which hyperparameters are kept fixed to their initial
@@ -227,9 +224,13 @@ class empbayes_fit(Logger):
             ``hyperprior``. If a dictionary, missing keys are treated as False.
         mlkw : dict
             Additional arguments passed to `GP.marginal_likelihood`.
-        forward : bool
-            Use forward instead of backward (default) derivatives. Typically,
-            forward is faster with a small number of parameters.
+        forward : bool, default False
+            Use forward instead of backward derivatives. Typically, forward is
+            faster with a small number of parameters.
+        additional_loss : callable, optional
+            A function with signature ``additional_loss(hyperparams) -> float``
+            which is added to the minus log marginal posterior of the
+            hyperparameters.
     
         Attributes
         ----------
@@ -283,9 +284,9 @@ class empbayes_fit(Logger):
         timer, functions = self._prepare_functions(
             gpfactory=gpfactory, gpfactorykw=gpfactorykw, data=data,
             cachedargs=cachedargs, hpunflat=hpunflat, mlkw=mlkw, jit=jit,
-            forward=forward,
+            forward=forward, additional_loss=additional_loss,
         )
-        del gpfactory, gpfactorykw, data, cachedargs, mlkw, forward
+        del gpfactory, gpfactorykw, data, cachedargs, mlkw, forward, additional_loss
 
         # prepare minimizer arguments
         minargs = self._prepare_minargs(method, functions, hpinitial)
@@ -651,7 +652,7 @@ class empbayes_fit(Logger):
         return data, cachedargs
 
     def _prepare_functions(self, *, gpfactory, gpfactorykw, data, cachedargs,
-        hpunflat, mlkw, jit, forward):
+        hpunflat, mlkw, jit, forward, additional_loss):
 
         timer = self._Timer()
         firstcall = [None]
@@ -659,11 +660,11 @@ class empbayes_fit(Logger):
         def make_decomp(p, **kw):
             """ decomposition of the prior covariance and data """
 
-            # start timer
+            # start timer and convert hypers to user format
             p = timer.start(p)
-
-            # create GP object
             hp = hpunflat(p)
+            
+            # create GP object
             gp = gpfactory(hp, **kw)
             assert isinstance(gp, _GP.GP)
             
@@ -688,8 +689,15 @@ class empbayes_fit(Logger):
                 nd = '?' if xdtype is None else _array._nd(xdtype)
                 self.log(f'{r.size} datapoints, {nd} covariates')
 
+            # compute user loss
+            if additional_loss is None:
+                loss = 0.
+            else:
+                loss = additional_loss(hp)
+
             # split timer and return decomposition
-            return timer.partial(decomp), r
+            return timer.partial(decomp), r, loss
+                # TODO what's the correct way of checkpointing r?
 
         # define wrapper to collect call stats, pass user args, compile
         def wrap(func):
@@ -704,11 +712,11 @@ class empbayes_fit(Logger):
         modename = 'forward' if forward else 'reverse'
         self.log(f'{modename}-mode autodiff (if used)', 2)
 
-        # TODO time the derivatives separately?
+        # TODO time the derivatives separately
 
         def prior(p):
-            # the prior is a normal with identity covariance matrix because p is
-            # transformed to make it so
+            # the marginal prior of the hyperparameters is a Normal with
+            # identity covariance matrix because p is transformed to make it so
             return 1/2 * (len(p) * jnp.log(2 * jnp.pi) + p @ p)
 
         def grad_prior(p):
@@ -719,66 +727,76 @@ class empbayes_fit(Logger):
 
         @wrap
         def fun(p, **kw):
-            """ minus log posterior on the hyperparameters (not normalized) """
-            decomp, r = make_decomp(p, **kw)
+            """ minus log marginal posterior of the hyperparameters (not
+            normalized) """
+            decomp, r, loss = make_decomp(p, **kw)
             cond, _, _, _, _ = decomp.minus_log_normal_density(r, value=True)
-            post = cond + prior(p)
+            post = cond + prior(p) + loss
+                # TODO what's the correct way of checkpointing prior and loss?
             return timer.partial(post)
 
         def make_gradfwd_fisher_args(p, **kw):
             def make_decomp_tee(p):
-                decomp, r = make_decomp(p, **kw)
-                return (decomp.matrix(), r), (decomp, r)
-            (dK, dr), (decomp, r) = jax.jacfwd(make_decomp_tee, has_aux=True)(p)
+                decomp, r, loss = make_decomp(p, **kw)
+                return (decomp.matrix(), r, loss), (decomp, r, loss)
+            (dK, dr, grad_loss), (decomp, r, loss) = jax.jacfwd(make_decomp_tee, has_aux=True)(p)
             lkw = dict(dK=dK, dr=dr)
-            return decomp, r, lkw
+            return decomp, r, lkw, loss, grad_loss
 
         def make_gradrev_args(p, **kw):
-            def make_decomp_r(p):
-                def make_decomp_K(p):
-                    decomp, r = make_decomp(p, **kw)
-                    return decomp.matrix(), (decomp, r)
-                _, dK_vjp, (decomp, r) = jax.vjp(make_decomp_K, p, has_aux=True)
-                return r, (decomp, r, dK_vjp)
-            _, dr_vjp, (decomp, r, dK_vjp) = jax.vjp(make_decomp_r, p, has_aux=True)
+            def make_decomp_loss(p):
+                def make_decomp_r(p):
+                    def make_decomp_K(p):
+                        decomp, r, loss = make_decomp(p, **kw)
+                        return decomp.matrix(), (decomp, r, loss)
+                    _, dK_vjp, (decomp, r, loss) = jax.vjp(make_decomp_K, p, has_aux=True)
+                    return r, (decomp, r, dK_vjp, loss)
+                _, dr_vjp, (decomp, r, dK_vjp, loss) = jax.vjp(make_decomp_r, p, has_aux=True)
+                return loss, (decomp, r, dK_vjp, dr_vjp, loss)
+            grad_loss, (decomp, r, dK_vjp, dr_vjp, loss) = jax.grad(make_decomp_loss, has_aux=True)(p)
             unpack = lambda f: lambda x: f(x)[0]
             dK_vjp = unpack(dK_vjp)
             dr_vjp = unpack(dr_vjp)
             lkw = dict(dK_vjp=dK_vjp, dr_vjp=dr_vjp)
-            return decomp, r, lkw
+            return decomp, r, lkw, loss, grad_loss
 
         def make_jac_args(p, **kw):
             if forward:
-                decomp, r, lkw = make_gradfwd_fisher_args(p, **kw)
-                lkw.update(gradfwd=True)
+                out = make_gradfwd_fisher_args(p, **kw)
+                out[2].update(gradfwd=True) # out[2] is lkw
             else:
-                decomp, r, lkw = make_gradrev_args(p, **kw)
-                lkw.update(gradrev=True)
-            return decomp, r, lkw
+                out = make_gradrev_args(p, **kw)
+                out[2].update(gradrev=True)
+            return out
 
         @wrap
         def fun_and_jac(p, **kw):
             """ fun and its gradient """
-            decomp, r, lkw = make_jac_args(p, **kw)
+            decomp, r, lkw, loss, grad_loss = make_jac_args(p, **kw)
             cond, gradrev, gradfwd, _, _ = decomp.minus_log_normal_density(r, value=True, **lkw)
-            post = cond + prior(p)
+            post = cond + prior(p) + loss
             grad_cond = gradfwd if forward else gradrev
-            grad_post = grad_cond + grad_prior(p)
+            grad_post = grad_cond + grad_prior(p) + grad_loss
             return timer.partial((post, grad_post))
         
         @wrap
         def jac(p, **kw):
             """ gradient of fun """
-            decomp, r, lkw = make_jac_args(p, **kw)
+            decomp, r, lkw, _, grad_loss = make_jac_args(p, **kw)
             _, gradrev, gradfwd, _, _ = decomp.minus_log_normal_density(r, **lkw)
             grad_cond = gradfwd if forward else gradrev
-            grad_post = grad_cond + grad_prior(p)
+            grad_post = grad_cond + grad_prior(p) + grad_loss
             return timer.partial(grad_post)
 
         @wrap
         def fisher(p, **kw):
             """ fisher matrix """
-            decomp, r, lkw = make_gradfwd_fisher_args(p, **kw)
+            if additional_loss is not None:
+                raise NotImplementedError(
+                    'Fisher matrix not implemented with additional_loss. It '
+                    'is possible but I did not prioritize it. If you need it, '
+                    'open an issue on github.')
+            decomp, r, lkw, _, _ = make_gradfwd_fisher_args(p, **kw)
             _, _, _, fisher_cond, _ = decomp.minus_log_normal_density(r, fisher=True, **lkw)
             fisher_post = fisher_cond + fisher_prior(p)
             return timer.partial(fisher_post)
