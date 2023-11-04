@@ -567,6 +567,10 @@ gvar 12.0 introduced custom formatting rules. I can put into lsqfitgp my
 favorite formatting function and add something to set it as gvar formatter
 conveniently, although I do not want to make it the default.
 
+=> On second thought, I want to change the default. Always seeing two digits of
+error and the corresponding value digits just overloads my brain with pointless
+information.
+
 ## Optimization
 
 ### `gvar`-related issues

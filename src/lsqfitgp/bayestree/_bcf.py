@@ -97,6 +97,7 @@ class bcf:
         gpaux=None,
         x_aux=None,
         otherhp={},
+        transf='standardize',
     ):
         r"""
         Nonparametric Bayesian regression with a GP version of BCF.
@@ -169,20 +170,32 @@ class bcf:
         x_aux : (n, k) array, series or dataframe, optional
             Additional covariates for the ``'aux'`` process.
         otherhp : dictionary of gvar
-            A dictionary with the prior of additional hyperpameters, intended to
-            be used by ``gpaux``.
+            A dictionary with the prior of arbitrary additional hyperpameters,
+            intended to be used by ``gpaux`` or ``transf``.
+        transf : str or pair of callable
+            Data transformation. Either a string indicating a pre-defined
+            transformation, or a pair ``(from_data, to_data)``, two functions
+            with signatures ``from_data(hp, y) -> eta`` and ``to_data(hp, eta)
+            -> y``, where ``eta`` is the value to which the model is fit, and
+            ``hp`` is the dictionary of hyperparameters. W.r.t. the second
+            argument, the functions must be ufuncs and one the inverse of the
+            other. The pre-defined transformations are:
+
+            'standardize' (default)
+                eta = (y - mean(y)) / sdev(y)
         
         Notes
         -----
         The regression model is:
 
         .. math::
-            y_i &= m + {} \\
+            \eta_i &= g(y_i; \ldots), \\
+            \eta_i &= m + {} \\
                 &\phantom{{}={}} +
-                    S \lambda_\mu
+                    \lambda_\mu
                     \mu(\mathbf x^\mu_i, \hat\pi_i?) + {} \\
                 &\phantom{{}={}} +
-                    S \lambda_\tau
+                    \lambda_\tau
                     \tau(\mathbf x^\tau_i, \hat\pi_i?) (z_i - z_0) + {} \\
                 &\phantom{{}={}} +
                     \mathrm{aux}(i, z_i, \mathbf x^\mu_i, \mathbf x^\tau_i,
@@ -191,10 +204,8 @@ class bcf:
                     \varepsilon_i, \\
             \varepsilon_i &\sim
                 N(0, \sigma^2 / w_i), \\
-            m &\sim N(L, S^2), \\
-            L &= \frac{\sum_{i=1}^n w_i y_i}{\sum_{i=1}^n w_i}, \qquad
-            S^2 = \frac{\sum_{i=1}^n w_i (y_i - L)^2}{\sum_{i=1}^n w_i}, \\
-            \log \sigma^2 &\sim N(\log(\bar w S^2), 4), \\
+            m &\sim N(0, 1), \\
+            \log \sigma^2 &\sim N(\log\bar w, 4), \\
             \lambda_\mu
                 &\sim \mathrm{HalfCauchy}(2), \\
             \lambda_\tau
@@ -258,9 +269,8 @@ class bcf:
         beta_mu, beta_tau : gvar
             The depth exponent of the tree spawn probability :math:`\beta_*`
             (named ``power`` in R bcf).
-        sdev_mu, sdev_tau : gvar
-            The prior standard deviation :math:`\lambda_* \mathrm{std}(\mathbf
-            y)`.
+        lambda_mu, lambda_tau : gvar
+            The prior standard deviation :math:`\lambda_*`.
         z_0 : gvar
             The treatment coding parameter.
         fit : empbayes_fit
@@ -271,9 +281,13 @@ class bcf:
         gp :
             Create a GP object.
         data :
-            Creates the dictionary to be passed to `GP.pred` to represent ``y``.
+            Creates the dictionary to be passed to `GP.pred` to represent data.
         pred :
             Evaluate the regression function at given locations.
+        from_data :
+            Convert :math:`y` to :math:`\eta`.
+        to_data :
+            Convert :math:`\eta` to :math:`y`.
 
         See also
         --------
@@ -324,22 +338,17 @@ class bcf:
             splits_tau = _kernels.BART.splits_from_coord(x_tau)
             i_tau = self._toindices(x_tau, splits_tau)
 
-        # data-dependent prior parameters
-        if weights is None:
-            ymean = jnp.mean(y)
-            yvar = jnp.var(y)
-            ystd = jnp.sqrt(yvar)
-            sigma2_priormean = yvar
-        else:
-            ymean = jnp.average(y, weights=weights)
-            yvar = jnp.average((y - ymean) ** 2, weights=weights)
-            ystd = jnp.sqrt(yvar)
-            sigma2_priormean = yvar * jnp.mean(weights)
+        # get functions for data transformation
+        from_data, to_data, additional_loss = self._get_transf(transf=transf,
+            weights=weights, y=y)
+
+        # prior parameter on error variance
+        sigma2_loc = jnp.mean(weights) if weights is not None else 1
 
         # prior on hyperparams
         hyperprior = copula.makedict({
-            'm': gvar.gvar(ymean, ystd),
-            'sigma^2': copula.lognorm(numpy.log(sigma2_priormean), 2),
+            'm': gvar.gvar(0, 1),
+            'sigma^2': copula.lognorm(numpy.log(sigma2_loc), 2),
             'lambda_mu': copula.halfcauchy(2),
             'lambda_tau': copula.halfnorm(1.48),
             'alpha_mu': copula.beta(2, 1),
@@ -359,8 +368,8 @@ class bcf:
         hyperprior.update(otherhp)
 
         # GP factory
-        def makegp(hp, *, z, i_mu, i_tau, pihat, x_aux, weights,
-            splits_mu, splits_tau, ystd, **_):
+        def gpfactory(hp, *, z, i_mu, i_tau, pihat, x_aux, weights,
+            splits_mu, splits_tau, **_):
             
             # TODO maybe I should pass kernelkw_* as arguments, but they may not
             # be jittable. I need jitkw in empbayes_fit for that.
@@ -375,10 +384,7 @@ class bcf:
 
             gp = _GP.GP(checkpos=False, checksym=False, solver='chol')
 
-            kernelkw = dict(mu=kernelkw_mu, tau=kernelkw_tau)
-                # eval() won't work because they are not captured elsewhere
-            
-            for name in 'mu', 'tau':
+            for name, kernelkw in dict(mu=kernelkw_mu, tau=kernelkw_tau).items():
                 kw = dict(
                     alpha=hp[f'alpha_{name}'],
                     beta=hp[f'beta_{name}'],
@@ -386,16 +392,16 @@ class bcf:
                     splits=eval(f'splits_{name}'),
                     **kw_overridable,
                 )
-                kw.update(kernelkw[name])
+                kw.update(kernelkw)
                 kernel = _kernels.BART(**kw, **kw_not_overridable)
-                kernel *= (hp[f'lambda_{name}'] * ystd) ** 2
+                kernel *= hp[f'lambda_{name}'] ** 2
                 
                 gp = gp.defproc(name, kernel)
 
             if 'm' in hp:
                 kernel_mean = 0 * _kernels.Constant()
             else:
-                kernel_mean = ystd ** 2 * _kernels.Constant()
+                kernel_mean = _kernels.Constant()
             gp = gp.defproc('m', kernel_mean)
 
             if gpaux is None:
@@ -419,8 +425,8 @@ class bcf:
             )
 
         # data factory
-        def info(hp, *, y, ymean, **_):
-            return {'train': y - hp.get('m', ymean)}
+        def data(hp, *, y, **_):
+            return {'train': from_data(hp, y) - hp.get('m', 0)}
 
         # fit hyperparameters
         gpkw = dict(
@@ -433,8 +439,6 @@ class bcf:
             weights=weights,
             splits_mu=splits_mu,
             splits_tau=splits_tau,
-            ystd=ystd,
-            ymean=ymean,
         )
         options = dict(
             verbosity=3,
@@ -442,23 +446,26 @@ class bcf:
             mlkw=dict(epsrel=0),
             forward=True,
             gpfactorykw=gpkw,
+            additional_loss=additional_loss,
         )
         options.update(fitkw)
-        fit = _fit.empbayes_fit(hyperprior, makegp, info, **options)
+        fit = _fit.empbayes_fit(hyperprior, gpfactory, data, **options)
         
         # extract hyperparameters from minimization result
-        self.m = fit.p.get('m', ymean)
+        self.m = fit.p.get('m', 0)
         self.sigma = gvar.sqrt(fit.p['sigma^2'])
-        self.sdev_mu = fit.p['lambda_mu'] * ystd
-        self.sdev_tau = fit.p['lambda_tau'] * ystd
+        self.lambda_mu = fit.p['lambda_mu']
+        self.lambda_tau = fit.p['lambda_tau']
         self.alpha_mu = fit.p['alpha_mu']
         self.alpha_tau = fit.p['alpha_tau']
         self.beta_mu = fit.p['beta_mu']
         self.beta_tau = fit.p['beta_tau']
         self.z_0 = fit.p['z_0']
 
-        # save fit object
+        # save other attributes
         self.fit = fit
+        self._from_data = from_data
+        self._to_data = to_data
 
     def _append_pihat(self, x_mu, x_tau, pihat):
         ip = self._include_pi
@@ -474,7 +481,8 @@ class bcf:
             ))
         return x_mu, x_tau
 
-    def _join_points(self, train, z, i_mu, i_tau, pihat, x_aux):
+    @staticmethod
+    def _join_points(train, z, i_mu, i_tau, pihat, x_aux):
         """ join covariates into a single StructuredArray """
         columns = dict(
             train=jnp.broadcast_to(bool(train), z.shape),
@@ -542,6 +550,8 @@ class bcf:
             attribute of the `bcf` object. The keys of the GP are ``'Xmean'``,
             ``'Xnoise'``, and ``'X'``, where the "X" stands either for 'train'
             or 'test', and X = Xmean + Xnoise.
+
+            This Gaussian process is defined on the transformed data ``eta``.
         """
 
         hp = self._gethp(hp, rng)
@@ -641,17 +651,18 @@ class bcf:
         Returns
         -------
         data : dict
-            A dictionary representing ``y`` in the format required by the
+            A dictionary representing ``eta`` in the format required by the
             `GP.pred` method.
         """
 
         hp = self._gethp(hp, rng)
         return self.fit.data(hp, **self.fit.gpfactorykw)
 
-    def pred(self, *, hp='map', error=False, format='matrices', z=None,
-        x_mu=None, x_tau=None, pihat=None, x_aux=None, weights=None, rng=None):
+    def pred(self, *, hp='map', error=False, z=None, x_mu=None, x_tau=None,
+        pihat=None, x_aux=None, weights=None, transformed=True, samples=None,
+        gvars=False, rng=None):
         r"""
-        Predict the outcome at given locations.
+        Predict the transformed outcome at given locations.
 
         Parameters
         ----------
@@ -659,12 +670,9 @@ class bcf:
             The hyperparameters to use. If ``'map'`` (default), use the marginal
             maximum a posteriori. If ``'sample'``, sample hyperparameters from
             the posterior. If a dict, use the given hyperparameters.
-        error : bool
-            If ``False`` (default), make a prediction for the latent mean. If
-            ``True``, add the error term.     
-        format : {'matrices', 'gvar'}
-            If ``'matrices'`` (default), return the mean and covariance matrix
-            separately. If ``'gvar'``, return an array of `~gvar.GVar`.
+        error : bool, default False
+            If ``False``, make a prediction for the latent mean. If ``True``,
+            add the error term.
         z : (m,) array, series or dataframe, optional
             Treatment status at test points. If specified, also `x_mu`, `pihat`,
             `x_tau` and `x_aux` (the latter two if and only also specified at
@@ -679,23 +687,49 @@ class bcf:
             Additional covariates for the ``'aux'`` process at test points.
         weights : (m,) array, series or dataframe, optional
             Weights for the error variance on the test points.
+        transformed : bool, default True
+            If ``True``, return the prediction on the transformed outcome
+            :math:`\eta`, else the observable outcome :math:`y`.
+        samples : int, optional
+            If specified, indicates the number of samples to take from the
+            posterior. If not, return the mean and covariance matrix of the
+            posterior.
+        gvars : bool, default False
+            If ``True``, return the mean and covariance matrix of the posterior
+            as an array of `GVar` variables.
         rng : numpy.random.Generator, optional
-            Random number generator, used if ``hp == 'sample'``.
+            Random number generator, used if ``hp == 'sample'`` or ``samples``
+            is not `None`.
 
         Returns
         -------
-        If `format` is ``'matrices'`` (default):
+        If ``samples`` is `None` and ``gvars`` is `False` (default):
 
-        mean, cov : arrays
+        mean, cov : (m,) and (m, m) arrays
             The mean and covariance matrix of the Normal posterior distribution
-            over the regression function at the specified locations.
+            over the regression function or :math:`\eta` at the specified
+            locations.
 
-        If `format` is ``'gvar'``:
+        If ``samples`` is `None` and ``gvars`` is `True`:
 
-        out : array of gvar
+        out : (m,) array of gvars
             The same distribution represented as an array of `~gvar.GVar`
             objects.
+
+        If ``samples`` is an integer:
+
+        sample : (samples, m) array
+            Posterior samples over either the regression function, :math:`\eta`,
+            or :math:`y`.
         """
+
+        # check consistency of output choice
+        if samples is None:
+            assert transformed, 'can not compute analytically posterior of y'
+        else:
+            if not transformed:
+                assert error, 'can not compute y without error term'
+            assert not gvars, 'can not represent posterior samples as gvars'
         
         # get hyperparameters
         hp = self._gethp(hp, rng)
@@ -719,13 +753,19 @@ class bcf:
         # GP regression
         mean, cov = self._pred(hp, z, x_mu, x_tau, pihat, x_aux, weights, self.fit.gpfactorykw, bool(error))
 
-        # pack output
-        if format == 'gvar':
-            return gvar.gvar(mean, cov, fast=True)
-        elif format == 'matrices':
-            return mean, cov
-        else:
-            raise KeyError(format)
+        # return Normal posterior moments
+        if samples is None:
+            if gvars:
+                return gvar.gvar(mean, cov, fast=True)
+            else:
+                return mean, cov
+
+        # sample from posterior
+        sample = jnp.stack(list(_fastraniter.raniter(mean, cov, n=samples, rng=rng)))
+            # TODO when I add vectorized sampling, use it here
+        if not transformed:
+            sample = self._to_data(hp, sample)
+        return sample
 
     @functools.cached_property
     def _pred(self):
@@ -741,12 +781,60 @@ class bcf:
             if not error:
                 label += 'mean'
             outmean, outcov = gp.predfromdata(data, label, raw=True)
-            return outmean + hp.get('m', gpfactorykw['ymean']), outcov
+            return outmean + hp.get('m', 0), outcov
 
         # TODO make everything pure and jit this per class instead of per
         # instance
 
         return _pred
+
+    def from_data(self, y, *, hp='map', rng=None):
+        """
+        Transforms outcomes :math:`y` to the regression variable :math:`\eta`.
+
+        Parameters
+        ----------
+        y : (n,) array
+            Outcomes.
+        hp : str or dict
+            The hyperparameters to use. If ``'map'`` (default), use the marginal
+            maximum a posteriori. If ``'sample'``, sample hyperparameters from
+            the posterior. If a dict, use the given hyperparameters.
+        rng : numpy.random.Generator, optional
+            Random number generator, used if ``hp == 'sample'``.
+
+        Returns
+        -------
+        eta : (n,) array
+            Transformed outcomes.
+        """
+
+        hp = self._gethp(hp, rng)
+        return self._from_data(hp, y)
+
+    def to_data(self, eta, *, hp='map', rng=None):
+        """
+        Convert the regression variable :math:`\eta` to outcomes :math:`y`.
+
+        Parameters
+        ----------
+        eta : (n,) array
+            Transformed outcomes.
+        hp : str or dict
+            The hyperparameters to use. If ``'map'`` (default), use the marginal
+            maximum a posteriori. If ``'sample'``, sample hyperparameters from
+            the posterior. If a dict, use the given hyperparameters.
+        rng : numpy.random.Generator, optional
+            Random number generator, used if ``hp == 'sample'``.
+
+        Returns
+        -------
+        y : (n,) array
+            Outcomes.
+        """
+
+        hp = self._gethp(hp, rng)
+        return self._to_data(hp, eta)
 
     @classmethod
     def _to_structured(cls, x, *, check_numerical=True):
@@ -811,8 +899,7 @@ alpha_mu/tau = {self.alpha_mu} {self.alpha_tau} (0 -> intercept only, 1 -> any)
 beta_mu/tau = {self.beta_mu} {self.beta_tau} (0 -> any, ∞ -> no interactions)
 z_0 = {self.z_0} (mu model applies at z = z_0)
 m = {m}
-lambda_mu/tau std(y) = {self.sdev_mu} {self.sdev_tau} (large -> conservative extrapolation)
-std(y) = {self.fit.gpfactorykw['ystd']:.3g}"""
+lambda_mu/tau = {self.lambda_mu} {self.lambda_tau} (large -> conservative extrapolation)"""
 
         weights = self.fit.gpfactorykw['weights']
         if weights is None:
@@ -827,3 +914,35 @@ sqrt(mean(sigma^2/w))  = {avgsigma}
 sigma = {self.sigma}"""
 
         return out
+
+    def _get_transf(self, *, transf, y, weights):
+        
+        if isinstance(transf, str):
+            
+            if transf == 'standardize':
+                
+                if weights is None:
+                    loc = jnp.mean(y)
+                    scale = jnp.std(y)
+                else:
+                    loc = jnp.average(y, weights=weights)
+                    scale = jnp.sqrt(jnp.average((y - loc) ** 2, weights=weights))
+                
+                def from_data(hp, y):
+                    return (y - loc) / scale
+                def to_data(hp, eta):
+                    return loc + scale * eta
+                def additional_loss(hp):
+                    return 0.
+
+            else:
+                raise KeyError(transf)
+
+        else:
+
+            from_data, to_data = transf
+            from_data_grad = _jaxext.elementwise_grad(from_data, 1)
+            def additional_loss(hp):
+                return -jnp.sum(jnp.log(from_data_grad(hp, y)))
+
+        return from_data, to_data, additional_loss

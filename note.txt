@@ -6291,7 +6291,7 @@ Ok, I should follow usual glm notation:
     eta = g(y; alpha)
     eta ~ GP
 
-    p(alpha, theta | y) ∝ (usual log posterior) · ∏_i g'(y_i; alpha)
+    p(alpha, theta | y) = (usual posterior) · ∏_i g'(y_i; alpha)
 
     log p(alpha, theta | y) = (usual) + ∑_i log g'(y_i; alpha)
 
@@ -6465,13 +6465,62 @@ Now I have to use it in bcf. I take yesterday's note and summarize them:
 - change all data-dependent locations and scales to weighted average and sdev 
   (DONE)
 - check everything still works fine (DONE)
-- remove data-dependent locations and scales
+- remove data-dependent locations and scales (DONE)
     but keep the code commented to use it in the next steps
-- add transformation system, using empbayes_fit support
-    - put the data transformation into the data factory function
+- add transformation system, using empbayes_fit support (DONE)
     - takes a parameter transf=(from_data, to_data) where to_data is the inverse
       of from_data, they have signatures from_data(hp, y), to_data(hp, eta) and
       are ufuncs over the second parameter. Strings define predefined values.
+    - put the data transformation into the data factory function
     - take the elementwise derivative of from_data w.r.t. the second argument.
     - use it to define the additional loss.
-- make default transformation be weighted standardization
+- make default transformation be weighted standardization (DONE)
+- expose transformations if necessary (DONE)
+- use transformations whenever y is inputted/outputted (DONE)
+
+For the last item, I have to somehow change the interface of pred. I can't in
+general return a normal posterior for y, I can transform only samples.
+Options:
+- make a new function that takes samples
+    This is inconvenient because most of the code is shared and most of it is
+    scaffolding and documentation
+- add the option to take samples to pred
+    It's similar to how it's done in most R packages I've seen
+
+I like the second better. Possible interface:
+
+    transformed = False: outcome space (needs samples != None)
+                  True: regression space
+    samples = None: posterior moments/gvars
+              int:  posterior samples
+    gvars = False: posterior moments
+            True: gvars
+
+Ok, now I'll try it. If I did everything correctly, the defaults should be such
+that it just works as usual.
+
+Uh-uh, I forgot to take the samples in the script. They'll come out
+standardized. What's going to happen? The errors shown will be just super-large,
+on the order of 0 vs. the data.
+
+Previous fit:
+alpha_mu/tau = 0.83(12) 0.742(20) (0 -> intercept only, 1 -> any)
+beta_mu/tau = 0.55(18) 1.03(25) (0 -> any, ∞ -> no interactions)
+z_0 = 0.39(22) (mu model applies at z = z_0)
+m = 1.22e+03
+lambda_mu/tau std(y) = 201(20) 82(62) (large -> conservative extrapolation)
+std(y) = 222
+sigma = 117.2(3.6)
+
+New fit:
+alpha_mu/tau = 0.83(12) 0.737(57) (0 -> intercept only, 1 -> any)
+beta_mu/tau = 0.54(20) 1.09(92) (0 -> any, ∞ -> no interactions)
+z_0 = 0.41(28) (mu model applies at z = z_0)
+m = 0
+lambda_mu/tau = 0.905(94) 0.35(33) (large -> conservative extrapolation)
+sigma = 0.527(20)
+
+=> Fixed, now it works.
+
+To do next: invent a transformation to reduce right-tail skewedness with a free
+parameter.
