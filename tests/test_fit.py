@@ -186,6 +186,8 @@ def test_int_data():
     lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0}, **FITKW)
 
 def test_data():
+    """ check that presenting data in different formats does not change the
+    result """
     
     hp = gvar.BufferDict({
         'log(sdev)': gvar.log(gvar.gvar(1, 1))
@@ -354,3 +356,12 @@ def test_loss_fisher():
 
     with pytest.raises(NotImplementedError):
         fit = lgp.empbayes_fit(hp, gpfactory, data, method='fisher', additional_loss=lambda _: 0., **FITKW)
+
+def test_yeojohnson():
+    """ check the Yeo-Johnson transformation """
+    testinput = np.linspace(-2, 2, 100)
+    lamda = 1.5
+    mod = lgp.bayestree._bcf
+    np.testing.assert_allclose(
+        mod.yeojohnson_inverse(mod.yeojohnson(testinput, lamda), lamda),
+        testinput, atol=0, rtol=1e-14)

@@ -571,6 +571,14 @@ conveniently, although I do not want to make it the default.
 error and the corresponding value digits just overloads my brain with pointless
 information.
 
+=> I can't because gvar wants me to provide the format parser as well. I can't
+just change the default format alone. I could make a context manager and always
+use it when I print gvars from within lsqfitgp's code.
+
+=> Maybe make a submodule for formatting, and include a function to format
+durations, and a separate on for mean + errors, since I always end up needing
+it.
+
 ## Optimization
 
 ### `gvar`-related issues

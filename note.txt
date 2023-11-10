@@ -6524,3 +6524,63 @@ sigma = 0.527(20)
 
 To do next: invent a transformation to reduce right-tail skewedness with a free
 parameter.
+
+2023-11-09
+==========
+
+I'll first try some ideas without refining them and then to a literature search
+with gpt.
+
+On first approximation, the function is a straight line.
+
+On second approximation, to compress the right tail, the function from_data must
+go down sub-linearly on the positive axis.
+
+A first idea is gluing in some way a straight line on the left with a power on
+the right. I can try gluing them with sigmoids.
+
+Does not work because the power is defined only on positive things.
+
+Maybe a rational function? But I still don't know how to put a non-integer
+power there without breaking the function on negative values. There can not be a
+"nude power" around, it has to be multiplied by something that deactivates it
+near 0 and below.
+
+log does not do it, it has to be something positive. a smooth function that goes to zero then stays there. it's not analytical then. one of those weird exponentials in freshman analysis.
+
+somewhat better, but still not quite right.
+
+=> Simpler idea: translate and truncate the power, glue it directly to the straight line at derivative 1. Calculation on paper notebook, date 2023-11-09.
+
+    alpha: exponent
+    b = alpha^(1 / (1 - alpha))
+    a = -b^alpha
+    y = x  if x ≤ 0,   a + (b + x)^alpha  if x > 0
+
+Now I use this in the script.
+
+=> Problem: the formula does not work at alpha = 0. I can fix it with a where, but the derivatives will not work at alpha=1 because jax just branches the derivative on the same condition. Also, even if I made the minimal custom derivative fix just to the place where 0/0 appears, the whole expression could end up numerically inaccurate when derived w.r.t. y and alpha. I should find a different route that yields nice expressions.
+
+First idea: use sigmoids to join things, but that multiply to 1 instead of summing 1. Maybe they join better this kind of stuff?
+
+    sigma(x) = 1 / (1 + e^-x)
+
+    sigma_1(x) = e^(sigma(x) - 1/2)
+
+=> Does not really make sense as a thing. Maybe I can work in exponentiated space?
+
+    log eta = sigma(-x) log x + sigma(x) log x^alpha =
+            = sigma(-x) log x + alpha sigma(x) log x =
+            = (sigma(-x) + alpha sigma(x)) log x
+
+    ==> eta = e^(sigma(-x) + alpha sigma(x)) x
+
+=> Nope, can't take log x with x < 0.
+
+Ok I asked gpt4. It spat out the yeo-johnson transf, wrote the jax code for me, inverted the transformation and cross-checked it against the original one.
+
+=> Result: everything works fine! Except the original problem isn't solved. The transformation does reduce a bit the right tail, but does not move enough the high outliers. The problem is that they are not that much higher than the close runners. I think it would be very ad-hoc to make a function with a sharp transition, I would clearly have to fit the tipping point, and I then would not be confident it'd generalize to all datasets. So, since the outlier residuals are still OK overall, I say I'm satisfied.
+
+Next: tidy up today's work. Move some functionality to the BCF code.
+
+(I tried further improving the YJ transf with GPT4, but on more sophisticated things it slips up. Indeed, I wasn't expecting it to succeed.)

@@ -337,92 +337,6 @@ class empbayes_fit(Logger):
         
         self.log('**** exit lsqfitgp.empbayes_fit ****')
 
-        # TODO would it be meaningful to add correlation of the fit result with
-        # the data and hyperprior?
-    
-        # TODO add the second order correction. It probably requires more than
-        # the gradient and inv_hess, but maybe by getting a little help from
-        # marginal_likelihood I can use the least-squares optimized second order
-        # correction on the residuals term and invent something for the logdet
-        # term.
-    
-        # TODO it raises very often with "Desired error not necessarily achieved
-        # due to precision loss.". I tried doing a forward grad on the logdet
-        # but does not fix the problem. I still suspect it's the logdet, maybe
-        # the value itself and not the derivative, because as the matrix changes
-        # the regularization can change a lot the value of the logdet. How do I
-        # stabilize it? => scipy's l-bfgs-b seems to fail the linear search less
-        # often
-        
-        # TODO compute the logGBF for the whole fit (see the gpbart code)
-        
-        # TODO empbayes_fit(autoeps=True) tries to double epsabs until the
-        # minimization succedes, with some maximum number of tries.
-        # autoeps=dict(maxrepeat=5, increasefactor=2, initial=1e-16,
-        # startfromzero=True) allows to configure the algorithm.
-
-        # TODO empbayes_fit(maxiter=100) sets the maximum number of minimization
-        # iterations. maxiter=dict(iter=100, calls=200, callsperiter=10) allows
-        # to configure it more finely. The calls limits are cumulative on all
-        # functions (need to make a class counter in _CountCalls), I can
-        # probably implement them by returning nan when the limit is surpassed,
-        # I hope the minimizer stops immediately on nan (test this). => Callback
-        # can raise StopIteration.
-
-        # TODO can I approximate the hessian with only function values and no
-        # gradient, i.e., when using nelder-mead? => See Hare (2022), although I
-        # would not know how to apply it properly to the optimization history.
-        # Somehow I need to keep only the "last" iterations.
-
-        # TODO is there a better algorithm than lbfgs for inaccurate functions?
-        # consider SC-BFGS (https://github.com/frankecurtis/SCBFGS). See Basak 
-        # (2022). And NonOpt (https://github.com/frankecurtis/NonOpt).
-
-        # TODO can I estimate the error on the likelihood with the matrices? It
-        # requires the condition number. Basak (2022) gives wide bounds. I could
-        # try an upper bound and see how it compares to the true error, assuming
-        # that the matrix was as ill-conditioned as possible, i.e., use eps as
-        # the lowest eigenvalue, and gershgorin as the highest one.
-
-        # TODO look into jaxopt: it has improved a lot since the last time I saw
-        # it. In particular, it implements l-bfgs and has a "do not stop on
-        # failed line search" option. And it probably supports float32, although
-        # a skim of the docs suggests it does not work well.
-
-        # TODO reimplement the timing system with host_callback.id_tap. It
-        # should preserve the order because id_tap takes inputs and outputs. I
-        # must take care to make all callbacks happen at runtime instead of
-        # having some of them at compile time. I tried once but failed.
-        # Currently host_callback is experimental, maybe wait until it isn't. =>
-        # I think it fails because it's asynchronous and there is only one
-        # device. Maybe host_callback.call would work? => I think they are
-        # developing something like my token machinery.
-
-        # TODO dictionary argument jitkw, arguments passed to jax.jit?
-
-        # TODO parameter float32: bool to use short float type. I think that
-        # scipy's optimize may break down with short floats with default
-        # options, I hope that changing termination tolerances does the trick.
-
-        # TODO make separate_jac a parameter
-
-        # TODO add options in _CountCalls to track inputs and/or outputs to some
-        # maximum buffer length, activate it if the method (after applying user
-        # options, lowercasing, and inferring minimize's default) is l-bfgs-b
-        # and the covariance is minhess or auto, to the order specified in the
-        # arguments to l-bfgs-b (after defaults inference if missing) (add tests
-        # in test_fit to check that the defaults stay as inferred), to be used
-        # if l-bfgs-b returns a crooked hessian. --- Alternative: if covariance
-        # = 'auto', it could be appropriate to use fisher per definition. ---
-        # Alternative: add option covariance = 'lbfgs(<order>)' that does this
-        # for any method, although this would require computing the gradients
-        # afterwards if the gradient was not used. These alternatives are not
-        # mutually exclusive.
-
-        # TODO logger should save all the logged lines with the verbosity, and
-        # be able to reproduce the full log, which I would then use for
-        # a summary function with verbosity option and repr
-
     class _CountCalls:
         """ wrap a callable to count calls """
         
@@ -1067,3 +981,93 @@ class empbayes_fit(Logger):
             return b
         else: # pragma: no cover
             raise NotImplementedError
+
+
+# TODO would it be meaningful to add correlation of the fit result with the data
+# and hyperprior?
+
+# TODO add the second order correction. It probably requires more than the
+# gradient and inv_hess, but maybe by getting a little help from
+# marginal_likelihood I can use the least-squares optimized second order
+# correction on the residuals term and invent something for the logdet term.
+
+# TODO it raises very often with "Desired error not necessarily achieved due to
+# precision loss.". I tried doing a forward grad on the logdet but does not fix
+# the problem. I still suspect it's the logdet, maybe the value itself and not
+# the derivative, because as the matrix changes the regularization can change a
+# lot the value of the logdet. How do I stabilize it? => scipy's l-bfgs-b seems
+# to fail the linear search less often
+
+# TODO compute the logGBF for the whole fit (see the gpbart code). In its doc,
+# specify that 1) additional_loss may break the normalization if the user does
+# not know what they are doing 2) the calculation of the log determinant term
+# heavily depends on the regularization if the covariance matrix is singular;
+# this won't happen if there are independent error terms in the model as usual.
+
+# TODO empbayes_fit(autoeps=True) tries to double epsabs until the minimization
+# succedes, with some maximum number of tries. autoeps=dict(maxrepeat=5,
+# increasefactor=2, initial=1e-16, startfromzero=True) allows to configure the
+# algorithm.
+
+# TODO empbayes_fit(maxiter=100) sets the maximum number of minimization
+# iterations. maxiter=dict(iter=100, calls=200, callsperiter=10) allows to
+# configure it more finely. The calls limits are cumulative on all functions
+# (need to make a class counter in _CountCalls), I can probably implement them
+# by returning nan when the limit is surpassed, I hope the minimizer stops
+# immediately on nan (test this). => Callback can raise StopIteration.
+
+# TODO can I approximate the hessian with only function values and no gradient,
+# i.e., when using nelder-mead? => See Hare (2022), although I would not know
+# how to apply it properly to the optimization history. Somehow I need to keep
+# only the "last" iterations.
+
+# TODO is there a better algorithm than lbfgs for inaccurate functions? consider
+# SC-BFGS (https://github.com/frankecurtis/SCBFGS). See Basak (2022). And NonOpt
+# (https://github.com/frankecurtis/NonOpt).
+
+# TODO can I estimate the error on the likelihood with the matrices? It requires
+# the condition number. Basak (2022) gives wide bounds. I could try an upper
+# bound and see how it compares to the true error, assuming that the matrix was
+# as ill-conditioned as possible, i.e., use eps as the lowest eigenvalue, and
+# gershgorin as the highest one.
+
+# TODO look into jaxopt: it has improved a lot since the last time I saw it. In
+# particular, it implements l-bfgs and has a "do not stop on failed line search"
+# option. And it probably supports float32, although a skim of the docs suggests
+# it does not work well.
+
+# TODO reimplement the timing system with host_callback.id_tap. It should
+# preserve the order because id_tap takes inputs and outputs. I must take care
+# to make all callbacks happen at runtime instead of having some of them at
+# compile time. I tried once but failed. Currently host_callback is
+# experimental, maybe wait until it isn't. => I think it fails because it's
+# asynchronous and there is only one device. Maybe host_callback.call would
+# work? => I think they are developing something like my token machinery.
+
+# TODO dictionary argument jitkw, arguments passed to jax.jit?
+
+# TODO parameter float32: bool to use short float type. I think that scipy's
+# optimize may break down with short floats with default options, I hope that
+# changing termination tolerances does the trick.
+
+# TODO make separate_jac a parameter
+
+# TODO add options in _CountCalls to track inputs and/or outputs to some maximum
+# buffer length, activate it if the method (after applying user options,
+# lowercasing, and inferring minimize's default) is l-bfgs-b and the covariance
+# is minhess or auto, to the order specified in the arguments to l-bfgs-b (after
+# defaults inference if missing) (add tests in test_fit to check that the
+# defaults stay as inferred), to be used if l-bfgs-b returns a crooked hessian.
+# --- Alternative: if covariance = 'auto', it could be appropriate to use fisher
+# per definition. --- Alternative: add option covariance = 'lbfgs(<order>)' that
+# does this for any method, although this would require computing the gradients
+# afterwards if the gradient was not used. These alternatives are not mutually
+# exclusive.
+
+# TODO logger should save all the logged lines with the verbosity, and be able
+# to reproduce the full log, which I would then use for a summary function with
+# verbosity option and repr
+
+# TODO make a helper function/class method that takes in data transf dependent
+# on hypers and outputs additional loss (the log jacobian of the appropriate
+# function with the appropriate sign)

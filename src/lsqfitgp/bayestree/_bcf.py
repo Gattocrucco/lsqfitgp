@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import functools
+import warnings
 
 import numpy
 from scipy import stats
@@ -31,6 +32,7 @@ from .. import _fit
 from .. import _array
 from .. import _GP
 from .. import _fastraniter
+from .. import _jaxext
 
 # TODO add methods or options to do causal inference stuff, e.g., impute missing
 # outcomes, or ate, att, cate, catt, sate, satt. Remember that the effect may
@@ -172,25 +174,39 @@ class bcf:
         otherhp : dictionary of gvar
             A dictionary with the prior of arbitrary additional hyperpameters,
             intended to be used by ``gpaux`` or ``transf``.
-        transf : str or pair of callable
+        transf : (list of) str or pair of callable
             Data transformation. Either a string indicating a pre-defined
             transformation, or a pair ``(from_data, to_data)``, two functions
             with signatures ``from_data(hp, y) -> eta`` and ``to_data(hp, eta)
             -> y``, where ``eta`` is the value to which the model is fit, and
-            ``hp`` is the dictionary of hyperparameters. W.r.t. the second
-            argument, the functions must be ufuncs and one the inverse of the
-            other. The pre-defined transformations are:
+            ``hp`` is the dictionary of hyperparameters. The functions must be
+            ufuncs and one the inverse of the other w.r.t. the second parameter.
+            ``from_data`` must be derivable with `jax` w.r.t. ``y``.
+
+            If a list of such specifications is provided, the transformations
+            are applied in order, with the first one being the outermost, i.e.,
+            the one applied first to the data.
+
+            If a transformation uses additional hyperparameters, either
+            predefined automatically or passed by the user through `otherhp`,
+            they are inferred with the rest of the hyperparameters.
+
+            The pre-defined transformations are:
 
             'standardize' (default)
-                eta = (y - mean(y)) / sdev(y)
+                eta = (y - mean(train_y)) / sdev(train_y)
+            'yeojohnson'
+                The Yeo-Johnson transformation to reduce skewness. The
+                :math:`\lambda` parameter is bounded in :math:`(0, 2)`
+                for implementational convenience, this restriction may be lifted
+                in future versions.
         
         Notes
         -----
         The regression model is:
 
         .. math::
-            \eta_i &= g(y_i; \ldots), \\
-            \eta_i &= m + {} \\
+            \eta_i = g(y_i; \ldots) &= m + {} \\
                 &\phantom{{}={}} +
                     \lambda_\mu
                     \mu(\mathbf x^\mu_i, \hat\pi_i?) + {} \\
@@ -222,7 +238,7 @@ class bcf:
         To make the inference, :math:`(\mu, \tau, \boldsymbol\varepsilon, m,
         \mathrm{aux})` are marginalized analytically, and the marginal posterior
         mode of
-        :math:`(\sigma, \lambda_*, \alpha_*, \beta_*, z_0)` is found by
+        :math:`(\sigma, \lambda_*, \alpha_*, \beta_*, z_0, \ldots)` is found by
         numerical minimization, after transforming them to express their prior
         as a Gaussian copula. Their marginal posterior covariance matrix is
         estimated with an approximation of the hessian inverse. See
@@ -339,16 +355,16 @@ class bcf:
             i_tau = self._toindices(x_tau, splits_tau)
 
         # get functions for data transformation
-        from_data, to_data, additional_loss = self._get_transf(transf=transf,
-            weights=weights, y=y)
+        from_data, to_data, transfloss, transfhp = self._get_transf(
+            transf=transf, weights=weights, y=y)
 
-        # prior parameter on error variance
-        sigma2_loc = jnp.mean(weights) if weights is not None else 1
+        # scale of error variance
+        logsigma2_loc = 0 if weights is None else numpy.log(jnp.mean(weights))
 
         # prior on hyperparams
         hyperprior = copula.makedict({
             'm': gvar.gvar(0, 1),
-            'sigma^2': copula.lognorm(numpy.log(sigma2_loc), 2),
+            'sigma^2': copula.lognorm(logsigma2_loc, 2),
             'lambda_mu': copula.halfcauchy(2),
             'lambda_tau': copula.halfnorm(1.48),
             'alpha_mu': copula.beta(2, 1),
@@ -357,15 +373,25 @@ class bcf:
             'beta_tau': copula.invgamma(1, 1),
             'z_0': copula.uniform(0, 1),
         })
+
+        # remove explicit mean parameter if it's baked into the Gaussian process
         if marginalize_mean:
             hyperprior.pop('m')
 
-        # add user hyperparams
-        otherhp = gvar.BufferDict(otherhp)
-        for key in otherhp.all_keys():
-            if hyperprior.has_dictkey(key):
-                raise ValueError(f'otherhp[{key!r}] overrides another hyperparameter')
-        hyperprior.update(otherhp)
+        # add data transformation and user hyperparameters
+        def update_hyperparams(new, newname, raises):
+            new = gvar.BufferDict(new)
+            for key in new.all_keys():
+                if hyperprior.has_dictkey(key):
+                    message = f'{newname} hyperparameter {key!r} overrides existing one'
+                    if raises:
+                        raise ValueError(message)
+                    else:
+                        warnings.warn(message)
+            hyperprior.update(new)
+        update_hyperparams(transfhp, 'data transformation', True)
+            # the hypers handed by _get_transf are not allowed to override
+        update_hyperparams(otherhp, 'user', False)
 
         # GP factory
         def gpfactory(hp, *, z, i_mu, i_tau, pihat, x_aux, weights,
@@ -446,7 +472,7 @@ class bcf:
             mlkw=dict(epsrel=0),
             forward=True,
             gpfactorykw=gpkw,
-            additional_loss=additional_loss,
+            additional_loss=transfloss,
         )
         options.update(fitkw)
         fit = _fit.empbayes_fit(hyperprior, gpfactory, data, **options)
@@ -915,12 +941,38 @@ sigma = {self.sigma}"""
 
         return out
 
+        # TODO print user parameters, applying transformations. Copy the dict and use .pop() to remove the predefined params as they are printed.
+
     def _get_transf(self, *, transf, y, weights):
+
+        from_datas = []
+        to_datas = []
+        hypers = {}
+
+        if transf is None:
+            transf = []
+        elif isinstance(transf, list):
+            name = lambda n: f'transf{i}_{n}'
+        else:
+            name = lambda n: n
+            transf = [transf]
         
-        if isinstance(transf, str):
-            
-            if transf == 'standardize':
+        for i, tr in enumerate(transf):
+
+            hyper = {}
+        
+            if not isinstance(tr, str):
                 
+                from_data, to_data = tr
+                
+            elif tr == 'standardize':
+
+                if i > 0:
+                    warnings.warn('standardization applied after other '
+                        'transformations: standardization always uses the '
+                        'initial data mean and standard deviation, so it may '
+                        'not work as intended')
+                    
                 if weights is None:
                     loc = jnp.mean(y)
                     scale = jnp.std(y)
@@ -932,17 +984,60 @@ sigma = {self.sigma}"""
                     return (y - loc) / scale
                 def to_data(hp, eta):
                     return loc + scale * eta
-                def additional_loss(hp):
-                    return 0.
+
+            elif tr == 'yeojohnson':
+                    
+                def from_data(hp, y):
+                    return yeojohnson(y, hp[name('lambda_yj')])
+                def to_data(hp, eta):
+                    return yeojohnson_inverse(eta, hp[name('lambda_yj')])
+                hyper[name('lambda_yj')] = 2 * copula.beta(2, 2)
 
             else:
-                raise KeyError(transf)
+                raise KeyError(tr)
+            
+            from_datas.append(from_data)
+            to_datas.append(to_data)
+            hypers.update(hyper)
 
+        if transf:
+            def from_data(hp, y):
+                for fd in from_datas:
+                    y = fd(hp, y)
+                return y
+            def to_data(hp, eta):
+                for td in reversed(to_datas):
+                    eta = td(hp, eta)
+                return eta
         else:
+            from_data = lambda hp, y: y
+            to_data = lambda hp, eta: eta
 
-            from_data, to_data = transf
-            from_data_grad = _jaxext.elementwise_grad(from_data, 1)
-            def additional_loss(hp):
-                return -jnp.sum(jnp.log(from_data_grad(hp, y)))
+        from_data_grad = _jaxext.elementwise_grad(from_data, 1)
+        def loss(hp):
+            return -jnp.sum(jnp.log(from_data_grad(hp, y)))
 
-        return from_data, to_data, additional_loss
+        hypers = copula.makedict(hypers)
+
+        return from_data, to_data, loss, hypers
+
+def yeojohnson(x, lmbda):
+    """ Yeo-Johnson transformation with lamda != 0, 2 """
+    return jnp.where(
+        x >= 0,
+        (jnp.power(x + 1, lmbda) - 1) / lmbda,
+        -((jnp.power(-x + 1, 2 - lmbda) - 1) / (2 - lmbda))
+    )
+
+    # TODO
+    # - rewrite the cases with expm1, log1p, etc. to make them accurate
+    # - split the cases into lambda 0/2
+    # - make custom_jvps for the singular points to define derivatives w.r.t.
+    #   lambda even though it does not appear in the expression
+
+def yeojohnson_inverse(y, lmbda):
+    return jnp.where(
+        y >= 0,
+        jnp.power(y * lmbda + 1, 1 / lmbda) - 1,
+        -jnp.power(-(2 - lmbda) * y + 1, 1 / (2 - lmbda)) + 1
+    )
