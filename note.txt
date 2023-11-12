@@ -6584,3 +6584,79 @@ Ok I asked gpt4. It spat out the yeo-johnson transf, wrote the jax code for me, 
 Next: tidy up today's work. Move some functionality to the BCF code.
 
 (I tried further improving the YJ transf with GPT4, but on more sophisticated things it slips up. Indeed, I wasn't expecting it to succeed.)
+
+Next thing to do? I should run the simulation study. Make a new script, starting from the one I used for the bart benchmark to save the results, but adding my plan for the DR experiment for reproducibility.
+
+Should I first freeze BCF and move to the bart repo? I guess not; experience teaches me that repeating the inference hundredths of times will uncover various instabilities.
+
+2023-11-10
+==========
+
+todo
+- directory for the simulation (DONE)
+- main script
+    - first scaffolding
+    - then fitting routine embedded in loop
+- analysis script
+
+If I have to look at a dataset, I'll use the standalone script I already have.
+
+I can't recover the DR plan, I have to rederive it from scratch.
+- there are directories with dates in the name
+- fetch the most recent directory (DONE)
+- if there's a certain file marking the directory as done, create a new directory and set it as work directory (DONE)
+- if not, it's still open for work (DONE)
+- if missing, create a numpy table of settings and results (DONE)
+    - fixed range of datasets, do not adapt to actual files, to be sure no files are missing or malformed
+    - rows:
+        - dataset
+        - done flag
+        - seed
+            I need it to sample the posterior. Create it from the dataset (see numpy's guide to do it without correlating the sequences)
+        - one column per estimand
+        - paired columns for confidence interval
+- use pip freeze to write a requirements file (DONE)
+- unconditionally copy the script itself into the directory (DONE)
+    this won't preserve complete consistency if I run multiple times in a certain directory, but I need it for debugging, it shouldn't be a real problem in my application
+- open numpy table as memmap (use contextlib to autoclose => nope) (DONE)
+- fetch indexes in table which are not done (DONE)
+- randomize indices to get a working ETA (DONE)
+- cycle over such indices with progressbar (DONE)
+    - copy fitting script (DONE)
+    - save log of bcf in a log file which is never reset, with a visible header with date and time (DONE)
+    - save plots in directory without showing them => YANKED, too many plots
+    - mark row as done (DONE)
+- write completion file in directory (DONE)
+
+Done. Time to run and fail.
+
+=> It's running, I have fixed the first round of bugs. The total running time should be 110h. If I let it run at night, that's at least 8h per day, so tops 110/8 = 14 days. A bit slow! Also, I guess I'll uncover bugs as I run the analysis script on it, so I'll have to scratch and restart? I don't see how but that does not mean it will go right.
+
+To do next: write the analysis script.
+
+What will I do if the performance is poor? I really want this to succeed. But the fight is almost fair, and I have not done all that's possible to win, because I do not terminally care that much about this fight in the first place.
+
+New problem: the memory increases arbitrarily. What's up? Maybe jax is caching things? Possible routes:
+- roll with the jax hypothesis, see if it has options related to caching of something (jit I guess)
+    It does have a compilation cache, and it can be freed with jax.clear_caches().
+    => Seems to be working! Good.
+- find some tool to inspect the memory of the running python program (ask gpt or the internet)
+- last resort: make a python runner that launches a separate script for each inference
+- check if it does the same out of ipython (DONE)
+    It does!!
+
+2023-11-11
+==========
+
+At 6h20m of running time, during the night, the jit started taking 15m to compile. Sigh. I hope this bug does not kick in earlier than that.
+
+Extemporary note: I should have a field with the timestamp in the result table. This is useful to know when problems happen, without having to sift through the log file.
+
+Inspection of timers:
+
+    Occurrences     Cause
+    1               ps
+    1               hypers
+    9               satt
+
+I can't guess how it happened with ps, it can't be jax. Maybe rpy2 shenanigans.

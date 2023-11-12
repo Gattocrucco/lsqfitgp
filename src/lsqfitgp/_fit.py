@@ -79,21 +79,55 @@ def token_map(func, x):
     return tree_util.tree_map(lambda x: token_map_leaf(func, x), x)
 
 class Logger:
-    
-    def __init__(self, verbosity=0):
-        self._verbosity = verbosity
+    """ Class to manage a log. Can be used as superclass. Each line of the log
+    has a verbosity level (an integer >= 0) and is printed only if this level is
+    below a threshold. All lines are saved and the log can be retrieved. """
+
+    def __init__(self, target_verbosity=0):
+        """ set the threshold used to exclude log lines """
+        self._verbosity = target_verbosity
+        self._loggedlines = []
     
     def _indent(self, text, level=0):
         """ indent a text by provided level or by global current level """
         level = max(0, level + self.loglevel._level)
         prefix = 4 * level * ' '
         return textwrap.indent(text, prefix)
+
+    def _select(self, verbosity, target_verbosity=None):
+        if target_verbosity is None:
+            target_verbosity = self._verbosity
+        if isinstance(verbosity, int):
+            return target_verbosity >= verbosity
+        else:
+            return target_verbosity in verbosity
     
     def log(self, message, verbosity=1, *, level=0):
-        """ print a message """
-        if verbosity > self._verbosity:
-            return
-        print(self._indent(message, level))
+        """
+        Print and record a message.
+
+        Parameters
+        ----------
+        message : str
+            The message to print. A newline is added unconditionally.
+        verbosity : int or set, default 1
+            The verbosity level(s) at which the message is printed. If an
+            integer, it's printed at all levels >= that integer. If a set, at
+            the specified levels.
+        level : int, default 0
+            The indentation level of the message.
+        """
+        if self._select(verbosity):
+            print(self._indent(message, level))
+        self._loggedlines.append((message, verbosity, level + self.loglevel._level))
+
+    def getlog(self, target_verbosity=None, *, base_level=0):
+        """ return all logged line as a single string """
+        return '\n'.join(
+            self._indent(message, base_level + level)
+            for message, verbosity, level in self._loggedlines
+            if self._select(verbosity, target_verbosity)
+        )
 
     class _LogLevel:
         """ shared context manager to indent messages """
@@ -871,38 +905,37 @@ class empbayes_fit(Logger):
                     self.tail_overhead_iter += 1
                     self.tail_overhead += overhead
 
-            if self.this._verbosity >= 3:
-                calls = self.this._CountCalls.fmtcalls('partial', self.functions)
+            # level 3 log
+            calls = self.this._CountCalls.fmtcalls('partial', self.functions)
+            times = self.fmttime(duration)
+            self.this.log(f'iter {self.it}, time: {times}, calls: {calls}', {3})
 
-            if self.this._verbosity >= 4:
-                tot = self.fmttime(duration)
-                if self.timer.partials:
-                    times = {
-                        'gp&cov': self.timer.partials[0],
-                        'dec': self.timer.partials[1],
-                        'like': self.timer.partials[2],
-                        'other': duration - sum(self.timer.partials.values()),
-                    }
-                    times = self.fmttimes(times)
-                else:
-                    times = 'n/d'
-                self.this.log(f'\niteration {self.it}', 4)
-                with self.this.loglevel:
-                    self.this.log(f'total time: {tot}', 4)
-                    self.this.log(f'partial: {times}', 4)
-                    self.this.log(f'calls: {calls}', 4)
+            # level 4 log
+            tot = self.fmttime(duration)
+            if self.timer.partials:
+                times = {
+                    'gp&cov': self.timer.partials[0],
+                    'dec': self.timer.partials[1],
+                    'like': self.timer.partials[2],
+                    'other': duration - sum(self.timer.partials.values()),
+                }
+                times = self.fmttimes(times)
+            else:
+                times = 'n/d'
+            self.this.log(f'\niteration {self.it}', 4)
+            with self.this.loglevel:
+                self.this.log(f'total time: {tot}', 4)
+                self.this.log(f'partial: {times}', 4)
+                self.this.log(f'calls: {calls}', 4)
 
-                if self.this._verbosity >= 5:
-                    nicep = self.unflat(p)
-                    nicep = self.this._copyasarrayorbufferdict(nicep)
-                    with self.this.loglevel:
-                        self.this.log(f'parameters = {nicep}', 5)
-                    # TODO write a method to format the parameters nicely. => use
-                    # gvar.tabulate? => nope, need actual gvars
-
-            elif self.this._verbosity >= 3:
-                times = self.fmttime(duration)
-                self.this.log(f'iter {self.it}, time: {times}, calls: {calls}', 3)
+            # level 5 log
+            nicep = self.unflat(p)
+            nicep = self.this._copyasarrayorbufferdict(nicep)
+            with self.this.loglevel:
+                self.this.log(f'parameters = {nicep}', 5)
+            # TODO write a method to format the parameters nicely. => use
+            # gvar.tabulate? => nope, need actual gvars
+            # TODO does this logging add significant overhead?
 
             self.stamp = now
             self.timer.reset()
@@ -912,6 +945,15 @@ class empbayes_fit(Logger):
 
         @classmethod
         def fmttime(cls, seconds):
+            if seconds < 0:
+                prefix = '-'
+                seconds = -seconds
+            else:
+                prefix = ''
+            return prefix + cls._fmttime_positive(seconds)
+
+        @classmethod
+        def _fmttime_positive(cls, seconds):
             td = datetime.timedelta(seconds=seconds)
             m = cls.pattern.fullmatch(str(td))
             _, day, hour, minute, second, _ = m.groups()
@@ -1063,10 +1105,6 @@ class empbayes_fit(Logger):
 # does this for any method, although this would require computing the gradients
 # afterwards if the gradient was not used. These alternatives are not mutually
 # exclusive.
-
-# TODO logger should save all the logged lines with the verbosity, and be able
-# to reproduce the full log, which I would then use for a summary function with
-# verbosity option and repr
 
 # TODO make a helper function/class method that takes in data transf dependent
 # on hypers and outputs additional loss (the log jacobian of the appropriate

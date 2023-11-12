@@ -196,7 +196,7 @@ class bcf:
             'standardize' (default)
                 eta = (y - mean(train_y)) / sdev(train_y)
             'yeojohnson'
-                The Yeo-Johnson transformation to reduce skewness. The
+                The Yeo-Johnson transformation [2]_ to reduce skewness. The
                 :math:`\lambda` parameter is bounded in :math:`(0, 2)`
                 for implementational convenience, this restriction may be lifted
                 in future versions.
@@ -316,6 +316,9 @@ class bcf:
             Confounding, and Heterogeneous Effects (with Discussion)," Bayesian
             Analysis 15(3), 965-1056, September 2020,
             https://doi.org/10.1214/19-BA1195
+        .. [2] Yeo, In-Kwon; Johnson, Richard A. (2000). "A New Family of Power
+            Transformations to Improve Normality or Symmetry". Biometrika. 87
+            (4): 954–959. https://doi.org/10.1093/biomet/87.4.954
         """
 
         # convert covariates to StructuredArray
