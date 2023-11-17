@@ -6660,3 +6660,195 @@ Inspection of timers:
     9               satt
 
 I can't guess how it happened with ps, it can't be jax. Maybe rpy2 shenanigans.
+
+..............
+
+Log places where bcf takes a long time:
+
+    ~/Documents/Scuola/lsqfitgp/Repository/lsqfitgp/playground/acic2022/loop/workdir_20231110223235/log.txt:
+     32130  
+     32131  calls: fun&jac 67
+     32132: total time: 16m06s
+     32133  partials: gp&cov 15m38s, decomp 1.0s, likelihood 17s, jit 8.9s, other 1.0s
+     32134                                                  param      prior      posterior
+     .....
+     113203  
+     113204  calls: fun&jac 38
+     113205: total time: 16m12s
+     113206  partials: gp&cov 14s, decomp 1.2s, likelihood 8.7s, jit 15m48s, other 0.57s
+     113207                                                  param      prior      posterior
+     .....
+     113578  
+     113579  calls: fun&jac 43
+     113580: total time: 17m15s
+     113581  partials: gp&cov 16s, decomp 1.3s, likelihood 16m49s, jit 9.0s, other 0.68s
+     113582                                                  param      prior      posterior
+     .....
+     117977  
+     117978  calls: fun&jac 30
+     117979: total time: 15m47s
+     117980  partials: gp&cov 11s, decomp 0.43s, likelihood 7.4s, jit 15m27s, other 0.44s
+     117981                                                  param      prior      posterior
+     .....
+     120369  
+     120370  calls: fun&jac 59
+     120371: total time: 18m24s
+     120372  partials: gp&cov 23s, decomp 1.1s, likelihood 17m50s, jit 9.1s, other 0.97s
+     120373                                                  param      prior     posterior
+     .....
+     132063  
+     132064  calls: fun&jac 31
+     132065: total time: 18m06s
+     132066  partials: gp&cov 12s, decomp 0.89s, likelihood 7.6s, jit 17m45s, other 0.47s
+     132067                                                  param      prior      posterior
+     .....
+     132773  
+     132774  calls: fun&jac 37
+     132775: total time: 17m40s
+     132776  partials: gp&cov 17m19s, decomp 1.1s, likelihood 9.5s, jit 9.3s, other 0.55s
+     132777                                                  param      prior      posterior
+     .....
+     148095  
+     148096  calls: fun&jac 42
+     148097: total time: 16m02s
+     148098  partials: gp&cov 15m40s, decomp 1.7s, likelihood 10s, jit 9.3s, other 0.64s
+     148099                                                  param      prior      posterior
+
+It's not always budgeted as jit as I thought. What's going on?
+
+The jit time is estimated by looking at how much time the first iteration takes compared to the average of the following ones. Can this criterion fail in some cases?
+
+I looked at the last group pasted above, and the problem pops up later:
+
+    iteration 9
+        total time: 15m26s
+        partial: gp&cov 15m25s, dec 0.49s, like 0.27s, other 14ms
+        calls: fun&jac 1
+
+This is slowing down the thing enough that's its worth addressing. Ideas:
+- put everything under a timeout, since it stays in the python process I can use interrupts I guess?
+- put there a pdb hook that triggers if it's taking too long
+    How? I don't know how to do this while the thing is still running, I can only do it after it's finished and has taken too long. I don't expect I'd be able to notice anything anomalous then.
+
+2023-11-16
+==========
+
+22/420 = 1/20 of the done datasets slugged. Assuming slugging is at random, restarting them increases the time compared to optimal by 5%, so it's convenient.
+
+I can use the library I was using in the r bart wrappers.
+
+Before running, I can fix standardization and then switch the order of the transformations. The Yeo-Johnson transformation is not scale-invariant, so I should continue to apply standardization beforehand as well.
+
+............
+
+Trying to make standardization kosher and applicable at other points:
+
+To overcome this limitation, I'd have to support transformations with non-diagonal jacobians. This is computationally expensive in general, although in practice it's not a big deal because it takes the time of a cholesky, and the decomposition is never the bottleneck in my current applications.
+
+Even if standardization has no free parameters, I can not ignore it jacobian term, because the function is nonlinear and so the jacobian depends on the inputs, which could depend on parameters.
+
+Other problem: the full jacobian of standardization is degenerate because the transf loses 2 degrees of freedom. I have a naive calculation on the paper notebook on 2023-11-09/16, but just by considering that constraining loc and scale it's identity over scale, the pdet must be 1/scale^(n-2).
+
+Proposal: new spec format which uses a class DataTransf(from_data, to_data, from_data_log_pdet_jac=None, assume_diagonal=False) instead of a pair of things. Matrix multiplication is not commutative, but multiplication of their determinants is, so I can reorder the jacobians to multiply if I so wish. However dense matmul takes as much as cholesky, so I may as well decompose everything in order without trying to merge things for optimization. I also guess that decomposing before matmuls may be more stable typically.
+
+But I'm confused: I don't want standardization to use the input sdev, because the sdev must stay fixed at the one of the data. Also, non-ufunc transformations are not defined out of sample.
+
+So my plan goes to pot. The code stays as it is.
+
+...........
+
+I remembered to check the timeout with a short threshold to see if it works properly. It didn't, the exception was somehow ignored during a C callback (numpy I guess?). Using use_signals=False did the job.
+
+=> Nope, now for some reason the code does not run at all!!
+
+Searching for solutions online:
+
+-------------------
+
+library: timeout-decorator
+
+Did not try it, does not seem promising
+
+-------------------
+
+library: stopit
+
+stopit.ThreadingTimeout
+A context manager that “kills” its inner block execution that exceeds the provided time.
+ThreadingTimeout(seconds, swallow_exc=True)
+
+=> Does not work because the exception is ignored during cffi call.
+
+-------------------
+
+There are a lot of suggestions, but none using concurrent.futures, which I think is the most legible way to handle this.
+
+from concurrent.futures import ProcessPoolExecutor
+
+# Warning: this does not terminate function if timeout
+def timeout_five(fnc, *args, **kwargs):
+    with ProcessPoolExecutor() as p:
+        f = p.submit(fnc, *args, **kwargs)
+        return f.result(timeout=5)
+Super simple to read and maintain.
+
+We make a pool, submit a single process and then wait up to 5 seconds before raising a TimeoutError that you could catch and handle however you needed.
+
+Native to python 3.2+ and backported to 2.7 (pip install futures).
+
+Switching between threads and processes is as simple as replacing ProcessPoolExecutor with ThreadPoolExecutor.
+
+If you want to terminate the Process on timeout I would suggest looking into Pebble.
+
+=> Does not work as usual: ThreadPoolExecutor launches an exception which is ignored during a cffi call, while ProcessPoolExecutor does not run the code at all.
+
+I have seen ^C successfully interrupting jax jit stuff, so I may try a custom threading solution where I check if the process has actually stopped periodically and reraise if not. The re-check period is separate from the main timeout.
+
+-------------------
+
+exit_after decorator
+
+Next we need a function to terminate the main() from the child thread:
+
+def quit_function(fn_name):
+    # print to stderr, unbuffered in Python 2.
+    print('{0} took too long'.format(fn_name), file=sys.stderr)
+    sys.stderr.flush() # Python 3 stderr is likely buffered.
+    thread.interrupt_main() # raises KeyboardInterrupt
+And here is the decorator itself:
+
+def exit_after(s):
+    '''
+    use as decorator to exit process if 
+    function takes longer than s seconds
+    '''
+    def outer(fn):
+        def inner(*args, **kwargs):
+            timer = threading.Timer(s, quit_function, args=[fn.__name__])
+            timer.start()
+            try:
+                result = fn(*args, **kwargs)
+            finally:
+                timer.cancel()
+            return result
+        return inner
+    return outer
+Usage
+
+And here's the usage that directly answers your question about exiting after 5 seconds!:
+
+@exit_after(5)
+def countdown(n):
+    print('countdown started', flush=True)
+    for i in range(n, -1, -1):
+        print(i, end=', ', flush=True)
+        sleep(1)
+    print('countdown finished')
+
+-------------------
+
+Ok, I managed to make a threading-exception solution with nagging auto-timers.
+
+Problem: the auto-timer may trigger in the next entry, find it as "not done" and stop it. I have to make sure the "done" flag is a per-entry writable object referenced by everyone, not a global variable.
+
+I can try converting on_timeout in a factory that takes in a list, and I append something to the list to make it evaluate to True. => Success!

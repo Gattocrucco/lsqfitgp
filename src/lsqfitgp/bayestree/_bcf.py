@@ -82,6 +82,10 @@ def cast(dtype, default, mapping={}):
     default = None if default is None else numpy.dtype(default)
     return _recursive_cast(numpy.dtype(dtype), default, mapping)
 
+    # TODO
+    # - move this to generic utils
+    # - make unit tests
+
 class bcf:
     
     def __init__(self, *,
@@ -198,7 +202,7 @@ class bcf:
             'yeojohnson'
                 The Yeo-Johnson transformation [2]_ to reduce skewness. The
                 :math:`\lambda` parameter is bounded in :math:`(0, 2)`
-                for implementational convenience, this restriction may be lifted
+                for implementation convenience, this restriction may be lifted
                 in future versions.
         
         Notes
@@ -975,7 +979,11 @@ sigma = {self.sigma}"""
                         'transformations: standardization always uses the '
                         'initial data mean and standard deviation, so it may '
                         'not work as intended')
-                    
+
+                    # It's not possible to overcome this limitation if one wants
+                    # to stick to transformations that act on one point at a
+                    # time to make them generalizable out of sample.
+
                 if weights is None:
                     loc = jnp.mean(y)
                     scale = jnp.std(y)
@@ -1037,6 +1045,7 @@ def yeojohnson(x, lmbda):
     # - split the cases into lambda 0/2
     # - make custom_jvps for the singular points to define derivatives w.r.t.
     #   lambda even though it does not appear in the expression
+    # - add unit tests that check gradients with finite differences
 
 def yeojohnson_inverse(y, lmbda):
     return jnp.where(
