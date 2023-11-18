@@ -336,7 +336,7 @@ class empbayes_fit(Logger):
         # add user arguments and minimize
         minargs.update(minkw)
         self.log(f'minimizer method {minargs["method"]!r}', 2)
-        total = time.time()
+        total = time.perf_counter()
         result = optimize.minimize(**minargs)
 
         # check the minimization was successful
@@ -346,7 +346,7 @@ class empbayes_fit(Logger):
         cov = self._posterior_covariance(method, covariance, result, functions['fisher'])    
         
         # log total timings and function calls
-        total = time.time() - total
+        total = time.perf_counter() - total
         self._log_totals(total, timer, callback, jit, functions)
         
         # join posterior mean and covariance matrix
@@ -420,7 +420,7 @@ class empbayes_fit(Logger):
             return token_map(self._start, token)
 
         def _start(self, token):
-            self.stamp = time.time()
+            self.stamp = time.perf_counter()
             self.counter = 0
             assert not self._last_start # forbid consecutive start() calls
             self._last_start = True
@@ -433,7 +433,7 @@ class empbayes_fit(Logger):
             return token_map(self._partial, token)
 
         def _partial(self, token):
-            now = time.time()
+            now = time.perf_counter()
             delta = now - self.stamp
             self.partials[self.counter] = self.partials.get(self.counter, 0) + delta
             self.totals[self.counter] = self.totals.get(self.counter, 0) + delta
@@ -874,7 +874,7 @@ class empbayes_fit(Logger):
         
         def __init__(self, this, functions, timer, unflat):
             self.it = 0
-            self.stamp = time.time()
+            self.stamp = time.perf_counter()
             self.this = this
             self.functions = functions
             self.timer = timer
@@ -892,7 +892,7 @@ class empbayes_fit(Logger):
                 raise TypeError(type(intermediate_result))
 
             self.it += 1
-            now = time.time()
+            now = time.perf_counter()
             duration = now - self.stamp
             
             worktime = sum(self.timer.partials.values())

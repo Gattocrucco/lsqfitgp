@@ -6852,3 +6852,108 @@ Ok, I managed to make a threading-exception solution with nagging auto-timers.
 Problem: the auto-timer may trigger in the next entry, find it as "not done" and stop it. I have to make sure the "done" flag is a per-entry writable object referenced by everyone, not a global variable.
 
 I can try converting on_timeout in a factory that takes in a list, and I append something to the list to make it evaluate to True. => Success!
+
+2023-11-17
+==========
+
+The timeout did not work properly: during the night, at some point xla started taking too much, and the timeout did not trigger.
+
+    Python 3.11.2 (v3.11.2:878ead1ac1, Feb  7 2023, 10:02:41) [Clang 13.0.0 (clang-1300.0.29.30)]
+    Type 'copyright', 'credits' or 'license' for more information
+    IPython 8.17.2 -- An enhanced Interactive Python. Type '?' for help.
+
+    IPython profile: pylab
+    Installed osx event loop hook.
+    Using matplotlib backend: MacOSX
+      2%|█▏                                                                 | 57/3314 [2:59:41<702:18:53, 776.28s/it]2023-11-17 05:42:33.373903: E external/xla/xla/service/slow_operation_alarm.cc:133] The operation took 16m3.343392s
+
+    ********************************
+    [Compiling module jit__pred] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+    ********************************
+      2%|█▏                                                                 | 58/3314 [3:19:03<806:35:14, 891.80s/it]2023-11-17 05:59:43.255512: E external/xla/xla/service/slow_operation_alarm.cc:133] The operation took 16m13.292464s
+
+    ********************************
+    [Compiling module jit_fun_and_jac] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+    ********************************
+      2%|█▎                                                               | 64/3314 [5:20:20<1105:30:21, 1224.56s/it]2023-11-17 08:00:05.501081: E external/xla/xla/service/slow_operation_alarm.cc:133] The operation took 15m17.914603s
+
+    ********************************
+    [Compiling module jit_fun_and_jac] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+    ********************************
+      2%|█▎                                                               | 66/3314 [5:54:44<1016:22:09, 1126.52s/it]2023-11-17 08:28:52.381740: E external/xla/xla/service/slow_operation_alarm.cc:133] The operation took 9m40.784338s
+
+    ********************************
+    [Compiling module jit_fun_and_jac] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+    ********************************
+      2%|█▍                                                                 | 73/3314 [7:57:27<747:47:12, 830.62s/it]2023-11-17 10:31:02.989131: E external/xla/xla/service/slow_operation_alarm.cc:133] The operation took 8m32.91364s
+
+    ********************************
+    [Compiling module jit__pred] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+    ********************************
+      2%|█▍                                                                 | 74/3314 [8:07:31<686:23:51, 762.66s/it]2023-11-17 11:05:12.739563: E external/xla/xla/service/slow_operation_alarm.cc:133] The operation took 16m3.691209s
+
+    ********************************
+    [Compiling module jit__pred] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+    ********************************
+      3%|█▊                                                                 | 88/3314 [9:07:30<112:02:51, 125.04s/it]
+
+What to do, what to do? I'm really confused. The previous failure mode I had observed always got me an error message like "exception ignored due to cffi callback", here I don't even see that.
+
+Todo:
+- analyse timing of the bug from the error messages above (DONE)
+    2023-11-17 02:24 start of job in new shell
+    2023-11-17 05:42 jit _pred 16m
+    2023-11-17 05:59 jit fun_and_jac 16m
+    2023-11-17 08:00 jit fun_and_jac 15m
+    2023-11-17 08:28 jit fun_and_jac 9m
+    2023-11-17 10:31 jit _pred 8m
+    2023-11-17 11:05 jit _pred 16m
+
+    Started after 3h, then one per hour on average, lasts 15m, so it's taking 33% more time
+
+- plot the timings and retries in the results table (DONE)
+    Aagh! There's 21 of them, not 6! Why aren't them all issuing warnings on stderr? Maybe there's some logic for not issuing close repeated warnings.
+
+- estimate total waste if I don't solve it (DONE)
+    It starts after 3h so I can't leave it run at night effectively. It did 88 things in 9h7m, so 10 per hour, while when working well it does 30. So I'm running 3x slower.
+
+- try to block the script and, in the same shell, do again the test with short timeout (DONE)
+    If it doesn't work that would tell me that somehow after a while it stops working, instead of being xla-specific, but I guess it will work. => It works as expected.
+
+- search on jax doc if there's a way to timeout xla (DONE)
+    Nope, there isn't.
+
+Ideas to solve the problem?
+
+- search online for this specific problem (DONE)
+    Could not find anything.
+
+- split the script into a pure driver and a script to do the inference
+    Hopefully it's easier to timeout unconditionally a subprocess.
+
+    The startup time of a Python process seems to be some seconds. Maybe there'll also be additional slowdowns due to optimizations, partial jitting or whatelse, but the bulk of the computation is in array computations or R compiled modules so it should not be significant.
+
+    So I could open a process for each cycle.
+
+    => Timeout works without hiccups in the test, the running time is good, everything seems to be working smoothly.
+
+............
+
+Error on square root:
+
+    d/dx √x = 1/(2√x)
+
+    sdev(√x) = sdev(x) d/dx √x = sdev(x)/(2√x)
+
+............
+
+Hanged up with:
+
+      File "/Users/giacomo/Documents/Scuola/lsqfitgp/Repository/lsqfitgp/src/lsqfitgp/_fit.py", line 901, in __call__
+        assert overhead >= 0, (duration, worktime)
+               ^^^^^^^^^^^^^
+    AssertionError: (0.496978759765625, 0.5980560779571533)
+
+Wtf???
+
+it's 0.1s, maybe it's a clock adjustment? What function should I use in place of time.time() to avoid that? It makes no sense to remove this assertion.
