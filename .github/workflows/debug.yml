@@ -1,0 +1,61 @@
+# lsqfitgp/workflows/debug.yml
+#
+# Copyright (c) 2023, Giacomo Petrillo
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
+name: debug
+
+on:
+  workflow_dispatch:
+
+jobs:
+  
+  debug-old:
+
+    if: github.repository == 'Gattocrucco/lsqfitgp'
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-20.04
+            python-version: "3.8"
+          - os: macos-11
+            python-version: "3.8"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and dependencies
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install '.[tests]'
+      - name: Install package and outdated dependencies
+        if: matrix.python-version == '3.8'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r .github/workflows/tests-requirements-old.txt
+          python -m pip install setuptools wheel # required by --no-use-pep517
+          python -m pip install --no-use-pep517 -r .github/workflows/tests-requirements-old-nopep517.txt
+          python -m pip install .
+      - name: Run unit tests
+        run: pytest -k loss_shrinkage

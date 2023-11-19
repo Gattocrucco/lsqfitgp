@@ -7054,3 +7054,36 @@ Test: I'll leave the thing running while I'm away this afternoon and see if now 
 AAAAGH. My timer worked fine probably. On many levels it's good news.
 
 => Success! it's been running for 5 hours without snags.
+
+2023-11-19
+==========
+
+With the latest jax on windows, the unit tests complete with some failures!
+
+..........
+
+Failure on CI old: grad of loss complains that the loss has shape (1,) instead of (). Installing old jax locally does not solve the problem, so that's not it.
+
+Guess: it's an old scipy mishandling of shapes somewhere that propagates. I can't install old scipy locally due to missing wheels for Apple M processors, so I have either to deduce the bug in my head or instrument the code an start a CI on github.
+
+Path followed by the loss:
+- test_fit::test_loss_shrinkage
+    - I read the the result of an optimization without loss
+        This is a gvar bufferdict readout. Could it be here the problem? => Install old gvar, this is quick because it was compile-only until recent.
+
+        => Less immediate than expected: for some reason, Cython is required, and I had to manually downgrade it to Cython<3. I guess the C files are detected not compatible with my platform in some way?
+
+        => Result: the test passes.
+    - I define the loss function as (hp - loc) ** 2.
+        This looks straightforwardly fine.
+- _fit::empbayes_fit::_prepare_functions
+    - make_decomp
+        I evaluate the user loss and return it.
+            This looks pretty innocent too.
+    - make_gradrev_args
+        - I pass the loss through two layers of auxiliary return values
+            Since the bug does not depend on jax, this should not be it.
+        - I apply jax.grad
+            Which complains.
+
+I can't see where the problem could be here, so I should instrument every step with a simple "print(loss)". Test locally if the output is showed by pytest or not.

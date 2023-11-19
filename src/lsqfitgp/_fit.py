@@ -644,6 +644,7 @@ class empbayes_fit(Logger):
                 loss = additional_loss(hp)
 
             # split timer and return decomposition
+            print('loss in make_decomp =', loss)
             return timer.partial(decomp), r, loss
                 # TODO what's the correct way of checkpointing r?
 
@@ -660,7 +661,8 @@ class empbayes_fit(Logger):
         modename = 'forward' if forward else 'reverse'
         self.log(f'{modename}-mode autodiff (if used)', 2)
 
-        # TODO time the derivatives separately
+        # TODO time the derivatives separately => maybe I need a custom
+        # derivative rule for timer token acknoledgement?
 
         def prior(p):
             # the marginal prior of the hyperparameters is a Normal with
@@ -696,10 +698,13 @@ class empbayes_fit(Logger):
                 def make_decomp_r(p):
                     def make_decomp_K(p):
                         decomp, r, loss = make_decomp(p, **kw)
+                        print('loss in make_decomp_K =', loss)
                         return decomp.matrix(), (decomp, r, loss)
                     _, dK_vjp, (decomp, r, loss) = jax.vjp(make_decomp_K, p, has_aux=True)
+                    print('loss in make_decomp_r =', loss)
                     return r, (decomp, r, dK_vjp, loss)
                 _, dr_vjp, (decomp, r, dK_vjp, loss) = jax.vjp(make_decomp_r, p, has_aux=True)
+                print('loss in make_decomp_loss =', loss)
                 return loss, (decomp, r, dK_vjp, dr_vjp, loss)
             grad_loss, (decomp, r, dK_vjp, dr_vjp, loss) = jax.grad(make_decomp_loss, has_aux=True)(p)
             unpack = lambda f: lambda x: f(x)[0]
