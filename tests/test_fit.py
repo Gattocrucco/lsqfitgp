@@ -330,11 +330,10 @@ def test_loss_shrinkage():
     )
 
     fit0 = lgp.empbayes_fit(**common_args, **FITKW)
-    loc = (fit0.pmean['log(sdev)'] + 10).item() # .item() is for a bug, presumed due to old gvar-old numpy interaction
-    print('loc =', loc)
+    loc = (fit0.pmean['log(sdev)'] + 10).item()
+        # .item() is for a shape bug, presumed due to old gvar-old numpy interaction
     def loss(hp):
         return (hp['log(sdev)'] - loc) ** 2
-    print('loss(prev fit) =', loss(fit0.pmean))
     fit1 = lgp.empbayes_fit(**common_args, additional_loss=loss, **FITKW)
 
     assert fit1.minresult.fun > fit0.minresult.fun
