@@ -7087,3 +7087,5 @@ Path followed by the loss:
             Which complains.
 
 I can't see where the problem could be here, so I should instrument every step with a simple "print(loss)". Test locally if the output is showed by pytest or not.
+
+=> The loc extracted from the previous fit is an array! I guess that it's an interaction of old gvar with old numpy then. 

@@ -482,6 +482,7 @@ class empbayes_fit(Logger):
                 y = numpy.empty(flatfix.size, x.dtype)
                 y[unfixed_indices] = x
                 y[fixed_indices] = fixed_values
+                    # TODO maybe I should explicitly convert the indices jax arrays to numpy arrays
             else:
                 x = mean + dec.correlate(x)
                 y = jnp.empty(flatfix.size, x.dtype)
