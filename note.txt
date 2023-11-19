@@ -6957,3 +6957,100 @@ Hanged up with:
 Wtf???
 
 it's 0.1s, maybe it's a clock adjustment? What function should I use in place of time.time() to avoid that? It makes no sense to remove this assertion.
+
+..............
+
+Preliminary results:
+
+    RMSE ≈ 20
+    Coverage ≈ 90
+
+Success! It's decent enough, I'm in the left tail of good performers.
+
+Things that may be interesting to save that I'm not doing now:
+- the hyperparameters
+- the relative SATT
+
+Things I can add that do not require re-running with new setup:
+- correlation between estimated and true relative satt
+    Or maybe I should copy the metric they used in the acic2022dc paper
+
+    => Yes, use the DRMSE i.e. the RMSE on the relative SATT
+
+I want to make comparisons plots with the other participants.
+- RMSE
+- COVERAGE
+- DRMSE
+
+To think:
+- how do I summarize the DRMSE?
+    I should probably average the squares weighting with the group size. Unlickily, I'm not saving the subgroup sizes!! Are they constant? Figure 2 in Thal & Finucane (2023) suggests so.
+
+    Plan: new script, opens two datasets at random, groups by levels, counts the group sizes, I check they are equal, if so I copy the counting part to analysis.py
+
+- how do I obtain the other results?
+    Select Confounding Strength == 'All'
+    Merge level with year
+
+    Excerpt of the results file:
+
+         variable level bias abs_bias rmse cover width
+          Overall    NA  -20       31   39     0    54
+        Subgroups    NA  -21       39   51     0    98
+               X1     0  -22       36   45     0    79
+               X1     1  -19       33   41     0    75
+               X2     A  -20       36   45     0    86
+               X2     B  -21       36   46     0    91
+               X2     C  -21       40   51     0    111
+               X3     0  -21       36   45     0    81
+               X3     1  -19       32   40     0    73
+               X4     A  -20       32   40     0    61
+               X4     B  -22       49   63     0    151
+               X4     C  -20       67   87     0    215
+               X5     0  -21       34   43     0    76
+               X5     1  -21       35   44     0    79
+           Yearly     3  -23       32   41     0    76
+           Yearly     4  -18       31   39     0    79
+
+    Questions:
+    - what's the "Subgroups" line?
+        It could be averages of the following lines. I have to understand if they are flat averages or are already weighed for group size (best case).
+
+        => They are very similar to averages, but are not averages. Before looking at weighting, could it be that it's a simple average but not over years, since those are not called covariates in their notation?
+
+        => It's flat mean without years for all columns except RMSE.
+
+        => It's not flat mean over MSE either.
+
+        => Nope, coding error, it's flat mean over MSE.
+
+        Conclusion: it's not additional information, it's just a precomputed summary.
+
+    - what are the various columns?
+        My guesses:
+        bias = E[estimated - true]
+        abs_bias = E[|estimated - true|]
+        rmse = √ E[(estimated - true)^2]
+
+        Can I recover the DRMSE? => Nope.
+
+Conclusion: I can't compare the DRMSE in my own plot, I have to refer to the plot from thal2023. I can scan that with webplotdigitizer to at least know the lowest endpoints and say my method is as good as the best or almost so.
+
+2023-11-18
+==========
+
+IT CONTINUED TO HANG UP THIS NIGHT. AAAGHHHH.
+
+Observations:
+- these slowdowns seem to be completely out of every control
+- they do not happen at a fixed time after job start
+- they do not happen while I'm looking at the computer
+- the interruption happens in random places, not just where I expect a jit compilation
+
+New hypothesis: the computer is going in standby and periodically waking up for its own shit. => Found an option in system preferences about going in standby automatically when the screen is off even if the lid is open. I guess they overhauled that part so my old preferences about never going in stop automatically got ignored. AAAAGHH.
+
+Test: I'll leave the thing running while I'm away this afternoon and see if now it works fine.
+
+AAAAGH. My timer worked fine probably. On many levels it's good news.
+
+=> Success! it's been running for 5 hours without snags.

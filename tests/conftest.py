@@ -44,10 +44,13 @@ def rng(request):
 def reset_random_seeds(rng):
     """ Set seeds of global state random generators for tests that still use
     them. Prefer `rng` for new tests. """
-    seed = rng.bit_generator.seed_seq
-    s1, s2 = seed.spawn(2)
-    np.random.seed(s1.generate_state(2))
-    gvar.ranseed(s2.generate_state(2))
+    bitgen0 = rng.bit_generator
+    bitgen1 = bitgen0.jumped(1)
+    bitgen2 = bitgen1.jumped(2)
+    def toseed(bitgen):
+        return np.array([bitgen.random_raw()], np.uint64).view(np.uint32)
+    np.random.seed(toseed(bitgen1))
+    gvar.ranseed(toseed(bitgen2))
 
 class JSONEncoder(json.JSONEncoder):
     

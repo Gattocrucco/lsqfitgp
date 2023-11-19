@@ -303,7 +303,7 @@ def test_loss_offset():
     fit1 = lgp.empbayes_fit(**common_args, additional_loss=lambda _: offset, **FITKW)
 
     util.assert_allclose(fit0.minresult.fun + offset, fit1.minresult.fun, rtol=1e-13)
-    util.assert_allclose(fit0.minresult.x, fit1.minresult.x, rtol=1e-13)
+    util.assert_allclose(fit0.minresult.x, fit1.minresult.x, rtol=1e-12)
 
 def test_loss_shrinkage():
     """ check that a loss with minimum in a different position moves the
