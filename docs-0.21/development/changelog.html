@@ -134,6 +134,16 @@
   copy-pastable to github releases. -->
 <section class="tex2jax_ignore mathjax_ignore" id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
+<section id="this-release-marks-a-detente-in-the-ongoing-lsqfitgp-jax-conflict-2023-10-18">
+<h2>0.20.2 This release marks a detente in the ongoing lsqfitgp-jax conflict (2023-10-18)<a class="headerlink" href="#this-release-marks-a-detente-in-the-ongoing-lsqfitgp-jax-conflict-2023-10-18" title="Link to this heading">¶</a></h2>
+<p>Recent versions of jax are now supported using scipy’s polygamma in place of the one provided by jax. Other changes:</p>
+<ul class="simple">
+<li><p>Solved an incompatibility with <code class="docutils literal notranslate"><span class="pre">jax</span> <span class="pre">&gt;=</span> <span class="pre">0.4.17</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">copula.dirichlet</span></code> now uses the standard parametrization.</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">copula.lognorm</span></code>.</p></li>
+<li><p>New example script <code class="docutils literal notranslate"><span class="pre">pdf10.py</span></code>.</p></li>
+</ul>
+</section>
 <section id="i-beg-to-insist-it-was-not-my-fault-2023-09-22">
 <h2>0.20.1 I beg to insist it was not my fault (2023-09-22)<a class="headerlink" href="#i-beg-to-insist-it-was-not-my-fault-2023-09-22" title="Link to this heading">¶</a></h2>
 <p>This release pins <code class="docutils literal notranslate"><span class="pre">jax</span></code> and <code class="docutils literal notranslate"><span class="pre">jaxlib</span></code> to &lt;0.4.16 to avoid a new inaccurate implementation of the special functions zeta and polygamma.</p>

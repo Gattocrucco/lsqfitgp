@@ -170,11 +170,11 @@ hyperparameters.</p>
 <p>Then we specified a “hyperprior” for the hyperparameters (if you want to fit
 something you need a prior on it, there’s no way out of this). The function
 <code class="docutils literal notranslate"><span class="pre">makegp</span></code> extracts a key <code class="docutils literal notranslate"><span class="pre">'scale'</span></code> from the dictionary, but in the
-hyperprior we used <code class="docutils literal notranslate"><span class="pre">'log(scale)'</span></code>. This is a general feature of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v11.11.17)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>,
+hyperprior we used <code class="docutils literal notranslate"><span class="pre">'log(scale)'</span></code>. This is a general feature of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v12.0)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>,
 that it can automatically apply the inverse of the transformation specified in
 the key. It doesn’t work out of the box with any function: by default only the
 logarithm is supported; you can add other functions with
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v11.11.17)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution()</span></code></a>, or use the <a class="reference internal" href="../reference/copula.html#module-lsqfitgp.copula" title="lsqfitgp.copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copula</span></code></a> module to define
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v12.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution()</span></code></a>, or use the <a class="reference internal" href="../reference/copula.html#module-lsqfitgp.copula" title="lsqfitgp.copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copula</span></code></a> module to define
 them automatically.</p>
 <p>This means that the parameter we are actually fitting is the logarithm of the
 scale. Something like this is necessary because the scale must be a positive
