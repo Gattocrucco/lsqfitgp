@@ -110,6 +110,7 @@ def test_real_complex():
                 c1 = lgp.AR(slnr=2 * n * [r], lnc=add)(0, lag)
                 c2 = lgp.AR(slnr=[], lnc=add + n * [r])(0, lag)
                 util.assert_allclose(c2, c1, atol=0, rtol=1e-6)
+                    # this bound would be 1e-7 w/o windows, which gets inconsistent results and wants 1e-4 last time I checked
 
 def test_ar0():
     lag = np.arange(100)

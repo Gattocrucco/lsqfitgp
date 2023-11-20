@@ -139,7 +139,11 @@ strata = (df
 def compute_satt(fit, *, rng=None, **predkw):
 
     # create GP at MAP/sampled hypers and get imputed outcomes for the treated
-    kw = dict(weights=npatients_mis, error=True, format='gvar', **predkw)
+    kw = dict(weights=npatients_mis, error=True, **predkw)
+    if isinstance(fit, lgp.bayestree.bcf):
+        kw['gvars'] = True
+    elif isinstance(fit, lgp.bayestree.bart):
+        kw['format'] = 'gvar'
     if rng is not None:
         with lgp.switchgvar():
             ymis = fit.pred(**kw, hp='sample', rng=rng)
