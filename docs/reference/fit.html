@@ -5,10 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Fitting &#8212; lsqfitgp 0.20.2 documentation</title>
+    <title>Fitting &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=28c8e701" />
-    <script src="../_static/documentation_options.js?v=26ac6f1e"></script>
+    <script src="../_static/documentation_options.js?v=841cbeb9"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -26,7 +26,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">lsqfitgp 0.20.2</a></h1>
+<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
 
 
 
@@ -122,7 +122,7 @@
 <span id="fit"></span><h1>Fitting<a class="headerlink" href="#fitting" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.empbayes_fit">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gradient'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'priormean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forward</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/v0.20.2/src/lsqfitgp/_fit.py#L117-L1051"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">empbayes_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hyperprior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raises</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpfactorykw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gradient'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'priormean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mlkw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forward</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">additional_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_fit.py#L147-L1027"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.empbayes_fit" title="Link to this definition">¶</a></dt>
 <dd><p>Maximum a posteriori fit.</p>
 <p>Maximizes the marginal likelihood of the data with a Gaussian process
 model that depends on hyperparameters, multiplied by a prior on the
@@ -134,10 +134,10 @@ hyperparameters.</p>
 hyperparameters.</p>
 </dd>
 <dt><strong>gpfactory</strong><span class="classifier">callable</span></dt><dd><p>A function with signature gpfactory(hyperparams) -&gt; GP object. The
-argument <code class="docutils literal notranslate"><span class="pre">hyperparams</span></code> has the same structure of the empbayes_fit
-argument <code class="docutils literal notranslate"><span class="pre">hyperprior</span></code>. gpfactory must be JAX-friendly, i.e.,
-use jax.numpy and jax.scipy instead of plain numpy/scipy and avoid
-assignments to arrays.</p>
+argument <code class="docutils literal notranslate"><span class="pre">hyperparams</span></code> has the same structure of the
+<a class="reference internal" href="#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a> argument <code class="docutils literal notranslate"><span class="pre">hyperprior</span></code>. gpfactory must be
+JAX-friendly, i.e., use <a class="reference external" href="https://jax.readthedocs.io/en/latest/jax.numpy.html#module-jax.numpy" title="(in JAX)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jax.numpy</span></code></a> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">jax.scipy</span></code> instead of plain
+<a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.26)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy</span></code></a>/<a class="reference external" href="https://docs.scipy.org/doc/scipy/index.html#module-scipy" title="(in SciPy v1.11.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy</span></code></a> and avoid assignments to arrays.</p>
 </dd>
 <dt><strong>data</strong><span class="classifier">dict, tuple or callable</span></dt><dd><p>Dictionary of data that is passed to <a class="reference internal" href="gp.html#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code></a> on
 the GP object returned by <code class="docutils literal notranslate"><span class="pre">gpfactory</span></code>. If a tuple, it contains the
@@ -148,20 +148,20 @@ the argument(s) for <a class="reference internal" href="gp.html#lsqfitgp.GP.marg
 <dt><strong>raises</strong><span class="classifier">bool, optional</span></dt><dd><p>If True (default), raise an error when the minimization fails.
 Otherwise, use the last point of the minimization as result.</p>
 </dd>
-<dt><strong>minkw</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>, overwrites
+<dt><strong>minkw</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>, overwrites
 values specified by <a class="reference internal" href="#lsqfitgp.empbayes_fit" title="lsqfitgp.empbayes_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">empbayes_fit</span></code></a>.</p>
 </dd>
 <dt><strong>gpfactorykw</strong><span class="classifier">dict, optional</span></dt><dd><p>Keyword arguments passed to <code class="docutils literal notranslate"><span class="pre">gpfactory</span></code>, and also to <code class="docutils literal notranslate"><span class="pre">data</span></code> if
-it is a callable. If <code class="docutils literal notranslate"><span class="pre">jit</span></code>, <code class="docutils literal notranslate"><span class="pre">gpfactorykw</span></code> crosses a JAX jit
-boundary, so it must contain objects understandable by JAX.</p>
+it is a callable. If <code class="docutils literal notranslate"><span class="pre">jit</span></code>, <code class="docutils literal notranslate"><span class="pre">gpfactorykw</span></code> crosses a <a class="reference external" href="https://jax.readthedocs.io/en/latest/_autosummary/jax.jit.html#jax.jit" title="(in JAX)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jax.jit</span></code></a>
+boundary, so it must contain objects understandable by <code class="xref py py-obj docutils literal notranslate"><span class="pre">jax</span></code>.</p>
 </dd>
-<dt><strong>jit</strong><span class="classifier">bool</span></dt><dd><p>If True (default), use jax’s jit to compile the minimization target.</p>
+<dt><strong>jit</strong><span class="classifier">bool</span></dt><dd><p>If True (default), use <a class="reference external" href="https://jax.readthedocs.io/en/latest/_autosummary/jax.jit.html#jax.jit" title="(in JAX)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jax.jit</span></code></a> to compile the minimization target.</p>
 </dd>
 <dt><strong>method</strong><span class="classifier">str</span></dt><dd><p>Minimization strategy. Options:</p>
 <dl class="simple">
 <dt>‘nograd’</dt><dd><p>Use a gradient-free method.</p>
 </dd>
-<dt>‘gradient’</dt><dd><p>Use a gradient-only method (default).</p>
+<dt>‘gradient’ (default)</dt><dd><p>Use a gradient-only method.</p>
 </dd>
 <dt>‘fisher’</dt><dd><p>Use a Newton method with the Fisher information matrix plus
 the hyperprior precision matrix.</p>
@@ -171,7 +171,7 @@ the hyperprior precision matrix.</p>
 <dt><strong>initial</strong><span class="classifier">str, scalar, array, dictionary of scalars/arrays</span></dt><dd><p>Starting point for the minimization, matching the format of
 <code class="docutils literal notranslate"><span class="pre">hyperprior</span></code>, or one of the following options:</p>
 <dl class="simple">
-<dt>‘priormean’</dt><dd><p>Start from the hyperprior mean (default).</p>
+<dt>‘priormean’ (default)</dt><dd><p>Start from the hyperprior mean.</p>
 </dd>
 <dt>‘priorsample’</dt><dd><p>Take a random sample from the hyperprior.</p>
 </dd>
@@ -180,7 +180,7 @@ the hyperprior precision matrix.</p>
 <dt><strong>verbosity</strong><span class="classifier">int</span></dt><dd><p>An integer indicating how much information is printed on the
 terminal:</p>
 <dl class="simple">
-<dt>0</dt><dd><p>No logging (default).</p>
+<dt>0 (default)</dt><dd><p>No logging.</p>
 </dd>
 <dt>1</dt><dd><p>Minimal report.</p>
 </dd>
@@ -204,7 +204,7 @@ as precision matrix.</p>
 </dd>
 <dt>‘none’</dt><dd><p>Do not estimate the covariance matrix.</p>
 </dd>
-<dt>‘auto’ (default)</dt><dd><p>‘minhess’ if applicable, ‘none’ otherwise.</p>
+<dt>‘auto’ (default)</dt><dd><p><code class="docutils literal notranslate"><span class="pre">'minhess'</span></code> if applicable, <code class="docutils literal notranslate"><span class="pre">'none'</span></code> otherwise.</p>
 </dd>
 </dl>
 </dd>
@@ -215,8 +215,12 @@ value. Scalars and arrays are broadcasted to the shape of
 </dd>
 <dt><strong>mlkw</strong><span class="classifier">dict</span></dt><dd><p>Additional arguments passed to <a class="reference internal" href="gp.html#lsqfitgp.GP.marginal_likelihood" title="lsqfitgp.GP.marginal_likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.marginal_likelihood</span></code></a>.</p>
 </dd>
-<dt><strong>forward</strong><span class="classifier">bool</span></dt><dd><p>Use forward instead of backward (default) derivatives. Typically,
-forward is faster with a small number of parameters.</p>
+<dt><strong>forward</strong><span class="classifier">bool, default False</span></dt><dd><p>Use forward instead of backward derivatives. Typically, forward is
+faster with a small number of parameters.</p>
+</dd>
+<dt><strong>additional_loss</strong><span class="classifier">callable, optional</span></dt><dd><p>A function with signature <code class="docutils literal notranslate"><span class="pre">additional_loss(hyperparams)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code>
+which is added to the minus log marginal posterior of the
+hyperparameters.</p>
 </dd>
 </dl>
 </dd>
@@ -243,9 +247,9 @@ parameters were kept fixed to the values in <code class="docutils literal notran
 </dd>
 <dt><strong>pcov</strong><span class="classifier">scalar, array or dictionary of scalars/arrays</span></dt><dd><p>Covariance matrix of <code class="docutils literal notranslate"><span class="pre">p</span></code>.</p>
 </dd>
-<dt><strong>minresult</strong><span class="classifier">scipy.optimize.OptimizeResult</span></dt><dd><p>The result object returned by <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>.</p>
+<dt><strong>minresult</strong><span class="classifier">scipy.optimize.OptimizeResult</span></dt><dd><p>The result object returned by <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>.</p>
 </dd>
-<dt><strong>minargs</strong><span class="classifier">dict</span></dt><dd><p>The arguments passed to <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>.</p>
+<dt><strong>minargs</strong><span class="classifier">dict</span></dt><dd><p>The arguments passed to <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize" title="(in SciPy v1.11.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.optimize.minimize</span></code></a>.</p>
 </dd>
 <dt><strong>gpfactory</strong><span class="classifier">callable</span></dt><dd><p>The <code class="docutils literal notranslate"><span class="pre">gpfactory</span></code> argument.</p>
 </dd>
