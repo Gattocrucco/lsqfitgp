@@ -103,6 +103,7 @@ def test_compare_transfs():
         for k1 in keys:
             for k2 in keys:
                 util.assert_allclose(prior[0, 0], prior[k1, k2], atol=1e-15, rtol=1e-15)
+                    # TODO this seems to be comparing at f32 precision on Windows
     
     # with functions
     gp = preparegp()
@@ -508,6 +509,7 @@ def test_partial_derivative():
     cov2 = gp.prior(0, raw=True)
     
     util.assert_equal(cov1, cov2)
+        # TODO compares at f32 on Windows
 
 def test_zero_covblock(rng):
     gp = lgp.GP()

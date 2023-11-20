@@ -109,7 +109,7 @@ def test_real_complex():
                 add = list(np.arange(1, m + 1) * 0.1 + 1j)
                 c1 = lgp.AR(slnr=2 * n * [r], lnc=add)(0, lag)
                 c2 = lgp.AR(slnr=[], lnc=add + n * [r])(0, lag)
-                util.assert_allclose(c2, c1, atol=0, rtol=1e-7)
+                util.assert_allclose(c2, c1, atol=0, rtol=1e-6)
 
 def test_ar0():
     lag = np.arange(100)
