@@ -7088,4 +7088,9 @@ Path followed by the loss:
 
 I can't see where the problem could be here, so I should instrument every step with a simple "print(loss)". Test locally if the output is showed by pytest or not.
 
-=> The loc extracted from the previous fit is an array! I guess that it's an interaction of old gvar with old numpy then. 
+=> The loc extracted from the previous fit is an array! I guess that it's an interaction of old gvar with old numpy then.
+
+2023-12-07
+==========
+
+To do: tidy up, refine and document the features I introduced for the acic analysis, and then make a release such that I can move all that stuff to the bart repo.

@@ -32,7 +32,7 @@ __all__ = [
 # TODO support jax tracing and jax random sampling
 
 # TODO I should have a vectorized sampler, that returns an array of samples
-# right away.
+# right away. Copy the new gvar interface (from gvar 12.1).
 
 def _toslice(s):
     if isinstance(s, slice):

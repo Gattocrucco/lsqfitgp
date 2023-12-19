@@ -114,6 +114,8 @@ To compute a Fisher-vector product when there are many parameters, do
 
 # TODO split this file by class
 
+# TODO Consider using lineax for implementing non-materialized decomps
+
 import abc
 import functools
 

@@ -376,6 +376,8 @@ https://juliagaussianprocesses.github.io/KernelFunctions.jl/stable/kernels/#Kern
 truncated linear form GPy
 https://gpy.readthedocs.io/en/deploy/GPy.kern.src.html#module-GPy.kern.src.trunclinear
 
+Confluent hypergeometric (Yarger 2023).
+
 ### Transformations
 
 #### Pointwise infinite transformations

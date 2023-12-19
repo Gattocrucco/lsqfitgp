@@ -1078,7 +1078,7 @@ class empbayes_fit(Logger):
 # TODO look into jaxopt: it has improved a lot since the last time I saw it. In
 # particular, it implements l-bfgs and has a "do not stop on failed line search"
 # option. And it probably supports float32, although a skim of the docs suggests
-# it does not work well.
+# it does not work well. => See also optimistix.
 
 # TODO reimplement the timing system with host_callback.id_tap. It should
 # preserve the order because id_tap takes inputs and outputs. I must take care
