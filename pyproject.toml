@@ -41,9 +41,7 @@ dependencies = [
     'scipy>=1.5', # oldest supported by jax 0.4.6
     'jax>=0.4.6', # first with optimized jnp.vectorize (for BART)
     'jaxlib>=0.4.6',
-    'gvar>=11.10.1,!=11.11.3',
-        # 11.10.1 first supporting gvar.gvar(x, cov) with readonly cov
-        # 11.11.3 gives problems to lsqfit
+    'gvar>=12.0', # 12.0 first with custom formatting
 ]
 dynamic = ["version"]
 
@@ -87,7 +85,7 @@ dev = [ # to work locally on lsqfitgp
 tests = [ # to run the unit tests on CI
     "numpy",
     "scipy",
-    "gvar!=11.11.3",
+    "gvar",
     "jax",
     "jaxlib",
     "pytest",
@@ -97,11 +95,25 @@ tests = [ # to run the unit tests on CI
     "polars[pyarrow]",
 ]
 
+tests-old = [ # to run the unit tests on CI, with minimum supported dependencies
+    "numpy==1.20",
+    "scipy==1.5",
+    "gvar==12.0",
+    "jax==0.4.6",
+    "jaxlib==0.4.6",
+    "pytest",
+    "coverage[toml]",
+    "mpmath",
+    "pandas<1.5",
+    "polars==0.15.16",
+    "pyarrow==10.0.1",
+]
+
 docs = [ # to run examples, documentation code, and build documentation on CI
     "numpy",
     "scipy",
     "matplotlib",
-    "gvar!=11.11.3",
+    "gvar",
     "lsqfit",
     "jax",
     "jaxlib",

@@ -275,7 +275,8 @@ def gvar_format(spec=None, *, lsqfitgp_format=True):
     Parameters
     ----------
     spec : str, optional
-        The format specification.
+        The format specification. If not specified and `lsqfitgp_format` is
+        ``True``, use ``'1.5p'``.
     lsqfitgp_format : bool, default True
         Whether to use a modified version of the `gvar` formatting
         specification, provided by `lsqfitgp`.

@@ -64,10 +64,7 @@ jobs:
         if: matrix.python-version == '3.8'
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r .github/workflows/tests-requirements-old.txt
-          python -m pip install setuptools wheel # required by --no-use-pep517
-          python -m pip install --no-use-pep517 -r .github/workflows/tests-requirements-old-nopep517.txt
-          python -m pip install .
+          python -m pip install '.[tests-old]'
       - name: Run unit tests
         run: make COVERAGE_SUFFIX=-${{ matrix.os }}-py${{ matrix.python-version }} tests
       - name: Save coverage information
