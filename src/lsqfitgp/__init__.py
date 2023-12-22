@@ -46,7 +46,15 @@ from ._Kernel import (
     isotropickernel,
 )
 from ._kernels import *
-from ._gvarext import jacobian, from_jacobian, gvar_gufunc, switchgvar
+from ._gvarext import (
+    jacobian,
+    from_jacobian,
+    gvar_gufunc,
+    switchgvar,
+    uformat,
+    fmtspec_kwargs,
+    gvar_format,
+)
 from ._GP import GP
 from ._fit import empbayes_fit
 from ._fastraniter import raniter, sample

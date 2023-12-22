@@ -22,7 +22,16 @@
 Gvar extensions
 ===============
 
+Index
+-----
+`gvar_gufunc`, `switchgvar`, `jacobian`, `from_jacobian`, `gvar_format`, `uformat`, `fmtspec_kwargs`
+
+--------
+
 .. autofunction:: gvar_gufunc
 .. autofunction:: switchgvar
 .. autofunction:: jacobian
 .. autofunction:: from_jacobian
+.. autofunction:: gvar_format
+.. autofunction:: uformat
+.. autofunction:: fmtspec_kwargs
