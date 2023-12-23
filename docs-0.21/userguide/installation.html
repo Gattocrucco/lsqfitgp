@@ -122,19 +122,14 @@
             
   <section id="installation">
 <span id="id1"></span><h1><span class="section-number">1. </span>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h1>
-<p>First, you have to get a working Python interpreter. There are two main
-options: the official package from <a class="reference external" href="https://www.python.org">https://www.python.org</a>, and the <a class="reference external" href="https://www.spyder-ide.org">Spyder
-IDE</a>. The latter is probably the easier one.</p>
+<p>First, you have to get a working Python interpreter. There are three main options: the official package from <a class="reference external" href="https://www.python.org">https://www.python.org</a>, the Anaconda distribution <a class="reference external" href="https://www.anaconda.com">https://www.anaconda.com</a>, and the <a class="reference external" href="https://www.spyder-ide.org">Spyder IDE</a>. The latter is probably the easier one if it’s your first time with Python.</p>
 <p>Then, install <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> by running this command in a shell:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>lsqfitgp
 </pre></div>
 </div>
 <section id="windows">
 <h2><span class="section-number">1.1. </span>Windows<a class="headerlink" href="#windows" title="Link to this heading">¶</a></h2>
-<p>I’ve seen that people may have problems installing the dependency <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v12.1)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a> on
-Windows. This page may help: <a class="reference external" href="https://www.lfd.uci.edu/~gohlke/pythonlibs/">https://www.lfd.uci.edu/~gohlke/pythonlibs/</a>.
-Another problematic dependency is JAX, whose Windows support is experimental. I
-do not test <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> on Windows.</p>
+<p>JAX is still a bit buggy on Windows, a few tests in lsqfitgp’s test suite fail due to accuracy problems.</p>
 </section>
 </section>
 
