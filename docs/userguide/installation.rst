@@ -22,9 +22,7 @@
 Installation
 ============
 
-First, you have to get a working Python interpreter. There are two main
-options: the official package from `<https://www.python.org>`_, and the `Spyder
-IDE <https://www.spyder-ide.org>`_. The latter is probably the easier one.
+First, you have to get a working Python interpreter. There are three main options: the official package from `<https://www.python.org>`_, the Anaconda distribution `<https://www.anaconda.com>`_, and the `Spyder IDE <https://www.spyder-ide.org>`_. The latter is probably the easier one if it's your first time with Python.
 
 Then, install :mod:`lsqfitgp` by running this command in a shell:
 
@@ -35,7 +33,4 @@ Then, install :mod:`lsqfitgp` by running this command in a shell:
 Windows
 -------
 
-I've seen that people may have problems installing the dependency :mod:`gvar` on
-Windows. This page may help: `<https://www.lfd.uci.edu/~gohlke/pythonlibs/>`_.
-Another problematic dependency is JAX, whose Windows support is experimental. I
-do not test `lsqfitgp` on Windows.
+JAX is still a bit buggy on Windows, a few tests in lsqfitgp's test suite fail due to accuracy problems.

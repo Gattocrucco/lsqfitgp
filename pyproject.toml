@@ -170,6 +170,7 @@ github = [
     '/Library/Frameworks/Python.framework/Versions/*/lib/python*/site-packages/lsqfitgp/',
     '/Users/runner/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/',
     '/opt/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/',
+    'C:\hostedtoolcache\windows\Python\*\*\Lib\site-packages\lsqfitgp\',
 ]
 
 local = [
@@ -180,4 +181,5 @@ local = [
     '/Library/Frameworks/Python.framework/Versions/*/lib/python*/site-packages/lsqfitgp/',
     '/Users/runner/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/',
     '/opt/hostedtoolcache/Python/*/*/lib/python*/site-packages/lsqfitgp/',
+    'C:\hostedtoolcache\windows\Python\*\*\Lib\site-packages\lsqfitgp\',
 ]
