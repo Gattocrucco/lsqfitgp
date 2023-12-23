@@ -86,6 +86,7 @@ def test_cov(rng):
     M2 = gp.prior('M', raw=True)
     util.assert_equal(M1, M2)
 
+@util.winxfail
 def test_compare_transfs():
     x = np.arange(20)
     def preparegp():
@@ -497,6 +498,7 @@ def test_new_proc():
     with pytest.raises(TypeError):
         gp.prior(0, raw=True)
 
+@util.winxfail
 def test_partial_derivative():
     gp = lgp.GP(lgp.ExpQuad())
     x = np.arange(20)

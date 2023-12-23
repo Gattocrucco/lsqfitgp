@@ -19,6 +19,7 @@
 
 import functools
 import warnings
+import sys
 
 from jax import tree_util
 import numpy as np
@@ -235,3 +236,5 @@ def assert_equal_bufferdict(x, y):
     assert np.all(x.buf == y.buf)
     assert list(x.keys()) == list(y.keys())
     assert all(x.slice_shape(k) == y.slice_shape(k) for k in x.keys())
+
+winxfail = mark.xfail(sys.platform.startswith('win'), reason="Looks like the calculation is done at fp32 accuracy, guess it's a jax bug on Windows")

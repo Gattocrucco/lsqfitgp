@@ -369,8 +369,8 @@ def zeta_zeros(s):
 
 @mark.parametrize('s', [
     pytest.param(-2, id='-2'),
-    pytest.param(-np.arange(4, 11, 2), id='small'),
-    pytest.param(-np.arange(12, 101, 2), id='large'),
+    pytest.param(-np.arange(4, 11, 2), id='small', marks=util.winxfail),
+    pytest.param(-np.arange(12, 101, 2), id='large', marks=util.winxfail),
 ])
 def test_zeta_zeros(s, cached):
     def handwritten(s):
