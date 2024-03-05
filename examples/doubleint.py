@@ -33,7 +33,7 @@ prior = gp.predfromdata({
     'integ' : 1,
     'integx': 1,
 }, ['data', 'integ', 'integx'])
-priorsample = next(gvar.raniter(prior))
+priorsample = gvar.sample(prior)
 
 datamean = priorsample['data']
 dataerr = np.full_like(datamean, 1)

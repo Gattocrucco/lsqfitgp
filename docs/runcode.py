@@ -27,31 +27,21 @@ import textwrap
 import contextlib
 import os
 import pathlib
+import warnings
+import gc
 
 import numpy as np
 from matplotlib import pyplot as plt
 import gvar
 import pygments
 from pygments import lexers, formatters
+import jax
+import lsqfitgp as lgp
+
+warnings.filterwarnings('ignore', r'Negative eigenvalue with ')
 
 def pyprint(text):
     print(pygments.highlight(text, lexers.PythonLexer(), formatters.TerminalFormatter()))
-
-@contextlib.contextmanager
-def switchgvar():
-    try:
-        yield gvar.switch_gvar()
-    finally:
-        gvar.restore_gvar()
-
-@contextlib.contextmanager
-def chdir(path):
-    try:
-        cwd = pathlib.Path.cwd()
-        os.chdir(path)
-        yield
-    finally:
-        os.chdir(cwd)
 
 pattern = re.compile(r'(?m)(?!\.\..+?)^.*?::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
 # TODO                            ^^^ try to delete this
@@ -74,17 +64,20 @@ def runcode(file):
     np.random.seed(0)
     gvar.ranseed(0)
     globals_dict = {}
-    with switchgvar():
+    with lgp.switchgvar():
 
         # run code
         for match in pattern.finditer(text):
             codeblock = match.group(1)
             print(58 * '-' + '\n')
             code = textwrap.dedent(codeblock).strip()
-            printcode = '\n'.join(f' {i + 1:2d}  ' + l for i, l in enumerate(code.split('\n')))
+            printcode = '\n'.join(
+                f' {i + 1:2d}  ' + l
+                for i, l in enumerate(code.split('\n'))
+            )
             pyprint(printcode)
 
-            with chdir(file.parent):
+            with contextlib.chdir(file.parent):
                 exec(code, globals_dict)
 
 for file in sys.argv[1:]:
@@ -92,3 +85,5 @@ for file in sys.argv[1:]:
     line = '*' * len(s)
     print('\n' + line + '\n' + s + '\n' + line)
     runcode(file)
+    gc.collect()
+    jax.clear_caches()

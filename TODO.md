@@ -65,6 +65,9 @@ versions of the manual list.
 Rename all the single letter example scripts and gift them a communicative
 description
 
+Search engines still find the outdated "stable" version doc on readthedocs, I
+have to disable it and keep only "latest".
+
 ## Fixes and tests
 
 Stabilize Matern kernel near r == 0, then Matern derivatives for real nu

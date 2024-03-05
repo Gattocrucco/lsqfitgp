@@ -30,9 +30,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 import gvar
 import lsqfitgp as lgp
+import jax
 
 warnings.filterwarnings('ignore', r'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure\.')
 warnings.filterwarnings('ignore', r'FigureCanvasAgg is non-interactive, and thus cannot be shown')
+warnings.filterwarnings('ignore', r'Negative eigenvalue with ')
 
 for file in sys.argv[1:]:
 
@@ -46,6 +48,7 @@ for file in sys.argv[1:]:
         gvar.ranseed(0)
         runpy.run_path(str(file))
         gc.collect()
+        jax.clear_caches()
     
     # save figures
     nums = plt.get_fignums()
