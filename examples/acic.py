@@ -70,7 +70,7 @@ ate_unadjusted = gvar.gvar(result.params['Z'], result.bse['Z'])
 # going to use standard unconfoundedness given pretreatment outcomes instead
 # of the DID-like assumption given by the competition rules
 V_columns = [c for c in df.columns if c.startswith('V')]
-posttreatment = df.filter(pl.col('post') == 1).drop(V_columns, 'post')
+posttreatment = df.filter(pl.col('post') == 1).drop(*V_columns, 'post')
 for year, stratum in df.filter(pl.col('post') == 0).groupby('year'):
     posttreatment = posttreatment.join(
         stratum.select(
