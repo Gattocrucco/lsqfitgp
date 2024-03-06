@@ -22,7 +22,7 @@
 Installation
 ============
 
-First, you have to get a working Python interpreter. There are three main options: the official package from `<https://www.python.org>`_, the Anaconda distribution `<https://www.anaconda.com>`_, and the `Spyder IDE <https://www.spyder-ide.org>`_. The latter is probably the easier one if it's your first time with Python.
+First, you have to get a working Python interpreter. There are three main options: the `official package <https://www.python.org>`_, the `Anaconda distribution <https://www.anaconda.com>`_, and the `Spyder IDE <https://www.spyder-ide.org>`_. The latter is probably the easier one if it's your first time with Python.
 
 Then, install :mod:`lsqfitgp` by running this command in a shell:
 
