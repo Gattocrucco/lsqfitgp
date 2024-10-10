@@ -1,5 +1,4 @@
-# A symlink I use on my copy
-lsqfitgp
+*.png
 
 # output of example scripts not to be run each time because they are slow
 !pdf7.png

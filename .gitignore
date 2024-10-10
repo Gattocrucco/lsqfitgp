@@ -1,8 +1,6 @@
 # My stuff
-pyenv*
-*.png
+pyenv/
 *.sublime-workspace
-playground
 tests/fast-hash/main
 *.dSYM
 
