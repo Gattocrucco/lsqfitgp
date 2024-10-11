@@ -1,6 +1,6 @@
 # lsqfitgp/Makefile
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -93,6 +93,7 @@ gendocs: docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsre
 
 docscode: gendocs
 	$(DOCSPY) docs/runcode.py docs/*.rst docs/*/*.rst
+	## am I not missing an --append here?
 
 docs: gendocs
 	make -C docs html
@@ -107,6 +108,7 @@ covreport:
 
 resetenv:
 	test ! -d pyenv || rm -fr pyenv
+	@@echo using `which python3`
 	python3 -m venv pyenv
 	pyenv/bin/python3 -m pip install --upgrade pip
 	pyenv/bin/python3 -m pip install --editable '.[dev]'

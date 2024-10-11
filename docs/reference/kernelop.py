@@ -112,7 +112,7 @@ for name, tlist in transfs.items():
     columns['Method'].append(get_method(tlist))
     columns['Name'].append(get_name(name))
     columns['Classes'].append(get_classes(tlist))
-table = pl.DataFrame(columns).sort('Method', 'Name')
+table = pl.DataFrame(columns, schema_overrides={'tlist': pl.Object}).sort('Method', 'Name')
 
 # write index table to text
 index_table = table.select('Method', 'Name', 'Classes').to_dict()
