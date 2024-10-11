@@ -1,6 +1,6 @@
 # lsqfitgp/_signature.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024 Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -21,7 +21,10 @@
 
 import inspect
 
-from numpy.lib import function_base
+try:
+    from numpy.lib import function_base # numpy 1
+except ImportError:
+    from numpy.lib import _function_base_impl as function_base # numpy 2
 import jax
 from jax import numpy as jnp
 

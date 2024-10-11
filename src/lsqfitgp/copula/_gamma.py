@@ -1,6 +1,6 @@
 # lsqfitgp/copula/_gamma.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -52,16 +52,19 @@ dQ_dx = _jaxext.elementwise_grad(jspecial.gammaincc, 1)
 def gammainccinv_jvp(primals, tangents):
     a, y = primals
     at, yt = tangents
+
     x = gammainccinv(a, y)
-    a = jnp.asarray(a)
-    a = a.astype(_jaxext.float_type(a))
-    # convert a to float to avoid dQ_da complaining even when we are not
-    # actually deriving w.r.t. a
-    dQ_da_a_x = dQ_da(a, x)
+
     dQ_dx_a_x = dQ_dx(a, x)
     dQinv_dy_a_y = 1 / dQ_dx_a_x
-    dQinv_da_a_y = -dQinv_dy_a_y * dQ_da_a_x
-    return x, dQinv_da_a_y * at + dQinv_dy_a_y * yt
+    xt = dQinv_dy_a_y * yt
+
+    if jnp.issubdtype(jnp.asarray(a).dtype, jnp.floating): # modern jax would be: getattr(at, 'dtype', jnp.float64) != jax.float0
+        dQ_da_a_x = dQ_da(a, x)
+        dQinv_da_a_y = -dQinv_dy_a_y * dQ_da_a_x
+        xt += dQinv_da_a_y * at
+    
+    return x, xt
 
 @jax.custom_jvp
 def gammaincinv(a, y):
@@ -78,16 +81,19 @@ dP_dx = _jaxext.elementwise_grad(jspecial.gammainc, 1)
 def gammaincinv_jvp(primals, tangents):
     a, y = primals
     at, yt = tangents
+    
     x = gammaincinv(a, y)
-    a = jnp.asarray(a)
-    a = a.astype(_jaxext.float_type(a))
-    # convert a to float to avoid dP_da complaining even when we are not
-    # actually deriving w.r.t. a
-    dP_da_a_x = dP_da(a, x)
+
     dP_dx_a_x = dP_dx(a, x)
     dPinv_dy_a_y = 1 / dP_dx_a_x
-    dPinv_da_a_y = -dPinv_dy_a_y * dP_da_a_x
-    return x, dPinv_da_a_y * at + dPinv_dy_a_y * yt
+    xt = dPinv_dy_a_y * yt   
+    
+    if jnp.issubdtype(jnp.asarray(a).dtype, jnp.floating): # modern jax would be: getattr(at, 'dtype', jnp.float64) != jax.float0
+        dP_da_a_x = dP_da(a, x)
+        dPinv_da_a_y = -dPinv_dy_a_y * dP_da_a_x
+        xt += dPinv_da_a_y * at
+    
+    return x, xt
 
 def _gammaisf_normcdf_large_neg_x(x, a):
     logphi = lambda x: -1/2 * jnp.log(2 * jnp.pi) - 1/2 * jnp.square(x) - jnp.log(-x)

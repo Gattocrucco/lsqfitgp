@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/optim.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -127,8 +127,8 @@ And the winner is:
 
 .. code-block:: text
 
-    doinference took   6.701 ms on average
-    doinference took   0.018 ms on average
+    doinference took  10.591 ms on average
+    doinference took   0.023 ms on average
 
 The compiled version is 400 times faster. The difference is so stark because we
 used only 10 datapoints, so most of the time is spent in routing overhead
@@ -139,12 +139,12 @@ should be milder::
     benchmark(doinference, data)
     benchmark(doinference_compiled, data)
 
-Indeed, it's 20x faster, lower but still high:
+Indeed, it's 6x faster, lower but still high:
 
 .. code-block:: text
 
-    doinference took 554.387 ms on average
-    doinference took  26.828 ms on average
+    doinference took  30.618 ms on average
+    doinference took   5.346 ms on average
 
 We said that using the :class:`GP` options ``checkpos=False, checksym=False``
 makes it faster, and that they are disabled anyway under jit. Let's check::
@@ -156,8 +156,8 @@ Result:
 
 .. code-block:: text
 
-    doinference took  65.561 ms on average
-    doinference took  23.917 ms on average
+    doinference took  19.312 ms on average
+    doinference took   6.120 ms on average
 
 As expected, the compiled version is not affected, while the original one gains
 a lot of speed: now the advantage is just 3x.

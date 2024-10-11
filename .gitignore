@@ -1,5 +1,5 @@
 # My stuff
-pyenv/
+pyenv*
 *.sublime-workspace
 tests/fast-hash/main
 *.dSYM

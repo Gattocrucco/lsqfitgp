@@ -41,7 +41,7 @@ df = df_p.join(df_py, on='id.practice')
 
 # shift treated units by a fixed amount for testing purposes
 df = df.with_columns(
-    Y=pl.col('Y') + pl
+    pl.col('Y') + pl
     .when((pl.col('Z') == 1) & (pl.col('post') == 1))
     .then(artificial_effect_shift)
     .otherwise(0)
@@ -71,11 +71,11 @@ ate_unadjusted = gvar.gvar(result.params['Z'], result.bse['Z'])
 # of the DID-like assumption given by the competition rules
 V_columns = [c for c in df.columns if c.startswith('V')]
 posttreatment = df.filter(pl.col('post') == 1).drop(*V_columns, 'post')
-for year, stratum in df.filter(pl.col('post') == 0).groupby('year'):
+for year, stratum in df.filter(pl.col('post') == 0).group_by('year'):
     posttreatment = posttreatment.join(
         stratum.select(
             'id.practice',
-            pl.col(['Y', 'n.patients'] + V_columns).suffix(f'_year{year}')
+            pl.col(['Y', 'n.patients'] + V_columns).name.suffix(f'_year{year}')
         ), on='id.practice'
     )
 
@@ -133,7 +133,7 @@ strata = (df
     .filter((pl.col('Z') == 1) & (pl.col('post') == 1))
     .select([f'X{i}' for i in range(1, 6)] + ['year'])
     .rename({'year': 'Yearly'})
-    .with_row_count('index')
+    .with_row_index('index')
 )
 
 def compute_satt(fit, *, rng=None, **predkw):
@@ -159,7 +159,7 @@ def compute_satt(fit, *, rng=None, **predkw):
     for variable in strata.columns:
         if variable == 'index':
             continue
-        for level, stratum in strata.groupby(variable):
+        for (level,), stratum in strata.group_by([variable]):
             indices = stratum['index'].to_numpy()
             key = f'{variable}={level}'
             satt[key] = np.average(effect[indices], weights=n[indices])
@@ -181,17 +181,17 @@ satt_bcf = compute_satt(fit_outcome_bcf, **bcf_predkw)
 # compute the SATT sampling the hyperparameters with the Laplace approx
 if laplace:
     rng = np.random.default_rng(202307081315)
+    
     satt_bcf_samples = {}
     for _ in tqdm.tqdm(range(nsamples)):
         satt_sample = compute_satt(fit_outcome_bcf, rng=rng, **bcf_predkw)
         for k, v in satt_sample.items():
             satt_bcf_samples.setdefault(k, []).append(v)
+    
     satt_bcf_samples_quantiles = {}
     satt_bcf_samples_meanstd = {}
     for k, samples in satt_bcf_samples.items():
-        cl1 = np.diff(stats.norm.cdf([-1, 1])).item()
-        cl2 = np.diff(stats.norm.cdf([-2, 2])).item()
-        q = [(1 - cl2) / 2, (1 - cl1) / 2, 0.5, (1 + cl1) / 2, (1 + cl2) / 2]
+        q = stats.norm.cdf([-2, -1, 0, 1, 2])
         satt_bcf_samples_quantiles[k] = np.quantile(samples, q)
         satt_bcf_samples_meanstd[k] = gvar.gvar(np.mean(samples), np.std(samples))
 
@@ -219,7 +219,7 @@ df_results = (pl
 
 # collect and show truth
 satt_true = {}
-for variable, group in df_results.groupby('variable'):
+for (variable,), group in df_results.group_by(['variable']):
     if len(group) > 1:
         for row in group.iter_rows(named=True):
             level = row['level']
@@ -241,7 +241,7 @@ ax_satt, ax_ps = axs
 # plot propensity score distribution
 ps_by_group = (Xobs_ps
     .select('Z', pl.col('ps').rank('dense'))
-    .groupby('Z')
+    .group_by('Z')
     .all()
     .sort('Z')
     .get_column('ps')

@@ -1,6 +1,6 @@
 # lsqfitgp/_gvarext/_format.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024 Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -116,6 +116,11 @@ def uformat(mu, s, errdig=2, sep=None, *, shareexp=True, outersign=False, uniexp
         instead of showing more actual digits than those specified.
     possign : bool, default False
         Whether to put a `+` before the central value when it is positive.
+
+    Returns
+    -------
+    r : str
+        The quantity (mu +/- s) nicely formatted.
     """
     if errdig < 1:
         raise ValueError('errdig < 1')

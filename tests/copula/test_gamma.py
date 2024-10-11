@@ -1,6 +1,6 @@
 # lsqfitgp/tests/copula/test_gamma.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,6 +19,7 @@
 
 """ Test the copula._gamma module """
 
+import jax
 from jax import test_util
 from scipy import stats
 from pytest import mark
@@ -36,6 +37,10 @@ from .. import util
 @mark.parametrize('func', ['gammaincinv', 'gammainccinv'])
 def test_deriv(degree, func):
     test_util.check_grads(getattr(_gamma, func), (2.5, 0.3), degree)
+
+@mark.parametrize('func', ['gammaincinv', 'gammainccinv'])
+def test_deriv_int_alpha(func):
+    jax.grad(getattr(_gamma, func), 1)(1, 0.5)
 
 @pytest.fixture(params=['gamma', 'invgamma'])
 def distr(request):

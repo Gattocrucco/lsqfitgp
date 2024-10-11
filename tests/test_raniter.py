@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_raniter.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -16,6 +16,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
+import warnings
 
 import numpy as np
 from scipy import stats
@@ -83,7 +85,7 @@ def test_raniter_warning(rng):
     # with pytest.warns(UserWarning, match='positive definite'):
     with pytest.raises(np.linalg.LinAlgError):
         lgp.sample(np.zeros(len(cov)), cov, rng=rng)
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings(record=True) as record:
         lgp.sample(np.zeros(len(cov)), cov, eps=0.1, rng=rng)
     assert len(record) == 0
 

@@ -1,6 +1,6 @@
 # lsqfitgp/pyproject.toml
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -105,7 +105,7 @@ tests-old = [ # to run the unit tests on CI, with minimum supported dependencies
     "coverage[toml]",
     "mpmath",
     "pandas<1.5",
-    "polars==0.15.16",
+    "polars==1.0.0",
     "pyarrow==10.0.1",
 ]
 

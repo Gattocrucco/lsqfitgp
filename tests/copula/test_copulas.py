@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_copulas.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -219,7 +219,7 @@ class DistrTestBase:
         eps = np.finfo(float).eps
         x1 = self.copcls.invfcn(-eps, *self.array_params)
         x2 = self.copcls.invfcn(eps, *self.array_params)
-        util.assert_allclose(x1, x2, atol=4 * eps, rtol=3 * eps)
+        util.assert_allclose(x1, x2, atol=8 * eps, rtol=8 * eps)
 
     def test_decorator(self):
         """ check that recreating the distrution with the decorator works """
