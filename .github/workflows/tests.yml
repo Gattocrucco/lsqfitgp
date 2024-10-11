@@ -1,6 +1,6 @@
 # lsqfitgp/workflows/tests.yml
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024 Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -36,41 +36,51 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.11"]
+        python-version: ["3.12"]
         include:
           - os: ubuntu-20.04
             python-version: "3.8"
-          - os: macos-11
+          - os: macos-12
             python-version: "3.8"
           - os: windows-latest
-            python-version: "3.11"
-            experimental: true
-          # do not run outdated tests on windows because only recent jax
-          # versions support windows
+            python-version: "3.12"
+            # experimental: true
+            # do not run outdated tests on windows because only recent jax
+            # versions support windows
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      
       - name: Install package and dependencies
-        if: matrix.python-version == '3.11'
+        if: matrix.python-version == '3.12'
         run: |
           python -m pip install --upgrade pip
           python -m pip install '.[tests]'
+      
       - name: Install package and outdated dependencies
         if: matrix.python-version == '3.8'
         run: |
           python -m pip install --upgrade pip
           python -m pip install '.[tests-old]'
+      
       - name: Run unit tests
         run: make COVERAGE_SUFFIX=-${{ matrix.os }}-py${{ matrix.python-version }} tests
+
+      - name: List files (for debug)
+        run: ls -aR
+      
       - name: Save coverage information
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+        include-hidden-files: true
+        if-no-files-found: error
         with:
-          name: coverage
+          name: coverage.tests-${{ matrix.os }}-py${{ matrix.python-version }}
           path: .coverage.tests-${{ matrix.os }}-py${{ matrix.python-version }}
 
   docs:
@@ -80,19 +90,19 @@ jobs:
     needs: tests
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Install package and dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install '.[docs]'
       - name: Run examples
-        run: make COVERAGE_SUFFIX=-macos-latest-py3.11 examples
+        run: make COVERAGE_SUFFIX=-macos-latest-py3.12 examples
       - name: Run documentation code
-        run: make COVERAGE_SUFFIX=-macos-latest-py3.11 docscode
+        run: make COVERAGE_SUFFIX=-macos-latest-py3.12 docscode
       - name: Generate documentation
         run: make docs
       - name: Copy documentation to github pages
@@ -112,15 +122,19 @@ jobs:
           folder: docs/_build/html
           target-folder: docs-${{ env.lsqfitgp_version }}
       - name: Save coverage from examples
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+        if-no-files-found: error
+        include-hidden-files: true
         with:
-          name: coverage
-          path: .coverage.examples-macos-latest-py3.11
+          name: coverage.examples-macos-latest-py3.12
+          path: .coverage.examples-macos-latest-py3.12
       - name: Save coverage from tutorials
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+        if-no-files-found: error
+        include-hidden-files: true
         with:
-          name: coverage
-          path: .coverage.docs-macos-latest-py3.11
+          name: coverage.docs-macos-latest-py3.12
+          path: .coverage.docs-macos-latest-py3.12
 
   postcov:
 
@@ -128,19 +142,20 @@ jobs:
     needs: [tests, docs]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Install coverage
         run: |
           python -m pip install --upgrade pip
           python -m pip install coverage
       - name: Get coverage files
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: coverage
+          pattern: coverage.*
+          merge-multiple: true
       - name: List files
         run: |
           pwd
