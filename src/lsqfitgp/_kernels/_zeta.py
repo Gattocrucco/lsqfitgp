@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels/_zeta.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -24,8 +24,6 @@ from jax import numpy as jnp
 from .. import _special
 from .. import _jaxext
 from .. import _Kernel
-
-__all__ = ['Zeta']
 
 def check_nu(nu):
     with _jaxext.skipifabstract():

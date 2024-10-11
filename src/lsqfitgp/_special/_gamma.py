@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_gamma.py
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -38,7 +38,7 @@ def _polygamma_is_accurate():
     inputs = 2, 1
     jax = jspecial.polygamma(*inputs)
     ref = special.polygamma(*inputs)
-    return jnp.allclose(jax, ref, rtol=1e-15, atol=0)
+    return jnp.allclose(jax, ref, rtol=1e-14, atol=0)
 
 def _make_polygamma():
     if _polygamma_is_accurate():
@@ -51,9 +51,8 @@ def _make_polygamma():
             floatcast=True,
         )
 
-_polygamma = _make_polygamma()
-    # jax implements polygamma, but in jax 0.4.16+ it does not provide fp64
-    # precision, this is hopefully a temporary patch
+polygamma = _make_polygamma()
+    # jax 0.4.16 to 0.4.25 does not provide fp64 precision due to xla bug
 
 def gamma_incr(x, e):
     """
@@ -68,7 +67,7 @@ def gamma_incr(x, e):
     n = 23 if t == jnp.float64 else 10
     # n such that 1/2^n 1/n! d^n/dx^n log G(x) |_x=2 < eps
     k = jnp.arange(n).reshape((n,) + (1,) * max(x.ndim, e.ndim))
-    coef = _polygamma(k, x)
+    coef = polygamma(k, x)
     fact = jnp.cumprod(1 + k, 0, t)
     coef /= fact
     gammaln = e * jnp.polyval(coef[::-1], e)

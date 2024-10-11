@@ -1,6 +1,6 @@
 # lsqfitgp/_array.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -25,15 +25,6 @@ from numpy.lib import recfunctions
 import jax
 from jax import numpy as jnp
 from jax import tree_util
-
-__all__ = [
-    'StructuredArray',
-    'broadcast',
-    'broadcast_to',
-    'broadcast_arrays',
-    'asarray',
-    'unstructured_to_structured',
-]
 
 # TODO use register_pytree_with_keys
 @tree_util.register_pytree_node_class

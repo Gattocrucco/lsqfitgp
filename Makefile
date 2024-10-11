@@ -22,7 +22,7 @@
 COVERAGE_SUFFIX=
 
 RELEASE_TARGETS = tests examples docscode docs
-TARGETS = upload release $(RELEASE_TARGETS) covreport resetenv
+TARGETS = upload release $(RELEASE_TARGETS) covreport resetenv clean
 
 .PHONY: all $(TARGETS)
 
@@ -44,6 +44,12 @@ all:
 	@echo " 7) $$ make upload"
 	@echo " 8) publish the github release"
 	@echo " 9) bump version number and add .dev0 suffix"
+	@echo
+	@echo "Dependency maintenance instructions:"
+	@echo " 1) $$ make clean"
+	@echo " 2) $$ make resetenv"
+	@echo " 3) $$ make tests examples docscode docs"
+	@echo " 4) repeat 3 until all problems are fixed"
 
 upload:
 	python3 -m twine upload dist/*
@@ -68,7 +74,7 @@ EXAMPLES := $(filter-out examples/runexamples.py, $(EXAMPLES)) # runner script
 EXAMPLES := $(filter-out examples/pdf7.py, $(EXAMPLES)) # slow
 EXAMPLES := $(filter-out examples/pdf8.py, $(EXAMPLES)) # slow
 EXAMPLES := $(filter-out examples/pdf9.py, $(EXAMPLES)) # slow	
-.PHONY: $(EXAMPLES)
+
 examples: $(EXAMPLES)
 	$(EXAMPLESPY) examples/runexamples.py $(EXAMPLES)
 
@@ -88,14 +94,13 @@ docs/reference/kernelop.rst: docs/reference/kernelop.py src/lsqfitgp/_Kernel/*.p
 ##  release. How do I tell make to first delete a file but do not re-delete it
 ##  for each target?
 
-.PHONY: gendocs
-gendocs: docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst docs/reference/kernelop.rst
+GENDOCS = docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst docs/reference/kernelop.rst
 
-docscode: gendocs
+docscode: $(GENDOCS)
 	$(DOCSPY) docs/runcode.py docs/*.rst docs/*/*.rst
 	## am I not missing an --append here?
 
-docs: gendocs
+docs: $(GENDOCS)
 	make -C docs html
 	@echo
 	@echo "Now open docs/_build/html/index.html"
@@ -108,9 +113,23 @@ covreport:
 
 resetenv:
 	test ! -d pyenv || rm -fr pyenv
-	@@echo using `which python3`
+	@echo using `which python3`
 	python3 -m venv pyenv
 	pyenv/bin/python3 -m pip install --upgrade pip
 	pyenv/bin/python3 -m pip install --editable '.[dev]'
 	@echo
 	@echo 'Now type ". pyenv/bin/activate"'
+
+clean:
+	rm -f $(GENDOCS)
+	make -C docs clean
+	rm -fr htmlcov
+	rm -f .coverage*
+	rm -f coverage.xml
+	rm -fr dist
+	rm -fr src/lsqfitgp.egg-info
+	rm -fr .pytest_cache
+	rm -fr src/lsqfitgp/__pycache__
+	rm -fr src/lsqfitgp/*/__pycache__
+	rm -fr tests/__pycache__
+	rm -fr tests/*/__pycache__

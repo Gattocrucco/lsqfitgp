@@ -1,6 +1,6 @@
 # lsqfitgp/_special/__init__.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,11 +17,45 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from ._bernoulli import *
-from ._bessel import *
-from ._exp import *
-from ._expint import *
-from ._gamma import *
-from ._sinc import *
-from ._taylor import *
-from ._zeta import zeta, hurwitz_zeta, periodic_zeta, zeta_zero, zeta_series_power_diff
+from ._bernoulli import (
+    periodic_bernoulli,
+    scaled_periodic_bernoulli,
+)
+from ._bessel import (
+    j0,
+    j1,
+    jv,
+    jvp,
+    kv,
+    kvp,
+    iv,
+    ivp,
+    jvmodx2,
+    kvmodx2,
+    kvmodx2_hi,
+)
+from ._exp import (
+    expm1x,
+)
+from ._expint import (
+    expn_imag,
+    exp1_imag,
+    ci,
+)
+from ._gamma import (
+    sgngamma,
+    gamma,
+    poch,
+    polygamma,
+    gamma_incr,
+    gammaln1,
+)
+from ._sinc import sinc
+from ._taylor import taylor
+from ._zeta import (
+    zeta,
+    hurwitz_zeta,
+    periodic_zeta,
+    zeta_zero,
+    zeta_series_power_diff,
+)

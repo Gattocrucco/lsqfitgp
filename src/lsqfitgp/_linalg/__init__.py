@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/__init__.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,5 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from ._decomp import *
+from ._decomp import (
+    Decomposition,
+    Chol,
+    solve_batched,
+)
 from ._stdcplx import predtime

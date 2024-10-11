@@ -1,6 +1,6 @@
 # lsqfitgp/_fastraniter.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -23,11 +23,6 @@ import gvar
 import numpy
 
 from . import _linalg
-
-__all__ = [
-    'raniter',
-    'sample',
-]
 
 # TODO support jax tracing and jax random sampling
 

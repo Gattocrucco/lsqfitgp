@@ -1,6 +1,6 @@
 # lsqfitgp/copula/__init__.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -23,7 +23,17 @@ from ._base import DistrBase
 from ._distr import Distr, distribution
 from ._copula import Copula
 from ._makedict import makedict
-from ._copulas import *
+from ._copulas import (
+    beta,
+    dirichlet,
+    gamma,
+    loggamma,
+    invgamma,
+    halfcauchy,
+    halfnorm,
+    uniform,
+    lognorm,
+)
 
 # TODO I could try to drop BufferDict altogether. It adds more complexity than
 # necessary: won't keep track of dependencies between keys, structure fixed to a

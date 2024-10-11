@@ -823,7 +823,7 @@ class bcf:
 
     def from_data(self, y, *, hp='map', rng=None):
         """
-        Transforms outcomes :math:`y` to the regression variable :math:`\eta`.
+        Transforms outcomes :math:`y` to the regression variable :math:`\\eta`.
 
         Parameters
         ----------
@@ -847,7 +847,7 @@ class bcf:
 
     def to_data(self, eta, *, hp='map', rng=None):
         """
-        Convert the regression variable :math:`\eta` to outcomes :math:`y`.
+        Convert the regression variable :math:`\\eta` to outcomes :math:`y`.
 
         Parameters
         ----------

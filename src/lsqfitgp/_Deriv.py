@@ -1,6 +1,6 @@
 # lsqfitgp/_Deriv.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -20,10 +20,6 @@
 import collections
 
 import numpy as np
-
-__all__ = [
-    'Deriv',
-]
 
 class Deriv:
     """

@@ -1,6 +1,6 @@
 # lsqfitgp/__init__.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -29,7 +29,14 @@ __version__ = '0.21.dev0'
 from . import _patch_jax
 from . import _patch_gvar
 
-from ._array import *
+from ._array import (
+    StructuredArray,
+    broadcast,
+    broadcast_to,
+    broadcast_arrays,
+    asarray,
+    unstructured_to_structured,
+)
 from ._Deriv import Deriv
 from ._Kernel import (
     CrossKernel,
@@ -45,7 +52,7 @@ from ._Kernel import (
     crossisotropickernel,
     isotropickernel,
 )
-from ._kernels import *
+from ._kernels import * # safe, _kernels/__init__.py only imports kernels
 from ._gvarext import (
     jacobian,
     from_jacobian,
