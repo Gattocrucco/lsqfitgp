@@ -22,7 +22,7 @@
 COVERAGE_SUFFIX=
 
 RELEASE_TARGETS = tests examples docscode docs
-TARGETS = upload release $(RELEASE_TARGETS) covreport resetenv clean
+TARGETS = upload release $(RELEASE_TARGETS) covreport resetenv resetenv-old clean
 
 .PHONY: all $(TARGETS)
 
@@ -119,6 +119,16 @@ resetenv:
 	pyenv/bin/python3 -m pip install --editable '.[dev]'
 	@echo
 	@echo 'Now type ". pyenv/bin/activate"'
+
+resetenv-old:
+	test ! -d pyenv-old || rm -fr pyenv-old
+	@echo using `which python3`
+	test 3.9 = `python3 -c 'import sys;print(f"{sys.version_info.major}.{sys.version_info.minor}")'` 
+	python3 -m venv pyenv-old
+	pyenv-old/bin/python3 -m pip install --upgrade pip
+	pyenv-old/bin/python3 -m pip install --editable '.[dev,tests-old]'
+	@echo
+	@echo 'Now type ". pyenv-old/bin/activate"'
 
 clean:
 	rm -f $(GENDOCS)

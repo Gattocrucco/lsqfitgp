@@ -38,7 +38,7 @@ classifiers = [
 ]
 dependencies = [
     'numpy>=1.22', # oldest supported by jax 0.4.26
-    'scipy>=1.9', # oldest supported by jax 0.4.26
+    'scipy>=1.10', # oldest supported by jax 0.4.26 and without quirky bugs
     'jax>=0.4.26', # first that fixes polygamma & zeta fp64
     'jaxlib>=0.4.26',
     'gvar>=12.0', # first with custom formatting
@@ -97,7 +97,7 @@ tests = [ # to run the unit tests on CI
 
 tests-old = [ # to run the unit tests on CI, with minimum supported dependencies
     "numpy==1.22",
-    "scipy==1.9",
+    "scipy==1.10",
     "gvar==12.0",
     "jax==0.4.26",
     "jaxlib==0.4.26",

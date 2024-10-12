@@ -3,7 +3,7 @@
 	[
 		{
 			"path": ".",
-			"folder_exclude_patterns": ["pyenv", "docs/_build", "htmlcov"],
+			"folder_exclude_patterns": ["pyenv", "pyenv-old", "docs/_build", "htmlcov"],
 		}
 	]
 }

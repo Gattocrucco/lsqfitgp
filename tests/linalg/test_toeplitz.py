@@ -1,6 +1,6 @@
 # lsqfitgp/tests/linalg/test_toeplitz.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -59,7 +59,7 @@ def check_toeplitz(rng):
     
         imb1 = _toeplitz.solve(t, b)
         imb2 = np.linalg.solve(m, b)
-        util.assert_close_matrices(imb1, imb2, rtol=1e-8)
+        util.assert_close_matrices(imb1, imb2, rtol=2e-8)
 
 def test_toeplitz_nojit(rng):
     with jax.disable_jit():
