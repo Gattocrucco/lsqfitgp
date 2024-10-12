@@ -9,11 +9,10 @@
         contexts = {
   "a": "docs-macos-latest-py3.12",
   "b": "examples-macos-latest-py3.12",
-  "c": "tests-macos-13-py3.8",
+  "c": "tests-macos-latest-py3.9",
   "d": "tests-macos-latest-py3.12",
-  "e": "tests-ubuntu-20.04-py3.8",
-  "f": "tests-ubuntu-latest-py3.12",
-  "g": "tests-windows-latest-py3.12"
+  "e": "tests-ubuntu-latest-py3.12",
+  "f": "tests-windows-latest-py3.12"
 }
     </script>
     <script src="coverage_html_cb_6fb7b396.js" defer></script>
@@ -78,7 +77,7 @@
             <a id="nextFileLink" class="nav" href="z_b0dff8e5200f471f__processes_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.6.2">coverage.py v7.6.2</a>,
-            created at 2024-10-12 00:44 +0000
+            created at 2024-10-12 02:34 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -112,9 +111,9 @@
     <p class="pln"><span class="n"><a id="t17" href="#t17">17</a></span><span class="t"><span class="com"># You should have received a copy of the GNU General Public License</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t"><span class="com"># along with lsqfitgp.  If not, see &lt;http://www.gnu.org/licenses/>.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t"><span class="key">from</span> <span class="op">.</span> <span class="key">import</span> <span class="nam">_base</span><span class="op">,</span> <span class="nam">_compute</span><span class="op">,</span> <span class="nam">_elements</span><span class="op">,</span> <span class="nam">_processes</span>&nbsp;</span><input type="checkbox" id="ctxs20"><span class="r"><label for="ctxs20" class="ctx">7 ctx</label></span><span class="ctxs">1abcdefg</span></p>
+    <p class="run"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t"><span class="key">from</span> <span class="op">.</span> <span class="key">import</span> <span class="nam">_base</span><span class="op">,</span> <span class="nam">_compute</span><span class="op">,</span> <span class="nam">_elements</span><span class="op">,</span> <span class="nam">_processes</span>&nbsp;</span><input type="checkbox" id="ctxs20"><span class="r"><label for="ctxs20" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t"><span class="key">class</span> <span class="nam">GP</span><span class="op">(</span><span class="nam">_compute</span><span class="op">.</span><span class="nam">GPCompute</span><span class="op">,</span> <span class="nam">_elements</span><span class="op">.</span><span class="nam">GPElements</span><span class="op">,</span> <span class="nam">_processes</span><span class="op">.</span><span class="nam">GPProcesses</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs22"><span class="r"><label for="ctxs22" class="ctx">7 ctx</label></span><span class="ctxs">1abcdefg</span></p>
+    <p class="run"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t"><span class="key">class</span> <span class="nam">GP</span><span class="op">(</span><span class="nam">_compute</span><span class="op">.</span><span class="nam">GPCompute</span><span class="op">,</span> <span class="nam">_elements</span><span class="op">.</span><span class="nam">GPElements</span><span class="op">,</span> <span class="nam">_processes</span><span class="op">.</span><span class="nam">GPProcesses</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs22"><span class="r"><label for="ctxs22" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t"><span class="str">    Object that represents a Gaussian process.</span>&nbsp;</span><span class="r"></span></p>
@@ -206,7 +205,7 @@
     <p class="pln"><span class="n"><a id="t111" href="#t111">111</a></span><span class="t"><span class="str">    </span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t112" href="#t112">112</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">    <span class="key">def</span> <span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span>&nbsp;</span><input type="checkbox" id="ctxs114"><span class="r"><label for="ctxs114" class="ctx">7 ctx</label></span><span class="ctxs">1abcdefg</span></p>
+    <p class="run"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">    <span class="key">def</span> <span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span>&nbsp;</span><input type="checkbox" id="ctxs114"><span class="r"><label for="ctxs114" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
     <p class="pln"><span class="n"><a id="t115" href="#t115">115</a></span><span class="t">        <span class="nam">covfun</span><span class="op">=</span><span class="key">None</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">        <span class="op">*</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">        <span class="nam">solver</span><span class="op">=</span><span class="str">'chol'</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -218,10 +217,10 @@
     <p class="pln"><span class="n"><a id="t123" href="#t123">123</a></span><span class="t">        <span class="nam">halfmatrix</span><span class="op">=</span><span class="key">False</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t124" href="#t124">124</a></span><span class="t">        <span class="op">**</span><span class="nam">kw</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t125" href="#t125">125</a></span><span class="t">    <span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t126" href="#t126">126</a></span><span class="t">        <span class="nam">_base</span><span class="op">.</span><span class="nam">GPBase</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">checkfinite</span><span class="op">=</span><span class="nam">checkfinite</span><span class="op">,</span> <span class="nam">checklin</span><span class="op">=</span><span class="nam">checklin</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs126"><span class="r"><label for="ctxs126" class="ctx">7 ctx</label></span><span class="ctxs">1abcdefg</span></p>
-    <p class="run"><span class="n"><a id="t127" href="#t127">127</a></span><span class="t">        <span class="nam">_processes</span><span class="op">.</span><span class="nam">GPProcesses</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">covfun</span><span class="op">=</span><span class="nam">covfun</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs127"><span class="r"><label for="ctxs127" class="ctx">7 ctx</label></span><span class="ctxs">1abcdefg</span></p>
-    <p class="run"><span class="n"><a id="t128" href="#t128">128</a></span><span class="t">        <span class="nam">_elements</span><span class="op">.</span><span class="nam">GPElements</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">checkpos</span><span class="op">=</span><span class="nam">checkpos</span><span class="op">,</span> <span class="nam">checksym</span><span class="op">=</span><span class="nam">checksym</span><span class="op">,</span> <span class="nam">posepsfac</span><span class="op">=</span><span class="nam">posepsfac</span><span class="op">,</span> <span class="nam">halfmatrix</span><span class="op">=</span><span class="nam">halfmatrix</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs128"><span class="r"><label for="ctxs128" class="ctx">7 ctx</label></span><span class="ctxs">1abcdefg</span></p>
-    <p class="run"><span class="n"><a id="t129" href="#t129">129</a></span><span class="t">        <span class="nam">_compute</span><span class="op">.</span><span class="nam">GPCompute</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">solver</span><span class="op">=</span><span class="nam">solver</span><span class="op">,</span> <span class="nam">solverkw</span><span class="op">=</span><span class="nam">kw</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs129"><span class="r"><label for="ctxs129" class="ctx">7 ctx</label></span><span class="ctxs">1abcdefg</span></p>
+    <p class="run"><span class="n"><a id="t126" href="#t126">126</a></span><span class="t">        <span class="nam">_base</span><span class="op">.</span><span class="nam">GPBase</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">checkfinite</span><span class="op">=</span><span class="nam">checkfinite</span><span class="op">,</span> <span class="nam">checklin</span><span class="op">=</span><span class="nam">checklin</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs126"><span class="r"><label for="ctxs126" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t127" href="#t127">127</a></span><span class="t">        <span class="nam">_processes</span><span class="op">.</span><span class="nam">GPProcesses</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">covfun</span><span class="op">=</span><span class="nam">covfun</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs127"><span class="r"><label for="ctxs127" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t128" href="#t128">128</a></span><span class="t">        <span class="nam">_elements</span><span class="op">.</span><span class="nam">GPElements</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">checkpos</span><span class="op">=</span><span class="nam">checkpos</span><span class="op">,</span> <span class="nam">checksym</span><span class="op">=</span><span class="nam">checksym</span><span class="op">,</span> <span class="nam">posepsfac</span><span class="op">=</span><span class="nam">posepsfac</span><span class="op">,</span> <span class="nam">halfmatrix</span><span class="op">=</span><span class="nam">halfmatrix</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs128"><span class="r"><label for="ctxs128" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
+    <p class="run"><span class="n"><a id="t129" href="#t129">129</a></span><span class="t">        <span class="nam">_compute</span><span class="op">.</span><span class="nam">GPCompute</span><span class="op">.</span><span class="nam">__init__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">solver</span><span class="op">=</span><span class="nam">solver</span><span class="op">,</span> <span class="nam">solverkw</span><span class="op">=</span><span class="nam">kw</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs129"><span class="r"><label for="ctxs129" class="ctx">6 ctx</label></span><span class="ctxs">1abcdef</span></p>
 </main>
 <footer>
     <div class="content">
@@ -231,7 +230,7 @@
             <a class="nav" href="z_b0dff8e5200f471f__processes_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.6.2">coverage.py v7.6.2</a>,
-            created at 2024-10-12 00:44 +0000
+            created at 2024-10-12 02:34 +0000
         </p>
     </div>
 </footer>
