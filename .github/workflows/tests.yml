@@ -100,7 +100,7 @@ jobs:
         run: make docs
       - name: Copy documentation to github pages
         if: github.event_name == 'push'
-        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        uses: JamesIves/github-pages-deploy-action@v4.6.8
         with:
           branch: gh-pages
           folder: docs/_build/html
@@ -109,7 +109,7 @@ jobs:
         run: echo lsqfitgp_version=`python -c 'import re, lsqfitgp; print(re.fullmatch(r"(\d+(\.\d+)*)(.dev\d+)?", lsqfitgp.__version__).group(1))'` >> $GITHUB_ENV
       - name: Copy documentation to github pages (versioned directory)
         if: github.event_name == 'push'
-        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        uses: JamesIves/github-pages-deploy-action@v4.6.8
         with:
           branch: gh-pages
           folder: docs/_build/html
@@ -165,7 +165,7 @@ jobs:
         run: rm htmlcov/.gitignore
       - name: Copy report to github pages
         if: github.event_name == 'push'
-        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        uses: JamesIves/github-pages-deploy-action@v4.6.8
         with:
           branch: gh-pages
           folder: htmlcov
