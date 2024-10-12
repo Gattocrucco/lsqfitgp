@@ -19,7 +19,6 @@
 
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
-from scipy import special
 
 from .. import _jaxext
 
@@ -34,26 +33,6 @@ def poch(x, k):
     # TODO does not handle properly special cases with x and/or k nonpositive
     # integers
 
-def _polygamma_is_accurate():
-    inputs = 2, 1
-    jax = jspecial.polygamma(*inputs)
-    ref = special.polygamma(*inputs)
-    return jnp.allclose(jax, ref, rtol=1e-14, atol=0)
-
-def _make_polygamma():
-    if _polygamma_is_accurate():
-        return jspecial.polygamma
-    else:
-        return _jaxext.makejaxufunc(
-            special.polygamma,
-            None,
-            lambda n, x: polygamma(n + 1, x),
-            floatcast=True,
-        )
-
-polygamma = _make_polygamma()
-    # jax 0.4.16 to 0.4.25 does not provide fp64 precision due to xla bug
-
 def gamma_incr(x, e):
     """
     Compute Γ(x+e) / (Γ(x)Γ(1+e)) - 1 accurately for x >= 2 and |e| < 1/2
@@ -67,7 +46,7 @@ def gamma_incr(x, e):
     n = 23 if t == jnp.float64 else 10
     # n such that 1/2^n 1/n! d^n/dx^n log G(x) |_x=2 < eps
     k = jnp.arange(n).reshape((n,) + (1,) * max(x.ndim, e.ndim))
-    coef = polygamma(k, x)
+    coef = jspecial.polygamma(k, x)
     fact = jnp.cumprod(1 + k, 0, t)
     coef /= fact
     gammaln = e * jnp.polyval(coef[::-1], e)

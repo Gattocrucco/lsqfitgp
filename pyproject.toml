@@ -37,11 +37,11 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
-    'numpy>=1.20', # first version with broadcast_shapes
-    'scipy>=1.5', # oldest supported by jax 0.4.6
-    'jax>=0.4.6', # first with optimized jnp.vectorize (for BART)
-    'jaxlib>=0.4.6',
-    'gvar>=12.0', # 12.0 first with custom formatting
+    'numpy>=1.22', # oldest supported by jax 0.4.26
+    'scipy>=1.9', # oldest supported by jax 0.4.26
+    'jax>=0.4.26', # first that fixes polygamma & zeta fp64
+    'jaxlib>=0.4.26',
+    'gvar>=12.0', # first with custom formatting
 ]
 dynamic = ["version"]
 
@@ -96,11 +96,11 @@ tests = [ # to run the unit tests on CI
 ]
 
 tests-old = [ # to run the unit tests on CI, with minimum supported dependencies
-    "numpy==1.20",
-    "scipy==1.5",
+    "numpy==1.22",
+    "scipy==1.9",
     "gvar==12.0",
-    "jax==0.4.6",
-    "jaxlib==0.4.6",
+    "jax==0.4.26",
+    "jaxlib==0.4.26",
     "pytest",
     "coverage[toml]",
     "mpmath",

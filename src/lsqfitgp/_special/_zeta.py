@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_zeta.py
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -278,6 +278,10 @@ def zeta_neg(s, n):
     zet = jnp.where(mx == 1,           1, zet)
         
     return 2 * jnp.exp(logpi + loggam) * cos * zet
+
+# Below I have my custom implementation of zeta. jax.scipy.special.zeta does not
+# work in (0, 1) (last checked v0.4.34), but I don't remember if I actually
+# need that interval, maybe I always use s > 1.
 
 ##########################################################################
 #    The following is adapted from gsl/specfunc/zeta.c (GPL license)     #

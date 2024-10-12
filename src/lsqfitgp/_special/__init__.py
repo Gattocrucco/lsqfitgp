@@ -46,7 +46,6 @@ from ._gamma import (
     sgngamma,
     gamma,
     poch,
-    polygamma,
     gamma_incr,
     gammaln1,
 )
