@@ -44,6 +44,7 @@ Classes
 
 .. autoclass:: CrossKernel
     :members:
+    :exclude-members: Transf
 
 ----
 

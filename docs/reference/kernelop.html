@@ -7,9 +7,10 @@
 
     <title>Kernel transformations &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
-    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=a66d8bb5" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
     <script src="../_static/documentation_options.js?v=841cbeb9"></script>
-    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -25,7 +26,7 @@
   </head><body>
   <div class="document">
     
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
 <h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
 
@@ -45,7 +46,16 @@
 
 
 
-<h3>Navigation</h3>
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference</a><ul class="current">
@@ -78,16 +88,6 @@
   </ul></li>
 </ul>
 </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -318,29 +318,41 @@ other : CrossKernel or scalar
 <dl class="py method" id="arcsin">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'arcsin'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Inverse sine, element-wise.
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Compute element-wise inverse of trigonometric sine of input.
 
-LAX-backend implementation of :func:`numpy.arcsin`.
+  JAX implementation of :obj:`numpy.arcsin`.
 
-*Original docstring below.*
+  Args:
+    x: input array or scalar.
 
-Parameters
-----------
-x : array_like
-    `y`-coordinate on the unit circle.
+  Returns:
+    An array containing the inverse trigonometric sine of each element of ``x``
+    in radians in the range ``[-pi/2, pi/2]``, promoting to inexact dtype.
 
-Returns
--------
-angle : ndarray
-    The inverse sine of each element in `x`, in radians and in the
-    closed interval ``[-pi/2, pi/2]``.
-    This is a scalar if `x` is a scalar.
+  Note:
+    - ``jnp.arcsin`` returns ``nan`` when ``x`` is real-valued and not in the closed
+      interval ``[-1, 1]``.
+    - ``jnp.arcsin`` follows the branch cut convention of :obj:`numpy.arcsin` for
+      complex inputs.
 
-References
-----------
-Abramowitz, M. and Stegun, I. A., *Handbook of Mathematical Functions*,
-10th printing, New York: Dover, 1964, pp. 79ff.
-https://personal.math.ubc.ca/~cbm/aands/page_79.htm
+  See also:
+    - :func:`jax.numpy.sin`: Computes a trigonometric sine of each element of input.
+    - :func:`jax.numpy.arccos` and :func:`jax.numpy.acos`: Computes the inverse of
+      trigonometric cosine of each element of input.
+    - :func:`jax.numpy.arctan` and :func:`jax.numpy.atan`: Computes the inverse of
+      trigonometric tangent of each element of input.
+
+  Examples:
+    &gt;&gt;&gt; x = jnp.array([-2, -1, -0.5, 0, 0.5, 1, 2])
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.arcsin(x)
+    Array([   nan, -1.571, -0.524,  0.   ,  0.524,  1.571,    nan], dtype=float32)
+
+    For complex-valued inputs:
+
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.arcsin(3+4j)
+    Array(0.634+2.306j, dtype=complex64, weak_type=True)
 </pre></div>
 </div>
 </dd></dl>
@@ -348,30 +360,48 @@ https://personal.math.ubc.ca/~cbm/aands/page_79.htm
 <dl class="py method" id="arctanh">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'arctanh'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Inverse hyperbolic tangent element-wise.
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Calculate element-wise inverse of hyperbolic tangent of input.
 
-LAX-backend implementation of :func:`numpy.arctanh`.
+  JAX implementation of :obj:`numpy.arctanh`.
 
-*Original docstring below.*
+  The inverse of hyperbolic tangent is defined by:
 
-Parameters
-----------
-x : array_like
-    Input array.
+  .. math:
 
-Returns
--------
-out : ndarray or scalar
-    Array of the same shape as `x`.
-    This is a scalar if `x` is a scalar.
+    arctanh(x) = \frac{1}{2} [\ln(1 + x) - \ln(1 - x)]
 
-References
-----------
-.. [1] M. Abramowitz and I.A. Stegun, &quot;Handbook of Mathematical Functions&quot;,
-       10th printing, 1964, pp. 86.
-       https://personal.math.ubc.ca/~cbm/aands/page_86.htm
-.. [2] Wikipedia, &quot;Inverse hyperbolic function&quot;,
-       https://en.wikipedia.org/wiki/Arctanh
+  Args:
+    x: input array or scalar.
+
+  Returns:
+    An array of same shape as ``x`` containing the inverse of hyperbolic tangent
+    of each element of ``x``, promoting to inexact dtype.
+
+  Note:
+    - ``jnp.arctanh`` returns ``nan`` for real-values outside the range ``[-1, 1]``.
+    - ``jnp.arctanh`` follows the branch cut convention of :obj:`numpy.arctanh`
+      for complex inputs.
+
+  See also:
+    - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
+      input.
+    - :func:`jax.numpy.arcsinh`: Computes the element-wise inverse of hyperbolic
+      sine of the input.
+    - :func:`jax.numpy.arccosh`: Computes the element-wise inverse of hyperbolic
+      cosine of the input.
+
+  Examples:
+    &gt;&gt;&gt; x = jnp.array([-2, -1, -0.5, 0, 0.5, 1, 2])
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.arctanh(x)
+    Array([   nan,   -inf, -0.549,  0.   ,  0.549,    inf,    nan], dtype=float32)
+
+    For complex-valued input:
+
+    &gt;&gt;&gt; x1 = jnp.array([-2+0j, 3+0j, 4-1j])
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.arctanh(x1)
+    Array([-0.549+1.571j,  0.347+1.571j,  0.239-1.509j], dtype=complex64)
 </pre></div>
 </div>
 </dd></dl>
@@ -379,24 +409,53 @@ References
 <dl class="py method" id="cosh">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'cosh'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Hyperbolic cosine, element-wise.
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Calculate element-wise hyperbolic cosine of input.
 
-LAX-backend implementation of :func:`numpy.cosh`.
+  JAX implementation of :obj:`numpy.cosh`.
 
-*Original docstring below.*
+  The hyperbolic cosine is defined by:
 
-Equivalent to ``1/2 * (np.exp(x) + np.exp(-x))`` and ``np.cos(1j*x)``.
+  .. math:
 
-Parameters
-----------
-x : array_like
-    Input array.
+    cosh(x) = \frac{e^x + e^{-x}}{2}
 
-Returns
--------
-out : ndarray or scalar
-    Output array of same shape as `x`.
-    This is a scalar if `x` is a scalar.
+  Args:
+    x: input array or scalar.
+
+  Returns:
+    An array containing the hyperbolic cosine of each element of ``x``, promoting
+    to inexact dtype.
+
+  Note:
+    ``jnp.cosh`` is equivalent to computing ``jnp.cos(1j * x)``.
+
+  See also:
+    - :func:`jax.numpy.sinh`: Computes the element-wise hyperbolic sine of the input.
+    - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
+      input.
+    - :func:`jax.numpy.arccosh`:  Computes the element-wise inverse of hyperbolic
+      cosine of the input.
+
+  Examples:
+    &gt;&gt;&gt; x = jnp.array([[3, -1, 0],
+    ...                [4, 7, -5]])
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.cosh(x)
+    Array([[ 10.068,   1.543,   1.   ],
+           [ 27.308, 548.317,  74.21 ]], dtype=float32)
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.cos(1j * x)
+    Array([[ 10.068+0.j,   1.543+0.j,   1.   +0.j],
+           [ 27.308+0.j, 548.317+0.j,  74.21 +0.j]],      dtype=complex64, weak_type=True)
+
+    For complex-valued input:
+
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.cosh(5+1j)
+    Array(40.096+62.44j, dtype=complex64, weak_type=True)
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.cos(1j * (5+1j))
+    Array(40.096+62.44j, dtype=complex64, weak_type=True)
 </pre></div>
 </div>
 </dd></dl>
@@ -404,30 +463,41 @@ out : ndarray or scalar
 <dl class="py method" id="exp">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'exp'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Calculate the exponential of all elements in the input array.
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Calculate element-wise exponential of the input.
 
-LAX-backend implementation of :func:`numpy.exp`.
+  JAX implementation of :obj:`numpy.exp`.
 
-*Original docstring below.*
+  Args:
+    x: input array or scalar
 
-Parameters
-----------
-x : array_like
-    Input values.
+  Returns:
+    An array containing the exponential of each element in ``x``, promotes to
+    inexact dtype.
 
-Returns
--------
-out : ndarray or scalar
-    Output array, element-wise exponential of `x`.
-    This is a scalar if `x` is a scalar.
+  See also:
+    - :func:`jax.numpy.log`: Calculates element-wise logarithm of the input.
+    - :func:`jax.numpy.expm1`: Calculates :math:`e^x-1` of each element of the
+      input.
+    - :func:`jax.numpy.exp2`: Calculates base-2 exponential of each element of
+      the input.
 
-References
-----------
-.. [1] Wikipedia, &quot;Exponential function&quot;,
-       https://en.wikipedia.org/wiki/Exponential_function
-.. [2] M. Abramovitz and I. A. Stegun, &quot;Handbook of Mathematical Functions
-       with Formulas, Graphs, and Mathematical Tables,&quot; Dover, 1964, p. 69,
-       https://personal.math.ubc.ca/~cbm/aands/page_69.htm
+  Examples:
+    ``jnp.exp`` follows the properties of exponential such as :math:`e^{(a+b)}
+    = e^a * e^b`.
+
+    &gt;&gt;&gt; x1 = jnp.array([2, 4, 3, 1])
+    &gt;&gt;&gt; x2 = jnp.array([1, 3, 2, 3])
+    &gt;&gt;&gt; with jnp.printoptions(precision=2, suppress=True):
+    ...   print(jnp.exp(x1+x2))
+    [  20.09 1096.63  148.41   54.6 ]
+    &gt;&gt;&gt; with jnp.printoptions(precision=2, suppress=True):
+    ...   print(jnp.exp(x1)*jnp.exp(x2))
+    [  20.09 1096.63  148.41   54.6 ]
+
+    This property holds for complex input also:
+
+    &gt;&gt;&gt; jnp.allclose(jnp.exp(3-4j), jnp.exp(3)*jnp.exp(-4j))
+    Array(True, dtype=bool)
 </pre></div>
 </div>
 </dd></dl>
@@ -435,22 +505,44 @@ References
 <dl class="py method" id="expm1">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'expm1'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Calculate ``exp(x) - 1`` for all elements in the array.
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Calculate ``exp(x)-1`` of each element of the input.
 
-LAX-backend implementation of :func:`numpy.expm1`.
+  JAX implementation of :obj:`numpy.expm1`.
 
-*Original docstring below.*
+  Args:
+    x: input array or scalar.
 
-Parameters
-----------
-x : array_like
-    Input values.
+  Returns:
+    An array containing ``exp(x)-1`` of each element in ``x``, promotes to inexact
+    dtype.
 
-Returns
--------
-out : ndarray or scalar
-    Element-wise exponential minus one: ``out = exp(x) - 1``.
-    This is a scalar if `x` is a scalar.
+  Note:
+    ``jnp.expm1`` has much higher precision than the naive computation of
+    ``exp(x)-1`` for small values of ``x``.
+
+  See also:
+    - :func:`jax.numpy.log1p`: Calculates element-wise logarithm of one plus input.
+    - :func:`jax.numpy.exp`: Calculates element-wise exponential of the input.
+    - :func:`jax.numpy.exp2`: Calculates base-2 exponential of each element of
+      the input.
+
+  Examples:
+    &gt;&gt;&gt; x = jnp.array([2, -4, 3, -1])
+    &gt;&gt;&gt; with jnp.printoptions(precision=2, suppress=True):
+    ...   print(jnp.expm1(x))
+    [ 6.39 -0.98 19.09 -0.63]
+    &gt;&gt;&gt; with jnp.printoptions(precision=2, suppress=True):
+    ...   print(jnp.exp(x)-1)
+    [ 6.39 -0.98 19.09 -0.63]
+
+    For values very close to 0, ``jnp.expm1(x)`` is much more accurate than
+    ``jnp.exp(x)-1``:
+
+    &gt;&gt;&gt; x1 = jnp.array([1e-4, 1e-6, 2e-10])
+    &gt;&gt;&gt; jnp.expm1(x1)
+    Array([1.0000500e-04, 1.0000005e-06, 2.0000000e-10], dtype=float32)
+    &gt;&gt;&gt; jnp.exp(x1)-1
+    Array([1.00016594e-04, 9.53674316e-07, 0.00000000e+00], dtype=float32)
 </pre></div>
 </div>
 </dd></dl>
@@ -466,33 +558,24 @@ out : ndarray or scalar
 <dl class="py method" id="i0">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'i0'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Modified Bessel function of order 0.
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Modified bessel function of zeroth order.
 
-LAX-backend implementation of :func:`scipy.special.i0`.
+  JAX implementation of :obj:`scipy.special.i0`.
 
-*Original docstring below.*
+  .. math:
 
-Defined as,
+     \mathrm{i0}(x) = I_0(x) = \sum_{k=0}^\infty \frac{(x^2/4)^k}{(k!)^2}
 
-.. math:
-    I_0(x) = \sum_{k=0}^\infty \frac{(x^2/4)^k}{(k!)^2} = J_0(\imath x),
+  Args:
+    x: array, real-valued
 
-where :math:`J_0` is the Bessel function of the first kind of order 0.
+  Returns:
+    array of bessel function values.
 
-Parameters
-----------
-x : array_like
-    Argument (float)
-
-Returns
--------
-I : scalar or ndarray
-    Value of the modified Bessel function of order 0 at `x`.
-
-References
-----------
-.. [1] Cephes Mathematical Functions Library,
-       http://www.netlib.org/cephes/
+  See also:
+    - :func:`jax.scipy.special.i0e`
+    - :func:`jax.scipy.special.i1`
+    - :func:`jax.scipy.special.i1e`
 </pre></div>
 </div>
 </dd></dl>
@@ -500,34 +583,24 @@ References
 <dl class="py method" id="i1">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'i1'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Modified Bessel function of order 1.
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Modified bessel function of first order.
 
-LAX-backend implementation of :func:`scipy.special.i1`.
+  JAX implementation of :obj:`scipy.special.i1`.
 
-*Original docstring below.*
+  .. math:
 
-Defined as,
+     \mathrm{i1}(x) = I_1(x) = \frac{1}{2}x\sum_{k=0}^\infty\frac{(x^2/4)^k}{k!(k+1)!}
 
-.. math:
-    I_1(x) = \frac{1}{2}x \sum_{k=0}^\infty \frac{(x^2/4)^k}{k! (k + 1)!}
-           = -\imath J_1(\imath x),
+  Args:
+    x: array, real-valued
 
-where :math:`J_1` is the Bessel function of the first kind of order 1.
+  Returns:
+    array of bessel function values
 
-Parameters
-----------
-x : array_like
-    Argument (float)
-
-Returns
--------
-I : scalar or ndarray
-    Value of the modified Bessel function of order 1 at `x`.
-
-References
-----------
-.. [1] Cephes Mathematical Functions Library,
-       http://www.netlib.org/cephes/
+  See also:
+    - :func:`jax.scipy.special.i0`
+    - :func:`jax.scipy.special.i0e`
+    - :func:`jax.scipy.special.i1e`
 </pre></div>
 </div>
 </dd></dl>
@@ -584,30 +657,54 @@ base : scalar
 <dl class="py method" id="sinh">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'sinh'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Hyperbolic sine, element-wise.
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Calculate element-wise hyperbolic sine of input.
 
-LAX-backend implementation of :func:`numpy.sinh`.
+  JAX implementation of :obj:`numpy.sinh`.
 
-*Original docstring below.*
+  The hyperbolic sine is defined by:
 
-Equivalent to ``1/2 * (np.exp(x) - np.exp(-x))`` or
-``-1j * np.sin(1j*x)``.
+  .. math:
 
-Parameters
-----------
-x : array_like
-    Input array.
+    sinh(x) = \frac{e^x - e^{-x}}{2}
 
-Returns
--------
-y : ndarray
-    The corresponding hyperbolic sine values.
-    This is a scalar if `x` is a scalar.
+  Args:
+    x: input array or scalar.
 
-References
-----------
-M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions.
-New York, NY: Dover, 1972, pg. 83.
+  Returns:
+    An array containing the hyperbolic sine of each element of ``x``, promoting
+    to inexact dtype.
+
+  Note:
+    ``jnp.sinh`` is equivalent to computing ``-1j * jnp.sin(1j * x)``.
+
+  See also:
+    - :func:`jax.numpy.cosh`: Computes the element-wise hyperbolic cosine of the
+      input.
+    - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
+      input.
+    - :func:`jax.numpy.arcsinh`:  Computes the element-wise inverse of hyperbolic
+      sine of the input.
+
+  Examples:
+    &gt;&gt;&gt; x = jnp.array([[-2, 3, 5],
+    ...                [0, -1, 4]])
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.sinh(x)
+    Array([[-3.627, 10.018, 74.203],
+           [ 0.   , -1.175, 27.29 ]], dtype=float32)
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   -1j * jnp.sin(1j * x)
+    Array([[-3.627+0.j, 10.018-0.j, 74.203-0.j],
+           [ 0.   -0.j, -1.175+0.j, 27.29 -0.j]],      dtype=complex64, weak_type=True)
+
+    For complex-valued input:
+
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   jnp.sinh(3-2j)
+    Array(-4.169-9.154j, dtype=complex64, weak_type=True)
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   -1j * jnp.sin(1j * (3-2j))
+    Array(-4.169-9.154j, dtype=complex64, weak_type=True)
 </pre></div>
 </div>
 </dd></dl>
@@ -615,29 +712,30 @@ New York, NY: Dover, 1972, pg. 83.
 <dl class="py method" id="tan">
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">CrossKernel.</span></span><span class="sig-name descname"><span class="pre">algop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">'tan'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_crosskernel.py#L634-L681"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Compute tangent element-wise.
+<dd><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Compute a trigonometric tangent of each element of input.
 
-LAX-backend implementation of :func:`numpy.tan`.
+  JAX implementation of :obj:`numpy.tan`.
 
-*Original docstring below.*
+  Args:
+    x: scalar or array. Angle in radians.
 
-Equivalent to ``np.sin(x)/np.cos(x)`` element-wise.
+  Returns:
+    An array containing the tangent of each element in ``x``, promotes to inexact
+    dtype.
 
-Parameters
-----------
-x : array_like
-    Input array.
+  See also:
+    - :func:`jax.numpy.sin`: Computes a trigonometric sine of each element of input.
+    - :func:`jax.numpy.cos`: Computes a trigonometric cosine of each element of
+      input.
+    - :func:`jax.numpy.arctan` and :func:`jax.numpy.atan`: Computes the inverse of
+      trigonometric tangent of each element of input.
 
-Returns
--------
-y : ndarray
-    The corresponding tangent values.
-    This is a scalar if `x` is a scalar.
-
-References
-----------
-M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions.
-New York, NY: Dover, 1972.
+  Examples:
+    &gt;&gt;&gt; pi = jnp.pi
+    &gt;&gt;&gt; x = jnp.array([0, pi/6, pi/4, 3*pi/4, 5*pi/6])
+    &gt;&gt;&gt; with jnp.printoptions(precision=3, suppress=True):
+    ...   print(jnp.tan(x))
+    [ 0.     0.577  1.    -1.    -0.577]
 </pre></div>
 </div>
 </dd></dl>
@@ -890,8 +988,8 @@ newkernel : Kernel
       &#169;2020-2024, Giacomo Petrillo.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
-      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.1</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
       |
       <a href="../_sources/reference/kernelop.rst.txt"

@@ -7,9 +7,10 @@
 
     <title>BART &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
-    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=a66d8bb5" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
     <script src="../_static/documentation_options.js?v=841cbeb9"></script>
-    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -27,7 +28,7 @@
   </head><body>
   <div class="document">
     
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
 <h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
 
@@ -47,7 +48,16 @@
 
 
 
-<h3>Navigation</h3>
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../userguide/userguide.html">Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="reference.html">Reference</a><ul class="current">
@@ -80,16 +90,6 @@
   </ul></li>
 </ul>
 </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -178,7 +178,42 @@ defaults.</p>
 </dd>
 </dl>
 </dd>
+<dt class="field-even">Attributes<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>mean</strong><span class="classifier">gvar</span></dt><dd><p>The prior mean <span class="math notranslate nohighlight">\(\mu\)</span>.</p>
+</dd>
+<dt><strong>sigma</strong><span class="classifier">float or gvar</span></dt><dd><p>The error term standard deviation <span class="math notranslate nohighlight">\(\sigma\)</span>. If there are
+weights, the sdev for each unit is obtained dividing <code class="docutils literal notranslate"><span class="pre">sigma</span></code> by
+sqrt(weight).</p>
+</dd>
+<dt><strong>alpha</strong><span class="classifier">gvar</span></dt><dd><p>The numerator of the tree spawn probability <span class="math notranslate nohighlight">\(\alpha\)</span> (named
+<code class="docutils literal notranslate"><span class="pre">base</span></code> in BayesTree and BART).</p>
+</dd>
+<dt><strong>beta</strong><span class="classifier">gvar</span></dt><dd><p>The depth exponent of the tree spawn probability <span class="math notranslate nohighlight">\(\beta\)</span>
+(named <code class="docutils literal notranslate"><span class="pre">power</span></code> in BayesTree and BART).</p>
+</dd>
+<dt><strong>meansdev</strong><span class="classifier">gvar</span></dt><dd><p>The prior standard deviation <span class="math notranslate nohighlight">\(\lambda\)</span> of the latent
+regression function.</p>
+</dd>
+<dt><strong>fit</strong><span class="classifier">empbayes_fit</span></dt><dd><p>The hyperparameters fit object.</p>
+</dd>
 </dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bart.gp" title="lsqfitgp.bayestree.bart.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>(*[, hp, x_test, weights, rng])</p></td>
+<td><p>Create a Gaussian process with the fitted hyperparameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bart.data" title="lsqfitgp.bayestree.bart.data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code></a>(*[, hp, rng])</p></td>
+<td><p>Get the data to be passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.pred</span></code> on a GP object returned by <a class="reference internal" href="#lsqfitgp.bayestree.bart.gp" title="lsqfitgp.bayestree.bart.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bart.pred" title="lsqfitgp.bayestree.bart.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(*[, hp, error, format, x_test, ...])</p></td>
+<td><p>Predict the outcome at given locations.</p></td>
+</tr>
+</tbody>
+</table>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
@@ -221,43 +256,6 @@ this procedure.</p>
 observed covariates. This corresponds to settings <code class="docutils literal notranslate"><span class="pre">usequants=True</span></code>,
 <code class="docutils literal notranslate"><span class="pre">numcut=inf</span></code> in the R packages BayesTree and BART. Use the
 <code class="docutils literal notranslate"><span class="pre">kernelkw</span></code> parameter to customize the grid.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Attributes<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>mean</strong><span class="classifier">gvar</span></dt><dd><p>The prior mean <span class="math notranslate nohighlight">\(\mu\)</span>.</p>
-</dd>
-<dt><strong>sigma</strong><span class="classifier">float or gvar</span></dt><dd><p>The error term standard deviation <span class="math notranslate nohighlight">\(\sigma\)</span>. If there are
-weights, the sdev for each unit is obtained dividing <code class="docutils literal notranslate"><span class="pre">sigma</span></code> by
-sqrt(weight).</p>
-</dd>
-<dt><strong>alpha</strong><span class="classifier">gvar</span></dt><dd><p>The numerator of the tree spawn probability <span class="math notranslate nohighlight">\(\alpha\)</span> (named
-<code class="docutils literal notranslate"><span class="pre">base</span></code> in BayesTree and BART).</p>
-</dd>
-<dt><strong>beta</strong><span class="classifier">gvar</span></dt><dd><p>The depth exponent of the tree spawn probability <span class="math notranslate nohighlight">\(\beta\)</span>
-(named <code class="docutils literal notranslate"><span class="pre">power</span></code> in BayesTree and BART).</p>
-</dd>
-<dt><strong>meansdev</strong><span class="classifier">gvar</span></dt><dd><p>The prior standard deviation <span class="math notranslate nohighlight">\(\lambda\)</span> of the latent
-regression function.</p>
-</dd>
-<dt><strong>fit</strong><span class="classifier">empbayes_fit</span></dt><dd><p>The hyperparameters fit object.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-<p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bart.gp" title="lsqfitgp.bayestree.bart.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>(*[, hp, x_test, weights, rng])</p></td>
-<td><p>Create a Gaussian process with the fitted hyperparameters.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bart.data" title="lsqfitgp.bayestree.bart.data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code></a>(*[, hp, rng])</p></td>
-<td><p>Get the data to be passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.pred</span></code> on a GP object returned by <a class="reference internal" href="#lsqfitgp.bayestree.bart.gp" title="lsqfitgp.bayestree.bart.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bart.pred" title="lsqfitgp.bayestree.bart.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(*[, hp, error, format, x_test, ...])</p></td>
-<td><p>Predict the outcome at given locations.</p></td>
-</tr>
-</tbody>
-</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.bayestree.bart.data">
 <span class="sig-name descname"><span class="pre">data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'map'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bart.py#L316-L337"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bart.data" title="Link to this definition">¶</a></dt>
@@ -455,7 +453,49 @@ in future versions.</p>
 </dd>
 </dl>
 </dd>
+<dt class="field-even">Attributes<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>m</strong><span class="classifier">float or gvar</span></dt><dd><p>The prior mean <span class="math notranslate nohighlight">\(m\)</span>.</p>
+</dd>
+<dt><strong>sigma</strong><span class="classifier">gvar</span></dt><dd><p>The error term standard deviation <span class="math notranslate nohighlight">\(\sigma\)</span>. If there are
+weights, the sdev for each unit is obtained dividing <code class="docutils literal notranslate"><span class="pre">sigma</span></code> by
+sqrt(weight).</p>
+</dd>
+<dt><strong>alpha_mu, alpha_tau</strong><span class="classifier">gvar</span></dt><dd><p>The numerator of the tree spawn probability <span class="math notranslate nohighlight">\(\alpha_*\)</span> (named
+<code class="docutils literal notranslate"><span class="pre">base</span></code> in R bcf).</p>
+</dd>
+<dt><strong>beta_mu, beta_tau</strong><span class="classifier">gvar</span></dt><dd><p>The depth exponent of the tree spawn probability <span class="math notranslate nohighlight">\(\beta_*\)</span>
+(named <code class="docutils literal notranslate"><span class="pre">power</span></code> in R bcf).</p>
+</dd>
+<dt><strong>lambda_mu, lambda_tau</strong><span class="classifier">gvar</span></dt><dd><p>The prior standard deviation <span class="math notranslate nohighlight">\(\lambda_*\)</span>.</p>
+</dd>
+<dt><strong>z_0</strong><span class="classifier">gvar</span></dt><dd><p>The treatment coding parameter.</p>
+</dd>
+<dt><strong>fit</strong><span class="classifier">empbayes_fit</span></dt><dd><p>The hyperparameters fit object.</p>
+</dd>
 </dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.gp" title="lsqfitgp.bayestree.bcf.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>(*[, hp, z, x_mu, x_tau, pihat, x_aux, ...])</p></td>
+<td><p>Create a Gaussian process with the fitted hyperparameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.data" title="lsqfitgp.bayestree.bcf.data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code></a>(*[, hp, rng])</p></td>
+<td><p>Get the data to be passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.pred</span></code> on a GP object returned by <a class="reference internal" href="#lsqfitgp.bayestree.bcf.gp" title="lsqfitgp.bayestree.bcf.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.pred" title="lsqfitgp.bayestree.bcf.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(*[, hp, error, z, x_mu, x_tau, pihat, ...])</p></td>
+<td><p>Predict the transformed outcome at given locations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.from_data" title="lsqfitgp.bayestree.bcf.from_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_data</span></code></a>(y, *[, hp, rng])</p></td>
+<td><p>Transforms outcomes <span class="math notranslate nohighlight">\(y\)</span> to the regression variable <span class="math notranslate nohighlight">\(\eta\)</span>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.to_data" title="lsqfitgp.bayestree.bcf.to_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_data</span></code></a>(eta, *[, hp, rng])</p></td>
+<td><p>Convert the regression variable <span class="math notranslate nohighlight">\(\eta\)</span> to outcomes <span class="math notranslate nohighlight">\(y\)</span>.</p></td>
+</tr>
+</tbody>
+</table>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
@@ -542,50 +582,6 @@ Transformations to Improve Normality or Symmetry”. Biometrika. 87
 (4): 954–959. <a class="reference external" href="https://doi.org/10.1093/biomet/87.4.954">https://doi.org/10.1093/biomet/87.4.954</a></p>
 </div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Attributes<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>m</strong><span class="classifier">float or gvar</span></dt><dd><p>The prior mean <span class="math notranslate nohighlight">\(m\)</span>.</p>
-</dd>
-<dt><strong>sigma</strong><span class="classifier">gvar</span></dt><dd><p>The error term standard deviation <span class="math notranslate nohighlight">\(\sigma\)</span>. If there are
-weights, the sdev for each unit is obtained dividing <code class="docutils literal notranslate"><span class="pre">sigma</span></code> by
-sqrt(weight).</p>
-</dd>
-<dt><strong>alpha_mu, alpha_tau</strong><span class="classifier">gvar</span></dt><dd><p>The numerator of the tree spawn probability <span class="math notranslate nohighlight">\(\alpha_*\)</span> (named
-<code class="docutils literal notranslate"><span class="pre">base</span></code> in R bcf).</p>
-</dd>
-<dt><strong>beta_mu, beta_tau</strong><span class="classifier">gvar</span></dt><dd><p>The depth exponent of the tree spawn probability <span class="math notranslate nohighlight">\(\beta_*\)</span>
-(named <code class="docutils literal notranslate"><span class="pre">power</span></code> in R bcf).</p>
-</dd>
-<dt><strong>lambda_mu, lambda_tau</strong><span class="classifier">gvar</span></dt><dd><p>The prior standard deviation <span class="math notranslate nohighlight">\(\lambda_*\)</span>.</p>
-</dd>
-<dt><strong>z_0</strong><span class="classifier">gvar</span></dt><dd><p>The treatment coding parameter.</p>
-</dd>
-<dt><strong>fit</strong><span class="classifier">empbayes_fit</span></dt><dd><p>The hyperparameters fit object.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-<p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.gp" title="lsqfitgp.bayestree.bcf.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>(*[, hp, z, x_mu, x_tau, pihat, x_aux, ...])</p></td>
-<td><p>Create a Gaussian process with the fitted hyperparameters.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.data" title="lsqfitgp.bayestree.bcf.data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data</span></code></a>(*[, hp, rng])</p></td>
-<td><p>Get the data to be passed to <code class="xref py py-obj docutils literal notranslate"><span class="pre">GP.pred</span></code> on a GP object returned by <a class="reference internal" href="#lsqfitgp.bayestree.bcf.gp" title="lsqfitgp.bayestree.bcf.gp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gp</span></code></a>.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.pred" title="lsqfitgp.bayestree.bcf.pred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pred</span></code></a>(*[, hp, error, z, x_mu, x_tau, pihat, ...])</p></td>
-<td><p>Predict the transformed outcome at given locations.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.from_data" title="lsqfitgp.bayestree.bcf.from_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_data</span></code></a>(y, *[, hp, rng])</p></td>
-<td><p>Transforms outcomes <span class="math notranslate nohighlight">\(y\)</span> to the regression variable <span class="math notranslate nohighlight">\(\eta\)</span>.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.bayestree.bcf.to_data" title="lsqfitgp.bayestree.bcf.to_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_data</span></code></a>(eta, *[, hp, rng])</p></td>
-<td><p>Convert the regression variable <span class="math notranslate nohighlight">\(\eta\)</span> to outcomes <span class="math notranslate nohighlight">\(y\)</span>.</p></td>
-</tr>
-</tbody>
-</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.bayestree.bcf.data">
 <span class="sig-name descname"><span class="pre">data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'map'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rng</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/bayestree/_bcf.py#L671-L692"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.bayestree.bcf.data" title="Link to this definition">¶</a></dt>
@@ -730,7 +726,7 @@ over the regression function or <span class="math notranslate nohighlight">\(\et
 locations.</p>
 </dd>
 <dt>If <code class="docutils literal notranslate"><span class="pre">samples</span></code> is <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code> and <code class="docutils literal notranslate"><span class="pre">gvars</span></code> is <code class="xref py py-obj docutils literal notranslate"><span class="pre">True</span></code>:</dt><dd></dd>
-<dt><strong>out</strong><span class="classifier">(m,) array of gvars</span></dt><dd><p>The same distribution represented as an array of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v13.0.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GVar</span></code></a>
+<dt><strong>out</strong><span class="classifier">(m,) array of gvars</span></dt><dd><p>The same distribution represented as an array of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v13.1.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GVar</span></code></a>
 objects.</p>
 </dd>
 <dt>If <code class="docutils literal notranslate"><span class="pre">samples</span></code> is an integer:</dt><dd></dd>
@@ -799,8 +795,8 @@ the posterior. If a dict, use the given hyperparameters.</p>
       &#169;2020-2024, Giacomo Petrillo.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
-      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.1</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
       |
       <a href="../_sources/reference/bayestree.rst.txt"

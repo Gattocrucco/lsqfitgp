@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/sine.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -34,7 +34,7 @@ First, import the modules::
 I suppose you know about :mod:`numpy`, but you may not know about :mod:`gvar`.
 It is a module for automatic linear correlation tracking. We will se how to use
 it in the example, if you want to know more `it has a good documentation
-<https://gvar.readthedocs.io/en/latest/>`_.
+<https://gvar.readthedocs.io/en/stable/>`_.
 
 Now we generate some fake data. Let's make a sine:[#f1]_ ::
 
