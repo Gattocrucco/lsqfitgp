@@ -7,9 +7,10 @@
 
     <title>7. Multidimensional input &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
-    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=a66d8bb5" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
     <script src="../_static/documentation_options.js?v=841cbeb9"></script>
-    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -27,7 +28,7 @@
   </head><body>
   <div class="document">
     
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
 <h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
 
@@ -47,7 +48,16 @@
 
 
 
-<h3>Navigation</h3>
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="userguide.html">Guide</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="installation.html">1. Installation</a></li>
@@ -82,16 +92,6 @@
   </ul></li>
 </ul>
 </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -211,7 +211,7 @@ keyword to specify the dimension, and <code class="docutils literal notranslate"
 (it raises an error if it gets negative input points).</p>
 <p>In many dimensions it can get tedious to specify all the field names, it would
 be simpler if multidimensional input was implemented with arrays. Luckily
-<a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.26)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> supports array data types in fields. Let’s redo the first example,
+<a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v2.1)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> supports array data types in fields. Let’s redo the first example,
 this time without named fields:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="mi">2</span><span class="p">)])</span>
 <span class="n">xy</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
@@ -221,7 +221,7 @@ this time without named fields:</p>
 <p>Ok, I lied a bit, there’s still a field name around. It is needed because
 otherwise <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> would not know that the last axis with size 2 is a
 2-dimensional point instead of a pair of points, so we encapsulate it in a
-field. <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v1.26)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> treats the ellipsis <code class="docutils literal notranslate"><span class="pre">...</span></code> as a string of colons <code class="docutils literal notranslate"><span class="pre">:</span></code> of
+field. <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v2.1)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> treats the ellipsis <code class="docutils literal notranslate"><span class="pre">...</span></code> as a string of colons <code class="docutils literal notranslate"><span class="pre">:</span></code> of
 the appropriate length.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
     <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
@@ -271,8 +271,8 @@ write your own kernel.</p>
       &#169;2020-2024, Giacomo Petrillo.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
-      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.1</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
       |
       <a href="../_sources/userguide/in.rst.txt"
