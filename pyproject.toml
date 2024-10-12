@@ -28,7 +28,7 @@ authors = [
 ]
 description = "A general purpose Gaussian process regression module"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9" # oldest supported by jax 0.4.26
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
