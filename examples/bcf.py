@@ -13,14 +13,12 @@ import tqdm
 
 """
 
-Analyze a dataset from the ACIC 2022 Data Challenge [1]_ using GP-BCF.
-
-Website: https://acic2022.mathematica.org
+Analyze a dataset from the ACIC 2022 Data Challenge[1]_ using GP-BCF.
 
 .. [1] Dan R.C. Thal and Mariel M. Finucane, "Causal Methods Madness: Lessons
        Learned from the 2022 ACIC Competition to Estimate Health Policy
        Impacts," Observational Studies, Volume 9, Issue 3, 2023, pp. 3-27,
-       https://doi.org/10.1353/obs.2023.0023
+       https://doi.org/10.1353/obs.2023.0023, https://acic2022.mathematica.org
 
 """
 
@@ -228,9 +226,9 @@ print(f'\nSATT (truth) =\n{pprint.pformat(satt_true)}')
 fig, axs = plt.subplots(2, 1,
     num='bcf',
     clear=True,
-    layout='constrained',
     figsize=[6.4, 8],
     height_ratios=[2, 1],
+    layout='constrained',
 )
 ax_satt, ax_ps = axs
 

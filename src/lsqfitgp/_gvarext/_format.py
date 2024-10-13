@@ -56,14 +56,14 @@ def mantissa(x, n, e):
         s = s[:-1]
     return s, e
 
-def insert_dot(s, n, e, addzeros=True):
+def insert_dot(s, n, e, *, add_leading_zeros=True, trailing_zero_char='0'):
     e = e + len(s) - n
     n = len(s)
     if e >= n - 1:
-        s = s + '0' * (e - n + 1)
+        s = s + trailing_zero_char * (e - n + 1)
     elif e >= 0:
         s = s[:1 + e] + '.' + s[1 + e:]
-    elif e <= -1 and addzeros:
+    elif e <= -1 and add_leading_zeros:
         s = '0' * -e + s
         s = s[:1] + '.' + s[1:]
     return s
@@ -71,7 +71,15 @@ def insert_dot(s, n, e, addzeros=True):
 def tostring(x):
     return '0' if x == 0 else f'{x:#.6g}'
 
-def uformat(mu, s, errdig=2, sep=None, *, shareexp=True, outersign=False, uniexp=False, minnegexp=6, minposexp=4, padzeros=False, possign=False):
+def uformat(mu, s, errdig=2, sep=None, *,
+    shareexp=True,
+    outersign=False,
+    uniexp=False,
+    minnegexp=6,
+    minposexp=4,
+    padzero=None,
+    possign=False,
+    ):
     """
     Format a number with uncertainty.
     
@@ -110,10 +118,11 @@ def uformat(mu, s, errdig=2, sep=None, *, shareexp=True, outersign=False, uniexp
         The power of ten of the least significant digit at which exponential
         notation is used. Default 0. Setting higher values may force padding
         the error with zeros, depending on `errdig`.
-    padzeros : bool, default False
-        Whether to pad with zeros when not using exponential notation due to
-        `minposexp` even if the least significant digit is not on the units,
-        instead of showing more actual digits than those specified.
+    padzero : str, optional
+        If provided, a character representing 0 to pad with when not using
+        exponential notation due to `minposexp` even if the least significant
+        digit is not on the units, instead of showing more actual digits than
+        those specified.
     possign : bool, default False
         Whether to put a `+` before the central value when it is positive.
 
@@ -147,13 +156,16 @@ def uformat(mu, s, errdig=2, sep=None, *, shareexp=True, outersign=False, uniexp
     
     if use_exp:
         mumant = insert_dot(mumant, mundig, muexp - base_exp)
-        smant = insert_dot(smant, sndig, sexp - base_exp, sep is not None)
-    elif base_exp >= max(mundig, sndig) and not padzeros:
+        smant = insert_dot(smant, sndig, sexp - base_exp, add_leading_zeros=sep is not None)
+    elif base_exp >= max(mundig, sndig) and padzero is None:
         mumant = str(abs(round(mu)))
         smant = str(abs(round(s)))
     else:
-        mumant = insert_dot(mumant, mundig, muexp)
-        smant = insert_dot(smant, sndig, sexp, sep is not None)
+        zerochar = '0' if padzero is None else padzero
+        mumant = insert_dot(mumant, mundig, muexp, trailing_zero_char=zerochar)
+        if len(mumant) >= 2 and mumant.startswith('0') and all(c == zerochar for c in mumant[1:]):
+            mumant = zerochar + mumant[1:]
+        smant = insert_dot(smant, sndig, sexp, add_leading_zeros=sep is not None, trailing_zero_char=zerochar)
     
     if not outersign:
         mumant = musign + mumant
@@ -182,11 +194,6 @@ def uformat(mu, s, errdig=2, sep=None, *, shareexp=True, outersign=False, uniexp
         r = musign + r
     
     return r
-
-    # TODO padzeros=False, use a different character (O, o, #) instead of 0 to
-    # mark what's going on. (I prefer 'o' currently.) I guess that I have to
-    # place it in insert_do in the first case of the conditional, but I'm not
-    # sure, I have to test it in the unit tests.
 
 def fmtspec_kwargs(spec):
     """
@@ -219,7 +226,7 @@ def fmtspec_kwargs(spec):
         error mantissas in exponential notation.
     '#' :
         Do not show non-significative digits at all costs, replacing them with
-        zeros.
+        lowercase 'o', representing a rounding 0 rather than a significative 0.
     '$' :
         In exponential notation, repeat the exponent for the central value and
         error.
@@ -251,7 +258,7 @@ def fmtspec_kwargs(spec):
     options = m.group(1)
     kw['possign'] = '+' in options
     kw['outersign'] = '-' in options
-    kw['padzeros'] = '#' in options
+    kw['padzero'] = 'o' if '#' in options else None
     kw['shareexp'] = '$' not in options
     if m.group(2):
         kw['errdig'] = float(m.group(2))

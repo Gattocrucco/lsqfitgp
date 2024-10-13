@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/reference/bayestree.rst
 ..
-.. Copyright (c) 2023, Giacomo Petrillo
+.. Copyright (c) 2023, 2024, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -24,7 +24,7 @@ BART
 
 The `bayestree` submodule contains classes to set up a Gaussian process
 regression with the `~lsqfitgp.BART` kernel. See the :ref:`bart <bart>`,
-:ref:`barteasy <barteasy>` and :ref:`acic <acic>` examples.
+:ref:`barteasy <barteasy>` and :ref:`bcf <bcf>` examples.
 
 The original version of these models is implemented in the R packages `BART
 <https://cran.r-project.org/package=BART>`_, `dbarts

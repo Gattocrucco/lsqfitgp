@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_gvar.py
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -196,7 +196,7 @@ def test_gvar_format():
         # mean, sdev, spec, result
         (1, 12, '1p', '1(12)'),
         (1, 1234, 'p', '1(1234)'),
-        (1, 1234, '#p', '000(1200)'),
+        (1, 1234, '#p', 'ooo(12oo)'),
         (1, 1234, ':2p', '0.0(1.2)e+3'),
         (1, 1234, ':2u', '(0.0 ± 1.2)e+3'),
         (1, 1234, ':2U', '(0.0 ± 1.2)×10³'),

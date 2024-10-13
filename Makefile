@@ -133,6 +133,8 @@ resetenv-old:
 clean:
 	rm -f $(GENDOCS)
 	make -C docs clean
+	rm -f docs/*/*.png
+	rm -f docs/*/*/*.png
 	rm -fr htmlcov
 	rm -f .coverage*
 	rm -f coverage.xml
@@ -143,3 +145,6 @@ clean:
 	rm -fr src/lsqfitgp/*/__pycache__
 	rm -fr tests/__pycache__
 	rm -fr tests/*/__pycache__
+	# TODO remove example plots, difficulties:
+	#      - skip committed ones
+	#      - the plot file name may be numbered or not
