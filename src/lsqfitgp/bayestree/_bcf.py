@@ -758,7 +758,13 @@ class bcf:
 
         # check consistency of output choice
         if samples is None:
-            assert transformed, 'can not compute analytically posterior of y'
+            if not transformed:
+                raise ValueError('Posterior is required in analytical form '
+                                 '(samples=None) and in data space '
+                                 '(transformed=False), this is not possible as '
+                                 'the transformation model space -> data space '
+                                 'is arbitrary. Either sample the posterior or '
+                                 'get the result in model space.')
         else:
             if not transformed:
                 assert error, 'can not compute y without error term'

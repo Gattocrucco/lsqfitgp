@@ -1,6 +1,6 @@
 # lsqfitgp/_gvarext/_format.py
 #
-# Copyright (c) 2023, 2024 Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -182,6 +182,11 @@ def uformat(mu, s, errdig=2, sep=None, *, shareexp=True, outersign=False, uniexp
         r = musign + r
     
     return r
+
+    # TODO padzeros=False, use a different character (O, o, #) instead of 0 to
+    # mark what's going on. (I prefer 'o' currently.) I guess that I have to
+    # place it in insert_do in the first case of the conditional, but I'm not
+    # sure, I have to test it in the unit tests.
 
 def fmtspec_kwargs(spec):
     """

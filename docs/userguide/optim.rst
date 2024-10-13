@@ -103,7 +103,7 @@ Example::
         yplot_sdev = jnp.sqrt(jnp.diag(yplot_cov))
         return yplot_mean, yplot_sdev
     
-    doinference_compiled = jax.jit(doinference, static_argnames=['solver', 'checkpos', 'checksym'])
+    doinference_compiled = jax.jit(doinference, static_argnames=['checkpos', 'checksym'])
     # static_argnames indicates the function parameters that are not numerical
     # and should not be dealt with by the compiler, I've put some I will use
     # later

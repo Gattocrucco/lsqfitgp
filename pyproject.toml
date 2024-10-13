@@ -80,6 +80,7 @@ dev = [ # to work locally on lsqfitgp
     "statsmodels",
     "tqdm",
     "tabulate",
+    "appnope",
 ]
 
 tests = [ # to run the unit tests on CI
