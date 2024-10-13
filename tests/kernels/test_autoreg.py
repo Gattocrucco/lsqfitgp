@@ -101,7 +101,6 @@ def test_phase_degeneracy():
         c2 = lgp.AR(slnr=[], lnc=lnc(ph2))(0, lag)
         util.assert_allclose(c2, c1, atol=0, rtol=1e-13)
 
-@util.winxfail
 def test_real_complex():
     lag = np.arange(100)
     for r in np.logspace(-5, 0, 10):

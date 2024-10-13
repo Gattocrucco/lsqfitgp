@@ -582,9 +582,9 @@ class bcf:
         -------
         gp : GP
             A centered Gaussian process object. To add the mean, use the `m`
-            attribute of the `bcf` object. The keys of the GP are ``'Xmean'``,
-            ``'Xnoise'``, and ``'X'``, where the "X" stands either for 'train'
-            or 'test', and X = Xmean + Xnoise.
+            attribute of the `bcf` object. The keys of the GP are ``'@mean'``,
+            ``'@noise'``, and ``'@'``, where the "@" stands either for 'train'
+            or 'test', and @ = @mean + @noise.
 
             This Gaussian process is defined on the transformed data ``eta``.
         """
@@ -768,9 +768,16 @@ class bcf:
                                  'is arbitrary. Either sample the posterior or '
                                  'get the result in model space.')
         else:
-            if not transformed:
-                assert error, 'can not compute y without error term'
+            if not transformed and not error:
+                raise ValueError('Posterior is required in data space '
+                                 '(transformed=False) and without error term '
+                                 '(error=False), this is not possible as the '
+                                 'transformation model space -> data space '
+                                 'applies after adding the error.')
             assert not gvars, 'can not represent posterior samples as gvars'
+
+        # TODO allow exceptions to these rules when there are no transformations
+        # or the only transformation is 'standardize'.
         
         # get hyperparameters
         hp = self._gethp(hp, rng)
@@ -807,6 +814,12 @@ class bcf:
         if not transformed:
             sample = self._to_data(hp, sample)
         return sample
+
+        # TODO the default should be something in data space, so with samples.
+        # If I handle the analyitical posterior through standardize, I could
+        # also make it without samples by default. Although I guess for
+        # whatever calculations samples are more convenient (just do the
+        # calculation on the samples.)
 
     @functools.cached_property
     def _pred(self):

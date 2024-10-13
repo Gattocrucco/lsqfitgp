@@ -205,6 +205,8 @@ def _assert_similar_gvars(g, h, rtol, atol):
     g = np.reshape(g, -1)
     h = np.reshape(h, -1)
     assert_close_matrices(gvar.evalcov(g), gvar.evalcov(h), rtol=rtol, atol=atol)
+    # TODO does it make sense for rtol and atol to be the same in the two
+    # checks? Maybe rtol
 
 def assert_similar_gvars(*gs, rtol=0, atol=0):
     if gs:
@@ -236,5 +238,3 @@ def assert_equal_bufferdict(x, y):
     assert np.all(x.buf == y.buf)
     assert list(x.keys()) == list(y.keys())
     assert all(x.slice_shape(k) == y.slice_shape(k) for k in x.keys())
-
-winxfail = pytest.mark.xfail(False and sys.platform.startswith('win'), reason="Looks like the calculation is done at fp32 accuracy, guess it's a jax bug on Windows")

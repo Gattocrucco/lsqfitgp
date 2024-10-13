@@ -1,6 +1,6 @@
 # lsqfitgp/tests/conftest.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -24,6 +24,7 @@ import gzip
 import pytest
 import gvar
 import numpy as np
+import jax
 
 @pytest.fixture(autouse=True)
 def clean_gvar_env():
@@ -39,6 +40,13 @@ def rng(request):
     nodeid = request.node.nodeid
     seed = np.array([nodeid], np.bytes_).view(np.uint8)
     return np.random.default_rng(seed)
+
+@pytest.fixture
+def key(rng):
+    """ A deterministic per-test jax random key """
+    seed = np.array(rng.bytes(4)).view(np.uint32)
+    key = jax.random.key(seed)
+    return jax.random.fold_in(key, 0xcc755e92) # to make it independent of rng
 
 @pytest.fixture(autouse=True)
 def reset_random_seeds(rng):
