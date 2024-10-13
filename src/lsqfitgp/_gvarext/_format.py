@@ -293,7 +293,7 @@ def gvar_format(spec=None, *, lsqfitgp_format=True):
     ----------
     spec : str, optional
         The format specification. If not specified and `lsqfitgp_format` is
-        ``True``, use ``'1.5p'``.
+        ``True``, use ``'#1.5p'``.
     lsqfitgp_format : bool, default True
         Whether to use a modified version of the `gvar` formatting
         specification, provided by `lsqfitgp`.
@@ -309,7 +309,7 @@ def gvar_format(spec=None, *, lsqfitgp_format=True):
     """
     if lsqfitgp_format:
         if spec is None:
-            spec = '1.5p'
+            spec = '#1.5p'
         def formatter(g, spec, defaultspec=spec):
             if spec == '':
                 spec = defaultspec

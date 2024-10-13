@@ -13,7 +13,7 @@ import tqdm
 
 """
 
-Analyze a dataset from the ACIC 2022 Data Challenge[1]_ using GP-BCF.
+Analyze a dataset from the ACIC 2022 Data Challenge [1]_ using GP-BCF.
 
 .. [1] Dan R.C. Thal and Mariel M. Finucane, "Causal Methods Madness: Lessons
        Learned from the 2022 ACIC Competition to Estimate Health Policy

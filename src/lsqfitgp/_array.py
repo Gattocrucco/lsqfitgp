@@ -177,15 +177,24 @@ class StructuredArray:
         return len(self.shape)
 
     @property
+    def nbytes(self):
+        return sum(x.nbytes for x in self._dict.values())
+
+    @property
     def T(self):
         if self.ndim < 2:
             return self
         return self.swapaxes(self.ndim - 2, self.ndim - 1)
 
+        # TODO this is mT, not T! Make a unit test and correct it.
+
     def swapaxes(self, i, j):
         shape = jax.eval_shape(lambda: jnp.empty(self.shape).swapaxes(i, j)).shape
         d = {k: v.swapaxes(i, j) for k, v in self._dict.items()}
         return self._array(shape, self.dtype, d)
+
+        # TODO: doesn't this break when the indices are negative and there is
+        # an array field? Test it.
 
     def __len__(self):
         if self.shape:
@@ -451,8 +460,8 @@ class broadcast:
 
 def asarray(x, dtype=None):
     """
-    Version of numpy.asarray that works with StructuredArray and JAX arrays.
-    If x is not an array already, returns a JAX array if possible.
+    Version of `numpy.asarray` that works with `StructuredArray` and JAX arrays.
+    If `x` is not an array already, returns a JAX array if possible.
     """
     if isinstance(x, (StructuredArray, jnp.ndarray, numpy.ndarray)):
         return x if dtype is None else x.astype(dtype)
@@ -497,7 +506,7 @@ def unstructured_to_structured(arr,
     copy=False,
     casting='unsafe'):
     """ Like `numpy.lib.recfunctions.unstructured_to_structured`, but outputs a
-    StructuredArray. """
+    `StructuredArray`. """
     arr = asarray(arr)
     if not arr.ndim:
         raise ValueError('arr must have at least one dimension')
@@ -567,6 +576,10 @@ def _nd(dtype):
         return size
     else:
         return size * sum(_nd(base[name]) for name in base.names)
+
+    # I use this function in many parts of the package so it should not have an
+    # underscore, even if I don't export it in the main namespace. And move it
+    # to utils, it's not specific to StructuredArray.
 
 def _structured_to_unstructured_recursive(idx, arr, out, *strides):
     dtype = arr.dtype

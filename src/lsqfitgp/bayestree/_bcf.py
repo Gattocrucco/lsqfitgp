@@ -1,6 +1,6 @@
 # lsqfitgp/bayestree/_bcf.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -33,6 +33,8 @@ from .. import _array
 from .. import _GP
 from .. import _fastraniter
 from .. import _jaxext
+from .. import _gvarext
+from .. import _utils
 
 # TODO add methods or options to do causal inference stuff, e.g., impute missing
 # outcomes, or ate, att, cate, catt, sate, satt. Remember that the effect may
@@ -235,8 +237,8 @@ class bcf:
             \tau &\sim \mathrm{GP}(0,
                 \mathrm{BART}(\alpha_\tau, \beta_\tau) ), \\
             \mathrm{aux} & \sim \mathrm{GP}(0, \text{<user defined>}), \\
-            \alpha_\mu, \alpha_\tau &\sim \mathrm{B}(2, 1), \\
-            \beta_\mu, \beta_\tau &\sim \mathrm{IG}(1, 1), \\
+            \alpha_\mu, \alpha_\tau &\sim \mathrm{Beta}(2, 1), \\
+            \beta_\mu, \beta_\tau &\sim \mathrm{InvGamma}(1, 1), \\
             z_0 &\sim U(0, 1),
 
         To make the inference, :math:`(\mu, \tau, \boldsymbol\varepsilon, m,
@@ -928,31 +930,74 @@ class bcf:
         return _array.unstructured_to_structured(ix, dtype=dtype)
 
     def __repr__(self):
-        if hasattr(self.m, 'sdev'):
-            m = str(self.m)
-        else:
-            m = f'{self.m:.3g}'
 
-        out = f"""BCF fit:
-alpha_mu/tau = {self.alpha_mu} {self.alpha_tau} (0 -> intercept only, 1 -> any)
-beta_mu/tau = {self.beta_mu} {self.beta_tau} (0 -> any, ∞ -> no interactions)
-z_0 = {self.z_0} (mu model applies at z = z_0)
-m = {m}
-lambda_mu/tau = {self.lambda_mu} {self.lambda_tau} (large -> conservative extrapolation)"""
+        with _gvarext.gvar_format():
+            if hasattr(self.m, 'sdev'):
+                m = str(self.m)
+            else:
+                m = f'{self.m:.3g}'
 
-        weights = self.fit.gpfactorykw['weights']
-        if weights is None:
+            n = self.fit.gpfactorykw['y'].size
+            p_mu = _array._nd(self.fit.gpfactorykw['i_mu']['x'].dtype)
+            x_tau = self.fit.gpfactorykw['i_tau']
+            x_aux = self.fit.gpfactorykw['x_aux']
+
+            out = f"""\
+Data:
+    n = {n}"""
+
+            if x_tau is None:
+                out += f"""
+    p = {p_mu}"""
+            else:
+                p_tau = _array._nd(x_tau['x'].dtype)
+                out += f"""
+    p_mu/tau = {p_mu}, {p_tau}"""
+
+            if x_aux is not None:
+                p_aux = _array._nd(x_aux['x'].dtype)
+                out += f"""
+    p_aux = {p_aux}"""
+
             out += f"""
-sigma = {self.sigma}"""
+Hyperparameter posterior:
+    m = {m}
+    z_0 = {self.z_0}
+    alpha_mu/tau = {self.alpha_mu} {self.alpha_tau}
+    beta_mu/tau = {self.beta_mu} {self.beta_tau}
+    lambda_mu/tau = {self.lambda_mu} {self.lambda_tau}"""
+
+            weights = self.fit.gpfactorykw['weights']
+            if weights is None:
+                out += f"""
+    sigma = {self.sigma}"""
+            
+            else:
+                weights = numpy.array(weights) # to avoid jax taking over the ops
+                avgsigma = numpy.sqrt(numpy.mean(self.sigma ** 2 / weights))
+                out += f"""
+    sqrt(mean(sigma^2/w))  = {avgsigma}
+    sigma = {self.sigma}"""
+
+        out += """
+Meaning of hyperparameters:
+    mu(x) = reference outcome level
+    tau(x) = effect of the treatment
+    z_0 in (0, 1): reference treatment level
+        z_0 -> 0: mu is the model of the untreated
+        z_0 -> 1: mu is the model of the treated
+    alpha in (0, 1)
+        alpha -> 0: constant function
+        alpha -> 1: no constraints on the function
+    beta in (0, ∞)
+        beta -> 0: no constraints on the function
+        beta -> ∞: no interactions, f(x) = f1(x1) + f2(x2) + ...
+    lambda in (0, ∞): standard deviation of function
+        lambda small: confident extrapolation
+        lambda large: conservative extrapolation
+    sigma in (0, ∞): standard deviation of i.i.d. error"""
         
-        else:
-            weights = numpy.array(weights) # to avoid jax taking over the ops
-            avgsigma = numpy.sqrt(numpy.mean(self.sigma ** 2 / weights))
-            out += f"""
-sqrt(mean(sigma^2/w))  = {avgsigma}
-sigma = {self.sigma}"""
-
-        return out
+        return _utils.top_bottom_rule('BCF', out)
 
         # TODO print user parameters, applying transformations. Copy the dict and use .pop() to remove the predefined params as they are printed.
 

@@ -1,6 +1,6 @@
 # lsqfitgp/docs/runcode.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -64,26 +64,29 @@ def runcode(file):
     np.random.seed(0)
     gvar.ranseed(0)
     globals_dict = {}
-    with lgp.switchgvar():
+    with plt.style.context('tableau-colorblind10', after_reset=True):
+        with lgp.switchgvar():
 
-        # run code
-        for match in pattern.finditer(text):
-            codeblock = match.group(1)
-            print(58 * '-' + '\n')
-            code = textwrap.dedent(codeblock).strip()
-            printcode = '\n'.join(
-                f' {i + 1:2d}  ' + l
-                for i, l in enumerate(code.split('\n'))
-            )
-            pyprint(printcode)
+            # run code
+            for match in pattern.finditer(text):
+                codeblock = match.group(1)
+                print(58 * '-' + '\n')
+                code = textwrap.dedent(codeblock).strip()
+                printcode = '\n'.join(
+                    f' {i + 1:2d}  ' + l
+                    for i, l in enumerate(code.split('\n'))
+                )
+                pyprint(printcode)
 
-            with contextlib.chdir(file.parent):
-                exec(code, globals_dict)
+                with contextlib.chdir(file.parent):
+                    exec(code, globals_dict)
+
+    # cleanup
+    gc.collect()
+    jax.clear_caches()
 
 for file in sys.argv[1:]:
     s = f'*  running {file}  *'
     line = '*' * len(s)
     print('\n' + line + '\n' + s + '\n' + line)
     runcode(file)
-    gc.collect()
-    jax.clear_caches()
