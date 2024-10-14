@@ -148,3 +148,5 @@ clean:
 	## TODO remove example plots, difficulties:
 	##      - skip committed ones
 	##      - the plot file name may be numbered or not
+
+## TODO maube it's not a good thing to count coverage in examples and docscode, because if it goes wrong there is no alert, it already happened a few times. Or I could have a separate coverage report for examples & documentation.

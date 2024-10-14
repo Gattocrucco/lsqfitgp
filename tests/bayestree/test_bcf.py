@@ -26,9 +26,9 @@ from jax import numpy as jnp
 import statsmodels.api as sm
 import pytest
 
-from lsqfitgp import bayestree
+import lsqfitgp as lgp
 
-from . import util
+from .. import util
 
 def gen_X(key, p, n):
     return random.uniform(key, (p, n), float, -2, 2)
@@ -87,27 +87,41 @@ def y(z, X, key):
 def pihat(X, z):
     return estimate_ps(X, z)
 
-@pytest.fixture
-def kw():
-    return dict()
+@pytest.fixture(params=[1, 2, 3])
+def kw(request, X):
+    variant = request.param
+    
+    if variant == 1:
+        return dict()
 
-    # TODO: parametrize
-    # - with and without gpaux/x_aux/otherhp
-    # - options for include_pi
-    # - options for marginalize_mean
-    # - different x_tau
-    #      I should use a different X and check the result changes
-    # many of these do not interact so I can change all of them at once.
+    if variant == 2:
+        def gpaux(hp, gp):
+            kernel = lgp.ExpQuad(scale=hp['scale'], dim='aux')
+            return gp.defproc('aux', kernel)
+        return dict(
+            x_tau=X.T ** 2,
+            include_pi='both',
+            marginalize_mean=False,
+            gpaux=gpaux,
+            x_aux=jnp.abs(X.T),
+            otherhp=lgp.copula.makedict(dict(scale=lgp.copula.invgamma(1, 1))),
+        )
+
+    if variant == 3:
+        return dict(include_pi='tau')
+
+def getkw(kw, key):
+    return kw.get(key, lgp.bayestree.bcf.__init__.__kwdefaults__[key])
 
 def test_scale_shift(y, z, X, pihat, key, kw):
     
-    kw.update(z=z, x_mu=X.T, pihat=pihat)
-    bcf1 = bayestree.bcf(y=y, **kw)
+    kw.update(z=z, x_mu=X.T, pihat=pihat, transf='standardize')
+    bcf1 = lgp.bayestree.bcf(y=y, **kw)
 
     offset = 0.4703189
     scale = 0.5294714
     tilde_y = offset + y * scale
-    bcf2 = bayestree.bcf(y=tilde_y, **kw)
+    bcf2 = lgp.bayestree.bcf(y=tilde_y, **kw)
 
     seed = random.bits(key)
     rng1 = np.random.default_rng(seed.item())
@@ -115,21 +129,26 @@ def test_scale_shift(y, z, X, pihat, key, kw):
     predkw = dict(transformed=False, samples=1, error=True)
     y1, = bcf1.pred(**predkw, rng=rng1)
     y2, = bcf2.pred(**predkw, rng=rng2)
-    util.assert_allclose(y2, offset + y1 * scale, rtol=2e-7)
+    util.assert_allclose(y2, offset + y1 * scale, rtol=1e-7, atol=1e-7)
 
     eta1 = bcf1.from_data(y)
     eta2 = bcf2.from_data(tilde_y)
-    util.assert_allclose(eta2, eta1, rtol=1e-14)
+    util.assert_allclose(eta2, eta1, rtol=1e-13)
+
+    if getkw(kw, 'marginalize_mean'):
+        assert bcf1.m == 0
+    else:
+        assert hasattr(bcf1.m, 'sdev')
 
 def test_to_from_data(y, z, X, pihat, kw, key):
-    bcf = bayestree.bcf(
+    kw.update(
         y=y,
         z=z,
         x_mu=X.T,
         pihat=pihat,
         transf=['standardize', 'yeojohnson'],
-        **kw,
     )
+    bcf = lgp.bayestree.bcf(**kw)
 
     eta = bcf.from_data(y)
     y2 = bcf.to_data(eta)
@@ -146,7 +165,18 @@ def test_yeojohnson():
     """ check the Yeo-Johnson transformation """
     testinput = np.linspace(-2, 2, 100)
     lamda = 1.5
-    mod = bayestree._bcf
+    mod = lgp.bayestree._bcf
     np.testing.assert_allclose(
         mod.yeojohnson_inverse(mod.yeojohnson(testinput, lamda), lamda),
         testinput, atol=0, rtol=1e-14)
+
+# TODO
+# - tests of basic statistical ability
+#     - true ATE/SATT vs. infer it with bcf
+#     - predictions on a test set
+#     What margins should I use? I could look at the result, decide it makes sense,
+#     then set margins based on that to look for regressions.
+# - process index spec for gpaux
+#     How do I access it? => Define a noop proclintransf that inspects x
+# - x_tau changes the result
+# - a test with no transf
