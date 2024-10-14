@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/index.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -56,6 +56,7 @@ Manual for older versions
 -------------------------
 
   * `Latest development version <https://gattocrucco.github.io/lsqfitgp/docs/index.html>`_
+  * `0.21 <https://gattocrucco.github.io/lsqfitgp/docs-0.21/index.html>`_
   * `0.20.2 <https://gattocrucco.github.io/lsqfitgp/docs-0.20.2/index.html>`_
   * `0.20 <https://gattocrucco.github.io/lsqfitgp/docs-0.20/index.html>`_
   * `0.19 <https://gattocrucco.github.io/lsqfitgp/docs-0.19/index.html>`_

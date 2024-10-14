@@ -1,6 +1,6 @@
 <!--- lsqfitgp/docs/changelog.md
 
-  Copyright (c) 2023, Giacomo Petrillo
+  Copyright (c) 2023, 2024, Giacomo Petrillo
 
   This file is part of lsqfitgp.
 
@@ -22,6 +22,55 @@
   copy-pastable to github releases. -->
 
 # Changelog
+
+
+## 0.21 Release early, release often, then hide in a foreign country and wait one year (2024-10-14)
+
+Thanks to waiting one year, Google and the Python Software Foundation have substantially improved `jax` and Python, making `lsqfitgp` faster and supported on Windows, through no effort of my own.
+
+### Release highlights
+
+  * Improved `gvar` formatting.
+  * Data transformations in `bayestree.bcf`.
+
+### Improved formatting of uncertainties
+
+Improved gvar formatting. Disabled by default, can be enabled with the context manager `gvar_format`. The new format has more options than the one provided by `gvar`. In particular the default setting has 1.5 error digits instead of 2, and never shows non-significant digits.
+
+  * Fractional error digits: with 1.5 digits, 2 error digits are shown up to $\sqrt{10}$, then 1. So 12.3 +/- 1.5 becomes `'12.3(1.5)`, while 12.3 +/- 4.5 becomes `'12(4)'`.
+  * Never show non-significant digits: the `gvar` formatter displays 1200 +/- 500 as `'1(234)'`, showing more digits than the first 2 error digits. The new formatter instead writes `'oo(23o)'`, using `o` as a "small zero" symbol to represent a rounding zero rather than a significant zero. This also allows to avoid exponential notation for small numbers: 1234 +/- 567 is shown as `'1.23(57)e+03'` with the default formatter, and as `'12oo(6oo)'` with the new formatter.
+
+The new formatter can also be used manually without gvars through `uformat`.
+
+### BCF
+
+  * Data transformations, with free parameters inferred together with the other hyperparameters, thus accounting for the additional degrees of freedom due to the transformation. The predefined transformations are standardization and Yeo-Johnson. The user can pass arbitrary callables, and  easily stack their own transformations with the predefined ones.
+  * The hyperparameters are always expressed in the transformed model, instead of rescaled for standardization, since now the data transformation is under control of the user.
+  * `bcf.pred` can sample the predictive posterior, and return results in the transformed space instead of data space.
+
+### `empbayes_fit`
+
+  * New parameter `empbayesfit(..., additional_loss=<func>)` to add an user-specified function to the minus log marginal posterior of the hyperparameters used to find the MAP.
+  * Fix show-stopping bug with old numpy versions if there were more than 1 hyperparameters.
+
+### Dependencies
+
+As usual I run tests with the oldest supported versions of all dependencies. Additionally, I now check that the versions pre-installed on Google Colab are supported.
+
+  * Minimum required versions bumped to:
+    * Python 3.8 -> 3.9
+    * numpy 1.20 -> 1.22
+    * scipy 1.5 -> 1.10
+    * jax 0.4.6 -> 0.4.26
+    * gvar 11.10.1 -> 12.0
+  * New supported versions/platforms:
+    * Python 3.12
+    * numpy 2
+    * Windows fully supported instead of experimental
+
+### `StructuredArray`
+
+  * Implemented `StructuredArray.nbytes`.
 
 
 ## 0.20.2 This release marks a detente in the ongoing lsqfitgp-jax conflict (2023-10-18)
