@@ -1,6 +1,6 @@
 # lsqfitgp/_fit.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -480,9 +480,8 @@ class empbayes_fit(Logger):
                 xjac = dec.correlate(jac)
                 x = _gvarext.from_jacobian(xmean, xjac, indices)
                 y = numpy.empty(flatfix.size, x.dtype)
-                y[unfixed_indices] = x
-                y[fixed_indices] = fixed_values
-                    # TODO maybe I should explicitly convert the indices jax arrays to numpy arrays
+                numpy.put(y, unfixed_indices, x)
+                numpy.put(y, fixed_indices, fixed_values)
             else:
                 x = mean + dec.correlate(x)
                 y = jnp.empty(flatfix.size, x.dtype)

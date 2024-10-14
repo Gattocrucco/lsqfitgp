@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_fit.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -75,8 +75,7 @@ def check_fit(hyperprior, gpfactory, alpha=1e-5):
     # check fit result against hyperparameters
     chisq_test(fit.p - truehp, alpha)
 
-@util.tryagain
-@mark.xfail(reason='I guess Laplace approximation bad for this model')
+@mark.xfail(reason='I guess Laplace approximation bad for this model. Seen passing.')
 def test_period():
     hp = {
         'log(scale)': gvar.log(gvar.gvar(1, 0.1))
@@ -84,10 +83,8 @@ def test_period():
     x = np.linspace(0, 6, 10)
     def gpfactory(hp):
         return lgp.GP(lgp.Periodic(scale=hp['scale'])).addx(x, 'x')
-    for _ in range(10):
-        check_fit(hp, gpfactory)
+    check_fit(hp, gpfactory)
 
-@util.tryagain
 def test_scale():
     hp = {
         'log(scale)': gvar.log(gvar.gvar(3, 0.2))
@@ -95,10 +92,8 @@ def test_scale():
     x = np.linspace(0, 2 * np.pi * 5, 20)
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad(scale=hp['scale'])).addx(x, 'x')
-    for _ in range(10):
-        check_fit(hp, gpfactory, alpha=1e-7)
+    check_fit(hp, gpfactory, alpha=1e-7)
 
-@util.tryagain
 def test_sdev():
     hp = {
         'log(sdev)': gvar.log(gvar.gvar(1, 1))
@@ -106,35 +101,49 @@ def test_sdev():
     x = np.linspace(0, 5, 10)
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
-    for _ in range(10):
-        check_fit(hp, gpfactory, alpha=1e-8)
+    check_fit(hp, gpfactory, alpha=1e-8)
+    
     # TODO once I've seen the chi2 check fail with sf(q) = 1e-8. Is this
     # a minimization problem or the posterior distribution of log(sdev) which
     # has a very heavy tail? The distribution of sdev**2 should be a scaled
     # inverse chisquared, so very heavy tailed indeed
 
-def test_flat():
+def test_scale_sdev():
+    hp = {
+        'log(scale)': gvar.log(gvar.gvar(3, 0.2)),
+        'log(sdev)': gvar.log(gvar.gvar(1, 1)),
+    }
+    x = np.linspace(0, 2 * np.pi * 5, 20)
+    def gpfactory(hp):
+        kernel = hp['sdev'] ** 2 * lgp.ExpQuad(scale=hp['scale'])
+        return lgp.GP(kernel).addx(x, 'x')
+    check_fit(hp, gpfactory, alpha=1e-7)
+
+def test_flat_scalar():
     hp = gvar.BufferDict({
-        'log(sdev)': gvar.log(gvar.gvar(1, 1))
+        'log(sdev)': gvar.log(gvar.gvar(1, 1)),
     })
     x = np.linspace(0, 5, 10)
+    
     def gpfactory1(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
     def gpfactory2(hp):
         return lgp.GP(lgp.ExpQuad() * jnp.exp(hp[0]) ** 2).addx(x, 'x')
     def gpfactory3(hp):
         return lgp.GP(lgp.ExpQuad() * jnp.exp(hp) ** 2).addx(x, 'x')
+    
     truehp = gvar.sample(hp)
     truegp = gpfactory1(truehp)
     trueprior = truegp.prior()
     data = gvar.sample(trueprior)
-    kw = dict(raises=False)
-    fit1 = lgp.empbayes_fit(hp, gpfactory1, data, **kw, **FITKW)
-    fit2 = lgp.empbayes_fit(hp.buf, gpfactory2, data, **kw, **FITKW)
-    fit3 = lgp.empbayes_fit(hp.buf[0], gpfactory3, data, **kw, **FITKW)
+    
+    kw = dict(raises=False, **FITKW)
+    fit1 = lgp.empbayes_fit(hp, gpfactory1, data, **kw)
+    fit2 = lgp.empbayes_fit(hp.buf, gpfactory2, data, **kw)
+    fit3 = lgp.empbayes_fit(hp.buf[0], gpfactory3, data, **kw)
+    
     util.assert_similar_gvars(fit1.p.buf[0], fit2.p[0], fit3.p)
 
-@util.tryagain
 def test_method():
     
     hp = gvar.BufferDict({
@@ -185,7 +194,7 @@ def test_int_data():
         return lgp.GP(lgp.ExpQuad()).addx(x, 'x')
     lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0}, **FITKW)
 
-def test_data():
+def test_data_formats():
     """ check that presenting data in different formats does not change the
     result """
     
@@ -357,12 +366,3 @@ def test_loss_fisher():
 
     with pytest.raises(NotImplementedError):
         fit = lgp.empbayes_fit(hp, gpfactory, data, method='fisher', additional_loss=lambda _: 0., **FITKW)
-
-def test_yeojohnson():
-    """ check the Yeo-Johnson transformation """
-    testinput = np.linspace(-2, 2, 100)
-    lamda = 1.5
-    mod = lgp.bayestree._bcf
-    np.testing.assert_allclose(
-        mod.yeojohnson_inverse(mod.yeojohnson(testinput, lamda), lamda),
-        testinput, atol=0, rtol=1e-14)

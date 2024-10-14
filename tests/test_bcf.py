@@ -91,6 +91,14 @@ def pihat(X, z):
 def kw():
     return dict()
 
+    # TODO: parametrize
+    # - with and without gpaux/x_aux/otherhp
+    # - options for include_pi
+    # - options for marginalize_mean
+    # - different x_tau
+    #      I should use a different X and check the result changes
+    # many of these do not interact so I can change all of them at once.
+
 def test_scale_shift(y, z, X, pihat, key, kw):
     
     kw.update(z=z, x_mu=X.T, pihat=pihat)
@@ -133,3 +141,12 @@ def test_to_from_data(y, z, X, pihat, kw, key):
     eta = bcf.from_data(y, hp='sample', rng=rng1)
     y2 = bcf.to_data(eta, hp='sample', rng=rng2)
     util.assert_allclose(y, y2, rtol=1e-15, atol=1e-15)
+
+def test_yeojohnson():
+    """ check the Yeo-Johnson transformation """
+    testinput = np.linspace(-2, 2, 100)
+    lamda = 1.5
+    mod = bayestree._bcf
+    np.testing.assert_allclose(
+        mod.yeojohnson_inverse(mod.yeojohnson(testinput, lamda), lamda),
+        testinput, atol=0, rtol=1e-14)

@@ -145,6 +145,6 @@ clean:
 	rm -fr src/lsqfitgp/*/__pycache__
 	rm -fr tests/__pycache__
 	rm -fr tests/*/__pycache__
-	# TODO remove example plots, difficulties:
-	#      - skip committed ones
-	#      - the plot file name may be numbered or not
+	## TODO remove example plots, difficulties:
+	##      - skip committed ones
+	##      - the plot file name may be numbered or not
