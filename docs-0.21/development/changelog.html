@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Changelog &#8212; lsqfitgp documentation</title>
+    <title>Changelog &#8212; lsqfitgp 0.21 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=686e5160" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
-    <script src="../_static/documentation_options.js?v=841cbeb9"></script>
+    <script src="../_static/documentation_options.js?v=a53c679b"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -30,7 +30,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
+<h1 class="logo"><a href="../index.html">lsqfitgp 0.21</a></h1>
 
 
 
@@ -114,7 +114,7 @@
             
   <!--- lsqfitgp/docs/changelog.md
 
-  Copyright (c) 2023, Giacomo Petrillo
+  Copyright (c) 2023, 2024, Giacomo Petrillo
 
   This file is part of lsqfitgp.
 
@@ -135,6 +135,69 @@
   copy-pastable to github releases. -->
 <section class="tex2jax_ignore mathjax_ignore" id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
+<section id="release-early-release-often-then-hide-in-a-foreign-country-and-wait-one-year-2024-10-14">
+<h2>0.21 Release early, release often, then hide in a foreign country and wait one year (2024-10-14)<a class="headerlink" href="#release-early-release-often-then-hide-in-a-foreign-country-and-wait-one-year-2024-10-14" title="Link to this heading">¶</a></h2>
+<p>Thanks to waiting one year, Google and the Python Software Foundation have substantially improved <code class="docutils literal notranslate"><span class="pre">jax</span></code> and Python, making <code class="docutils literal notranslate"><span class="pre">lsqfitgp</span></code> faster and supported on Windows, through no effort of my own.</p>
+<section id="release-highlights">
+<h3>Release highlights<a class="headerlink" href="#release-highlights" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Improved <code class="docutils literal notranslate"><span class="pre">gvar</span></code> formatting.</p></li>
+<li><p>Data transformations in <code class="docutils literal notranslate"><span class="pre">bayestree.bcf</span></code>.</p></li>
+</ul>
+</section>
+<section id="improved-formatting-of-uncertainties">
+<h3>Improved formatting of uncertainties<a class="headerlink" href="#improved-formatting-of-uncertainties" title="Link to this heading">¶</a></h3>
+<p>Improved gvar formatting. Disabled by default, can be enabled with the context manager <code class="docutils literal notranslate"><span class="pre">gvar_format</span></code>. The new format has more options than the one provided by <code class="docutils literal notranslate"><span class="pre">gvar</span></code>. In particular the default setting has 1.5 error digits instead of 2, and never shows non-significant digits.</p>
+<ul class="simple">
+<li><p>Fractional error digits: with 1.5 digits, 2 error digits are shown up to <span class="math notranslate nohighlight">\(\sqrt{10}\)</span>, then 1. So 12.3 +/- 1.5 becomes <code class="docutils literal notranslate"><span class="pre">'12.3(1.5)</span></code>, while 12.3 +/- 4.5 becomes <code class="docutils literal notranslate"><span class="pre">'12(4)'</span></code>.</p></li>
+<li><p>Never show non-significant digits: the <code class="docutils literal notranslate"><span class="pre">gvar</span></code> formatter displays 1200 +/- 500 as <code class="docutils literal notranslate"><span class="pre">'1(234)'</span></code>, showing more digits than the first 2 error digits. The new formatter instead writes <code class="docutils literal notranslate"><span class="pre">'oo(23o)'</span></code>, using <code class="docutils literal notranslate"><span class="pre">o</span></code> as a “small zero” symbol to represent a rounding zero rather than a significant zero. This also allows to avoid exponential notation for small numbers: 1234 +/- 567 is shown as <code class="docutils literal notranslate"><span class="pre">'1.23(57)e+03'</span></code> with the default formatter, and as <code class="docutils literal notranslate"><span class="pre">'12oo(6oo)'</span></code> with the new formatter.</p></li>
+</ul>
+<p>The new formatter can also be used manually without gvars through <code class="docutils literal notranslate"><span class="pre">uformat</span></code>.</p>
+</section>
+<section id="bcf">
+<h3>BCF<a class="headerlink" href="#bcf" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Data transformations, with free parameters inferred together with the other hyperparameters, thus accounting for the additional degrees of freedom due to the transformation. The predefined transformations are standardization and Yeo-Johnson. The user can pass arbitrary callables, and  easily stack their own transformations with the predefined ones.</p></li>
+<li><p>The hyperparameters are always expressed in the transformed model, instead of rescaled for standardization, since now the data transformation is under control of the user.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bcf.pred</span></code> can sample the predictive posterior, and return results in the transformed space instead of data space.</p></li>
+</ul>
+</section>
+<section id="empbayes-fit">
+<h3><code class="docutils literal notranslate"><span class="pre">empbayes_fit</span></code><a class="headerlink" href="#empbayes-fit" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>New parameter <code class="docutils literal notranslate"><span class="pre">empbayesfit(...,</span> <span class="pre">additional_loss=&lt;func&gt;)</span></code> to add an user-specified function to the minus log marginal posterior of the hyperparameters used to find the MAP.</p></li>
+<li><p>Fix show-stopping bug with old numpy versions if there were more than 1 hyperparameters.</p></li>
+</ul>
+</section>
+<section id="dependencies">
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h3>
+<p>As usual I run tests with the oldest supported versions of all dependencies. Additionally, I now check that the versions pre-installed on Google Colab are supported.</p>
+<ul class="simple">
+<li><p>Minimum required versions bumped to:</p>
+<ul>
+<li><p>Python 3.8 -&gt; 3.9</p></li>
+<li><p>numpy 1.20 -&gt; 1.22</p></li>
+<li><p>scipy 1.5 -&gt; 1.10</p></li>
+<li><p>jax 0.4.6 -&gt; 0.4.26</p></li>
+<li><p>gvar 11.10.1 -&gt; 12.0</p></li>
+</ul>
+</li>
+<li><p>New supported versions/platforms:</p>
+<ul>
+<li><p>Python 3.12</p></li>
+<li><p>numpy 2</p></li>
+<li><p>Windows fully supported instead of experimental</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="structuredarray">
+<h3><code class="docutils literal notranslate"><span class="pre">StructuredArray</span></code><a class="headerlink" href="#structuredarray" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Implemented <code class="docutils literal notranslate"><span class="pre">StructuredArray.nbytes</span></code>.</p></li>
+</ul>
+</section>
+</section>
 <section id="this-release-marks-a-detente-in-the-ongoing-lsqfitgp-jax-conflict-2023-10-18">
 <h2>0.20.2 This release marks a detente in the ongoing lsqfitgp-jax conflict (2023-10-18)<a class="headerlink" href="#this-release-marks-a-detente-in-the-ongoing-lsqfitgp-jax-conflict-2023-10-18" title="Link to this heading">¶</a></h2>
 <p>Recent versions of jax are now supported using scipy’s polygamma in place of the one provided by jax. Other changes:</p>
@@ -151,8 +214,8 @@
 </section>
 <section id="kernels-kernels-kernels-all-you-can-think-about-is-covariance-functions-i-am-sick-of-your-kernels-i-am-sick-of-cleaning-the-leftover-eigenspaces-you-leave-on-the-carpet-when-you-come-home-late-in-the-night-after-spending-all-day-hewing-positive-semidefinite-operators-i-am-sick-of-hearing-your-breath-the-stale-unique-acrid-smell-that-fills-the-algebraists-workrooms-wafting-through-the-linen-to-my-nostrils-go-away-go-away-from-here-and-rest-with-your-beloved-kernels-2023-08-29">
 <h2>0.20. Kernels, kernels, kernels. All you can think about is covariance functions. I am sick of your kernels. I am sick of cleaning the leftover eigenspaces you leave on the carpet when you come home, late in the night, after spending all day hewing positive semidefinite operators. I am sick of hearing your breath, the stale unique acrid smell that fills the algebraists’ workrooms, wafting through the linen to my nostrils. Go away. Go away from here and rest with your beloved kernels! (2023-08-29)<a class="headerlink" href="#kernels-kernels-kernels-all-you-can-think-about-is-covariance-functions-i-am-sick-of-your-kernels-i-am-sick-of-cleaning-the-leftover-eigenspaces-you-leave-on-the-carpet-when-you-come-home-late-in-the-night-after-spending-all-day-hewing-positive-semidefinite-operators-i-am-sick-of-hearing-your-breath-the-stale-unique-acrid-smell-that-fills-the-algebraists-workrooms-wafting-through-the-linen-to-my-nostrils-go-away-go-away-from-here-and-rest-with-your-beloved-kernels-2023-08-29" title="Link to this heading">¶</a></h2>
-<section id="release-highlights">
-<h3>Release highlights<a class="headerlink" href="#release-highlights" title="Link to this heading">¶</a></h3>
+<section id="id1">
+<h3>Release highlights<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Improvements to the kernel system.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">GP</span></code> objects are immutable.</p></li>
@@ -188,8 +251,8 @@
 </section>
 <section id="miss-the-forest-for-two-forests-and-an-auxiliary-regression-term-2023-08-22">
 <h2>0.19. Miss the Forest for Two Forests and an Auxiliary Regression Term (2023-08-22)<a class="headerlink" href="#miss-the-forest-for-two-forests-and-an-auxiliary-regression-term-2023-08-22" title="Link to this heading">¶</a></h2>
-<section id="id1">
-<h3>Release highlights<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<section id="id2">
+<h3>Release highlights<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>GP version of BCF (Bayesian Causal Forests).</p></li>
 <li><p>Extension of the <code class="docutils literal notranslate"><span class="pre">copula</span></code> submodule to a full PPL (Probabilistic Programming Language) to specify the hyperparameter priors.</p></li>
@@ -216,8 +279,8 @@
 <li><p>Support <code class="docutils literal notranslate"><span class="pre">numpy.lib.recfunctions.append_fields</span></code>.</p></li>
 </ul>
 </section>
-<section id="id2">
-<h3><code class="docutils literal notranslate"><span class="pre">gvar</span></code>-related<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<section id="id3">
+<h3><code class="docutils literal notranslate"><span class="pre">gvar</span></code>-related<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Solve bug that could make <code class="docutils literal notranslate"><span class="pre">jax.jit</span></code> fail if a <code class="docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code> was passed as argument.</p></li>
 <li><p>Decorator <code class="docutils literal notranslate"><span class="pre">gvar_gufunc</span></code> to make a function support gvars.</p></li>
@@ -239,8 +302,8 @@
 <li><p>The <code class="docutils literal notranslate"><span class="pre">'fisher'</span></code> method in <code class="docutils literal notranslate"><span class="pre">empbayes_fit</span></code> now works decently enough that it can be used in practice, same for <code class="docutils literal notranslate"><span class="pre">covariance='fisher'</span></code>.</p></li>
 </ul>
 </section>
-<section id="empbayes-fit">
-<h3><code class="docutils literal notranslate"><span class="pre">empbayes_fit</span></code><a class="headerlink" href="#empbayes-fit" title="Link to this heading">¶</a></h3>
+<section id="id4">
+<h3><code class="docutils literal notranslate"><span class="pre">empbayes_fit</span></code><a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">empbayes_fit(...,</span> <span class="pre">minkw=dict(method='trust-constr')</span></code> did not work, fixed.</p></li>
 <li><p>Now <code class="docutils literal notranslate"><span class="pre">jit=True</span></code> by default.</p></li>
@@ -268,8 +331,8 @@
 <li><p>Solved bug with scalar elements in dictionaries</p></li>
 </ul>
 </section>
-<section id="id3">
-<h3><code class="docutils literal notranslate"><span class="pre">empbayes_fit</span></code><a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<section id="id5">
+<h3><code class="docutils literal notranslate"><span class="pre">empbayes_fit</span></code><a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>The arguments in <code class="docutils literal notranslate"><span class="pre">gpfactorykw</span></code> are now passed through a function call instead of being closed over. This implies that, if <code class="docutils literal notranslate"><span class="pre">jit=True</span></code>, large arrays can be passed efficiently without being hardcoded in the compiled code, and that arguments not understood by JAX can not be passed through <code class="docutils literal notranslate"><span class="pre">gpfactorykw</span></code>.</p></li>
 </ul>
@@ -316,8 +379,8 @@
 <li><p>Copula factories for the Beta and Inverse Gamma distributions, in the submodule <code class="docutils literal notranslate"><span class="pre">copula</span></code>.</p></li>
 </ul>
 </section>
-<section id="structuredarray">
-<h3><code class="docutils literal notranslate"><span class="pre">StructuredArray</span></code><a class="headerlink" href="#structuredarray" title="Link to this heading">¶</a></h3>
+<section id="id6">
+<h3><code class="docutils literal notranslate"><span class="pre">StructuredArray</span></code><a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>New function <code class="docutils literal notranslate"><span class="pre">unstructured_to_structured</span></code> to create a <code class="docutils literal notranslate"><span class="pre">StructuredArray</span></code> from an unstructured array.</p></li>
 <li><p>Arrays are now read-only. Setting the fields requires a JAX-like syntax with <code class="docutils literal notranslate"><span class="pre">.at[field].set(value)</span></code>. <strong>&lt;– BREAKING CHANGE</strong></p></li>
@@ -326,21 +389,21 @@
 <li><p>Implemented numpy functions <code class="docutils literal notranslate"><span class="pre">ix</span></code>, <code class="docutils literal notranslate"><span class="pre">empty_like</span></code>, and <code class="docutils literal notranslate"><span class="pre">empty</span></code>.</p></li>
 </ul>
 </section>
-<section id="id4">
-<h3>Kernels<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<section id="id7">
+<h3>Kernels<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>New <code class="docutils literal notranslate"><span class="pre">CrossKernel</span></code> parameter <code class="docutils literal notranslate"><span class="pre">batchbytes</span></code> to batch the calculation, and corresponding method <code class="docutils literal notranslate"><span class="pre">batch</span></code>. Requires jax-traceability of the kernel implementation.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">Decaying</span></code> kernel gets an explicit real exponent to indicate infinite divisibility.</p></li>
 </ul>
 </section>
-<section id="id5">
-<h3>GP<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>GP<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>By default, even if <code class="docutils literal notranslate"><span class="pre">checksym=False</span></code>, the full covariance matrix is computed for diagonal blocks, unless the additional new option <code class="docutils literal notranslate"><span class="pre">halfmatrix=True</span></code> is set. <strong>&lt;– BREAKING CHANGE</strong></p></li>
 </ul>
 </section>
-<section id="dependencies">
-<h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>Dependencies<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Pinned jax and jaxlib to 0.4.6. Earlier versions severely break the optimization of the BART kernel, while later versions break the <code class="docutils literal notranslate"><span class="pre">jit</span></code> option in <code class="docutils literal notranslate"><span class="pre">empbayes_fit</span></code>. Sorry for this pin, I do know that dependency pins in libraries are evil. <strong>&lt;– BREAKING CHANGE</strong></p></li>
 <li><p>Tested on Python 3.11</p></li>
