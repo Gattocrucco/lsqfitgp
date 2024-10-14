@@ -1,6 +1,6 @@
 # lsqfitgp/docs/reference/kernelsref.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -205,90 +205,92 @@ for kernel in kernels2:
     :class-doc-from: class
 """
 
-    fig.clf()
-    ax = fig.subplots()
-    
-    m = meta.get(kernel, {})
-    
-    if m.get('skip', False):
-        continue
+    with plt.style.context('tableau-colorblind10', after_reset=True):
 
-    if 'x' in m:
-        x = m['x']
-        l = np.min(x)
-        r = np.max(x)
-    else:
-        l, r = m.get('range', [0, 5])
-        x = np.linspace(l, r, 500)
-    
-    legend = m.get('kwlist')
-    for kw in m.get('kwlist', [{}]):
-        covfun = k(**kw)
-        with np.printoptions(**printoptions):
-            label = ', '.join(f'{k} = {v}' for k, v in kw.items())
-        if issubclass(k, lgp.StationaryKernel):
-            acf = covfun(x[0], x)
-            ax.plot(x, acf, label=label)
+        fig.clf()
+        ax = fig.subplots()
+        
+        m = meta.get(kernel, {})
+        
+        if m.get('skip', False):
+            continue
+
+        if 'x' in m:
+            x = m['x']
+            l = np.min(x)
+            r = np.max(x)
         else:
-            cov = covfun(x[None, :], x[:, None])
-            dx = (x[1] - x[0]) / 2
-            vmin = min(0, np.min(cov))
-            im = ax.imshow(cov, aspect='equal', origin='lower', vmin=vmin, extent=(x[0] - dx, x[-1] + dx, x[0] - dx, x[-1] + dx))
-            legend = False
-            break
-    
-    if legend:
-        ax.legend()
-    ax.set_title('Covariance function')
-    ax.set_xlabel('x')
-    if issubclass(k, lgp.StationaryKernel):
-        ax.set_ylabel(f'Cov[f(x), f({l})]')
-        b, t = ax.get_ylim()
-        dy = 0.1
-        lim = max([abs(b), abs(t), 1 + dy])
-        ax.set_ylim(-lim, lim)
-        ax.axvspan(l, r, -1, 0.5, color='#ddd')
-        ax.set_xlim(l, r)
-    else:
-        ax.set_ylabel("x'")
-        fig.colorbar(im, label="Cov[f(x), f(x')]")
-    fig.savefig(make_figpath(kernel))
-    
-    out += f"""\
+            l, r = m.get('range', [0, 5])
+            x = np.linspace(l, r, 500)
+        
+        legend = m.get('kwlist')
+        for kw in m.get('kwlist', [{}]):
+            covfun = k(**kw)
+            with np.printoptions(**printoptions):
+                label = ', '.join(f'{k} = {v}' for k, v in kw.items())
+            if issubclass(k, lgp.StationaryKernel):
+                acf = covfun(x[0], x)
+                ax.plot(x, acf, label=label)
+            else:
+                cov = covfun(x[None, :], x[:, None])
+                dx = (x[1] - x[0]) / 2
+                vmin = min(0, np.min(cov))
+                im = ax.imshow(cov, aspect='equal', origin='lower', vmin=vmin, extent=(x[0] - dx, x[-1] + dx, x[0] - dx, x[-1] + dx))
+                legend = False
+                break
+        
+        if legend:
+            ax.legend()
+        ax.set_title('Covariance function')
+        ax.set_xlabel('x')
+        if issubclass(k, lgp.StationaryKernel):
+            ax.set_ylabel(f'Cov[f(x), f({l})]')
+            b, t = ax.get_ylim()
+            dy = 0.1
+            lim = max([abs(b), abs(t), 1 + dy])
+            ax.set_ylim(-lim, lim)
+            ax.axvspan(l, r, -1, 0.5, color='#ddd')
+            ax.set_xlim(l, r)
+        else:
+            ax.set_ylabel("x'")
+            fig.colorbar(im, label="Cov[f(x), f(x')]")
+        fig.savefig(make_figpath(kernel))
+        
+        out += f"""\
 .. image:: {make_figref(kernel)}
 """
-    
-    fig.clf()
-    ax = fig.subplots()
+        
+        fig.clf()
+        ax = fig.subplots()
 
-    if 'srange' in m:
-        l, r = m['srange']
-        x = np.linspace(l, r, len(x))
-    
-    nsamples = 1 if m.get('kwlist', False) else 2
-    for kw in m.get('kwlist', [{}]):
-        covfun = k(**kw)
-        with np.printoptions(**printoptions):
-            label = ', '.join(f'{k} = {v}' for k, v in kw.items())
-        cov = covfun(x[None, :], x[:, None])
-        try:
-            dec = lgp._linalg.Chol(cov)
-        except np.linalg.LinAlgError:
-            dec = lgp._linalg.EigCutFullRank(cov)
-        iid = gen.standard_normal((dec.m, nsamples))
-        samples = dec.correlate(iid)
-        for j, y in enumerate(samples.T):
-            ax.plot(x, y, label=None if j else label)
-    
-    if m.get('kwlist'):
-        ax.legend()
-    ax.set_title('Samples')
-    ax.set_xlabel('x')
-    ax.set_ylabel('f(x)')
-    figname = f'{kernel}-samples'
-    fig.savefig(make_figpath(figname))
+        if 'srange' in m:
+            l, r = m['srange']
+            x = np.linspace(l, r, len(x))
+        
+        nsamples = 1 if m.get('kwlist', False) else 2
+        for kw in m.get('kwlist', [{}]):
+            covfun = k(**kw)
+            with np.printoptions(**printoptions):
+                label = ', '.join(f'{k} = {v}' for k, v in kw.items())
+            cov = covfun(x[None, :], x[:, None])
+            try:
+                dec = lgp._linalg.Chol(cov)
+            except np.linalg.LinAlgError:
+                dec = lgp._linalg.EigCutFullRank(cov)
+            iid = gen.standard_normal((dec.m, nsamples))
+            samples = dec.correlate(iid)
+            for j, y in enumerate(samples.T):
+                ax.plot(x, y, label=None if j else label)
+        
+        if m.get('kwlist'):
+            ax.legend()
+        ax.set_title('Samples')
+        ax.set_xlabel('x')
+        ax.set_ylabel('f(x)')
+        figname = f'{kernel}-samples'
+        fig.savefig(make_figpath(figname))
 
-    out += f"""\
+        out += f"""\
 .. image:: {make_figref(figname)}
 """
 
