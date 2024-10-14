@@ -255,13 +255,13 @@ global covariance matrix.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.gvar_format">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">gvar_format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsqfitgp_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext/_format.py#L275-L312"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.gvar_format" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">gvar_format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsqfitgp_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext/_format.py#L287-L324"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.gvar_format" title="Link to this definition">¶</a></dt>
 <dd><p>Context manager to set the default format specification of gvars.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>spec</strong><span class="classifier">str, optional</span></dt><dd><p>The format specification. If not specified and <code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp_format</span></code> is
-<code class="docutils literal notranslate"><span class="pre">True</span></code>, use <code class="docutils literal notranslate"><span class="pre">'1.5p'</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">True</span></code>, use <code class="docutils literal notranslate"><span class="pre">'#1.5p'</span></code>.</p>
 </dd>
 <dt><strong>lsqfitgp_format</strong><span class="classifier">bool, default True</span></dt><dd><p>Whether to use a modified version of the <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v13.1.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar</span></code></a> formatting
 specification, provided by <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a>.</p>
@@ -282,7 +282,7 @@ details.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.uformat">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">uformat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errdig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shareexp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outersign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uniexp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minnegexp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minposexp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padzeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">possign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext/_format.py#L74-L184"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.uformat" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">uformat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errdig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shareexp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outersign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uniexp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minnegexp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minposexp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padzero</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">possign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext/_format.py#L74-L196"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.uformat" title="Link to this definition">¶</a></dt>
 <dd><p>Format a number with uncertainty.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -320,9 +320,10 @@ greater between central value and error is considered.</p>
 notation is used. Default 0. Setting higher values may force padding
 the error with zeros, depending on <code class="xref py py-obj docutils literal notranslate"><span class="pre">errdig</span></code>.</p>
 </dd>
-<dt><strong>padzeros</strong><span class="classifier">bool, default False</span></dt><dd><p>Whether to pad with zeros when not using exponential notation due to
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">minposexp</span></code> even if the least significant digit is not on the units,
-instead of showing more actual digits than those specified.</p>
+<dt><strong>padzero</strong><span class="classifier">str, optional</span></dt><dd><p>If provided, a character representing 0 to pad with when not using
+exponential notation due to <code class="xref py py-obj docutils literal notranslate"><span class="pre">minposexp</span></code> even if the least significant
+digit is not on the units, instead of showing more actual digits than
+those specified.</p>
 </dd>
 <dt><strong>possign</strong><span class="classifier">bool, default False</span></dt><dd><p>Whether to put a <code class="xref py py-obj docutils literal notranslate"><span class="pre">+</span></code> before the central value when it is positive.</p>
 </dd>
@@ -339,7 +340,7 @@ instead of showing more actual digits than those specified.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="lsqfitgp.fmtspec_kwargs">
-<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">fmtspec_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext/_format.py#L186-L264"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.fmtspec_kwargs" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">fmtspec_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_gvarext/_format.py#L198-L276"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.fmtspec_kwargs" title="Link to this definition">¶</a></dt>
 <dd><p>Parse a string formatting pattern to be used with <a class="reference internal" href="#lsqfitgp.uformat" title="lsqfitgp.uformat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uformat</span></code></a>.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -369,7 +370,7 @@ instead of showing more actual digits than those specified.</p>
 error mantissas in exponential notation.</p>
 </dd>
 <dt>‘#’ :</dt><dd><p>Do not show non-significative digits at all costs, replacing them with
-zeros.</p>
+lowercase ‘o’, representing a rounding 0 rather than a significative 0.</p>
 </dd>
 <dt>‘$’ :</dt><dd><p>In exponential notation, repeat the exponent for the central value and
 error.</p>
@@ -423,7 +424,7 @@ superscript characters for exponential notation.</p>
       &#169;2020-2024, Giacomo Petrillo.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.1</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
       |
