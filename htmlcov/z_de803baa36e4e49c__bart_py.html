@@ -77,7 +77,7 @@
             <a id="nextFileLink" class="nav" href="z_de803baa36e4e49c__bcf_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.6.3">coverage.py v7.6.3</a>,
-            created at 2024-10-14 17:25 +0000
+            created at 2024-10-15 19:54 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -94,7 +94,7 @@
 <main id="source">
     <p class="pln"><span class="n"><a id="t1" href="#t1">1</a></span><span class="t"><span class="com"># lsqfitgp/bayestree/_bart.py</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2" href="#t2">2</a></span><span class="t"><span class="com">#</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t3" href="#t3">3</a></span><span class="t"><span class="com"># Copyright (c) 2023, Giacomo Petrillo</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t3" href="#t3">3</a></span><span class="t"><span class="com"># Copyright (c) 2023, 2024, Giacomo Petrillo</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t4" href="#t4">4</a></span><span class="t"><span class="com">#</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t5" href="#t5">5</a></span><span class="t"><span class="com"># This file is part of lsqfitgp.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t6" href="#t6">6</a></span><span class="t"><span class="com">#</span>&nbsp;</span><span class="r"></span></p>
@@ -284,7 +284,7 @@
     <p class="run"><span class="n"><a id="t190" href="#t190">190</a></span><span class="t">        <span class="key">def</span> <span class="nam">makegp</span><span class="op">(</span><span class="nam">hp</span><span class="op">,</span> <span class="op">*</span><span class="op">,</span> <span class="nam">i_train</span><span class="op">,</span> <span class="nam">weights</span><span class="op">,</span> <span class="nam">splits</span><span class="op">,</span> <span class="op">**</span><span class="nam">_</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs190"><span class="r"><label for="ctxs190" class="ctx">5 ctx</label></span><span class="ctxs">1abcde</span></p>
     <p class="run"><span class="n"><a id="t191" href="#t191">191</a></span><span class="t">            <span class="nam">kw</span> <span class="op">=</span> <span class="nam">dict</span><span class="op">(</span>&nbsp;</span><input type="checkbox" id="ctxs191"><span class="r"><label for="ctxs191" class="ctx">5 ctx</label></span><span class="ctxs">1abcde</span></p>
     <p class="pln"><span class="n"><a id="t192" href="#t192">192</a></span><span class="t">                <span class="nam">alpha</span><span class="op">=</span><span class="nam">hp</span><span class="op">[</span><span class="str">'alpha'</span><span class="op">]</span><span class="op">,</span> <span class="nam">beta</span><span class="op">=</span><span class="nam">hp</span><span class="op">[</span><span class="str">'beta'</span><span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t193" href="#t193">193</a></span><span class="t">                <span class="nam">maxd</span><span class="op">=</span><span class="num">10</span><span class="op">,</span> <span class="nam">reset</span><span class="op">=</span><span class="op">[</span><span class="num">2</span><span class="op">,</span> <span class="num">4</span><span class="op">,</span> <span class="num">6</span><span class="op">,</span> <span class="num">8</span><span class="op">]</span><span class="op">,</span> <span class="nam">gamma</span><span class="op">=</span><span class="num">0.95</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t193" href="#t193">193</a></span><span class="t">                <span class="nam">maxd</span><span class="op">=</span><span class="num">10</span><span class="op">,</span> <span class="nam">reset</span><span class="op">=</span><span class="op">[</span><span class="num">2</span><span class="op">,</span> <span class="num">4</span><span class="op">,</span> <span class="num">6</span><span class="op">,</span> <span class="num">8</span><span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t194" href="#t194">194</a></span><span class="t">            <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t195" href="#t195">195</a></span><span class="t">            <span class="nam">kw</span><span class="op">.</span><span class="nam">update</span><span class="op">(</span><span class="nam">kernelkw</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs195"><span class="r"><label for="ctxs195" class="ctx">5 ctx</label></span><span class="ctxs">1abcde</span></p>
     <p class="run"><span class="n"><a id="t196" href="#t196">196</a></span><span class="t">            <span class="nam">kernel</span> <span class="op">=</span> <span class="nam">_kernels</span><span class="op">.</span><span class="nam">BART</span><span class="op">(</span><span class="nam">splits</span><span class="op">=</span><span class="nam">splits</span><span class="op">,</span> <span class="nam">indices</span><span class="op">=</span><span class="key">True</span><span class="op">,</span> <span class="op">**</span><span class="nam">kw</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs196"><span class="r"><label for="ctxs196" class="ctx">5 ctx</label></span><span class="ctxs">1abcde</span></p>
@@ -565,7 +565,7 @@
             <a class="nav" href="z_de803baa36e4e49c__bcf_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.6.3">coverage.py v7.6.3</a>,
-            created at 2024-10-14 17:25 +0000
+            created at 2024-10-15 19:54 +0000
         </p>
     </div>
 </footer>
