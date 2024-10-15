@@ -403,11 +403,11 @@ also stands for its paired conjugate.</p>
 <img alt="../_images/AR-samples.png" src="../_images/AR-samples.png" />
 <dl class="py class">
 <dt class="sig sig-object py" id="lsqfitgp.BART">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">BART</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_bart.py#L32-L213"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BART" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">BART</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_bart.py#L32-L210"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BART" title="Link to this definition">¶</a></dt>
 <dd><p>BART kernel.</p>
-<p>Good default parameters: <code class="docutils literal notranslate"><span class="pre">gamma=0.95</span></code>; <code class="docutils literal notranslate"><span class="pre">maxd=4,</span> <span class="pre">reset=2</span></code> if not fitting
-the hyperparameters (<code class="docutils literal notranslate"><span class="pre">alpha</span></code> and <code class="docutils literal notranslate"><span class="pre">beta</span></code>), <code class="docutils literal notranslate"><span class="pre">maxd=10,</span> <span class="pre">reset=[2,4,6,8]</span></code>
-otherwise. Derivatives are faster with forward autodiff.</p>
+<p>Good default parameters: <code class="docutils literal notranslate"><span class="pre">maxd=4,</span> <span class="pre">reset=2</span></code> if <code class="docutils literal notranslate"><span class="pre">alpha</span></code> and <code class="docutils literal notranslate"><span class="pre">beta</span></code> are
+kept fixed at the default values, <code class="docutils literal notranslate"><span class="pre">maxd=10,</span> <span class="pre">reset=[2,4,6,8]</span></code> otherwise.
+Derivatives are faster with forward autodiff.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -422,7 +422,7 @@ dimension.</p>
 <dt><strong>splits</strong><span class="classifier">pair of arrays</span></dt><dd><p>The first is an int (p,) array containing the number of splitting
 points along each dimension, the second has shape (n, p) and contains
 the sorted splitting points in each column, filled with high values
-after the length.</p>
+after the length. Use <a class="reference internal" href="#lsqfitgp.BART.splits_from_coord" title="lsqfitgp.BART.splits_from_coord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART.splits_from_coord</span></code></a> to produce them.</p>
 </dd>
 <dt><strong>gamma</strong><span class="classifier">scalar or str</span></dt><dd><p>Interpolation coefficient in [0, 1] between a lower and a upper
 bound on the infinite maxd limit, or a string ‘auto’ indicating to
@@ -433,10 +433,10 @@ covariates, empirically calibrated on maxd from 1 to 3. Default 1
 <dt><strong>pnt</strong><span class="classifier">(maxd + 1,) array, optional</span></dt><dd><p>Nontermination probabilities at depths 0…maxd. If specified,
 <code class="docutils literal notranslate"><span class="pre">alpha</span></code>, <code class="docutils literal notranslate"><span class="pre">beta</span></code> and <code class="docutils literal notranslate"><span class="pre">maxd</span></code> are ignored.</p>
 </dd>
-<dt><strong>intercept</strong><span class="classifier">bool</span></dt><dd><p>The correlation is in [1 - alpha, 1] (or [1 - pnt[0], 1] when using
-pnt). If intercept=False, it is rescaled to [0, 1]. Default True.</p>
+<dt><strong>intercept</strong><span class="classifier">bool, default True</span></dt><dd><p>The correlation is in [1 - alpha, 1] (or [1 - pnt[0], 1] when using
+pnt). If intercept=False, it is rescaled to [0, 1].</p>
 </dd>
-<dt><strong>weights</strong><span class="classifier">(p,) array</span></dt><dd><p>Unnormalized selection probabilities for the covariate axes. If not
+<dt><strong>weights</strong><span class="classifier">(p,) array, optional</span></dt><dd><p>Unnormalized selection probabilities for the covariate axes. If not
 specified, all axes have the same probability to be selected for
 splitting.</p>
 </dd>
@@ -445,9 +445,9 @@ function value at a reset depth is evaluated on the initial inputs for
 all recursion paths, instead of the modified input handed down by the
 recursion. Default none.</p>
 </dd>
-<dt><strong>indices</strong><span class="classifier">bool</span></dt><dd><p>If False (default), the inputs <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code> represent coordinate values.
-If True, they are taken to be already the indices of the points in the
-splitting grid, as can be obtained with <a class="reference internal" href="#lsqfitgp.BART.indices_from_coord" title="lsqfitgp.BART.indices_from_coord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART.indices_from_coord</span></code></a>.</p>
+<dt><strong>indices</strong><span class="classifier">bool, default False</span></dt><dd><p>If False , the inputs <code class="xref py py-obj docutils literal notranslate"><span class="pre">x</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">y</span></code> represent coordinate values. If True,
+they are taken to be already the indices of the points in the splitting
+grid, as can be obtained with <a class="reference internal" href="#lsqfitgp.BART.indices_from_coord" title="lsqfitgp.BART.indices_from_coord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BART.indices_from_coord</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
@@ -468,9 +468,8 @@ splitting grid, as can be obtained with <a class="reference internal" href="#lsq
 </table>
 <p class="rubric">Notes</p>
 <p>This is the covariance function of the latent mean prior of BART (Bayesian
-Additive Regression Trees) <a class="reference internal" href="#r0b7d3b51c950-1" id="id1">[1]</a> in the limit of an infinite number of
-trees, and with an upper bound <span class="math notranslate nohighlight">\(D\)</span> on the depth of the trees. This
-prior is the distribution of the function</p>
+Additive Regression Trees) <a class="reference internal" href="#r0b7d3b51c950-1" id="id1">[1]</a> with an upper bound <span class="math notranslate nohighlight">\(D\)</span> on the depth
+of the trees. This prior is the distribution of the function</p>
 <div class="math notranslate nohighlight">
 \[f(\mathbf x) = \lim_{m\to\infty}
 \sum_{j=1}^m g(\mathbf x; T_j, M_j),\]</div>
@@ -547,7 +546,7 @@ Ann. Appl. Stat. 4(1), 266-298, (March 2010).</p>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.BART.correlation">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">correlation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">splitsbefore_or_totalsplits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsbetween_or_index1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsafter_or_index2</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intercept</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altinput</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_bart.py#L314-L468"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BART.correlation" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">correlation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">splitsbefore_or_totalsplits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsbetween_or_index1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitsafter_or_index2</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pnt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intercept</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altinput</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_bart.py#L311-L465"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BART.correlation" title="Link to this definition">¶</a></dt>
 <dd><p>Compute the BART prior correlation between two points.</p>
 <p>Apart from arguments <code class="docutils literal notranslate"><span class="pre">maxd</span></code>, <code class="docutils literal notranslate"><span class="pre">debug</span></code> and <code class="docutils literal notranslate"><span class="pre">reset</span></code>, this method is fully
 vectorized.</p>
@@ -588,7 +587,7 @@ False. The <a class="reference internal" href="#lsqfitgp.BART" title="lsqfitgp.B
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.BART.indices_from_coord">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">indices_from_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splits</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_bart.py#L274-L304"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BART.indices_from_coord" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">indices_from_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splits</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_bart.py#L271-L301"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BART.indices_from_coord" title="Link to this definition">¶</a></dt>
 <dd><p>Convert coordinates to indices w.r.t. splitting points.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -621,7 +620,7 @@ i &gt; 0 means between split i - 1 and split i.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.BART.splits_from_coord">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">splits_from_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_bart.py#L219-L249"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BART.splits_from_coord" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">splits_from_coord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_kernels/_bart.py#L216-L246"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.BART.splits_from_coord" title="Link to this definition">¶</a></dt>
 <dd><p>Generate splitting points from data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
