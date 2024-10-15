@@ -1,6 +1,6 @@
 # lsqfitgp/bayestree/_bart.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -190,7 +190,7 @@ class bart:
         def makegp(hp, *, i_train, weights, splits, **_):
             kw = dict(
                 alpha=hp['alpha'], beta=hp['beta'],
-                maxd=10, reset=[2, 4, 6, 8], gamma=0.95,
+                maxd=10, reset=[2, 4, 6, 8],
             )
             kw.update(kernelkw)
             kernel = _kernels.BART(splits=splits, indices=True, **kw)

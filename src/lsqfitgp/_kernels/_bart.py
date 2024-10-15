@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels/_bart.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -47,9 +47,9 @@ def _BARTBase(x, y,
     """
     BART kernel.
 
-    Good default parameters: ``gamma=0.95``; ``maxd=4, reset=2`` if not fitting
-    the hyperparameters (``alpha`` and ``beta``), ``maxd=10, reset=[2,4,6,8]``
-    otherwise. Derivatives are faster with forward autodiff.
+    Good default parameters: ``maxd=4, reset=2`` if ``alpha`` and ``beta`` are
+    kept fixed at the default values, ``maxd=10, reset=[2,4,6,8]`` otherwise.
+    Derivatives are faster with forward autodiff.
     
     Parameters
     ----------
@@ -65,7 +65,7 @@ def _BARTBase(x, y,
         The first is an int (p,) array containing the number of splitting
         points along each dimension, the second has shape (n, p) and contains
         the sorted splitting points in each column, filled with high values
-        after the length.
+        after the length. Use `BART.splits_from_coord` to produce them.
     gamma : scalar or str
         Interpolation coefficient in [0, 1] between a lower and a upper
         bound on the infinite maxd limit, or a string 'auto' indicating to
@@ -75,10 +75,10 @@ def _BARTBase(x, y,
     pnt : (maxd + 1,) array, optional
         Nontermination probabilities at depths 0...maxd. If specified,
         ``alpha``, ``beta`` and ``maxd`` are ignored.
-    intercept : bool
+    intercept : bool, default True
         The correlation is in [1 - alpha, 1] (or [1 - pnt[0], 1] when using
-        pnt). If intercept=False, it is rescaled to [0, 1]. Default True.
-    weights : (p,) array
+        pnt). If intercept=False, it is rescaled to [0, 1].
+    weights : (p,) array, optional
         Unnormalized selection probabilities for the covariate axes. If not
         specified, all axes have the same probability to be selected for
         splitting.
@@ -87,10 +87,10 @@ def _BARTBase(x, y,
         function value at a reset depth is evaluated on the initial inputs for
         all recursion paths, instead of the modified input handed down by the
         recursion. Default none.
-    indices : bool
-        If False (default), the inputs ``x``, ``y`` represent coordinate values.
-        If True, they are taken to be already the indices of the points in the
-        splitting grid, as can be obtained with `BART.indices_from_coord`.
+    indices : bool, default False
+        If False , the inputs `x`, `y` represent coordinate values. If True,
+        they are taken to be already the indices of the points in the splitting
+        grid, as can be obtained with `BART.indices_from_coord`.
     
     Methods
     -------
@@ -101,9 +101,8 @@ def _BARTBase(x, y,
     Notes
     -----
     This is the covariance function of the latent mean prior of BART (Bayesian
-    Additive Regression Trees) [1]_ in the limit of an infinite number of
-    trees, and with an upper bound :math:`D` on the depth of the trees. This
-    prior is the distribution of the function
+    Additive Regression Trees) [1]_ with an upper bound :math:`D` on the depth
+    of the trees. This prior is the distribution of the function
     
     .. math::
         f(\\mathbf x) = \\lim_{m\\to\\infty}
@@ -206,8 +205,6 @@ def _BARTBase(x, y,
     )
     
     # TODO
-    # - approximate as stationary w.r.t. indices (is it pos def?)
-    # - default gamma='auto'? => wait for better gamma
     # - make gamma='auto' depend on maxd and reset with a dictionary, error
     #   if not specified
     # - do not require to specify splitting points if using indices

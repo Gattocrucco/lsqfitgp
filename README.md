@@ -1,5 +1,4 @@
 [![PyPI](https://img.shields.io/pypi/v/lsqfitgp)](https://pypi.org/project/lsqfitgp/)
-
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13930792.svg)](https://doi.org/10.5281/zenodo.13930792)
 
 

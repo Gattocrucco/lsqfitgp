@@ -412,7 +412,6 @@ class bcf:
             kw_overridable = dict(
                 maxd=10,
                 reset=[2, 4, 6, 8],
-                gamma=0.95,
                 intercept=False,
             )
             kw_not_overridable = dict(indices=True)
