@@ -34,6 +34,7 @@ from .. import _fastraniter
 # TODO I added a lot of functionality to bcf. The easiest way to port it over is
 # adding the option in bcf to drop the second bart model and its associated
 # hypers, and then write bart as a simple convenience wrapper-subclass over bcf.
+# (also the option include_pi='none'.)
 
 class bart:
     

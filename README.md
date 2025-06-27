@@ -20,7 +20,7 @@ Python module to do inference with Gaussian processes. Features:
     of covariance functions.
   * Good GP versions of
     [BART](https://gattocrucco.github.io/lsqfitgp/docs/reference/bayestree.html#lsqfitgp.bayestree.bart)
-    (Bayes Additive Regression Trees) and
+    (Bayesian Additive Regression Trees) and
     [BCF](https://gattocrucco.github.io/lsqfitgp/docs/reference/bayestree.html#lsqfitgp.bayestree.bcf)
     (Bayesian Causal Forests).
   

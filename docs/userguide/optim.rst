@@ -111,7 +111,7 @@ Example::
     import timeit
     
     def benchmark(func, *args, **kwargs):
-        timer = timeit.Timer('func(*args, **kwargs)', globals=locals())
+        timer = timeit.Timer('jax.block_until_ready(func(*args, **kwargs))', globals=locals())
         n, _ = timer.autorange()
         times = timer.repeat(5, n)
         time = min(times) / n

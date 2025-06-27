@@ -463,23 +463,30 @@ class bcf:
             return {'train': from_data(hp, y) - hp.get('m', 0)}
 
         # fit hyperparameters
-        gpkw = dict(
-            y=y,
-            z=z,
-            i_mu=i_mu,
-            i_tau=i_tau,
-            pihat=pihat,
-            x_aux=x_aux,
-            weights=weights,
-            splits_mu=splits_mu,
-            splits_tau=splits_tau,
-        )
         options = dict(
             verbosity=3,
-            minkw=dict(method='l-bfgs-b', options=dict(maxls=4, maxiter=100)),
-            mlkw=dict(epsrel=0),
+            minkw=dict(
+                method='l-bfgs-b',
+                options=dict(
+                    maxls=4,
+                    maxiter=100,
+                ),
+            ),
+            mlkw=dict(
+                epsrel=0,
+            ),
             forward=True,
-            gpfactorykw=gpkw,
+            gpfactorykw=dict(
+                y=y,
+                z=z,
+                i_mu=i_mu,
+                i_tau=i_tau,
+                pihat=pihat,
+                x_aux=x_aux,
+                weights=weights,
+                splits_mu=splits_mu,
+                splits_tau=splits_tau,
+            ),
             additional_loss=transfloss,
         )
         options.update(fitkw)

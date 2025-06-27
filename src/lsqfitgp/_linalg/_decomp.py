@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_decomp.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2024, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -189,8 +189,8 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
         *,
         dr_vjp=None,
         dK_vjp=None,
-        dr_jvp=None,
-        dK_jvp=None,
+        dr_jvp_vec=None,
+        dK_jvp_vec=None,
         dr=None,
         dK=None,
         value=False,
@@ -365,6 +365,8 @@ def diag_scale_pow2(K):
     """
     d = jnp.diag(K)
     return jnp.where(d, jnp.exp2(jnp.rint(0.5 * jnp.log2(d))), 1)
+
+    # Golub and Van Loan (2013) say this is not a totally general heuristic
 
 def transpose(x):
     """ swap the last two axes of array x, corresponds to matrix tranposition
@@ -589,7 +591,7 @@ class Chol(Decomposition):
         else:
             out['fishvec'] = None
 
-        return tuple(out.values())
+        return tuple(out.values()) # TODO a namedtuple
 
     @classmethod
     def make_derivs(cls,
