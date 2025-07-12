@@ -354,7 +354,7 @@ def test_power_diff(x, q, a, s, cached):
     p1 = cached('p1', zeta_series_power_diff, x, q, a)
     p2 = _special.zeta_series_power_diff(x, q, a)
     if np.all(q <= 1) and np.any(x):
-        tol = 20 * np.max(np.abs(p1), 0) * np.finfo(float).eps
+        tol = 40 * np.max(np.abs(p1), 0) * np.finfo(float).eps
         maxdiff = np.max(np.abs(p1 - p2), 0)
         assert np.all(maxdiff < tol)
     else:

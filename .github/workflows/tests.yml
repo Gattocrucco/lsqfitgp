@@ -39,7 +39,7 @@ jobs:
         python-version: ["3.12"]
         include:
           - os: macos-latest # macos-latest is presently the faster runner
-            python-version: "3.9"
+            python-version: "3.10"
 
     steps:
       - name: Checkout repository
@@ -57,7 +57,7 @@ jobs:
           python -m pip install '.[tests]'
       
       - name: Install package and outdated dependencies
-        if: matrix.python-version == '3.9'
+        if: matrix.python-version == '3.10'
         run: |
           python -m pip install --upgrade pip
           python -m pip install '.[tests-old]'

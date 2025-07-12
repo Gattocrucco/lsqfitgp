@@ -386,7 +386,13 @@ class StructuredArray:
 
         # TODO try simply using the __repr__ of self._dict
     
-    def __array__(self):
+    def __array__(self, copy=None, dtype=None):
+        if copy is False:
+            raise ValueError('StructuredArray has to be copied when converted to a numpy array')
+        if dtype is not None:
+            dtype = numpy.dtype(dtype)
+            if dtype != self.dtype:
+                raise ValueError('StructuredArray can not be converted to a numpy array with a different dtype')
         array = numpy.empty(self.shape, self.dtype)
         self._copy_into_array(array)
         return array

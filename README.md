@@ -29,7 +29,7 @@ theory behind lsqfitgp.
 
 ## Installation
 
-Python >= 3.9 required. Then:
+Python >= 3.10 required. Then:
 
 ```
 $ pip install lsqfitgp
