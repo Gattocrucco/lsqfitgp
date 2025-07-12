@@ -1,6 +1,6 @@
 # lsqfitgp/_fit.py
 #
-# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, 2025, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -64,7 +64,7 @@ def token_map_leaf(func, x):
         token = token_getter(x)
         @jax.custom_jvp
         def jaxfunc(token):
-            return jax.pure_callback(func, token, token, vectorized=True)
+            return jax.pure_callback(func, token, token, vmap_method='expand_dims')
         @jaxfunc.defjvp
         def _(p, t):
             return (jaxfunc(*p), *t)
@@ -348,6 +348,10 @@ class empbayes_fit(Logger):
         # log total timings and function calls
         total = time.perf_counter() - total
         self._log_totals(total, timer, callback, jit, functions)
+
+        ##### temporary fix for gplepage/gvar#50 #####
+        cov = numpy.array(cov, order='C')
+        ##############################################
         
         # join posterior mean and covariance matrix
         uresult = gvar.gvar(result.x, cov)

@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel/_ops.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2025, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -383,7 +383,8 @@ def cond(core, cond1, cond2, other):
         xcond = cond1(x)
         ycond = cond2(y)
         r = jnp.where(xcond & ycond, core(x, y, **kw), other(x, y, **kw))
-        return jnp.where(xcond ^ ycond, 0, r)
+        return jnp.where((xcond ^ ycond).astype('u8'), 0, r)
+        # the .astype('u8') fixes a weird bug with some old dependencies
     
     return newcore
 

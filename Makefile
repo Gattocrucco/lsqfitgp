@@ -1,6 +1,6 @@
 # lsqfitgp/Makefile
 #
-# Copyright (c) 2022, 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, 2025, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -123,7 +123,7 @@ resetenv:
 resetenv-old:
 	test ! -d pyenv-old || rm -fr pyenv-old
 	@echo using `which python3`
-	test 3.9 = `python3 -c 'import sys;print(f"{sys.version_info.major}.{sys.version_info.minor}")'` 
+	test 3.10 = `python3 -c 'import sys;print(f"{sys.version_info.major}.{sys.version_info.minor}")'` 
 	python3 -m venv pyenv-old
 	pyenv-old/bin/python3 -m pip install --upgrade pip
 	pyenv-old/bin/python3 -m pip install --editable '.[dev,tests-old]'

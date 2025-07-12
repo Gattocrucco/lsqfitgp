@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels/_bart.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2025, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -88,7 +88,7 @@ def _BARTBase(x, y,
         all recursion paths, instead of the modified input handed down by the
         recursion. Default none.
     indices : bool, default False
-        If False , the inputs `x`, `y` represent coordinate values. If True,
+        If False, the inputs `x`, `y` represent coordinate values. If True,
         they are taken to be already the indices of the points in the splitting
         grid, as can be obtained with `BART.indices_from_coord`.
     

@@ -1,6 +1,6 @@
 # lsqfitgp/_GP/_compute.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2025, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -322,6 +322,10 @@ class GPCompute(_base.GPBase):
         
         elif not keepcorr:
                         
+            ##### temporary fix for gplepage/gvar#49 #####
+            cov = numpy.array(cov)
+            ##############################################
+            
             flatout = gvar.gvar(mean, cov, fast=True)
         
         if not strip:

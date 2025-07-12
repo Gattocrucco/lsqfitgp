@@ -1,6 +1,6 @@
 # lsqfitgp/docs/runcode.py
 #
-# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, 2025, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -52,6 +52,16 @@ pattern = re.compile(r'(?m)(?!\.\..+?)^.*?::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
 # I could use .. code-block:: for stuff that should not be run, and add
 # explicit try blocks for code that is supposed to showcase errors.
 
+@contextlib.contextmanager
+def chdir(dir):
+    """Change current working directory, and restore it when done."""
+    old_dir = os.getcwd()
+    try:
+        os.chdir(dir)
+        yield
+    finally:
+        os.chdir(old_dir)
+
 def runcode(file):
 
     file = pathlib.Path(file)
@@ -78,7 +88,7 @@ def runcode(file):
                 )
                 pyprint(printcode)
 
-                with contextlib.chdir(file.parent):
+                with chdir(file.parent):
                     exec(code, globals_dict)
 
     # cleanup

@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/optim.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2024, 2025, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -111,7 +111,8 @@ Example::
     import timeit
     
     def benchmark(func, *args, **kwargs):
-        timer = timeit.Timer('jax.block_until_ready(func(*args, **kwargs))', globals=locals())
+        from jax import block_until_ready
+        timer = timeit.Timer('block_until_ready(func(*args, **kwargs))', globals=locals())
         n, _ = timer.autorange()
         times = timer.repeat(5, n)
         time = min(times) / n
@@ -125,10 +126,10 @@ And the winner is:
 
 .. code-block:: text
 
-    doinference took  10.591 ms on average
-    doinference took   0.023 ms on average
+    doinference took   7.102 ms on average
+    doinference took   0.041 ms on average
 
-The compiled version is 400 times faster. The difference is so stark because we
+The compiled version is 200 times faster. The difference is so stark because we
 used only 10 datapoints, so most of the time is spent in routing overhead
 instead of actual computations. Repeating with 1000 datapoints, the advantage
 should be milder::
@@ -141,8 +142,8 @@ Indeed, it's 6x faster, lower but still high:
 
 .. code-block:: text
 
-    doinference took  30.618 ms on average
-    doinference took   5.346 ms on average
+    doinference took  33.204 ms on average
+    doinference took   4.804 ms on average
 
 We said that using the :class:`GP` options ``checkpos=False, checksym=False``
 makes it faster, and that they are disabled anyway under jit. Let's check::
@@ -154,8 +155,8 @@ Result:
 
 .. code-block:: text
 
-    doinference took  19.312 ms on average
-    doinference took   6.120 ms on average
+    doinference took  16.029 ms on average
+    doinference took   5.010 ms on average
 
 As expected, the compiled version is not affected, while the original one gains
 a lot of speed: now the advantage is just 3x.

@@ -1,6 +1,6 @@
 # lsqfitgp/pyproject.toml
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2025, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -28,7 +28,7 @@ authors = [
 ]
 description = "A general purpose Gaussian process regression module"
 readme = "README.md"
-requires-python = ">=3.9" # oldest supported by jax 0.4.26
+requires-python = ">=3.10" # oldest supported by jax 0.4.35
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -37,10 +37,10 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
-    'numpy>=1.22', # oldest supported by jax 0.4.26
-    'scipy>=1.10', # oldest supported by jax 0.4.26 and without quirky bugs
-    'jax>=0.4.26', # first that fixes polygamma & zeta fp64
-    'jaxlib>=0.4.26',
+    'numpy>=1.24', # oldest supported by jax 0.4.35
+    'scipy>=1.10', # oldest supported by jax 0.4.35
+    'jax>=0.4.35', # first with `vmap_method` argument in `pure_callback`
+    'jaxlib>=0.4.35',
     'gvar>=12.0', # first with custom formatting
 ]
 dynamic = ["version"]
@@ -98,11 +98,11 @@ tests = [ # to run the unit tests on CI
 ]
 
 tests-old = [ # to run the unit tests on CI, with minimum supported dependencies
-    "numpy==1.22",
+    "numpy==1.24",
     "scipy==1.10",
     "gvar==12.0",
-    "jax==0.4.26",
-    "jaxlib==0.4.26",
+    "jax==0.4.35",
+    "jaxlib==0.4.35",
     "pytest",
     "coverage[toml]",
     "mpmath",

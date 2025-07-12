@@ -1,6 +1,6 @@
 # lsqfitgp/_GP/_elements.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2025, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -721,6 +721,10 @@ class GPElements(_base.GPBase):
         mean = numpy.zeros(x.size)
         cov = self._covblock(key, key).astype(float)
         assert cov.shape == 2 * mean.shape, cov.shape
+
+        ##### temporary fix for gplepage/gvar#49 #####
+        cov = numpy.array(cov)
+        ##############################################
         
         # get preexisting primary gvars to be correlated with the new ones
         preitems = [

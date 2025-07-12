@@ -1,6 +1,6 @@
 # lsqfitgp/_jaxext/__init__.py
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2025, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -153,7 +153,7 @@ def is_jax_type(dtype):
         jnp.empty(0, dtype)
         return True
     except TypeError as e:
-        if 'JAX only supports number and bool dtypes' in str(e):
+        if 'JAX only supports number' in str(e):
             return False
         raise
 
@@ -174,7 +174,7 @@ def pure_callback_ufunc(callback, dtype, *args, excluded=None, **kwargs):
         for i, a in enumerate(args)
     ]
     result = jax.ShapeDtypeStruct(shape, dtype)
-    return jax.pure_callback(callback, result, *padded_args, vectorized=True, **kwargs)
+    return jax.pure_callback(callback, result, *padded_args, vmap_method='expand_dims', **kwargs)
 
     # TODO when jax solves this, check version and piggyback on original if new
 
