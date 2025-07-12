@@ -1,6 +1,6 @@
 <!--- lsqfitgp/docs/changelog.md
 
-  Copyright (c) 2023, 2024, Giacomo Petrillo
+  Copyright (c) 2023, 2024, 2025, Giacomo Petrillo
 
   This file is part of lsqfitgp.
 
@@ -24,7 +24,19 @@
 # Changelog
 
 
-## 0.21 Release early, release often, then hide in a foreign country and wait one year (2024-10-14)
+## 0.21.1. Should the middle class programmer still update his software in 2025? (2025-07-12)
+
+A few months on updates on part of lsqfitgp's dependencies broke some stuff as usual. I am here to fix the broken stuff.
+
+Changes:
+- minimum python version 3.9 => 3.10
+- minimum jax version 0.4.26 => 0.4.35
+- minimum numpy version 1.22 => 1.24
+- colorblind-friendly documentation
+- default gamma in bart and bcf is 1 instead of 0.95, should not make a visible difference
+
+
+## 0.21. Release early, release often, then hide in a foreign country and wait one year (2024-10-14)
 
 Thanks to waiting one year, Google and the Python Software Foundation have substantially improved `jax` and Python, making `lsqfitgp` faster and supported on Windows, through no effort of my own.
 
@@ -73,7 +85,7 @@ As usual I run tests with the oldest supported versions of all dependencies. Add
   * Implemented `StructuredArray.nbytes`.
 
 
-## 0.20.2 This release marks a detente in the ongoing lsqfitgp-jax conflict (2023-10-18)
+## 0.20.2. This release marks a detente in the ongoing lsqfitgp-jax conflict (2023-10-18)
 
 Recent versions of jax are now supported using scipy's polygamma in place of the one provided by jax. Other changes:
 
@@ -83,7 +95,7 @@ Recent versions of jax are now supported using scipy's polygamma in place of the
   * New example script `pdf10.py`.
 
 
-## 0.20.1 I beg to insist it was not my fault (2023-09-22)
+## 0.20.1. I beg to insist it was not my fault (2023-09-22)
 
 This release pins `jax` and `jaxlib` to <0.4.16 to avoid a new inaccurate implementation of the special functions zeta and polygamma.
 

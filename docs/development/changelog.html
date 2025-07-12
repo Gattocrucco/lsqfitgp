@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Changelog &#8212; lsqfitgp documentation</title>
+    <title>Changelog &#8212; lsqfitgp 0.21.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
-    <script src="../_static/documentation_options.js?v=feaa0556"></script>
+    <script src="../_static/documentation_options.js?v=6081af2d"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -30,7 +30,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
+<h1 class="logo"><a href="../index.html">lsqfitgp 0.21.1</a></h1>
 
 
 
@@ -114,7 +114,7 @@
             
   <!--- lsqfitgp/docs/changelog.md
 
-  Copyright (c) 2023, 2024, Giacomo Petrillo
+  Copyright (c) 2023, 2024, 2025, Giacomo Petrillo
 
   This file is part of lsqfitgp.
 
@@ -135,8 +135,20 @@
   copy-pastable to github releases. -->
 <section class="tex2jax_ignore mathjax_ignore" id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
+<section id="should-the-middle-class-programmer-still-update-his-software-in-2025-2025-07-12">
+<h2>0.21.1. Should the middle class programmer still update his software in 2025? (2025-07-12)<a class="headerlink" href="#should-the-middle-class-programmer-still-update-his-software-in-2025-2025-07-12" title="Link to this heading">¶</a></h2>
+<p>A few months on updates on part of lsqfitgp’s dependencies broke some stuff as usual. I am here to fix the broken stuff.</p>
+<p>Changes:</p>
+<ul class="simple">
+<li><p>minimum python version 3.9 =&gt; 3.10</p></li>
+<li><p>minimum jax version 0.4.26 =&gt; 0.4.35</p></li>
+<li><p>minimum numpy version 1.22 =&gt; 1.24</p></li>
+<li><p>colorblind-friendly documentation</p></li>
+<li><p>default gamma in bart and bcf is 1 instead of 0.95, should not make a visible difference</p></li>
+</ul>
+</section>
 <section id="release-early-release-often-then-hide-in-a-foreign-country-and-wait-one-year-2024-10-14">
-<h2>0.21 Release early, release often, then hide in a foreign country and wait one year (2024-10-14)<a class="headerlink" href="#release-early-release-often-then-hide-in-a-foreign-country-and-wait-one-year-2024-10-14" title="Link to this heading">¶</a></h2>
+<h2>0.21. Release early, release often, then hide in a foreign country and wait one year (2024-10-14)<a class="headerlink" href="#release-early-release-often-then-hide-in-a-foreign-country-and-wait-one-year-2024-10-14" title="Link to this heading">¶</a></h2>
 <p>Thanks to waiting one year, Google and the Python Software Foundation have substantially improved <code class="docutils literal notranslate"><span class="pre">jax</span></code> and Python, making <code class="docutils literal notranslate"><span class="pre">lsqfitgp</span></code> faster and supported on Windows, through no effort of my own.</p>
 <section id="release-highlights">
 <h3>Release highlights<a class="headerlink" href="#release-highlights" title="Link to this heading">¶</a></h3>
@@ -199,7 +211,7 @@
 </section>
 </section>
 <section id="this-release-marks-a-detente-in-the-ongoing-lsqfitgp-jax-conflict-2023-10-18">
-<h2>0.20.2 This release marks a detente in the ongoing lsqfitgp-jax conflict (2023-10-18)<a class="headerlink" href="#this-release-marks-a-detente-in-the-ongoing-lsqfitgp-jax-conflict-2023-10-18" title="Link to this heading">¶</a></h2>
+<h2>0.20.2. This release marks a detente in the ongoing lsqfitgp-jax conflict (2023-10-18)<a class="headerlink" href="#this-release-marks-a-detente-in-the-ongoing-lsqfitgp-jax-conflict-2023-10-18" title="Link to this heading">¶</a></h2>
 <p>Recent versions of jax are now supported using scipy’s polygamma in place of the one provided by jax. Other changes:</p>
 <ul class="simple">
 <li><p>Solved an incompatibility with <code class="docutils literal notranslate"><span class="pre">jax</span> <span class="pre">&gt;=</span> <span class="pre">0.4.17</span></code>.</p></li>
@@ -209,7 +221,7 @@
 </ul>
 </section>
 <section id="i-beg-to-insist-it-was-not-my-fault-2023-09-22">
-<h2>0.20.1 I beg to insist it was not my fault (2023-09-22)<a class="headerlink" href="#i-beg-to-insist-it-was-not-my-fault-2023-09-22" title="Link to this heading">¶</a></h2>
+<h2>0.20.1. I beg to insist it was not my fault (2023-09-22)<a class="headerlink" href="#i-beg-to-insist-it-was-not-my-fault-2023-09-22" title="Link to this heading">¶</a></h2>
 <p>This release pins <code class="docutils literal notranslate"><span class="pre">jax</span></code> and <code class="docutils literal notranslate"><span class="pre">jaxlib</span></code> to &lt;0.4.16 to avoid a new inaccurate implementation of the special functions zeta and polygamma.</p>
 </section>
 <section id="kernels-kernels-kernels-all-you-can-think-about-is-covariance-functions-i-am-sick-of-your-kernels-i-am-sick-of-cleaning-the-leftover-eigenspaces-you-leave-on-the-carpet-when-you-come-home-late-in-the-night-after-spending-all-day-hewing-positive-semidefinite-operators-i-am-sick-of-hearing-your-breath-the-stale-unique-acrid-smell-that-fills-the-algebraists-workrooms-wafting-through-the-linen-to-my-nostrils-go-away-go-away-from-here-and-rest-with-your-beloved-kernels-2023-08-29">
