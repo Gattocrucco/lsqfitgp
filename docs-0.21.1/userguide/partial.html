@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>8. Partial derivatives &#8212; lsqfitgp 0.21.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
+    <script src="../_static/documentation_options.js?v=6081af2d"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="9. Multidimensional output" href="out.html" />
+    <link rel="prev" title="7. Multidimensional input" href="in.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">lsqfitgp 0.21.1</a></h1>
+
+
+
+<p class="blurb">A general purpose Gaussian process regression module</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Gattocrucco&repo=lsqfitgp&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="userguide.html">Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="installation.html">1. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sine.html">2. First example: a sine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html">3. More on kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivatives.html">4. Taking derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrals.html">5. Taking integrals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customs.html">6. A custom kernel: text classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="in.html">7. Multidimensional input</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8. Partial derivatives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="out.html">9. Multidimensional output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="components.html">10. Splitting components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyper.html">11. Hyperparameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hyperstruct.html">12. Hyperparameters in the input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nonlinear.html">13. Nonlinear models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optim.html">14. Optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/reference.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examplesref.html">Example scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/development.html">Development</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="userguide.html">Guide</a><ul>
+      <li>Previous: <a href="in.html" title="previous chapter"><span class="section-number">7. </span>Multidimensional input</a></li>
+      <li>Next: <a href="out.html" title="next chapter"><span class="section-number">9. </span>Multidimensional output</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="in.html" title="Previous document"><span class="section-number">7. </span>Multidimensional input</a>
+        </li>
+        <li>
+          <a href="out.html" title="Next document"><span class="section-number">9. </span>Multidimensional output</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <section id="partial-derivatives">
+<span id="partial"></span><h1><span class="section-number">8. </span>Partial derivatives<a class="headerlink" href="#partial-derivatives" title="Link to this heading">¶</a></h1>
+<p>Now that we can represent <a class="reference internal" href="in.html#multiin"><span class="std std-ref">Multidimensional input</span></a>, we can also take partial derivatives.
+In the last example in <a class="reference internal" href="derivatives.html#derivs"><span class="std std-ref">Taking derivatives</span></a>, we imposed that the unknown function
+ought to have a local maximum in zero. Here we’ll try to impose that a function
+of two variables has a saddle point in the center. Let’s say that the function
+has value 0 at the four corners of the unitary square:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">lsqfitgp</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lgp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gvar</span>
+
+<span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="mf">0.25</span><span class="p">))</span>
+
+<span class="n">xydata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">)])</span>
+
+<span class="n">zdata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xydata</span><span class="p">,</span> <span class="s1">&#39;corners&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, we have to specify the saddle point using derivatives. For simplicity,
+let’s say that the saddle point is oriented along the axes and fix that the
+curvature is negative along <code class="xref py py-obj docutils literal notranslate"><span class="pre">x</span></code> and positive along <code class="xref py py-obj docutils literal notranslate"><span class="pre">y</span></code>. This implies that:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>the second derivatives w.r.t. <code class="xref py py-obj docutils literal notranslate"><span class="pre">x</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">y</span></code> are respectively negative and
+positive;</p></li>
+<li><p>the cross second derivative is zero;</p></li>
+<li><p>the first derivatives are zero.</p></li>
+</ul>
+</div></blockquote>
+<p>To specify partial derivatives, we pass a field name, a tuple of field names, or
+a pair <code class="docutils literal notranslate"><span class="pre">(order,</span> <span class="pre">field</span> <span class="pre">name)</span></code> as <code class="docutils literal notranslate"><span class="pre">deriv</span></code> argument to <code class="docutils literal notranslate"><span class="pre">addx</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">xydata</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">gp</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">center</span><span class="p">,</span>   <span class="s1">&#39;dx&#39;</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span>       <span class="s1">&#39;x&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">center</span><span class="p">,</span>   <span class="s1">&#39;dy&#39;</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span>       <span class="s1">&#39;y&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">center</span><span class="p">,</span>  <span class="s1">&#39;d2x&#39;</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">center</span><span class="p">,</span>  <span class="s1">&#39;d2y&#39;</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span><span class="p">(</span>  <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">center</span><span class="p">,</span> <span class="s1">&#39;dxdy&#39;</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">))</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we add a grid of points to do the plot and then ask for the prediction:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xyplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">xydata</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">xyplot</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">xyplot</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">xyplot</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">xyplot</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+
+<span class="n">gp</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xyplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+
+<span class="n">zplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span>
+    <span class="s1">&#39;corners&#39;</span><span class="p">:</span> <span class="n">zdata</span><span class="p">,</span>
+    <span class="s1">&#39;dx&#39;</span>     <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s1">&#39;dy&#39;</span>     <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s1">&#39;d2x&#39;</span>    <span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">),</span>
+    <span class="s1">&#39;d2y&#39;</span>    <span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">),</span>
+    <span class="s1">&#39;dxdy&#39;</span>   <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+<span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And plot it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">,</span> <span class="n">subplot_kw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+    <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">,</span>
+    <span class="n">computed_zorder</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">))</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xyplot</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">xyplot</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">gvar</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">zplot</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xydata</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">xydata</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">zdata</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">depthshade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;partial1.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="../_images/partial1.png" src="../_images/partial1.png" />
+<p>In general to specify a partial derivative you have to define a floating point
+named field in your input array and use the field name to specify the derived
+variable. For the full derivative specification syntax, see the reference for
+<a class="reference internal" href="../reference/deriv.html#lsqfitgp.Deriv" title="lsqfitgp.Deriv"><code class="xref py py-class docutils literal notranslate"><span class="pre">Deriv</span></code></a>.</p>
+</section>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="in.html" title="Previous document"><span class="section-number">7. </span>Multidimensional input</a>
+        </li>
+        <li>
+          <a href="out.html" title="Next document"><span class="section-number">9. </span>Multidimensional output</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2020-2025, Giacomo Petrillo.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/userguide/partial.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

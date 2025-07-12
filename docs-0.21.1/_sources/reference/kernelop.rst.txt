@@ -1,0 +1,771 @@
+.. file generated automatically by lsqfitgp/docs/reference/kernelop.py
+
+.. currentmodule:: lsqfitgp
+
+Kernel transformations
+======================
+
+Kernel transformations are applied through the `CrossKernel` methods
+`~CrossKernel.transf`, `~CrossKernel.linop`, `~CrossKernel.algop`. A
+transformation returns a new kernel object derived from the input ones and
+additional arguments. Example::
+
+    import lsqfitgp as lgp
+    K = lgp.ExpQuad()
+    Q = (K
+        .linop('scale', 2)   # rescale the input
+        .algop('expm1')      # amplify positive correlations
+        .linop('diff', 1, 0) # derive w.r.t. the first argument
+    )
+
+A kernel can access all transformations defined in its superclasses. However,
+most transformations will regress the class of the output at least to the
+superclass which actually defines the transformation. Example::
+
+    K = lgp.ExpQuad()
+    assert isinstance(K, lgp.IsotropicKernel)
+    Q = K.linop('dim', 'a') # consider only dimension 'a' of the input
+    assert not isinstance(Q, lgp.IsotropicKernel)
+
+Index
+-----
+=====================  =============  =======================================================================================================================
+Method                 Name           Classes
+=====================  =============  =======================================================================================================================
+`~CrossKernel.algop`   `-log1p(-x)`_  :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `1/(1-x)`_     :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `1/arccos`_    :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `1/cos`_       :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `add`_         `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
+`~CrossKernel.algop`   `arcsin`_      :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `arctanh`_     :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `cosh`_        :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `exp`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `expm1`_       :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `expm1x`_      :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `i0`_          :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `i1`_          :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `mul`_         `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
+`~CrossKernel.algop`   `pow`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `rpow`_        :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `sinh`_        :ref:`All generic classes <generickernel>`
+`~CrossKernel.algop`   `tan`_         :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `cond`_        :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `derivable`_   `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
+`~CrossKernel.linop`   `diff`_        `CrossKernel`, `Kernel`
+`~CrossKernel.linop`   `dim`_         `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`
+`~CrossKernel.linop`   `fourier`_     `Zeta`
+`~CrossKernel.linop`   `loc`_         `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
+`~CrossKernel.linop`   `maxdim`_      `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
+`~CrossKernel.linop`   `normalize`_   :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `rescale`_     :ref:`All generic classes <generickernel>`
+`~CrossKernel.linop`   `scale`_       `CrossKernel`, `Kernel`, `CrossStationaryKernel`, `StationaryKernel`, `CrossIsotropicKernel`, `IsotropicKernel`, `Zeta`
+`~CrossKernel.linop`   `xtransf`_     `CrossKernel`, `Kernel`
+`~CrossKernel.transf`  `forcekron`_   `Kernel`
+=====================  =============  =======================================================================================================================
+
+Transformations
+---------------
+
+.. _-log1p(-x):
+.. method:: CrossKernel.algop('-log1p(-x)', )
+    :no-index:
+
+.. _1/(1-x):
+.. method:: CrossKernel.algop('1/(1-x)', )
+    :no-index:
+
+.. _1/arccos:
+.. method:: CrossKernel.algop('1/arccos', )
+    :no-index:
+
+.. _1/cos:
+.. method:: CrossKernel.algop('1/cos', )
+    :no-index:
+
+.. _add:
+.. method:: CrossKernel.algop('add', self, other)
+    :no-index:
+
+    .. code-block:: text
+
+        Sum of kernels.
+
+        .. math:
+            \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}(x, y), \\
+            \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}.
+
+        Parameters
+        ----------
+        other : CrossKernel or scalar
+            The other kernel.
+
+
+.. _arcsin:
+.. method:: CrossKernel.algop('arcsin', )
+    :no-index:
+
+    .. code-block:: text
+
+        Compute element-wise inverse of trigonometric sine of input.
+
+          JAX implementation of :obj:`numpy.arcsin`.
+
+          Args:
+            x: input array or scalar.
+
+          Returns:
+            An array containing the inverse trigonometric sine of each element of ``x``
+            in radians in the range ``[-pi/2, pi/2]``, promoting to inexact dtype.
+
+          Note:
+            - ``jnp.arcsin`` returns ``nan`` when ``x`` is real-valued and not in the closed
+              interval ``[-1, 1]``.
+            - ``jnp.arcsin`` follows the branch cut convention of :obj:`numpy.arcsin` for
+              complex inputs.
+
+          See also:
+            - :func:`jax.numpy.sin`: Computes a trigonometric sine of each element of input.
+            - :func:`jax.numpy.arccos` and :func:`jax.numpy.acos`: Computes the inverse of
+              trigonometric cosine of each element of input.
+            - :func:`jax.numpy.arctan` and :func:`jax.numpy.atan`: Computes the inverse of
+              trigonometric tangent of each element of input.
+
+          Examples:
+            >>> x = jnp.array([-2, -1, -0.5, 0, 0.5, 1, 2])
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.arcsin(x)
+            Array([   nan, -1.571, -0.524,  0.   ,  0.524,  1.571,    nan], dtype=float32)
+
+            For complex-valued inputs:
+
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.arcsin(3+4j)
+            Array(0.634+2.306j, dtype=complex64, weak_type=True)
+
+
+.. _arctanh:
+.. method:: CrossKernel.algop('arctanh', )
+    :no-index:
+
+    .. code-block:: text
+
+        Calculate element-wise inverse of hyperbolic tangent of input.
+
+          JAX implementation of :obj:`numpy.arctanh`.
+
+          The inverse of hyperbolic tangent is defined by:
+
+          .. math:
+
+            arctanh(x) = \frac{1}{2} [\ln(1 + x) - \ln(1 - x)]
+
+          Args:
+            x: input array or scalar.
+
+          Returns:
+            An array of same shape as ``x`` containing the inverse of hyperbolic tangent
+            of each element of ``x``, promoting to inexact dtype.
+
+          Note:
+            - ``jnp.arctanh`` returns ``nan`` for real-values outside the range ``[-1, 1]``.
+            - ``jnp.arctanh`` follows the branch cut convention of :obj:`numpy.arctanh`
+              for complex inputs.
+
+          See also:
+            - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
+              input.
+            - :func:`jax.numpy.arcsinh`: Computes the element-wise inverse of hyperbolic
+              sine of the input.
+            - :func:`jax.numpy.arccosh`: Computes the element-wise inverse of hyperbolic
+              cosine of the input.
+
+          Examples:
+            >>> x = jnp.array([-2, -1, -0.5, 0, 0.5, 1, 2])
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.arctanh(x)
+            Array([   nan,   -inf, -0.549,  0.   ,  0.549,    inf,    nan], dtype=float32)
+
+            For complex-valued input:
+
+            >>> x1 = jnp.array([-2+0j, 3+0j, 4-1j])
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.arctanh(x1)
+            Array([-0.549+1.571j,  0.347+1.571j,  0.239-1.509j], dtype=complex64)
+
+
+.. _cosh:
+.. method:: CrossKernel.algop('cosh', )
+    :no-index:
+
+    .. code-block:: text
+
+        Calculate element-wise hyperbolic cosine of input.
+
+          JAX implementation of :obj:`numpy.cosh`.
+
+          The hyperbolic cosine is defined by:
+
+          .. math:
+
+            cosh(x) = \frac{e^x + e^{-x}}{2}
+
+          Args:
+            x: input array or scalar.
+
+          Returns:
+            An array containing the hyperbolic cosine of each element of ``x``, promoting
+            to inexact dtype.
+
+          Note:
+            ``jnp.cosh`` is equivalent to computing ``jnp.cos(1j * x)``.
+
+          See also:
+            - :func:`jax.numpy.sinh`: Computes the element-wise hyperbolic sine of the input.
+            - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
+              input.
+            - :func:`jax.numpy.arccosh`:  Computes the element-wise inverse of hyperbolic
+              cosine of the input.
+
+          Examples:
+            >>> x = jnp.array([[3, -1, 0],
+            ...                [4, 7, -5]])
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.cosh(x)
+            Array([[ 10.068,   1.543,   1.   ],
+                   [ 27.308, 548.317,  74.21 ]], dtype=float32)
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.cos(1j * x)
+            Array([[ 10.068+0.j,   1.543+0.j,   1.   +0.j],
+                   [ 27.308+0.j, 548.317+0.j,  74.21 +0.j]],      dtype=complex64, weak_type=True)
+
+            For complex-valued input:
+
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.cosh(5+1j)
+            Array(40.096+62.44j, dtype=complex64, weak_type=True)
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.cos(1j * (5+1j))
+            Array(40.096+62.44j, dtype=complex64, weak_type=True)
+
+
+.. _exp:
+.. method:: CrossKernel.algop('exp', )
+    :no-index:
+
+    .. code-block:: text
+
+        Calculate element-wise exponential of the input.
+
+          JAX implementation of :obj:`numpy.exp`.
+
+          Args:
+            x: input array or scalar
+
+          Returns:
+            An array containing the exponential of each element in ``x``, promotes to
+            inexact dtype.
+
+          See also:
+            - :func:`jax.numpy.log`: Calculates element-wise logarithm of the input.
+            - :func:`jax.numpy.expm1`: Calculates :math:`e^x-1` of each element of the
+              input.
+            - :func:`jax.numpy.exp2`: Calculates base-2 exponential of each element of
+              the input.
+
+          Examples:
+            ``jnp.exp`` follows the properties of exponential such as :math:`e^{(a+b)}
+            = e^a * e^b`.
+
+            >>> x1 = jnp.array([2, 4, 3, 1])
+            >>> x2 = jnp.array([1, 3, 2, 3])
+            >>> with jnp.printoptions(precision=2, suppress=True):
+            ...   print(jnp.exp(x1+x2))
+            [  20.09 1096.63  148.41   54.6 ]
+            >>> with jnp.printoptions(precision=2, suppress=True):
+            ...   print(jnp.exp(x1)*jnp.exp(x2))
+            [  20.09 1096.63  148.41   54.6 ]
+
+            This property holds for complex input also:
+
+            >>> jnp.allclose(jnp.exp(3-4j), jnp.exp(3)*jnp.exp(-4j))
+            Array(True, dtype=bool)
+
+
+.. _expm1:
+.. method:: CrossKernel.algop('expm1', )
+    :no-index:
+
+    .. code-block:: text
+
+        Calculate ``exp(x)-1`` of each element of the input.
+
+          JAX implementation of :obj:`numpy.expm1`.
+
+          Args:
+            x: input array or scalar.
+
+          Returns:
+            An array containing ``exp(x)-1`` of each element in ``x``, promotes to inexact
+            dtype.
+
+          Note:
+            ``jnp.expm1`` has much higher precision than the naive computation of
+            ``exp(x)-1`` for small values of ``x``.
+
+          See also:
+            - :func:`jax.numpy.log1p`: Calculates element-wise logarithm of one plus input.
+            - :func:`jax.numpy.exp`: Calculates element-wise exponential of the input.
+            - :func:`jax.numpy.exp2`: Calculates base-2 exponential of each element of
+              the input.
+
+          Examples:
+            >>> x = jnp.array([2, -4, 3, -1])
+            >>> with jnp.printoptions(precision=2, suppress=True):
+            ...   print(jnp.expm1(x))
+            [ 6.39 -0.98 19.09 -0.63]
+            >>> with jnp.printoptions(precision=2, suppress=True):
+            ...   print(jnp.exp(x)-1)
+            [ 6.39 -0.98 19.09 -0.63]
+
+            For values very close to 0, ``jnp.expm1(x)`` is much more accurate than
+            ``jnp.exp(x)-1``:
+
+            >>> x1 = jnp.array([1e-4, 1e-6, 2e-10])
+            >>> jnp.expm1(x1)
+            Array([1.0000500e-04, 1.0000005e-06, 2.0000000e-10], dtype=float32)
+            >>> jnp.exp(x1)-1
+            Array([1.00016594e-04, 9.53674316e-07, 0.00000000e+00], dtype=float32)
+
+
+.. _expm1x:
+.. method:: CrossKernel.algop('expm1x', )
+    :no-index:
+
+    .. code-block:: text
+
+        Compute accurately :math:`e^x - 1 - x = x^2/2 {}_1F_1(1, 3, x)`.
+
+
+.. _i0:
+.. method:: CrossKernel.algop('i0', )
+    :no-index:
+
+    .. code-block:: text
+
+        Modified bessel function of zeroth order.
+
+          JAX implementation of :obj:`scipy.special.i0`.
+
+          .. math:
+
+             \mathrm{i0}(x) = I_0(x) = \sum_{k=0}^\infty \frac{(x^2/4)^k}{(k!)^2}
+
+          Args:
+            x: array, real-valued
+
+          Returns:
+            array of bessel function values.
+
+          See also:
+            - :func:`jax.scipy.special.i0e`
+            - :func:`jax.scipy.special.i1`
+            - :func:`jax.scipy.special.i1e`
+
+
+.. _i1:
+.. method:: CrossKernel.algop('i1', )
+    :no-index:
+
+    .. code-block:: text
+
+        Modified bessel function of first order.
+
+          JAX implementation of :obj:`scipy.special.i1`.
+
+          .. math:
+
+             \mathrm{i1}(x) = I_1(x) = \frac{1}{2}x\sum_{k=0}^\infty\frac{(x^2/4)^k}{k!(k+1)!}
+
+          Args:
+            x: array, real-valued
+
+          Returns:
+            array of bessel function values
+
+          See also:
+            - :func:`jax.scipy.special.i0`
+            - :func:`jax.scipy.special.i0e`
+            - :func:`jax.scipy.special.i1e`
+
+
+.. _mul:
+.. method:: CrossKernel.algop('mul', self, other)
+    :no-index:
+
+    .. code-block:: text
+
+        Product of kernels.
+
+        .. math:
+            \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}(x, y), \\
+            \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}.
+
+        Parameters
+        ----------
+        other : CrossKernel or scalar
+            The other kernel.
+
+
+.. _pow:
+.. method:: CrossKernel.algop('pow', self, *, exponent)
+    :no-index:
+
+    .. code-block:: text
+
+        Power of the kernel.
+
+        .. math:
+            \mathrm{newkernel}(x, y) = \mathrm{kernel}(x, y)^{\mathrm{exponent}}
+
+        Parameters
+        ----------
+        exponent : nonnegative integer
+            The exponent. If traced by jax, it must have unsigned integer type.
+
+
+.. _rpow:
+.. method:: CrossKernel.algop('rpow', self, *, base)
+    :no-index:
+
+    .. code-block:: text
+
+        Exponentiation of the kernel.
+
+        .. math:
+            \text{newkernel}(x, y) = \text{base}^{\text{kernel}(x, y)}
+
+        Parameters
+        ----------
+        base : scalar
+            A number >= 1. If traced by jax, the value is not checked.
+
+
+.. _sinh:
+.. method:: CrossKernel.algop('sinh', )
+    :no-index:
+
+    .. code-block:: text
+
+        Calculate element-wise hyperbolic sine of input.
+
+          JAX implementation of :obj:`numpy.sinh`.
+
+          The hyperbolic sine is defined by:
+
+          .. math:
+
+            sinh(x) = \frac{e^x - e^{-x}}{2}
+
+          Args:
+            x: input array or scalar.
+
+          Returns:
+            An array containing the hyperbolic sine of each element of ``x``, promoting
+            to inexact dtype.
+
+          Note:
+            ``jnp.sinh`` is equivalent to computing ``-1j * jnp.sin(1j * x)``.
+
+          See also:
+            - :func:`jax.numpy.cosh`: Computes the element-wise hyperbolic cosine of the
+              input.
+            - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
+              input.
+            - :func:`jax.numpy.arcsinh`:  Computes the element-wise inverse of hyperbolic
+              sine of the input.
+
+          Examples:
+            >>> x = jnp.array([[-2, 3, 5],
+            ...                [0, -1, 4]])
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.sinh(x)
+            Array([[-3.627, 10.018, 74.203],
+                   [ 0.   , -1.175, 27.29 ]], dtype=float32)
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   -1j * jnp.sin(1j * x)
+            Array([[-3.627+0.j, 10.018-0.j, 74.203-0.j],
+                   [ 0.   -0.j, -1.175+0.j, 27.29 -0.j]],      dtype=complex64, weak_type=True)
+
+            For complex-valued input:
+
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   jnp.sinh(3-2j)
+            Array(-4.169-9.154j, dtype=complex64, weak_type=True)
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   -1j * jnp.sin(1j * (3-2j))
+            Array(-4.169-9.154j, dtype=complex64, weak_type=True)
+
+
+.. _tan:
+.. method:: CrossKernel.algop('tan', )
+    :no-index:
+
+    .. code-block:: text
+
+        Compute a trigonometric tangent of each element of input.
+
+          JAX implementation of :obj:`numpy.tan`.
+
+          Args:
+            x: scalar or array. Angle in radians.
+
+          Returns:
+            An array containing the tangent of each element in ``x``, promotes to inexact
+            dtype.
+
+          See also:
+            - :func:`jax.numpy.sin`: Computes a trigonometric sine of each element of input.
+            - :func:`jax.numpy.cos`: Computes a trigonometric cosine of each element of
+              input.
+            - :func:`jax.numpy.arctan` and :func:`jax.numpy.atan`: Computes the inverse of
+              trigonometric tangent of each element of input.
+
+          Examples:
+            >>> pi = jnp.pi
+            >>> x = jnp.array([0, pi/6, pi/4, 3*pi/4, 5*pi/6])
+            >>> with jnp.printoptions(precision=3, suppress=True):
+            ...   print(jnp.tan(x))
+            [ 0.     0.577  1.    -1.    -0.577]
+
+
+.. _cond:
+.. method:: CrossKernel.linop('cond', other, cond1[,  cond2])
+    :no-index:
+
+    .. code-block:: text
+
+        Switch between two independent processes based on a condition.
+
+        .. math:
+            T(f, g)(x) = \begin{cases}
+                f(x) & \text{if $\mathrm{cond}(x)$,} \\
+                g(x) & \text{otherwise.}
+            \end{cases}
+
+        Parameters
+        ----------
+        cond1, cond2 : callable
+            Function that is applied on an array of points and must return
+            a boolean array with the same shape.
+        other :
+            Kernel of the process used where the condition is false.
+
+
+.. _derivable:
+.. method:: CrossKernel.linop('derivable', xderivable[,  yderivable])
+    :no-index:
+
+    .. code-block:: text
+
+        Specify the degree of derivability of the function.
+
+        Parameters
+        ----------
+        xderivable, yderivable: int or None
+            Degree of derivability of the function. None means unknown.
+
+        Notes
+        -----
+        The derivability check is hardcoded into the kernel core and it is not
+        possible to remove it afterwards by applying ``'derivable'`` again with a
+        higher limit.
+
+
+.. _diff:
+.. method:: CrossKernel.linop('diff', xderiv[,  yderiv])
+    :no-index:
+
+    .. code-block:: text
+
+        Derive the function.
+
+        .. math:
+            T(f)(x) = \frac{\partial^n f}{\partial x^n} (x)
+
+        Parameters
+        ----------
+        xderiv, yderiv : Deriv_like
+            A `Deriv` or something that can be converted to a `Deriv`.
+
+        Raises
+        ------
+        RuntimeError
+            The derivative orders are greater than the `derivative` attribute.
+
+
+.. _dim:
+.. method:: CrossKernel.linop('dim', xdim[,  ydim])
+    :no-index:
+
+    .. code-block:: text
+
+        Restrict the function to a field of a structured input:
+
+            T(f)(x) = f(x[dim])
+
+        If the array is not structured, an exception is raised. If the field for
+        name `dim` has a nontrivial shape, the array passed to the kernel is still
+        structured but has only field `dim`.
+
+        Parameters
+        ----------
+        xdim, ydim: None, str, list of str
+            Field names or lists of field names.
+
+
+.. _fourier:
+.. method:: CrossKernel.linop('fourier', arg2, self[,  arg1])
+    :no-index:
+
+    .. code-block:: text
+
+        Compute the Fourier series transform of the function.
+
+        .. math:
+
+            T(f)(k) = \begin{cases}
+                    \frac2T \int_0^T \mathrm dx\, f(x)
+                    \cos\left(\frac{2\pi}T \frac k2 x\right)
+                    & \text{if $k$ is even} \\
+                    \frac2T \int_0^T \mathrm dx\, f(x)
+                    \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
+                    & \text{if $k$ is odd}
+                \end{cases}
+
+        The period :math:`T` is 1.
+
+
+.. _loc:
+.. method:: CrossKernel.linop('loc', xloc[,  yloc])
+    :no-index:
+
+    .. code-block:: text
+
+        Translate the process inputs:
+
+        .. math:
+            T(f)(x) = f(x - \mathrm{loc})
+
+        Parameters
+        ----------
+        xloc, yloc: None, number
+            Translations.
+
+
+.. _maxdim:
+.. method:: CrossKernel.linop('maxdim', xmaxdim[,  ymaxdim])
+    :no-index:
+
+    .. code-block:: text
+
+        Restrict the process to a maximum input dimensionality.
+
+        Parameters
+        ----------
+        xmaxdim, ymaxdim: None, int
+            Maximum dimensionality of the input.
+
+        Notes
+        -----
+        Once applied a restriction, the check is hardcoded into the kernel core and
+        it is not possible to remove it by applying again `maxdim` with a larger
+        limit.
+
+
+.. _normalize:
+.. method:: CrossKernel.linop('normalize', dox[,  doy])
+    :no-index:
+
+    .. code-block:: text
+
+        Rescale the process to unit variance.
+
+        .. math:
+            T(f)(x) &= f(x) / \sqrt{\mathrm{Std}[f(x)]} \\
+                    &= f(x) / \sqrt{\mathrm{kernel}(x, x)}
+
+        Parameters
+        ----------
+        dox, doy : bool
+            Whether to rescale.
+
+
+.. _rescale:
+.. method:: CrossKernel.linop('rescale', xfun[,  yfun])
+    :no-index:
+
+    .. code-block:: text
+
+        Rescale the output of the function.
+
+        .. math:
+            T(f)(x) = \mathrm{fun}(x) f(x)
+
+        Parameters
+        ----------
+        xfun, yfun : callable or None
+            Functions from the type of the arguments of the kernel to scalar.
+
+
+.. _scale:
+.. method:: CrossKernel.linop('scale', xscale[,  yscale])
+    :no-index:
+
+    .. code-block:: text
+
+        Rescale the process inputs:
+
+        .. math:
+            T(f)(x) = f(x / \mathrm{scale})
+
+        Parameters
+        ----------
+        xscale, yscale: None, number
+            Rescaling factors.
+
+
+.. _xtransf:
+.. method:: CrossKernel.linop('xtransf', xfun[,  yfun])
+    :no-index:
+
+    .. code-block:: text
+
+        Transform the inputs of the function.
+
+        .. math:
+            T(f)(x) = f(\mathrm{fun}(x))
+
+        Parameters
+        ----------
+        xfun, yfun : callable or None
+            Functions mapping a new kind of input to the kind of input accepted by
+            the kernel.
+
+
+.. _forcekron:
+.. method:: CrossKernel.transf('forcekron', )
+    :no-index:
+
+    .. code-block:: text
+
+        Force the kernel to be a separate product over dimensions:
+
+        .. math:
+            \mathrm{newkernel}(x, y) = \prod_i \mathrm{kernel}(x_i, y_i)
+
+        Returns
+        -------
+        newkernel : Kernel
+            The transformed kernel.
+

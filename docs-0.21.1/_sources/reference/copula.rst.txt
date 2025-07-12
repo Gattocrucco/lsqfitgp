@@ -1,0 +1,79 @@
+.. file generated automatically by lsqfitgp/docs/copula.py
+
+.. module:: lsqfitgp.copula
+
+Gaussian copulas
+================
+
+The `copula` submodule provides classes to define probability distributions and
+reparametrize them such that the joint distribution is Normal. This is useful to
+define priors for the hyperparameters of a Gaussian process, but can also be
+used on its own.
+
+To define a variable, use one of the subclasses of `Distr` listed under
+:ref:`families`. Combine the variables together to define a model by putting
+them in a `Copula` object. See `Distr` for examples.
+
+To represent at once concrete values of the variables and their transformed
+parametrization, put them in a `gvar.BufferDict` using `makedict`. To apply
+the transformation manually, use `~DistrBase.partial_invfcn`.
+
+..  note::
+    
+    I define "Gaussian copula" to mean a representation of an arbitrary random
+    variable as the transformation of a multivariate Normal random variable, as
+    explained, e.g., `here
+    <https://blogs.sas.com/content/iml/2021/07/05/introduction-copulas.html>`_.
+    This is different from another common usage, which is representing a
+    bivariate Normal as the transformation of uniform variables, as `"Gaussian
+    copula" on wikipedia
+    <https://en.wikipedia.org/wiki/Copula_(probability_theory)#Gaussian_copula>`_.
+
+Generic classes
+---------------
+
+The class `DistrBase` defines basic functionality shared by `Distr` and
+`Copula`, and can not be instantiated. `Distr` represents a probability
+distribution on a numerical tensor; it can not be instantied, use its concrete
+subclasses :ref:`listed below <families>`. `Copula` represents a collection of
+possibly related `Distr` objects and is intended for direct use.
+
+.. autoclass:: DistrBase
+    :members:
+
+--------
+
+.. autoclass:: Distr
+    :members:
+
+--------
+
+.. autoclass:: Copula
+    :members:
+
+Utilities
+---------
+
+.. autofunction:: makedict
+
+--------
+
+.. autofunction:: distribution
+
+.. _families:
+
+Predefined families
+-------------------
+
+The parametrizations follow Wikipedia, while the class names are as in
+`scipy.stats`.
+
+.. autoclass:: beta(alpha, beta)
+.. autoclass:: dirichlet(alpha)
+.. autoclass:: gamma(alpha, beta)
+.. autoclass:: halfcauchy(gamma)
+.. autoclass:: halfnorm(sigma)
+.. autoclass:: invgamma(alpha, beta)
+.. autoclass:: loggamma(alpha)
+.. autoclass:: lognorm(mu, sigma)
+.. autoclass:: uniform(a, b)
