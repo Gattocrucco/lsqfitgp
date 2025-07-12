@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>2. First example: a sine &#8212; lsqfitgp documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
-    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
     <script src="../_static/documentation_options.js?v=feaa0556"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
@@ -127,12 +127,12 @@
 <span id="sine"></span><h1><span class="section-number">2. </span>First example: a sine<a class="headerlink" href="#first-example-a-sine" title="Link to this heading">¶</a></h1>
 <p>We will go through a simple example fit to introduce how the module works.
 First, import the modules:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">gvar</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">lsqfitgp</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lgp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gvar</span>
 </pre></div>
 </div>
-<p>I suppose you know about <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v2.1)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a>, but you may not know about <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v13.1.1)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>.
+<p>I suppose you know about <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v2.3)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a>, but you may not know about <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v13.1.6)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>.
 It is a module for automatic linear correlation tracking. We will se how to use
 it in the example, if you want to know more <a class="reference external" href="https://gvar.readthedocs.io/en/stable/">it has a good documentation</a>.</p>
 <p>Now we generate some fake data. Let’s make a sine:<a class="footnote-reference brackets" href="#f1" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p>
@@ -205,7 +205,7 @@ In Python this paradigm is employed, e.g., by strings.</p>
 dictionary with labels as keys and arrays of function values as values, the
 second is the label of the points on which we want the estimate.</p>
 <p>Now we make a plot of everything:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">)</span>
 
@@ -226,10 +226,10 @@ second is the label of the points on which we want the estimate.</p>
 <img alt="../_images/sine1.png" src="../_images/sine1.png" />
 <p>To plot <code class="docutils literal notranslate"><span class="pre">ypred</span></code>, we did <code class="docutils literal notranslate"><span class="pre">ypred_mean</span> <span class="pre">=</span> <span class="pre">gvar.mean(ypred)</span></code>. This is because the
 output of <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP.predfromdata" title="lsqfitgp.GP.predfromdata"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predfromdata()</span></code></a> is not an array of numbers, but an array of
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v13.1.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gvar.GVar</span></code></a> objects. <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables represent Gaussian
-distributions; <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.mean" title="(in gvar v13.1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.mean()</span></code></a> extracts the mean of the distribution. Let’s
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.GVar" title="(in gvar v13.1.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gvar.GVar</span></code></a> objects. <code class="xref py py-class docutils literal notranslate"><span class="pre">GVar</span></code> variables represent Gaussian
+distributions; <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.mean" title="(in gvar v13.1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.mean()</span></code></a> extracts the mean of the distribution. Let’s
 make an error band for the fit by computing the standard deviations with
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sdev" title="(in gvar v13.1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sdev()</span></code></a>:</p>
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sdev" title="(in gvar v13.1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sdev()</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ypred_sdev</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">ypred</span><span class="p">)</span>
 <span class="n">bottom</span> <span class="o">=</span> <span class="n">ypred_mean</span> <span class="o">-</span> <span class="n">ypred_sdev</span>
 <span class="n">top</span> <span class="o">=</span> <span class="n">ypred_mean</span> <span class="o">+</span> <span class="n">ypred_sdev</span>
@@ -263,8 +263,8 @@ summary of the figure is this: close to the points, the function is probably a
 sine; as soon as we move out from the datapoints, the fit gives up and just
 returns the prior.</p>
 <p>Instead of trying to interpret what functions the fit result is representing, we
-can sample some plausible functions from the posterior distribution. <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v13.1.1)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>
-has a function for doing that, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v13.1.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>:</p>
+can sample some plausible functions from the posterior distribution. <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v13.1.6)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>
+has a function for doing that, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v13.1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">ypred_sample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">ypred</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xpred</span><span class="p">,</span> <span class="n">ypred_sample</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
@@ -386,10 +386,10 @@ don’t know why.</p>
     <div class="clearer"></div>
   </div>
     <div class="footer">
-      &#169;2020-2024, Giacomo Petrillo.
+      &#169;2020-2025, Giacomo Petrillo.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
       |

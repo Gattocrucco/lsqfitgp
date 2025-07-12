@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>13. Nonlinear models &#8212; lsqfitgp documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
-    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
     <script src="../_static/documentation_options.js?v=feaa0556"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
@@ -134,7 +134,7 @@ values. Gaussian distributions don’t play nicely with boundaries—they are
 defined on <span class="math notranslate nohighlight">\((-\infty,\infty)\)</span>—so it is necessary to map the Gaussian
 process space to an interval with a nonlinear function.</p>
 <p><a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> is designed to work with the general purpose fitting module
-<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#module-lsqfit" title="(in lsqfit v13.2.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfit</span></code></a> (after which it takes the name) for this kind of situations. If
+<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#module-lsqfit" title="(in lsqfit v13.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfit</span></code></a> (after which it takes the name) for this kind of situations. If
 you want to know more, it has a <a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/index.html">good documentation</a>.</p>
 <p>Let’s see how to fit some data that is constrained in (-1, 1). To map the
 Gaussian process space to the data space, we’ll use a hyperbolic tangent.
@@ -142,9 +142,9 @@ It has the properties <span class="math notranslate nohighlight">\(\tanh(\pm\inf
 <span class="math notranslate nohighlight">\(\tanh(-x) = -\tanh(x)\)</span>.</p>
 <p>We first define a Gaussian process as usual and take a sample from it as fake
 data.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfitgp</span> <span class="k">as</span> <span class="nn">lgp</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">gvar</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">lsqfitgp</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lgp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gvar</span>
 
 <span class="n">gp</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
 
@@ -166,8 +166,8 @@ sampling from it. To see this intuitively, consider that in the latter case the
 fake data would not satisfy the requirement of being bounded within (-1, 1).</p>
 <p>Now we’ll add errors to the data. If data does not have errors, there’s not
 really a problem to start with: you can map the data to <span class="math notranslate nohighlight">\((-\infty,
-\infty)\)</span> with <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.arctanh.html#numpy.arctanh" title="(in NumPy v2.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">arctanh</span></code></a>, do the Gaussian process fit, take some
-samples, map the samples back with <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.tanh.html#numpy.tanh" title="(in NumPy v2.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tanh</span></code></a>.</p>
+\infty)\)</span> with <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.arctanh.html#numpy.arctanh" title="(in NumPy v2.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">arctanh</span></code></a>, do the Gaussian process fit, take some
+samples, map the samples back with <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.tanh.html#numpy.tanh" title="(in NumPy v2.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tanh</span></code></a>.</p>
 <p>You may do that even with errors, either at first order using
 <code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.arctanh</span></code>, or by transforming the errors manually yourself. However,
 in that way you would be doing a fit with Gaussian errors on the transformed
@@ -188,14 +188,14 @@ prediction:</p>
 </pre></div>
 </div>
 <p>Now we define the prior and model function following the requirements of
-<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#lsqfit.nonlinear_fit" title="(in lsqfit v13.2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">lsqfit.nonlinear_fit</span></code></a> and run the fit:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lsqfit</span>
+<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#lsqfit.nonlinear_fit" title="(in lsqfit v13.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">lsqfit.nonlinear_fit</span></code></a> and run the fit:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">lsqfit</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s1">&#39;gproc&#39;</span><span class="p">:</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
 <span class="p">}</span>
 
-<span class="k">def</span> <span class="nf">fcn</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fcn</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">gvar</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;gproc&#39;</span><span class="p">])</span>
 
 <span class="n">fit</span> <span class="o">=</span> <span class="n">lsqfit</span><span class="o">.</span><span class="n">nonlinear_fit</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">fcn</span><span class="o">=</span><span class="n">fcn</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior</span><span class="p">)</span>
@@ -265,7 +265,7 @@ but is already the distribution of some points of our process. We want to
 also other parameters beside the Gaussian process, and we do not want to modify
 the fit result dictionary for good bookkeeping practice. Then we plot both the
 data space and the Gaussian process space.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mf">6.4</span><span class="p">,</span> <span class="mi">7</span><span class="p">])</span>
 
@@ -315,10 +315,10 @@ data space and the Gaussian process space.</p>
     <div class="clearer"></div>
   </div>
     <div class="footer">
-      &#169;2020-2024, Giacomo Petrillo.
+      &#169;2020-2025, Giacomo Petrillo.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
       |

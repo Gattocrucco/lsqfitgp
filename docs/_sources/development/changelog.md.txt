@@ -38,7 +38,7 @@ Thanks to waiting one year, Google and the Python Software Foundation have subst
 Improved gvar formatting. Disabled by default, can be enabled with the context manager `gvar_format`. The new format has more options than the one provided by `gvar`. In particular the default setting has 1.5 error digits instead of 2, and never shows non-significant digits.
 
   * Fractional error digits: with 1.5 digits, 2 error digits are shown up to $\sqrt{10}$, then 1. So 12.3 +/- 1.5 becomes `'12.3(1.5)`, while 12.3 +/- 4.5 becomes `'12(4)'`.
-  * Never show non-significant digits: the `gvar` formatter displays 1200 +/- 500 as `'1(234)'`, showing more digits than the first 2 error digits. The new formatter instead writes `'oo(23o)'`, using `o` as a "small zero" symbol to represent a rounding zero rather than a significant zero. This also allows to avoid exponential notation for small numbers: 1234 +/- 567 is shown as `'1.23(57)e+03'` with the default formatter, and as `'12oo(6oo)'` with the new formatter.
+  * Never show non-significant digits: the `gvar` formatter displays 1 +/- 234 as `'1(234)'`, showing more digits than the first 2 error digits. The new formatter instead writes `'oo(23o)'`, using `o` as a "small zero" symbol to represent a rounding zero rather than a significant zero. This also allows to avoid exponential notation for small numbers: 1234 +/- 567 is shown as `'1.23(57)e+03'` with the default formatter, and as `'12oo(6oo)'` with the new formatter.
 
 The new formatter can also be used manually without gvars through `uformat`.
 
