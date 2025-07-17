@@ -131,7 +131,7 @@ used on its own.</p>
 <a class="reference internal" href="#families"><span class="std std-ref">Predefined families</span></a>. Combine the variables together to define a model by putting
 them in a <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> object. See <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> for examples.</p>
 <p>To represent at once concrete values of the variables and their transformed
-parametrization, put them in a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> using <a class="reference internal" href="#lsqfitgp.copula.makedict" title="lsqfitgp.copula.makedict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">makedict</span></code></a>. To apply
+parametrization, put them in a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> using <a class="reference internal" href="#lsqfitgp.copula.makedict" title="lsqfitgp.copula.makedict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">makedict</span></code></a>. To apply
 the transformation manually, use <a class="reference internal" href="#lsqfitgp.copula.DistrBase.partial_invfcn" title="lsqfitgp.copula.DistrBase.partial_invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -175,10 +175,10 @@ represents the atomic shape of the distribution.</p>
 <td><p>Map independent Normal variables to the desired distribution.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#lsqfitgp.copula.DistrBase.add_distribution" title="lsqfitgp.copula.DistrBase.add_distribution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_distribution</span></code></a>(name)</p></td>
-<td><p>Register the distribution for usage with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p></td>
+<td><p>Register the distribution for usage with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#lsqfitgp.copula.DistrBase.gvars" title="lsqfitgp.copula.DistrBase.gvars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvars</span></code></a>()</p></td>
-<td><p>Return an array of gvars intended as value in a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p></td>
+<td><p>Return an array of gvars intended as value in a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -191,13 +191,13 @@ represents the atomic shape of the distribution.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.copula.DistrBase.add_distribution">
 <span class="sig-name descname"><span class="pre">add_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_base.py#L101-L135"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.DistrBase.add_distribution" title="Link to this definition">¶</a></dt>
-<dd><p>Register the distribution for usage with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p>
+<dd><p>Register the distribution for usage with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>The name to use for the distribution. It must be globally unique,
 and it should not contain parentheses. To redefine a distribution
-with the same name, use <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.del_distribution" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.del_distribution</span></code></a> first.
+with the same name, use <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.del_distribution" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.del_distribution</span></code></a> first.
 However, it is allowed to reuse the name if the distribution family,
 shape and parameters are identical to those used for the existing
 definition.</p>
@@ -208,7 +208,7 @@ definition.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution</span></code></a>, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.del_distribution" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.del_distribution</span></code></a></dt><dd></dd>
+<dt><a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution</span></code></a>, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.del_distribution" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.del_distribution</span></code></a></dt><dd></dd>
 </dl>
 </div>
 </dd></dl>
@@ -216,7 +216,7 @@ definition.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="lsqfitgp.copula.DistrBase.gvars">
 <span class="sig-name descname"><span class="pre">gvars</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/copula/_base.py#L137-L150"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.copula.DistrBase.gvars" title="Link to this definition">¶</a></dt>
-<dd><p>Return an array of gvars intended as value in a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p>
+<dd><p>Return an array of gvars intended as value in a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -278,7 +278,7 @@ axes in the array. This shape broadcasts with the non-core shapes of the
 parameters.</p>
 </dd>
 <dt><strong>name</strong><span class="classifier">str, optional</span></dt><dd><p>If specified, the distribution is defined for usage with
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> using <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution</span></code></a>, and for
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> using <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution</span></code></a>, and for
 convenience the constructor returns an array of gvars with the
 appropriate shape instead of the <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> object. See <code class="xref py py-obj docutils literal notranslate"><span class="pre">add_distribution</span></code>.</p>
 </dd>
@@ -310,7 +310,7 @@ attribute.</p>
 </dd>
 <dt>Else:</dt><dd></dd>
 <dt><strong>gvars</strong><span class="classifier">array of gvars</span></dt><dd><p>An array of primary gvars that can be set as value in a
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> under a key that uses the just defined name.</p>
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> under a key that uses the just defined name.</p>
 </dd>
 </dl>
 </dd>
@@ -318,7 +318,7 @@ attribute.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a>, <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a>, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.uniform" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.uniform</span></code></a></dt><dd></dd>
+<dt><a class="reference internal" href="#lsqfitgp.copula.DistrBase" title="lsqfitgp.copula.DistrBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DistrBase</span></code></a>, <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a>, <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.uniform" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict.uniform</span></code></a></dt><dd></dd>
 </dl>
 </div>
 <p class="rubric">Notes</p>
@@ -327,7 +327,7 @@ attribute.</p>
 ufunc and its number of parameters can be inferred. <a class="reference internal" href="#lsqfitgp.copula.Distr.invfcn" title="lsqfitgp.copula.Distr.invfcn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invfcn</span></code></a> must be
 vectorized.</p>
 <p class="rubric">Examples</p>
-<p>Use directly with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> by setting <code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code>:</p>
+<p>Use directly with <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a> by setting <code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code>:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">copula</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">BufferDict</span><span class="p">({</span>
 <span class="gp">... </span>    <span class="s1">&#39;A(x)&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;A&#39;</span><span class="p">),</span>
 <span class="gp">... </span>    <span class="s1">&#39;B(y)&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">),</span>
@@ -387,7 +387,7 @@ X \mid \sigma &amp;\sim \mathrm{HalfNorm}(\sigma), \\
 Y \mid \sigma &amp;\sim \mathrm{HalfCauchy}(\sigma),\end{split}\]</div>
 <p>with the same parameter <span class="math notranslate nohighlight">\(\sigma^2\)</span> shared between the two
 distributions. However, if the distributions are now put into a
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>, with</p>
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>, with</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sigma2</span><span class="o">.</span><span class="n">add_distribution</span><span class="p">(</span><span class="s1">&#39;distr_sigma2&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="o">.</span><span class="n">add_distribution</span><span class="p">(</span><span class="s1">&#39;distr_X&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span><span class="o">.</span><span class="n">add_distribution</span><span class="p">(</span><span class="s1">&#39;distr_Y&#39;</span><span class="p">)</span>
@@ -421,7 +421,7 @@ put them into a container of choice and wrap it as a <a class="reference interna
 </div>
 <p>The <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> provides a <code class="xref py py-obj docutils literal notranslate"><span class="pre">partial_invfcn</span></code> function to map Normal variables
 to a structure, with the same layout as the input one, of desired variates.
-The whole <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> can be used in <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>:</p>
+The whole <a class="reference internal" href="#lsqfitgp.copula.Copula" title="lsqfitgp.copula.Copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Copula</span></code></a> can be used in <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">makedict</span><span class="p">({</span><span class="s1">&#39;sigmaXY&#39;</span><span class="p">:</span> <span class="n">sigmaXY</span><span class="p">})</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span>
 <span class="go">BufferDict({&quot;__copula_{&#39;sigma2&#39;: invgamma{1, 1}, &#39;X&#39;: halfnorm{sqrt{_Path{path=[{DictKey{key=&#39;sigma2&#39;},}]}}}, &#39;Y&#39;: halfcauchy{sqrt{_Path{path=[{DictKey{key=&#39;sigma2&#39;},}]}}}}(sigmaXY)&quot;: array([0.0(1.0), 0.0(1.0), 0.0(1.0)], dtype=object)})</span>
@@ -580,7 +580,7 @@ to the desired distribution.</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<p>Put a <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> into a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.6)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>:</p>
+<p>Put a <a class="reference internal" href="#lsqfitgp.copula.Distr" title="lsqfitgp.copula.Distr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Distr</span></code></a> into a <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict" title="(in gvar v13.1.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gvar.BufferDict</span></code></a>:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">makedict</span><span class="p">({</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">lgp</span><span class="o">.</span><span class="n">copula</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)})</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span>
 <span class="go">BufferDict({&#39;__copula_beta{1, 1}(x)&#39;: 0.0(1.0)})</span>
