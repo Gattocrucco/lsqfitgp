@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>13. Nonlinear models &#8212; lsqfitgp 0.21.1 documentation</title>
+    <title>13. Nonlinear models &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
-    <script src="../_static/documentation_options.js?v=6081af2d"></script>
+    <script src="../_static/documentation_options.js?v=feaa0556"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -30,7 +30,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">lsqfitgp 0.21.1</a></h1>
+<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
 
 
 
@@ -134,7 +134,7 @@ values. Gaussian distributions don’t play nicely with boundaries—they are
 defined on <span class="math notranslate nohighlight">\((-\infty,\infty)\)</span>—so it is necessary to map the Gaussian
 process space to an interval with a nonlinear function.</p>
 <p><a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> is designed to work with the general purpose fitting module
-<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#module-lsqfit" title="(in lsqfit v13.3)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfit</span></code></a> (after which it takes the name) for this kind of situations. If
+<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#module-lsqfit" title="(in lsqfit v13.3.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lsqfit</span></code></a> (after which it takes the name) for this kind of situations. If
 you want to know more, it has a <a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/index.html">good documentation</a>.</p>
 <p>Let’s see how to fit some data that is constrained in (-1, 1). To map the
 Gaussian process space to the data space, we’ll use a hyperbolic tangent.
@@ -188,7 +188,7 @@ prediction:</p>
 </pre></div>
 </div>
 <p>Now we define the prior and model function following the requirements of
-<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#lsqfit.nonlinear_fit" title="(in lsqfit v13.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">lsqfit.nonlinear_fit</span></code></a> and run the fit:</p>
+<a class="reference external" href="https://lsqfit.readthedocs.io/en/latest/lsqfit.html#lsqfit.nonlinear_fit" title="(in lsqfit v13.3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">lsqfit.nonlinear_fit</span></code></a> and run the fit:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">lsqfit</span>
 
 <span class="n">prior</span> <span class="o">=</span> <span class="p">{</span>

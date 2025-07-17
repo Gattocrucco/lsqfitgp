@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>14. Optimization &#8212; lsqfitgp 0.21.1 documentation</title>
+    <title>14. Optimization &#8212; lsqfitgp documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
-    <script src="../_static/documentation_options.js?v=6081af2d"></script>
+    <script src="../_static/documentation_options.js?v=feaa0556"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -30,7 +30,7 @@
     
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">lsqfitgp 0.21.1</a></h1>
+<h1 class="logo"><a href="../index.html">lsqfitgp</a></h1>
 
 
 
@@ -144,18 +144,18 @@ and the positivity check is somewhat slow. To disable the check, write <code cla
 <span class="pre">checkpos=False,</span> <span class="pre">checksym=False)</span></code>. The check is disabled anyway when using the
 jax compiler, addressed in the next section.</p>
 <p>Since usually <span class="math notranslate nohighlight">\(m \gg n\)</span> because the plot is done on a finely spaced grid,
-the typical bottleneck is taking the samples, i.e., calling <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sample" title="(in gvar v13.1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sample()</span></code></a>
-(or <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v13.1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>). This problem can be bypassed by plotting only the
+the typical bottleneck is taking the samples, i.e., calling <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sample" title="(in gvar v13.1.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sample()</span></code></a>
+(or <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v13.1.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>). This problem can be bypassed by plotting only the
 standard deviation band instead of taking samples, but it is less informative.
-To make <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sample" title="(in gvar v13.1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sample()</span></code></a> faster, use its <code class="docutils literal notranslate"><span class="pre">eps</span></code> option: <code class="docutils literal notranslate"><span class="pre">gvar.sample(x,</span>
+To make <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.sample" title="(in gvar v13.1.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.sample()</span></code></a> faster, use its <code class="docutils literal notranslate"><span class="pre">eps</span></code> option: <code class="docutils literal notranslate"><span class="pre">gvar.sample(x,</span>
 <span class="pre">eps=1e-12)</span></code>. This forces it to use a Cholesky decomposition instead of a
 diagonalization.</p>
 <p>In general the <a class="reference internal" href="../reference/gp.html#lsqfitgp.GP" title="lsqfitgp.GP"><code class="xref py py-class docutils literal notranslate"><span class="pre">GP</span></code></a> methods have options for doing everything without
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v13.1.6)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>, but don’t try to use all of them mindlessly before profiling the
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v13.1.7)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>, but don’t try to use all of them mindlessly before profiling the
 code to know where the bottleneck actually is. Python has the module
 <code class="xref py py-mod docutils literal notranslate"><span class="pre">cProfile</span></code> for that, and in an IPython shell you can use <code class="docutils literal notranslate"><span class="pre">%run</span> <span class="pre">-p</span></code>. If
 you opt out of gvars, you can use <a class="reference internal" href="../reference/raniter.html#lsqfitgp.raniter" title="lsqfitgp.raniter"><code class="xref py py-func docutils literal notranslate"><span class="pre">lsqfitgp.raniter()</span></code></a> to draw samples from
-an explicit mean vector and covariance matrix instead of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v13.1.6)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>.</p>
+an explicit mean vector and covariance matrix instead of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.raniter" title="(in gvar v13.1.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">gvar.raniter()</span></code></a>.</p>
 <p>If you have written a custom kernel, it may become a bottleneck. For example the
 letter counting kernel in <a class="reference internal" href="customs.html#customs"><span class="std std-ref">A custom kernel: text classification</span></a> was very slow. A quick way to get a 2x
 improvement is computing only half of the covariance matrix: <code class="docutils literal notranslate"><span class="pre">GP(kernel,</span>
