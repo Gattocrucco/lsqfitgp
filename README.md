@@ -24,7 +24,7 @@ Python module to do inference with Gaussian processes. Features:
     [BCF](https://gattocrucco.github.io/lsqfitgp/docs/reference/bayestree.html#lsqfitgp.bayestree.bcf)
     (Bayesian Causal Forests).
   
-See [this report](https://www.giacomopetrillo.com/scuola/gppdf.pdf) for the
+See [chapter 3 of my thesis](https://hdl.handle.net/2158/1420172) for the
 theory behind lsqfitgp.
 
 ## Installation
