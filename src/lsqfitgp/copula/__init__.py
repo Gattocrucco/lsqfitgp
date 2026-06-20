@@ -35,14 +35,6 @@ from ._copulas import (
     lognorm,
 )
 
-# TODO I could try to drop BufferDict altogether. It adds more complexity than
-# necessary: won't keep track of dependencies between keys, structure fixed to a
-# dictionary, and global unique transformation names.
-#
-# I need something analogous to carry around both the distribution definition
-# and specific values. Copula.concretize(x) -> ConcreteCopula object. Method
-# .values() returns pytree of transformed values (container-copied),
-# .input_values() the flat input array (readonly view). Prints as:
 # Copula({
 #     'x': beta(1, 2),
 #     'y': gamma(1, <x>),

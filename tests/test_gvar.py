@@ -212,6 +212,4 @@ def test_gvar_format():
             assert format(g) == result
         assert format(g) == pre
 
-    # TODO check without lsqfitgp formatting rules
 
-# TODO test gvar_gufunc

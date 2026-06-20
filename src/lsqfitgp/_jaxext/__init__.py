@@ -126,8 +126,6 @@ class skipifabstract:
             and issubclass(exc_type, (
                 jax.errors.ConcretizationTypeError,
                 jax.errors.TracerArrayConversionError,
-                    # TODO why isn't this a subclass of the former like
-                    # TracerBoolConversionError? Open an issue
             ))
         )
         if exit or ignorable_error:
@@ -137,8 +135,6 @@ class skipifabstract:
             traceback.extract_tb(tb)[-1].name in ('arg_info_pytree', '_origin_msg'),
         )
         if weird_cond: # pragma: no cover
-            # TODO this ignores a jax internal bug I don't understand, appears
-            # in examples/pdf4.py
             return True
 
 def float_type(*args):
@@ -176,7 +172,6 @@ def pure_callback_ufunc(callback, dtype, *args, excluded=None, **kwargs):
     result = jax.ShapeDtypeStruct(shape, dtype)
     return jax.pure_callback(callback, result, *padded_args, vmap_method='expand_dims', **kwargs)
 
-    # TODO when jax solves this, check version and piggyback on original if new
 
 def limit_derivatives(x, n, error_func=None):
     """

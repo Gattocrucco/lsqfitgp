@@ -600,7 +600,6 @@ def patched_append_fields(base, names, data, **kw):
     zero-sized arrays and non-1D arrays correctly.
     """
 
-    # TODO open a numpy issue about this
 
     empty = base.size == 0
     non1d = base.ndim != 1

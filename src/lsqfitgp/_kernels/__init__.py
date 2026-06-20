@@ -73,6 +73,4 @@ from ._wendland import (
 )
 from ._zeta import Zeta
 
-# TODO add explicit exponent parameter to all infinitely divisible kernels
 
-# TODO new kernels LM(formula) and LMER(formula).

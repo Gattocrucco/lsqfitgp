@@ -48,7 +48,6 @@ class GPCompute(_base.GPBase):
         plus the matrix ycov. Keyword arguments are passed to the decomposition.
         """
         
-        # TODO cache ignores **kw.
 
         keys = tuple(keys)
         
@@ -57,11 +56,6 @@ class GPCompute(_base.GPBase):
             cache = self._decompcache.get(keys)
             if cache is not None:
                 return cache
-            # TODO use frozenset(keys) instead of tuple(keys) to make cache
-            # work when order changes, but I have to permute the decomposition
-            # to make that work. Needs an ad-hoc class in _linalg. Make the
-            # decompcache a dict subclass that accepts tuples of keys but uses
-            # internally frozenset.
         
         # Compute decomposition. # woodbury, currently un-implemented
         # if isinstance(ycov, _linalg.Decomposition):
@@ -84,7 +78,6 @@ class GPCompute(_base.GPBase):
         #     if covtransf:
         #         ycov, transf, cov = covtransf((ycov, transf, cov))
         #     covdec = self._decompclass(cov, **kw)
-        #     # TODO obtain covdec from _solver recursively, to use cache?
         #     decomp = _linalg.Woodbury2(ycov, transf, covdec, self._decompclass, sign=1, **kw)
         # else:
         Kxx = self._assemblecovblocks(keys)
@@ -128,7 +121,6 @@ class GPCompute(_base.GPBase):
             ylist.append(l.reshape(-1))
             keylist.append(key)
         
-        # TODO error checking on the unpacking of givencov
         
         if gcblack:
             covblocks = givencov
@@ -204,7 +196,6 @@ class GPCompute(_base.GPBase):
         
         """
 
-        # TODO GP.pred(..., raw=True, onlyvariance=True) computes only the
         # variance (requires actually implementing diagquad at least in Chol and
         # Diag).
 
@@ -245,12 +236,6 @@ class GPCompute(_base.GPBase):
             ycov = jnp.block(ycovblocks)
         elif (fromdata or raw or not keepcorr) and y.dtype == object:
             ycov = gvar.evalcov(gvar.gvar(y))
-            # TODO use evalcov_blocks
-            # TODO I think this ignores the case in which we are using gvars
-            # and they are correlated with the GP. I guess the correct thing
-            # would be to sum the data gvars to the prior ones and use the
-            # resulting covariance matrix, and write a note about possible
-            # different results in this case when switching raw or keepcorr.
         else:
             ycov = None
         self._check_ycov(ycov)
@@ -281,7 +266,6 @@ class GPCompute(_base.GPBase):
                     # if isinstance(ycov, _linalg.Decomposition): # for woodbury, currently un-implemented
                     #     ycov = ycov.matrix()
                     A = solver.ginv_linear(Kxxs)
-                    # TODO do I need K⁺ here or is K⁻ fine?
                     cov += A.T @ ycov @ A
             
         else: # (keepcorr and not raw)        
@@ -531,5 +515,3 @@ class GPCompute(_base.GPBase):
         decompcls = cls._getdecomp(solver)
         return decompcls(m, **kw)
         
-        # TODO extend the interface to use composite decompositions
-        # TODO accept a dict for covariance matrix

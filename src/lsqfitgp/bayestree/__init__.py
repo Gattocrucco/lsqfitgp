@@ -20,4 +20,3 @@
 from ._bart import bart
 from ._bcf import bcf
 
-# TODO maybe I should rename this module 'models' and add other stuff

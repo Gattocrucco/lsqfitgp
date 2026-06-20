@@ -206,7 +206,6 @@ class GPProcesses(_base.GPBase):
         
         """
         
-        # TODO support procs being a single key
         
         if key in self._procs:
             raise KeyError(f'process key {key!r} already used in GP')
@@ -225,7 +224,6 @@ class GPProcesses(_base.GPBase):
             checklin = self._checklin
         if checklin:
             mockup_function = lambda a: lambda _: a
-            # TODO this array mockup fails with jax functions
             class Mockup(numpy.ndarray):
                 __getitem__ = lambda *_: Mockup((0,))
                 __getattr__ = __getitem__

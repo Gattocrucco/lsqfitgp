@@ -30,9 +30,6 @@ from .. import _array
 from .._Kernel import kernel
 
 @kernel(derivable=False, batchbytes=10e6)
-# TODO maybe batching should be done automatically by GP instead of by the
-# kernels? But before doing that I need to support batching non-traceable
-# functions.
 def _BARTBase(x, y,
     alpha=0.95,
     beta=2,
@@ -204,10 +201,6 @@ def _BARTBase(x, y,
         intercept=intercept, weights=weights, reset=reset, altinput=True,
     )
     
-    # TODO
-    # - make gamma='auto' depend on maxd and reset with a dictionary, error
-    #   if not specified
-    # - do not require to specify splitting points if using indices
 
 class BART(_BARTBase):
     
@@ -241,9 +234,6 @@ class BART(_BARTBase):
         x = cls._check_x(x)
         return cls._splits_from_coord(x)
         
-        # TODO options like BayesTree, i.e., use an evenly spaced range
-        # instead of quantilizing, and set a maximum number of splits. Use the
-        # same parameter names as BayesTree::bart, but change the defaults.
 
     @staticmethod
     @jax.jit
@@ -464,7 +454,6 @@ class BART(_BARTBase):
             )
         return corr
     
-    # TODO public method to compute pnt
         
     @staticmethod
     def _gamma(p, pnt):
@@ -486,7 +475,6 @@ class BART(_BARTBase):
         
         return floor * corner
         
-        # TODO make this public?
 
     @staticmethod
     def _check_x(x):
@@ -533,8 +521,6 @@ class BART(_BARTBase):
         assert nminus.shape == n0.shape == nplus.shape == w.shape
         assert nminus.ndim == 1 and nminus.size >= 0
         assert pnt.ndim == 1 and pnt.size > 0
-        # TODO repeat this shape checks in BART.correlation such that the
-        # error messages are user-legible
 
         # optimization to avoid looping over ignored axes
         nminus = jnp.where(w, nminus, 0)
@@ -580,8 +566,6 @@ class BART(_BARTBase):
             sump = (1 - pnt[1]) * S + pnt[1] * Q * jnp.sum(tall) # <-- @
             return jnp.where(anyn0, 1 - pnt[0] * (1 - sump / Wn), 1)
         
-            # TODO the pnt.size == 3 calculation is probably less accurate than
-            # the recursive one, see comparison limits > 30 ULP in test_bart.py
     
         p = len(nminus)
 
@@ -657,8 +641,6 @@ class BART(_BARTBase):
         assert n.shape == ix.shape == iy.shape == w.shape
         assert pnt.ndim == 1 and pnt.size > 0
         assert gamma.ndim == 0
-        # TODO repeat this shape checks in BART.correlation such that the
-        # error messages are user-legible
 
         # check the strict conditions under which `repeat` is implemented
         if repeat is not None:

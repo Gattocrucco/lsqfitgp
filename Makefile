@@ -92,9 +92,6 @@ docs/reference/kernelsref.rst: docs/reference/kernelsref.py src/lsqfitgp/_kernel
 docs/reference/kernelop.rst: docs/reference/kernelop.py src/lsqfitgp/_Kernel/*.py src/lsqfitgp/_kernels/*.py src/lsqfitgp/_jaxext/*.py src/lsqfitgp/_special/*.py
 	$(DOCSPY) --append $<
 
-## TODO: since I'm appending to .coverage.docs, delete it when I start a
-##  release. How do I tell make to first delete a file but do not re-delete it
-##  for each target?
 
 GENDOCS = docs/reference/copula.rst docs/examplesref.rst docs/reference/kernelsref.rst docs/reference/kernelop.rst
 
@@ -147,8 +144,4 @@ clean:
 	rm -fr src/lsqfitgp/*/__pycache__
 	rm -fr tests/__pycache__
 	rm -fr tests/*/__pycache__
-	## TODO remove example plots, difficulties:
-	##      - skip committed ones
-	##      - the plot file name may be numbered or not
 
-## TODO maube it's not a good thing to count coverage in examples and docscode, because if it goes wrong there is no alert, it already happened a few times. Or I could have a separate coverage report for examples & documentation.

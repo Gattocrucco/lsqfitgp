@@ -57,7 +57,6 @@ def White(x, y):
         \\end{cases}
     """
     return _Kernel.prod_recurse_dtype(lambda x, y: x == y, x, y).astype(int)
-    # TODO maybe StructuredArray should support equality and other operations
 
 @isotropickernel(derivable=True)
 def ExpQuad(r2):
@@ -118,11 +117,7 @@ def GammaExp(r2, gamma=1):
     # computed because the second derivative at x=0 of x^p with floating
     # point p is nan.
     
-    # TODO extend to gamma=0, the correct limit is
-    # e^-1 constant + (1 - e^-1) white noise. Use lax.switch.
 
-    # TODO derivatives w.r.t. gamma at gamma==2 are probably broken, although
-    # I guess they are not needed since it's on the boundary of the domain
     
 @kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):
@@ -149,19 +144,13 @@ def NNKernel(x, y, sigma0=1):
     Reference: Rasmussen and Williams (2006, p. 90).
     """
     
-    # TODO the `2`s in the formula are a bit arbitrary. Remove them or give
-    # motivation relative to the precise formulation of the neural network.
     with _jaxext.skipifabstract():
         assert 0 < sigma0 < jnp.inf
     q = sigma0 ** 2
     denom = (1 + 2 * (q + _dot(x, x))) * (1 + 2 * (q + _dot(y, y)))
     return 2/jnp.pi * jnp.arcsin(2 * (q + _dot(x, y)) / denom)
     
-    # TODO this is not fully equivalent to an arbitrary transformation on the
-    # augmented vector even if x and y are transformed, unless I support q
-    # being a vector or an additional parameter.
 
-    # TODO if arcsin has positive taylor coefficients, this can be obtained as
     # arcsin(1 + linear) * rescaling.
 
 @kernel
@@ -230,8 +219,6 @@ def Categorical(x, y, cov=None):
     matrix of the values.
     """
         
-    # TODO support sparse matrix for cov (replace jnp.asarray and numpy
-    # check)
     
     assert jnp.issubdtype(x.dtype, jnp.integer)
     cov = jnp.asarray(cov)
@@ -279,9 +266,6 @@ def Expon(delta):
     """
     return jnp.exp(-delta)
 
-    # TODO rename Laplace, write it in terms of the 1-norm directly, then do
-    # TruncLaplace that reaches zero over a prescribed box. (Or truncate with
-    # an option truncbox=[(l0, r0), (l1, r1), ...]).
 
 _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]')
 
@@ -302,12 +286,7 @@ def BagOfWords(x, y):
     Reference: Rasmussen and Williams (2006, p. 100).
     """
     
-    # TODO precompute the bags for x and y, then call a vectorized private
-    # function.
     
-    # TODO iterate on the shorter bag and use get on the other instead of
-    # computing set intersection? Or: convert words to integers and then do
-    # set intersection with sorted arrays?
     
     xbag = collections.Counter(_bow_regexp.split(x))
     ybag = collections.Counter(_bow_regexp.split(y))
@@ -316,7 +295,6 @@ def BagOfWords(x, y):
     common = set(xbag) & set(ybag)
     return sum(xbag[k] * ybag[k] for k in common)
 
-# TODO add bag of characters and maybe other text kernels
 
 @stationarykernel(derivable=False, input='abs', maxdim=1)
 def HoleEffect(delta):
@@ -364,8 +342,6 @@ def Cauchy(r2, alpha=2, beta=2):
     # point p is nan.
     return (1 + power / beta) ** (-beta / alpha)
     
-    # TODO derivatives w.r.t. alpha at alpha==2 are probably broken, although
-    # I guess they are not needed since it's on the boundary of the domain
     
 @isotropickernel(derivable=lambda alpha=1: alpha == 0, input='posabs')
 def CausalExpQuad(r, alpha=1):
@@ -381,10 +357,7 @@ def CausalExpQuad(r, alpha=1):
     with _jaxext.skipifabstract():
         assert alpha >= 0, alpha
     return jspecial.erfc(alpha / 4 * r) * jnp.exp(-1/2 * jnp.square(r))
-    # TODO taylor-expand erfc near 0 and use r2
 
-    # TODO is the erfc part a standalone valid kernel? If so, separate it,
-    # since this can be obtained as the product
 
 @kernel(derivable=True, maxdim=1)
 def Decaying(x, y, alpha=1):
@@ -398,7 +371,6 @@ def Decaying(x, y, alpha=1):
         
     Reference: Swersky, Snoek and Adams (2014).
     """
-    # TODO high dimensional version of this, see mlkernels issue #3
     with _jaxext.skipifabstract():
         assert jnp.all(x >= 0)
         assert jnp.all(y >= 0)
@@ -436,9 +408,5 @@ def Taylor(x, y):
     val = 2 * jnp.sqrt(jnp.abs(mul))
     return jnp.where(mul >= 0, jspecial.i0(val), _special.j0(val))
 
-    # TODO reference? Maybe it's called bessel kernel in the literature?
-    # => nope, bessel kernel is the J_v one
         
-    # TODO what is the "natural" extension of this to multidim?
     
-    # TODO probably the rescaled version of this (e^-x) makes more sense

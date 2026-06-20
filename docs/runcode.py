@@ -44,13 +44,7 @@ def pyprint(text):
     print(pygments.highlight(text, lexers.PythonLexer(), formatters.TerminalFormatter()))
 
 pattern = re.compile(r'(?m)(?!\.\..+?)^.*?::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
-# TODO                            ^^^ try to delete this
-#                                                        ^ delete
 
-# TODO modify the pattern to allow empty lines in between, and then adopt
-# some other convention for when the code is not supposed to be actually run.
-# I could use .. code-block:: for stuff that should not be run, and add
-# explicit try blocks for code that is supposed to showcase errors.
 
 @contextlib.contextmanager
 def chdir(dir):

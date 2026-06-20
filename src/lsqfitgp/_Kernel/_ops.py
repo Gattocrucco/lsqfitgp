@@ -104,15 +104,6 @@ def derivable(derivable):
 
     return xtransf
 
-    # TODO this system does not ignore additional derivatives that are not
-    # taken by .transf('diff'). Plan:
-    # - understand how to associate a jax transformation to a frame
-    # - make a context manager with a global stack
-    # - at initialization it takes the frames of the derivatives made by diff
-    # - the context is around calling core in diff.newcore
-    # - it adds the frames to the stack
-    # - derivable asks the context manager class to find the frames in x
-    # - raises if their number is above the limit
 
 def _asfloat(x):
     return x.astype(_jaxext.float_type(x))
@@ -388,7 +379,6 @@ def cond(core, cond1, cond2, other):
     
     return newcore
 
-    # TODO add a function `choose` to extend `cond`,
     # kernel0.linop('choose', kernel1, kernel2, ..., lambda x: x['index'])
 
 AffineSpan.inherit_transf('maxdim')

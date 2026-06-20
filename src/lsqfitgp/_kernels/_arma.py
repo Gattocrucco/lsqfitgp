@@ -50,11 +50,7 @@ def MA(delta, w=None, norm=False):
     
     """
     
-    # TODO reference? must find some standard book with a treatment which is
-    # not too formal yet writes clearly about the covariance function
     
-    # TODO nd version with w.ndim == n, it's a nd convolution. use
-    # jax.scipy.signal.correlate.
         
     w = jnp.asarray(w)
     assert w.ndim == 1
@@ -175,9 +171,6 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
     if not cond:
         raise ValueError('invalid set of specified parameters')
     
-    # TODO maybe I could allow redundantly specifying gamma and phi, e.g., for
-    # numerical accuracy reasons if they are determined from an analytical
-    # expression.
     
     if phi is None and gamma is None:
         return _ar_with_roots(delta, slnr, lnc, norm)
@@ -270,11 +263,6 @@ def _ar_with_roots(delta, slnr, lnc, norm):
     acf = AR.cov_from_ampl(slnr, lnc, ampl, delta)
     return acf
 
-    # TODO Currently gamma is not even pos def for high multiplicity/roots close
-    # to 1. Raw patch: the badness condition is gamma[0] < 0 or any(abs(gamma) >
-    # gamma[0]) or gamma inf/nan. Take the smallest log|root| and assume it
-    # alone determines gamma. This is best implemented as an option in
-    # _gamma_from_ampl_matmul.
     
     # Is numerical integration of the spectrum a feasible way to get the
     # covariance? The roots correspond to peaks, and they get very high as the
@@ -332,8 +320,6 @@ def _gamma_from_ampl_matmul(slnr, lnc, lag, ampl, lagnorm=None):
         return jnp.where(maxloc <= lagnorm, maxnorm, defnorm)
     
     # roots at infinity
-    # TODO remove this because it's degenerate with large roots, handle the
-    # p=0 case outside of this function
     col = jnp.where(lag, 0, 1)
     out = col[..., :, None] * ampl[..., 0, :]
     
@@ -428,9 +414,6 @@ class AR(_ARBase):
         phi = cls._process_phi(phi)
         return _yule_walker_inv(phi)
         
-        # TODO fails (nan) for very small roots. In that case the answer is that
-        # gamma is a constant vector. However I can't get the constant out of
-        # a degenerate phi, I need the roots, and I don't know the formula.
     
     @classmethod
     def extend_gamma(cls, gamma, phi, n):
@@ -489,10 +472,6 @@ class AR(_ARBase):
         roots = jnp.concatenate([r, c, c.conj()]).sort() # <-- polyroots sorts
         coef = jnp.atleast_1d(jnp.poly(roots))
         
-        # TODO the implementation of jnp.poly (and np.poly) is inferior to the
-        # one of np.polynomial.polynomial.polyfromroots, which cares about
-        # numerical accuracy and would reduce compilation time if ported to jax
-        # (current one is O(p), that would be O(log p)).
         
         if coef.size:
             with _jaxext.skipifabstract():
@@ -500,13 +479,9 @@ class AR(_ARBase):
                 numpy.testing.assert_allclose(jnp.imag(coef), 0, rtol=0, atol=1e-4)
         return -coef.real[1:]
         
-        # TODO possibly not accurate for large p. Do a test with an
-        # implementation of poly which uses integer roots and non-fft convolve
-        # (maybe add it as an option to my to-be-written implementation of poly)
 
     @classmethod
     def ampl_from_roots(cls, slnr, lnc, gamma):
-        # TODO docs
         slnr, lnc = cls._process_roots(slnr, lnc)
         gamma = cls._process_gamma(gamma)
         assert gamma.size == 1 + slnr.size + 2 * lnc.size
@@ -515,16 +490,10 @@ class AR(_ARBase):
         # return jnp.linalg.solve(mat, gamma)
         return _pseudo_solve(mat, gamma)
         
-        # TODO I'm using pseudo-solve only because of large roots degeneracy
-        # in _gamma_from_ampl_matmul, remove it after solving that
         
-        # TODO maybe I can increase the precision of the solve with some
-        # ordering of the columns of mat, I guess (reversed) global sort of the
-        # roots
     
     @classmethod
     def cov_from_ampl(cls, slnr, lnc, ampl, lag):
-        # TODO docs
         slnr, lnc = cls._process_roots(slnr, lnc)
         ampl = cls._process_ampl(ampl)
         assert ampl.size == 1 + slnr.size + 2 * lnc.size
@@ -541,8 +510,6 @@ class AR(_ARBase):
         poly = jnp.concatenate([jnp.ones(1), -phi])
         return jnp.roots(poly, strip_zeros=False)
     
-    # TODO methods:
-    # - gamma_from_roots which uses quadrature fourier transf of spectrum
     
     @staticmethod
     def _process_roots(slnr, lnc):

@@ -31,10 +31,6 @@ from .. import _array
 from .. import _GP
 from .. import _fastraniter
 
-# TODO I added a lot of functionality to bcf. The easiest way to port it over is
-# adding the option in bcf to drop the second bart model and its associated
-# hypers, and then write bart as a simple convenience wrapper-subclass over bcf.
-# (also the option include_pi='none'.)
 
 class bart:
     
@@ -376,9 +372,6 @@ class bart:
             The same distribution represented as an array of `GVar` objects.
         """
 
-        # TODO it is a bit confusing that if x_test=None and error=True, the
-        # prediction returns y_train exactly, instead of hypothetical new
-        # observations at the same covariates.
         
         hp = self._gethp(hp, rng)
         if x_test is not None:

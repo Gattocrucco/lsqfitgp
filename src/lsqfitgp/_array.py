@@ -26,7 +26,6 @@ import jax
 from jax import numpy as jnp
 from jax import tree_util
 
-# TODO use register_pytree_with_keys
 @tree_util.register_pytree_node_class
 class StructuredArray:
     """
@@ -101,7 +100,6 @@ class StructuredArray:
                 (name, x.dtype, x.shape[ndim:])
                 for name, x in d.items()
             ])
-            # TODO infer the least common head shape instead of counting dims
 
         # remove offset info since this is actually a columnar format
         t = recfunctions.repack_fields(t, align=False, recurse=True)
@@ -153,9 +151,6 @@ class StructuredArray:
             for col in df.columns
         }
         return cls._array(None, None, d)
-        # TODO support polars structured dtypes
-        # TODO polars has a parameter Series.to_numpy(zero_copy_only: bool),
-        # default False. Maybe make it accessible through kw or options.
 
     @classmethod
     def from_dict(cls, mapping):
@@ -186,15 +181,12 @@ class StructuredArray:
             return self
         return self.swapaxes(self.ndim - 2, self.ndim - 1)
 
-        # TODO this is mT, not T! Make a unit test and correct it.
 
     def swapaxes(self, i, j):
         shape = jax.eval_shape(lambda: jnp.empty(self.shape).swapaxes(i, j)).shape
         d = {k: v.swapaxes(i, j) for k, v in self._dict.items()}
         return self._array(shape, self.dtype, d)
 
-        # TODO: doesn't this break when the indices are negative and there is
-        # an array field? Test it.
 
     def __len__(self):
         if self.shape:
@@ -251,7 +243,6 @@ class StructuredArray:
             def set(self, val):
                 assert isinstance(val, (numpy.ndarray, jnp.ndarray, StructuredArray))
                 prev = self.array._dict[self.key]
-                # TODO support casting and broadcasting
                 assert prev.dtype == val.dtype
                 assert prev.shape == val.shape
                 d = dict(self.array._dict)
@@ -307,7 +298,6 @@ class StructuredArray:
         }
         return self._array(shape, self.dtype, d)
     
-    # TODO implement flatten_with_keys
     def tree_flatten(self):
         """ JAX PyTree encoder. See `jax.tree_util.tree_flatten`. """
         children = tuple(self._dict[key] for key in self.dtype.names)
@@ -349,15 +339,6 @@ class StructuredArray:
 
         return cls._array(None, dtype, d)
 
-        # TODO this breaks jax.jit(...).lower(...).compile()(...) because
-        # apparently `lower` saves the pytree def after a step of dummyfication,
-        # so the shape and dtype bases of the StructuredArray are () and object.
-        # JAX expects pytrees to have a structure which does not depend on what
-        # they store. => Quick hack: preserve the shape and dtype
-        # unconditionally, i.e., tree_unflatten can produce malformed
-        # StructuredArrays. The dictionary will contain whatever JAX puts into
-        # it. => Quicker hack: it seems to me that jax always uses None as
-        # dummy, so I could detect if all childrens are None or StructuredArray.
 
     def __repr__(self):
         # code from gvar https://github.com/gplepage/gvar
@@ -384,7 +365,6 @@ class StructuredArray:
         
         return out
 
-        # TODO try simply using the __repr__ of self._dict
     
     def __array__(self, copy=None, dtype=None):
         if copy is False:
@@ -508,7 +488,7 @@ def _ix(*args):
 def unstructured_to_structured(arr,
     dtype=None,
     names=None,
-    align=False, # TODO maybe align is totally inapplicable even with numpy arrays? What does it mean?
+    align=False,
     copy=False,
     casting='unsafe'):
     """ Like `numpy.lib.recfunctions.unstructured_to_structured`, but outputs a
@@ -568,7 +548,6 @@ def _structured_to_unstructured(arr, dtype=None, casting='unsafe'):
         out = jnp.empty(*args)
     except TypeError:
         out = numpy.empty(*args)
-        # TODO can I make out column-major w.r.t. only the last column?
     out, length = _structured_to_unstructured_recursive(0, arr, out)
     assert length == dummy.shape[-1]
     return out

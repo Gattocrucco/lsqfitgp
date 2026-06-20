@@ -101,11 +101,6 @@ class gamma(_distr.Distr):
         boundary = cls._boundary(x)
         return _piecewise_multiarg(
             [x < 0, x < boundary, x >= boundary],
-                # TODO the x < 0 case is probably never considered because
-                # piecewise evaluates from the right and x < boundary is
-                # satisfied too. Why are the tests not uncovering the
-                # inaccuracy? First find whether it's accurate the same or if
-                # the tests are lacking, then correct the conditionals.
             [
                 lambda x, a: _gamma.gamma.ppf(_normcdf(x), a),
                 lambda x, a: _gamma.gamma.isf(_normcdf(-x), a),
@@ -142,8 +137,6 @@ class loggamma(_distr.Distr):
             x, alpha,
         )
 
-    # TODO scipy.stats.gamma has inaccurate logsf instead of using loggamma.sf,
-    # open an issue
 
 class invgamma(_distr.Distr):
     """

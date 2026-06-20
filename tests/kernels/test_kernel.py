@@ -646,7 +646,7 @@ class TestLinOp:
             k.linop('diff', (2, 'f0'))(y, y)
             k.linop('diff', (2, 'f1'))(y, y)
 
-        # check looks at total order with nd inputs (TODO: document this behavior)
+        # check looks at total order with nd inputs
         with pytest.raises(ValueError, match='derivatives'):
             k.linop('diff', ('f0', 'f1'))(y, y)
         with pytest.raises(ValueError, match='derivatives'):

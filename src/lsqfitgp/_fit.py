@@ -37,8 +37,6 @@ from . import _jaxext
 from . import _gvarext
 from . import _array
 
-# TODO the following token_ thing functionality may be provided by jax in the
-# future, follow the developments
 
 @functools.singledispatch
 def token_getter(x):
@@ -368,10 +366,7 @@ class empbayes_fit(Logger):
             self.log(_gvarext.tabulate_together(
                 self.prior, self.p,
                 headers=['param', 'prior', 'posterior'],
-            )) # TODO replace tabulate_toegether with something more flexible I
-            # can use for the callback as well. Maybe import TextMatrix from
-            # miscpy.
-            # TODO print the transformed parameters
+            ))
         
         self.log('**** exit lsqfitgp.empbayes_fit ****')
 
@@ -458,7 +453,7 @@ class empbayes_fit(Logger):
         flathp = self._flatview(hyperprior)
         freehp = flathp[~flatfix]
         mean = gvar.mean(freehp)
-        cov = gvar.evalcov(freehp) # TODO use evalcov_blocks
+        cov = gvar.evalcov(freehp)
         dec = _linalg.Chol(cov)
         assert dec.n == freehp.size
         self.log(f'{freehp.size}/{flathp.size} free hyperparameters', 2)
@@ -467,9 +462,6 @@ class empbayes_fit(Logger):
         initial = self._parse_initial(hyperprior, initial, dec)
         flatinitial = self._flatview(initial)
         x0 = dec.pinv_correlate(flatinitial[~flatfix] - mean)
-        # TODO for initial = 'priormean', x0 is zero, skip decorrelate
-        # for initial = 'priorsample', x0 is iid normal, but I have to sync
-        # it with the user-exposed unflattened initial in _parse_initial
         
         # make function to correlate, add fixed values, and reshape to original
         # format
@@ -564,7 +556,7 @@ class empbayes_fit(Logger):
             self.log('start from a random sample from the prior', 2)
             if dec.n < hyperprior.size:
                 flathp = self._flatview(hyperprior)
-                cov = gvar.evalcov(flathp) # TODO use evalcov_blocks
+                cov = gvar.evalcov(flathp)
                 fulldec = _linalg.Chol(cov)
             else:
                 fulldec = dec
@@ -649,7 +641,6 @@ class empbayes_fit(Logger):
 
             # split timer and return decomposition
             return timer.partial(decomp), r, loss
-                # TODO what's the correct way of checkpointing r?
 
         # define wrapper to collect call stats, pass user args, compile
         def wrap(func):
@@ -664,8 +655,6 @@ class empbayes_fit(Logger):
         modename = 'forward' if forward else 'reverse'
         self.log(f'{modename}-mode autodiff (if used)', 2)
 
-        # TODO time the derivatives separately => maybe I need a custom
-        # derivative rule for timer token acknoledgement?
 
         def prior(p):
             # the marginal prior of the hyperparameters is a Normal with
@@ -685,7 +674,6 @@ class empbayes_fit(Logger):
             decomp, r, loss = make_decomp(p, **kw)
             cond, _, _, _, _ = decomp.minus_log_normal_density(r, value=True)
             post = cond + prior(p) + loss
-                # TODO what's the correct way of checkpointing prior and loss?
             return timer.partial(post)
 
         def make_gradfwd_fisher_args(p, **kw):
@@ -783,7 +771,6 @@ class empbayes_fit(Logger):
         self.log(f'method {method!r}', 2)
         return minargs
 
-        # TODO add method with fisher matvec instead of fisher matrix
 
     def _log_totals(self, total, timer, callback, jit, functions):
         times = {
@@ -795,11 +782,6 @@ class empbayes_fit(Logger):
         }
         if jit:
             overhead = callback.estimate_firstcall_overhead()
-            # TODO this estimation ignores the jit compilation of the function
-            # used to compute the precision matrix, to be precise I should
-            # manually split the jit into compilation + evaluation or hook into
-            # it somehow. Maybe the jit object keeps a compilation wall time
-            # stat?
         if jit and overhead is not None:
             times['jit'] = overhead
             times['other'] -= overhead
@@ -845,10 +827,6 @@ class empbayes_fit(Logger):
                 if isinstance(hessinv, optimize.LbfgsInvHessProduct):
                     self.log(f'convert LBFGS({hessinv.n_corrs}) hessian inverse to BFGS as covariance', 2)
                     cov = self._invhess_lbfgs_to_bfgs(hessinv)
-                    # TODO this still gives a too wide cov when the minimization
-                    # terminates due to bad linear search, is it because of
-                    # dropped updates? This is currently keeping me from setting
-                    # l-bfgs-b as default minimization method.
                 elif isinstance(hessinv, numpy.ndarray):
                     self.log('use minimizer estimate of inverse hessian as covariance', 2)
                     cov = hessinv
@@ -938,9 +916,6 @@ class empbayes_fit(Logger):
             nicep = self.this._copyasarrayorbufferdict(nicep)
             with self.this.loglevel:
                 self.this.log(f'parameters = {nicep}', 5)
-            # TODO write a method to format the parameters nicely. => use
-            # gvar.tabulate? => nope, need actual gvars
-            # TODO does this logging add significant overhead?
 
             self.stamp = now
             self.timer.reset()
@@ -1007,7 +982,6 @@ class empbayes_fit(Logger):
     @staticmethod
     def _unflatview(x, original):
         if isinstance(original, numpy.ndarray):
-            # TODO is this never applied to jax arrays?
             out = x.reshape(original.shape)
             # if not out.shape:
             #     try:
@@ -1023,94 +997,23 @@ class empbayes_fit(Logger):
             b._buf = x
             # b.buf = x does not work because BufferDict checks that the
             # array is a numpy array
-            # TODO maybe make a feature request to gvar to accept array_like
-            # buf
             return b
         else: # pragma: no cover
             raise NotImplementedError
 
 
-# TODO would it be meaningful to add correlation of the fit result with the data
-# and hyperprior?
 
-# TODO add the second order correction. It probably requires more than the
-# gradient and inv_hess, but maybe by getting a little help from
-# marginal_likelihood I can use the least-squares optimized second order
-# correction on the residuals term and invent something for the logdet term.
 
-# TODO it raises very often with "Desired error not necessarily achieved due to
-# precision loss.". I tried doing a forward grad on the logdet but does not fix
-# the problem. I still suspect it's the logdet, maybe the value itself and not
-# the derivative, because as the matrix changes the regularization can change a
-# lot the value of the logdet. How do I stabilize it? => scipy's l-bfgs-b seems
-# to fail the linear search less often
 
-# TODO compute the logGBF for the whole fit (see the gpbart code). In its doc,
-# specify that 1) additional_loss may break the normalization if the user does
-# not know what they are doing 2) the calculation of the log determinant term
-# heavily depends on the regularization if the covariance matrix is singular;
-# this won't happen if there are independent error terms in the model as usual.
 
-# TODO empbayes_fit(autoeps=True) tries to double epsabs until the minimization
-# succedes, with some maximum number of tries. autoeps=dict(maxrepeat=5,
-# increasefactor=2, initial=1e-16, startfromzero=True) allows to configure the
-# algorithm.
 
-# TODO empbayes_fit(maxiter=100) sets the maximum number of minimization
-# iterations. maxiter=dict(iter=100, calls=200, callsperiter=10) allows to
-# configure it more finely. The calls limits are cumulative on all functions
-# (need to make a class counter in _CountCalls), I can probably implement them
-# by returning nan when the limit is surpassed, I hope the minimizer stops
-# immediately on nan (test this). => Callback can raise StopIteration.
 
-# TODO can I approximate the hessian with only function values and no gradient,
-# i.e., when using nelder-mead? => See Hare (2022), although I would not know
-# how to apply it properly to the optimization history. Somehow I need to keep
-# only the "last" iterations.
 
-# TODO is there a better algorithm than lbfgs for inaccurate functions? consider
-# SC-BFGS (https://github.com/frankecurtis/SCBFGS). See Basak (2022). And NonOpt
-# (https://github.com/frankecurtis/NonOpt).
 
-# TODO can I estimate the error on the likelihood with the matrices? It requires
-# the condition number. Basak (2022) gives wide bounds. I could try an upper
-# bound and see how it compares to the true error, assuming that the matrix was
-# as ill-conditioned as possible, i.e., use eps as the lowest eigenvalue, and
-# gershgorin as the highest one.
 
-# TODO look into jaxopt: it has improved a lot since the last time I saw it. In
-# particular, it implements l-bfgs and has a "do not stop on failed line search"
-# option. And it probably supports float32, although a skim of the docs suggests
-# it does not work well. => See also optimistix.
 
-# TODO reimplement the timing system with host_callback.id_tap. It should
-# preserve the order because id_tap takes inputs and outputs. I must take care
-# to make all callbacks happen at runtime instead of having some of them at
-# compile time. I tried once but failed. Currently host_callback is
-# experimental, maybe wait until it isn't. => I think it fails because it's
-# asynchronous and there is only one device. Maybe host_callback.call would
-# work? => I think they are developing something like my token machinery.
 
-# TODO dictionary argument jitkw, arguments passed to jax.jit?
 
-# TODO parameter float32: bool to use short float type. I think that scipy's
-# optimize may break down with short floats with default options, I hope that
-# changing termination tolerances does the trick.
 
-# TODO make separate_jac a parameter
 
-# TODO add options in _CountCalls to track inputs and/or outputs to some maximum
-# buffer length, activate it if the method (after applying user options,
-# lowercasing, and inferring minimize's default) is l-bfgs-b and the covariance
-# is minhess or auto, to the order specified in the arguments to l-bfgs-b (after
-# defaults inference if missing) (add tests in test_fit to check that the
-# defaults stay as inferred), to be used if l-bfgs-b returns a crooked hessian.
-# --- Alternative: if covariance = 'auto', it could be appropriate to use fisher
-# per definition. --- Alternative: add option covariance = 'lbfgs(<order>)' that
-# does this for any method, although this would require computing the gradients
-# afterwards if the gradient was not used. These alternatives are not mutually
-# exclusive.
 
-# TODO make a helper function/class method that takes in data transf dependent
-# on hypers and outputs additional loss (the log jacobian of the appropriate
-# function with the appropriate sign)

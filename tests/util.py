@@ -101,7 +101,6 @@ def xfail(cls, meth, **kw):
 def skip(cls, meth, **kw):
     mark(cls, meth, 'skip', **kw)
 
-# TODO drop tryagain because now I'm using a deterministic seed
 
 def tryagain(fun, rep=2, method=False):
     """
@@ -205,8 +204,6 @@ def _assert_similar_gvars(g, h, rtol, atol):
     g = np.reshape(g, -1)
     h = np.reshape(h, -1)
     assert_close_matrices(gvar.evalcov(g), gvar.evalcov(h), rtol=rtol, atol=atol)
-    # TODO does it make sense for rtol and atol to be the same in the two
-    # checks? Maybe rtol
 
 def assert_similar_gvars(*gs, rtol=0, atol=0):
     if gs:

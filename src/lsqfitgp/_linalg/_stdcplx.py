@@ -21,8 +21,6 @@
 Module to estimate the time taken by standard linear algebra operations.
 """
 
-# TODO maybe I can replace this with jax compilation introspection, which
-# provides flops estimates. See https://jax.readthedocs.io/en/latest/aot.html
 
 import timeit
 import inspect
@@ -148,5 +146,3 @@ def listops():
         for op, (job, _) in ops.items()
     }
 
-# TODO I should estimate the cost under jit, and subtract the overheaded
-# estimated with a jitted no-op.

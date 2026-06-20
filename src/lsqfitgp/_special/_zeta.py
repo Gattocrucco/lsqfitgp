@@ -54,7 +54,6 @@ def hurwitz_zeta_series(m, x, a1, onlyeven=False, onlyodd=False, skipterm=None):
     ns1 = nm - 1 + x # = n + s - 1
     ns1_limit = jnp.where(ns1 == 0, 1, ns1) # pochhammer zero cancels zeta pole
     ns1_limit = jnp.where(ns1 == 1, 0, ns1_limit)
-    # TODO this == 1 worries me, maybe sometimes it's violated, use shift
     factor = jnp.cumprod((ns1_limit * a1 / n).at[..., 0].set(1), -1, t)
     
     # handle tweaks to the series

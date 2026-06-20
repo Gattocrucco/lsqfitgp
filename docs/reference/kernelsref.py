@@ -129,8 +129,6 @@ class Formula:
     def __call__(self, x):
         return eval(self.formula, vars(np), dict(x=x))
 
-# TODO nd plot for kernels with maxdim > 1, key kwlist_nd has precedence over
-# kwlist
 
 def bart_splits(n):
     x = np.random.uniform(1, 4, (n, 1))

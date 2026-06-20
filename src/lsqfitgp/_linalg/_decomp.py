@@ -108,13 +108,8 @@ To compute a Fisher-vector product when there are many parameters, do
 
 """
 
-# TODO to automatize this further, I could take in a function that generates K
-# (or its pieces) and the arguments to the function. But how would this play
-# together with passing decomposition objects as pieces?
 
-# TODO split this file by class
 
-# TODO Consider using lineax for implementing non-materialized decomps
 
 import abc
 import functools
@@ -287,7 +282,6 @@ def solve_triangular_python(a, b, *, lower=False):
     Pure python implementation of scipy.linalg.solve_triangular for when
     a or b are object arrays.
     """
-    # TODO maybe commit this to gvar.linalg
     a = numpy.asarray(a)
     x = numpy.copy(b)
 
@@ -394,8 +388,6 @@ class Chol(Decomposition):
         L = jlinalg.cholesky(K, lower=True)
         with _jaxext.skipifabstract():
             if not jnp.all(jnp.isfinite(L)):
-                # TODO check that jax fills with nan after failed row, detect
-                # and report minor index like scipy
                 raise numpy.linalg.LinAlgError('cholesky decomposition not finite, probably matrix not pos def numerically')
         self._L = L * s[:, None]
         self._eps = eps * jnp.min(s * s)
@@ -591,7 +583,7 @@ class Chol(Decomposition):
         else:
             out['fishvec'] = None
 
-        return tuple(out.values()) # TODO a namedtuple
+        return tuple(out.values())
 
     @classmethod
     def make_derivs(cls,

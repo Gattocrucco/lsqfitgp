@@ -186,11 +186,7 @@ class GPElements(_base.GPBase):
         
         """
         
-        # TODO after I implement block solving, add per-key covariance matrix
-        # flags.
         
-        # TODO add `copy` parameter, default False, to copy the input arrays
-        # if they are numpy arrays.
         
         # this interface does not allow adding a single dictionary as x element
         # unless it's wrapped as a 0d numpy array, but this is for the best
@@ -221,15 +217,6 @@ class GPElements(_base.GPBase):
             gx = _array._asarray_jaxifpossible(gx)
 
             # Check dtype is compatible with previous arrays.
-            # TODO since we never concatenate arrays we could allow a less
-            # strict compatibility. In principle we could allow really anything
-            # as long as the kernel eats it, but this probably would let bugs
-            # through without being really ever useful. What would make sense
-            # is checking the dtype structure matches recursively and check
-            # concrete dtypes of fields can be casted.
-            # TODO result_type is too lax. Examples: str, float -> str,
-            # object, float -> object. I should use something like the
-            # ordering function in updowncast.py.
             if self._dtype is not None:
                 try:
                     self._dtype = numpy.result_type(self._dtype, gx.dtype)
@@ -388,12 +375,6 @@ class GPElements(_base.GPBase):
         
         """
         
-        # TODO elementwise operations can be applied more efficiently to
-        # primary gvars (tipical case), so the method could use an option
-        # `elementwise`. What is the reliable way to check it is indeed
-        # elementwise with a single random vector? Zero items of the tangent
-        # at random with p=0.5 and check they stay zero? (And of course check
-        # the shape is preserved.)
         
         # Check key.
         if key is None:
@@ -463,11 +444,7 @@ class GPElements(_base.GPBase):
         
         """
         
-        # TODO maybe allow passing only the lower/upper triangular part for
-        # the diagonal blocks, like I meta-allow for out of diagonal blocks?
         
-        # TODO with multiple blocks and a single decomp, the decomp could be
-        # interpreted as the decomposition of the whole block matrix.
         
         # Check type of `covblocks` and standardize it to dictionary.
         if hasattr(covblocks, 'keys'):
@@ -492,7 +469,6 @@ class GPElements(_base.GPBase):
         shapes = {}
         preblocks = {}
         for keys, block in covblocks.items():
-            # TODO maybe check that keys is a 2-tuple
             for key in keys:
                 if key in self._elements:
                     raise KeyError(f'key {key!r} already in GP')
@@ -584,7 +560,6 @@ class GPElements(_base.GPBase):
         
         kernel = self._crosskernel(x.proc, y.proc)
         if kernel is self._zerokernel:
-            # TODO handle zero cov block efficiently
             return jnp.zeros((x.size, y.size))
         
         kernel = kernel.linop('diff', x.deriv, y.deriv)
@@ -596,13 +571,6 @@ class GPElements(_base.GPBase):
             ay = flat[iy]
             halfcov = kernel(ax, ay)
             cov = halfcov[back]
-            # TODO to avoid inefficiencies like in BART, maybe _Kernel should
-            # have a method outer(x) that by default simply does self(x[None,
-            # :], x[:, None]) but can be overwritten. This halfmatrix impl could
-            # be moved there with an option outer(x, *, half=False). To carry
-            # over custom implementations of outer, there should be a callable
-            # attribute _outer, optionally set at initialization, that is
-            # transformed by kernel operations.
         else:
             ax = x.x.reshape(-1)[:, None]
             ay = y.x.reshape(-1)[None, :]
@@ -645,7 +613,6 @@ class GPElements(_base.GPBase):
         elif isinstance(x, self._Cov) and isinstance(y, self._Cov) and x.blocks is y.blocks and (xkey, ykey) in x.blocks:
             cov = x.blocks[xkey, ykey]
         else:
-            # TODO handle zero cov block efficiently
             cov = jnp.zeros((x.size, y.size))
         
         with _jaxext.skipifabstract():
@@ -702,7 +669,6 @@ class GPElements(_base.GPBase):
     
     _checkpos_cache = functools.cached_property(lambda self: [])
     def _checkpos_keys(self, keys):
-        # TODO go back to ancestors of _LinTransf?
         if not self._checkpositive:
             return
         keys = set(keys)
@@ -766,12 +732,6 @@ class GPElements(_base.GPBase):
             jac[s].reshape(self._elements[k].shape + indices.shape)
             for s, k in zip(slices, x.keys)
         ]
-        # TODO the jacobian can be extracted much more efficiently when the
-        # elements are _Points or _Cov, since in that case the gvars are primary
-        # and contiguous within each block, so each jacobian is the identity + a
-        # range. Then write a function _gvarext.merge_jacobians to combine
-        # them, which also can be optimized knowing the indices are
-        # non-overlapping ranges.
         
         # Apply transformation.
         t = jax.vmap(x.transf, -1, -1)

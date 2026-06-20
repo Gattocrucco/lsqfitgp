@@ -42,7 +42,6 @@ def Wiener(x, y):
 
 def _fracbrownian_derivable(H=1/2, K=1):
     return H == 1 and K == 1
-    # TODO fails under tracing, return None if not concrete
 
 @kernel(derivable=_fracbrownian_derivable, maxdim=1)
 def FracBrownian(x, y, H=1/2, K=1):
@@ -61,8 +60,6 @@ def FracBrownian(x, y, H=1/2, K=1):
     Reference: Houdré and Villa (2003).
     """
         
-    # TODO I think the correlation between successive same step increments
-    # is 2^(2H-1) - 1 in (-1/2, 1). Maybe add this to the docstring.
     
     with _jaxext.skipifabstract():
         assert 0 < H <= 1, H
@@ -104,9 +101,6 @@ def WienerIntegral(x, y):
     
     """
     
-    # TODO can I generate this algorithmically for arbitrary integration order?
-    # If I don't find a closed formula I can use sympy. =>
-    # JuliaGaussianProcesses implements it, copy their code
     
     with _jaxext.skipifabstract():
         assert jnp.all(x >= 0)
@@ -131,7 +125,6 @@ def OrnsteinUhlenbeck(x, y):
     
     """
     
-    # TODO reference? look on wikipedia
     
     with _jaxext.skipifabstract():
         assert jnp.all(x >= 0)
@@ -150,11 +143,7 @@ def BrownianBridge(x, y):
     It is a Wiener process conditioned on being zero at x = 1.
     """
     
-    # TODO reference? look on wikipedia
     
-    # TODO can this have a Hurst index? I think the kernel would be
-    # (t^2H(1-s) + s^2H(1-t) + s(1-t)^2H + t(1-s)^2H - (t+s) - |t-s|^2H + 2ts)/2
-    # but I have to check if it is correct. (In new kernel FracBrownianBridge.)
     
     with _jaxext.skipifabstract():
         assert jnp.all(x >= 0) and jnp.all(x <= 1)
@@ -176,11 +165,9 @@ def StationaryFracBrownian(delta, H=1/2):
     Reference: Gneiting and Schlather (2006, p. 272).
     """
     
-    # TODO older reference, see [29] is GS06.
     
     with _jaxext.skipifabstract():
         assert 0 < H <= 1, H
     H2 = 2 * H
     return 1/2 * (jnp.abs(delta + 1) ** H2 + jnp.abs(delta - 1) ** H2 - 2 * jnp.abs(delta) ** H2)
     
-    # TODO is the bifractional version of this valid?

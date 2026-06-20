@@ -51,12 +51,7 @@ def Wendland(r, k=0, alpha=1):
     
     """
         
-    # TODO compute the kernel only on the nonzero points.
     
-    # TODO find the nonzero points in O(nlogn) instead of O(n^2) by sorting
-    # the inputs, and output a sparse matrix => on second thought this should
-    # be a general mechanism implemented in GP that gives sparse x and y to
-    # the kernel
     
     with _jaxext.skipifabstract():
         D = _wendland_maxdim(k, alpha)
@@ -95,15 +90,7 @@ def Wendland(r, k=0, alpha=1):
 
 # adapted from the "GP-circular" example in the PyMC documentation
 
-# TODO maxdim actually makes sense only for isotropic. I need a way to say
-# structured/non structured. Maybe all this should just live in the test suite.
 
-# TODO Any stationary kernel supported on [0, pi] would be fine combined with
-# the geodesic distance. Use the generic wendland kernel. Options:
-# 1) add here the parameters of Wendland
-# 2) add a distance option in stationary to use the angular distance, then
-#    let the user apply it to wendland => the problem is that the user would
-#    need to be careful with positiveness, while wendland checks it for him
 
 @stationarykernel(derivable=1, maxdim=1, input='posabs')
 def Circular(delta, tau=4, c=1/2):

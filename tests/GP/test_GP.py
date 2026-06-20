@@ -391,13 +391,10 @@ def test_key_already_used():
     with pytest.raises(KeyError):
         gp.addcov(1, 0)
 
-# TODO this fails in numpy 1.20, may work as versions are bumped
 # def test_bad_array():
 #     gp = lgp.GP(lgp.ExpQuad())
 #     with pytest.raises(ValueError):
 #         gp.addx({0: [[1, 2], 3]})
-
-# TODO make a test on empty things (empty x, empty cov)
 
 def test_incompatible_dtypes():
     gp = lgp.GP(lgp.ExpQuad()).addx(0, 0)
@@ -943,7 +940,7 @@ def test_givencov_decomp():
     
     # low rank givencov
     dec1, dec2 = decs(gp, [0], len(a) // 2)
-    util.assert_close_decomps(dec2, dec1, rtol=1) # TODO wildly inaccurate
+    util.assert_close_decomps(dec2, dec1, rtol=1)
     
 def test_nochecksym_structured():
     gp = lgp.GP(lgp.ExpQuad(), checksym=False, halfmatrix=True)

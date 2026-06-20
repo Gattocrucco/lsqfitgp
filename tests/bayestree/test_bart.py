@@ -76,8 +76,4 @@ def test_scale_shift(X, y, kw):
     m2, cov2 = bart2.pred()
     util.assert_allclose(m2, offset + m1 * scale, rtol=1e-10)
     util.assert_allclose(cov2, cov1 * scale ** 2, rtol=1e-11)
-    # TODO should I use assert_close_matrices instead?
 
-# TODO test out-of-sample predictions are good
-# - mse similar to expected mse
-# - log loss similar to expected log loss

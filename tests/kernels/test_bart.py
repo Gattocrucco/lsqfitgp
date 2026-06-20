@@ -371,13 +371,3 @@ def test_empty():
     c = lgp.BART.correlation(empty, empty, empty)
     util.assert_equal(c, 1)
 
-# TODO
-# - increases at fixed n0 and ntot if the difference between nminus and nplus
-#   decreases (not completely sure)
-# - test gamma='auto' gives 0 for beta=0, alpha=1
-# - test of equality with precomputed values sampled with qmc
-# - duplicated entries in reset have no effect
-# - continuity w.r.t. weight in zero, unless all differring covariates disappear
-#   and the points collapse (which should still be continuous if gamma=1)
-# - reset
-# - splitting points are checked only if indices=False

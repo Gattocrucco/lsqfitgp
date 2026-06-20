@@ -46,7 +46,6 @@ def quad(A, v):
     utv = u.T @ v
     eps = len(A) * 1e-12 * np.max(w)
     return (utv.T / np.maximum(w, eps)) @ utv
-    # TODO maybe low-rank is better?
 
 def chisq_test(g, alpha):
     """chisquare test on g being 0"""
@@ -103,10 +102,6 @@ def test_sdev():
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
     check_fit(hp, gpfactory, alpha=1e-8)
     
-    # TODO once I've seen the chi2 check fail with sf(q) = 1e-8. Is this
-    # a minimization problem or the posterior distribution of log(sdev) which
-    # has a very heavy tail? The distribution of sdev**2 should be a scaled
-    # inverse chisquared, so very heavy tailed indeed
 
 def test_scale_sdev():
     hp = {

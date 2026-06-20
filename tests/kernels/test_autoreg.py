@@ -147,7 +147,6 @@ def test_ar1():
 #     ])
 #     a = np.abs(rng.standard_normal(p + 1))
 #     phi = np.sum(a[:, None] * vertices, 0) / np.sum(a)
-    # TODO formula for the correlation?
 
 def test_zero_slnr():
     for p in range(1, 10):
@@ -184,5 +183,3 @@ def test_ar_norm():
         v2 *= v1[0, 0]
         util.assert_allclose(v1, v2, rtol=1e-14)    
 
-# TODO
-# test reflection of extend_gamma

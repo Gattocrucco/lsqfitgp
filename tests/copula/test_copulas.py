@@ -298,7 +298,6 @@ class TestDirichlet(DistrTestBase):
     params = [1, 4, 3],
     recparams = params
     # recparams = 'gamma' <shape=5>
-        # TODO make the recparams system support shapes conveniently
 
     def rvs(cls, alpha, size=(), random_state=None):
         alpha = np.asarray(alpha)

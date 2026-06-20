@@ -113,8 +113,6 @@ for name in sorted(distrs):
 .. autoclass:: {name}{sig}
 """
 
-# TODO make a table instead of listing the classes, columns: signature in
-# lsqfitgp, name in scipy (with ref), wikipedia page name (with link), Notes
 
 outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
 print(f'writing to {outfile}...')

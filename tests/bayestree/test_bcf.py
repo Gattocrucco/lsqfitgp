@@ -170,13 +170,3 @@ def test_yeojohnson():
         mod.yeojohnson_inverse(mod.yeojohnson(testinput, lamda), lamda),
         testinput, atol=0, rtol=1e-14)
 
-# TODO
-# - tests of basic statistical ability
-#     - true ATE/SATT vs. infer it with bcf
-#     - predictions on a test set
-#     What margins should I use? I could look at the result, decide it makes sense,
-#     then set margins based on that to look for regressions.
-# - process index spec for gpaux
-#     How do I access it? => Define a noop proclintransf that inspects x
-# - x_tau changes the result
-# - a test with no transf

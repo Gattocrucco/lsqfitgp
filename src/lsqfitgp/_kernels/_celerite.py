@@ -91,12 +91,8 @@ def Harmonic(delta, Q=1):
     Astronomical Time Series*.
     """
     
-    # TODO improve and test the numerical accuracy for derivatives near x=0
-    # and Q=1. I don't know if the derivatives have problems away from Q=1.
     
-    # TODO probably second derivatives w.r.t. Q at Q=1 are wrong.
     
-    # TODO will fail if Q is traced.
     
     with _jaxext.skipifabstract():
         assert 0 < Q < jnp.inf, Q

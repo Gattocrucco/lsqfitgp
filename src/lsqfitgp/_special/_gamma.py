@@ -30,8 +30,6 @@ def gamma(x):
 
 def poch(x, k):
     return jnp.exp(jspecial.gammaln(x + k) - jspecial.gammaln(x)) # DLMF 5.2.5
-    # TODO does not handle properly special cases with x and/or k nonpositive
-    # integers
 
 def gamma_incr(x, e):
     """

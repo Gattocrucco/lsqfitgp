@@ -518,13 +518,10 @@ class Distr(_base.DistrBase):
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kw):
         if method != '__call__' or kw or ufunc.signature:
-            # TODO jax 0.4.15 should introduce ufunc methods
             return NotImplemented
         ufunc_class = UFunc.make_subclass(ufunc)
         return ufunc_class(*inputs)
 
-        # TODO make this work with gufuncs. See comment in _signature.py.
-        # matmul in particular.
 
     # continuous binary operations
     __add__, __radd__ = _numeric_methods(numpy.add, 'add')
@@ -541,7 +538,6 @@ class Distr(_base.DistrBase):
     __pos__ = _unary_method(numpy.positive, 'pos')
     __abs__ = _unary_method(numpy.absolute, 'abs')
 
-    # TODO add __getitem__ and __array_function__
 
 class UFunc:
     """ base class of objects representing ufuncs applied to Distr instances """

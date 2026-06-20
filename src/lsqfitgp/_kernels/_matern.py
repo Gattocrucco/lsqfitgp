@@ -47,7 +47,6 @@ def Maternp(r2, p=None):
         assert int(p) == p and p >= 0, p
     r2 = (2 * p + 1) * r2
     return _special.kvmodx2_hi(r2 + 1e-30, p)
-    # TODO see if I can remove the 1e-30 improving kvmodx2_hi_jvp
 
 def _matern_derivable(nu=None):
     with _jaxext.skipifabstract():
@@ -76,11 +75,6 @@ def Matern(r2, nu=None):
                                         # noise, so I avoid doing r2 * 0
     return _special.kvmodx2(nu, r2)
     
-    # TODO broken for high nu. However the convergence to ExpQuad is extremely
-    # slow. Tentative temporary patch:
-    # - for large x, when x^v=inf, use https://dlmf.nist.gov/10.25.E3
-    # - for small x, when Kv(x)=inf, return 1
-    # - for very large v, use expquad even if it's not good enough
     
     # The GSL has log K_nu
     # https://www.gnu.org/software/gsl/doc/html/specfunc.html#irregular-modified-bessel-functions-fractional-order
@@ -99,10 +93,6 @@ def _bessel_derivable(nu=0):
     with _jaxext.skipifabstract():
         return int(nu // 2)
 
-# TODO looking at the plot in the reference, it seems derivable also for nu = 0.
-# what's up? investigate numerically by overwriting the derivability. rasmussen
-# does not say anything about it. Problem: my custom derivatives may not work
-# properly in this case.
 
 def _bessel_maxdim(nu=0):
     with _jaxext.skipifabstract():

@@ -196,14 +196,3 @@ outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().
 print(f'writing to {outfile}...')
 outfile.write_text(out)
 
-# TODO make the doc proper. I need to reference actual functions.
-# - have to use autofunction to let numpydoc do its thing to the docstring
-# - there must be an actual named internal object to be referenced, so no
-#   external ufuncs and no lambdas in the definitions
-# - Instead of module_path.name(..., I want lsqfitgp.CrossKernel.transf('name', ...)
-# - Can I do that with sphinx templates? If I can, can I make that happen
-#   only at specific places?
-# - Can I brute force postprocess something which is still purely semantical
-#   that comes before the html? => I see no text files in _build post-facto
-# => Perhaps the best way would be reading Sphinxe's customization manual from
-# start to finish.

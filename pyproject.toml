@@ -111,7 +111,6 @@ tests-old = [ # to run the unit tests on CI, with minimum supported dependencies
     "pyarrow==10.0.1",
     "statsmodels",
 ]
-# TODO can I restrict tests-old to the pins, and use [tests,tests-old]?
 
 docs = [ # to run examples, documentation code, and build documentation on CI
     "numpy",

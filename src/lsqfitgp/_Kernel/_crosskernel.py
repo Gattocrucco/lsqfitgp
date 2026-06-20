@@ -230,14 +230,7 @@ class CrossKernel:
         
         return __class__(core)
 
-        # TODO instead of wrapping the cores just by closing over an argument,
-        # define a `PartialKernel` object that has linop defined, with one arg
-        # fixed to None, and __call__ that closes over an argument. This way I
-        # could apply ops directly with deflintransf.
 
-    # TODO move in the binary op methods the logic that decides wether to
-    # return NotImplemented, while the algops will raise an exception if the
-    # argument is not to their liking
 
     def __add__(self, other):
         return self.algop('add', other)
@@ -263,10 +256,6 @@ class CrossKernel:
             core=lambda x, y, **kw: core(y, x, **kw),
         )
 
-        # TODO make _swap a transf inherited by CrossIsotropicKernel => messes
-        # up with Kernel subclasses. I want to make Kernel subclasses identity
-        # on swap, so it can't be an inherited transf, because Kernel appears
-        # as the second base.
 
     def batch(self, maxnbytes):
         """
@@ -726,7 +715,6 @@ class CrossKernel:
         cls._settransf(transfname, (func, doc, kind))
         return func
 
-        # TODO forbid to override with a different kind?
 
     @classmethod
     def register_linop(cls, op, transfname=None, doc=None, argparser=None):
@@ -974,19 +962,8 @@ class CrossKernel:
         cls.register_transf(func, transfname, doc, cls._algopmarker)
         return op
 
-        # TODO delete initkw (also in linop) if there's more than one kernel
-        # operand or if the class changed?
 
-        # TODO consider adding an option domains=callable, returns list of
-        # domains from the operands, or list of tuples right away, and the
-        # impl checks at runtime (if not traced) that the output values are in
-        # the domains, with an informative error message
 
-        # TODO consider escalating to ancestor definitions of the transf
-        # until an impl does not return NotImplemented, and then raise an
-        # an error instead of letting the NotImplemented escape. This would be
-        # useful to partial behavior ovverride in subclasses, e.g, handle
-        # multiplication by scalar to rewire transformations.
 
     class _AlgOpMarker(str): pass
     _algopmarker = _AlgOpMarker('algop')
@@ -1226,30 +1203,6 @@ class AffineSpan(CrossKernel, abc.ABC):
         for name in __class__._transf:
             cls.inherit_transf(name)
 
-        # TODO I would like to inherit conditional on there not being another
-        # definition. However, since registrations are done after class
-        # creation, this method is invoked too early to do that.
-        #
-        # Is it possible to reimplement the transformation system to have the
-        # transformations defined in the class body?
-        #
-        # Option 1: use a decorator that marks the transf methods and makes
-        # them staticmethods. Then an __init_subclass__ above CrossKernel goes
-        # through the methods and registers the marked ones.
-        # 
-        # Option 2: try to use descriptors (classes like property). Is it
-        # possible to reimplement from scratch something like classmethod? If
-        # so, I could make a transfmethod that bounds two arguments: tcls
-        # for the class that defines it, and self for the object that invokes
-        # it. Then inheriting would be just copying the thing over. If I wanted
-        # to keep the invocation through method interface, I could define the
-        # methods with underscores and register them somewhere.
-        #
-        # However, since I define kernels with decorators, I can't actually
-        # count on the transformations being defined into them at class
-        # creation. But that would be quite a corner case.
-        #
-        # To make subclassing convenient without decorators, allow to define a
         # core(x, y) method, which __init_subclass__ converts to staticmethod,
         # and have __new__ use it to set _core (I can't use the same name with
         # slots).
@@ -1294,16 +1247,7 @@ class AffineSpan(CrossKernel, abc.ABC):
         else:
             return NotImplemented
 
-    # TODO I could do separately AffineLeft, AffineRight, AffineOut, and make
-    # this a subclass of those three. AffineOut would also allow keeping the
-    # class when adding two objects without keyword arguments in initkw and
-    # dynkw beyond those managed by Affine. => Make only AffineSide and have it
-    # switch side on _swap.
 
-    # TODO when I reimplement transformations as methods, make AffineSpan not
-    # a subclass of CrossKernel. Right now I have to to avoid routing around
-    # the assumption that all classes in the MRO implement the transformation
-    # management logic.
 
 class PreservedBySwap(CrossKernel):
 
@@ -1315,5 +1259,3 @@ class PreservedBySwap(CrossKernel):
     def _swap(self):
         return super()._swap()._clone(self.__class__)
 
-    # TODO when I implement transformations with methods, make this not an
-    # instance of CrossKernel.

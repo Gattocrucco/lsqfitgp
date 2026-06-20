@@ -86,7 +86,7 @@ def sequential_algorithm(n, ops):
             args = (ops[j].iter_out(i) for j in op.inputs)
             op.iter(i, *args)
         return ops
-    ops = lax.fori_loop(1, n, body_fun, ops) # TODO convert to lax.scan and unroll?
+    ops = lax.fori_loop(1, n, body_fun, ops)
     return tuple(op.finalize() for op in ops)
     
 class Producer(SequentialOperation):

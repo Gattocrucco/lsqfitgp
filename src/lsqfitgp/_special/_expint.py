@@ -49,18 +49,15 @@ def expn_imag(n, x):
     #   eps z^n-2 / Gamma(n) = (n)_nt / z^nt+1  -->
     #   -->  z = (Gamma(n + nt) / eps)^1/(n+nt-1)
     
-    # TODO improve accuracy at large n, it is probably sufficient to use
-    # something like softmin(1/(n-1), 1/x) e^-ix, where the softmin scale
-    # increases with n (how?)
     
     x = jnp.asarray(x)
     with jax.ensure_compile_time_eval():
         n = jnp.asarray(n)
         dt = _jaxext.float_type(n, x)
         if dt == jnp.float32:
-            nt = jnp.array(10, 'i4') # TODO optimize to raise maximum n
+            nt = jnp.array(10, 'i4')
         else:
-            nt = 20 # TODO optimize to raise maximum n
+            nt = 20
         eps = jnp.finfo(dt).eps
         knee = (special.gamma(n + nt) / eps) ** (1 / (n + nt - 1))
     small = expn_imag_smallx(n, x)
@@ -92,8 +89,6 @@ def expn_imag_smallx(n, x):
     part2 = jnp.exp(ix) * jnp.polyval(coefs, ix)
     return (part1 + part2) / n_1fact
     
-    # TODO to make this work with jit n, since the maximum n is something
-    # like 30, I can always compute all the terms and set some of them to zero
 
 def expn_asymp_coefgen(s, e, n):
     k = jnp.arange(s, e, dtype=n.dtype)
@@ -265,7 +260,6 @@ def exp1_imag(x):
     """
     return jnp.where(x < 4, _exp1_imag_smallx(x), _exp1_imag_largex(x))
     
-    # TODO This is 40x faster than special.exp1(-1j * x) and 2x than
     # special.sici(x), and since the jit has to run (I'm guessing) through both
     # branches of jnp.where, a C/Cython implementation would be 4x faster. Maybe
     # PR it to scipy for sici, after checking the accuracy against mpmath and

@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-# TODO maybe use sympy instead of direct mpmath, it should be easier.
 
 import jax
 from jax import test_util
@@ -79,7 +78,6 @@ def test_kvmodx2():
         if v >= 0.5: # negative diverges, and below 0.5 d/dx at 0 is inf
             for no in range(5):
                 util.assert_allclose(_special.kvmodx2(v, 1e-15, no), _special.kvmodx2(v, 0, no), rtol=1e-11)
-        # TODO really need to check at 0 in other cases
     xz = np.linspace(0, 1, 1000)
     np.testing.assert_equal(_special.kvmodx2(0, xz), np.where(xz, 0, 1))
 
@@ -161,7 +159,6 @@ def test_hurwitz_zeta_vectorized():
     z1 = _special.hurwitz_zeta(s, a)
     z2 = np.vectorize(_special.hurwitz_zeta)(s, a)
     np.testing.assert_array_max_ulp(z1, z2, 1100)
-    # TODO what?? 1000 ULP?? what??
 
 def test_gamma():
     x = np.linspace(-100.1, 100, 1000)  # .1 because negative integers are poles
@@ -169,7 +166,6 @@ def test_gamma():
     g2 = _special.gamma(x)
     np.testing.assert_array_max_ulp(g2, g1, 2000)
 
-    # TODO _special.gamma(negative integer) is currently +inf, it should be nan
 
 def _periodic_zeta(x, s):
     with mpmath.workdps(32):
@@ -424,8 +420,8 @@ def test_expn(rng, cached):
     assert result_64.dtype == 'complex128'
     assert result_32.dtype == 'complex64'
     sol = cached('sol', expint, n[:, None], -1j * x)
-    util.assert_allclose(result_64, sol, rtol=1e-7) # TODO quite bad
-    util.assert_allclose(result_32, sol, atol=0.01) # TODO very bad!!
+    util.assert_allclose(result_64, sol, rtol=1e-7)
+    util.assert_allclose(result_32, sol, atol=0.01)
 
 def test_kvp():
     test_util.check_grads(lambda z: _special.kv(3.2, z), (1.5,), 2)

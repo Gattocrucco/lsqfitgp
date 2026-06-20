@@ -103,9 +103,6 @@ def pow(tcls, self, *, exponent):
     else:
         return NotImplemented
 
-    # TODO this will raise TypeError on negative integers. It should stop
-    # method search and raise ValueError. Same for rpow. Check if it is a
-    # scalar, then check if it satisfies the bound.
 
 @CrossKernel.register_algop
 def rpow(tcls, self, *, base):
@@ -149,8 +146,6 @@ CrossKernel.register_ufuncalgop(jspecial.i1)
 #     assert _util.is_nonnegative_scalar_trueontracer(order)
 #     return _special.iv(order, x)
 
-# TODO other unary algop:
-# - hypergeom (wrap the scipy impl in _special)
 
 @functools.partial(AffineSpan.register_algop, transfname='add')
 def affine_add(tcls, self, other):

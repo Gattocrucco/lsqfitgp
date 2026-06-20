@@ -28,8 +28,6 @@ import pytest
 import lsqfitgp as lgp
 from .. import util
 
-# TODO
-# - add gpkw for setting checksym, checkpos, solvers
 
 def pred(seed, err, **kw):
     rng = np.random.default_rng(seed)
@@ -76,16 +74,6 @@ def test_pred(err, kw1, kw2, rng):
     # this test, fix the seed and apply functools.cache to pred.
     util.assert_allclose(m1, m2, rtol=1e-5 if err else 1e-6)
     util.assert_close_matrices(cov1, cov2, rtol=1e-5 if err else 1e-1)
-    # TODO 1e-1 is quite inaccurate. It's not due to matrices close to zero.
-    # The combinations that require it are (err, kw1, kw2):
-    # (False, {'fromdata': False, 'raw': False, 'keepcorr': False}, {'fromdata': False, 'raw': False, 'keepcorr': True})
-    # (False, {'fromdata': False, 'raw': True, 'keepcorr': False}, {'fromdata': True, 'raw': False, 'keepcorr': True})
-    # (False, {'fromdata': True, 'raw': False, 'keepcorr': False}, {'fromdata': True, 'raw': False, 'keepcorr': True})
-    # (False, {'fromdata': False, 'raw': False, 'keepcorr': True}, {'fromdata': False, 'raw': True, 'keepcorr': False})
-    # (False, {'fromdata': False, 'raw': False, 'keepcorr': True}, {'fromdata': True, 'raw': False, 'keepcorr': False})
-    # (False, {'fromdata': True, 'raw': False, 'keepcorr': True}, {'fromdata': True, 'raw': True, 'keepcorr': False})
-    # So it's all and only the comparisons with different keepcorr, i.e.,
-    # with/without gvars.
 
 def test_double_pred(rng):
     n = 50

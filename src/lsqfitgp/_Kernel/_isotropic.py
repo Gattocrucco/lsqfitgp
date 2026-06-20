@@ -80,16 +80,7 @@ class CrossIsotropicKernel(_stationary.CrossStationaryKernel):
         
         return _crosskernel.CrossKernel.__new__(cls, newcore, **kw)
 
-    # TODO add a `distance` parameter to pick arbitrary distances, but since the
-    # distance definition can not be changed arbitrarily, it may be better to
-    # keep this class for the 2-norm and eventually add another if needed.
     
-    # TODO it is not efficient that the distance is computed separately for
-    # each kernel in a kernel expression, but probably it would be difficult
-    # to support everything without bugs while also computing the distance once.
-    # A possible way is adding a keyword argument to the _kernel member
-    # that kernels use to memoize things, the first IsotropicKernel that gets
-    # called puts the distance there. Possible name: _cache.
     
 class IsotropicKernel(CrossIsotropicKernel, _stationary.StationaryKernel):
     pass

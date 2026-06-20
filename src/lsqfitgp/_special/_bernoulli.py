@@ -26,8 +26,6 @@ from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
 def periodic_bernoulli(n, x):
-    # TODO to make this jittable, hardcode size to 60 and truncate by writing
-    # zeros
     n = int(n)
     bernoulli = special.bernoulli(n)
     k = numpy.arange(n + 1)

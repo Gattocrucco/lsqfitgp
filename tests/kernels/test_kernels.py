@@ -44,7 +44,7 @@ pytestmark = pytest.mark.filterwarnings(
 unary_algops = [
     ('rpow', (-np.inf, np.inf), dict(base=1.5)),
     ('tan', (-np.pi / 2, np.pi / 2), {}),
-    # ('1/sinc', (-np.pi, np.pi), {}),         # <--- TODO fix this, what's wrong?
+    # ('1/sinc', (-np.pi, np.pi), {}),
     ('1/cos', (-np.pi / 2, np.pi / 2), {}),
     ('arcsin', (-1, 1), {}),
     ('1/arccos', (-1, 1), {}),
@@ -77,7 +77,6 @@ def find_pos_rescale_to_fit(l, r, a, b, L, R):
     assert res.success, res.message
     return res.x
 
-# TODO test higher dimensions and derivatives?
 
 def skipon(meth, exc, match):
     """ decorator to make a unit test method skip on a certain exception """
@@ -208,9 +207,7 @@ class Base:
     def test_jit_nd_0(self, kernel, x_nd):
         self.impl_jit(kernel, 0, x_nd)
 
-    # TODO jit with kw as arguments. use static_argnames filtering by dtype.
     
-    # TODO test vmap
     
     @pytest.fixture(params=[(0, 0)])
     def derivs(self, request):
@@ -251,8 +248,6 @@ class Base:
     def test_loc_scale_nd(self, kernel, x_nd):
         loc = -2  # < 0
         scale = 3 # > abs(loc)
-        # TODO maybe put loc and scale in kw and let random_x adapt the
-        # domain to loc and scale
         if not np.issubdtype(x_nd.dtype[0].base, np.inexact):
             pytest.skip()
         x1 = x_nd[:, None]
@@ -861,8 +856,6 @@ for name, kernel in kernels.items():
 util.skip(TestAR, 'test_normalized')
 util.skip(TestMA, 'test_normalized')
 
-# TODO These are isotropic kernels with the input='posabs' option. The problems
-# arise where x == y. => use make_jaxpr to debug?
 util.xfail(TestWendland, 'test_positive_nd_2')
 util.xfail(TestWendland, 'test_double_diff_nd_second_chopped')
 util.xfail(TestWendland, 'test_continuous_in_zero_2')
@@ -881,8 +874,6 @@ util.xfail(TestWendland, 'test_jit_nd_1', reason="the failures are on kw14, "
     "kw33, and involve integer multiples of the identity, with differences: "
     "24 vs 25, 24 vs. 22.")
 
-# TODO These are not isotropic kernels, what is the problem? Those commented are
-# currently skipped, the failures were with forcekron applied.
 # util.xfail(TestTaylor, 'test_double_diff_nd_second') # numerical precision
 # util.xfail(TestFracBrownian, 'test_double_diff_nd_second') # large difference
 util.xfail(TestNNKernel, 'test_double_diff_nd_second', reason="large difference")

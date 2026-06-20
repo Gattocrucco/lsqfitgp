@@ -72,12 +72,8 @@ def Zeta(delta, *, nu, **_):
     
     # return -(-1) ** (s // 2) * _special.scaled_periodic_bernoulli(s, delta) / jspecial.zeta(s, 1)
     
-    # TODO use the bernoully version for integer even s, based on the type of
-    # the input such that it's static, because it is much more accurate
 
-    # TODO ND version. The separable product is not equivalent I think.
     
-    # TODO the derivative w.r.t. nu is probably broken
     
 @_Kernel.kernel(maxdim=1, derivable=False)
 def ZetaFourier(k, q, *, nu, lloc, rloc, lscale, rscale, offset, ampl):
@@ -140,9 +136,3 @@ def translkw(*, dynkw, **initkw):
 
 Zeta.make_linop_family('fourier', ZetaFourier, CrossZetaFourier, translkw=translkw, doc=fourier_doc, argparser=fourier_argparser)
 
-# TODO
-# - test the transf with rescalings (what cross check can I do?)
-# - track affine transf in CrossZetaFourier too
-# - make Zeta support non-sym affine ops (I think I need to define CrossZeta
-#    then subclass to Zeta(CrossZeta, Kernel)
-# - consider renaming fourier to fourier_series when I rewrite transf system

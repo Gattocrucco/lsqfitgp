@@ -36,9 +36,6 @@ from .. import _jaxext
 from .. import _gvarext
 from .. import _utils
 
-# TODO add methods or options to do causal inference stuff, e.g., impute missing
-# outcomes, or ate, att, cate, catt, sate, satt. Remember that the effect may
-# also depend on aux. See bartCause, possibly copy its naming.
 
 def _recursive_cast(dtype, default, mapping):
     if dtype in mapping:
@@ -84,9 +81,6 @@ def cast(dtype, default, mapping={}):
     default = None if default is None else numpy.dtype(default)
     return _recursive_cast(numpy.dtype(dtype), default, mapping)
 
-    # TODO
-    # - move this to generic utils
-    # - make unit tests
 
 class bcf:
     
@@ -406,8 +400,6 @@ class bcf:
         def gpfactory(hp, *, z, i_mu, i_tau, pihat, x_aux, weights,
             splits_mu, splits_tau, **_):
             
-            # TODO maybe I should pass kernelkw_* as arguments, but they may not
-            # be jittable. I need jitkw in empbayes_fit for that.
 
             kw_overridable = dict(
                 maxd=10,
@@ -782,8 +774,6 @@ class bcf:
                                  'applies after adding the error.')
             assert not gvars, 'can not represent posterior samples as gvars'
 
-        # TODO allow exceptions to these rules when there are no transformations
-        # or the only transformation is 'standardize'.
         
         # get hyperparameters
         hp = self._gethp(hp, rng)
@@ -816,16 +806,10 @@ class bcf:
 
         # sample from posterior
         sample = jnp.stack(list(_fastraniter.raniter(mean, cov, n=samples, rng=rng)))
-            # TODO when I add vectorized sampling, use it here
         if not transformed:
             sample = self._to_data(hp, sample)
         return sample
 
-        # TODO the default should be something in data space, so with samples.
-        # If I handle the analyitical posterior through standardize, I could
-        # also make it without samples by default. Although I guess for
-        # whatever calculations samples are more convenient (just do the
-        # calculation on the samples.)
 
     @functools.cached_property
     def _pred(self):
@@ -843,8 +827,6 @@ class bcf:
             outmean, outcov = gp.predfromdata(data, label, raw=True)
             return outmean + hp.get('m', 0), outcov
 
-        # TODO make everything pure and jit this per class instead of per
-        # instance
 
         return _pred
 
@@ -1018,7 +1000,6 @@ Meaning of hyperparameters:
         
         return _utils.top_bottom_rule('BCF', out)
 
-        # TODO print user parameters, applying transformations. Copy the dict and use .pop() to remove the predefined params as they are printed.
 
     def _get_transf(self, *, transf, y, weights):
 
@@ -1110,12 +1091,6 @@ def yeojohnson(x, lmbda):
         -((jnp.power(-x + 1, 2 - lmbda) - 1) / (2 - lmbda))
     )
 
-    # TODO
-    # - rewrite the cases with expm1, log1p, etc. to make them accurate
-    # - split the cases into lambda 0/2
-    # - make custom_jvps for the singular points to define derivatives w.r.t.
-    #   lambda even though it does not appear in the expression
-    # - add unit tests that check gradients with finite differences
 
 def yeojohnson_inverse(y, lmbda):
     return jnp.where(

@@ -71,7 +71,6 @@ def is_scalar_cond_trueontracer(x, cond):
 def is_nonnegative_scalar_trueontracer(x):
     return is_scalar_cond_trueontracer(x, lambda x: x >= 0)
 
-# TODO reimplement with tree_reduce, closuring ndim to recognize shaped fields
 def _reduce_recurse_dtype(fun, args, reductor, npreductor, jnpreductor, **kw):
     x = args[0]
     if x.dtype.names is None:

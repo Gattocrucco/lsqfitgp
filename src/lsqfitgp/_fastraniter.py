@@ -24,10 +24,7 @@ import numpy
 
 from . import _linalg
 
-# TODO support jax tracing and jax random sampling
 
-# TODO I should have a vectorized sampler, that returns an array of samples
-# right away. Copy the new gvar interface (from gvar 12.1).
 
 def _toslice(s):
     if isinstance(s, slice):
@@ -99,8 +96,6 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
         covdec = _linalg.Chol(squarecov, epsrel='auto' if eps is None else eps)
     except numpy.linalg.LinAlgError:
         raise numpy.linalg.LinAlgError('covariance matrix not positive definite with eps={}'.format(eps))
-        # TODO when I implement a pseudoinverse or something that does not fail
-        # like diagonalization, issue a warning and use the other decomposition
 
     # get random number generator
     rng = numpy.random.default_rng(rng)
