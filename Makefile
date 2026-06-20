@@ -46,10 +46,12 @@ all:
 	@echo " 9) bump version number and add .dev0 suffix"
 	@echo
 	@echo "Dependency maintenance instructions:"
-	@echo " 1) $$ make clean"
-	@echo " 2) $$ make resetenv"
-	@echo " 3) $$ make tests examples docscode docs"
-	@echo " 4) repeat 3 until all problems are fixed"
+	@echo " 1) Get the latest version of python"
+	@echo " 2) $$ make clean"
+	@echo " 3) $$ make resetenv"
+	@echo " 4) $$ make tests examples docscode docs"
+	@echo " 5) repeat 4 until all problems are fixed"
+	@echo " 6) update the python version in the workflows"
 
 upload:
 	python3 -m twine upload dist/*
