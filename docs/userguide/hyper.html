@@ -10,10 +10,10 @@
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
     <script src="../_static/documentation_options.js?v=feaa0556"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="12. Hyperparameters in the input" href="hyperstruct.html" />
@@ -152,12 +152,12 @@ need another fancy name.</p>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">makegp</span><span class="p">(</span><span class="n">hyperparams</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">lgp</span>
-        <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">hyperparams</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]))</span>
-        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;sine&#39;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">hyperparams</span><span class="p">[</span><span class="s1">'scale'</span><span class="p">]))</span>
+        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">'sine'</span><span class="p">)</span>
     <span class="p">)</span>
-<span class="n">hyperprior</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;log(scale)&#39;</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))}</span>
-<span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hyperprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span>
+<span class="n">hyperprior</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'log(scale)'</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))}</span>
+<span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hyperprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">'sine'</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">'scale'</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>Output:</p>
@@ -171,11 +171,11 @@ hyperparameters.</p>
 <p>Then we specified a “hyperprior” for the hyperparameters (if you want to fit
 something you need a prior on it, there’s no way out of this). The function
 <code class="docutils literal notranslate"><span class="pre">makegp</span></code> extracts a key <code class="docutils literal notranslate"><span class="pre">'scale'</span></code> from the dictionary, but in the
-hyperprior we used <code class="docutils literal notranslate"><span class="pre">'log(scale)'</span></code>. This is a general feature of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v13.1.7)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>,
+hyperprior we used <code class="docutils literal notranslate"><span class="pre">'log(scale)'</span></code>. This is a general feature of <a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#module-gvar" title="(in gvar v13.1.10)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gvar</span></code></a>,
 that it can automatically apply the inverse of the transformation specified in
 the key. It doesn’t work out of the box with any function: by default only the
 logarithm is supported; you can add other functions with
-<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v13.1.7)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution()</span></code></a>, or use the <a class="reference internal" href="../reference/copula.html#module-lsqfitgp.copula" title="lsqfitgp.copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copula</span></code></a> module to define
+<a class="reference external" href="https://gvar.readthedocs.io/en/latest/gvar.html#gvar.BufferDict.add_distribution" title="(in gvar v13.1.10)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">gvar.BufferDict.add_distribution()</span></code></a>, or use the <a class="reference internal" href="../reference/copula.html#module-lsqfitgp.copula" title="lsqfitgp.copula"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copula</span></code></a> module to define
 them automatically.</p>
 <p>This means that the parameter we are actually fitting is the logarithm of the
 scale. Something like this is necessary because the scale must be a positive
@@ -190,20 +190,20 @@ and take some samples. However, since the hyperparameter has an uncertainty,
 we have to sample it too:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">'lsqfitgp example'</span><span class="p">)</span>
 
 <span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">hpsample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsample</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
-    <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsample</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">'plot'</span><span class="p">)</span>
+    <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">'sine'</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">'plot'</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">ysample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">yplot</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">ysample</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">ysample</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;hyper1.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'hyper1.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/hyper1.png" src="../_images/hyper1.png" />
@@ -212,20 +212,20 @@ we change that with an hyperparameter? The amplitude of the oscillations is
 given by the prior variance, so we just need to multiply the kernel by a
 constant:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">makegp</span><span class="p">(</span><span class="n">hyperparams</span><span class="p">):</span>
-    <span class="n">kernel</span> <span class="o">=</span> <span class="n">hyperparams</span><span class="p">[</span><span class="s1">&#39;sdev&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">hyperparams</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span>
+    <span class="n">kernel</span> <span class="o">=</span> <span class="n">hyperparams</span><span class="p">[</span><span class="s1">'sdev'</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">hyperparams</span><span class="p">[</span><span class="s1">'scale'</span><span class="p">])</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">lgp</span>
         <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
-        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;sine&#39;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">'sine'</span><span class="p">)</span>
     <span class="p">)</span>
 
 <span class="n">hyperprior</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;log(sdev)&#39;</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
-    <span class="s1">&#39;log(scale)&#39;</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="s1">'log(sdev)'</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="s1">'log(scale)'</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
 <span class="p">}</span>
 
-<span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hyperprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;sdev&#39;</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;sdev&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">])</span>
+<span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hyperprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">'sine'</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'sdev'</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">'sdev'</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'scale'</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">'scale'</span><span class="p">])</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -246,15 +246,15 @@ than 1.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
 
 <span class="k">for</span> <span class="n">hpsample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsample</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
-    <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsample</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">'plot'</span><span class="p">)</span>
+    <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">'sine'</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">'plot'</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">ysample</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">yplot</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">ysample</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">ysample</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'red'</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;hyper2.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'hyper2.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/hyper2.png" src="../_images/hyper2.png" />
@@ -270,9 +270,9 @@ oscillation in a more widely varying function. To get a feel of that, let’s
 plot a lot of samples from the prior with the hyperparameters I would have
 liked to come out, i.e., I’ll use a scale of 2 and a standard deviation of, say,
 0.7:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">({</span><span class="s1">&#39;scale&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;sdev&#39;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">})</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">({</span><span class="s1">'scale'</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">'sdev'</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">})</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">'plot'</span><span class="p">)</span>
 
-<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">'plot'</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">set_size_inches</span><span class="p">(</span><span class="mf">6.4</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
@@ -280,24 +280,24 @@ liked to come out, i.e., I’ll use a scale of 2 and a standard deviation of, sa
 
 <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axs</span><span class="p">,</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">prior</span><span class="p">)):</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;hyper3.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'hyper3.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/hyper3.png" src="../_images/hyper3.png" />
 <p>Now we do the same with the optimized hyperparameters:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">pmean</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">pmean</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">'plot'</span><span class="p">)</span>
 
-<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">'plot'</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axs</span><span class="p">,</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">prior</span><span class="p">)):</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;hyper4.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'hyper4.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/hyper4.png" src="../_images/hyper4.png" />
@@ -311,9 +311,9 @@ integrating the Gaussian distribution, with the caveat that the parameter we
 actually used in the fit is log(sdev):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">stats</span>
 
-<span class="n">p</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;log(sdev)&#39;</span><span class="p">]</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="s1">'log(sdev)'</span><span class="p">]</span>
 <span class="n">prob</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="n">gvar</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="n">scale</span><span class="o">=</span><span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:.3g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prob</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="si">{:.3g}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prob</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>Output:</p>
@@ -339,19 +339,19 @@ log(scale) 1.051(77)
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">Model</span><span class="p">()</span>
 <span class="k">with</span> <span class="n">model</span><span class="p">:</span>
-    <span class="n">logscale</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="s1">&#39;logscale&#39;</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">logsdev</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="s1">&#39;logsdev&#39;</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">logscale</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="s1">'logscale'</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">logsdev</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="s1">'logsdev'</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">kernel</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logsdev</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pm</span><span class="o">.</span><span class="n">gp</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="n">pm</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logscale</span><span class="p">))</span>
     <span class="n">gp</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">gp</span><span class="o">.</span><span class="n">Marginal</span><span class="p">(</span><span class="n">cov_func</span><span class="o">=</span><span class="n">kernel</span><span class="p">)</span>
-    <span class="n">gp</span><span class="o">.</span><span class="n">marginal_likelihood</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">gp</span><span class="o">.</span><span class="n">marginal_likelihood</span><span class="p">(</span><span class="s1">'data'</span><span class="p">,</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
 <span class="k">with</span> <span class="n">model</span><span class="p">:</span>
     <span class="n">mp</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">find_MAP</span><span class="p">()</span>
     <span class="n">trace</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Maximum a posteriori (must be the same as lsqfitgp):&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;log(sdev) </span><span class="si">{:.2f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mp</span><span class="p">[</span><span class="s1">&#39;logsdev&#39;</span><span class="p">]))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;log(scale) </span><span class="si">{:.2f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mp</span><span class="p">[</span><span class="s1">&#39;logscale&#39;</span><span class="p">]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">Maximum a posteriori (must be the same as lsqfitgp):'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'log(sdev) </span><span class="si">{:.2f}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mp</span><span class="p">[</span><span class="s1">'logsdev'</span><span class="p">]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'log(scale) </span><span class="si">{:.2f}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mp</span><span class="p">[</span><span class="s1">'logscale'</span><span class="p">]))</span>
 
 <span class="n">df</span> <span class="o">=</span> <span class="n">pm</span><span class="o">.</span><span class="n">trace_to_dataframe</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
 <span class="n">mean</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
@@ -365,16 +365,16 @@ log(scale) 1.051(77)
         <span class="n">covdict</span><span class="p">[</span><span class="n">label1</span><span class="p">,</span> <span class="n">label2</span><span class="p">]</span> <span class="o">=</span> <span class="n">cov</span><span class="p">[</span><span class="n">label1</span><span class="p">][</span><span class="n">label2</span><span class="p">]</span>
 
 <span class="n">params</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="n">meandict</span><span class="p">,</span> <span class="n">covdict</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Posterior mean and standard deviation:&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;log(sdev)&#39;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;logsdev&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;log(scale)&#39;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;logscale&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">Posterior mean and standard deviation:'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'log(sdev)'</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s1">'logsdev'</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'log(scale)'</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s1">'logscale'</span><span class="p">])</span>
 
-<span class="n">p</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;logsdev&#39;</span><span class="p">]</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">'logsdev'</span><span class="p">]</span>
 <span class="n">prob_gauss</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="n">gvar</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="n">scale</span><span class="o">=</span><span class="n">gvar</span><span class="o">.</span><span class="n">sdev</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
-<span class="n">true_prob</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;logsdev&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Probability of having sdev &lt; 1:&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;prob_gauss </span><span class="si">{:.3g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prob_gauss</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;true_prob </span><span class="si">{:.3g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">true_prob</span><span class="p">))</span>
+<span class="n">true_prob</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'logsdev'</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">Probability of having sdev &lt; 1:'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'prob_gauss </span><span class="si">{:.3g}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prob_gauss</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'true_prob </span><span class="si">{:.3g}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">true_prob</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>Output:</p>
@@ -445,12 +445,12 @@ the same second derivative:</p>
 <span class="n">cos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 <span class="n">gauss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;cosgauss&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">'cosgauss'</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cos</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">gauss</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;hyper5.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'hyper5.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/hyper5.png" src="../_images/hyper5.png" />
@@ -459,7 +459,7 @@ than the sine, so let’s try it:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gauss_large</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">gauss_large</span><span class="p">,</span> <span class="n">scaley</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;hyper6.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'hyper6.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/hyper6.png" src="../_images/hyper6.png" />
@@ -470,31 +470,31 @@ easy as cheating actually if we use the <a class="reference internal" href="../r
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">makegp</span><span class="p">(</span><span class="n">hp</span><span class="p">):</span>
-    <span class="n">scale</span> <span class="o">=</span> <span class="n">hp</span><span class="p">[</span><span class="s1">&#39;period&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">hp</span><span class="p">[</span><span class="s1">'period'</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
     <span class="n">kernel</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">Periodic</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">lgp</span>
         <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
-        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;sine&#39;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">'sine'</span><span class="p">)</span>
     <span class="p">)</span>
 
 <span class="n">hprior</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;log(period)&#39;</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="s1">'log(period)'</span><span class="p">:</span> <span class="n">gvar</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">gvar</span><span class="o">.</span><span class="n">gvar</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
 <span class="p">}</span>
-<span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">fit</span> <span class="o">=</span> <span class="n">lgp</span><span class="o">.</span><span class="n">empbayes_fit</span><span class="p">(</span><span class="n">hprior</span><span class="p">,</span> <span class="n">makegp</span><span class="p">,</span> <span class="p">{</span><span class="s1">'sine'</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">raises</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">all_keys</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
 
 <span class="k">for</span> <span class="n">hpsamp</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
-    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsamp</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
-    <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">&#39;sine&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">&#39;plot&#39;</span><span class="p">)</span>
+    <span class="n">gp</span> <span class="o">=</span> <span class="n">makegp</span><span class="p">(</span><span class="n">hpsamp</span><span class="p">)</span><span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="s1">'plot'</span><span class="p">)</span>
+    <span class="n">yplot</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">predfromdata</span><span class="p">({</span><span class="s1">'sine'</span><span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="s1">'plot'</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">ysamp</span> <span class="ow">in</span> <span class="n">gvar</span><span class="o">.</span><span class="n">raniter</span><span class="p">(</span><span class="n">yplot</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">ysamp</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;.k&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;hyper7.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'hyper7.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/hyper7.png" src="../_images/hyper7.png" />
@@ -528,10 +528,10 @@ period 6.280(18)
     <div class="clearer"></div>
   </div>
     <div class="footer">
-      &#169;2020-2025, Giacomo Petrillo.
+      &#169;2020-2026, Giacomo Petrillo.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
       |

@@ -10,8 +10,8 @@
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
     <script src="../_static/documentation_options.js?v=feaa0556"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Kernel transformations" href="kernelop.html" />
@@ -194,7 +194,7 @@ enforced to be the new class.</p>
 <span class="sig-prename descclassname"><span class="pre">lsqfitgp.</span></span><span class="sig-name descname"><span class="pre">stationarykernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/Gattocrucco/lsqfitgp/blob/master/src/lsqfitgp/_Kernel/_decorators.py#L128-L144"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lsqfitgp.stationarykernel" title="Link to this definition">¶</a></dt>
 <dd><p>Like <a class="reference internal" href="#lsqfitgp.crosskernel" title="lsqfitgp.crosskernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crosskernel</span></code></a> but makes a subclass of <a class="reference internal" href="kernel.html#lsqfitgp.StationaryKernel" title="lsqfitgp.StationaryKernel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StationaryKernel</span></code></a>.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">stationarykernel</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s1">&#39;posabs&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@lgp</span><span class="o">.</span><span class="n">stationarykernel</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s1">'posabs'</span><span class="p">)</span>
 <span class="gp">... </span><span class="k">def</span><span class="w"> </span><span class="nf">MyKernel</span><span class="p">(</span><span class="n">absdelta</span><span class="p">,</span> <span class="n">cippa</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lippa</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
 <span class="gp">... </span>    <span class="k">return</span> <span class="n">cippa</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
 <span class="gp">... </span>        <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">absdelta</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">/</span> <span class="n">lippa</span><span class="p">)</span>
@@ -248,10 +248,10 @@ enforced to be the new class.</p>
     <div class="clearer"></div>
   </div>
     <div class="footer">
-      &#169;2020-2025, Giacomo Petrillo.
+      &#169;2020-2026, Giacomo Petrillo.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
       |
