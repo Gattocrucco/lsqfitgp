@@ -24,6 +24,15 @@
 # Changelog
 
 
+## 0.21.2. The singularity is nigh (2026-10-03)
+
+I heard the singularity is near,\
+should I release more than once a year?
+
+- fix for compatibility with recent jax versions
+- test on python 3.14
+
+
 ## 0.21.1. Should the middle class programmer still update his software in 2025? (2025-07-12)
 
 A few months on updates on part of lsqfitgp's dependencies broke some stuff as usual. I am here to fix the broken stuff.
