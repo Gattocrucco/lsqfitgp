@@ -28,6 +28,7 @@ from jax import numpy as jnp
 from pytest import mark
 
 import lsqfitgp as lgp
+from lsqfitgp import _linalg
 from tests import util
 
 
@@ -903,7 +904,7 @@ def test_transf_checks():
 
 
 @mark.skip('Woodbury currently un-implemented')
-def test_givencov_decomp():
+def test_givencov_decomp(rng):
 
     def genpd(n, rank=None, size=()):
         if not isinstance(size, tuple):
@@ -929,7 +930,7 @@ def test_givencov_decomp():
         givencov2 = gp.decompose(cov)
         dec1, _ = gp._prior_decomp(given, givencov1)
         dec2, _ = gp._prior_decomp(given, givencov2)
-        classes = (lgp._linalg.Woodbury, lgp._linalg.Woodbury2)
+        classes = (_linalg.Woodbury, _linalg.Woodbury2)
         assert not isinstance(dec1, classes)
         assert isinstance(dec2, classes)
         return dec1, dec2

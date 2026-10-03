@@ -26,6 +26,7 @@ import warnings
 
 import gvar
 import jax
+import jax.core
 import numpy
 from jax import numpy as jnp
 from jax import tree_util

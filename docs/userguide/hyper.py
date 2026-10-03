@@ -1,6 +1,6 @@
 import gvar  ####
 import numpy as np  ####
-import pymc3 as pm
+import pymc3 as pm  # ty: ignore[unresolved-import]
 from scipy import stats  ####
 
 x = np.linspace(-5, 5, 11)  ####

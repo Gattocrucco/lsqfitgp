@@ -337,3 +337,16 @@ closing-quotes = false
 # error on stale `ty: ignore` comments, e.g., ignores for diagnostics fixed by
 # typing improvements in our dependencies
 unused-ignore-comment = "error"
+# lsqfitgp has no type annotations, so ty can only infer types, and on this
+# dynamic code (attributes set in `__new__` or by other mixins, heterogeneous
+# containers, arguments that are None until defaulted, subclasses that
+# deliberately change method signatures) these rules yield almost only false
+# positives. The rules about names, imports and call arity are kept.
+unresolved-attribute = "ignore"
+invalid-argument-type = "ignore"
+invalid-method-override = "ignore"
+no-matching-overload = "ignore"
+not-subscriptable = "ignore"
+not-iterable = "ignore"
+unsupported-operator = "ignore"
+invalid-assignment = "ignore"

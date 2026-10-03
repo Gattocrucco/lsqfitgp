@@ -26,6 +26,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import lsqfitgp as lgp
+from lsqfitgp import _linalg
 
 figdir = pathlib.Path(__file__).with_suffix('')
 figdir.mkdir(exist_ok=True)
@@ -300,9 +301,9 @@ for kernel in kernels2:
                 label = ', '.join(f'{k} = {v}' for k, v in kw.items())
             cov = covfun(x[None, :], x[:, None])
             try:
-                dec = lgp._linalg.Chol(cov)
+                dec = _linalg.Chol(cov)
             except np.linalg.LinAlgError:
-                dec = lgp._linalg.EigCutFullRank(cov)
+                dec = _linalg.EigCutFullRank(cov)
             iid = gen.standard_normal((dec.m, nsamples))
             samples = dec.correlate(iid)
             for j, y in enumerate(samples.T):

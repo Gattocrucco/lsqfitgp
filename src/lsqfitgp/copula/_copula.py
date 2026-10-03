@@ -177,7 +177,7 @@ class Copula(_base.DistrBase):
 
     def _map_getattr(self, attr):
         def get_attr(obj):
-            if isinstance(obj, __class__):
+            if isinstance(obj, __class__):  # ty: ignore[unresolved-reference]
                 return obj._map_getattr(attr)
             else:
                 return getattr(obj, attr)

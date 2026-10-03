@@ -22,7 +22,8 @@
 import inspect
 
 try:
-    from numpy.lib import function_base  # numpy 1
+    # WORKAROUND(numpy<2): drop numpy 1 support
+    from numpy.lib import function_base  # ty: ignore[unresolved-import]
 except ImportError:
     from numpy.lib import _function_base_impl as function_base  # numpy 2
 import jax

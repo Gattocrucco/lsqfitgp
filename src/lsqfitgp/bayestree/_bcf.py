@@ -1085,8 +1085,8 @@ Meaning of hyperparameters:
                     eta = td(hp, eta)
                 return eta
         else:
-            from_data = lambda hp, y: y
-            to_data = lambda hp, eta: eta
+            from_data = lambda hp, y: y  # ty: ignore[conflicting-declarations]
+            to_data = lambda hp, eta: eta  # ty: ignore[conflicting-declarations]
 
         from_data_grad = _jaxext.elementwise_grad(from_data, 1)
 

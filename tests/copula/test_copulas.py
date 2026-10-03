@@ -319,7 +319,7 @@ class TestDirichlet(DistrTestBase):
 
     @staticmethod
     def dirichlet_rvs(alpha, rng):
-        lny = TestLogGamma.rvs(alpha, random_state=rng)
+        lny = TestLogGamma.rvs(alpha, random_state=rng)  # ty: ignore[missing-argument]
         norm = special.logsumexp(lny, axis=-1, keepdims=True)
         return np.exp(lny - norm)
 

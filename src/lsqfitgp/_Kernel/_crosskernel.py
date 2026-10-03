@@ -30,6 +30,11 @@ from jax import numpy as jnp
 from lsqfitgp import _array, _jaxext, _utils
 from lsqfitgp._Kernel import _util
 
+# subclasses defined in other modules, which set these names when imported
+Kernel: type
+Constant: type
+CrossConstant: type
+
 
 @functools.cache
 def least_common_superclass(*classes):
@@ -746,7 +751,7 @@ class CrossKernel:
 
             # split the arguments in kernels and non-kernels
             for pos, arg in enumerate(allargs):
-                if not isinstance(arg, __class__):
+                if not isinstance(arg, __class__):  # ty: ignore[unresolved-reference]
                     break
             else:
                 pos = len(allargs)
@@ -793,11 +798,11 @@ class CrossKernel:
             result = op(tcls, self, arg1, arg2, *operands)
 
             # check result is a kernel
-            if not isinstance(result, __class__):
+            if not isinstance(result, __class__):  # ty: ignore[unresolved-reference]
                 raise TypeError(
                     f'linop {transfname!r} returned '
                     f'object of type {result.__class__.__name__}, expected '
-                    f'subclass of {__class__.__name__}'
+                    f'subclass of {__class__.__name__}'  # ty: ignore[unresolved-reference]
                 )
 
             # modify class of the result
@@ -923,17 +928,17 @@ class CrossKernel:
 
             if result is NotImplemented:
                 return result
-            elif not isinstance(result, __class__):
+            elif not isinstance(result, __class__):  # ty: ignore[unresolved-reference]
                 raise TypeError(
                     f'algop {transfname!r} returned '
                     f'object of type {result.__class__.__name__}, expected '
-                    f'subclass of {__class__.__name__}'
+                    f'subclass of {__class__.__name__}'  # ty: ignore[unresolved-reference]
                 )
 
             def classes():
                 yield tcls
                 for o in operands:
-                    if isinstance(o, __class__):
+                    if isinstance(o, __class__):  # ty: ignore[unresolved-reference]
                         yield o.__class__
                     elif _util.is_nonnegative_scalar_trueontracer(o):
                         yield Constant
@@ -986,7 +991,7 @@ class CrossKernel:
         @functools.wraps(ufunc)
         def op(_, self, *operands, **kw):
             cores = tuple(
-                o.core if isinstance(o, __class__) else lambda x, y: o
+                o.core if isinstance(o, __class__) else lambda x, y: o  # ty: ignore[unresolved-reference]
                 for o in (self, *operands)
             )
 
@@ -1092,7 +1097,7 @@ class CrossKernel:
                     )
 
                 def __new__(cls, *args, **kw):
-                    self = super(rightker, cls).__new__(cls, *args, **kw)
+                    self = super(rightker, cls).__new__(cls, *args, **kw)  # ty: ignore[invalid-super-argument]
 
                     if self.__class__ is cls:
                         self = self._swap()

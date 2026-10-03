@@ -51,7 +51,7 @@ df = pl.read_csv(
     datafile,
     new_columns=columns,
     has_header=False,
-    dtypes={'Sex': pl.Categorical, 'Rings': pl.Float64},
+    schema_overrides={'Sex': pl.Categorical, 'Rings': pl.Float64},
 ).to_dummies(columns='Sex')
 
 df = df[:500]  # drop most data to keep the script fast

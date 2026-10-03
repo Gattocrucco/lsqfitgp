@@ -586,12 +586,12 @@ class Chol(Decomposition):
                 invK_dKv_invK = jlinalg.solve_triangular(
                     L.T, invL_dKv_invK, lower=False
                 )
-                tr_invK_dK_invK_dK_v = dK_vjp(invK_dKv_invK)
+                tr_invK_dK_invK_dK_v = dK_vjp(invK_dKv_invK)  # ty: ignore[call-non-callable]
                 out['fishvec'] += 1 / 2 * tr_invK_dK_invK_dK_v
             if not (dr_jvp_vec is None and dr_vjp is None):
                 invL_drv = jlinalg.solve_triangular(L, dr_jvp_vec, lower=True)
                 invK_drv = jlinalg.solve_triangular(L.T, invL_drv, lower=False)
-                dr_invK_drv_v = dr_vjp(invK_drv)
+                dr_invK_drv_v = dr_vjp(invK_drv)  # ty: ignore[call-non-callable]
                 out['fishvec'] += dr_invK_drv_v
         else:
             out['fishvec'] = None
