@@ -22,6 +22,7 @@
 import functools
 
 import gvar
+import jax
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
@@ -52,6 +53,8 @@ for fname in gvar_ufuncs:
     fjax = getattr(jnp, fname, getattr(jspecial, fname, NotImplemented))
     fboth = functools.singledispatch(fgvar)
     fboth.register(jnp.ndarray, fjax)
+    fboth.register(jax.core.Tracer, fjax)
+        # in recent jax, tracers are not virtual subclasses of jax.Array
     setattr(gvar, fname, fboth)
 
 # reset transformations to support jax arrays

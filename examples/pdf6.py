@@ -180,7 +180,7 @@ check_integrals(xdata['x'], trueparams['xdata'])
 easyfit = gp.predfromdata(dict(data=data['data'], **constraints), ['xdata'])
 p0 = gvar.mean(easyfit)
 
-fit = lsqfit.nonlinear_fit(data, fcn, prior, p0=p0, verbose=2)
+fit = lsqfit.nonlinear_fit(data, fcn, prior, p0=p0, verbose=2, fitter='scipy_least_squares')
 print(fit.format(maxline=True, pstyle='v'))
 print(fit.format(maxline=-1))
 

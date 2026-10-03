@@ -543,5 +543,5 @@ class AR(_ARBase):
     @staticmethod
     def _process_lag(lag):
         lag = jnp.asarray(lag)
-        assert jnp.issubdtype(lag, jnp.integer)
+        assert jnp.issubdtype(lag.dtype, jnp.integer)
         return lag.astype(int)

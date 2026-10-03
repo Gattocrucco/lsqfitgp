@@ -266,7 +266,7 @@ class TestTransf:
     def test_transf_help(self, idtransf):
         class A(lgp.CrossKernel): pass
         A.register_linop(idtransf)
-        assert A.transf_help('idtransf') == ' porco duo '
+        assert A.transf_help('idtransf') == idtransf.__doc__
         A.register_linop(idtransf, 'gatto', 'duo gatto')
         assert A.transf_help('gatto') == 'duo gatto'
         A.register_algop(idtransf, 'gesu', '3')

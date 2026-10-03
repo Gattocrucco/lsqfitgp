@@ -57,11 +57,11 @@ def pred(seed, err, **kw):
     
     return mean, cov
 
-@mark.parametrize('kw1,kw2', itertools.combinations([
+@mark.parametrize('kw1,kw2', list(itertools.combinations([
     dict(fromdata=fromdata, raw=raw, keepcorr=keepcorr)
     for fromdata, raw, keepcorr in itertools.product([False, True], repeat=3)
     if not (raw and keepcorr)
-], 2))
+], 2)))
 @mark.parametrize('err', [False, True])
 def test_pred(err, kw1, kw2, rng):
     if err and kw1['fromdata'] != kw2['fromdata']:

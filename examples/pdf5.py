@@ -158,7 +158,7 @@ check_integrals(xdata['x'], priorsample['xdata'])
 
 #### FIT ####
 
-fit = lsqfit.nonlinear_fit(data, fcn, params_prior, verbose=2)
+fit = lsqfit.nonlinear_fit(data, fcn, params_prior, verbose=2, fitter='scipy_least_squares')
 print(fit.format(maxline=True))
 print(fit.format(maxline=-1))
 
