@@ -3,31 +3,31 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Coverage for src/lsqfitgp/_special/_taylor.py: 100%</title>
-    <link rel="icon" sizes="32x32" href="favicon_32_cb_58284776.png">
-    <link rel="stylesheet" href="style_cb_81f8c14c.css" type="text/css">
+    <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
+    <link rel="stylesheet" href="style_cb_4667309f.css" type="text/css">
     <script type="text/javascript">
         contexts = {
   "a": "tests-macos-latest-py3.10",
-  "b": "tests-macos-latest-py3.12",
-  "c": "tests-ubuntu-latest-py3.12",
-  "d": "tests-windows-latest-py3.12",
-  "e": "docs-macos-latest-py3.12",
-  "f": "examples-macos-latest-py3.12"
+  "b": "tests-macos-latest-py3.14",
+  "c": "tests-ubuntu-latest-py3.14",
+  "d": "tests-windows-latest-py3.14",
+  "e": "docs-macos-latest-py3.14",
+  "f": "examples-macos-latest-py3.14"
 }
     </script>
-    <script src="coverage_html_cb_6fb7b396.js" defer></script>
+    <script src="coverage_html_cb_15cffcd0.js" defer></script>
 </head>
 <body class="pyfile">
 <header>
     <div class="content">
         <h1>
-            <span class="text">Coverage for </span><b>src/lsqfitgp/_special/_taylor.py</b>:
+            <span class="text">Coverage for </span><b>src<span class="sep">/</span>lsqfitgp<span class="sep">/</span>_special<span class="sep">/</span>_taylor.py</b>:
             <span class="pc_cov">100%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
             <label for="help_panel_state">
-                <img id="keyboard_icon" src="keybd_closed_cb_ce680311.png" alt="Show/hide keyboard shortcuts">
+                <img id="keyboard_icon" src="keybd_closed_cb_900cfef5.png" alt="Show/hide keyboard shortcuts">
             </label>
             <div id="help_panel">
                 <p class="legend">Shortcuts on this page</p>
@@ -76,8 +76,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_688a275cf279a7c1__zeta_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.9.2">coverage.py v7.9.2</a>,
-            created at 2025-07-17 13:39 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+            created at 2026-10-03 14:58 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -109,7 +109,7 @@
     <p class="pln"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t"><span class="com"># GNU General Public License for more details.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t"><span class="com">#</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t17" href="#t17">17</a></span><span class="t"><span class="com"># You should have received a copy of the GNU General Public License</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t"><span class="com"># along with lsqfitgp.  If not, see &lt;http://www.gnu.org/licenses/>.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t"><span class="com"># along with lsqfitgp.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t"><span class="key">import</span> <span class="nam">functools</span>&nbsp;</span><input type="checkbox" id="ctxs20"><span class="r"><label for="ctxs20" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
     <p class="pln"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -119,13 +119,13 @@
     <p class="pln"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t"><span class="op">@</span><span class="nam">functools</span><span class="op">.</span><span class="nam">partial</span><span class="op">(</span><span class="nam">jax</span><span class="op">.</span><span class="nam">custom_jvp</span><span class="op">,</span> <span class="nam">nondiff_argnums</span><span class="op">=</span><span class="op">(</span><span class="num">0</span><span class="op">,</span> <span class="num">1</span><span class="op">,</span> <span class="num">2</span><span class="op">,</span> <span class="num">3</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs26"><span class="r"><label for="ctxs26" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
     <p class="run"><span class="n"><a id="t27" href="#t27">27</a></span><span class="t"><span class="key">def</span> <span class="nam">taylor</span><span class="op">(</span><span class="nam">coefgen</span><span class="op">,</span> <span class="nam">args</span><span class="op">,</span> <span class="nam">n</span><span class="op">,</span> <span class="nam">m</span><span class="op">,</span> <span class="nam">x</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><input type="checkbox" id="ctxs27"><span class="r"><label for="ctxs27" class="ctx">6 ctx</label></span><span class="ctxs">1efabcd</span></p>
-    <p class="pln"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t">    <span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t"><span class="str">    coefgen : function = start, end -> taylor coefficients for powers start:end</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t">    <span class="str">&quot;&quot;&quot;</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t"><span class="str">    coefgen : function = start, end -&gt; taylor coefficients for powers start:end</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t"><span class="str">    args : tuple = additional arguments to coefgen</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="str">    n : int = derivation order</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t"><span class="str">    m : int = number of coefficients used</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t"><span class="str">    x : argument</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t"><span class="str">    """</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t"><span class="str">    &quot;&quot;&quot;</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">    <span class="nam">c</span> <span class="op">=</span> <span class="nam">coefgen</span><span class="op">(</span><span class="nam">n</span><span class="op">,</span> <span class="nam">n</span> <span class="op">+</span> <span class="nam">m</span><span class="op">,</span> <span class="op">*</span><span class="nam">args</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs35"><span class="r"><label for="ctxs35" class="ctx">4 ctx</label></span><span class="ctxs">1abcd</span></p>
     <p class="run"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t">    <span class="nam">k</span> <span class="op">=</span> <span class="nam">jnp</span><span class="op">.</span><span class="nam">arange</span><span class="op">(</span><span class="nam">n</span><span class="op">,</span> <span class="nam">n</span> <span class="op">+</span> <span class="nam">m</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs36"><span class="r"><label for="ctxs36" class="ctx">4 ctx</label></span><span class="ctxs">1abcd</span></p>
     <p class="run"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t">    <span class="nam">c</span> <span class="op">=</span> <span class="nam">c</span> <span class="op">*</span> <span class="nam">jnp</span><span class="op">.</span><span class="nam">exp</span><span class="op">(</span><span class="nam">jspecial</span><span class="op">.</span><span class="nam">gammaln</span><span class="op">(</span><span class="num">1</span> <span class="op">+</span> <span class="nam">k</span><span class="op">)</span> <span class="op">-</span> <span class="nam">jspecial</span><span class="op">.</span><span class="nam">gammaln</span><span class="op">(</span><span class="num">1</span> <span class="op">+</span> <span class="nam">k</span> <span class="op">-</span> <span class="nam">n</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><input type="checkbox" id="ctxs37"><span class="r"><label for="ctxs37" class="ctx">4 ctx</label></span><span class="ctxs">1abcd</span></p>
@@ -144,8 +144,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_688a275cf279a7c1__zeta_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.9.2">coverage.py v7.9.2</a>,
-            created at 2025-07-17 13:39 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.16.2">coverage.py v7.16.2</a>,
+            created at 2026-10-03 14:58 +0000
         </p>
     </div>
 </footer>
