@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/hyperstruct.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -96,6 +96,8 @@ Let's fit now::
         'corr': lgp.copula.uniform(-1, 1),
         'log(scale)': gvar.log(gvar.gvar(3, 1)),
     })
+
+.. code-block:: python
 
     fit = lgp.empbayes_fit(hprior, makegp, {'data': data})
 

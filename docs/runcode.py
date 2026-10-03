@@ -1,6 +1,6 @@
 # lsqfitgp/docs/runcode.py
 #
-# Copyright (c) 2020, 2022, 2023, 2024, 2025, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, 2025, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -43,7 +43,9 @@ warnings.filterwarnings('ignore', r'Negative eigenvalue with ')
 def pyprint(text):
     print(pygments.highlight(text, lexers.PythonLexer(), formatters.TerminalFormatter()))
 
-pattern = re.compile(r'(?m)(?!\.\..+?)^.*?::\n\s*?\n(( {4,}.*\n)+)\s*?\n')
+# a literal block (`::`) of lines indented by at least 4 spaces, possibly
+# separated by blank lines, ended by a blank line
+pattern = re.compile(r'(?m)(?!\.\..+?)^.*?::\n\s*?\n((?: {4,}.*\n)(?:(?:[ \t]*\n)*(?: {4,}.*\n))*)\s*?\n')
 
 
 @contextlib.contextmanager
