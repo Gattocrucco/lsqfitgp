@@ -1,6 +1,6 @@
 # lsqfitgp/docs/reference/kernelop.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -64,12 +64,25 @@ Index
 -----
 """
 
-# collect all transformations from all kernels
+# collect all transformations from all kernels, with the generic classes first
+# in hierarchy order
+generic = [
+    lgp.CrossKernel,
+    lgp.Kernel,
+    lgp.CrossStationaryKernel,
+    lgp.StationaryKernel,
+    lgp.CrossIsotropicKernel,
+    lgp.IsotropicKernel,
+]
+classes = [
+    obj for obj in vars(lgp).values()
+    if inspect.isclass(obj) and issubclass(obj, lgp.CrossKernel)
+]
+classes.sort(key=lambda c: generic.index(c) if c in generic else len(generic))
 transfs = {}
-for name, obj in vars(lgp).items():
-    if inspect.isclass(obj) and issubclass(obj, lgp.CrossKernel):
-        for name, transf in obj.list_transf(superclasses=False).items():
-            transfs.setdefault(name, []).append(transf)
+for obj in classes:
+    for name, transf in obj.list_transf(superclasses=False).items():
+        transfs.setdefault(name, []).append(transf)
 
 # check that there are no namesakes with different documentation or kind
 for name, tlist in transfs.items():
