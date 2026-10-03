@@ -18,8 +18,9 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Constrain the discrete Fourier transform of a periodic process. Shows how
-to use GP.addlintransf.
+Constrain the discrete Fourier transform of a periodic process.
+
+Shows how to use GP.addlintransf.
 """
 
 import gvar

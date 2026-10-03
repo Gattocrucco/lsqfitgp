@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Generate a file with the list of kernels"""
+"""Generate a file with the list of kernels."""
 
 import inspect
 import pathlib
@@ -127,6 +127,7 @@ class Formula:
         self.formula = formula
 
     def __repr__(self):
+        """Return the formula."""
         return self.formula
 
     def __call__(self, x):

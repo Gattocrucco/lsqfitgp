@@ -17,9 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Run the python code in the rst files specified on the command line, but
-only if the leading indentation is at least 4 spaces and there is a blank line
-after the code block
+"""
+Run the python code in the rst files specified on the command line.
+
+Only code blocks with leading indentation of at least 4 spaces and followed by
+a blank line are run.
 """
 
 import contextlib

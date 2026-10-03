@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Generate the reference page for the copula module"""
+"""Generate the reference page for the copula module."""
 
 import inspect
 import pathlib

@@ -1,3 +1,33 @@
+# lsqfitgp/examples/bcf.py
+#
+# Copyright (c) 2024, 2026, Giacomo Petrillo
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+
+Analyze a dataset from the ACIC 2022 Data Challenge [1]_ using GP-BCF.
+
+.. [1] Dan R.C. Thal and Mariel M. Finucane, "Causal Methods Madness: Lessons
+       Learned from the 2022 ACIC Competition to Estimate Health Policy
+       Impacts," Observational Studies, Volume 9, Issue 3, 2023, pp. 3-27,
+       https://doi.org/10.1353/obs.2023.0023, https://acic2022.mathematica.org
+
+"""
+
 import pathlib
 import pprint
 
@@ -10,17 +40,6 @@ from matplotlib import pyplot as plt
 from scipy import stats
 
 import lsqfitgp as lgp
-
-"""
-
-Analyze a dataset from the ACIC 2022 Data Challenge [1]_ using GP-BCF.
-
-.. [1] Dan R.C. Thal and Mariel M. Finucane, "Causal Methods Madness: Lessons
-       Learned from the 2022 ACIC Competition to Estimate Health Policy
-       Impacts," Observational Studies, Volume 9, Issue 3, 2023, pp. 3-27,
-       https://doi.org/10.1353/obs.2023.0023, https://acic2022.mathematica.org
-
-"""
 
 # config
 less_data = True  # whether to halve the data for execution speed
@@ -135,7 +154,7 @@ def impute_counterfactual(hp, rng, nsamples):
 
 
 def compute_satt(ymis):
-    """Compute in-sample average effect on the treated given imputed couterfactual outcomes"""
+    """Compute in-sample average effect on the treated given imputed couterfactual outcomes."""
     yobs = y[z]
     n = npatients_obs[z]
     effect = yobs - ymis

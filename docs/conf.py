@@ -135,7 +135,7 @@ intersphinx_mapping = dict(
 
 def linkcode_resolve(domain, info):  # noqa: C901
     """
-    Determine the URL corresponding to Python object, for extension linkcode
+    Determine the URL corresponding to Python object, for extension linkcode.
 
     Adapted from scipy/doc/release/conf.py
     """

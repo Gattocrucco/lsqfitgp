@@ -17,11 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-
-Split a function into even and odd parts.
-
-"""
+"""Split a function into even and odd parts."""
 
 import gvar
 import numpy as np

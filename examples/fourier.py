@@ -17,13 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Constrain the values of Fourier series coefficients."""
+
 import gvar
 import numpy as np
 from matplotlib import pyplot as plt
 
 import lsqfitgp as lgp
-
-"""Constrain the values of Fourier series coefficients"""
 
 x = np.linspace(0, 1, 100)
 

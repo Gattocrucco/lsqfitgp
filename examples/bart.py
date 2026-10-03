@@ -17,9 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Example usage of the BART kernel to replace the standard BART MCMC algorithm.
-"""
+"""Example usage of the BART kernel to replace the standard BART MCMC algorithm."""
 
 import pathlib
 
