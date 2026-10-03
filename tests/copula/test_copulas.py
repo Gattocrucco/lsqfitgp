@@ -99,8 +99,6 @@ class DistrTestBase:
     @classmethod
     def recrvs(cls, level):
         """Return a sampler with `level` levels of random parameters."""
-        distrname = cls.copcls.__name__
-        distr = getattr(stats, distrname)
 
         def rvs(size, rng):
             if level > 0:
@@ -161,7 +159,7 @@ class DistrTestBase:
             gvar.evalcov(y).reshape(2 * y.shape), ycov, rtol=1e-6
         )
 
-    def test_partial_invfcn_gvar_vectorized(self, name, rng):
+    def test_partial_invfcn_gvar_vectorized(self, rng):
         """Check the error propagation of `partial_invfcn` on an array of gvars."""
         distr = self.copcls(*self.params)
 
@@ -198,7 +196,7 @@ class DistrTestBase:
     def test_overwrite(self, name):
         """Check that a name can be reused only by the same distribution."""
         gvar.BufferDict.add_distribution(name, gvar.exp)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match='already defined'):
             self.copcls(*self.params, name=name)
         gvar.BufferDict.del_distribution(name)
         self.copcls(*self.params, name=name)
@@ -227,7 +225,7 @@ class DistrTestBase:
         x2 = self.copcls.invfcn(b[key], *self.array_params)
         util.assert_allclose(x, x2, rtol=1e-6)
 
-    def test_continuity_zero(self, name):
+    def test_continuity_zero(self):
         """Check that `invfcn` is continuous in zero.
 
         Zero is a common cutpoint to switch from ppf(cdf(·)) to isf(sf(·)).
@@ -250,7 +248,7 @@ class DistrTestBase:
         d2 = alt(*self.params)
         for attr in 'in_shape', 'shape', 'distrshape':
             assert getattr(d1, attr) == getattr(d2, attr)
-        x = rng.standard_normal((7,) + d1.in_shape)
+        x = rng.standard_normal((7, *d1.in_shape))
         util.assert_equal(d1.partial_invfcn(x), d2.partial_invfcn(x))
 
     @pytest.fixture
@@ -273,9 +271,9 @@ class DistrTestBase:
         sig = self.copcls.signature.eval(None, *self.array_params)
         in_shape = sig.in_shapes[0]
         (out_shape,) = sig.out_shapes
-        samples_norm = rng.standard_normal((nsamples,) + in_shape)
+        samples_norm = rng.standard_normal((nsamples, *in_shape))
         samples = self.copcls.invfcn(samples_norm, *self.array_params)
-        assert samples.shape == (nsamples,) + out_shape
+        assert samples.shape == (nsamples, *out_shape)
         if out_shape or in_shape:
             refsamples = self.recrvs(0)(nsamples, rng)
             self.compare_samples(samples, refsamples, rng, significance)
@@ -287,7 +285,7 @@ class DistrTestBase:
     def test_recursive(self, name, level, rng, nsamples, significance):
         """Check the distribution with random parameters, nested `level` times."""
         variables = self.copcls(*self.convert_recparams(level), name=name)
-        samples_norm = rng.standard_normal((nsamples,) + variables.shape)
+        samples_norm = rng.standard_normal((nsamples, *variables.shape))
         bd = gvar.BufferDict({f'{name}(x)': samples_norm})
         samples = bd['x']
         refsamples = self.recrvs(level)(nsamples, rng)
@@ -307,7 +305,7 @@ class DistrTestBase:
         refsamples = self.trim(refsamples, len(out_shape))
 
         for i in np.ndindex(*out_shape):
-            i = (...,) + i
+            i = (..., *i)
             test = stats.ks_2samp(samples[i], refsamples[i])
             assert test.pvalue >= significance
 
@@ -440,7 +438,8 @@ def test_gamma_asymp(distr, x64):
         boundary = test.copcls._boundary(dtype(0.0))
         y1 = test.copcls.invfcn(boundary * (1 + np.finfo(dtype).eps), *test.params)
         y2 = test.copcls.invfcn(boundary * (1 - np.finfo(dtype).eps), *test.params)
-        assert 0 < y1 < np.inf and 0 < y2 < np.inf
+        assert 0 < y1 < np.inf
+        assert 0 < y2 < np.inf
         assert y1 != y2
         np.testing.assert_allclose(y1, y2, atol=0, rtol=rtol)
 

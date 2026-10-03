@@ -298,7 +298,7 @@ def test_hash():
     )
     seed32 = 2428169863
     seed64 = 6361217807637034346
-    for inp, h32, h64 in zip(inputs, hashes32, hashes64):
+    for inp, h32, h64 in zip(inputs, hashes32, hashes64, strict=True):
         hash64 = _jaxext.fasthash64(inp, seed64)
         hash32 = _jaxext.fasthash32(inp, seed32)
         assert h64 == hash64
@@ -347,7 +347,7 @@ def test_limit_derivatives():
     class MyException(Exception):
         pass
 
-    def error_func(current, n):
+    def error_func(_current, _n):
         return MyException
 
     def ld(n):

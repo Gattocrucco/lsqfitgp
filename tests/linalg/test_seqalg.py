@@ -26,5 +26,5 @@ from lsqfitgp._linalg import _seqalg
 
 def test_acausal_alg():
     """Check that an operation with forward-reference inputs raises `ValueError`."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='forward references'):
         _seqalg.sequential_algorithm(2, [_seqalg.Stack(0)])

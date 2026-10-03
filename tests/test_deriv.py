@@ -26,7 +26,7 @@ import lsqfitgp as lgp
 
 def test_manyargs():
     """Check that `Deriv` raises `ValueError` with more than one argument."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'^2$'):
         lgp.Deriv(1, 2)
 
 
@@ -38,7 +38,7 @@ def test_alienargs():
 
 def test_manyintegers():
     """Check that `Deriv` raises `ValueError` on consecutive integers."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='consecutive integers'):
         lgp.Deriv((1, 2))
 
 
@@ -50,9 +50,9 @@ def test_alienarg():
 
 def test_orphan():
     """Check that `Deriv` raises `ValueError` on an integer not followed by a name."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='dangling derivative order'):
         lgp.Deriv((1,))
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='dangling derivative order'):
         lgp.Deriv(('ciao', 1))
 
 
@@ -63,7 +63,7 @@ def test_length():
 
 def test_compare():
     """Check that a `Deriv` does not compare equal to a string."""
-    assert not lgp.Deriv() == 'cippa'
+    assert lgp.Deriv() != 'cippa'
 
 
 def test_repr():

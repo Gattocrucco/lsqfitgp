@@ -50,11 +50,11 @@ def test_dtype(aby):
     assert _beta.betaincinv(*aby).dtype == np.float64
     assert _beta.betaincinv(*map(np.float32, aby)).dtype == np.float32
     assert (
-        _beta.betaincinv(*map(lambda x: np.ceil(x).astype(np.int64), aby)).dtype
+        _beta.betaincinv(*(np.ceil(x).astype(np.int64) for x in aby)).dtype
         == np.float64
     )
     assert (
-        _beta.betaincinv(*map(lambda x: np.ceil(x).astype(np.int32), aby)).dtype
+        _beta.betaincinv(*(np.ceil(x).astype(np.int32) for x in aby)).dtype
         == np.float32
     )
 

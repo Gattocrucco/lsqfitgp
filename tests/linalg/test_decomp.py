@@ -155,7 +155,7 @@ class TestChol:
         """Return the decomposition of K."""
         return _linalg.Chol(K)
 
-    def test_ginv_linear(self, n, K, A, decomp):
+    def test_ginv_linear(self, n, K, A, decomp):  # noqa: ARG002, parametrization
         """Check `ginv_linear` against a direct solve."""
         result = decomp.ginv_linear(A)
         expected = jlinalg.solve(K, A, assume_a='pos')
@@ -168,7 +168,7 @@ class TestChol:
         expected = A.T @ linalg.solve(K_reg, r, assume_a='pos')
         util.assert_close_matrices(result, expected, rtol=1e-14)
 
-    def test_pinv_bilinear_proj(self, n, K, r, decomp):
+    def test_pinv_bilinear_proj(self, n, K, r, decomp):  # noqa: ARG002, parametrization
         """Check that `pinv_bilinear(K, r)` returns `r`."""
         result = decomp.pinv_bilinear(K, r)
         expected = r
@@ -229,7 +229,7 @@ class TestChol:
         expected = decomp.back_correlate(np.eye(n))  # = Z'I = Z'
         util.assert_close_matrices(result, expected, rtol=1e-13)
 
-    def test_correlate_back_correlate(self, n, K, decomp, r):
+    def test_correlate_back_correlate(self, n, K, decomp, r):  # noqa: ARG002, parametrization
         """Check that `correlate` after `back_correlate` multiplies by K."""
         result = decomp.correlate(decomp.back_correlate(r))
         expected = K @ r

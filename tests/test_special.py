@@ -38,10 +38,10 @@ def test_sinc():
 
 
 @pytest.mark.parametrize(
-    'name,wrap',
+    ('name', 'wrap'),
     [
-        ('j0', lambda f: lambda x: f(x)),
-        ('j1', lambda f: lambda x: f(x)),
+        ('j0', lambda f: f),
+        ('j1', lambda f: f),
         ('jv', lambda f: lambda x: f(1, x)),
         ('jvp', lambda f: lambda x: f(1, x, 1)),
         ('kv', lambda f: lambda x: f(1, x)),
@@ -70,7 +70,7 @@ def test_jvmodx2():
         s2 = _special.jvmodx2(v, x**2)
         util.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
         util.assert_allclose(_special.jvmodx2(v, 0), special.rgamma(v + 1), rtol=1e-14)
-        test_util.check_grads(lambda x: _special.jvmodx2(v, x**2), (x,), 2)
+        test_util.check_grads(lambda x: _special.jvmodx2(v, x**2), (x,), 2)  # noqa: B023, called in the same iteration
 
 
 def test_kvmodx2():
@@ -83,7 +83,7 @@ def test_kvmodx2():
         s2 = _special.kvmodx2(v, x**2)
         util.assert_allclose(s2, s1, atol=1e-15, rtol=1e-14)
         util.assert_allclose(_special.kvmodx2(v, 0), 1, rtol=1e-14)
-        test_util.check_grads(lambda x: _special.kvmodx2(v, x**2), (xsoft,), 2)
+        test_util.check_grads(lambda x: _special.kvmodx2(v, x**2), (xsoft,), 2)  # noqa: B023, called in the same iteration
         if v >= 0.5:  # negative diverges, and below 0.5 d/dx at 0 is inf
             for no in range(5):
                 util.assert_allclose(
@@ -101,8 +101,8 @@ def test_kvmodx2_hi():
     x2 = x**2
     for p in range(5):
         v = p + 1 / 2
-        f1 = lambda x: _special.kvmodx2_hi(x, p)
-        f2 = lambda x: _special.kvmodx2(v, x)
+        f1 = lambda x: _special.kvmodx2_hi(x, p)  # noqa: B023, called in the same iteration
+        f2 = lambda x: _special.kvmodx2(v, x)  # noqa: B023, called in the same iteration
         for _ in range(3):
             s1 = f1(x2)
             s2 = f2(x2)
@@ -467,7 +467,7 @@ def test_zeta_zeros(s, cached):
 def bernoulli_poly_handwritten(n, x):
     """Return the Bernoulli polynomial of degree `n` <= 6 from explicit formulas."""
     return [
-        lambda x: 1,
+        lambda _x: 1,
         lambda x: x - 1 / 2,
         lambda x: x**2 - x + 1 / 6,
         lambda x: x**3 - 3 / 2 * x**2 + 1 / 2 * x,

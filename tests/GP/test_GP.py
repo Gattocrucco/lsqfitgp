@@ -148,14 +148,14 @@ def test_lintransf_checks():
     gp = lgp.GP(lgp.ExpQuad()).addx(0, 0).addx(0, 1)
     with pytest.raises(KeyError):
         gp.addlintransf(lambda x, y: x + y, [0, 1], 0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='key can not be None'):
         gp.addlintransf(lambda x, y: x + y, [0, 1], None)
     with pytest.raises(KeyError):
         gp.addlintransf(lambda x, y: x + y, [0, 2], 2)
     with pytest.raises(RuntimeError):
         gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 2)
     with pytest.raises(RuntimeError):
-        gp.addlintransf(lambda x, y: 1, [0, 1], 2)
+        gp.addlintransf(lambda _x, _y: 1, [0, 1], 2)
     gp = gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 2, checklin=False)
     gp._checklin = False
     gp = gp.addlintransf(lambda x, y: 1 + x + y, [0, 1], 3)
@@ -175,7 +175,7 @@ def test_proclintransf_checks():
     with pytest.raises(KeyError):
         gp.deflintransf(2, lambda f, g: lambda x: f(x) + g(x), [0, 2])
     with pytest.raises(RuntimeError):
-        gp.deflintransf(2, lambda f, g: lambda x: 1, [0, 1], checklin=True)
+        gp.deflintransf(2, lambda _f, _g: lambda _x: 1, [0, 1], checklin=True)
     with pytest.raises(RuntimeError):
         gp.deflintransf(
             2, lambda f, g: lambda x: 1 + f(x) + g(x), [0, 1], checklin=True
@@ -188,7 +188,7 @@ def test_proclintransf_checks():
     gp = gp.deflintransf(3, lambda f, g: lambda x: f(x) + g(x), [0, 1], checklin=True)
     gp = makegp(checklin=True)
     with pytest.raises(RuntimeError):
-        gp.deflintransf(2, lambda f, g: lambda x: 1, [0, 1], checklin=None)
+        gp.deflintransf(2, lambda _f, _g: lambda _x: 1, [0, 1], checklin=None)
 
 
 def test_proclintransf_mockup():
@@ -263,7 +263,7 @@ def test_kernelop():
 def test_not_kernel():
     """Check that `GP` raises `TypeError` if the covariance function is not a kernel."""
     with pytest.raises(TypeError):
-        gp = lgp.GP(0)
+        lgp.GP(0)
 
 
 def test_two_procs():
@@ -315,7 +315,7 @@ def test_empty_proc():
     cov = (
         lgp.GP()
         .deftransf('a', {})
-        .deflintransf('b', lambda: lambda x: 0, [])
+        .deflintransf('b', lambda: lambda _x: 0, [])
         .addx(x, 'ax', proc='a')
         .addx(x, 'bx', proc='b')
         .prior(raw=True)
@@ -401,33 +401,33 @@ def test_missing_proc():
 def test_no_key():
     """Check that `addx` and `addcov` raise `ValueError` if the key is missing."""
     gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='x is not dictionary but key is None'):
         gp.addx(0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='covblocks is not dictionary'):
         gp.addcov(1)
 
 
 def test_redundant_key():
     """Check that `addx` and `addcov` raise `ValueError` if the key is given twice."""
     gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='can not specify key if x is a dictionary'):
         gp.addx({0: 0}, 0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='can not specify key if covblocks'):
         gp.addcov({0: 1}, 0)
 
 
 def test_none_key():
     """Check that `None` is rejected as key."""
     gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='None key in x not allowed'):
         gp.addx({None: 0})
 
     gp = lgp.GP(lgp.ExpQuad()).addx(0, 0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='key can not be None'):
         gp.addtransf({0: 1}, None)
 
     gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='None key in covblocks not allowed'):
         gp.addcov({None: 1})
 
 
@@ -474,14 +474,14 @@ def test_incompatible_dtypes():
 def test_explicit_deriv():
     """Check that a derivative by field name on a plain input raises `ValueError`."""
     gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='x has no fields but derivative has'):
         gp.addx(0, 0, deriv='x')
 
 
 def test_missing_field():
     """Check that a derivative w.r.t. a missing field raises `ValueError`."""
     gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="deriv field 'x' not in x"):
         gp.addx(np.array((0, 0), 'f8,f8'), 0, deriv='x')
 
 
@@ -497,10 +497,10 @@ def test_nonsense_tensors():
     gp = lgp.GP(lgp.ExpQuad()).addx(0, 0)
     with pytest.raises(TypeError):
         gp.addtransf({0: 'a'}, 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'tensors\[0\] contains infs/nans'):
         gp.addtransf({0: np.inf}, 1)
     gp = gp.addx([0, 1], 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='can not be multiplied with shape'):
         gp.addtransf({1: [1, 2, 3]}, 2)
 
 
@@ -514,19 +514,19 @@ def test_fail_broadcast():
 def test_addcov_wrong_blocks(rng):
     """Check that `addcov` rejects invalid or asymmetric covariance blocks."""
     gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='odd number of axes'):
         gp.addcov(np.zeros((1, 1, 1)), 0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='of diagonal block 0 is not symmetric'):
         gp.addcov(np.zeros((1, 2, 2, 1)), 0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'^diagonal block 0 is not symmetric'):
         gp.addcov(rng.standard_normal((10, 10)), 0)
     with pytest.raises(KeyError):
         gp.addcov({(0, 0): 1, (0, 1): 0})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'is not \(2, 3\) as expected'):
         gp.addcov(
             {(0, 0): np.ones((2, 2)), (1, 1): np.ones((3, 3)), (0, 1): np.ones((3, 2))}
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='is not the transpose of block'):
         gp.addcov(
             {
                 (0, 0): np.ones((2, 2)),
@@ -602,9 +602,9 @@ def test_addcov_checks(rng):
     m = b.T @ b
 
     gp = lgp.GP()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='diagonal block 0 is not symmetric'):
         gp.addcov(a, 0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'block \(0, 0\) not finite'):
         gp.addcov(m, 0)
 
     gp = lgp.GP(checksym=False).addcov(a, 0)
@@ -623,7 +623,9 @@ def test_addcov_checks(rng):
     b = rng.standard_normal((20, 20))
     b = b @ b.T
     bd = lgp.GP.decompose(b)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match='decomposition matrix size 20 != diagonal block size 10'
+    ):
         gp.addcov({(0, 0): a}, decomps={0: bd})
 
 
@@ -736,7 +738,7 @@ def test_given_checks(rng):
         gp.predfromdata({0: z}, 1, givencov=0)
     with pytest.raises(KeyError):
         gp.predfromdata({2: z}, 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'given\[0\] has shape'):
         gp.predfromdata({0: z[:-1]}, 1)
     with pytest.raises(TypeError):
         gp.predfromdata({0: np.empty_like(z, str)}, 1)
@@ -759,16 +761,20 @@ def test_pred_checks(rng):
     gp = lgp.GP(lgp.ExpQuad())
     x, y, z = rng.standard_normal((3, 20))
     gp = gp.addx(x, 0).addx(y, 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match='you must specify if `given` is data or fit result'
+    ):
         gp.pred({0: z}, 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='both keepcorr=True and raw=True'):
         gp.predfromdata({0: z}, 1, raw=True, keepcorr=True)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='mean of `given` is not finite'):
         gp.predfromdata({0: np.full_like(z, np.nan)}, 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='covariance matrix of `given` is not finite'):
         gp.predfromdata({0: z}, 1, {(0, 0): np.full(2 * x.shape, np.nan)})
     a = rng.standard_normal((20, 20))
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match='covariance matrix of `given` is not symmetric'
+    ):
         gp.predfromdata({0: z}, 1, {(0, 0): a})
     gp._checkfinite = False
     gp.predfromdata({0: np.full_like(z, np.nan)}, 1)
@@ -791,16 +797,18 @@ def test_marginal_likelihood_checks(rng):
     x, y = rng.standard_normal((2, 20))
     gp = gp.addx(x, 0)
     z = np.full_like(x, np.nan)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='mean of `given` is not finite'):
         gp.marginal_likelihood({0: z})
     m = np.full(2 * x.shape, np.nan)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='covariance matrix of `given` is not finite'):
         gp.marginal_likelihood({0: y}, {(0, 0): m})
     a = rng.standard_normal(2 * x.shape)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match='covariance matrix of `given` is not symmetric'
+    ):
         gp.marginal_likelihood({0: y}, {(0, 0): a})
     c = a.T @ a
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning, match='specified both explicitly and with gvars'):
         gp.marginal_likelihood({0: gvar.gvar(y, c)}, {(0, 0): c})
 
 
@@ -832,7 +840,7 @@ def test_addtransf_abstract():
         gp = gp.addx(0, 0).addtransf({0: np.inf}, 1)
         return gp.prior(1, raw=True)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'tensors\[0\] contains infs/nans'):
         func()
     assert jit(func)().item() == np.inf
 
@@ -858,7 +866,7 @@ def test_addcov_abstract():
         gp = gp.addcov({(0, 0): 1, (1, 1): 1, (0, 1): 1, (1, 0): 0})
         return gp.prior([0, 1], raw=True)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='is not the transpose of block'):
         func()
     cov = jit(func)()
     assert cov[0, 1] == 1 or cov[0, 1] == 0
@@ -872,7 +880,7 @@ def test_marginal_likelihood_abstract(rng):
         gp = gp.addx(rng.standard_normal(10), 0)
         return gp.marginal_likelihood({0: np.full(10, np.nan)})
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='mean of `given` is not finite'):
         func()
     # this once did not raise under jit, but now it does, I guess due to a more
     # eager jit implementation?
@@ -883,12 +891,14 @@ def test_marginal_likelihood_abstract(rng):
         return gp.marginal_likelihood({0: rng.standard_normal(10)}, {(0, 0): cov})
 
     covnan = np.full((10, 10), np.nan)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='covariance matrix of `given` is not finite'):
         func(covnan)
     assert np.isnan(jit(func)(covnan))
 
     covasym = rng.standard_normal((10, 10))
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match='covariance matrix of `given` is not symmetric'
+    ):
         func(covasym)
     jit(func)(covasym)
 
@@ -943,15 +953,17 @@ def test_matrices(rng):
 
             def transf(*args):
                 out = 0
-                for x, t, s in zip(args, tensors, shapes):
+                for x, t, s in zip(args, tensors, shapes, strict=False):  # noqa: B023, gp is recreated along with tensors
                     out += jnp.tensordot(t, x, axes=len(s))
                 return out
 
             gp = gp.addlintransf(transf, list(range(len(tensors))), 100 + i)
 
             matrices = gp._elements[100 + i].matrices(gp)
-            tensors2 = [m.reshape(t.shape) for m, t in zip(matrices, tensors)]
-            for t, t2 in zip(tensors, tensors2):
+            tensors2 = [
+                m.reshape(t.shape) for m, t in zip(matrices, tensors, strict=True)
+            ]
+            for t, t2 in zip(tensors, tensors2, strict=True):
                 util.assert_equal(t2, t)
 
 
@@ -970,12 +982,12 @@ def test_transf_outer():
 def test_transf_checks():
     """Check that `addtransf` raises `ValueError` on an empty transformation."""
     gp = lgp.GP(lgp.ExpQuad())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='empty tensors'):
         gp.addtransf({}, 2)
 
 
 @pytest.mark.skip('Woodbury currently un-implemented')
-def test_givencov_decomp(rng):
+def test_givencov_decomp(rng):  # noqa: PLR0915
     """Check a decomposed error covariance against a dense one in the decomposition."""
 
     def genpd(n, rank=None, size=()):
@@ -983,20 +995,20 @@ def test_givencov_decomp(rng):
             size = (size,)
         if rank is None:
             rank = n
-        m = rng.standard_normal(size + (n, rank))
+        m = rng.standard_normal((*size, n, rank))
         return m @ np.swapaxes(m, -2, -1)
 
     def decs(gp, keys, covrank=None):
         elems = gp._elements
         shapes = [elems[key].shape for key in keys]
-        given = {k: np.zeros(s) for k, s in zip(keys, shapes)}
+        given = {k: np.zeros(s) for k, s in zip(keys, shapes, strict=True)}
         size = sum(elems[key].size for key in keys)
         cov = genpd(size, covrank)
         slices = gp._slices(keys)
         givencov1 = {
             (ka, kb): cov[sla, slb].reshape(sa + sb)
             for (ka, sla, sa), (kb, slb, sb) in itertools.product(
-                zip(keys, slices, shapes), repeat=2
+                zip(keys, slices, shapes, strict=True), repeat=2
             )
         }
         givencov2 = gp.decompose(cov)
@@ -1113,7 +1125,9 @@ def test_pred_ambiguous_error_covariance():
     gp = lgp.GP(lgp.ExpQuad())
     gp = gp.addx(0, 0)
     gp = gp.addx(1, 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match='separate covariance matrix has been provided'
+    ):
         gp.predfromdata({0: gvar.gvar(0, 1)}, 1, {(0, 0): 2})
 
 

@@ -182,10 +182,14 @@ def assert_close_matrices(actual, desired, *, rtol=0, atol=0, tozero=False):
 
     Parameters
     ----------
-    actual, desired : array_like
-        The two matrices to be compared. Must be scalars, vectors, or 2d arrays.
-    rtol, atol : scalar
-        Relative and absolute tolerances for the comparison.
+    actual : array_like
+        The matrix to be compared. Must be a scalar, vector, or 2d array.
+    desired : array_like
+        The reference matrix, with the same shape as `actual`.
+    rtol : scalar
+        Relative tolerance for the comparison.
+    atol : scalar
+        Absolute tolerance for the comparison.
     tozero : bool
         Default False. If True, use the following codition instead:
 
@@ -195,7 +199,7 @@ def assert_close_matrices(actual, desired, *, rtol=0, atol=0, tozero=False):
     ------
     AssertionError :
         If the condition is not satisfied.
-    """
+    """  # noqa: DOC201, the bare `return` returns nothing
     actual = np.asarray(actual)
     desired = np.asarray(desired)
     assert actual.shape == desired.shape
@@ -284,4 +288,4 @@ def assert_equal_bufferdict(x, y):
     """Assert that two `BufferDict` have the same buffer, keys and shapes."""
     assert np.all(x.buf == y.buf)
     assert list(x.keys()) == list(y.keys())
-    assert all(x.slice_shape(k) == y.slice_shape(k) for k in x.keys())
+    assert all(x.slice_shape(k) == y.slice_shape(k) for k in x)

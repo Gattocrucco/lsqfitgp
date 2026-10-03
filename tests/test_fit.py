@@ -207,11 +207,11 @@ def test_checks():
         lgp.empbayes_fit(
             gvar.gvar(0, 1), lambda: None, lambda: None, method='cippa', **FITKW
         )
+
+    def makegp(x):
+        return lgp.GP(lgp.ExpQuad()).addx(x, 'x')
+
     with pytest.raises(RuntimeError) as err:
-
-        def makegp(x):
-            return lgp.GP(lgp.ExpQuad()).addx(x, 'x')
-
         lgp.empbayes_fit(
             gvar.gvar(0, 1),
             makegp,
@@ -306,9 +306,7 @@ def test_loss_zero():
     )
     varying_args = [dict(), dict(additional_loss=lambda _: 0.0)]
 
-    fits = []
-    for kw in varying_args:
-        fits.append(lgp.empbayes_fit(**common_args, **kw, **FITKW))
+    fits = [lgp.empbayes_fit(**common_args, **kw, **FITKW) for kw in varying_args]
 
     f0 = fits[0].minresult.fun
     for fit in fits[1:]:
@@ -393,6 +391,6 @@ def test_loss_fisher():
     data = gvar.sample(trueprior)
 
     with pytest.raises(NotImplementedError):
-        fit = lgp.empbayes_fit(
+        lgp.empbayes_fit(
             hp, gpfactory, data, method='fisher', additional_loss=lambda _: 0.0, **FITKW
         )

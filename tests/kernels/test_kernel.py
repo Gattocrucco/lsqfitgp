@@ -199,7 +199,7 @@ class TestAlgOp:
 
     @pytest.mark.parametrize('op', [operator.add, operator.mul])
     @pytest.mark.parametrize(
-        'cls,crosscls',
+        ('cls', 'crosscls'),
         [
             (lgp.Kernel, lgp.CrossKernel),
             (lgp.StationaryKernel, lgp.CrossStationaryKernel),
@@ -209,14 +209,7 @@ class TestAlgOp:
     def test_binary_scalar_class(self, constcore, op, cls, crosscls):
         """Check the class of a kernel plus or times a scalar, cross if negative."""
         k = cls(constcore)
-        convs = [
-            lambda x: int(x),
-            lambda x: float(x),
-            np.float64,
-            jnp.float64,
-            np.array,
-            jnp.array,
-        ]
+        convs = [int, float, np.float64, jnp.float64, np.array, jnp.array]
 
         @jit
         def check(x):
@@ -245,7 +238,7 @@ class TestAlgOp:
         A = lgp.kernel(constcore)
 
         @A.register_algop
-        def ciao(tcls, self, *_):
+        def ciao(_tcls, self, *_):
             return self
 
         a = A()
@@ -276,7 +269,7 @@ class TestAlgOp:
         class A(lgp.CrossKernel):
             pass
 
-        A.register_algop(lambda tcls, self: self, 'ciao')
+        A.register_algop(lambda _tcls, self: self, 'ciao')
         A.inherit_all_algops()
 
         # check that CrossKernel can't inherit
@@ -288,7 +281,7 @@ class TestAlgOp:
 def idtransf():
     """Return an identity transformation with a docstring."""
 
-    def idtransf(tcls, self, a, b):
+    def idtransf(_tcls, self, _a, _b):
         """Porco duo."""
         return self
 
@@ -392,9 +385,9 @@ class TestTransf:
             return self
 
         a = A()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match='not defined with register_linop'):
             a.linop('ciao', None)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match='not defined with register_algop'):
             a.algop('ciao')
 
     def test_forcekron(self, constcore):
@@ -439,7 +432,8 @@ class TestTransf:
 
         # check only that transf is in the new class
         t = A.list_transf(superclasses=False)
-        assert len(t) == 1 and 'ciao' in t
+        assert len(t) == 1
+        assert 'ciao' in t
 
     def test_super(self, constcore):
         """Check that `super_transf` invokes the transformation of the superclass."""
@@ -451,11 +445,11 @@ class TestTransf:
             pass
 
         @A.register_transf
-        def ciao(tcls, self, *args):
+        def ciao(_tcls, _self, *args):
             return ' '.join(map(str, args))
 
         @B.register_transf
-        def ciao(tcls, self, *args):
+        def ciao(tcls, self, *args):  # noqa: F811, the transf name is the function name
             return 'ciao ' + tcls.super_transf('ciao', self, *args)
 
         a = A(constcore)
@@ -481,14 +475,14 @@ class TestTransf:
 
         # set up transformations that return the class name
         @A.register_transf
-        def who(tcls, self):
+        def who(tcls, _self):
             return tcls
 
         B.inherit_transf('who')
 
         # make the transf on D invoke superclasses
         @D.register_transf
-        def who(tcls, self):
+        def who(tcls, self):  # noqa: F811, the transf name is the function name
             return tcls.super_transf('who', self)
 
         # check the MRO is respected
@@ -499,12 +493,12 @@ class TestTransf:
 class TestLinOp:
     """Test the linear operators on kernels."""
 
-    def test_args_errors(self, idtransf):
+    def test_args_errors(self):
         """Check that `linop` raises `ValueError` on the wrong number of arguments."""
         with pytest.raises(ValueError, match='incorrect number of'):
-            lgp.Kernel(lambda x, y: 1).linop('normalize', None, None, None)
+            lgp.Kernel(lambda _x, _y: 1).linop('normalize', None, None, None)
         with pytest.raises(ValueError, match='incorrect number of'):
-            lgp.Kernel(lambda x, y: 1).linop('normalize')
+            lgp.Kernel(lambda _x, _y: 1).linop('normalize')
 
     def test_no_unnecessary_result_clone(self, constcore, idtransf):
         """Check that a linop returning the kernel itself does not clone it."""
@@ -550,13 +544,13 @@ class TestLinOp:
             pass
 
         @A.register_linop
-        def op(tcls, self, arg1, arg2):
+        def op(_tcls, _self, _arg1, _arg2):
             return B(constcore)
 
         assert A(constcore).linop('op', 1, 2).__class__ is B
 
     @pytest.mark.parametrize(
-        'name,arg',
+        ('name', 'arg'),
         [
             ('rescale', jnp.cos),
             ('xtransf', jnp.cos),
@@ -586,7 +580,7 @@ class TestLinOp:
         util.assert_equal(c1, c2)
 
     @pytest.mark.parametrize(
-        'name,arg',
+        ('name', 'arg'),
         [
             ('rescale', None),
             ('xtransf', None),
@@ -615,14 +609,14 @@ class TestLinOp:
         assert a.linop(name, arg, arg) is a
 
     @pytest.mark.parametrize(
-        'name,arg',
+        ('name', 'arg'),
         [
             ('rescale', 1),
             ('xtransf', 1),
             ('diff', -1),
             ('diff', lambda: None),
-            ('loc', lambda x: 0),
-            ('scale', lambda x: 1),
+            ('loc', lambda _x: 0),
+            ('scale', lambda _x: 1),
             ('dim', 0),
             ('maxdim', -1),
             ('maxdim', 9.0),
@@ -655,7 +649,7 @@ class TestLinOp:
         ],
     )
     @pytest.mark.parametrize(
-        'name,arg,nops',
+        ('name', 'arg', 'nops'),
         [
             ('rescale', jnp.cos, 0),
             ('loc', 0, 0),
@@ -792,6 +786,7 @@ class TestLinOp:
         k.linop('diff', 'f1')(y, y)
         with pytest.raises(ValueError, match='derivatives'):
             k.linop('diff', (2, 'f0'))(y, y)
+        with pytest.raises(ValueError, match='derivatives'):
             k.linop('diff', (2, 'f1'))(y, y)
 
         # check looks at total order with nd inputs
@@ -836,7 +831,7 @@ class TestLinOp:
         c1 = kernel(x, x.T)
         c2 = kernels(xs, xs.T)
         util.assert_equal(c1, c2)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match='cannot get dim'):
             kernels(x, x.T)
         with pytest.raises(KeyError):
             kernel.linop('dim', 'c')(xs, xs.T)
@@ -858,7 +853,7 @@ class TestLinOp:
     @pytest.mark.parametrize('doc', [None, 'miao'])
     @pytest.mark.parametrize('argnames', [None, ('xbau', 'ybau')])
     @pytest.mark.parametrize('nonsym', [False, True])
-    def test_make_linop_family(self, rng, rightker, doc, argnames, nonsym):
+    def test_make_linop_family(self, rightker, doc, argnames, nonsym):  # noqa: C901, PLR0915
         """Check the classes, arguments and docs of a `make_linop_family` family."""
         decorator = lgp.crosskernel if nonsym else lgp.kernel
 
@@ -998,7 +993,7 @@ class TestStationaryIsotropic:
         util.assert_allclose(c1, c3, atol=1e-15)
         util.assert_allclose(c1, c4, atol=1e-16)
 
-    def test_zero(self, rng, constcore):
+    def test_zero(self, rng):
         """Check that the `Zero` kernel is zero."""
         x, y = rng.standard_normal((2, 10))
         zero = lgp._Kernel.Zero()
@@ -1014,7 +1009,9 @@ class TestStationaryIsotropic:
         K = lgp.Expon
         with pytest.warns(UserWarning, match='overriding'):
             c1 = K(input='signed')(x1, x2)
+        with pytest.warns(UserWarning, match='overriding'):
             c2 = K(input='abs')(x1, x2)
+        with pytest.warns(UserWarning, match='overriding'):
             c3 = K(input='posabs')(x1, x2)
         util.assert_allclose(c1, c2, atol=1e-14, rtol=1e-14)
         util.assert_allclose(c1, c3, atol=1e-14, rtol=1e-14)
@@ -1053,11 +1050,11 @@ class TestDecorator:
         assert A(scale=5).__class__ is lgp.Kernel
         assert A(loc=5).__class__ is lgp.Kernel
 
-        with pytest.raises(ValueError):
-            lgp.kernel(lambda x: 2, 'gatto')
+        with pytest.raises(ValueError, match=r'^2$'):
+            lgp.kernel(lambda _x: 2, 'gatto')
 
     @pytest.mark.parametrize(
-        'dec,cls,crdec,crcls',
+        ('dec', 'cls', 'crdec', 'crcls'),
         [
             (
                 lgp.stationarykernel,
@@ -1089,7 +1086,7 @@ class TestDecorator:
         assert A(loc=(1, 2)).__class__ is crcls
 
         @dec(loc=1)
-        def B(delta, ciao=2):
+        def B(_delta, ciao=2):
             return ciao
 
         assert B(ciao=1).__class__ is B
@@ -1097,7 +1094,7 @@ class TestDecorator:
         if cls in (lgp.IsotropicKernel, lgp.CrossIsotropicKernel):
 
             @dec(dim='a')
-            def C(delta, ciao=2):
+            def C(_delta, ciao=2):
                 return ciao
 
             assert C(ciao=1).__class__ in (
@@ -1106,7 +1103,7 @@ class TestDecorator:
             )
 
         @crdec
-        def C(delta):
+        def C(_delta):
             return 0
 
         assert C().__class__ is C

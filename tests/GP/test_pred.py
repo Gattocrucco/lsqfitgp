@@ -53,7 +53,7 @@ def pred(seed, err, **kw):
 
 
 @pytest.mark.parametrize(
-    'kw1,kw2',
+    ('kw1', 'kw2'),
     list(
         itertools.combinations(
             [

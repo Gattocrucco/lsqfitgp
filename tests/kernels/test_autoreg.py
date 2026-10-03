@@ -47,7 +47,8 @@ def test_gen_ar_acf(rng):
     """Check that `gen_ar_acf` gives a p.s.d. autocovariance of length `p + 1`."""
     for p in plist:
         acf = gen_ar_acf(p, rng)
-        assert acf.ndim == 1 and acf.size == 1 + p
+        assert acf.ndim == 1
+        assert acf.size == 1 + p
         mat = linalg.toeplitz(acf)
         w = linalg.eigvalsh(mat)
         assert np.min(w) >= -np.max(w) * len(mat) * np.finfo(float).eps
@@ -200,7 +201,7 @@ def test_ma_norm():
 def test_ar_invalid_argset():
     """Check that evaluating `AR` with `phi` but no `maxlag` raises `ValueError`."""
     kernel = lgp.AR(phi=[1, 2, 3])
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='invalid set of specified parameters'):
         kernel([1, 2, 3], [3, 2, 1])
 
 

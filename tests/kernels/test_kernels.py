@@ -149,7 +149,7 @@ class Base:
         """
 
         def gen(ndim, size=(100,)):
-            x = ranx_scalar(size + (ndim,))
+            x = ranx_scalar((*size, ndim))
             return x.view([('', x.dtype)] * ndim).squeeze(-1)
 
         return gen
@@ -201,7 +201,7 @@ class Base:
         for op, (l, r), kw in unary_algops:
             a, b = np.min(cov), np.max(cov)
             z, f = find_pos_rescale_to_fit(l + 0.01, r - 0.01, a, b, -5, 5)
-            mat = lgp.Kernel(lambda *_: z + f * cov).algop(op, **kw)(
+            mat = lgp.Kernel(lambda *_: z + f * cov).algop(op, **kw)(  # noqa: B023, called in the same iteration
                 x[None, :], x[:, None]
             )
             self.check_sym_and_psd(mat, psdeps)
@@ -223,7 +223,7 @@ class Base:
             deriv = deriv, 'f0'
         else:
             dtype = x.dtype
-        if not np.issubdtype(dtype, np.number) and not dtype == bool:
+        if not np.issubdtype(dtype, np.number) and dtype != bool:
             pytest.skip()
         kernel = kernel.linop('diff', deriv, deriv)
         cov1 = kernel(x[None, :], x[:, None])
@@ -292,7 +292,7 @@ class Base:
         c2 = kernel(x2, x2.T)
         util.assert_allclose(c1, c2, rtol=1e-12, atol=1e-13)
 
-    def impl_continuous_in_zero(self, kernel, deriv, x_scalar, kw):
+    def impl_continuous_in_zero(self, kernel, deriv, x_scalar, kw):  # noqa: ARG002, same signature as the override
         """Skip, since continuity in zero is tested only for stationary kernels."""
         pytest.skip(reason='not a stationary kernel test class')
 
@@ -1076,7 +1076,7 @@ for name, obj in vars(_kernels).items():
         kernels[name] = obj
 
 # Create default test classes for all kernels without a test already
-for name, kernel in kernels.items():
+for name in kernels:
     testname = 'Test' + name
     if testname not in globals():
         globals()[testname] = types.new_class(testname, (All,))

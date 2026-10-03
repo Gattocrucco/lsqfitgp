@@ -19,6 +19,8 @@
 
 """Test the `BART` kernel."""
 
+import itertools
+
 import numpy as np
 import pytest
 
@@ -29,9 +31,9 @@ rng = np.random.default_rng(202307302223)
 
 plist = [1, 5]
 smark = pytest.mark.parametrize(
-    'sb,sbw,sa,w',
-    sum(
-        [
+    ('sb', 'sbw', 'sa', 'w'),
+    list(
+        itertools.chain.from_iterable(
             [
                 (*rng.integers(0, 4, (3, p)), rng.integers(1, 10, p)),
                 (*np.zeros((3, p), int), rng.integers(1, 10, p)),
@@ -49,8 +51,7 @@ smark = pytest.mark.parametrize(
                 ),
             ]
             for p in plist
-        ],
-        [],
+        )
     ),
 )
 amark = pytest.mark.parametrize(
@@ -155,9 +156,9 @@ def test_incr_alpha(sb, sbw, sa, w, a, b, u, md):
 @bmark
 @amark
 @pytest.mark.parametrize(
-    'sb,sbw,sa,w',
-    sum(
-        [
+    ('sb', 'sbw', 'sa', 'w'),
+    list(
+        itertools.chain.from_iterable(
             [
                 # n^0 = 0
                 (
@@ -169,35 +170,19 @@ def test_incr_alpha(sb, sbw, sa, w, a, b, u, md):
                 (*np.zeros((3, p), int), rng.integers(1, 10, p)),
             ]
             for p in plist
-        ],
-        [],
+        )
     )
-    + sum(
-        [
-            [
-                # w = 0
-                (*rng.integers(0, 4, (3, p)), np.zeros(p))
-            ]
-            for p in plist
-        ],
-        [],
-    )
-    + sum(
-        [
-            [
-                # wi = 0 or ni = 0
-                np.concatenate(
-                    [rng.integers(0, 4, (3, p)), rng.integers(1, 10, (1, p))]
-                )
-                * (
-                    rng.integers(0, 2, p).astype(bool)
-                    ^ np.array([0, 0, 0, 1], bool)[:, None]
-                )
-            ]
-            for p in plist
-        ],
-        [],
-    )
+    + [
+        # w = 0
+        (*rng.integers(0, 4, (3, p)), np.zeros(p))
+        for p in plist
+    ]
+    + [
+        # wi = 0 or ni = 0
+        np.concatenate([rng.integers(0, 4, (3, p)), rng.integers(1, 10, (1, p))])
+        * (rng.integers(0, 2, p).astype(bool) ^ np.array([0, 0, 0, 1], bool)[:, None])
+        for p in plist
+    ]
     + [
         # p = 0
         (*np.empty((3, 0), int), np.empty(0))
@@ -259,8 +244,8 @@ def test_perm_dims(sb, sbw, sa, w, a, b, u, md, rng):
 @bmark
 @amark
 @pytest.mark.parametrize(
-    'sb,sbw,sa,w',
-    sum([[(*rng.integers(0, 10, (3, p)), rng.integers(1, 10, p))] for p in plist], []),
+    ('sb', 'sbw', 'sa', 'w'),
+    [(*rng.integers(0, 10, (3, p)), rng.integers(1, 10, p)) for p in plist],
 )
 def test_incr_n0(sb, sbw, sa, w, a, b, u, md, rng):
     """Check that the correlation decreases as n0 increases at fixed ntot."""
@@ -280,7 +265,8 @@ def test_incr_n0(sb, sbw, sa, w, a, b, u, md, rng):
     sbw += dn
     sa -= np.where(~lr, dn, 0)
     assert np.all(ntot == sb + sbw + sa)
-    assert np.all(sb >= 0) and np.all(sa >= 0)
+    assert np.all(sb >= 0)
+    assert np.all(sa >= 0)
 
     ci = lgp.BART.correlation(sb, sbw, sa, alpha=a, beta=b, gamma=u, maxd=md, weights=w)
     np.testing.assert_array_max_ulp(ci, np.minimum(c, ci))
@@ -293,7 +279,7 @@ def values(mark):
 
 
 @pytest.mark.parametrize(
-    'sb,sbw,sa,w,a,b,md',
+    ('sb', 'sbw', 'sa', 'w', 'a', 'b', 'md'),
     [
         # n^0 = 0
         (
@@ -401,7 +387,7 @@ def test_structured():
     """Check that `BART` can be evaluated on structured array input."""
     X = np.arange(10 * 2.0).reshape(1, -1, 2).view('d,d')
     splits = lgp.BART.splits_from_coord(X)
-    cov = lgp.BART(splits=splits)(X, X.T)
+    lgp.BART(splits=splits)(X, X.T)
 
 
 def test_duplicates():
@@ -411,7 +397,7 @@ def test_duplicates():
         .view('d,d')
         .squeeze(axis=-1)
     )
-    length, splits = lgp.BART.splits_from_coord(x)
+    length, _ = lgp.BART.splits_from_coord(x)
     assert np.all(length == 9)
 
 
@@ -492,7 +478,7 @@ def test_i32():
 
 
 @pytest.mark.parametrize(
-    'md,reset',
+    ('md', 'reset'),
     [
         (0, None),
         (1, None),

@@ -118,7 +118,7 @@ def kw(request, X):
     if variant == 1:
         return dict()
 
-    if variant == 2:
+    elif variant == 2:
 
         def gpaux(hp, gp):
             kernel = lgp.ExpQuad(scale=hp['scale'], dim='aux')
@@ -133,7 +133,8 @@ def kw(request, X):
             otherhp=lgp.copula.makedict(dict(scale=lgp.copula.invgamma(1, 1))),
         )
 
-    if variant == 3:
+    else:
+        assert variant == 3
         return dict(include_pi='tau')
 
 

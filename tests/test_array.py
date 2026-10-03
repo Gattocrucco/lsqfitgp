@@ -94,7 +94,7 @@ def crosscheck_operation(op, *arrays, **kw):
         r2 = (r2,)
 
     assert len(r1) == len(r2)
-    for res1, res2 in zip(r1, r2):
+    for res1, res2 in zip(r1, r2, strict=True):
         if isinstance(res1, lgp.StructuredArray):
             res1 = np.asarray(res1)
         if isinstance(res2, lgp.StructuredArray):
@@ -155,11 +155,11 @@ def test_broadcast_to(dtypes, shapes, rng):
     op = np.broadcast_to  # uses __array_function__
     transfs = [
         lambda s: s,
-        lambda s: (1,) + s,
-        lambda s: (1, 1) + s,
-        lambda s: (8,) + s,
+        lambda s: (1, *s),
+        lambda s: (1, 1, *s),
+        lambda s: (8, *s),
         lambda s: tuple(7 if i == 1 else i for i in s),
-        lambda s: (4,) + tuple(3 if i == 1 else i for i in s),
+        lambda s: (4, *(3 if i == 1 else i for i in s)),
     ]
     for dtype, shape, transf in itertools.product(dtypes, shapes, transfs):
         array = random_array(shape, dtype, rng)
@@ -171,11 +171,11 @@ def test_broadcast_arrays(dtypes, shapes, rng):
     op = np.broadcast_arrays  # uses __array_function__
     transfs = [
         lambda s: s,
-        lambda s: (1,) + s,
-        lambda s: (1, 1) + s,
-        lambda s: (8,) + s,
+        lambda s: (1, *s),
+        lambda s: (1, 1, *s),
+        lambda s: (8, *s),
         lambda s: tuple(7 if i == 1 else i for i in s),
-        lambda s: (4,) + tuple(3 if i == 1 else i for i in s),
+        lambda s: (4, *(3 if i == 1 else i for i in s)),
     ]
     for dtype, shape, transf in itertools.product(dtypes, shapes, transfs):
         array1 = random_array(shape, dtype, rng)
@@ -191,11 +191,11 @@ def test_broadcast(dtypes, shapes, rng):
 
     transfs = [
         lambda s: s,
-        lambda s: (1,) + s,
-        lambda s: (1, 1) + s,
-        lambda s: (8,) + s,
+        lambda s: (1, *s),
+        lambda s: (1, 1, *s),
+        lambda s: (8, *s),
         lambda s: tuple(7 if i == 1 else i for i in s),
-        lambda s: (4,) + tuple(3 if i == 1 else i for i in s),
+        lambda s: (4, *(3 if i == 1 else i for i in s)),
     ]
     for dtype, shape, transf in itertools.product(dtypes, shapes, transfs):
         array1 = random_array(shape, dtype, rng)
@@ -317,15 +317,15 @@ def test_reshape(dtypes, shapes, rng):
 
     transfs = [
         lambda s: s,
-        lambda s: (1,) + s,
-        lambda s: s + (1,),
-        lambda s: (1, 1) + s,
-        lambda s: (-1,) + s,
-        lambda s: s + (-1,),
-        lambda s: s[:-1] + (-1,),
-        lambda s: s[:-2] + (-1,),
-        lambda s: (-1,) + s[1:],
-        lambda s: (-1,) + s[2:],
+        lambda s: (1, *s),
+        lambda s: (*s, 1),
+        lambda s: (1, 1, *s),
+        lambda s: (-1, *s),
+        lambda s: (*s, -1),
+        lambda s: (*s[:-1], -1),
+        lambda s: (*s[:-2], -1),
+        lambda s: (-1, *s[1:]),
+        lambda s: (-1, *s[2:]),
     ]
     for dtype, shape, transf in itertools.product(dtypes, shapes, transfs):
         array = random_array(shape, dtype, rng)
@@ -484,7 +484,7 @@ def test_longkey(rng):
     x = random_array((2, 3), '5d,5d', rng)
     x = lgp.StructuredArray(x)
     with pytest.raises(IndexError):
-        elem = x[0, 1, 2]
+        x[0, 1, 2]
 
 
 def test_unflatten_dummy(rng):
@@ -520,8 +520,8 @@ def test_ix(rng):
     util.assert_equal(x1, x)
 
     x1, y1 = np.ix_(x, y)
-    assert x1.shape == x.shape + (1,)
-    assert y1.shape == (1,) + y.shape
+    assert x1.shape == (*x.shape, 1)
+    assert y1.shape == (1, *y.shape)
     assert isinstance(x1, lgp.StructuredArray)
     assert isinstance(y1, lgp.StructuredArray)
     util.assert_equal(x1.squeeze(), x)
@@ -530,16 +530,16 @@ def test_ix(rng):
     x1, y1, z1 = np.ix_(x, y, z)
     assert isinstance(x1, lgp.StructuredArray)
     assert isinstance(y1, lgp.StructuredArray)
-    assert x1.shape == x.shape + (1, 1)
-    assert y1.shape == (1,) + y.shape + (1,)
-    assert z1.shape == (1, 1) + z.shape
+    assert x1.shape == (*x.shape, 1, 1)
+    assert y1.shape == (1, *y.shape, 1)
+    assert z1.shape == (1, 1, *z.shape)
     util.assert_equal(x1.squeeze(), x)
     util.assert_equal(y1.squeeze(), y)
     util.assert_equal(z1.squeeze(), z)
 
     z1, x1 = np.ix_(z, x)
-    assert z1.shape == z.shape + (1,)
-    assert x1.shape == (1,) + x.shape
+    assert z1.shape == (*z.shape, 1)
+    assert x1.shape == (1, *x.shape)
     assert isinstance(x1, lgp.StructuredArray)
     util.assert_equal(z1.squeeze(), z)
     util.assert_equal(x1.squeeze(), x)
@@ -578,8 +578,8 @@ def test_unstructured_to_structured_nocopy(rng):
 def test_unstructured_to_structured_error0d(rng):
     """Check that `lgp.unstructured_to_structured` raises `ValueError` on 0d input."""
     x = random_array((), float, rng)
-    with pytest.raises(ValueError):
-        y = lgp.unstructured_to_structured(x)
+    with pytest.raises(ValueError, match='at least one dimension'):
+        lgp.unstructured_to_structured(x)
 
 
 def test_empty():
@@ -634,12 +634,12 @@ def test_concatenate(dtypes, shapes, rng):
         narrays = rng.integers(1, 5)
         lengths = rng.integers(0, 5, narrays)
         arrays = [
-            random_array(shape[:axis] + (length,) + shape[axis:], dtype, rng)
+            random_array((*shape[:axis], length, *shape[axis:]), dtype, rng)
             for length in lengths
         ]
 
         def func(*args, **kw):
-            return np.concatenate(args, axis=axis, **kw)
+            return np.concatenate(args, axis=axis, **kw)  # noqa: B023, called in the same iteration
 
         crosscheck_operation(func, *arrays)
 
@@ -682,10 +682,10 @@ def test_append_fields(dtypes, shapes, rng):
         data = [random_array(shape, 'f', rng) for _ in names]
 
         def append1(array):
-            return patched_append_fields(array, names[0], data[0], usemask=False)
+            return patched_append_fields(array, names[0], data[0], usemask=False)  # noqa: B023, called in the same iteration
 
         def append2(array):
-            return patched_append_fields(array, names, data, usemask=False)
+            return patched_append_fields(array, names, data, usemask=False)  # noqa: B023, called in the same iteration
 
         crosscheck_operation(append1, array)
         crosscheck_operation(append2, array)
@@ -696,7 +696,7 @@ def test_from_dict(dtypes, shapes, rng):
     dtype = np.dtype([(f'f{i}', dtype) for i, dtype in enumerate(dtypes)])
     for shape in shapes:
         array = random_array(shape, dtype, rng)
-        d = dict((name, array[name]) for name in array.dtype.names)
+        d = {name: array[name] for name in array.dtype.names}
         x = lgp.StructuredArray.from_dict(d)
         util.assert_equal(array, x)
 

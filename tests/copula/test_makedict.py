@@ -28,9 +28,9 @@ def test_dependencies():
     """Check that `makedict` forbids interdependencies between the keys."""
     x = copula.beta(1, 1)
     y = copula.beta(1, x)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='cross-key occurrences'):
         copula.makedict({'x': x, 'y': y})
     xy = copula.Copula({'x': x, 'y': y})
     copula.makedict({'xy': xy})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='cross-key occurrences'):
         copula.makedict({'xy': xy, 'x': x})

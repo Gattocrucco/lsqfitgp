@@ -131,4 +131,4 @@ def test_raniter_bd(rng):
     """Check that `sample` accepts a `BufferDict` as mean."""
     mean, cov = make_mean_cov_dict(rng, (1,))
     mean = gvar.BufferDict(mean)
-    sample = lgp.sample(mean, cov, rng=rng)
+    lgp.sample(mean, cov, rng=rng)

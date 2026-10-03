@@ -84,9 +84,9 @@ def test_toeplitz_chol_solve_numpy(rng):
     for tshape, bshape in shapes:
         for n in [0, 1, 2, 10]:
             x = np.linspace(0, 3, n)
-            gamma = rng.uniform(0, 2, tshape + (1,))
+            gamma = rng.uniform(0, 2, (*tshape, 1))
             t = np.pi * np.exp(-1 / 2 * x**gamma)
-            m = np.empty(tshape + (n, n))
+            m = np.empty((*tshape, n, n))
             for i in np.ndindex(*tshape):
                 m[i] = linalg.toeplitz(t[i])
             l = np.linalg.cholesky(m)

@@ -155,7 +155,7 @@ def cached(testpath):
         with gzip.open(file, 'rt') as stream:
             cache = json.load(stream, object_hook=object_hook)
 
-        def cached(name, func, *args, **kw):
+        def cached(name, func, *args, **kw):  # noqa: ARG001, same signature as the other branch
             return cache[name]
 
         yield cached
