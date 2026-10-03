@@ -8,7 +8,7 @@ Example scripts
 ===============
 
 This is an index of the example scripts in the `examples directory
-<https://github.com/Gattocrucco/lsqfitgp/tree/master/examples>`_ in the
+<https://github.com/Gattocrucco/lsqfitgp/tree/main/examples>`_ in the
 repository. The links point to the file preview on github.
 
 Short index
@@ -20,7 +20,7 @@ Index with figures
 
 .. _a:
 
-  * `a.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/a.py>`_: EXAMPLE A.
+  * `a.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/a.py>`_: EXAMPLE A.
 
     Where the oscillating nature of an unknown function is revealed
     from but a few points, though only to a certain distance.
@@ -29,7 +29,7 @@ Index with figures
 
 .. _b:
 
-  * `b.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/b.py>`_: EXAMPLE B.
+  * `b.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/b.py>`_: EXAMPLE B.
 
     Where it is discovered that the derivative of the unknown function
     is orthogonal to the function itself, and furthermore that it is
@@ -39,17 +39,17 @@ Index with figures
 
 .. _bart:
 
-  * `bart.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/bart.py>`_: Example usage of the BART kernel to replace the standard BART MCMC algorithm.
+  * `bart.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/bart.py>`_: Example usage of the BART kernel to replace the standard BART MCMC algorithm.
 
 .. _barteasy:
 
-  * `barteasy.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/barteasy.py>`_: BART with the simplified subpackage.
+  * `barteasy.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/barteasy.py>`_: BART with the simplified subpackage.
     
     .. image:: ../examples/plot/barteasy.png
 
 .. _bcf:
 
-  * `bcf.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/bcf.py>`_: Analyze a dataset from the ACIC 2022 Data Challenge [1]_ using GP-BCF.
+  * `bcf.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/bcf.py>`_: Analyze a dataset from the ACIC 2022 Data Challenge [1]_ using GP-BCF.
 
     .. [1] Dan R.C. Thal and Mariel M. Finucane, "Causal Methods Madness: Lessons
            Learned from the 2022 ACIC Competition to Estimate Health Policy
@@ -60,7 +60,7 @@ Index with figures
 
 .. _c:
 
-  * `c.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/c.py>`_: EXAMPLE C.
+  * `c.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/c.py>`_: EXAMPLE C.
 
     Where a nonlinear transformation hides the true height of some
     crosses.
@@ -69,7 +69,7 @@ Index with figures
 
 .. _d:
 
-  * `d.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/d.py>`_: EXAMPLE D.
+  * `d.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/d.py>`_: EXAMPLE D.
 
     Where the primitive of our function takes some freedom to move
     up and down.
@@ -78,20 +78,20 @@ Index with figures
 
 .. _dft:
 
-  * `dft.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/dft.py>`_: Constrain the discrete Fourier transform of a periodic process. Shows how
+  * `dft.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/dft.py>`_: Constrain the discrete Fourier transform of a periodic process. Shows how
     to use GP.addlintransf.
     
     .. image:: ../examples/plot/dft.png
 
 .. _doubleint:
 
-  * `doubleint.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/doubleint.py>`_: Test of double integral constraint
+  * `doubleint.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/doubleint.py>`_: Test of double integral constraint
     
     .. image:: ../examples/plot/doubleint.png
 
 .. _e:
 
-  * `e.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/e.py>`_: EXAMPLE E.
+  * `e.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/e.py>`_: EXAMPLE E.
 
     Where observing both a function and its derivative put some
     restraint on their behaviour.
@@ -100,13 +100,13 @@ Index with figures
 
 .. _even:
 
-  * `even.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/even.py>`_: Split a function into even and odd parts.
+  * `even.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/even.py>`_: Split a function into even and odd parts.
     
     .. image:: ../examples/plot/even.png
 
 .. _f:
 
-  * `f.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/f.py>`_: EXAMPLE F.
+  * `f.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/f.py>`_: EXAMPLE F.
 
     Where apparently in these times it is not anymore possible to
     know exactly where one gentleman's function will pass.
@@ -115,13 +115,13 @@ Index with figures
 
 .. _fourier:
 
-  * `fourier.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/fourier.py>`_: Constrain the values of Fourier series coefficients
+  * `fourier.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/fourier.py>`_: Constrain the values of Fourier series coefficients
     
     .. image:: ../examples/plot/fourier.png
 
 .. _g:
 
-  * `g.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/g.py>`_: EXAMPLE G.
+  * `g.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/g.py>`_: EXAMPLE G.
 
     Where two ways of expressing one's beliefs are compared and found,
     satisfactorily, to be quite similar.
@@ -130,7 +130,7 @@ Index with figures
 
 .. _h:
 
-  * `h.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/h.py>`_: EXAMPLE H.
+  * `h.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/h.py>`_: EXAMPLE H.
 
     Where at first sight nothing has changed, but behind the scenes
     important information has been lost forever.
@@ -139,7 +139,7 @@ Index with figures
 
 .. _i:
 
-  * `i.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/i.py>`_: EXAMPLE I.
+  * `i.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/i.py>`_: EXAMPLE I.
 
     Where, due to obscure political reasons, we insist on forgetting
     important details that a reasonable man's mind would be fond of
@@ -149,7 +149,7 @@ Index with figures
 
 .. _j:
 
-  * `j.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/j.py>`_: EXAMPLE J.
+  * `j.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/j.py>`_: EXAMPLE J.
 
     Where the excessive smoothness of the prediction is found not
     to satisfy our manly tastes.
@@ -158,7 +158,7 @@ Index with figures
 
 .. _k:
 
-  * `k.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/k.py>`_: EXAMPLE K.
+  * `k.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/k.py>`_: EXAMPLE K.
 
     Where lady K finds out that every gentleman hides his rougher
     corners in his derivative.
@@ -167,7 +167,7 @@ Index with figures
 
 .. _l:
 
-  * `l.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/l.py>`_: EXAMPLE L.
+  * `l.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/l.py>`_: EXAMPLE L.
 
     Where two formulas give the same results and so math triumphs
     once again.
@@ -176,7 +176,7 @@ Index with figures
 
 .. _m:
 
-  * `m.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/m.py>`_: EXAMPLE M.
+  * `m.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/m.py>`_: EXAMPLE M.
 
     Where we discover that, unlike elephants, Matérn processes
     prefer to forget after less than one data step.
@@ -185,7 +185,7 @@ Index with figures
 
 .. _n:
 
-  * `n.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/n.py>`_: EXAMPLE N.
+  * `n.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/n.py>`_: EXAMPLE N.
 
     Where we wonder how much a derivative is allowed to do her own
     business compared to her mistress.
@@ -194,7 +194,7 @@ Index with figures
 
 .. _o:
 
-  * `o.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/o.py>`_: EXAMPLE O.
+  * `o.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/o.py>`_: EXAMPLE O.
 
     Where mister N's enquiry is repeated by different means.
     
@@ -202,13 +202,13 @@ Index with figures
 
 .. _pdf1:
 
-  * `pdf1.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf1.py>`_: Fit of parton distributions functions (PDFs)
+  * `pdf1.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf1.py>`_: Fit of parton distributions functions (PDFs)
     
     .. image:: ../examples/plot/pdf1.png
 
 .. _pdf10:
 
-  * `pdf10.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf10.py>`_: Fit of parton distributions functions (PDFs)
+  * `pdf10.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf10.py>`_: Fit of parton distributions functions (PDFs)
 
     Like pdf9, but with per-function hyperparameters
     
@@ -216,7 +216,7 @@ Index with figures
 
 .. _pdf2:
 
-  * `pdf2.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf2.py>`_: Fit of parton distributions functions (PDFs)
+  * `pdf2.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf2.py>`_: Fit of parton distributions functions (PDFs)
 
     The difference from pdf1.py is that we define the transformation on processes
     instead of on their finite realizations
@@ -225,7 +225,7 @@ Index with figures
 
 .. _pdf3:
 
-  * `pdf3.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf3.py>`_: Fit of parton distributions functions (PDFs)
+  * `pdf3.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf3.py>`_: Fit of parton distributions functions (PDFs)
 
     Like pdf2, but with correct integral constraints and naming this time
     
@@ -233,7 +233,7 @@ Index with figures
 
 .. _pdf4:
 
-  * `pdf4.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf4.py>`_: Fit of parton distribution functions (PDFs)
+  * `pdf4.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf4.py>`_: Fit of parton distribution functions (PDFs)
 
     Like pdf3, but with hyperparameters
     
@@ -241,7 +241,7 @@ Index with figures
 
 .. _pdf5:
 
-  * `pdf5.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf5.py>`_: Fit of parton distributions functions (PDFs)
+  * `pdf5.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf5.py>`_: Fit of parton distributions functions (PDFs)
 
     Like pdf3, but with nonlinear data
     
@@ -249,7 +249,7 @@ Index with figures
 
 .. _pdf6:
 
-  * `pdf6.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf6.py>`_: Fit of parton distributions functions (PDFs)
+  * `pdf6.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf6.py>`_: Fit of parton distributions functions (PDFs)
 
     Like pdf5, but with uncertainties on M and M2
     
@@ -257,7 +257,7 @@ Index with figures
 
 .. _pdf7:
 
-  * `pdf7.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf7.py>`_: Fit of parton distributions functions (PDFs)
+  * `pdf7.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf7.py>`_: Fit of parton distributions functions (PDFs)
 
     Like pdf6, but with hyperparameters
     
@@ -265,7 +265,7 @@ Index with figures
 
 .. _pdf8:
 
-  * `pdf8.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf8.py>`_: Fit of parton distributions functions (PDFs)
+  * `pdf8.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf8.py>`_: Fit of parton distributions functions (PDFs)
 
     Like pdf7, but with more realistic PDFs
     
@@ -273,7 +273,7 @@ Index with figures
 
 .. _pdf9:
 
-  * `pdf9.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/pdf9.py>`_: Fit of parton distributions functions (PDFs)
+  * `pdf9.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/pdf9.py>`_: Fit of parton distributions functions (PDFs)
 
     Like pdf8, but only with linear data
     
@@ -281,7 +281,7 @@ Index with figures
 
 .. _q:
 
-  * `q.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/q.py>`_: EXAMPLE Q.
+  * `q.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/q.py>`_: EXAMPLE Q.
 
     Where we extend a pattern of waves in space, but do not dare
     look too far from our data.
@@ -290,7 +290,7 @@ Index with figures
 
 .. _r:
 
-  * `r.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/r.py>`_: EXAMPLE R.
+  * `r.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/r.py>`_: EXAMPLE R.
 
     Where we decide to introduce a strong anisotropy despite
     evidence of its absence.
@@ -299,7 +299,7 @@ Index with figures
 
 .. _s:
 
-  * `s.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/s.py>`_: EXAMPLE S.
+  * `s.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/s.py>`_: EXAMPLE S.
 
     Where different coordinates unite together under a single
     field name.
@@ -308,7 +308,7 @@ Index with figures
 
 .. _t:
 
-  * `t.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/t.py>`_: EXAMPLE T.
+  * `t.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/t.py>`_: EXAMPLE T.
 
     Where we pretend to discover that two series of events
     were in fact one the delayed and imperfect copy of the
@@ -318,7 +318,7 @@ Index with figures
 
 .. _u:
 
-  * `u.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/u.py>`_: EXAMPLE U.
+  * `u.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/u.py>`_: EXAMPLE U.
 
     Where we infer the temporal scale of a process assuming
     another process is correlated with its derivative.
@@ -327,7 +327,7 @@ Index with figures
 
 .. _v:
 
-  * `v.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/v.py>`_: EXAMPLE V.
+  * `v.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/v.py>`_: EXAMPLE V.
 
     Where we go on an expedition to survey the many and wondrous
     kernels that inhabit our software.
@@ -336,7 +336,7 @@ Index with figures
 
 .. _w:
 
-  * `w.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/w.py>`_: EXAMPLE W.
+  * `w.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/w.py>`_: EXAMPLE W.
 
     Manually split a process as a sum of two processes, using an additional
     index in the input space.
@@ -345,7 +345,7 @@ Index with figures
 
 .. _x:
 
-  * `x.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/x.py>`_: EXAMPLE X.
+  * `x.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/x.py>`_: EXAMPLE X.
 
     Where the derivatives of an interesting correlation function
     are put to harsh a trial.
@@ -354,7 +354,7 @@ Index with figures
 
 .. _y:
 
-  * `y.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/y.py>`_: EXAMPLE Y.
+  * `y.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/y.py>`_: EXAMPLE Y.
 
     Where a Zeta kernel forces some random samples to have
     zero mean.
@@ -363,7 +363,7 @@ Index with figures
 
 .. _z:
 
-  * `z.py <https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/z.py>`_: EXAMPLE Z.
+  * `z.py <https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/z.py>`_: EXAMPLE Z.
 
     Where we sail in an infinite dimensional space to sum two
     numbers.
