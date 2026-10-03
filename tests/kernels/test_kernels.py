@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Test predefined kernels"""
+"""Test predefined kernels."""
 
 import functools
 import inspect
@@ -63,6 +63,8 @@ unary_algops = [
 
 def find_pos_rescale_to_fit(l, r, a, b, L, R):
     """
+    Find the maximum positive rescaling that fits a range into a domain.
+
     (l, r) = target domain
     (a, b) = current range
     find z, f >= 0 s.t.
@@ -79,7 +81,7 @@ def find_pos_rescale_to_fit(l, r, a, b, L, R):
 
 
 def skipon(meth, exc, match):
-    """Decorator to make a unit test method skip on a certain exception"""
+    """Make a unit test method skip on a certain exception."""
 
     @functools.wraps(meth)
     def newmeth(self, *args, **kw):
@@ -99,13 +101,11 @@ skiponderivable = functools.partial(skipon, exc=ValueError, match=r'derivatives'
 
 
 class Base:
-    """
-    Base class to test kernels. Each subclass tests one specific kernel.
-    """
+    """Base class to test kernels. Each subclass tests one specific kernel."""
 
     @property
     def kercls(self):
-        """Kernel subclass to test"""
+        """Kernel subclass to test."""
         clsname = self.__class__.__name__
         assert clsname.startswith('Test')
         cls = getattr(_kernels, clsname[4:])
@@ -114,31 +114,38 @@ class Base:
         return cls
 
     def test_public(self):
+        """Check that the kernel class is exported in the `lsqfitgp` namespace."""
         assert self.kercls in vars(lgp).values()
 
     @pytest.fixture
     def kw(self):
-        """Keyword arguments for the constructor, not used directly by the
-        tests if not for inspection
+        """
+        Return keyword arguments for the constructor.
+
+        Not used directly by the tests if not for inspection.
         """
         return {}
 
     @pytest.fixture
     def kernel(self, kw):
-        """A kernel instance"""
+        """Return a kernel instance."""
         return self.kercls(**kw)
 
     @pytest.fixture
     def ranx_scalar(self, rng):
-        """A callable generating a random vector of scalar input values,
-        not used directly by tests
+        """
+        Return a callable generating a random vector of scalar input values.
+
+        Not used directly by tests.
         """
         return lambda size=100: rng.uniform(-5, 5, size=size)
 
     @pytest.fixture
     def ranx_nd(self, ranx_scalar):
-        """A callable generating a random vector of sized input values,
-        not used directly by tests
+        """
+        Return a callable generating a random vector of sized input values.
+
+        Not used directly by tests.
         """
 
         def gen(ndim, size=(100,)):
@@ -149,32 +156,41 @@ class Base:
 
     @pytest.fixture
     def x_scalar(self, ranx_scalar):
-        """A random vector of scalar input values"""
+        """Return a random vector of scalar input values."""
         return ranx_scalar()
 
     @pytest.fixture
     def x_nd(self, ranx_nd):
-        """A random vector of sized input values"""
+        """Return a random vector of sized input values."""
         return ranx_nd(3)
 
     @pytest.fixture
     def x(self, x_scalar):
-        """A random vector of input values with unspecified dtype structure,
-        default scalar
+        """
+        Return a random vector of input values with unspecified dtype structure.
+
+        Default scalar.
         """
         return x_scalar
 
     @pytest.fixture
     def psdeps(self):
-        """Relative tolerance for the smallest eigenvalue to be negative"""
+        """Return the relative tolerance for the smallest eigenvalue to be negative."""
         return np.finfo(float).eps
 
     def check_sym_and_psd(self, cov, psdeps):
+        """Check that `cov` is symmetric and positive semidefinite."""
         util.assert_allclose(cov, cov.T, rtol=1e-5, atol=1e-7)
         eigv = linalg.eigvalsh(cov)
         assert np.min(eigv) >= -len(cov) * psdeps * np.max(eigv)
 
     def impl_positive(self, kernel, deriv, x, psdeps, doops=False):
+        """
+        Check that the kernel derived `deriv` times is positive semidefinite.
+
+        If `doops`, also check the result of applying each operation in
+        `unary_algops` to the covariance matrix, rescaled to fit the domain.
+        """
         d = (deriv, 'f0') if x.dtype.names else deriv
         k = kernel.linop('diff', d, d)
         cov = k(x[None, :], x[:, None])
@@ -191,13 +207,16 @@ class Base:
             self.check_sym_and_psd(mat, psdeps)
 
     def test_positive_scalar_0(self, kernel, x_scalar, psdeps):
+        """Check that the kernel is p.s.d. on scalar input, also after algebraic ops."""
         self.impl_positive(kernel, 0, x_scalar, psdeps, True)
 
     @skiponmaxdim
     def test_positive_nd_0(self, kernel, x_nd, psdeps):
+        """Check that the kernel is positive semidefinite on multidimensional input."""
         self.impl_positive(kernel, 0, x_nd, psdeps)
 
     def impl_jit(self, kernel, deriv, x):
+        """Check that `jax.jit` does not change the kernel derived `deriv` times."""
         if x.dtype.names:
             x = lgp.StructuredArray(x)
             dtype = np.result_type(*(x.dtype[name].base for name in x.dtype.names))
@@ -212,19 +231,22 @@ class Base:
         util.assert_allclose(cov2, cov1, rtol=1e-6, atol=1e-5)
 
     def test_jit_scalar_0(self, kernel, x_scalar):
+        """Check that `jax.jit` does not change the kernel on scalar input."""
         self.impl_jit(kernel, 0, x_scalar)
 
     @skiponmaxdim
     def test_jit_nd_0(self, kernel, x_nd):
+        """Check that `jax.jit` does not change the kernel on multidimensional input."""
         self.impl_jit(kernel, 0, x_nd)
 
     @pytest.fixture(params=[(0, 0)])
     def derivs(self, request):
-        """Pair of numbers of derivatives to take"""
+        """Return a pair of numbers of derivatives to take."""
         return request.param
 
     @skiponderivable
     def test_symmetric_offdiagonal(self, kernel, derivs, x):
+        """Check that swapping both arguments and derivatives gives the same result."""
         xderiv, yderiv = derivs
         if xderiv == yderiv:
             a = x[: x.size // 2, None]
@@ -241,11 +263,13 @@ class Base:
 
     @staticmethod
     def make_x_nd_implicit(x):
+        """Convert `x` from one field per dimension to a single array field."""
         dtype = recfunctions.repack_fields(x.dtype, align=False, recurse=True)
         return x.astype(dtype).view([('', x.dtype[0], (len(x.dtype),))]).copy()
 
     @skiponmaxdim
     def test_implicit_fields(self, kernel, x_nd):
+        """Check that one field per dimension is equivalent to a single array field."""
         x1 = x_nd[:, None]
         x2 = self.make_x_nd_implicit(x1)
         c1 = kernel(x1, x1.T)
@@ -254,6 +278,7 @@ class Base:
 
     @skiponmaxdim
     def test_loc_scale_nd(self, kernel, x_nd):
+        """Check that the `'scale'` and `'loc'` linops match transforming the input."""
         loc = -2  # < 0
         scale = 3  # > abs(loc)
         if not np.issubdtype(x_nd.dtype[0].base, np.inexact):
@@ -268,13 +293,15 @@ class Base:
         util.assert_allclose(c1, c2, rtol=1e-12, atol=1e-13)
 
     def impl_continuous_in_zero(self, kernel, deriv, x_scalar, kw):
+        """Skip, since continuity in zero is tested only for stationary kernels."""
         pytest.skip(reason='not a stationary kernel test class')
 
 
 class Stationary(Base):
-    """Test class for kernels that may be a subclass of StationaryKernel"""
+    """Test class for kernels that may be a subclass of `StationaryKernel`."""
 
     def impl_continuous_in_zero(self, kernel, deriv, x_scalar, kw):
+        """Check that the kernel derived `deriv` times is continuous in zero."""
         if not isinstance(kernel, _Kernel.StationaryKernel):
             pytest.skip()
         if not np.issubdtype(x_scalar.dtype, np.inexact):
@@ -300,9 +327,11 @@ class Stationary(Base):
         util.assert_allclose(c1, c0, rtol=1e-10)
 
     def test_continuous_in_zero_0(self, kernel, x_scalar, kw):
+        """Check that the kernel is continuous in zero."""
         self.impl_continuous_in_zero(kernel, 0, x_scalar, kw)
 
     def test_stationary(self, x_scalar, kernel):
+        """Check that the variance of a stationary kernel is constant."""
         if isinstance(kernel, _Kernel.StationaryKernel):
             var = kernel(x_scalar, x_scalar)
             util.assert_allclose(var, var[0])
@@ -310,6 +339,7 @@ class Stationary(Base):
             pytest.skip()
 
     def test_normalized(self, kernel, x_scalar):
+        """Check that the variance of a stationary kernel is 1."""
         if isinstance(kernel, _Kernel.StationaryKernel):
             var = kernel(x_scalar, x_scalar)
             util.assert_allclose(var, 1, rtol=1e-14, atol=1e-15)
@@ -318,36 +348,43 @@ class Stationary(Base):
 
 
 class Deriv1(Base):
-    """Test class for kernels that may be derived at least one time"""
+    """Test class for kernels that may be derived at least one time."""
 
     @pytest.fixture(params=[(0, 0), (1, 0), (1, 1)])
     def derivs(self, request):
+        """Return a pair of numbers of derivatives to take, up to 1."""
         return request.param
 
     @skiponmaxdim
     @skiponderivable
     def test_positive_nd_1(self, kernel, x_nd, psdeps):
+        """Check that the kernel derived once is p.s.d. on multidimensional input."""
         self.impl_positive(kernel, 1, x_nd, psdeps)
 
     @skiponderivable
     def test_positive_scalar_1(self, kernel, x_scalar, psdeps):
+        """Check that the kernel derived once is p.s.d. on scalar input."""
         self.impl_positive(kernel, 1, x_scalar, psdeps)
 
     @skiponderivable
     def test_jit_scalar_1(self, kernel, x_scalar):
+        """Check that `jax.jit` does not change the kernel derived once on scalars."""
         self.impl_jit(kernel, 1, x_scalar)
 
     @skiponmaxdim
     @skiponderivable
     def test_jit_nd_1(self, kernel, x_nd):
+        """Check that `jax.jit` does not change the kernel derived once on nd input."""
         self.impl_jit(kernel, 1, x_nd)
 
     @skiponderivable
     def test_continuous_in_zero_1(self, kernel, x_scalar, kw):
+        """Check that the kernel derived once is continuous in zero."""
         self.impl_continuous_in_zero(kernel, 1, x_scalar, kw)
 
     @skiponderivable
     def test_double_diff_scalar_first(self, kernel, x_scalar):
+        """Check that `diff(1, 1)` equals chaining `diff(1, 0)` and `diff(0, 1)`."""
         r1 = kernel.linop('diff', 1, 1)(x_scalar[None, :], x_scalar[:, None])
         r2 = kernel.linop('diff', 1, 0).linop('diff', 0, 1)(
             x_scalar[None, :], x_scalar[:, None]
@@ -357,6 +394,7 @@ class Deriv1(Base):
     @skiponmaxdim
     @skiponderivable
     def test_double_diff_nd_first(self, kernel, x_nd):
+        """Check that `diff(f0, f0)` equals chaining `diff(f0, 0)` and `diff(0, f0)`."""
         x = x_nd[:, None]
         f0 = x.dtype.names[0]
         r1 = kernel.linop('diff', f0, f0)(x, x.T)
@@ -365,36 +403,43 @@ class Deriv1(Base):
 
 
 class Deriv2(Deriv1):
-    """Test class for kernels that may be derived at least two times"""
+    """Test class for kernels that may be derived at least two times."""
 
     @pytest.fixture(params=[(0, 0), (1, 0), (1, 1), (2, 0), (2, 1), (2, 2)])
     def derivs(self, request):
+        """Return a pair of numbers of derivatives to take, up to 2."""
         return request.param
 
     @skiponmaxdim
     @skiponderivable
     def test_positive_nd_2(self, kernel, x_nd, psdeps):
+        """Check that the kernel derived twice is p.s.d. on multidimensional input."""
         self.impl_positive(kernel, 2, x_nd, psdeps)
 
     @skiponderivable
     def test_positive_scalar_2(self, kernel, x_scalar, psdeps):
+        """Check that the kernel derived twice is p.s.d. on scalar input."""
         self.impl_positive(kernel, 2, x_scalar, psdeps)
 
     @skiponderivable
     def test_jit_scalar_2(self, kernel, x_scalar):
+        """Check that `jax.jit` does not change the kernel derived twice on scalars."""
         self.impl_jit(kernel, 2, x_scalar)
 
     @skiponmaxdim
     @skiponderivable
     def test_jit_nd_2(self, kernel, x_nd):
+        """Check that `jax.jit` does not change the kernel derived twice on nd input."""
         self.impl_jit(kernel, 2, x_nd)
 
     @skiponderivable
     def test_continuous_in_zero_2(self, kernel, x_scalar, kw):
+        """Check that the kernel derived twice is continuous in zero."""
         self.impl_continuous_in_zero(kernel, 2, x_scalar, kw)
 
     @skiponderivable
     def test_double_diff_scalar_second(self, kernel, x_scalar):
+        """Check that `diff(2, 2)` is equivalent to `diff(1, 1)` chained twice."""
         r1 = kernel.linop('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
         r2 = kernel.linop('diff', 1, 1).linop('diff', 1, 1)(
             x_scalar[None, :], x_scalar[:, None]
@@ -403,6 +448,7 @@ class Deriv2(Deriv1):
 
     @skiponderivable
     def test_double_diff_scalar_second_chopped(self, kernel, x_scalar):
+        """Check that `diff(2, 2)` equals chaining `diff(2, 0)` and `diff(0, 2)`."""
         r1 = kernel.linop('diff', 2, 2)(x_scalar[None, :], x_scalar[:, None])
         r2 = kernel.linop('diff', 2, 0).linop('diff', 0, 2)(
             x_scalar[None, :], x_scalar[:, None]
@@ -412,6 +458,12 @@ class Deriv2(Deriv1):
     @skiponmaxdim
     @skiponderivable
     def test_double_diff_nd_second(self, kernel, x_nd):
+        """
+        Check two ways of taking second derivatives w.r.t. two fields.
+
+        Compare `diff((2, f0), (2, f1))` with `diff(f0, f0)` chained with
+        `diff(f1, f1)`.
+        """
         x = x_nd[:, None]
         if len(x.dtype) < 2:
             pytest.skip(reason='test needs nd >= 2')
@@ -422,11 +474,17 @@ class Deriv2(Deriv1):
 
     @pytest.fixture
     def ddtol(self):
+        """Return the tolerances for `test_double_diff_nd_second_chopped`."""
         return dict(atol=1e-15, rtol=1e-12)
 
     @skiponmaxdim
     @skiponderivable
     def test_double_diff_nd_second_chopped(self, kernel, x_nd, ddtol):
+        """
+        Check two ways of taking second derivatives w.r.t. two fields.
+
+        Compare `diff((2, f0), (2, f1))` with `diff(f0, f1)` chained twice.
+        """
         x = x_nd[:, None]
         if len(x.dtype) < 2:
             pytest.skip(reason='test needs nd >= 2')
@@ -437,9 +495,10 @@ class Deriv2(Deriv1):
 
 
 class Fourier(Base):
-    """Test class for kernels that may implement the fourier series"""
+    """Test class for kernels that may implement the fourier series."""
 
     def test_fourier_swap(self, kernel, x_scalar):
+        """Check that the Fourier series cross-covariance is symmetric under swap."""
         if not kernel.has_transf('fourier'):
             pytest.skip()
         x = x_scalar[:, None]
@@ -451,6 +510,7 @@ class Fourier(Base):
         util.assert_equal(c1, c2)
 
     def test_fourier_chained(self, kernel, kw):
+        """Check that the Fourier series on both arguments is the same if chained."""
         if not kernel.has_transf('fourier'):
             pytest.skip()
 
@@ -470,7 +530,7 @@ class Fourier(Base):
         util.assert_allclose(c0, c2)
 
     def test_fourier_inference(self, kernel, kw):
-        """Test that removing a mode leaves the other in the posterior mean"""
+        """Test that removing a mode leaves the other in the posterior mean."""
         if not kernel.has_transf('fourier'):
             pytest.skip()
 
@@ -494,12 +554,14 @@ class Fourier(Base):
 
 
 class All(Stationary, Deriv2, Fourier):
-    """Contains all tests, used by default if no test class is defined"""
+    """Contains all tests, used by default if no test class is defined."""
 
     pass
 
 
 class TestMatern(Stationary, Deriv2):
+    """Test the `Matern` kernel."""
+
     @pytest.fixture(
         params=[dict(nu=v + 0.5) for v in range(5)]
         + [dict(nu=v + 0.49) for v in range(5)]
@@ -509,17 +571,23 @@ class TestMatern(Stationary, Deriv2):
         + [dict(nu=v + 0.01) for v in range(5)]
     )
     def kw(self, request):
+        """Return `nu` values at, and close to, integers and half-integers."""
         return request.param
 
 
 class TestMaternp(Stationary, Deriv2):
+    """Test the `Maternp` kernel."""
+
     @pytest.fixture(params=list(range(10)))
     def kw(self, request):
+        """Return `p` values from 0 to 9."""
         return dict(p=request.param)
 
     @pytest.mark.parametrize('deriv', [0, 1, 2])
     def test_matern_half_integer(self, rng, deriv):
         """
+        Check that `Maternp` agrees with `Matern` at half-integer `nu`.
+
         Check that the formula for half integer nu gives the same result of the
         formula for real nu.
         """
@@ -533,8 +601,11 @@ class TestMaternp(Stationary, Deriv2):
 
 
 class TestWendland(Stationary, Deriv2):
+    """Test the `Wendland` kernel."""
+
     @pytest.fixture
     def x_nd(self, kw, ranx_nd):
+        """Return a random input vector with the maximum dimensionality for `alpha`."""
         nd = int(np.floor(2 * kw['alpha'] - 1))
         return ranx_nd(nd)
 
@@ -542,29 +613,35 @@ class TestWendland(Stationary, Deriv2):
         params=[dict(k=k, alpha=a) for k in range(4) for a in np.linspace(1, 4, 10)]
     )
     def kw(self, request):
+        """Return combinations of `k` from 0 to 3 and `alpha` from 1 to 4."""
         return request.param
 
     @pytest.fixture
     def psdeps(self):
+        """Return a larger tolerance for negative eigenvalues."""
         return 1e3 * np.finfo(float).eps
 
     def test_highk(self):
+        """Check that evaluating the kernel with `k=4` raises `NotImplementedError`."""
         kernel = self.kercls(k=4)
         with pytest.raises(NotImplementedError):
             kernel(0, 0)
 
 
 class TestWiener(Base):
+    """Test the `Wiener` kernel."""
+
     @pytest.fixture
     def ranx_scalar(self, rng):
+        """Return a callable generating random inputs in [0, 10)."""
         return lambda size=100: rng.uniform(0, 10, size)
 
 
 class TestWienerIntegral(TestWiener, Deriv1):
+    """Test the `WienerIntegral` kernel."""
+
     def test_wiener_integral(self, rng):
-        """
-        Test that the derivative of the Wiener integral is the Wiener.
-        """
+        """Test that the derivative of the Wiener integral is the Wiener."""
         x, y = np.abs(rng.standard_normal((2, 100)))
         r1 = _kernels.Wiener()(x, y)
         r2 = _kernels.WienerIntegral().linop('diff', 1, 1)(x, y)
@@ -572,63 +649,88 @@ class TestWienerIntegral(TestWiener, Deriv1):
 
 
 class TestOrnsteinUhlenbeck(TestWiener):
+    """Test the `OrnsteinUhlenbeck` kernel."""
+
     pass
 
 
 class TestFracBrownian(Deriv2):
+    """Test the `FracBrownian` kernel."""
+
     @pytest.fixture
     def ranx_scalar(self, rng):
+        """Return a callable generating random inputs in [-10, 10)."""
         return lambda size=100: rng.uniform(-10, 10, size)
 
     @pytest.fixture(
         params=[dict(H=H, K=K) for H in [0.1, 0.5, 1] for K in [0.1, 0.5, 1]]
     )
     def kw(self, request):
+        """Return combinations of `H` and `K` in {0.1, 0.5, 1}."""
         return request.param
 
 
 class TestBrownianBridge(Base):
+    """Test the `BrownianBridge` kernel."""
+
     @pytest.fixture
     def ranx_scalar(self, rng):
+        """Return a callable generating random inputs in [0, 1)."""
         return lambda size=100: rng.uniform(0, 1, size)
 
 
 class TestCategorical(Base):
+    """Test the `Categorical` kernel."""
+
     N = 10
 
     @pytest.fixture
     def ranx_scalar(self, rng):
+        """Return a callable generating random category indices in [0, `N`)."""
         return lambda size=100: rng.integers(0, self.N, size)
 
     @pytest.fixture
     def kw(self, rng):
+        """Return a random covariance matrix between the `N` categories."""
         a = rng.standard_normal((self.N, self.N))
         return dict(cov=a @ a.T)
 
 
 class TestNNKernel(Deriv2):
+    """Test the `NNKernel` kernel."""
+
     @pytest.fixture
     def psdeps(self):
+        """Return a larger tolerance for negative eigenvalues."""
         return 4 * np.finfo(float).eps
 
 
 class TestZeta(All):
+    """Test the `Zeta` kernel."""
+
     @pytest.fixture(params=[0, 0.1, 1, 1.5, 4.9, 1000])
     def kw(self, request):
+        """Return various values of `nu`, including 0 and a large one."""
         return dict(nu=request.param)
 
 
 class TestCelerite(Stationary, Deriv1):
+    """Test the `Celerite` kernel."""
+
     @pytest.fixture(
         params=[dict(), dict(gamma=1, B=1), dict(gamma=0, B=0), dict(gamma=10, B=0)]
     )
     def kw(self, request):
+        """Return the default parameters and some combinations of `gamma` and `B`."""
         return request.param
 
 
 class TestHarmonic(Stationary, Deriv1):
+    """Test the `Harmonic` kernel."""
+
     @pytest.fixture(params=[None, 0.01, 0.25, 0.75, 0.99, 1, 1.01, 2])
     def kw(self, request):
+        """Return the default and various values of `Q`, including 1 and close to it."""
         Q = request.param
         return {} if Q is None else dict(Q=Q)
 
@@ -636,6 +738,11 @@ class TestHarmonic(Stationary, Deriv1):
     @pytest.mark.parametrize('Q0', [1 / 2, 1])
     @pytest.mark.parametrize('Qderiv', [False, True])
     def test_harmonic_continuous(self, rng, deriv, Q0, Qderiv):
+        """
+        Check that `Harmonic` is continuous in `Q` around `Q0`.
+
+        Optionally differentiate w.r.t. the inputs and/or `Q`.
+        """
         eps = 1e-10
         Q0 = float(Q0)
         Qs = [(1 - eps) * Q0, Q0, (1 + eps) * Q0]
@@ -653,10 +760,7 @@ class TestHarmonic(Stationary, Deriv1):
         util.assert_allclose(results[1], results[2], atol=1e-5)
 
     def test_celerite_harmonic(self, rng):
-        """
-        Check that the Celerite kernel is equivalent to the Harmonic kernel when
-        B == gamma.
-        """
+        """Check that the `Celerite` kernel equals `Harmonic` if `B == gamma`."""
         x = rng.uniform(-1, 1, size=100)
         Q = rng.uniform(1.1, 3)
         eta = np.sqrt(1 - 1 / Q**2)
@@ -667,6 +771,8 @@ class TestHarmonic(Stationary, Deriv1):
 
 
 class TestBagOfWords(Base):
+    """Test the `BagOfWords` kernel."""
+
     lipsum = """
 
     Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia
@@ -696,6 +802,7 @@ class TestBagOfWords(Base):
 
     @pytest.fixture
     def ranx_scalar(self, rng):
+        """Return a callable generating random strings of 10 words from `lipsum`."""
         return lambda size=30: np.array(
             [
                 ' '.join(rng.choice(self.lipsum_words, 10))
@@ -705,26 +812,37 @@ class TestBagOfWords(Base):
 
 
 class TestGibbs(Stationary, Deriv2):
+    """Test the `Gibbs` kernel."""
+
     pass
 
 
 class TestRescaling(Stationary, Deriv2):
+    """Test the `Rescaling` kernel."""
+
     pass
 
 
 class TestGammaExp(Stationary, Deriv2):
+    """Test the `GammaExp` kernel."""
+
     @pytest.fixture(params=[dict(), dict(gamma=2)])
     def kw(self, request):
+        """Return the default parameters and `gamma=2`."""
         return request.param
 
     @pytest.fixture
     def psdeps(self):
+        """Return a larger tolerance for negative eigenvalues."""
         return 1e3 * np.finfo(float).eps
 
 
 class TestBessel(Stationary, Deriv2):
+    """Test the `Bessel` kernel."""
+
     @pytest.fixture
     def psdeps(self):
+        """Return a larger tolerance for negative eigenvalues."""
         return 4 * np.finfo(float).eps
 
     @pytest.fixture(
@@ -735,10 +853,13 @@ class TestBessel(Stationary, Deriv2):
         + [dict(nu=nu + 0.5) for nu in range(5)]
     )
     def kw(self, request):
+        """Return the default `nu` and values at/near integers, and half-integers."""
         return request.param
 
 
 class TestCauchy(Stationary, Deriv2):
+    """Test the `Cauchy` kernel."""
+
     @pytest.fixture(
         params=[
             dict(alpha=a, beta=b)
@@ -747,48 +868,66 @@ class TestCauchy(Stationary, Deriv2):
         ]
     )
     def kw(self, request):
+        """Return combinations of `alpha` in (0, 2] and `beta` in (0, 8]."""
         return request.param
 
 
 class TestCausalExpQuad(Stationary, Deriv2):
+    """Test the `CausalExpQuad` kernel."""
+
     @pytest.fixture(params=[0, 1, 2])
     def kw(self, request):
+        """Return `alpha` values 0, 1, 2."""
         return dict(alpha=request.param)
 
     @pytest.fixture
     def ddtol(self):
+        """Return looser tolerances for `test_double_diff_nd_second_chopped`."""
         return dict(atol=1e-13, rtol=1e-12)
 
 
 class TestDecaying(Deriv2):
+    """Test the `Decaying` kernel."""
+
     @pytest.fixture(params=[0, 0.5, 1, 2])
     def kw(self, request):
+        """Return various values of `alpha`, including 0."""
         return dict(alpha=request.param)
 
     @pytest.fixture
     def ranx_scalar(self, rng):
+        """Return a callable generating random inputs in [0, 5)."""
         return lambda size=100: rng.uniform(0, 5, size)
 
 
 class TestStationaryFracBrownian(Stationary, Deriv2):
+    """Test the `StationaryFracBrownian` kernel."""
+
     @pytest.fixture
     def psdeps(self):
+        """Return a larger tolerance for negative eigenvalues."""
         return 8 * np.finfo(float).eps
 
     @pytest.fixture(params=[0.1, 0.5, 1])
     def kw(self, request):
+        """Return `H` values 0.1, 0.5, 1."""
         return dict(H=request.param)
 
 
 class TestCircular(Stationary, Deriv2):
+    """Test the `Circular` kernel."""
+
     @pytest.fixture(
         params=[dict(c=c, tau=t) for c, t in [(0.1, 4), (0.5, 4), (0.5, 8)]]
     )
     def kw(self, request):
+        """Return some combinations of `c` and `tau`."""
         return request.param
 
 
 class TestMA(Stationary, Base):
+    """Test the `MA` kernel."""
+
     rng = np.random.default_rng([2023, 8, 25, 0, 25])
 
     @pytest.fixture(
@@ -804,14 +943,18 @@ class TestMA(Stationary, Base):
         ]
     )
     def kw(self, request):
+        """Return various weight vectors `w`, including empty and random ones."""
         return dict(w=request.param)
 
     @pytest.fixture
     def ranx_scalar(self, rng):
+        """Return a callable generating random integer inputs in [0, 100)."""
         return lambda size=100: rng.integers(0, 100, size)
 
 
 class TestAR(Stationary, Base):
+    """Test the `AR` kernel."""
+
     @pytest.fixture(
         params=[
             dict(phi=phi, maxlag=100)
@@ -850,38 +993,49 @@ class TestAR(Stationary, Base):
         ]
     )
     def kw(self, request):
+        """Return parameters specifying the process by `phi`, `gamma`, or roots."""
         return request.param
 
     @pytest.fixture
     def ranx_scalar(self, rng):
+        """Return a callable generating random integer inputs in [0, 100)."""
         return lambda size=100: rng.integers(0, 100, size)
 
 
 class TestColor(Stationary, Deriv2):
+    """Test the `Color` kernel."""
+
     @pytest.fixture(params=[2, 3, 4, 5, 6, 20])
     def kw(self, request):
+        """Return various values of `n`."""
         return dict(n=request.param)
 
 
 class TestBART(Base):
+    """Test the `BART` kernel."""
+
     @pytest.fixture(params=[1, 5])
     def nd(self, request):
+        """Return the number of input dimensions."""
         return request.param
 
     @pytest.fixture
     def x_scalar(self, nd, ranx_scalar):
+        """Return a random vector of scalar input values, skip if `nd` != 1."""
         if nd != 1:
             pytest.skip(reason='scalar test, nd parameters')
         return ranx_scalar()
 
     @pytest.fixture
     def x_nd(self, nd, ranx_nd):
+        """Return a random vector of `nd`-dimensional inputs, skip if `nd` == 1."""
         if nd == 1:
             pytest.skip(reason='nd tests, scalar parameters')
         return ranx_nd(nd)
 
     @pytest.fixture
     def x(self, nd, ranx_scalar, ranx_nd):
+        """Return a random vector of scalar or `nd`-dimensional input values."""
         return ranx_scalar() if nd == 1 else ranx_nd(nd)
 
     @pytest.fixture(
@@ -894,13 +1048,17 @@ class TestBART(Base):
         ]
     )
     def kw(self, request, rng, nd):
+        """Return parameters with random splitting points in `nd` dimensions."""
         splits = rng.standard_normal((10, nd))
         return dict(**request.param, splits=_kernels.BART.splits_from_coord(splits))
 
 
 class TestSinc(Stationary, Deriv2):
+    """Test the `Sinc` kernel."""
+
     @pytest.fixture
     def psdeps(self):
+        """Return a larger tolerance for negative eigenvalues."""
         return 10 * np.finfo(float).eps
 
 

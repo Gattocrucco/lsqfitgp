@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test the `AR` and `MA` kernels."""
+
 import numpy as np
 import pytest
 from scipy import linalg
@@ -26,6 +28,7 @@ from tests import util
 
 
 def gen_ar_acf(p, rng):
+    """Generate a random autocovariance at lags 0 to `p`."""
     if p:
         mod = rng.uniform(1.1, 10, p)
         phase = rng.uniform(0, 2 * np.pi, p)
@@ -41,6 +44,7 @@ plist = [0, 1, 2, 10, 30, 100]
 
 
 def test_gen_ar_acf(rng):
+    """Check that `gen_ar_acf` gives a p.s.d. autocovariance of length `p + 1`."""
     for p in plist:
         acf = gen_ar_acf(p, rng)
         assert acf.ndim == 1 and acf.size == 1 + p
@@ -50,6 +54,7 @@ def test_gen_ar_acf(rng):
 
 
 def test_yule_walker_inv(rng):
+    """Check that `gamma_from_phi` inverts `phi_from_gamma` up to normalization."""
     for p in plist:
         acf = gen_ar_acf(p, rng)
         phi = lgp.AR.phi_from_gamma(acf)
@@ -60,6 +65,7 @@ def test_yule_walker_inv(rng):
 
 
 def test_yule_walker_inv_extend(rng):
+    """Check that zero-padding `phi` does not change `gamma_from_phi` at lags 0...p."""
     for p in plist:
         acf = gen_ar_acf(p, rng)
         phi = lgp.AR.phi_from_gamma(acf)
@@ -70,6 +76,7 @@ def test_yule_walker_inv_extend(rng):
 
 
 def test_yule_walker_inv_evolve(rng):
+    """Check that `extend_gamma` agrees with `gamma_from_phi` on zero-padded `phi`."""
     for p in plist:
         acf = gen_ar_acf(p, rng)
         phi = lgp._kernels.AR.phi_from_gamma(acf)
@@ -80,11 +87,13 @@ def test_yule_walker_inv_evolve(rng):
 
 
 def test_yule_walker_inv_0():
+    """Check that `gamma_from_phi` with empty `phi` gives `[1]`."""
     acf = lgp._kernels.AR.gamma_from_phi(np.empty(0))
     util.assert_allclose(acf, [1], rtol=1e-15)
 
 
 def test_yule_walker_inv_1(rng):
+    """Check `gamma_from_phi` against the analytical AR(1) autocovariance."""
     bound = 1 - 1e-8
     phi = rng.uniform(-bound, bound)
     acf = lgp.AR.gamma_from_phi([phi])
@@ -93,6 +102,7 @@ def test_yule_walker_inv_1(rng):
 
 
 def test_phase_degeneracy():
+    """Check that `lnc` roots equivalent by conjugation or 2pi phase shifts agree."""
     phases = [
         [[1], [-1]],
         [[1], [1 + 2 * np.pi]],
@@ -113,6 +123,7 @@ def test_phase_degeneracy():
 
 
 def test_real_complex():
+    """Check that a real root in `lnc` equals two identical roots in `slnr`."""
     lag = np.arange(100)
     for r in np.logspace(-5, 0, 10):
         for n in range(3):
@@ -124,6 +135,7 @@ def test_real_complex():
 
 
 def test_ar0():
+    """Check that all ways of specifying an AR(0) give white noise."""
     lag = np.arange(100)
     acf = np.where(lag, 0, 1)
     params = [
@@ -138,6 +150,7 @@ def test_ar0():
 
 
 def test_ar1():
+    """Check that all ways of specifying an AR(1) give the analytical autocovariance."""
     lag = np.arange(100)
     for phi in np.logspace(-5, -0.001, 10):
         acf = 1 / ((1 - phi) * (1 + phi)) * phi**lag
@@ -164,6 +177,7 @@ def test_ar1():
 
 
 def test_zero_slnr():
+    """Check that `phi_from_roots` maps `slnr` +0 and -0 to the roots +1 and -1."""
     for p in range(1, 10):
         for s in [1, -1]:
             p1 = lgp.AR.phi_from_roots(p * [s * 0.0], [])
@@ -172,6 +186,7 @@ def test_zero_slnr():
 
 
 def test_ma_norm():
+    """Check that `norm=True` in `MA` divides the kernel by the squared norm of `w`."""
     x = np.arange(10)[:, None]
     w = [0.1, 0.3, -0.6]
     k1 = lgp.MA(w=w)
@@ -183,12 +198,14 @@ def test_ma_norm():
 
 
 def test_ar_invalid_argset():
+    """Check that evaluating `AR` with `phi` but no `maxlag` raises `ValueError`."""
     kernel = lgp.AR(phi=[1, 2, 3])
     with pytest.raises(ValueError):
         kernel([1, 2, 3], [3, 2, 1])
 
 
 def test_ar_norm():
+    """Check that `norm=True` in `AR` divides the kernel by its variance."""
     for kw in [dict(phi=[1.4, 0.3], maxlag=100), dict(slnr=[0.1], lnc=[0.2 - 1.0j])]:
         k1 = lgp.AR(**kw)
         k2 = lgp.AR(**kw, norm=True)

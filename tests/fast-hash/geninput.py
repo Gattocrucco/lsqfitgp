@@ -1,9 +1,12 @@
+"""Generate random test inputs for the fast-hash tests as C and Python code."""
+
 import numpy as np
 
 gen = np.random.default_rng(202303181456)
 
 
 def genint(dtype, size=()):
+    """Return random integers spanning the full range of `dtype`."""
     return gen.integers(
         np.iinfo(dtype).min, np.iinfo(dtype).max, endpoint=True, dtype=dtype, size=size
     )

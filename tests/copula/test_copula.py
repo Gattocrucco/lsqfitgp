@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Test the Copula class"""
+"""Test the `Copula` class."""
 
 import gvar
 import pytest
@@ -28,11 +28,12 @@ from tests import util
 
 @pytest.fixture
 def name(request):
+    """Return the node id of the test, to use as unique name."""
     return request.node.nodeid
 
 
 def test_repr_paths():
-    """Check that no object is represented more than once"""
+    """Check that no object is represented more than once."""
     d = {}
     assert repr(copula.Copula(d)) == 'Copula({})'
 
@@ -63,13 +64,13 @@ Copula({'a': beta(1, 2), 'b': <a>, 'c': beta(<a>, gamma(2, 2)), 'd': <c.1>})"""
 
 
 def test_dict_order():
-    """Check that the insertion order of a dict is preserved (jax issue)"""
+    """Check that the insertion order of a dict is preserved (jax issue)."""
     d = dict(b=copula.beta(1, 2), a=copula.beta(1, 2))
     assert list(copula.Copula(d)._variables) == list(d)
 
 
 def test_repr_dict_order():
-    """Check that the insertion order of a dict is preserved (pprint issue)"""
+    """Check that the insertion order of a dict is preserved (pprint issue)."""
     d = dict(b=copula.beta(1, 2), a=copula.beta(1, 2))
     assert (
         repr(copula.Copula(d))
@@ -79,13 +80,13 @@ Copula({'b': beta(1, 2), 'a': beta(1, 2)})"""
 
 
 def test_repr_long():
-    """Check that long reprs are split on newlines"""
+    """Check that long reprs are split on newlines."""
     d = {str(i): copula.beta(1, 2) for i in range(100)}
     assert repr(copula.Copula(d)).find('\n') >= 0
 
 
 def test_add_distribution(name, rng):
-    """Check that add_distribution works"""
+    """Check that `add_distribution` works."""
     c = copula.Copula({'a': copula.beta(1, 2)})
     c.add_distribution(name)
     in_samples = rng.standard_normal(c.in_shape)
@@ -100,7 +101,7 @@ def test_add_distribution(name, rng):
 @pytest.mark.parametrize('use_gvar', [False, True])
 @pytest.mark.parametrize('double', [False, True])
 def test_partial_invfcn(rng, broadcast_shape, shape, use_gvar, double):
-    """Check that a Distr used through a Copula works the same"""
+    """Check that a `Distr` used through a `Copula` works the same."""
     distr = copula.beta(1, 2, shape=shape)
     c = copula.Copula({'a': distr})
     if double:
@@ -123,7 +124,7 @@ def test_partial_invfcn(rng, broadcast_shape, shape, use_gvar, double):
 
 @pytest.mark.parametrize('broadcast_shape', [(), (2,), (2, 3)])
 def test_dependencies(rng, broadcast_shape):
-    """Check that dependencies are respected"""
+    """Check that dependencies are respected."""
     d = {}
     d['a'] = copula.beta(1, 2)
     d['b'] = copula.beta(d['a'], 2)
@@ -141,6 +142,7 @@ def test_dependencies(rng, broadcast_shape):
 @pytest.mark.parametrize('double', [False, True])
 @pytest.mark.parametrize('attr', ['shape', 'distrshape', 'dtype'])
 def test_out_attrs(double, attr):
+    """Check that the output attributes are dicts of those of the variables."""
     d = {'a': copula.beta(1, 2), 'b': copula.beta(1, 2, shape=(2,))}
     c = copula.Copula(d)
     if double:
@@ -149,6 +151,7 @@ def test_out_attrs(double, attr):
 
 
 def test_staticdescr():
+    """Check that `_staticdescr` distinguishes repeated variables from equal ones."""
     x1 = copula.beta(1, 2)
     x2 = x1.__class__(*x1.params)
 

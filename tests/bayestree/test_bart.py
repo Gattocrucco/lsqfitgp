@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""test lgp.bayestree.bart"""
+"""Test `lgp.bayestree.bart`."""
 
 import pytest
 from jax import numpy as jnp
@@ -28,48 +28,56 @@ from tests import util
 
 
 def gen_X(key, p, n):
+    """Generate random covariates uniform in [-2, 2] with shape (p, n)."""
     return random.uniform(key, (p, n), float, -2, 2)
 
 
 def f(X):
+    """Return the true regression function."""
     T = 2
     return jnp.sum(jnp.cos(2 * jnp.pi / T * X), axis=0)
 
 
 def gen_y(key, X):
+    """Generate outcomes as `f(X)` plus Gaussian noise."""
     sigma = 0.1
     return f(X) + sigma * random.normal(key, X.shape[1:])
 
 
 @pytest.fixture
 def n():
+    """Return the number of data points."""
     return 101
 
 
 @pytest.fixture
 def p():
+    """Return the number of covariates."""
     return 11
 
 
 @pytest.fixture
 def X(n, p, key):
+    """Return random covariates."""
     key = random.fold_in(key, 0xD9B0963D)
     return gen_X(key, p, n)
 
 
 @pytest.fixture
 def y(X, key):
+    """Return random outcomes."""
     key = random.fold_in(key, 0x1391BC96)
     return gen_y(key, X)
 
 
 @pytest.fixture
 def kw():
+    """Return additional keyword arguments for `bart` (none)."""
     return dict()
 
 
 def test_scale_shift(X, y, kw):
-
+    """Check that `bart` is equivariant to an affine transformation of the outcome."""
     X = X.T
     bart1 = bayestree.bart(X, y, **kw)
 

@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Utilities shared by the tests."""
+
 import functools
 import warnings
 
@@ -32,9 +34,7 @@ import lsqfitgp as lgp
 
 
 def jaxtonumpy(x):
-    """
-    Recursively convert jax arrays in x to numpy arrays.
-    """
+    """Recursively convert jax arrays in x to numpy arrays."""
     children, meta = tree.flatten(x)
     children = (np.array(x) if isinstance(x, jnp.ndarray) else x for x in children)
     return tree.unflatten(meta, children)
@@ -42,17 +42,20 @@ def jaxtonumpy(x):
 
 def assert_equal(*args):
     """
-    Version of assert_equal that works with jax arrays and StructuredArray, and
-    which fixes numpy issue #21739
+    Version of assert_equal that works with jax arrays and StructuredArray.
+
+    It also fixes numpy issue #21739.
     """
     assert_array_equal(*jaxtonumpy(args))
 
 
 def normalize(dtype):
+    """Return `dtype` with its fields packed, recursively."""
     return recfunctions.repack_fields(dtype, align=False, recurse=True)
 
 
 def assert_array_equal(*args):
+    """Assert arrays are equal, handling structured and string dtypes specially."""
     args = [np.array(a) if isinstance(a, lgp.StructuredArray) else a for a in args]
     a = args[0]
     if isinstance(a, np.ndarray) and a.size == 0 and a.dtype.names:
@@ -84,8 +87,9 @@ def assert_array_equal(*args):
 
 def mark(cls, meth, mark, **kw):
     """
-    Function to mark a test method without marking the superclass if the
-    method is inherited.
+    Mark a test method.
+
+    Do not mark the superclass if the method is inherited.
     """
     impl = getattr(cls, meth)
     if not meth.startswith('test_'):
@@ -107,17 +111,20 @@ def mark(cls, meth, mark, **kw):
 
 
 def xfail(cls, meth, **kw):
+    """Mark test method `meth` of `cls` as xfail, see `mark`."""
     mark(cls, meth, 'xfail', **kw)
 
 
 def skip(cls, meth, **kw):
+    """Mark test method `meth` of `cls` as skip, see `mark`."""
     mark(cls, meth, 'skip', **kw)
 
 
 def tryagain(fun, rep=2, method=False):
     """
-    Decorates test `fun` to make it try again in case of failure. Inhibited
-    by xfails.
+    Decorate test `fun` to make it try again in case of failure.
+
+    Inhibited by xfails.
     """
     meta = {}
 
@@ -227,12 +234,19 @@ def _assert_similar_gvars(g, h, rtol, atol):
 
 
 def assert_similar_gvars(*gs, rtol=0, atol=0):
+    """Assert that the gvars in `gs` have close means and covariances."""
     if gs:
         for g in gs[1:]:
             _assert_similar_gvars(g, gs[0], rtol, atol)
 
 
 def assert_same_gvars(actual, desired, *, rtol=0, atol=0):
+    """
+    Assert that `actual` and `desired` are the same gvars up to tolerances.
+
+    The difference `actual - desired` must have mean and covariance close to
+    zero, relative to the mean and covariance of `desired`.
+    """
     z = np.reshape(actual - desired, -1)
     desired = np.reshape(desired, -1)
     kw = dict(tozero=True, rtol=rtol, atol=atol)
@@ -241,6 +255,12 @@ def assert_same_gvars(actual, desired, *, rtol=0, atol=0):
 
 
 def assert_close_decomps(actual, desired, *, rtol=0, atol=0):
+    """
+    Assert that two decompositions represent close matrices.
+
+    Check that the pseudoinverse of each decomposition inverts the matrix of
+    the other on its range.
+    """
     assert actual.n == desired.n
 
     def compare(a, b):
@@ -254,13 +274,14 @@ def assert_close_decomps(actual, desired, *, rtol=0, atol=0):
 
 
 def assert_allclose(actual, desired, *, rtol=0, atol=0, equal_nan=False, **kw):
-    """Change the default arguments of np.testing.assert_allclose"""
+    """Change the default arguments of np.testing.assert_allclose."""
     np.testing.assert_allclose(
         actual, desired, rtol=rtol, atol=atol, equal_nan=equal_nan, **kw
     )
 
 
 def assert_equal_bufferdict(x, y):
+    """Assert that two `BufferDict` have the same buffer, keys and shapes."""
     assert np.all(x.buf == y.buf)
     assert list(x.keys()) == list(y.keys())
     assert all(x.slice_shape(k) == y.slice_shape(k) for k in x.keys())

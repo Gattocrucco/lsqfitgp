@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test the `_special` submodule."""
 
 import mpmath
 import numpy as np
@@ -29,6 +30,7 @@ from tests import util
 
 
 def test_sinc():
+    """Check `_special.sinc` against `numpy.sinc` around zero."""
     x = np.linspace(-0.1, 0.1, 1000)
     s1 = np.sinc(x)
     s2 = _special.sinc(x)
@@ -49,6 +51,7 @@ def test_sinc():
     ],
 )
 def test_bessel(name, wrap):
+    """Check the Bessel functions against scipy and check their gradients."""
     x = np.linspace(0.5, 1.5, 10)
     our = wrap(getattr(_special, name))
     ref = wrap(getattr(special, name))
@@ -59,6 +62,7 @@ def test_bessel(name, wrap):
 
 
 def test_jvmodx2():
+    """Check `jvmodx2` against `jv`, its value at 0, and its gradients."""
     nu = np.linspace(-5, 5, 20)
     x = np.linspace(1e-15, 0.1, 1000)
     for v in nu:
@@ -70,6 +74,7 @@ def test_jvmodx2():
 
 
 def test_kvmodx2():
+    """Check `kvmodx2` against `kv`, its value and derivatives at 0, and its gradients."""
     nu = np.linspace(-5, 5, 20)
     x = np.linspace(1e-15, 0.1, 1000)
     xsoft = np.linspace(1, 10, 1000)
@@ -91,6 +96,7 @@ def test_kvmodx2():
 
 
 def test_kvmodx2_hi():
+    """Check `kvmodx2_hi` and its derivatives against `kvmodx2` at half-integer order."""
     x = np.linspace(1e-15, 10, 1000)
     x2 = x**2
     for p in range(5):
@@ -106,7 +112,11 @@ def test_kvmodx2_hi():
 
 
 def randpoly(rng, n):
-    """Currently not used, what was this for?"""
+    """
+    Return random polynomial coefficients with nonzero leading coefficient.
+
+    Currently not used, what was this for?
+    """
     while True:
         a = rng.standard_normal(n)
         if a[0] != 0:
@@ -114,6 +124,7 @@ def randpoly(rng, n):
 
 
 def test_exp1_imag_and_ci():
+    """Check `exp1_imag` and `ci` against scipy."""
     xs = [np.linspace(1e-15, 100, 1000), np.logspace(2, 20, 1000)]
     for x in xs:
         y1 = _special.exp1_imag(x)
@@ -126,6 +137,7 @@ def test_exp1_imag_and_ci():
 
 
 def test_expm1x():
+    """Check `expm1x` against `hyp1f1` in double and single precision, and its gradients."""
     x = np.linspace(-2, 2, 10000)
     y = _special.expm1x(x)
     y2 = x * x / 2 * special.hyp1f1(1, 3, x)
@@ -137,6 +149,7 @@ def test_expm1x():
 
 @np.vectorize
 def zeta_split(s, n):
+    """Return the Riemann zeta of `s + n` computed with mpmath, or inf at the pole."""
     with mpmath.workdps(32):
         n = mpmath.mpmathify(n)
         s = mpmath.mpmathify(s)
@@ -144,6 +157,7 @@ def zeta_split(s, n):
 
 
 def test_zeta(cached):
+    """Check `_special.zeta` against mpmath."""
     n = np.arange(-30, 30)[:, None]
     s = np.linspace(-0.5, 0.5, 101)
     z1 = cached('z1', zeta_split, s, n)
@@ -153,10 +167,12 @@ def test_zeta(cached):
 
 @np.vectorize
 def zeta(*args):
+    """Return the zeta function computed with mpmath."""
     return float(mpmath.zeta(*args))
 
 
 def test_hurwitz_zeta(cached):
+    """Check `hurwitz_zeta` against mpmath."""
     s = np.linspace(-10, 0, 100)[:, None]
     a = np.linspace(0, 1, 100)
     z1 = cached('z1', zeta, s, a)
@@ -168,6 +184,7 @@ def test_hurwitz_zeta(cached):
 
 
 def test_hurwitz_zeta_vectorized():
+    """Check that `hurwitz_zeta` gives the same result vectorized and elementwise."""
     s = np.linspace(-10, 0, 100)
     a = np.linspace(0, 1, 100)
     z1 = _special.hurwitz_zeta(s, a)
@@ -176,6 +193,7 @@ def test_hurwitz_zeta_vectorized():
 
 
 def test_gamma():
+    """Check `_special.gamma` against scipy."""
     x = np.linspace(-100.1, 100, 1000)  # .1 because negative integers are poles
     g1 = special.gamma(x)
     g2 = _special.gamma(x)
@@ -198,6 +216,7 @@ def _zeta(s):
 
 @np.vectorize
 def periodic_zeta(x, s):
+    """Return the periodic zeta function computed with mpmath."""
     if int(x) == x:
         return _zeta(s)
         # patch for mpmath.polylog(s, 1) != zeta(s)
@@ -227,6 +246,7 @@ def periodic_zeta(x, s):
     ],
 )
 def test_periodic_zeta(s, d, sgn, i, cached):
+    """Check the real or imaginary part of `periodic_zeta` against mpmath."""
     if d == 0 and sgn < 0:
         pytest.skip()
 
@@ -250,6 +270,7 @@ def test_periodic_zeta(s, d, sgn, i, cached):
     'i', [pytest.param(False, id='real'), pytest.param(True, id='imag')]
 )
 def test_periodic_zeta_deriv(i, cached):
+    """Check the derivative of `periodic_zeta` w.r.t. `x` against mpmath."""
     x = np.linspace(-1, 2, 52)
     s = np.linspace(2.01, 16, 20)[:, None]
 
@@ -265,6 +286,7 @@ def test_periodic_zeta_deriv(i, cached):
 
 @np.vectorize
 def zeta_zero(s):
+    """Return zeta(s) - zeta(0) computed with mpmath."""
     with mpmath.workdps(40):
         return float(mpmath.zeta(s) - mpmath.zeta(0))
 
@@ -279,6 +301,7 @@ def zeta_zero(s):
     ],
 )
 def test_zeta_zero(s, cached):
+    """Check `zeta_zero` against mpmath."""
     z1 = cached('z1', zeta_zero, s)
     z2 = _special.zeta_zero(s)
     np.testing.assert_array_max_ulp(z1, z2, 2)
@@ -286,6 +309,7 @@ def test_zeta_zero(s, cached):
 
 @np.vectorize
 def gamma_incr(x, e):
+    """Return gamma(x + e) / (gamma(x) gamma(1 + e)) - 1 computed with mpmath."""
     with mpmath.workdps(40):
         x = mpmath.mpf(float(x))
         e = mpmath.mpf(float(e))
@@ -306,6 +330,7 @@ def gamma_incr(x, e):
     'x', [pytest.param(2, id='2'), pytest.param(np.arange(3, 15), id='farpole')]
 )
 def test_gamma_incr(x, e, s, cached):
+    """Check `gamma_incr` against mpmath."""
     x = np.reshape(x, (-1, 1))
     e = e * s
     e = np.where(x == 1, np.abs(e), e)
@@ -316,6 +341,7 @@ def test_gamma_incr(x, e, s, cached):
 
 @np.vectorize
 def gammaln1(x):
+    """Return log(gamma(1 + x)) computed with mpmath."""
     with mpmath.workdps(40):
         x = mpmath.mpf(float(x))
         return float(mpmath.loggamma(1 + x))
@@ -331,6 +357,7 @@ def gammaln1(x):
     ],
 )
 def test_gammaln1(x, s, cached):
+    """Check `gammaln1` against mpmath."""
     x = x * s
     g1 = cached('g1', gammaln1, x)
     g2 = _special.gammaln1(x)
@@ -339,6 +366,7 @@ def test_gammaln1(x, s, cached):
 
 @np.vectorize
 def zeta_series_power_diff(x, q, a):
+    """Compute the reference for `zeta_series_power_diff` with mpmath."""
     with mpmath.workdps(40):
         x = mpmath.mpf(float(x))
         q = mpmath.mpf(float(q))
@@ -378,6 +406,7 @@ def zeta_series_power_diff(x, q, a):
     ],
 )
 def test_power_diff(x, q, a, s, cached):
+    """Check `zeta_series_power_diff` against mpmath."""
     if np.any(q == 0) and np.any(s > 0):
         pytest.skip()
     x = np.reshape(x, (-1, 1, 1))
@@ -401,6 +430,7 @@ def test_power_diff(x, q, a, s, cached):
 
 @np.vectorize
 def zeta_zeros(s):
+    """Return the derivative of the zeta function computed with mpmath."""
     with mpmath.workdps(20):
         return float(mpmath.diff(mpmath.zeta, s))
 
@@ -414,6 +444,8 @@ def zeta_zeros(s):
     ],
 )
 def test_zeta_zeros(s, cached):
+    """Check the derivative of zeta at the trivial zeros, from a closed form and from `_special.zeta`, against mpmath."""
+
     def handwritten(s):
         pi = 2 * (2 * np.pi) ** (s - 1)
         n = np.around(s)
@@ -433,6 +465,7 @@ def test_zeta_zeros(s, cached):
 
 
 def bernoulli_poly_handwritten(n, x):
+    """Return the Bernoulli polynomial of degree `n` <= 6 from explicit formulas."""
     return [
         lambda x: 1,
         lambda x: x - 1 / 2,
@@ -445,12 +478,14 @@ def bernoulli_poly_handwritten(n, x):
 
 
 def check_bernoulli(n, x):
+    """Check `periodic_bernoulli` against the explicit Bernoulli polynomial."""
     r1 = bernoulli_poly_handwritten(n, x)
     r2 = _special.periodic_bernoulli(n, x)
     util.assert_allclose(r1, r2, atol=1e-15, rtol=1e-8)
 
 
 def test_bernoulli(rng):
+    """Run `check_bernoulli` with degrees 0 to 6 on random points in [0, 1]."""
     for n in range(7):
         x = rng.uniform(0, 1, size=100)
         check_bernoulli(n, x)
@@ -458,10 +493,12 @@ def test_bernoulli(rng):
 
 @np.vectorize
 def expint(n, z):
+    """Return the generalized exponential integral computed with mpmath."""
     return complex(mpmath.expint(n, z))
 
 
 def test_expn(rng, cached):
+    """Check `expn_imag` in double and single precision against mpmath."""
     x = rng.uniform(0, 30, 10)
     n = np.arange(2, 12)
     result_64 = np.array([_special.expn_imag(n, x) for n in n])
@@ -474,4 +511,5 @@ def test_expn(rng, cached):
 
 
 def test_kvp():
+    """Check the gradients of `kv` w.r.t. the argument."""
     test_util.check_grads(lambda z: _special.kv(3.2, z), (1.5,), 2)

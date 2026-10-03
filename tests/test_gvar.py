@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test the `gvar` extensions in `_gvarext` and `BufferDict` as a pytree."""
+
 import gvar
 import numpy as np
 import pytest
@@ -27,6 +29,7 @@ from tests import util
 
 
 def check_jacobian(nprim, shape, rng, *, pnz=1):
+    """Check that `from_jacobian` inverts `jacobian` on random linear gvars."""
     z, s = rng.standard_normal((2, nprim))
     x = gvar.gvar(z, np.abs(s))
     t = rng.standard_normal((*shape, nprim))
@@ -38,6 +41,7 @@ def check_jacobian(nprim, shape, rng, *, pnz=1):
 
 
 def test_jacobian(rng):
+    """Check the `jacobian` round trip with various shapes and sparsities."""
     check_jacobian(10, (5,), rng)
     check_jacobian(10, (2, 3), rng)
     check_jacobian(0, (5,), rng)
@@ -49,6 +53,7 @@ def test_jacobian(rng):
 
 
 def test_bdtree():
+    """Check that a `BufferDict` survives a pytree flatten-unflatten round trip."""
     x = gvar.BufferDict(a=[1, 2], b=[3, 4])
     l, t = tree.flatten(x)
     y = tree.unflatten(t, l)
@@ -59,6 +64,7 @@ def test_bdtree():
 
 
 def test_bdtree_dtype():
+    """Check that the pytree round trip preserves the dtype of a `BufferDict`."""
     x = gvar.BufferDict(dict(a=0), dtype=bool)
     l, t = tree.flatten(x)
     y = tree.unflatten(t, l)
@@ -67,6 +73,7 @@ def test_bdtree_dtype():
 
 @pytest.mark.parametrize('shape', [(), (2,)])
 def test_bdtree_compare(rng, shape):
+    """Check that flattening the same `BufferDict` twice gives equal treedefs."""
     x = gvar.BufferDict(a=rng.standard_normal(shape))
     _, t1 = tree.flatten(x)
     _, t2 = tree.flatten(x)
@@ -75,8 +82,10 @@ def test_bdtree_compare(rng, shape):
 
 @pytest.mark.parametrize('shape', [(), (2,)])
 def test_double_jit(rng, shape):
-    """Call a jitted function twice with the same BufferDict to trigger the
-    machinery that checks if a compiled version already exists
+    """Call a jitted function twice with the same BufferDict.
+
+    This triggers the machinery that checks if a compiled version already
+    exists.
     """
     x = gvar.BufferDict(a=rng.standard_normal(shape))
 
@@ -91,6 +100,7 @@ def test_double_jit(rng, shape):
 
 
 def test_tracer():
+    """Check that a `BufferDict` passes through `tree.map` inside `jit`."""
     x = gvar.BufferDict(a=0.0, b=1.0)
 
     @jit
@@ -102,6 +112,7 @@ def test_tracer():
 
 
 def test_uformat():
+    """Check the strings produced by `uformat` for many values and settings."""
 
     def check(n, s, string, *args, **kw):
         defaults = dict(minnegexp=2, minposexp=0)
@@ -203,6 +214,7 @@ def test_uformat():
 
 
 def test_gvar_format():
+    """Check that `gvar_format` changes the gvar formatting only within its context."""
     arglist = [
         # mean, sdev, spec, result
         (1, 12, '1p', '1(12)'),

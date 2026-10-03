@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Test numpy array protocols on Distr"""
+"""Test numpy array protocols on `Distr`."""
 
 import operator
 
@@ -40,6 +40,7 @@ from tests import util
 )
 @pytest.mark.parametrize('number', [False, True])
 def test_binary(op, number, rng):
+    """Check that binary operators on distributions apply to the samples."""
     x = copula.beta(2, 3)
     y = 1.3 if number else copula.gamma(1, 1)
     z = op(x, y)
@@ -60,6 +61,7 @@ def test_binary(op, number, rng):
 
 @pytest.mark.parametrize('op', [operator.abs, operator.neg, operator.pos])
 def test_unary(op, rng):
+    """Check that unary operators on distributions apply to the samples."""
     x = copula.beta(2, 3)
     z = op(x)
 
@@ -74,5 +76,6 @@ def test_unary(op, rng):
 
 
 def test_repr():
+    """Check the `repr` of an operation on distributions."""
     x = copula.beta(1, 1) + copula.gamma(1, 1)
     assert repr(x) == 'add(beta(1, 1), gamma(1, 1))'

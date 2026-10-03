@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test `empbayes_fit`."""
+
 import sys
 
 import gvar
@@ -32,7 +34,7 @@ FITKW = dict()
 
 
 def flat(g):
-    """Convert dictionary or array to 1D array"""
+    """Convert dictionary or array to 1D array."""
     if hasattr(g, 'buf'):
         return g.buf
     elif hasattr(g, 'keys'):
@@ -42,7 +44,7 @@ def flat(g):
 
 
 def quad(A, v):
-    """Compute v.T @ A^-1 @ v"""
+    """Compute v.T @ A^-1 @ v."""
     w, u = np.linalg.eigh(A)
     utv = u.T @ v
     eps = len(A) * 1e-12 * np.max(w)
@@ -50,7 +52,7 @@ def quad(A, v):
 
 
 def chisq_test(g, alpha):
-    """Chisquare test on g being 0"""
+    """Chisquare test on g being 0."""
     g = flat(g)
     mean = gvar.mean(g)
     cov = gvar.evalcov(g)
@@ -61,8 +63,10 @@ def chisq_test(g, alpha):
 
 
 def check_fit(hyperprior, gpfactory, alpha=1e-5):
-    """Do a fit with empbayes_fit and check the fitted hyperparameters
-    are compatible with the ones used to generate the data
+    """Do a fit with `empbayes_fit` and check the fitted hyperparameters.
+
+    Check the fitted hyperparameters are compatible with the ones used to
+    generate the data.
     """
     # generate hyperparameters
     truehp = gvar.sample(hyperprior)
@@ -82,6 +86,7 @@ def check_fit(hyperprior, gpfactory, alpha=1e-5):
     reason='I guess Laplace approximation bad for this model. Seen passing.'
 )
 def test_period():
+    """Check that the fit recovers the scale of a `Periodic` kernel."""
     hp = {'log(scale)': gvar.log(gvar.gvar(1, 0.1))}
     x = np.linspace(0, 6, 10)
 
@@ -92,6 +97,7 @@ def test_period():
 
 
 def test_scale():
+    """Check that the fit recovers the scale of an `ExpQuad` kernel."""
     hp = {'log(scale)': gvar.log(gvar.gvar(3, 0.2))}
     x = np.linspace(0, 2 * np.pi * 5, 20)
 
@@ -102,6 +108,7 @@ def test_scale():
 
 
 def test_sdev():
+    """Check that the fit recovers the standard deviation of an `ExpQuad` kernel."""
     hp = {'log(sdev)': gvar.log(gvar.gvar(1, 1))}
     x = np.linspace(0, 5, 10)
 
@@ -112,6 +119,7 @@ def test_sdev():
 
 
 def test_scale_sdev():
+    """Check that the fit recovers both scale and sdev of an `ExpQuad` kernel."""
     hp = {
         'log(scale)': gvar.log(gvar.gvar(3, 0.2)),
         'log(sdev)': gvar.log(gvar.gvar(1, 1)),
@@ -126,6 +134,10 @@ def test_scale_sdev():
 
 
 def test_flat_scalar():
+    """Check that the hyperprior can be a dict, a 1D array or a scalar.
+
+    The three formats must give the same result.
+    """
     hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
 
@@ -152,7 +164,7 @@ def test_flat_scalar():
 
 
 def test_method():
-
+    """Check that the fit methods agree, with fixed or hp-dependent data."""
     hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
 
@@ -190,6 +202,7 @@ def test_method():
 
 
 def test_checks():
+    """Check that the fit raises on an invalid method and on minimization failure."""
     with pytest.raises(KeyError):
         lgp.empbayes_fit(
             gvar.gvar(0, 1), lambda: None, lambda: None, method='cippa', **FITKW
@@ -210,6 +223,8 @@ def test_checks():
 
 
 def test_int_data():
+    """Check that the fit accepts integer data."""
+
     def makegp(x):
         return lgp.GP(lgp.ExpQuad()).addx(x, 'x')
 
@@ -217,9 +232,7 @@ def test_int_data():
 
 
 def test_data_formats():
-    """Check that presenting data in different formats does not change the
-    result
-    """
+    """Check that presenting data in different formats does not change the result."""
     hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
 
@@ -272,7 +285,7 @@ def test_data_formats():
 
 
 def test_loss_zero():
-    """Check that adding a zero loss function does not change the result"""
+    """Check that adding a zero loss function does not change the result."""
     hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
 
@@ -303,9 +316,7 @@ def test_loss_zero():
 
 
 def test_loss_offset():
-    """Check that adding a constant loss function changes the function value
-    but not the location of the minimum
-    """
+    """Check that a constant loss changes the minimum value but not its location."""
     hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
 
@@ -334,9 +345,7 @@ def test_loss_offset():
 
 
 def test_loss_shrinkage():
-    """Check that a loss with minimum in a different position moves the
-    result towards there
-    """
+    """Check that a loss with minimum elsewhere moves the result towards there."""
     hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
 
@@ -371,7 +380,7 @@ def test_loss_shrinkage():
 
 
 def test_loss_fisher():
-    """Check that using fisher with a user loss raises"""
+    """Check that using fisher with a user loss raises."""
     hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
 

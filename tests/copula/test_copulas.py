@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Test the predefined distributions"""
+"""Test the predefined distributions."""
 
 import contextlib
 import functools
@@ -37,6 +37,7 @@ from tests import util
 
 @contextlib.contextmanager
 def jaxconfig(**opts):
+    """Temporarily set jax configuration options."""
     prev = {k: jax.config.read(k) for k in opts}
     try:
         for k, v in opts.items():
@@ -48,13 +49,12 @@ def jaxconfig(**opts):
 
 
 class DistrTestBase:
-    """
-    Base class for tests of a Distr subclass
-    """
+    """Base class for tests of a `Distr` subclass."""
 
     testfor = {}  # noqa: RUF012, registry shared by design
 
     def __init_subclass__(cls):
+        """Set the default attributes of a test subclass and register it."""
         assert cls.__name__.startswith('Test')
         attrs = dict(copcls=getattr(lgp.copula, cls.__name__[4:].lower()))
         for k, v in attrs.items():
@@ -71,9 +71,11 @@ class DistrTestBase:
     accurate_range = (-np.inf, np.inf)
 
     def scipy_params(*params):
+        """Convert the parameters to scipy's parametrization."""
         return params
 
     def cdf(self):
+        """Return the scipy cdf, restricted and renormalized to `accurate_range`."""
         distrname = self.copcls.__name__
         distr = getattr(stats, distrname)
         params = self.scipy_params(*self.params)
@@ -88,6 +90,7 @@ class DistrTestBase:
         return clipped_cdf
 
     def rvs(cls, *params, size=(), random_state=None):
+        """Sample the distribution with scipy."""
         distrname = cls.copcls.__name__
         distr = getattr(stats, distrname)
         params = cls.scipy_params(*params)
@@ -95,7 +98,7 @@ class DistrTestBase:
 
     @classmethod
     def recrvs(cls, level):
-
+        """Return a sampler with `level` levels of random parameters."""
         distrname = cls.copcls.__name__
         distr = getattr(stats, distrname)
 
@@ -115,6 +118,7 @@ class DistrTestBase:
 
     @classmethod
     def trim(cls, x, corendim):
+        """Remove the samples with any component outside `accurate_range`."""
         ok = x == np.clip(x, *cls.accurate_range)
         axes = tuple(range(x.ndim - corendim, x.ndim))
         ok = np.all(ok, axis=axes)
@@ -122,6 +126,7 @@ class DistrTestBase:
 
     @classmethod
     def convert_recparams(cls, level):
+        """Return the parameters with `level` levels of nested distributions."""
         if level > 0:
             params = []
             for param in cls.recparams:
@@ -135,9 +140,11 @@ class DistrTestBase:
 
     @pytest.fixture
     def name(self, request):
+        """Return the node id of the test, to use as unique name."""
         return request.node.nodeid
 
     def test_invfcn_errorprop(self, name, rng):
+        """Check that `invfcn` propagates the errors of gvars to first order."""
         variables = self.copcls(*self.params, name=name)
         assert np.ndim(variables) in (0, 1)
         assert np.ndim(variables) == 0 or variables.size > 1
@@ -155,7 +162,7 @@ class DistrTestBase:
         )
 
     def test_partial_invfcn_gvar_vectorized(self, name, rng):
-
+        """Check the error propagation of `partial_invfcn` on an array of gvars."""
         distr = self.copcls(*self.params)
 
         shape = (13,)
@@ -189,6 +196,7 @@ class DistrTestBase:
             )
 
     def test_overwrite(self, name):
+        """Check that a name can be reused only by the same distribution."""
         gvar.BufferDict.add_distribution(name, gvar.exp)
         with pytest.raises(ValueError):
             self.copcls(*self.params, name=name)
@@ -197,6 +205,7 @@ class DistrTestBase:
         self.copcls(*self.params, name=name)
 
     def test_bufferdict_gvar(self, name):
+        """Check the error propagation through a `BufferDict` with the distribution."""
         key = f'{name}(x)'
         b = gvar.BufferDict({key: self.copcls(*self.params, name=name)})
         x = b['x']
@@ -210,6 +219,7 @@ class DistrTestBase:
         )
 
     def test_bufferdict(self, name):
+        """Check that a `BufferDict` key with the distribution applies `invfcn`."""
         key = f'{name}(x)'
         variables = self.copcls(*self.params, name=name)
         b = gvar.BufferDict({key: np.zeros_like(variables, float)})
@@ -218,8 +228,9 @@ class DistrTestBase:
         util.assert_allclose(x, x2, rtol=1e-6)
 
     def test_continuity_zero(self, name):
-        """Check that invfcn is continuous in zero, since it is a common
-        cutpoint to switch from ppf(cdf(·)) to isf(sf(·))
+        """Check that `invfcn` is continuous in zero.
+
+        Zero is a common cutpoint to switch from ppf(cdf(·)) to isf(sf(·)).
         """
         eps = np.finfo(float).eps
         x1 = self.copcls.invfcn(-eps, *self.array_params)
@@ -227,7 +238,7 @@ class DistrTestBase:
         util.assert_allclose(x1, x2, atol=8 * eps, rtol=8 * eps)
 
     def test_decorator(self, rng):
-        """Check that recreating the distrution with the decorator works"""
+        """Check that recreating the distribution with the decorator works."""
         alt = lgp.copula.distribution(
             self.copcls.invfcn,
             signature=self.copcls.signature.signature,
@@ -244,17 +255,21 @@ class DistrTestBase:
 
     @pytest.fixture
     def nsamples(self):
+        """Return the number of samples for the distribution tests."""
         return 10000
 
     @pytest.fixture
     def significance(self):
+        """Return the significance level of the distribution tests."""
         return 0.0001
 
     @functools.cached_property
     def array_params(self):
+        """Return the parameters converted to arrays."""
         return tuple(map(np.asarray, self.params))
 
     def test_correct_distribution(self, rng, nsamples, significance):
+        """Check that `invfcn` maps normal samples to the distribution."""
         sig = self.copcls.signature.eval(None, *self.array_params)
         in_shape = sig.in_shapes[0]
         (out_shape,) = sig.out_shapes
@@ -270,6 +285,7 @@ class DistrTestBase:
 
     @pytest.mark.parametrize('level', [0, 1, 2])
     def test_recursive(self, name, level, rng, nsamples, significance):
+        """Check the distribution with random parameters, nested `level` times."""
         variables = self.copcls(*self.convert_recparams(level), name=name)
         samples_norm = rng.standard_normal((nsamples,) + variables.shape)
         bd = gvar.BufferDict({f'{name}(x)': samples_norm})
@@ -278,9 +294,11 @@ class DistrTestBase:
         self.compare_samples(samples, refsamples, rng, significance)
 
     def assert_notnan(self, x):
+        """Assert that `x` contains no nan."""
         assert np.all(~np.isnan(x)), np.sum(np.isnan(x))
 
     def compare_samples(self, samples, refsamples, rng, significance):
+        """Check with KS tests that two samples have the same distribution."""
         self.assert_notnan(samples)
         self.assert_notnan(refsamples)
         assert refsamples.shape == samples.shape
@@ -301,16 +319,21 @@ class DistrTestBase:
 
 
 class TestBeta(DistrTestBase):
+    """Test the `beta` distribution."""
+
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfcauchy'
 
 
 class TestDirichlet(DistrTestBase):
+    """Test the `dirichlet` distribution."""
+
     params = ([1, 4, 3],)
     recparams = params
     # recparams = 'gamma' <shape=5>
 
     def rvs(cls, alpha, size=(), random_state=None):
+        """Sample the distribution, broadcasting `alpha` with `size`."""
         alpha = np.asarray(alpha)
         rng = np.random.default_rng(random_state)
         shape = np.broadcast_shapes(alpha.shape[:-1], size) + alpha.shape[-1:]
@@ -319,6 +342,7 @@ class TestDirichlet(DistrTestBase):
 
     @staticmethod
     def dirichlet_rvs(alpha, rng):
+        """Sample the distribution by normalizing gamma samples in log space."""
         lny = TestLogGamma.rvs(alpha, random_state=rng)  # ty: ignore[missing-argument]
         norm = special.logsumexp(lny, axis=-1, keepdims=True)
         return np.exp(lny - norm)
@@ -329,34 +353,45 @@ class TestDirichlet(DistrTestBase):
 
 
 class TestGamma(DistrTestBase):
+    """Test the `gamma` distribution."""
+
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfnorm'
     scipy_params = lambda alpha, beta: (alpha, 0, 1 / beta)
 
 
 class TestHalfCauchy(DistrTestBase):
+    """Test the `halfcauchy` distribution."""
+
     params = (0.7,)
     recparams = ('invgamma',)
     scipy_params = lambda gamma: (0, gamma)
 
 
 class TestHalfNorm(DistrTestBase):
+    """Test the `halfnorm` distribution."""
+
     params = (1.3,)
     recparams = ('invgamma',)
     scipy_params = lambda sigma: (0, sigma)
 
 
 class TestInvGamma(DistrTestBase):
+    """Test the `invgamma` distribution."""
+
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfnorm'
     scipy_params = lambda alpha, beta: (alpha, 0, beta)
 
 
 class TestLogGamma(DistrTestBase):
+    """Test the `loggamma` distribution."""
+
     params = (1.2,)
     recparams = ('invgamma',)
 
     def rvs(cls, c, size=(), random_state=None):
+        """Sample the distribution."""
         # old scipy versions do not handle small c, so I copied the code from
         # a recent version
         shape = getattr(c, 'shape', ())
@@ -371,12 +406,15 @@ class TestLogGamma(DistrTestBase):
 
 
 class TestUniform(DistrTestBase):
+    """Test the `uniform` distribution."""
+
     params = -0.5, 2
     recparams = -1, 'uniform'
     scipy_params = lambda a, b: (a, b - a)
 
 
 def test_invgamma_divergence():
+    """Check that `invgamma.invfcn` is finite for a large input."""
     y = lgp.copula.invgamma.invfcn(10.0, 1, 1)
     assert np.isfinite(y)
 
@@ -384,7 +422,7 @@ def test_invgamma_divergence():
 @pytest.mark.parametrize('distr', ['gamma', 'invgamma', 'loggamma'])
 @pytest.mark.parametrize('x64', [False, True])
 def test_gamma_asymp(distr, x64):
-
+    """Check overflow and continuity at the asymptotic series switchpoint."""
     test = DistrTestBase.testfor[distr]
 
     # check there's no over/underflow
@@ -408,7 +446,7 @@ def test_gamma_asymp(distr, x64):
 
 
 def test_staticdescr_repr():
-
+    """Check the `repr` of `_staticdescr` for various distributions."""
     x = lgp.copula.beta(1, 2)
     assert repr(x._staticdescr) == 'beta(1, 2)'
 
@@ -440,7 +478,7 @@ def test_staticdescr_repr():
 
 
 def test_repr():
-
+    """Check the `repr` of distributions, with arrays shown by shape."""
     x = lgp.copula.beta(1, 2)
     assert repr(x) == 'beta(1, 2)'
 
@@ -467,7 +505,7 @@ def test_repr():
 
 
 def test_repr_recursive():
-
+    """Check that `repr` shows repeated variables as references."""
     x = lgp.copula.beta(1, 2)
     y = lgp.copula.uniform(x, x)
     z = lgp.copula.beta(y, x)
@@ -475,7 +513,7 @@ def test_repr_recursive():
 
 
 def test_shared_basic(rng):
-    """Test that a shared variable is not duplicated"""
+    """Test that a shared variable is not duplicated."""
     x = lgp.copula.invgamma(1, 1)
     y = lgp.copula.halfnorm(x)
     z = lgp.copula.halfcauchy(x)
@@ -495,8 +533,9 @@ def test_shared_basic(rng):
 
 
 def test_shared_degeneracy(rng):
-    """Test that a shared variable is not duplicated, by checking the
-    degeneracy in the model
+    """Test that a shared variable is not duplicated.
+
+    Check it through the degeneracy in the model.
     """
     x = lgp.copula.loggamma(1)
     y = lgp.copula.uniform(x, x)
@@ -507,7 +546,7 @@ def test_shared_degeneracy(rng):
 
 
 def test_shared_hierarchy(rng):
-    """Test that a shared variable is not duplicated, with complex hierachy"""
+    """Test that a shared variable is not duplicated, with complex hierarchy."""
     x = lgp.copula.invgamma(1, 1)
     y = lgp.copula.halfnorm(x)
     z = lgp.copula.halfcauchy(x)
@@ -529,8 +568,9 @@ def test_shared_hierarchy(rng):
 
 
 def test_shared_shapes(rng):
-    """Test that a shared variable is not duplicated, with complex hierachy
-    and shapes
+    """Test that a shared variable is not duplicated.
+
+    Use a complex hierarchy and shapes.
     """
     a = lgp.copula.invgamma(2, 2, shape=(2, 1))  # 2
     x = lgp.copula.invgamma(1, 1, shape=3)  # 3
@@ -568,6 +608,7 @@ def test_shared_shapes(rng):
 
 
 def test_wrong_nargs():
+    """Check that a wrong number of parameters raises `TypeError`."""
     with pytest.raises(TypeError):
         lgp.copula.beta(1)
     with pytest.raises(TypeError):
@@ -575,6 +616,7 @@ def test_wrong_nargs():
 
 
 def test_staticdescr():
+    """Check that `_staticdescr` distinguishes repeated variables from equal ones."""
     x1 = lgp.copula.beta(1, 2)
     x2 = x1.__class__(*x1.params)
     assert x1._staticdescr == x2._staticdescr

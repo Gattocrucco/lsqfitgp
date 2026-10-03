@@ -17,11 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test the `_linalg._seqalg` submodule."""
+
 import pytest
 
 from lsqfitgp._linalg import _seqalg
 
 
 def test_acausal_alg():
+    """Check that an operation with forward-reference inputs raises `ValueError`."""
     with pytest.raises(ValueError):
         _seqalg.sequential_algorithm(2, [_seqalg.Stack(0)])

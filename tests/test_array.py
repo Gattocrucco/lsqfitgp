@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test `StructuredArray` and the other functionality of the `_array` submodule."""
+
 import itertools
 
 import numpy as np
@@ -33,6 +35,7 @@ from tests import util
 
 
 def test_ellipsis():
+    """Check that indexing with an ellipsis applies to the shape and not to the field subshape."""
     x = np.empty((2, 3), dtype=[('a', float, 4)])
     y = lgp.StructuredArray(x)
     z = y[..., 0]
@@ -41,6 +44,7 @@ def test_ellipsis():
 
 
 def fill_array_at_random(x, rng):
+    """Fill an array in place with random values, recursing into structured fields."""
     if x.dtype.names:
         for name in x.dtype.names:
             fill_array_at_random(x[name], rng)
@@ -67,6 +71,7 @@ def fill_array_at_random(x, rng):
 
 
 def random_array(shape, dtype, rng):
+    """Return a new array of the given shape and dtype filled with random values."""
     x = np.empty(shape, dtype)
     fill_array_at_random(x, rng)
     return x
@@ -74,6 +79,8 @@ def random_array(shape, dtype, rng):
 
 def crosscheck_operation(op, *arrays, **kw):
     """
+    Check that an operation gives the same result on numpy and `StructuredArray`.
+
     Arrays = structured numpy arrays
     applies op both to arrays and to the conversion to StructuredArrays, then
     converts back to numpy arrays and check the result is the same. Op can be
@@ -98,6 +105,7 @@ def crosscheck_operation(op, *arrays, **kw):
 
 @pytest.fixture
 def dtypes():
+    """Return a list of structured dtypes to test."""
     return [
         [('a', float)],
         'f,f',
@@ -117,6 +125,7 @@ def dtypes():
 
 @pytest.fixture
 def dtypes_s2us():
+    """Return a list of structured dtypes that support `structured_to_unstructured`."""
     # structured_to_unstructured does not work on object arrays (see numpy
     # issue #21990) and needs types that can be casted to a common type
     return [
@@ -137,10 +146,12 @@ def dtypes_s2us():
 
 @pytest.fixture
 def shapes():
+    """Return a list of array shapes to test."""
     return [(), (0,), (1,), (1, 0), (0, 1), (7,), (7, 11)]
 
 
 def test_broadcast_to(dtypes, shapes, rng):
+    """Check `numpy.broadcast_to` on `StructuredArray` against numpy."""
     op = np.broadcast_to  # uses __array_function__
     transfs = [
         lambda s: s,
@@ -156,6 +167,7 @@ def test_broadcast_to(dtypes, shapes, rng):
 
 
 def test_broadcast_arrays(dtypes, shapes, rng):
+    """Check `numpy.broadcast_arrays` on `StructuredArray` against numpy."""
     op = np.broadcast_arrays  # uses __array_function__
     transfs = [
         lambda s: s,
@@ -172,6 +184,8 @@ def test_broadcast_arrays(dtypes, shapes, rng):
 
 
 def test_broadcast(dtypes, shapes, rng):
+    """Check that `lgp.broadcast` gives the same shape on `StructuredArray` and numpy."""
+
     def op(array1, array2):
         return lgp.broadcast(array1, array2).shape
 
@@ -190,18 +204,22 @@ def test_broadcast(dtypes, shapes, rng):
 
 
 def test_asarray(dtypes, shapes, rng):
+    """Check `lgp.asarray` on `StructuredArray` against numpy."""
     for dtype, shape in itertools.product(dtypes, shapes):
         array = random_array(shape, dtype, rng)
         crosscheck_operation(lgp.asarray, array)
 
 
 def test_T(dtypes, shapes, rng):
+    """Check the transpose `.T` of `StructuredArray` against numpy."""
     for dtype, shape in itertools.product(dtypes, shapes):
         array = random_array(shape, dtype, rng)
         crosscheck_operation(lambda x: x.T, array)
 
 
 def test_multiindex(dtypes, shapes, rng):
+    """Check indexing `StructuredArray` with lists of field names against numpy."""
+
     def op(a):
         names = list(a.dtype.names)
         return a[names], a[names[:2]], a[names[-2:]], a[names[:1]]
@@ -212,6 +230,7 @@ def test_multiindex(dtypes, shapes, rng):
 
 
 def array_meta_hash(a):
+    """Return an integer that depends on the shape and dtype of an array."""
     d = a.dtype
     shape_hash = sum(a.shape) + a.size + a.ndim
     type_hash = len(d) + d.itemsize + sum(d[i].num for i in range(len(d))) + d.num
@@ -219,6 +238,8 @@ def array_meta_hash(a):
 
 
 def test_setfield(dtypes, shapes, rng):
+    """Check setting a field of `StructuredArray` with `.at[name].set` against numpy."""
+
     def op(a):
         name = a.dtype.names[0]
         a0 = a[name]
@@ -236,6 +257,7 @@ def test_setfield(dtypes, shapes, rng):
 
 
 def test_tree(dtypes, shapes, rng):
+    """Check that `StructuredArray` round-trips through `jax.tree` flatten and unflatten."""
     for dtype, shape in itertools.product(dtypes, shapes):
         array1 = random_array(shape, dtype, rng)
         array = lgp.StructuredArray(array1)
@@ -246,6 +268,7 @@ def test_tree(dtypes, shapes, rng):
 
 
 def test_tree_reshaped(dtypes, shapes, rng):
+    """Check that unflattening sliced, broadcasted or indexed leaves gives the reshaped array."""
     for dtype, shape in itertools.product(dtypes, shapes):
         basearray = random_array(shape, dtype, rng)
 
@@ -284,6 +307,8 @@ def test_tree_reshaped(dtypes, shapes, rng):
 
 
 def test_reshape(dtypes, shapes, rng):
+    """Check `StructuredArray.reshape` against numpy, with shape as tuple and as arguments."""
+
     def op1(array, shape):
         return array.reshape(shape)
 
@@ -312,6 +337,7 @@ def test_reshape(dtypes, shapes, rng):
 
 
 def test_repr():
+    """Check the `repr` of `StructuredArray` against fixed strings."""
     x = np.array(
         [
             [(79.4607, 34.16494104, True), (-122.71211, 70.48242559, False)],
@@ -379,6 +405,7 @@ StructuredArray({
 
 
 def test_set_subfield(rng):
+    """Check that `.at[a][b].set` is equivalent to nested `.at[...].set` calls."""
     y = random_array(5, [('a', [('b', float)])], rng)
     x = lgp.StructuredArray(y)
     a = x['a']
@@ -391,6 +418,7 @@ def test_set_subfield(rng):
 
 
 def test_squeeze(dtypes, rng):
+    """Check `squeeze` on `StructuredArray` against numpy, with and without `axis`."""
     shapes = [(), (0,), (1,), (1, 0), (0, 1), (10, 1), (1, 2, 3), (2, 3, 4, 1)]
     for dtype, shape in itertools.product(dtypes, shapes):
         array = random_array(shape, dtype, rng)
@@ -411,7 +439,7 @@ def test_squeeze(dtypes, rng):
 
 @pytest.mark.parametrize('cls', [pl.DataFrame, pd.DataFrame])
 def test_dataframe(cls, rng):
-    """Test DataFrame -> StructuredArray, both with Pandas and Polars"""
+    """Test DataFrame -> StructuredArray, both with Pandas and Polars."""
     a = random_array(10, 'f4,f8,i1,i2,i4,i8,u1,u2,u4,u8,?,U16,S16', rng)
     df = cls(pd.DataFrame.from_records(a))
     s = lgp.StructuredArray.from_dataframe(df)
@@ -420,12 +448,13 @@ def test_dataframe(cls, rng):
 
 
 def test_not_handled():
+    """Check that a numpy function not supported by `StructuredArray` raises `TypeError`."""
     with pytest.raises(TypeError):
         np.add(lgp.StructuredArray(np.zeros(1, 'd,d')), 0)
 
 
 def test_asjax(rng):
-
+    """Check that `_asarray_jaxifpossible` converts to jax only the dtypes supported by jax."""
     x = random_array(4, float, rng)
     assert isinstance(x, np.ndarray)
     x = _array._asarray_jaxifpossible(x)
@@ -442,6 +471,7 @@ def test_asjax(rng):
 
 
 def test_shortkey(rng):
+    """Check that indexing with fewer indices than dimensions keeps the remaining axes."""
     x = random_array((2, 3), 'd,d', rng)
     x = lgp.StructuredArray(x)
     elem = x[0]
@@ -450,6 +480,7 @@ def test_shortkey(rng):
 
 
 def test_longkey(rng):
+    """Check that indexing with more indices than dimensions raises `IndexError`."""
     x = random_array((2, 3), '5d,5d', rng)
     x = lgp.StructuredArray(x)
     with pytest.raises(IndexError):
@@ -457,6 +488,7 @@ def test_longkey(rng):
 
 
 def test_unflatten_dummy(rng):
+    """Check that unflattening with scalar dummy leaves gives a 0d array with the leaves' types."""
     x = random_array((2, 3), 'f,d,?', rng)
     x = lgp.StructuredArray(x)
     _, aux = tree.flatten(x)
@@ -467,6 +499,7 @@ def test_unflatten_dummy(rng):
 
 
 def test_incompatible_shapes(rng):
+    """Check unflattening with scalar dummy leaves that do not match the field shapes."""
     x = random_array((2, 3), 'f,2d,?', rng)
     x = lgp.StructuredArray(x)
     _, aux = tree.flatten(x)
@@ -477,6 +510,7 @@ def test_incompatible_shapes(rng):
 
 
 def test_ix(rng):
+    """Check `numpy.ix_` with `StructuredArray` and normal arrays mixed."""
     x = lgp.StructuredArray(random_array(8, 'f,2d,?', rng))
     y = lgp.StructuredArray(random_array(3, 'i,i', rng))
     z = random_array(7, 'd', rng)
@@ -512,12 +546,14 @@ def test_ix(rng):
 
 
 def test_structured_to_unstructured(dtypes_s2us, shapes, rng):
+    """Check `structured_to_unstructured` on `StructuredArray` against numpy."""
     for dtype, shape in itertools.product(dtypes_s2us, shapes):
         array = random_array(shape, dtype, rng)
         crosscheck_operation(recfunctions.structured_to_unstructured, array)
 
 
 def test_unstructured_to_structured(dtypes_s2us, shapes, rng):
+    """Check that `lgp.unstructured_to_structured` inverts `structured_to_unstructured`."""
     for dtype, shape in itertools.product(dtypes_s2us, shapes):
         x = random_array(shape, dtype, rng)
         y = recfunctions.structured_to_unstructured(x)
@@ -527,6 +563,7 @@ def test_unstructured_to_structured(dtypes_s2us, shapes, rng):
 
 
 def test_unstructured_to_structured_nocopy(rng):
+    """Check that `lgp.unstructured_to_structured` returns a view, without copying."""
     x = random_array((8, 9), float, rng)
     y = lgp.unstructured_to_structured(x)
     assert isinstance(y, lgp.StructuredArray)
@@ -539,12 +576,14 @@ def test_unstructured_to_structured_nocopy(rng):
 
 
 def test_unstructured_to_structured_error0d(rng):
+    """Check that `lgp.unstructured_to_structured` raises `ValueError` on 0d input."""
     x = random_array((), float, rng)
     with pytest.raises(ValueError):
         y = lgp.unstructured_to_structured(x)
 
 
 def test_empty():
+    """Check `numpy.empty` with `like=` and `numpy.empty_like` on `StructuredArray`."""
     like = lgp.StructuredArray(np.empty(0, 'f,f'))
     dtype = np.dtype(
         [
@@ -579,6 +618,7 @@ def test_empty():
 
 
 def test_nd():
+    """Check that `_nd` counts the total number of scalar items in a dtype."""
     nd = lambda d: _array._nd(np.dtype(d))
     assert nd(float) == 1
     assert nd('f,f') == 1 + 1
@@ -588,6 +628,7 @@ def test_nd():
 
 
 def test_concatenate(dtypes, shapes, rng):
+    """Check `numpy.concatenate` on `StructuredArray` against numpy."""
     for dtype, shape in itertools.product(dtypes, shapes):
         axis = rng.integers(0, len(shape) + 1)
         narrays = rng.integers(1, 5)
@@ -604,10 +645,7 @@ def test_concatenate(dtypes, shapes, rng):
 
 
 def patched_append_fields(base, names, data, **kw):
-    """
-    Patched version of `numpy.lib.recfunctions.append_fields` that handles
-    zero-sized arrays and non-1D arrays correctly.
-    """
+    """Call `numpy.lib.recfunctions.append_fields`, handling zero-sized and non-1D arrays correctly."""
     empty = base.size == 0
     non1d = base.ndim != 1
     oldshape = base.shape
@@ -637,6 +675,7 @@ def patched_append_fields(base, names, data, **kw):
 
 
 def test_append_fields(dtypes, shapes, rng):
+    """Check `append_fields` on `StructuredArray` against numpy."""
     for dtype, shape in itertools.product(dtypes, shapes):
         array = random_array(shape, dtype, rng)
         names = ['u', 'v']
@@ -653,6 +692,7 @@ def test_append_fields(dtypes, shapes, rng):
 
 
 def test_from_dict(dtypes, shapes, rng):
+    """Check that `StructuredArray.from_dict` reproduces the array from a dict of its fields."""
     dtype = np.dtype([(f'f{i}', dtype) for i, dtype in enumerate(dtypes)])
     for shape in shapes:
         array = random_array(shape, dtype, rng)
@@ -662,6 +702,7 @@ def test_from_dict(dtypes, shapes, rng):
 
 
 def test_len(rng):
+    """Check that `len` gives the length of the first axis and raises `TypeError` on 0d arrays."""
     x = lgp.StructuredArray(random_array(5, 'f,f', rng))
     assert len(x) == 5
     x = lgp.StructuredArray(random_array((5, 7), 'f,f', rng))
@@ -672,6 +713,7 @@ def test_len(rng):
 
 
 def test_normalized_dtype(rng):
+    """Check that selecting a subset of fields gives the same dtype as having only those fields."""
     x = random_array((), 'f,f,f', rng)
     x = x[['f0', 'f2']]
     x = lgp.StructuredArray(x)

@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""test copula.makedict"""
+"""Test `copula.makedict`."""
 
 import pytest
 
@@ -25,7 +25,7 @@ from lsqfitgp import copula
 
 
 def test_dependencies():
-    """Check that makedict forbids interdependencies between the keys"""
+    """Check that `makedict` forbids interdependencies between the keys."""
     x = copula.beta(1, 1)
     y = copula.beta(1, x)
     with pytest.raises(ValueError):

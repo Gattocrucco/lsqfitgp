@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Define the fixtures shared by all tests."""
+
 import gzip
 import json
 import pathlib
@@ -29,7 +31,10 @@ from jax import random
 
 @pytest.fixture(autouse=True)
 def clean_gvar_env():
-    """Create a new hidden global covariance matrix for primary gvars, restore
+    """
+    Use a fresh global covariance matrix for primary gvars during the test.
+
+    Create a new hidden global covariance matrix for primary gvars, restore
     the previous one during teardown. Otherwise the global covariance matrix
     grows arbitrarily.
     """
@@ -39,7 +44,7 @@ def clean_gvar_env():
 
 @pytest.fixture
 def rng(request):
-    """A random generator with a deterministic per-test seed"""
+    """Return a random generator with a deterministic per-test seed."""
     nodeid = request.node.nodeid
     seed = np.array([nodeid], np.bytes_).view(np.uint8)
     return np.random.default_rng(seed)
@@ -47,7 +52,7 @@ def rng(request):
 
 @pytest.fixture
 def key(rng):
-    """A deterministic per-test jax random key"""
+    """Return a deterministic per-test jax random key."""
     seed = np.array(rng.bytes(4)).view(np.uint32)
     key = random.key(seed)
     return random.fold_in(key, 0xCC755E92)  # to make it independent of rng
@@ -55,8 +60,10 @@ def key(rng):
 
 @pytest.fixture(autouse=True)
 def reset_random_seeds(rng):
-    """Set seeds of global state random generators for tests that still use
-    them. Prefer `rng` for new tests.
+    """
+    Set seeds of global state random generators for tests that still use them.
+
+    Prefer `rng` for new tests.
     """
     bitgen0 = rng.bit_generator
     bitgen1 = bitgen0.jumped(1)
@@ -70,7 +77,10 @@ def reset_random_seeds(rng):
 
 
 class JSONEncoder(json.JSONEncoder):
+    """JSON encoder that also handles numpy arrays and scalars, and complex numbers."""
+
     def default(self, obj):
+        """Convert numpy and complex objects to JSON-serializable objects."""
         if isinstance(obj, np.generic):
             return obj.item()
         if isinstance(obj, np.ndarray):
@@ -83,6 +93,7 @@ class JSONEncoder(json.JSONEncoder):
 
 
 def object_hook(obj):
+    """Decode the objects encoded by `JSONEncoder` when loading JSON."""
     if classname := obj.get('__class__'):
         constructor = dict(array=np.array, complex=complex)[classname]
         args = obj.get('args', ())
@@ -94,6 +105,8 @@ def object_hook(obj):
 @pytest.fixture
 def testpath(request):
     """
+    Return the location of the test.
+
     - relative Path of the file where the test is defined
     - dotted name of the test, including classes and parametrization
     """
@@ -109,7 +122,7 @@ def testpath(request):
 @pytest.fixture
 def cached(testpath):
     """
-    A function that caches the result of a function call in a file.
+    Return a function that caches the result of a function call in a file.
 
     The cache is per test (including parametrizations) and is stored in
     a compressed json file. The cache is a dictionary where the keys must be

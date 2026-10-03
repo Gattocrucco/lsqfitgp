@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Test the generic kernel machinery. This file shall cover at 100% the _Kernel
-submodule.
+"""Test the generic kernel machinery.
+
+This file shall cover at 100% the `_Kernel` submodule.
 """
 
 import contextlib
@@ -39,10 +40,13 @@ from tests import util
 
 @pytest.fixture
 def constcore():
+    """Return a kernel core that is 1 with the broadcast shape of the inputs."""
     return lambda x, y, **_: jnp.ones(jnp.broadcast_shapes(x.shape, y.shape))
 
 
 def test_batch(rng):
+    """Check that batching the computation preserves the class and the result."""
+
     class A(lgp.CrossKernel):
         pass
 
@@ -59,9 +63,12 @@ def test_batch(rng):
 
 
 class TestAlgOp:
+    """Test the algebraic operations on kernels."""
+
     @pytest.mark.parametrize('op', [operator.add, operator.mul])
     @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_binary_kernel(self, op, cls, rng):
+        """Check that adding or multiplying two kernels operates on their values."""
         f1 = lambda x, y: 1.2 * x + 8.9 * y
         f2 = lambda x, y: 3.4 * x + 5.6 * y
         kernel1 = cls(f1)
@@ -75,6 +82,7 @@ class TestAlgOp:
     @pytest.mark.parametrize('op', [operator.add, operator.mul])
     @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_binary_scalar(self, op, cls, rng):
+        """Check adding or multiplying a kernel and a scalar, in both orders."""
         f1 = lambda x, y: 1.2 * x + 8.9 * y
         f2 = 3.4
         x, y = rng.standard_normal((2, 5))
@@ -90,7 +98,7 @@ class TestAlgOp:
     @pytest.mark.parametrize('op', [operator.add, operator.mul, operator.pow])
     @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_binary_undef(self, op, cls, constcore):
-
+        """Check that operations with unsupported types raise or are delegated."""
         # test that adding a string raises through Python's mechanism
         kernel = cls(constcore)
         with pytest.raises(TypeError):
@@ -109,6 +117,7 @@ class TestAlgOp:
 
     @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_pow(self, cls, rng):
+        """Check that a kernel can be raised only to non-negative integer powers."""
         f = lambda x, y: 1.2 * x + 8.9 * y
         for exp in 3, np.int64(3), np.array(3), jnp.array(3):
             kernel = cls(f) ** exp
@@ -136,6 +145,7 @@ class TestAlgOp:
 
     @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_rpow(self, cls, rng):
+        """Check exponentiation with a kernel as exponent, with base >= 1."""
         f = lambda x, y: 1.2 * x + 8.9 * y
 
         def convs(x):
@@ -164,7 +174,7 @@ class TestAlgOp:
     @pytest.mark.parametrize('op', [operator.add, operator.mul])
     @pytest.mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
     def test_binary_kernel_class(self, op, cls, constcore):
-
+        """Check the class of the sum and product of kernels of different classes."""
         assert op(cls(constcore), cls(constcore)).__class__ is cls
         assert op(cls(constcore), lgp.Kernel(constcore)).__class__ is lgp.Kernel
         assert op(lgp.Kernel(constcore), cls(constcore)).__class__ is lgp.Kernel
@@ -197,6 +207,7 @@ class TestAlgOp:
         ],
     )
     def test_binary_scalar_class(self, constcore, op, cls, crosscls):
+        """Check the class of a kernel plus or times a scalar, cross if negative."""
         k = cls(constcore)
         convs = [
             lambda x: int(x),
@@ -221,6 +232,7 @@ class TestAlgOp:
 
     @pytest.mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
     def test_pow_class(self, cls, constcore):
+        """Check that the power of a kernel or subclass has the kernel's class."""
         assert (cls(constcore) ** 1).__class__ is cls
 
         class A(cls):
@@ -229,6 +241,7 @@ class TestAlgOp:
         assert (A(constcore) ** 1).__class__ is cls
 
     def test_algop_type_error(self, constcore):
+        """Check that an algop raises `TypeError` on an argument of the wrong type."""
         A = lgp.kernel(constcore)
 
         @A.register_algop
@@ -240,10 +253,12 @@ class TestAlgOp:
             a.algop('ciao', 'duo')
 
     def test_ufunc_algop(self, constcore):
+        """Check applying a ufunc to a kernel with `algop`."""
         a = lgp.Kernel(constcore).algop('1/cos')
         util.assert_allclose(a(0, 0), 1 / np.cos(1))
 
     def test_inherit_all_algops(self):
+        """Check `inherit_all_algops` on a subclass and on `CrossKernel`."""
 
         # check that inherit_all_algops does not try to inherit from itself
         class A(lgp.CrossKernel):
@@ -259,15 +274,20 @@ class TestAlgOp:
 
 @pytest.fixture
 def idtransf():
+    """Return an identity transformation with a docstring."""
+
     def idtransf(tcls, self, a, b):
-        """Porco duo"""
+        """Porco duo."""
         return self
 
     return idtransf
 
 
 class TestTransf:
+    """Test the registration and application of kernel transformations."""
+
     def test_missing_transf(self, constcore, idtransf):
+        """Check `has_transf`, and that a missing transformation raises `KeyError`."""
         kernel = lgp.Kernel(constcore)
         assert not kernel.has_transf('ciao')
         with pytest.raises(KeyError):
@@ -281,6 +301,7 @@ class TestTransf:
         assert not lgp.CrossKernel.has_transf('ciao')
 
     def test_already_registered_transf(self, idtransf):
+        """Check that a transformation name can be re-registered only in a subclass."""
         with pytest.raises(KeyError):
             lgp.Kernel.register_linop(idtransf, 'normalize')
 
@@ -294,6 +315,8 @@ class TestTransf:
         B.register_linop(idtransf, 'ciao')
 
     def test_transf_help(self, idtransf):
+        """Check that `transf_help` returns the docstring or the given help text."""
+
         class A(lgp.CrossKernel):
             pass
 
@@ -305,6 +328,8 @@ class TestTransf:
         assert A.transf_help('gesu') == '3'
 
     def test_output_type_error(self):
+        """Check which kinds of transformations check the type of their output."""
+
         @lgp.kernel
         def A(x, y):
             return x * y
@@ -344,6 +369,8 @@ class TestTransf:
         assert a.algop('piu', 1) is NotImplemented
 
     def test_kind_error(self):
+        """Check that using a transformation of the wrong kind raises `ValueError`."""
+
         @lgp.kernel
         def A(x, y):
             return x * y
@@ -359,7 +386,7 @@ class TestTransf:
             a.algop('ciao')
 
     def test_forcekron(self, constcore):
-
+        """Check the `forcekron` option and transformation, also with `maxdim`."""
         # at initialization it's within maxdim
         kernel = lgp.Kernel(constcore, forcekron=True, maxdim=1)
         x = np.empty(1, 'f,f')
@@ -382,6 +409,7 @@ class TestTransf:
             lgp.CrossKernel(constcore, forcekron=True)
 
     def test_list_transf(self):
+        """Check that `list_transf` lists the transformations of a class and bases."""
 
         # register a transf on a new class
         class A(lgp.CrossKernel):
@@ -389,7 +417,7 @@ class TestTransf:
 
         @functools.partial(A.register_transf, kind=7)
         def ciao(self, *_):
-            """Ciao"""
+            """Ciao."""
             pass
 
         # check the transf is there, and also those of the superclass
@@ -402,6 +430,8 @@ class TestTransf:
         assert len(t) == 1 and 'ciao' in t
 
     def test_super(self, constcore):
+        """Check that `super_transf` invokes the transformation of the superclass."""
+
         class A(lgp.Kernel):
             pass
 
@@ -422,6 +452,7 @@ class TestTransf:
         assert b.transf('ciao', 1, 2) == 'ciao 1 2'
 
     def test_super_multiple_inheritance(constcore):
+        """Check that `super_transf` follows the MRO with multiple inheritance."""
 
         # class D has mro C, B, A
         class A(lgp.Kernel):
@@ -454,13 +485,18 @@ class TestTransf:
 
 
 class TestLinOp:
+    """Test the linear operators on kernels."""
+
     def test_args_errors(self, idtransf):
+        """Check that `linop` raises `ValueError` on the wrong number of arguments."""
         with pytest.raises(ValueError, match='incorrect number of'):
             lgp.Kernel(lambda x, y: 1).linop('normalize', None, None, None)
         with pytest.raises(ValueError, match='incorrect number of'):
             lgp.Kernel(lambda x, y: 1).linop('normalize')
 
     def test_no_unnecessary_result_clone(self, constcore, idtransf):
+        """Check that a linop returning the kernel itself does not clone it."""
+
         class A(lgp.CrossKernel):
             pass
 
@@ -471,6 +507,8 @@ class TestLinOp:
         assert a.core is b.core
 
     def test_class_goes_to_cross_parent(self, constcore, idtransf):
+        """Check that the result of a linop has the cross class that defines it."""
+
         class A(lgp.CrossKernel):
             pass
 
@@ -487,8 +525,10 @@ class TestLinOp:
         assert q.__class__ is A
 
     def test_result_out_of_transf_tree(self, constcore):
-        """Check that if the result is not a descendant of the class
-        defining the transformation, it is not enforced to that class
+        """Check that the result of a linop is not always enforced to its class.
+
+        If the result is not a descendant of the class defining the
+        transformation, it is not enforced to that class.
         """
 
         class A(lgp.CrossKernel):
@@ -518,6 +558,7 @@ class TestLinOp:
         ],
     )
     def test_swap_and_duplicate(self, name, arg, rng):
+        """Check linops under swapping, and that a single argument applies to both."""
         kernel = lgp.CrossKernel(lambda x, y: x.astype(float) + 2 * y.astype(float))
         xy = rng.standard_normal((2, 10))
         if name == 'dim':
@@ -549,6 +590,7 @@ class TestLinOp:
         ],
     )
     def test_identity_noop(self, name, arg, constcore):
+        """Check that linops with identity arguments return the kernel unchanged."""
         kernel = lgp.Kernel(constcore)
         assert kernel.linop(name, arg) is kernel
         assert kernel.linop(name, arg, arg) is kernel
@@ -580,6 +622,7 @@ class TestLinOp:
         ],
     )
     def test_invalid_arg(self, name, arg, constcore):
+        """Check that linops reject invalid arguments on either side."""
         kernel = lgp.Kernel(constcore)
         with pytest.raises((ValueError, TypeError)):
             kernel.linop(name, arg)
@@ -612,13 +655,13 @@ class TestLinOp:
         ],
     )
     def test_isotropic_ops(self, cls, name, arg, nops, constcore):
-        """Check that these ops preserve IsotropicKernel and its ancestors"""
+        """Check that these ops preserve `IsotropicKernel` and its ancestors."""
         k = cls(constcore)
         q = k.linop(name, *nops * [k], arg)
         assert q.__class__ is cls
 
     def test_cond(self, rng):
-
+        """Check that the `'cond'` linop switches between two kernels."""
         k = lgp.Kernel(lambda x, y: x * y).transf('forcekron')
 
         x = rng.standard_normal((10, 2)).view('d,d').squeeze(-1)
@@ -635,7 +678,7 @@ class TestLinOp:
         util.assert_equal(c1, c2)
 
     def test_diff_errors(self, rng, constcore):
-        """Trigger errors not related to 'derivable'"""
+        """Trigger errors not related to `derivable`."""
         kernel = lgp.Kernel(constcore)
 
         # named deriv on scalar
@@ -660,6 +703,7 @@ class TestLinOp:
             kernel.linop('diff', 'f0')(x, x)
 
     def test_diff_value(self, rng):
+        """Check the derivatives of a bilinear kernel on plain and structured inputs."""
         derivs = {
             (0, 0): lambda x, y: x * y,
             (0, 1): lambda x, y: x * np.ones_like(y),
@@ -683,9 +727,7 @@ class TestLinOp:
             util.assert_equal(k(x, y), wrapper(core)(x, y))
 
     def test_diff_cross_nd(self, rng):
-        """Test that diff works when one argument is scalar and the other
-        structured
-        """
+        """Test `diff` when one argument is scalar and the other structured."""
         x = rng.standard_normal((10, 2)).view('d,d').squeeze(-1)
         y = rng.standard_normal(10)
         k1 = lgp.Kernel(lambda x, y: x['f0'] * y)
@@ -695,7 +737,7 @@ class TestLinOp:
         util.assert_equal(c1, c2)
 
     def test_derivable(self, constcore, rng):
-
+        """Check the derivability checks configured with the `derivable` argument."""
         # default no derivability check
         x = rng.standard_normal(10)
         kernel = lgp.Kernel(constcore)
@@ -750,8 +792,10 @@ class TestLinOp:
         reason='derivability check does not ignore extraneous derivatives'
     )
     def test_derivable_foreign(self, rng):
-        """Test that it is possible to derive w.r.t. other stuff that goes
-        through x without triggering derivability checks
+        """Test that deriving w.r.t. other stuff does not trigger derivability checks.
+
+        It should be possible to derive w.r.t. other stuff that goes through `x`
+        without triggering derivability checks.
         """
 
         # pass derived quantities through init arguments
@@ -772,6 +816,7 @@ class TestLinOp:
         f(1.0, x, y)
 
     def test_dim(self, rng):
+        """Check that the `'dim'` linop selects a field of the input."""
         x = rng.standard_normal(10)[:, None]
         xs = lgp.StructuredArray.from_dict({'a': x, 'b': x})
         kernel = lgp.ExpQuad()
@@ -785,6 +830,8 @@ class TestLinOp:
             kernel.linop('dim', 'c')(xs, xs.T)
 
     def test_dim_preserve_structure(self):
+        """Check that `dim` passes to the core an array with only the selected field."""
+
         @lgp.kernel(dim='f0')
         def A(x, y):
             assert x.dtype.names == ('f0',)
@@ -800,7 +847,7 @@ class TestLinOp:
     @pytest.mark.parametrize('argnames', [None, ('xbau', 'ybau')])
     @pytest.mark.parametrize('nonsym', [False, True])
     def test_make_linop_family(self, rng, rightker, doc, argnames, nonsym):
-
+        """Check the classes, arguments and docs of a `make_linop_family` family."""
         decorator = lgp.crosskernel if nonsym else lgp.kernel
 
         @decorator
@@ -897,13 +944,18 @@ miao"""
 
 
 class TestStationaryIsotropic:
+    """Test stationary and isotropic kernels."""
+
     @pytest.mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
     def test_invalid_input(self, cls, constcore):
+        """Check that an invalid `input` argument raises `KeyError`."""
         with pytest.raises(KeyError):
             cls(constcore, input='ciao')
 
     @pytest.mark.parametrize('dtype', [int, float, 'i,2i', 'd,2d'])
     def test_isotropic_input(self, rng, dtype):
+        """Check that the `input` options of `IsotropicKernel` give the same result."""
+
         def ssd(x, y):
             if x.dtype.names is not None:
                 x = recfunctions.structured_to_unstructured(x)
@@ -935,11 +987,13 @@ class TestStationaryIsotropic:
         util.assert_allclose(c1, c4, atol=1e-16)
 
     def test_zero(self, rng, constcore):
+        """Check that the `Zero` kernel is zero."""
         x, y = rng.standard_normal((2, 10))
         zero = lgp._Kernel.Zero()
         util.assert_allclose(zero(x, y), 0)
 
     def test_stationary_distances(self, rng):
+        """Check that the `input` options of a stationary kernel agree."""
         x1 = rng.standard_normal(10)
         x2 = x1 - 1 / np.pi
         if np.any(np.abs(x1 - x2) < 1e-6):
@@ -954,16 +1008,18 @@ class TestStationaryIsotropic:
         util.assert_allclose(c1, c3, atol=1e-14, rtol=1e-14)
 
     def test_stationary_broadcast(self, rng):
-        """Test that broadcasting does not break structured dtype dispatcher that
-        computes difference
+        """Test that broadcasting does not break the structured dtype dispatcher.
+
+        The dispatcher is the one that computes the difference.
         """
         x = rng.integers(0, 10, 10)
         kernel = lgp.Expon()
         kernel(x[:, None], x[None, :])
 
     def test_scale_int_nd(self, rng):
-        """Test that conversion int -> float on division does not break
-        structured dtype dispatcher
+        """Test that conversion int -> float on division works on structured dtypes.
+
+        The conversion must not break the structured dtype dispatcher.
         """
         x = rng.integers(0, 10, (10, 2))
         x = x.view(x.shape[-1] * [('', x.dtype)]).squeeze(-1)
@@ -972,7 +1028,11 @@ class TestStationaryIsotropic:
 
 
 class TestDecorator:
+    """Test the kernel class decorators."""
+
     def test_class_change(self):
+        """Check when instances of a decorated kernel class are demoted to `Kernel`."""
+
         @lgp.kernel
         def A(x, y):
             return x * y
@@ -1002,6 +1062,7 @@ class TestDecorator:
         ],
     )
     def test_class_change_user_kw(self, dec, cls, crdec, crcls):
+        """Check the class of instances of decorated stationary/isotropic kernels."""
 
         @dec(input='abs')
         def A(delta, ciao=3):
@@ -1041,8 +1102,10 @@ class TestDecorator:
 
 
 class TestAffineSpan:
+    """Test the `AffineSpan` kernel mixin."""
+
     def test_preserved_class(self, constcore):
-        """Test that affine operations preserve the specific subclass"""
+        """Test that affine operations preserve the specific subclass."""
 
         class A(lgp._Kernel.AffineSpan, lgp.Kernel):
             pass
@@ -1056,7 +1119,7 @@ class TestAffineSpan:
         assert (1 * a).__class__ is A
 
     def test_preserved_class_scalar_only(self, constcore):
-        """Test that algebraic operations on pairs do not preserve the class"""
+        """Test that algebraic operations on pairs do not preserve the class."""
 
         class A(lgp._Kernel.AffineSpan, lgp.Kernel):
             pass
@@ -1066,7 +1129,7 @@ class TestAffineSpan:
         assert (a * a).__class__ is lgp.Kernel
 
     def test_class_regression(self, constcore):
-        """Check that regressing the underlying class is not prevented"""
+        """Check that regressing the underlying class is not prevented."""
 
         class A(lgp._Kernel.AffineSpan, lgp.IsotropicKernel):
             pass
@@ -1077,6 +1140,7 @@ class TestAffineSpan:
 
     @pytest.mark.parametrize('op', [operator.add, operator.mul])
     def test_class_negative_scalar(self, constcore, op):
+        """Check that a negative scalar preserves the class only for cross kernels."""
 
         class A(lgp._Kernel.AffineSpan, lgp.Kernel):
             pass
@@ -1092,10 +1156,13 @@ class TestAffineSpan:
         assert op(b, -1).__class__ is B
 
     def test_no_instance(self, constcore):
+        """Check that `AffineSpan` can't be instantiated directly."""
         with pytest.raises(TypeError, match='cannot instantiate'):
             lgp._Kernel.AffineSpan(constcore)
 
     def test_calc(self, constcore, rng):
+        """Check the coefficients accumulated by `AffineSpan` and the kernel values."""
+
         class A(lgp._Kernel.AffineSpan, lgp.CrossKernel):
             pass
 
@@ -1131,6 +1198,7 @@ class TestAffineSpan:
 
 
 def test_callable_arg(constcore, rng):
+    """Check that a callable init argument is evaluated on the other arguments."""
     x = rng.standard_normal(10)
     kernel = lgp.Kernel(constcore, derivable=lambda d: d, d=1)
     with pytest.raises(ValueError, match='derivatives'):
@@ -1138,6 +1206,7 @@ def test_callable_arg(constcore, rng):
 
 
 def test_init_kw_preserved(constcore):
+    """Check that the init keyword arguments are preserved by transformations."""
     kernel = lgp.Kernel(constcore, cippa=4)
 
     def check(k):
@@ -1149,6 +1218,7 @@ def test_init_kw_preserved(constcore):
 
 
 def test_nary(rng):
+    """Check `_nary` applied to the left or right argument."""
     x, y = rng.standard_normal((2, 10))
     a = lambda x, y: 2 * x + 3 * y
     b = lambda x, y: 5 * x + 7 * y
@@ -1162,6 +1232,8 @@ def test_nary(rng):
 
 
 def test_crossmro():
+    """Check `_crossmro` on library and user kernel classes."""
+
     class A(lgp.CrossKernel):
         pass
 
@@ -1175,6 +1247,8 @@ def test_crossmro():
 
 
 def test_swap():
+    """Check that `_swap` is a no-op on `Kernel` and demotes cross subclasses."""
+
     class A(lgp.Kernel):
         pass
 

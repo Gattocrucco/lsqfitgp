@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test the jax utilities in `_jaxext`."""
+
 import functools
 
 import jax
@@ -31,6 +33,8 @@ from tests import util
 
 
 def test_elementwise_grad_1():
+    """Check that `elementwise_grad` matches `vmap(grad)` for a unary function."""
+
     def f(x):
         return 2 * x
 
@@ -42,6 +46,8 @@ def test_elementwise_grad_1():
 
 
 def test_elementwise_grad_2():
+    """Check that `elementwise_grad` matches `vmap(grad)` for a binary function."""
+
     def f(x, z):
         return 2 * x * z
 
@@ -53,6 +59,8 @@ def test_elementwise_grad_2():
 
 
 def test_elementwise_grad_3():
+    """Check that nested `elementwise_grad` matches `vmap` of the 2nd derivative."""
+
     def f(x):
         return 2 * x
 
@@ -64,6 +72,8 @@ def test_elementwise_grad_3():
 
 
 def test_elementwise_grad_4():
+    """Check nested `elementwise_grad`, twice w.r.t. the first of two arguments."""
+
     def f(x, z):
         return 2 * x * z
 
@@ -75,6 +85,8 @@ def test_elementwise_grad_4():
 
 
 def test_elementwise_grad_5():
+    """Check nested `elementwise_grad` for a mixed second derivative."""
+
     def f(x, z):
         return 2 * x * z
 
@@ -86,6 +98,8 @@ def test_elementwise_grad_5():
 
 
 def test_elementwise_grad_6():
+    """Check `jacrev` of `elementwise_grad` against `jacrev` of `vmap(grad)`."""
+
     def f(x, z):
         return 2 * x * z
 
@@ -98,6 +112,8 @@ def test_elementwise_grad_6():
 
 @pytest.mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
 def test_batcher(maxnbytes, rng):
+    """Check that `batchufunc` gives the same result as the unbatched function."""
+
     def func(x, y):
         return x * y
 
@@ -111,6 +127,8 @@ def test_batcher(maxnbytes, rng):
 
 @pytest.mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
 def test_batcher_structured(maxnbytes, rng):
+    """Check `batchufunc` on a function of `StructuredArray` arguments."""
+
     def func(x, y):
         return jnp.sum(x['x'] * y['x'], axis=-1)
 
@@ -125,7 +143,7 @@ def test_batcher_structured(maxnbytes, rng):
 
 
 def test_hash():
-    """Check the jax port of fast-hash against the original code"""
+    """Check the jax port of fast-hash against the original code."""
     inputs = [
         jnp.array([], dtype=jnp.uint8),
         jnp.array([234], dtype=jnp.uint8),
@@ -288,14 +306,14 @@ def test_hash():
 
 
 def genint(rng, dtype, size=()):
-    """Generate integers spanning full type range"""
+    """Generate integers spanning full type range."""
     return rng.integers(
         np.iinfo(dtype).min, np.iinfo(dtype).max, endpoint=True, dtype=dtype, size=size
     )
 
 
 def test_hash_bitflip(rng):
-    """Check a single bit flip in the input changes 50% of the hash bits"""
+    """Check a single bit flip in the input changes 50% of the hash bits."""
     buf = genint(rng, 'u1', 43)
 
     bufmod = buf.copy()
@@ -318,12 +336,13 @@ def test_hash_bitflip(rng):
 
 
 def test_hash_numpy(rng):
-    """Check numpy arrays do not break the hash"""
+    """Check numpy arrays do not break the hash."""
     buf = genint(rng, 'u1', 2)
     _jaxext.fasthash64(buf, 12345)
 
 
 def test_limit_derivatives():
+    """Check that `limit_derivatives` raises iff the derivative order exceeds `n`."""
 
     class MyException(Exception):
         pass

@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test the prediction methods of `GP`."""
+
 import itertools
 
 import gvar
@@ -28,6 +30,7 @@ from tests import util
 
 
 def pred(seed, err, **kw):
+    """Return the mean and covariance of a GP prediction on random data."""
     rng = np.random.default_rng(seed)
     x = rng.uniform(-5, 5, size=20)
     xpred = rng.uniform(-10, 10, size=100)
@@ -66,6 +69,7 @@ def pred(seed, err, **kw):
 )
 @pytest.mark.parametrize('err', [False, True])
 def test_pred(err, kw1, kw2, rng):
+    """Check that `GP.pred` gives the same result with different options."""
     if err and kw1['fromdata'] != kw2['fromdata']:
         pytest.skip()
     high = np.iinfo(np.uint64).max
@@ -79,6 +83,7 @@ def test_pred(err, kw1, kw2, rng):
 
 
 def test_double_pred(rng):
+    """Check `predfromfit` on the output of `predfromdata` against `predfromdata`."""
     n = 50
     gp = lgp.GP(lgp.ExpQuad())
     ax, bx = rng.standard_normal((2, n))

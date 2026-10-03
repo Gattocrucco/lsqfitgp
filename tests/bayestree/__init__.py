@@ -1,6 +1,6 @@
 # lsqfitgp/tests/bayestree/__init__.py
 #
-# Copyright (c) 2024, Giacomo Petrillo
+# Copyright (c) 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -16,3 +16,5 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Tests for the `bayestree` submodule."""

@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test the `_linalg._toeplitz` submodule."""
+
 import jax
 import numpy as np
 import pytest
@@ -28,6 +30,7 @@ from tests import util
 
 
 def test_toeplitz_gershgorin(rng):
+    """Check that `eigv_bound` matches `eigval_bound` on the dense matrix."""
     t = rng.standard_normal(100)
     m = linalg.toeplitz(t)
     b1 = _linalg._decomp.eigval_bound(m)
@@ -36,6 +39,7 @@ def test_toeplitz_gershgorin(rng):
 
 
 def check_toeplitz(rng):
+    """Compare the Toeplitz decomposition operations with dense linear algebra."""
     for n in [10, 2, 1]:
         x = np.linspace(0, 3, n)
         t = np.pi * np.exp(-1 / 2 * x**2)
@@ -64,15 +68,18 @@ def check_toeplitz(rng):
 
 
 def test_toeplitz_nojit(rng):
+    """Run `check_toeplitz` with jit disabled."""
     with jax.disable_jit():
         check_toeplitz(rng)
 
 
 def test_toeplitz(rng):
+    """Run `check_toeplitz` with jit enabled."""
     check_toeplitz(rng)
 
 
 def test_toeplitz_chol_solve_numpy(rng):
+    """Check `chol_solve_numpy` with broadcasting, and its errors on non-p.d. input."""
     shapes = [[(), ()], [(10,), (1,)], [(1, 2), (3, 1)], [(1, 4), (4,)], [(3,), (1, 3)]]
     for tshape, bshape in shapes:
         for n in [0, 1, 2, 10]:
