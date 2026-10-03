@@ -1063,14 +1063,16 @@ Meaning of hyperparameters:
                     return loc + scale * eta
 
             elif tr == 'yeojohnson':
+                # bind the key now, `name` depends on the loop variable `i`
+                key = name('lambda_yj')
 
-                def from_data(hp, y):
-                    return yeojohnson(y, hp[name('lambda_yj')])
+                def from_data(hp, y, key=key):
+                    return yeojohnson(y, hp[key])
 
-                def to_data(hp, eta):
-                    return yeojohnson_inverse(eta, hp[name('lambda_yj')])
+                def to_data(hp, eta, key=key):
+                    return yeojohnson_inverse(eta, hp[key])
 
-                hyper[name('lambda_yj')] = 2 * copula.beta(2, 2)
+                hyper[key] = 2 * copula.beta(2, 2)
 
             else:
                 raise KeyError(tr)

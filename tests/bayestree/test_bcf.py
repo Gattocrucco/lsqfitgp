@@ -187,6 +187,20 @@ def test_to_from_data(y, z, X, pihat, kw, key):
     util.assert_allclose(y, y2, rtol=1e-15, atol=1e-15)
 
 
+def test_transf_list():
+    """Check that each transformation in a list uses its own hyperparameter."""
+    y = np.linspace(-1, 1, 5)
+    from_data, to_data, _, hypers = lgp.bayestree.bcf._get_transf(
+        None, transf=['yeojohnson', 'yeojohnson'], y=y, weights=None
+    )
+    assert len(hypers) == 2
+    hp = {'transf0_lambda_yj': 0.5, 'transf1_lambda_yj': 1.5}
+    mod = lgp.bayestree._bcf
+    eta = mod.yeojohnson(mod.yeojohnson(y, 0.5), 1.5)
+    util.assert_allclose(from_data(hp, y), eta, rtol=1e-15)
+    util.assert_allclose(to_data(hp, eta), y, rtol=1e-14, atol=1e-15)
+
+
 def test_yeojohnson():
     """Check the Yeo-Johnson transformation."""
     testinput = np.linspace(-2, 2, 100)
