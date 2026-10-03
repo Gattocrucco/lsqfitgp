@@ -257,6 +257,18 @@ class TestAlgOp:
         a = lgp.Kernel(constcore).algop('1/cos')
         util.assert_allclose(a(0, 0), 1 / np.cos(1))
 
+    def test_ufunc_algop_scalar_operand(self):
+        """Check a ufunc algop with a scalar operand before a kernel operand."""
+
+        class A(lgp.Kernel):
+            pass
+
+        A.register_ufuncalgop(lambda a, b, c: a + 10 * b + 100 * c, 'f3')
+        k1 = A(lambda x, y: x * y)
+        k2 = A(lambda x, y: x + y)
+        k = k1.algop('f3', 3.0, k2)
+        util.assert_allclose(k(2.0, 5.0), 2 * 5 + 10 * 3 + 100 * (2 + 5))
+
     def test_inherit_all_algops(self):
         """Check `inherit_all_algops` on a subclass and on `CrossKernel`."""
 

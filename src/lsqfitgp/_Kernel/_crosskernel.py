@@ -993,8 +993,11 @@ class CrossKernel:
 
         @functools.wraps(ufunc)
         def op(_, self, *operands, **kw):
+            def constcore(value):
+                return lambda _x, _y, **_: value
+
             cores = tuple(
-                o.core if isinstance(o, __class__) else lambda x, y: o  # ty: ignore[unresolved-reference]
+                o.core if isinstance(o, __class__) else constcore(o)  # ty: ignore[unresolved-reference]
                 for o in (self, *operands)
             )
 
