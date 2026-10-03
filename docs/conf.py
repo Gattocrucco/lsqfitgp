@@ -1,6 +1,6 @@
 # lsqfitgp/docs/conf.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -26,6 +26,7 @@
 import sys
 import inspect
 import pathlib
+import re
 
 # -- Project information -----------------------------------------------------
 
@@ -40,12 +41,18 @@ if now.year > int(year):
 copyright = year + ', ' + author
 
 
-# # The full version, including alpha/beta/rc tags
+# The full version, derived from git by hatch-vcs, e.g. '0.21.3.dev4+g42e25cebd'
+# for a development version, or '0.21.2' for a release
 import lsqfitgp
 release = lsqfitgp.__version__
 version = release
-if 'dev' not in version:
+if 'dev' not in version and '+' not in version:
     project += ' ' + version
+
+# GitHub ref for source links: the commit node from a dev version string, or the
+# release tag when building from a clean tagged commit.
+MATCH = re.search(r'\+g([0-9a-f]+)', release)
+GITHUB_REF = MATCH.group(1) if MATCH else f'v{release.partition("+")[0]}'
 
 # -- General configuration ---------------------------------------------------
 
@@ -172,7 +179,6 @@ def linkcode_resolve(domain, info):
         linespec = ''
 
     prefix = 'https://github.com/Gattocrucco/lsqfitgp/blob'
-    version = 'main' if 'dev' in release else f'v{release}'
     root = pathlib.Path(lsqfitgp.__file__).parent
     path = pathlib.Path(fn).relative_to(root).as_posix()
-    return f'{prefix}/{version}/src/lsqfitgp/{path}{linespec}'
+    return f'{prefix}/{GITHUB_REF}/src/lsqfitgp/{path}{linespec}'

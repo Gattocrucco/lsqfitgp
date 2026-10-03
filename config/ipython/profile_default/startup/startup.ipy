@@ -1,0 +1,33 @@
+def _pre_startup():
+    with open(__file__) as f:
+        print("Startup commands:")
+        begin = False
+        for i, line in enumerate(f):
+            line = line.rstrip('\n')
+            if line == "##### BEGIN #####":
+                begin = True
+            elif begin:
+                print(f">>> {line}")
+        print()
+
+_pre_startup()
+
+##### BEGIN #####
+%matplotlib
+%load_ext autoreload
+%autoreload 2
+
+import appnope
+appnope.nope()
+
+from functools import partial
+
+import jax
+from jax import jit, vmap, lax, random
+from jax import numpy as jnp
+
+import numpy as np
+from matplotlib import pyplot as plt
+import gvar
+
+import lsqfitgp as lgp
