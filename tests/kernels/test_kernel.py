@@ -1,6 +1,6 @@
 # lsqfitgp/tests/kernels/test_kernel.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -352,7 +352,7 @@ class TestTransf:
 
         # check the transf is there, and also those of the superclass
         t = A.list_transf()
-        assert t['ciao'] == (A, 7, ciao, 'ciao')
+        assert t['ciao'] == (A, 7, ciao, ciao.__doc__)
         assert 'add' in t
 
         # check only that transf is in the new class

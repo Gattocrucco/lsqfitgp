@@ -1,6 +1,6 @@
 # lsqfitgp/copula/_copulas.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -42,7 +42,7 @@ def _normcdf(x):
 
 class beta(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Beta_distribution
+    `Beta distribution <https://en.wikipedia.org/wiki/Beta_distribution>`_
     """
     
     @staticmethod
@@ -51,7 +51,7 @@ class beta(_distr.Distr):
 
 class dirichlet(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Dirichlet_distribution
+    `Dirichlet distribution <https://en.wikipedia.org/wiki/Dirichlet_distribution>`_
     """
 
     signature = '(n),(n)->(n)'
@@ -84,7 +84,7 @@ class dirichlet(_distr.Distr):
 
 class gamma(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Gamma_distribution
+    `Gamma distribution <https://en.wikipedia.org/wiki/Gamma_distribution>`_
     """
     
     @staticmethod
@@ -111,7 +111,7 @@ class gamma(_distr.Distr):
 
 class loggamma(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Gamma_distribution, `scipy.stats.loggamma`
+    `Gamma distribution <https://en.wikipedia.org/wiki/Gamma_distribution>`_, `scipy.stats.loggamma`
 
     This is the distribution of the logarithm of a Gamma variable. The naming
     convention is the opposite of lognorm, which is the distribution of the
@@ -140,7 +140,7 @@ class loggamma(_distr.Distr):
 
 class invgamma(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Inverse-gamma_distribution
+    `Inverse-gamma distribution <https://en.wikipedia.org/wiki/Inverse-gamma_distribution>`_
     """
     
     @staticmethod
@@ -173,7 +173,7 @@ def _vectorized_switch(index, branches, *operands):
 
 class halfcauchy(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Cauchy_distribution, `scipy.stats.halfcauchy`
+    `Cauchy distribution <https://en.wikipedia.org/wiki/Cauchy_distribution>`_, `scipy.stats.halfcauchy`
     """
     
     @staticmethod
@@ -193,7 +193,7 @@ class halfcauchy(_distr.Distr):
 
 class halfnorm(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Half-normal_distribution
+    `Half-normal distribution <https://en.wikipedia.org/wiki/Half-normal_distribution>`_
     """
     
     @staticmethod
@@ -222,7 +222,7 @@ class halfnorm(_distr.Distr):
 
 class uniform(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Continuous_uniform_distribution
+    `Continuous uniform distribution <https://en.wikipedia.org/wiki/Continuous_uniform_distribution>`_
     """
     
     @staticmethod
@@ -231,7 +231,7 @@ class uniform(_distr.Distr):
 
 class lognorm(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Log-normal_distribution
+    `Log-normal distribution <https://en.wikipedia.org/wiki/Log-normal_distribution>`_
     """
     
     @staticmethod

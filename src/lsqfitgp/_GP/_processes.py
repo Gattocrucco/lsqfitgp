@@ -1,6 +1,6 @@
 # lsqfitgp/_GP/_processes.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -66,7 +66,7 @@ class GPProcesses(_base.GPBase):
         """A process defined as a linear transformation of other processes"""
     
         def __init__(self, ops, deriv):
-            """ops = dict proc key -> callable"""
+            """`ops` = dict proc key -> callable"""
             self.ops = ops
             self.deriv = deriv
 
@@ -81,7 +81,7 @@ class GPProcesses(_base.GPBase):
         """A process defined by an operation on the kernel of another process"""
     
         def __init__(self, proc, transfname, arg):
-            """proc = proc key, transfname = Kernel transfname, arg = argument to transf """
+            """`proc` = proc key, transfname = Kernel transfname, arg = argument to transf """
             self.proc = proc
             self.transfname = transfname
             self.arg = arg

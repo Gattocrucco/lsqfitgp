@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels/_bart.py
 #
-# Copyright (c) 2023, 2024, 2025, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2025, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -611,7 +611,7 @@ class BART(_BARTBase):
 
     @staticmethod
     def _scan_but_first(f, init, xs):
-        """ lax.scan, but execute separately the first cycle. The point is that
+        """ `lax.scan`, but execute separately the first cycle. The point is that
         I use it when the first cycle works on smaller arrays due to
         broadcasting. """
         assert isinstance(xs, jnp.ndarray)

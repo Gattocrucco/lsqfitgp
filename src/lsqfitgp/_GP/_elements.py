@@ -1,6 +1,6 @@
 # lsqfitgp/_GP/_elements.py
 #
-# Copyright (c) 2020, 2022, 2023, 2025, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2025, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -151,7 +151,7 @@ class GPElements(_base.GPBase):
         shape = None
     
         def __init__(self, blocks, shape):
-            """ blocks = dict (key, key) -> matrix """
+            """ `blocks` = dict (key, key) -> matrix """
             self.blocks = blocks
             self.shape = shape
 

@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels/_celerite.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -122,7 +122,7 @@ def Harmonic(delta, Q=1):
         return jnp.exp(-tauQ) * (jnp.cos(etatau) + jnp.sin(etatau) / etaQ)
 
 def _sqrt1pm1(x):
-    """sqrt(1 + x) - 1, numerically stable for small x"""
+    """`sqrt(1 + x) - 1`, numerically stable for small x"""
     return jnp.expm1(1/2 * jnp.log1p(x))
 
 @jax.custom_jvp

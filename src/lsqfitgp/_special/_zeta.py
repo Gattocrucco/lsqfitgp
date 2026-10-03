@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_zeta.py
 #
-# Copyright (c) 2022, 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -136,7 +136,7 @@ def standard_x(x):
     return neg, jnp.where(neg, 1 - x, x)
 
 def periodic_zeta_larges(x, s, nmax, imag):
-    """ https://dlmf.nist.gov/25.13.E1 """
+    """ See https://dlmf.nist.gov/25.13.E1 """
 
     t = _jaxext.float_type(x, s)
     s = s.astype(t) # avoid n^s overflow with integer s
@@ -150,7 +150,7 @@ def periodic_zeta_larges(x, s, nmax, imag):
 
 def periodic_zeta_smalls(x, s, imag):
     """
-    https://dlmf.nist.gov/25.11.E10 and https://dlmf.nist.gov/25.11.E3 expanded
+    See https://dlmf.nist.gov/25.11.E10 and https://dlmf.nist.gov/25.11.E3 expanded
     into https://dlmf.nist.gov/25.13.E2
     """
     neg, x = standard_x(x) # x in [0, 1/2]

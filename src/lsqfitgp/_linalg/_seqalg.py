@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_seqalg.py
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -108,7 +108,7 @@ class SingleInput(SequentialOperation):
     inputs = NotImplemented
 
 class Stack(Consumer, SingleInput):
-    """input = an operation producing arrays"""
+    """`input` = an operation producing arrays"""
         
     def init(self, n, a0):
         out = jnp.zeros((n,) + a0.shape, a0.dtype)
@@ -124,7 +124,7 @@ class Stack(Consumer, SingleInput):
 class MatMulIterByFull(Consumer, SingleInput):
     
     def __init__(self, input, b):
-        """input = an operation producing pieces of left operand (a)
+        """`input` = an operation producing pieces of left operand (a)
         b = right operand"""
         self.inputs = (input,)
         b = jnp.asarray(b)
@@ -163,7 +163,7 @@ class MatMulRowByFull(Producer, MatMulIterByFull):
         return abi
     
     def iter(self, i, ai):
-        """ i-th row of input @ b """
+        """ `i`-th row of `input @ b` """
         self.abi = ai @ self.b
     
 class SolveTriLowerColByFull(MatMulIterByFull):
@@ -227,7 +227,7 @@ class MatMulColByRow(Consumer):
         return self.ab
 
 class SumLogDiag(Consumer, SingleInput):
-    """input = operation producing the rows/columns of a square matrix"""
+    """`input` = operation producing the rows/columns of a square matrix"""
     
     def init(self, n, m0):
         assert m0.shape == (n,)
@@ -237,5 +237,5 @@ class SumLogDiag(Consumer, SingleInput):
         self.sld = self.sld + jnp.log(mi[i])
     
     def finalize(self):
-        """sum(log(diag(m)))"""
+        """`sum(log(diag(m)))`"""
         return self.sld

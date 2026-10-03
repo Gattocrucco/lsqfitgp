@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_toeplitz.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -32,7 +32,7 @@ class SymSchur(_seqalg.Producer):
     """
     
     def __init__(self, t):
-        """t = first row of the matrix"""
+        """`t` = first row of the matrix"""
         t = jnp.asarray(t)
         assert t.ndim == 1
         # assert t[0] > 0, '1-th leading minor is not positive definite'
@@ -50,7 +50,7 @@ class SymSchur(_seqalg.Producer):
         self.snorm = jnp.sqrt(norm)
     
     def iter_out(self, i):
-        """i-th column of Cholesky factor L"""
+        """`i`-th column of Cholesky factor L"""
         return self.g[0, :] * self.snorm
     
     def iter(self, i):
@@ -75,7 +75,7 @@ class SymLevinson(_seqalg.Producer):
     """
     
     def __init__(self, t):
-        """t = first row of the matrix"""
+        """`t` = first row of the matrix"""
         t = jnp.asarray(t, float)
         assert t.ndim == 1
         # assert t[0] > 0, '1-th leading minor is not positive definite'
@@ -91,7 +91,7 @@ class SymLevinson(_seqalg.Producer):
         del self.t
         
     def iter_out(self, i):
-        """i-th row of L^-1"""
+        """`i`-th row of L^-1"""
         return -self.phi2.at[i].set(-1) / jnp.sqrt(self.nu)
         
     def iter(self, i):

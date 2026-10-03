@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels/_arma.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -189,7 +189,7 @@ def _ar_with_phigamma(delta, phi, gamma, maxlag, norm):
 
 def _yule_walker(gamma):
     """
-    gamma = autocovariance at lag 0...p
+    `gamma` = autocovariance at lag 0...p
     output: autoregressive coefficients at lag 1...p
     """
     gamma = jnp.asarray(gamma)
@@ -214,7 +214,7 @@ def _yule_walker_inv_mat(phi):
     
 def _yule_walker_inv(phi):
     """
-    phi = autoregressive coefficients at lag 1...p
+    `phi` = autoregressive coefficients at lag 1...p
     output: autocovariance at lag 0...p, assuming driving noise has sdev 1
     """
     a = _yule_walker_inv_mat(phi)
@@ -225,7 +225,7 @@ def _yule_walker_inv(phi):
 
 def _ar_evolve(phi, start, noise):
     """
-    phi = autoregressive coefficients at lag 1...p
+    `phi` = autoregressive coefficients at lag 1...p
     start = first p values of the process (increasing time)
     noise = n noise values added at each step
     output: n new process values

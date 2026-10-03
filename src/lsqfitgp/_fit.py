@@ -1,6 +1,6 @@
 # lsqfitgp/_fit.py
 #
-# Copyright (c) 2020, 2022, 2023, 2024, 2025, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, 2025, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -714,7 +714,7 @@ class empbayes_fit(Logger):
 
         @wrap
         def fun_and_jac(p, **kw):
-            """ fun and its gradient """
+            """ `fun` and its gradient """
             decomp, r, lkw, loss, grad_loss = make_jac_args(p, **kw)
             cond, gradrev, gradfwd, _, _ = decomp.minus_log_normal_density(r, value=True, **lkw)
             post = cond + prior(p) + loss
@@ -957,7 +957,7 @@ class empbayes_fit(Logger):
 
         @classmethod
         def fmttimes(cls, times):
-            """ times = dict label -> seconds """
+            """ `times` = dict label -> seconds """
             return ', '.join(f'{k} {cls.fmttime(v)}' for k, v in times.items())
 
         def estimate_firstcall_overhead(self):

@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel/__init__.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,8 +19,10 @@
 
 from ._util import prod_recurse_dtype, sum_recurse_dtype, is_numerical_scalar
 from ._crosskernel import CrossKernel, AffineSpan, PreservedBySwap
+# isort: off
 from . import _ops # keep first
 from . import _alg # keep first
+# isort: on
 from ._kernel import Kernel
 from ._stationary import CrossStationaryKernel, StationaryKernel
 from ._isotropic import CrossIsotropicKernel, IsotropicKernel, Zero

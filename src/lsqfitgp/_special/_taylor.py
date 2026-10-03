@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_taylor.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -26,7 +26,7 @@ from jax.scipy import special as jspecial
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1, 2, 3))
 def taylor(coefgen, args, n, m, x):
     """
-    coefgen : function = start, end -> taylor coefficients for powers start:end
+    `coefgen` : function = start, end -> taylor coefficients for powers start:end
     args : tuple = additional arguments to coefgen
     n : int = derivation order
     m : int = number of coefficients used
