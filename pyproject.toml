@@ -145,8 +145,8 @@ addopts = [
     "--durations=3",
 ]
 
-# I wanted to use `--import-mode=importlib`, but it breaks importing submodules,
-# in particular `from . import util`.
+# the default import mode (prepend) puts the repository root in `sys.path`,
+# which makes `from tests import util` work in the tests.
 
 [tool.coverage.run]
 branch = true

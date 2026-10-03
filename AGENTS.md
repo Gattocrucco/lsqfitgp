@@ -81,8 +81,10 @@ Other directories:
 ## Code style
 
 - **Formatter/linter:** ruff with single quotes
-- **Imports:** inside the package, import sibling modules (`from . import _linalg`) and use them qualified (`_linalg.Chol`)
+- **Imports:** absolute imports only (`from lsqfitgp import _linalg`, not `from . import _linalg`); inside the package, import modules and use them qualified (`_linalg.Chol`)
     - for some heavily used big (sub)modules, e.g., `from jax import numpy as jnp`, `from jax import random; random.foo` is preferred to `from jax.random import foo, foo1, foo2, ..., foo999999`.
+    - use `jit`, `vmap`, `random` and `tree` imported from jax, not `jax.jit` etc. (checked by `make lint`)
+    - re-exports in `__init__.py` files are marked with `# noqa: F401`
 - **Headers:** all source files carry a GPL-3 license header
     - the first line is a comment with the path of the file, `lsqfitgp/<path relative to src/>` for files in the package, `lsqfitgp/<path relative to the repository>` otherwise (checked by `make lint`)
     - the copyright notice lists the years, e.g. `Copyright (c) 2022, 2023, 2024, 2026, Giacomo Petrillo`
@@ -90,6 +92,8 @@ Other directories:
 - **docstrings:**
     - numpydoc convention, rendered with the sphinx `numpydoc` extension
     - types are documented in the docstring (`x : array`), not with type annotations in signatures
+    - one entry per parameter, pydoclint does not understand `x, y : array`
+    - pydoclint `noqa` comments go after the closing `"""`; kernel and transformation definitions use them because their docstrings document the kernel, not the Python function
     - class docstrings and `__init__` docstrings are concatenated in the documentation
     - keep docstrings short, don't fill them with implementation details
         - related: no redundant comments, if the code is readable, it's self-documenting
@@ -115,7 +119,7 @@ Other directories:
 ## Testing
 
 - pytest, we use parametrization and test classes with inheritance a lot (e.g., `tests/kernels/test_kernels.py` defines a test class per kernel)
-- tests import helpers with `from . import util`, so pytest uses the default (prepend) import mode
+- tests import helpers with `from tests import util`, so pytest uses the default (prepend) import mode
 - fixtures in `tests/conftest.py`:
     - `rng`: a numpy random generator with a deterministic per-test seed; always use this (or `key`) instead of hardcoded seeds
     - `key`: a deterministic per-test jax random key
