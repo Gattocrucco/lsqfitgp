@@ -31,9 +31,9 @@ from lsqfitgp import _array, _jaxext, _utils
 from lsqfitgp._Kernel import _util
 
 # subclasses defined in other modules, which set these names when imported
-Kernel: type
-Constant: type
-CrossConstant: type
+Kernel: type = None
+Constant: type = None
+CrossConstant: type = None
 
 
 @functools.cache

@@ -27,7 +27,8 @@ import types
 import jax
 import numpy as np
 import pytest
-from pytest import mark
+from jax import jit
+from numpy.lib import recfunctions
 from scipy import linalg, optimize
 
 import lsqfitgp as lgp
@@ -207,7 +208,7 @@ class Base:
             pytest.skip()
         kernel = kernel.linop('diff', deriv, deriv)
         cov1 = kernel(x[None, :], x[:, None])
-        cov2 = jax.jit(kernel)(x[None, :], x[:, None])
+        cov2 = jit(kernel)(x[None, :], x[:, None])
         util.assert_allclose(cov2, cov1, rtol=1e-6, atol=1e-5)
 
     def test_jit_scalar_0(self, kernel, x_scalar):
@@ -240,8 +241,6 @@ class Base:
 
     @staticmethod
     def make_x_nd_implicit(x):
-        from numpy.lib import recfunctions
-
         dtype = recfunctions.repack_fields(x.dtype, align=False, recurse=True)
         return x.astype(dtype).view([('', x.dtype[0], (len(x.dtype),))]).copy()
 
@@ -518,7 +517,7 @@ class TestMaternp(Stationary, Deriv2):
     def kw(self, request):
         return dict(p=request.param)
 
-    @mark.parametrize('deriv', [0, 1, 2])
+    @pytest.mark.parametrize('deriv', [0, 1, 2])
     def test_matern_half_integer(self, rng, deriv):
         """
         Check that the formula for half integer nu gives the same result of the
@@ -633,9 +632,9 @@ class TestHarmonic(Stationary, Deriv1):
         Q = request.param
         return {} if Q is None else dict(Q=Q)
 
-    @mark.parametrize('deriv', [0, 1])
-    @mark.parametrize('Q0', [1 / 2, 1])
-    @mark.parametrize('Qderiv', [False, True])
+    @pytest.mark.parametrize('deriv', [0, 1])
+    @pytest.mark.parametrize('Q0', [1 / 2, 1])
+    @pytest.mark.parametrize('Qderiv', [False, True])
     def test_harmonic_continuous(self, rng, deriv, Q0, Qderiv):
         eps = 1e-10
         Q0 = float(Q0)

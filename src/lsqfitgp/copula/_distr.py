@@ -408,7 +408,7 @@ class Distr(_base.DistrBase):
 
         # wrap to support gvars
         @functools.partial(_gvarext.gvar_gufunc, signature=signature)
-        # @jax.jit
+        # @jit
         @functools.partial(jnp.vectorize, signature=signature)
         def _partial_invfcn(x):
             assert x.shape == self.in_shape

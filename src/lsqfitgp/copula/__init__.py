@@ -19,9 +19,9 @@
 
 """Reparametrize probability distributions as Normal."""
 
-from lsqfitgp.copula._base import DistrBase
-from lsqfitgp.copula._copula import Copula
-from lsqfitgp.copula._copulas import (
+from lsqfitgp.copula._base import DistrBase  # noqa: F401
+from lsqfitgp.copula._copula import Copula  # noqa: F401
+from lsqfitgp.copula._copulas import (  # noqa: F401
     beta,
     dirichlet,
     gamma,
@@ -32,8 +32,8 @@ from lsqfitgp.copula._copulas import (
     lognorm,
     uniform,
 )
-from lsqfitgp.copula._distr import Distr, distribution
-from lsqfitgp.copula._makedict import makedict
+from lsqfitgp.copula._distr import Distr, distribution  # noqa: F401
+from lsqfitgp.copula._makedict import makedict  # noqa: F401
 
 # Copula({
 #     'x': beta(1, 2),

@@ -20,6 +20,7 @@
 import functools
 
 import jax
+from jax import jit
 from jax import numpy as jnp
 from scipy import special
 
@@ -258,7 +259,7 @@ def _exp1_imag_largex(x):
     return real + 1j * imag  # e^ix (g + if)
 
 
-@jax.jit
+@jit
 def exp1_imag(x):
     """
     Compute E_1(-ix) = int_1^oo dt e^ixt / t, for x > 0

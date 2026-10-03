@@ -23,30 +23,29 @@ import jax
 import numpy as np
 import pytest
 from jax import test_util
-from pytest import mark
 from scipy import stats
 
 from lsqfitgp.copula import _gamma
 from tests import util
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     'degree',
     [
         pytest.param(1, id='grad'),
         pytest.param(
             2,
             id='hess',
-            marks=mark.xfail(reason='missing second derivs for gammainc in jax'),
+            marks=pytest.mark.xfail(reason='missing second derivs for gammainc in jax'),
         ),
     ],
 )
-@mark.parametrize('func', ['gammaincinv', 'gammainccinv'])
+@pytest.mark.parametrize('func', ['gammaincinv', 'gammainccinv'])
 def test_deriv(degree, func):
     test_util.check_grads(getattr(_gamma, func), (2.5, 0.3), degree)
 
 
-@mark.parametrize('func', ['gammaincinv', 'gammainccinv'])
+@pytest.mark.parametrize('func', ['gammaincinv', 'gammainccinv'])
 def test_deriv_int_alpha(func):
     jax.grad(getattr(_gamma, func), 1)(1, 0.5)
 

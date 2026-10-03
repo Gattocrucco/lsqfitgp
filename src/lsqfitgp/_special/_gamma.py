@@ -125,7 +125,7 @@ _gammaln1_coef_1 = [  # = _gen_gammaln1_coef(53, 1)
 
 def _gen_gammaln1_coef(n, x):  # pragma: no cover
     """Compute Taylor coefficients of log Γ(x)."""
-    import mpmath as mp
+    import mpmath as mp  # noqa: PLC0415, mpmath is only a dev dependency
 
     with mp.workdps(32):
         return [float(mp.polygamma(k, x) / mp.fac(k + 1)) for k in range(n)]

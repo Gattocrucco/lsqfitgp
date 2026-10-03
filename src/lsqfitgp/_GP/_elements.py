@@ -26,6 +26,7 @@ import gvar
 import jax
 import numpy
 from jax import numpy as jnp
+from jax import vmap
 from scipy import sparse
 
 from lsqfitgp import _array, _Deriv, _gvarext, _jaxext, _linalg
@@ -128,7 +129,7 @@ class GPElements(_base.GPBase):
             """
             elems = [gp._elements[key] for key in self.keys]
             matrices = []
-            transf = jax.vmap(self.transf, 0, 0)
+            transf = vmap(self.transf, 0, 0)
             for i, elem in enumerate(elems):
                 inputs = [
                     jnp.eye(elem.size).reshape((elem.size,) + elem.shape)
@@ -585,7 +586,7 @@ class GPElements(_base.GPBase):
             covs.append(cov)
 
         # Apply transformation.
-        t = jax.vmap(x.transf, -1, -1)
+        t = vmap(x.transf, -1, -1)
         cov = t(*covs)
         assert cov.shape == x.shape + (y.size,)
         return cov.reshape((x.size, y.size))  # don't leave out the ()!
@@ -729,7 +730,7 @@ class GPElements(_base.GPBase):
         ]
 
         # Apply transformation.
-        t = jax.vmap(x.transf, -1, -1)
+        t = vmap(x.transf, -1, -1)
         outjac = t(*jacs)
         assert outjac.shape == x.shape + indices.shape
 

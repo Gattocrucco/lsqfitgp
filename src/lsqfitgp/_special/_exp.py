@@ -18,11 +18,12 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import jax
+from jax import jit
 from jax import numpy as jnp
 
 
 @jax.custom_jvp
-@jax.jit
+@jit
 def expm1x(x):
     r"""
     Compute accurately :math:`e^x - 1 - x = x^2/2 {}_1F_1(1, 3, x)`.

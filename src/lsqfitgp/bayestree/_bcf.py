@@ -21,8 +21,8 @@ import functools
 import warnings
 
 import gvar
-import jax
 import numpy
+from jax import jit
 from jax import numpy as jnp
 
 from lsqfitgp import (
@@ -825,7 +825,7 @@ class bcf:
     @functools.cached_property
     def _pred(self):
 
-        @functools.partial(jax.jit, static_argnums=(8,))
+        @functools.partial(jit, static_argnums=(8,))
         def _pred(hp, z, x_mu, x_tau, pihat, x_aux, weights, gpfactorykw, error):
             gp = self._gp(hp, z, x_mu, x_tau, pihat, x_aux, weights, gpfactorykw)
             data = self.fit.data(hp, **gpfactorykw)

@@ -17,8 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from lsqfitgp._special._bernoulli import periodic_bernoulli, scaled_periodic_bernoulli
-from lsqfitgp._special._bessel import (
+from lsqfitgp._special._bernoulli import (  # noqa: F401
+    periodic_bernoulli,
+    scaled_periodic_bernoulli,
+)
+from lsqfitgp._special._bessel import (  # noqa: F401
     iv,
     ivp,
     j0,
@@ -31,12 +34,18 @@ from lsqfitgp._special._bessel import (
     kvmodx2_hi,
     kvp,
 )
-from lsqfitgp._special._exp import expm1x
-from lsqfitgp._special._expint import ci, exp1_imag, expn_imag
-from lsqfitgp._special._gamma import gamma, gamma_incr, gammaln1, poch, sgngamma
-from lsqfitgp._special._sinc import sinc
-from lsqfitgp._special._taylor import taylor
-from lsqfitgp._special._zeta import (
+from lsqfitgp._special._exp import expm1x  # noqa: F401
+from lsqfitgp._special._expint import ci, exp1_imag, expn_imag  # noqa: F401
+from lsqfitgp._special._gamma import (  # noqa: F401
+    gamma,
+    gamma_incr,
+    gammaln1,
+    poch,
+    sgngamma,
+)
+from lsqfitgp._special._sinc import sinc  # noqa: F401
+from lsqfitgp._special._taylor import taylor  # noqa: F401
+from lsqfitgp._special._zeta import (  # noqa: F401
     hurwitz_zeta,
     periodic_zeta,
     zeta,

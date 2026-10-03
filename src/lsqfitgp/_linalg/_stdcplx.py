@@ -63,7 +63,7 @@ ops = {
 
 
 def gen_ops_factors(n):  # pragma: no cover
-    key = random.PRNGKey(202208101236)
+    key = random.key(202208101236)
     factors = {}
     for op, (job, est) in ops.items():
         print(f'{op}({n})... ', end='', flush=True)

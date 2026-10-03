@@ -19,7 +19,6 @@
 
 import numpy as np
 import pytest
-from pytest import mark
 
 import lsqfitgp as lgp
 from tests import util
@@ -27,7 +26,7 @@ from tests import util
 rng = np.random.default_rng(202307302223)
 
 plist = [1, 5]
-smark = mark.parametrize(
+smark = pytest.mark.parametrize(
     'sb,sbw,sa,w',
     sum(
         [
@@ -52,22 +51,22 @@ smark = mark.parametrize(
         [],
     ),
 )
-amark = mark.parametrize(
+amark = pytest.mark.parametrize(
     'a',
     [
         pytest.param(np.array([0, 1])[:, None], id='a01'),
         pytest.param(np.linspace(0.01, 0.99, 7)[:, None], id='aother'),
     ],
 )
-bmark = mark.parametrize(
+bmark = pytest.mark.parametrize(
     'b',
     [
         pytest.param(np.array([0, np.inf]), id='b0inf'),
         pytest.param(np.linspace(1, 10, 10), id='bother'),
     ],
 )
-umark = mark.parametrize('u', [np.array([0, 1])[:, None, None]])
-mdmark = mark.parametrize('md', range(5))
+umark = pytest.mark.parametrize('u', [np.array([0, 1])[:, None, None]])
+mdmark = pytest.mark.parametrize('md', range(5))
 
 
 @mdmark
@@ -106,6 +105,7 @@ def test_lower_upper_incr_maxd(sb, sbw, sa, w, a, b):
     """
     lower/upper increases/decreases as maxd is increased
     """
+    plw = pup = None
     for md in range(4):
         lw = lgp.BART.correlation(
             sb, sbw, sa, alpha=a, beta=b, gamma=0, maxd=md, weights=w
@@ -154,7 +154,7 @@ def test_incr_alpha(sb, sbw, sa, w, a, b, u, md):
 @umark
 @bmark
 @amark
-@mark.parametrize(
+@pytest.mark.parametrize(
     'sb,sbw,sa,w',
     sum(
         [
@@ -256,7 +256,7 @@ def test_perm_dims(sb, sbw, sa, w, a, b, u, md, rng):
 @umark
 @bmark
 @amark
-@mark.parametrize(
+@pytest.mark.parametrize(
     'sb,sbw,sa,w',
     sum([[(*rng.integers(0, 10, (3, p)), rng.integers(1, 10, p))] for p in plist], []),
 )
@@ -289,7 +289,7 @@ def values(mark):
     return sum((getattr(v, 'values', (v,)) for v in vals), ())
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     'sb,sbw,sa,w,a,b,md',
     [
         # n^0 = 0
@@ -350,7 +350,7 @@ def test_lower_eq_upper(sb, sbw, sa, w, a, b, md):
     np.testing.assert_array_max_ulp(lw, up)
 
 
-@mark.parametrize('md', range(4))
+@pytest.mark.parametrize('md', range(4))
 @umark
 @bmark
 @amark
@@ -476,7 +476,7 @@ def test_i32():
     np.testing.assert_array_max_ulp(c1, c2, 0)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     'md,reset',
     [
         (0, None),

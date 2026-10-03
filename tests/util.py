@@ -24,7 +24,7 @@ import gvar
 import numpy as np
 import pytest
 from jax import numpy as jnp
-from jax import tree_util
+from jax import tree
 from numpy.lib import recfunctions
 from scipy import linalg
 
@@ -35,9 +35,9 @@ def jaxtonumpy(x):
     """
     Recursively convert jax arrays in x to numpy arrays.
     """
-    children, meta = tree_util.tree_flatten(x)
+    children, meta = tree.flatten(x)
     children = (np.array(x) if isinstance(x, jnp.ndarray) else x for x in children)
-    return tree_util.tree_unflatten(meta, children)
+    return tree.unflatten(meta, children)
 
 
 def assert_equal(*args):
@@ -141,8 +141,8 @@ def tryagain(fun, rep=2, method=False):
                 x = job()
                 if i > 0:
                     warnings.warn(
-                        f'Test {name} failed {i} times with last exception {exc.__class__.__name__}('
-                        + ', '.join(map(str, exc.args))
+                        f'Test {name} failed {i} times with last exception {exc.__class__.__name__}('  # noqa: F821, set in the previous iteration
+                        + ', '.join(map(str, exc.args))  # noqa: F821
                         + ')'
                     )
                 return x

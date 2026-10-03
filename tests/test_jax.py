@@ -22,9 +22,8 @@ import functools
 import jax
 import numpy as np
 import pytest
-from jax import lax
+from jax import lax, vmap
 from jax import numpy as jnp
-from pytest import mark
 
 import lsqfitgp as lgp
 from lsqfitgp import _jaxext
@@ -38,7 +37,7 @@ def test_elementwise_grad_1():
     x = np.arange(8.0)
     with jax.checking_leaks():
         y = _jaxext.elementwise_grad(f)(x)
-    y2 = jax.vmap(jax.grad(f))(x)
+    y2 = vmap(jax.grad(f))(x)
     util.assert_equal(y, y2)
 
 
@@ -49,7 +48,7 @@ def test_elementwise_grad_2():
     x = np.arange(8.0)
     with jax.checking_leaks():
         y = _jaxext.elementwise_grad(f, 0)(x, x)
-    y2 = jax.vmap(jax.grad(f, 0))(x, x)
+    y2 = vmap(jax.grad(f, 0))(x, x)
     util.assert_equal(y, y2)
 
 
@@ -60,7 +59,7 @@ def test_elementwise_grad_3():
     x = np.arange(8.0)
     with jax.checking_leaks():
         y = _jaxext.elementwise_grad(_jaxext.elementwise_grad(f))(x)
-    y2 = jax.vmap(jax.grad(jax.grad(f)))(x)
+    y2 = vmap(jax.grad(jax.grad(f)))(x)
     util.assert_equal(y, y2)
 
 
@@ -71,7 +70,7 @@ def test_elementwise_grad_4():
     x = np.arange(8.0)
     with jax.checking_leaks():
         y = _jaxext.elementwise_grad(_jaxext.elementwise_grad(f, 0), 0)(x, x)
-    y2 = jax.vmap(jax.grad(jax.grad(f, 0), 0))(x, x)
+    y2 = vmap(jax.grad(jax.grad(f, 0), 0))(x, x)
     util.assert_equal(y, y2)
 
 
@@ -82,7 +81,7 @@ def test_elementwise_grad_5():
     x = np.arange(8.0)
     with jax.checking_leaks():
         y = _jaxext.elementwise_grad(_jaxext.elementwise_grad(f, 0), 1)(x, x)
-    y2 = jax.vmap(jax.grad(jax.grad(f, 0), 1))(x, x)
+    y2 = vmap(jax.grad(jax.grad(f, 0), 1))(x, x)
     util.assert_equal(y, y2)
 
 
@@ -93,11 +92,11 @@ def test_elementwise_grad_6():
     x = np.arange(8.0)
     with jax.checking_leaks():
         y = jax.jacrev(_jaxext.elementwise_grad(f, 0), 1)(x, x)
-    y2 = jax.jacrev(jax.vmap(jax.grad(f, 0)), 1)(x, x)
+    y2 = jax.jacrev(vmap(jax.grad(f, 0)), 1)(x, x)
     util.assert_equal(y, y2)
 
 
-@mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
+@pytest.mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
 def test_batcher(maxnbytes, rng):
     def func(x, y):
         return x * y
@@ -110,7 +109,7 @@ def test_batcher(maxnbytes, rng):
     util.assert_equal(p1, p2)
 
 
-@mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
+@pytest.mark.parametrize('maxnbytes', [1, 10 * 8, 1000 * 8])
 def test_batcher_structured(maxnbytes, rng):
     def func(x, y):
         return jnp.sum(x['x'] * y['x'], axis=-1)
@@ -353,8 +352,8 @@ def test_limit_derivatives():
         (jax.grad(jax.grad(ld(1))), 0.0),
         (jax.grad(jax.jacfwd(jax.jacrev(ld(2)))), 0.0),
         (jax.value_and_grad(ld(0)), 0.0),
-        (jax.grad(jax.vmap(ld(0))), jnp.ones(1)),
-        (jax.vmap(jax.grad(ld(0))), jnp.ones(1)),
+        (jax.grad(vmap(ld(0))), jnp.ones(1)),
+        (vmap(jax.grad(ld(0))), jnp.ones(1)),
         (jax.jacfwd(lambda x: ld(0)(dict(a=x, b=1.0))), 0.0),
         (jax.jacfwd(lambda x: ld(0)(dict(a=x, b=x))), 0.0),
         (jax.jacfwd(jax.jacfwd(lambda x, y: ld(1)(dict(a=x, b=y))), 1), 0.0, 0.0),

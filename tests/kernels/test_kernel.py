@@ -29,9 +29,9 @@ import warnings
 import jax
 import numpy as np
 import pytest
+from jax import jit
 from jax import numpy as jnp
 from numpy.lib import recfunctions
-from pytest import mark
 
 import lsqfitgp as lgp
 from tests import util
@@ -59,8 +59,8 @@ def test_batch(rng):
 
 
 class TestAlgOp:
-    @mark.parametrize('op', [operator.add, operator.mul])
-    @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
+    @pytest.mark.parametrize('op', [operator.add, operator.mul])
+    @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_binary_kernel(self, op, cls, rng):
         f1 = lambda x, y: 1.2 * x + 8.9 * y
         f2 = lambda x, y: 3.4 * x + 5.6 * y
@@ -72,8 +72,8 @@ class TestAlgOp:
         expected = op(f1(x, y), f2(x, y))
         util.assert_equal(result, expected)
 
-    @mark.parametrize('op', [operator.add, operator.mul])
-    @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
+    @pytest.mark.parametrize('op', [operator.add, operator.mul])
+    @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_binary_scalar(self, op, cls, rng):
         f1 = lambda x, y: 1.2 * x + 8.9 * y
         f2 = 3.4
@@ -87,8 +87,8 @@ class TestAlgOp:
             util.assert_equal(result, expected)
             args = tuple(reversed(args))
 
-    @mark.parametrize('op', [operator.add, operator.mul, operator.pow])
-    @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
+    @pytest.mark.parametrize('op', [operator.add, operator.mul, operator.pow])
+    @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_binary_undef(self, op, cls, constcore):
 
         # test that adding a string raises through Python's mechanism
@@ -107,7 +107,7 @@ class TestAlgOp:
         assert op(A(), kernel) == 'ciao'
         assert op(kernel, A()) == 'ciao'
 
-    @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
+    @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_pow(self, cls, rng):
         f = lambda x, y: 1.2 * x + 8.9 * y
         for exp in 3, np.int64(3), np.array(3), jnp.array(3):
@@ -124,7 +124,7 @@ class TestAlgOp:
         with pytest.raises(TypeError):
             cls(f) ** -1
 
-        @jax.jit
+        @jit
         def traced(exp, x, y):
             return (cls(f) ** exp)(x, y)
 
@@ -134,7 +134,7 @@ class TestAlgOp:
         with pytest.raises(TypeError):
             traced(3, x, y)
 
-    @mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
+    @pytest.mark.parametrize('cls', [lgp.CrossKernel, lgp.Kernel])
     def test_rpow(self, cls, rng):
         f = lambda x, y: 1.2 * x + 8.9 * y
 
@@ -152,7 +152,7 @@ class TestAlgOp:
             expected = base ** f(x, y)
             util.assert_equal(result, expected)
 
-        @jax.jit
+        @jit
         def traced(base, x, y):
             return (base ** cls(f))(x, y)
 
@@ -161,8 +161,8 @@ class TestAlgOp:
                 base ** cls(f)
             traced(base, x, y)  # no bound check under tracing
 
-    @mark.parametrize('op', [operator.add, operator.mul])
-    @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
+    @pytest.mark.parametrize('op', [operator.add, operator.mul])
+    @pytest.mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
     def test_binary_kernel_class(self, op, cls, constcore):
 
         assert op(cls(constcore), cls(constcore)).__class__ is cls
@@ -187,8 +187,8 @@ class TestAlgOp:
         assert op(A(constcore), cls(constcore)).__class__ is cls
         assert op(A(constcore), lgp.Kernel(constcore)).__class__ is lgp.Kernel
 
-    @mark.parametrize('op', [operator.add, operator.mul])
-    @mark.parametrize(
+    @pytest.mark.parametrize('op', [operator.add, operator.mul])
+    @pytest.mark.parametrize(
         'cls,crosscls',
         [
             (lgp.Kernel, lgp.CrossKernel),
@@ -207,7 +207,7 @@ class TestAlgOp:
             jnp.array,
         ]
 
-        @jax.jit
+        @jit
         def check(x):
             assert op(k, x).__class__ is cls
 
@@ -219,7 +219,7 @@ class TestAlgOp:
             check(c(0))
             check(c(-1))
 
-    @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
+    @pytest.mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
     def test_pow_class(self, cls, constcore):
         assert (cls(constcore) ** 1).__class__ is cls
 
@@ -503,7 +503,7 @@ class TestLinOp:
 
         assert A(constcore).linop('op', 1, 2).__class__ is B
 
-    @mark.parametrize(
+    @pytest.mark.parametrize(
         'name,arg',
         [
             ('rescale', jnp.cos),
@@ -532,7 +532,7 @@ class TestLinOp:
         c2 = kernel.linop(name, arg, arg)(x, y)
         util.assert_equal(c1, c2)
 
-    @mark.parametrize(
+    @pytest.mark.parametrize(
         'name,arg',
         [
             ('rescale', None),
@@ -560,7 +560,7 @@ class TestLinOp:
         assert a.linop(name, arg) is a
         assert a.linop(name, arg, arg) is a
 
-    @mark.parametrize(
+    @pytest.mark.parametrize(
         'name,arg',
         [
             ('rescale', 1),
@@ -590,7 +590,7 @@ class TestLinOp:
         with pytest.raises((ValueError, TypeError)):
             kernel.linop(name, None, arg)
 
-    @mark.parametrize(
+    @pytest.mark.parametrize(
         'cls',
         [
             lgp.CrossStationaryKernel,
@@ -599,7 +599,7 @@ class TestLinOp:
             lgp.IsotropicKernel,
         ],
     )
-    @mark.parametrize(
+    @pytest.mark.parametrize(
         'name,arg,nops',
         [
             ('rescale', jnp.cos, 0),
@@ -746,7 +746,9 @@ class TestLinOp:
         with pytest.raises(ValueError, match='derivatives'):
             k.linop('diff', ('f0', 'f1'), None)(y, y)
 
-    @mark.xfail(reason='derivability check does not ignore extraneous derivatives')
+    @pytest.mark.xfail(
+        reason='derivability check does not ignore extraneous derivatives'
+    )
     def test_derivable_foreign(self, rng):
         """Test that it is possible to derive w.r.t. other stuff that goes
         through x without triggering derivability checks
@@ -793,10 +795,10 @@ class TestLinOp:
         a = A()
         a(x, x)
 
-    @mark.parametrize('rightker', [False, True])
-    @mark.parametrize('doc', [None, 'miao'])
-    @mark.parametrize('argnames', [None, ('xbau', 'ybau')])
-    @mark.parametrize('nonsym', [False, True])
+    @pytest.mark.parametrize('rightker', [False, True])
+    @pytest.mark.parametrize('doc', [None, 'miao'])
+    @pytest.mark.parametrize('argnames', [None, ('xbau', 'ybau')])
+    @pytest.mark.parametrize('nonsym', [False, True])
     def test_make_linop_family(self, rng, rightker, doc, argnames, nonsym):
 
         decorator = lgp.crosskernel if nonsym else lgp.kernel
@@ -895,12 +897,12 @@ miao"""
 
 
 class TestStationaryIsotropic:
-    @mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
+    @pytest.mark.parametrize('cls', [lgp.StationaryKernel, lgp.IsotropicKernel])
     def test_invalid_input(self, cls, constcore):
         with pytest.raises(KeyError):
             cls(constcore, input='ciao')
 
-    @mark.parametrize('dtype', [int, float, 'i,2i', 'd,2d'])
+    @pytest.mark.parametrize('dtype', [int, float, 'i,2i', 'd,2d'])
     def test_isotropic_input(self, rng, dtype):
         def ssd(x, y):
             if x.dtype.names is not None:
@@ -982,7 +984,7 @@ class TestDecorator:
         with pytest.raises(ValueError):
             lgp.kernel(lambda x: 2, 'gatto')
 
-    @mark.parametrize(
+    @pytest.mark.parametrize(
         'dec,cls,crdec,crcls',
         [
             (
@@ -1073,7 +1075,7 @@ class TestAffineSpan:
         assert a.linop('loc', 0).__class__ is A
         assert a.linop('dim', 'a').__class__ is lgp.StationaryKernel
 
-    @mark.parametrize('op', [operator.add, operator.mul])
+    @pytest.mark.parametrize('op', [operator.add, operator.mul])
     def test_class_negative_scalar(self, constcore, op):
 
         class A(lgp._Kernel.AffineSpan, lgp.Kernel):

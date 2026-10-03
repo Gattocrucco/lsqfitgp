@@ -18,10 +18,9 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import gvar
-import jax
 import numpy as np
-from jax import tree_util
-from pytest import mark
+import pytest
+from jax import jit, tree
 
 from lsqfitgp import _gvarext
 from tests import util
@@ -51,8 +50,8 @@ def test_jacobian(rng):
 
 def test_bdtree():
     x = gvar.BufferDict(a=[1, 2], b=[3, 4])
-    l, t = tree_util.tree_flatten(x)
-    y = tree_util.tree_unflatten(t, l)
+    l, t = tree.flatten(x)
+    y = tree.unflatten(t, l)
     assert np.all(x.buf == y.buf)
     assert x.keys() == y.keys()
     for k in x:
@@ -61,27 +60,27 @@ def test_bdtree():
 
 def test_bdtree_dtype():
     x = gvar.BufferDict(dict(a=0), dtype=bool)
-    l, t = tree_util.tree_flatten(x)
-    y = tree_util.tree_unflatten(t, l)
+    l, t = tree.flatten(x)
+    y = tree.unflatten(t, l)
     assert x.dtype == y.dtype
 
 
-@mark.parametrize('shape', [(), (2,)])
+@pytest.mark.parametrize('shape', [(), (2,)])
 def test_bdtree_compare(rng, shape):
     x = gvar.BufferDict(a=rng.standard_normal(shape))
-    _, t1 = tree_util.tree_flatten(x)
-    _, t2 = tree_util.tree_flatten(x)
+    _, t1 = tree.flatten(x)
+    _, t2 = tree.flatten(x)
     assert t1 == t2
 
 
-@mark.parametrize('shape', [(), (2,)])
+@pytest.mark.parametrize('shape', [(), (2,)])
 def test_double_jit(rng, shape):
     """Call a jitted function twice with the same BufferDict to trigger the
     machinery that checks if a compiled version already exists
     """
     x = gvar.BufferDict(a=rng.standard_normal(shape))
 
-    @jax.jit
+    @jit
     def f(x):
         return x
 
@@ -94,9 +93,9 @@ def test_double_jit(rng, shape):
 def test_tracer():
     x = gvar.BufferDict(a=0.0, b=1.0)
 
-    @jax.jit
+    @jit
     def f(x):
-        return tree_util.tree_map(lambda x: x, x)
+        return tree.map(lambda x: x, x)
 
     y = f(x)
     assert x == y

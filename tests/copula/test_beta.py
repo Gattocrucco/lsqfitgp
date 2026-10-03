@@ -22,7 +22,6 @@
 import numpy as np
 import pytest
 from jax import test_util
-from pytest import mark
 from scipy import stats
 
 from lsqfitgp.copula import _beta
@@ -38,7 +37,7 @@ def test_grad(aby):
     test_util.check_grads(lambda y: _beta.betaincinv(a, b, y), (y,), 2)
 
 
-@mark.xfail(reason='missing derivs in jax for betainc')
+@pytest.mark.xfail(reason='missing derivs in jax for betainc')
 def test_grad_ab(aby):
     test_util.check_grads(_beta.betaincinv, aby, 1)
 

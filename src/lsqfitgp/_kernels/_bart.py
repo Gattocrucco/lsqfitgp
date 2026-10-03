@@ -19,8 +19,7 @@
 
 import functools
 
-import jax
-from jax import lax
+from jax import jit, lax
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 from numpy.lib import recfunctions
@@ -244,7 +243,7 @@ class BART(_BARTBase):
         return cls._splits_from_coord(x)
 
     @staticmethod
-    @jax.jit
+    @jit
     def _splits_from_coord(x):
         """
         Jitted implementation of splits_from_coord. Applying jit avoids the
@@ -537,7 +536,7 @@ class BART(_BARTBase):
         return l, s
 
     @staticmethod
-    @functools.partial(jax.jit, static_argnames=('side',))
+    @functools.partial(jit, static_argnames=('side',))
     def _searchsorted_vectorized(A, V, **kw):
         """
         A : (n, p)
@@ -552,7 +551,7 @@ class BART(_BARTBase):
         return out.T
 
     @classmethod
-    @functools.partial(jax.jit, static_argnums=(0, 7))
+    @functools.partial(jit, static_argnums=(0, 7))
     def _correlation_old(cls, nminus, n0, nplus, pnt, gamma, w, debug):
         """Old version, kept around for cross-checking."""
         assert nminus.shape == n0.shape == nplus.shape == w.shape
@@ -669,7 +668,7 @@ class BART(_BARTBase):
             return lax.scan(f, init, xs[1:])
 
     @classmethod
-    @functools.partial(jax.jit, static_argnums=(0, 7, 8))
+    @functools.partial(jit, static_argnums=(0, 7, 8))
     def _correlation(cls, n, ix, iy, pnt, gamma, w, debug, repeat):
         # this implementation is optimized assuming that the shapes are as
         # follows:

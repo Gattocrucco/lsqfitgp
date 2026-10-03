@@ -21,11 +21,10 @@ import copy
 import itertools
 
 import gvar
-import jax
 import numpy as np
 import pytest
+from jax import jit
 from jax import numpy as jnp
-from pytest import mark
 
 import lsqfitgp as lgp
 from lsqfitgp import _linalg
@@ -42,7 +41,7 @@ def test_prior_raw_shape():
     assert cov.shape == (2, 10, 2, 10)
 
 
-@mark.parametrize('shape', [(20,), (2, 3)])
+@pytest.mark.parametrize('shape', [(20,), (2, 3)])
 def test_halfmatrix(shape, rng):
     covs = []
     x = rng.standard_normal(shape)
@@ -772,7 +771,7 @@ def test_addtransf_abstract():
 
     with pytest.raises(ValueError):
         func()
-    assert jax.jit(func)().item() == np.inf
+    assert jit(func)().item() == np.inf
 
 
 def test_addlintransf_abstract():
@@ -783,7 +782,7 @@ def test_addlintransf_abstract():
 
     with pytest.raises(RuntimeError):
         func()
-    assert jax.jit(func)().item() == 3
+    assert jit(func)().item() == 3
 
 
 def test_addcov_abstract():
@@ -794,7 +793,7 @@ def test_addcov_abstract():
 
     with pytest.raises(ValueError):
         func()
-    cov = jax.jit(func)()
+    cov = jit(func)()
     assert cov[0, 1] == 1 or cov[0, 1] == 0
 
 
@@ -818,12 +817,12 @@ def test_marginal_likelihood_abstract(rng):
     covnan = np.full((10, 10), np.nan)
     with pytest.raises(ValueError):
         func(covnan)
-    assert np.isnan(jax.jit(func)(covnan))
+    assert np.isnan(jit(func)(covnan))
 
     covasym = rng.standard_normal((10, 10))
     with pytest.raises(ValueError):
         func(covasym)
-    jax.jit(func)(covasym)
+    jit(func)(covasym)
 
 
 def test_addcov_decomps(rng):
@@ -903,7 +902,7 @@ def test_transf_checks():
         gp.addtransf({}, 2)
 
 
-@mark.skip('Woodbury currently un-implemented')
+@pytest.mark.skip('Woodbury currently un-implemented')
 def test_givencov_decomp(rng):
 
     def genpd(n, rank=None, size=()):
@@ -997,7 +996,7 @@ def test_nochecksym_structured():
 
 
 def test_nochecksym_structured_jit():
-    jax.jit(test_nochecksym_structured)()
+    jit(test_nochecksym_structured)()
 
 
 def test_nochecksym_tracer():
@@ -1006,7 +1005,7 @@ def test_nochecksym_tracer():
         gp = gp.addx(np.zeros(1), 0)
         return gp.prior(0, raw=True)
 
-    jax.jit(fun)()
+    jit(fun)()
 
 
 def test_decompose_nd():
@@ -1018,7 +1017,7 @@ def test_decompose_nd():
     util.assert_close_decomps(d1, d3)
 
 
-@mark.skip('Woodbury currently un-implemented')
+@pytest.mark.skip('Woodbury currently un-implemented')
 def test_pred_woodbury():
     gp = lgp.GP(lgp.ExpQuad())
     gp = gp.addx(0, 0)

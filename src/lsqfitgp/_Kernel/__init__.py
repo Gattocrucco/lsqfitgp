@@ -17,19 +17,23 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from lsqfitgp._Kernel._crosskernel import AffineSpan, CrossKernel, PreservedBySwap
-from lsqfitgp._Kernel._util import (
+from lsqfitgp._Kernel._crosskernel import (  # noqa: F401
+    AffineSpan,
+    CrossKernel,
+    PreservedBySwap,
+)
+from lsqfitgp._Kernel._util import (  # noqa: F401
     is_numerical_scalar,
     prod_recurse_dtype,
     sum_recurse_dtype,
 )
 
 # isort: off
-from lsqfitgp._Kernel import _ops  # keep first
-from lsqfitgp._Kernel import _alg  # keep first
+from lsqfitgp._Kernel import _ops  # noqa: F401  # keep first
+from lsqfitgp._Kernel import _alg  # noqa: F401  # keep first
 
 # isort: on
-from lsqfitgp._Kernel._decorators import (
+from lsqfitgp._Kernel._decorators import (  # noqa: F401
     crossisotropickernel,
     crosskernel,
     crossstationarykernel,
@@ -37,6 +41,13 @@ from lsqfitgp._Kernel._decorators import (
     kernel,
     stationarykernel,
 )
-from lsqfitgp._Kernel._isotropic import CrossIsotropicKernel, IsotropicKernel, Zero
-from lsqfitgp._Kernel._kernel import Kernel
-from lsqfitgp._Kernel._stationary import CrossStationaryKernel, StationaryKernel
+from lsqfitgp._Kernel._isotropic import (  # noqa: F401
+    CrossIsotropicKernel,
+    IsotropicKernel,
+    Zero,
+)
+from lsqfitgp._Kernel._kernel import Kernel  # noqa: F401
+from lsqfitgp._Kernel._stationary import (  # noqa: F401
+    CrossStationaryKernel,
+    StationaryKernel,
+)

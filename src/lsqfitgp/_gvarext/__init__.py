@@ -21,10 +21,10 @@ import contextlib
 
 import gvar
 
-from lsqfitgp._gvarext._format import fmtspec_kwargs, gvar_format, uformat
-from lsqfitgp._gvarext._jacobian import from_jacobian, jacobian
-from lsqfitgp._gvarext._tabulate import tabulate_together
-from lsqfitgp._gvarext._ufunc import gvar_gufunc
+from lsqfitgp._gvarext._format import fmtspec_kwargs, gvar_format, uformat  # noqa: F401
+from lsqfitgp._gvarext._jacobian import from_jacobian, jacobian  # noqa: F401
+from lsqfitgp._gvarext._tabulate import tabulate_together  # noqa: F401
+from lsqfitgp._gvarext._ufunc import gvar_gufunc  # noqa: F401
 
 
 @contextlib.contextmanager

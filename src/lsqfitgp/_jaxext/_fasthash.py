@@ -45,8 +45,7 @@
 
 import functools
 
-import jax
-from jax import lax
+from jax import jit, lax
 from jax import numpy as jnp
 
 
@@ -59,7 +58,7 @@ def mix(h):
     return h
 
 
-@functools.partial(jax.jit, static_argnames=('unroll',))
+@functools.partial(jit, static_argnames=('unroll',))
 def fasthash64(buf, seed, *, unroll=4):
     # buf = jnp.asarray(buf) # needed without jit
     seed = jnp.array(seed, jnp.uint64)

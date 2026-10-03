@@ -21,6 +21,7 @@ import functools
 
 import jax
 from jax import numpy as jnp
+from jax import random
 
 from lsqfitgp import _jaxext, _utils
 
@@ -52,17 +53,17 @@ class GPBase:
     def _checklinear(self, func, inshapes, elementwise=False):
 
         # Make input arrays.
-        rkey = jax.random.PRNGKey(202206091600)
+        rkey = random.key(202206091600)
         inp = []
         for shape in inshapes:
-            rkey, subkey = jax.random.split(rkey)
-            inp.append(jax.random.normal(subkey, shape))
+            rkey, subkey = random.split(rkey)
+            inp.append(random.normal(subkey, shape))
 
         # Put zeros into the arrays to check they are preserved.
         if elementwise:
             shape = jnp.broadcast_shapes(*inshapes)
-            rkey, subkey = jax.random.split(rkey)
-            zeros = jax.random.bernoulli(subkey, 0.5, shape)
+            rkey, subkey = random.split(rkey)
+            zeros = random.bernoulli(subkey, 0.5, shape)
             for i, a in enumerate(inp):
                 inp[i] = a.at[zeros].set(0)
 

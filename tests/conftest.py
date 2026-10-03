@@ -22,9 +22,9 @@ import json
 import pathlib
 
 import gvar
-import jax
 import numpy as np
 import pytest
+from jax import random
 
 
 @pytest.fixture(autouse=True)
@@ -49,8 +49,8 @@ def rng(request):
 def key(rng):
     """A deterministic per-test jax random key"""
     seed = np.array(rng.bytes(4)).view(np.uint32)
-    key = jax.random.key(seed)
-    return jax.random.fold_in(key, 0xCC755E92)  # to make it independent of rng
+    key = random.key(seed)
+    return random.fold_in(key, 0xCC755E92)  # to make it independent of rng
 
 
 @pytest.fixture(autouse=True)

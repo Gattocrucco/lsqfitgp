@@ -28,7 +28,7 @@ import jax
 import numpy as np
 import pytest
 from jax import numpy as jnp
-from pytest import mark
+from jax import vmap
 from scipy import special, stats
 
 import lsqfitgp as lgp
@@ -169,7 +169,7 @@ class DistrTestBase:
 
         ymean = distr.partial_invfcn(gvar.mean(x))
         assert ymean.shape == shape + distr.shape
-        deriv = jax.vmap(jax.jacfwd(distr.partial_invfcn))(gvar.mean(x))
+        deriv = vmap(jax.jacfwd(distr.partial_invfcn))(gvar.mean(x))
         assert deriv.shape == shape + distr.shape + distr.in_shape
 
         ii = string.ascii_lowercase[: len(distr.in_shape)]
@@ -268,7 +268,7 @@ class DistrTestBase:
             test = stats.ks_1samp(samples, self.cdf())
             assert test.pvalue >= significance
 
-    @mark.parametrize('level', [0, 1, 2])
+    @pytest.mark.parametrize('level', [0, 1, 2])
     def test_recursive(self, name, level, rng, nsamples, significance):
         variables = self.copcls(*self.convert_recparams(level), name=name)
         samples_norm = rng.standard_normal((nsamples,) + variables.shape)
@@ -381,8 +381,8 @@ def test_invgamma_divergence():
     assert np.isfinite(y)
 
 
-@mark.parametrize('distr', ['gamma', 'invgamma', 'loggamma'])
-@mark.parametrize('x64', [False, True])
+@pytest.mark.parametrize('distr', ['gamma', 'invgamma', 'loggamma'])
+@pytest.mark.parametrize('x64', [False, True])
 def test_gamma_asymp(distr, x64):
 
     test = DistrTestBase.testfor[distr]

@@ -25,7 +25,7 @@ import pprint
 import gvar
 import jax
 from jax import numpy as jnp
-from jax import tree_util
+from jax import tree, tree_util, vmap
 
 from lsqfitgp import _array, _gvarext
 from lsqfitgp.copula import _base
@@ -129,11 +129,11 @@ class Copula(_base.DistrBase):
 
         def patch_dict(obj):
             if is_dict(obj):
-                return tree_util.tree_map(patch_dict, cls._Dict(obj))
+                return tree.map(patch_dict, cls._Dict(obj))
             else:
                 return obj
 
-        return tree_util.tree_map(patch_dict, pytree, is_leaf=is_dict)
+        return tree.map(patch_dict, pytree, is_leaf=is_dict)
 
     @tree_util.register_pytree_with_keys_class
     class _Dict(dict):
@@ -158,7 +158,7 @@ class Copula(_base.DistrBase):
                 )
             return obj
 
-        self._variables = tree_util.tree_map_with_path(check_type, variables)
+        self._variables = tree_util.tree_map_with_path(check_type, variables)  # noqa: TID251  # WORKAROUND(jax<0.4.38): use tree.map_with_path
         cache = set()
         self.in_shape = (self._compute_in_size(cache),)
         self._ancestor_count = len(cache) - 1
@@ -173,7 +173,7 @@ class Copula(_base.DistrBase):
         def accumulate(in_size, obj):
             return in_size + obj._compute_in_size(cache)
 
-        return tree_util.tree_reduce(accumulate, self._variables, 0)
+        return tree.reduce(accumulate, self._variables, 0)
 
     def _map_getattr(self, attr):
         def get_attr(obj):
@@ -182,18 +182,18 @@ class Copula(_base.DistrBase):
             else:
                 return getattr(obj, attr)
 
-        return tree_util.tree_map(get_attr, self._variables)
+        return tree.map(get_attr, self._variables)
 
     def _partial_invfcn_internal(self, x, i, cache):
         if (out := super()._partial_invfcn_internal(x, i, cache)) is not None:
             return out
 
-        distributions, treedef = tree_util.tree_flatten(self._variables)
+        distributions, treedef = tree.flatten(self._variables)
         outputs = []
         for distr in distributions:
             out, i = distr._partial_invfcn_internal(x, i, cache)
             outputs.append(out)
-        out = tree_util.tree_unflatten(treedef, outputs)
+        out = tree.unflatten(treedef, outputs)
 
         cache[self] = out
         return out, i
@@ -202,7 +202,7 @@ class Copula(_base.DistrBase):
     def _partial_invfcn(self):
 
         # non vectorized version, check core shapes and call recursive impl
-        # @jax.jit
+        # @jit
         def partial_invfcn_0(x):
             assert x.shape == self.in_shape
             cache = {}
@@ -214,8 +214,8 @@ class Copula(_base.DistrBase):
         partial_invfcn_0_deriv = jax.jacfwd(partial_invfcn_0)
 
         # add 1-axis vectorization
-        partial_invfcn_1 = jax.vmap(partial_invfcn_0)
-        partial_invfcn_1_deriv = jax.vmap(partial_invfcn_0_deriv)
+        partial_invfcn_1 = vmap(partial_invfcn_0)
+        partial_invfcn_1_deriv = vmap(partial_invfcn_0_deriv)
 
         # add gvar support
         def partial_invfcn_2(x):
@@ -239,7 +239,7 @@ class Copula(_base.DistrBase):
                     out_jac = jnp.einsum('b...i,big->b...g', jac, in_jac)
                     return _gvarext.from_jacobian(out_mean, out_jac, indices)
 
-                return tree_util.tree_map(contract_and_pack, out_mean, jac)
+                return tree.map(contract_and_pack, out_mean, jac)
 
             else:
                 return partial_invfcn_1(x)
@@ -259,7 +259,7 @@ class Copula(_base.DistrBase):
                     y = y.item()
                 return y
 
-            return tree_util.tree_map(reshape_y, y, self.shape)
+            return tree.map(reshape_y, y, self.shape)
 
         return partial_invfcn_3
 
@@ -282,8 +282,8 @@ class Copula(_base.DistrBase):
             def __repr__(self):
                 return self.s
 
-        out = tree_util.tree_map_with_path(subrepr, self._variables)
-        out = tree_util.tree_map(NoQuotesRepr, out)
+        out = tree_util.tree_map_with_path(subrepr, self._variables)  # noqa: TID251  # WORKAROUND(jax<0.4.38): use tree.map_with_path
+        out = tree.map(NoQuotesRepr, out)
         out = pprint.pformat(out, sort_dicts=False)
         return f'{self.__class__.__name__}({out})'
 
@@ -291,4 +291,4 @@ class Copula(_base.DistrBase):
         def compute(key, x):
             return x._compute_staticdescr(path + [key], cache)
 
-        return tree_util.tree_map_with_path(compute, self._variables)
+        return tree_util.tree_map_with_path(compute, self._variables)  # noqa: TID251  # WORKAROUND(jax<0.4.38): use tree.map_with_path

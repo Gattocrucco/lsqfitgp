@@ -22,7 +22,6 @@ import itertools
 import gvar
 import numpy as np
 import pytest
-from pytest import mark
 
 import lsqfitgp as lgp
 from tests import util
@@ -50,7 +49,7 @@ def pred(seed, err, **kw):
     return mean, cov
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     'kw1,kw2',
     list(
         itertools.combinations(
@@ -65,7 +64,7 @@ def pred(seed, err, **kw):
         )
     ),
 )
-@mark.parametrize('err', [False, True])
+@pytest.mark.parametrize('err', [False, True])
 def test_pred(err, kw1, kw2, rng):
     if err and kw1['fromdata'] != kw2['fromdata']:
         pytest.skip()

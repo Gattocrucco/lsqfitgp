@@ -24,7 +24,7 @@ import pandas as pd
 import polars as pl
 import pytest
 from jax import numpy as jnp
-from jax import tree_util
+from jax import tree
 from numpy.lib import recfunctions
 
 import lsqfitgp as lgp
@@ -239,8 +239,8 @@ def test_tree(dtypes, shapes, rng):
     for dtype, shape in itertools.product(dtypes, shapes):
         array1 = random_array(shape, dtype, rng)
         array = lgp.StructuredArray(array1)
-        children, aux_data = tree_util.tree_flatten(array)
-        array = tree_util.tree_unflatten(aux_data, children)
+        children, aux_data = tree.flatten(array)
+        array = tree.unflatten(aux_data, children)
         array2 = np.asarray(array)
         util.assert_equal(array1, array2)
 
@@ -253,9 +253,9 @@ def test_tree_reshaped(dtypes, shapes, rng):
         array1 = basearray[slices]
 
         array = lgp.StructuredArray(basearray)
-        children, aux_data = tree_util.tree_flatten(array)
+        children, aux_data = tree.flatten(array)
         children = tuple(x[slices] for x in children)
-        array = tree_util.tree_unflatten(aux_data, children)
+        array = tree.unflatten(aux_data, children)
         array2 = np.asarray(array)
 
         util.assert_equal(array1, array2)
@@ -264,9 +264,9 @@ def test_tree_reshaped(dtypes, shapes, rng):
         array1 = np.broadcast_to(basearray, lead + shape)
 
         array = lgp.StructuredArray(basearray)
-        children, aux_data = tree_util.tree_flatten(array)
+        children, aux_data = tree.flatten(array)
         children = tuple(np.broadcast_to(x, lead + x.shape) for x in children)
-        array = tree_util.tree_unflatten(aux_data, children)
+        array = tree.unflatten(aux_data, children)
         array2 = np.asarray(array)
 
         util.assert_equal(array1, array2)
@@ -275,9 +275,9 @@ def test_tree_reshaped(dtypes, shapes, rng):
             array1 = basearray[0]
 
             array = lgp.StructuredArray(basearray)
-            children, aux_data = tree_util.tree_flatten(array)
+            children, aux_data = tree.flatten(array)
             children = tuple(x[0] for x in children)
-            array = tree_util.tree_unflatten(aux_data, children)
+            array = tree.unflatten(aux_data, children)
             array2 = np.asarray(array)
 
             util.assert_equal(array1, array2)
@@ -459,9 +459,9 @@ def test_longkey(rng):
 def test_unflatten_dummy(rng):
     x = random_array((2, 3), 'f,d,?', rng)
     x = lgp.StructuredArray(x)
-    _, aux = tree_util.tree_flatten(x)
+    _, aux = tree.flatten(x)
     children = (8.0, False, None)
-    y = tree_util.tree_unflatten(aux, children)
+    y = tree.unflatten(aux, children)
     assert y.shape == ()
     assert y.dtype == [('f0', float), ('f1', bool), ('f2', object)]
 
@@ -469,9 +469,9 @@ def test_unflatten_dummy(rng):
 def test_incompatible_shapes(rng):
     x = random_array((2, 3), 'f,2d,?', rng)
     x = lgp.StructuredArray(x)
-    _, aux = tree_util.tree_flatten(x)
+    _, aux = tree.flatten(x)
     children = (8.0, False, None)
-    y = tree_util.tree_unflatten(aux, children)
+    y = tree.unflatten(aux, children)
     assert y.shape == ()
     assert y.dtype == [('f0', float), ('f1', bool), ('f2', object)]
 

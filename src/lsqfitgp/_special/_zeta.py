@@ -84,7 +84,7 @@ def hze_nmax(t):
     return int(math.ceil(-math.log2(jnp.finfo(t).eps * minz)))
 
 
-# @jax.jit
+# @jit
 def hurwitz_zeta(s, a):
     """For 0 <= a <= 1 and -S <= s <= 0 with S not too large."""
     s = jnp.asarray(s)
@@ -101,7 +101,7 @@ def hurwitz_zeta(s, a):
 
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(1, 2))
-# @functools.partial(jax.jit, static_argnums=(2,))
+# @functools.partial(jit, static_argnums=(2,))
 def periodic_zeta(x, s, imag=False):
     """Compute F(x,s) = Li_s(e^2πix) for real s > 1, real x."""
     x = jnp.asarray(x)
@@ -249,14 +249,14 @@ zeta_zero_coef = [  # = gen_zeta_zero_coef(17)
 
 def gen_zeta_zero_coef(n):  # pragma: no cover
     """Compute first n derivatives of zeta(s) - 1/(s-1) at s = 0."""
-    import mpmath as mp
+    import mpmath as mp  # noqa: PLC0415, mpmath is only a dev dependency
 
     with mp.workdps(32):
         func = lambda s: mp.zeta(s) - 1 / (s - 1)
         return [float(mp.diff(func, 0, k)) for k in range(n)]
 
 
-# @jax.jit
+# @jit
 def zeta(s, n=0):
     """Compute ζ(n + s) with integer n, accurate for even n < 0 and small s."""
     s = jnp.asarray(s)

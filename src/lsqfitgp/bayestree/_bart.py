@@ -20,8 +20,8 @@
 import functools
 
 import gvar
-import jax
 import numpy
+from jax import jit
 from jax import numpy as jnp
 
 from lsqfitgp import _GP, _array, _fastraniter, _fit, _kernels, copula
@@ -377,7 +377,7 @@ class bart:
     @functools.cached_property
     def _pred(self):
 
-        @functools.partial(jax.jit, static_argnums=(4,))
+        @functools.partial(jit, static_argnums=(4,))
         def _pred(hp, x_test, weights, gpfactorykw, error):
             gp = self._gp(hp, x_test, weights, gpfactorykw)
             data = self.fit.data(hp, **gpfactorykw)

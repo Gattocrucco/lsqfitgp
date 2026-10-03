@@ -28,8 +28,9 @@ import gvar
 import jax
 import jax.core
 import numpy
+from jax import jit as jax_jit  # `jit` is a parameter of empbayes_fit
 from jax import numpy as jnp
-from jax import tree_util
+from jax import tree
 from scipy import optimize
 
 from lsqfitgp import _GP, _array, _gvarext, _linalg
@@ -81,7 +82,7 @@ def token_map_leaf(func, x):
 
 
 def token_map(func, x):
-    return tree_util.tree_map(lambda x: token_map_leaf(func, x), x)
+    return tree.map(lambda x: token_map_leaf(func, x), x)
 
 
 class Logger:
@@ -687,7 +688,7 @@ class empbayes_fit(Logger):
         # define wrapper to collect call stats, pass user args, compile
         def wrap(func):
             if jit:
-                func = jax.jit(func)
+                func = jax_jit(func)
             func = functools.partial(func, **gpfactorykw)
             return self._CountCalls(func)
 

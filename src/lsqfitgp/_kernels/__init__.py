@@ -19,9 +19,9 @@
 
 # Keep this file a pure import list.
 
-from lsqfitgp._kernels._arma import AR, MA
-from lsqfitgp._kernels._bart import BART
-from lsqfitgp._kernels._basic import (
+from lsqfitgp._kernels._arma import AR, MA  # noqa: F401
+from lsqfitgp._kernels._bart import BART  # noqa: F401
+from lsqfitgp._kernels._basic import (  # noqa: F401
     BagOfWords,
     Categorical,
     Cauchy,
@@ -41,9 +41,9 @@ from lsqfitgp._kernels._basic import (
     Taylor,
     White,
 )
-from lsqfitgp._kernels._celerite import Celerite, Harmonic
-from lsqfitgp._kernels._matern import Bessel, Matern, Maternp
-from lsqfitgp._kernels._randomwalk import (
+from lsqfitgp._kernels._celerite import Celerite, Harmonic  # noqa: F401
+from lsqfitgp._kernels._matern import Bessel, Matern, Maternp  # noqa: F401
+from lsqfitgp._kernels._randomwalk import (  # noqa: F401
     BrownianBridge,
     FracBrownian,
     OrnsteinUhlenbeck,
@@ -51,6 +51,6 @@ from lsqfitgp._kernels._randomwalk import (
     Wiener,
     WienerIntegral,
 )
-from lsqfitgp._kernels._spectral import Color, Cos, Pink, Sinc
-from lsqfitgp._kernels._wendland import Circular, Wendland
-from lsqfitgp._kernels._zeta import Zeta
+from lsqfitgp._kernels._spectral import Color, Cos, Pink, Sinc  # noqa: F401
+from lsqfitgp._kernels._wendland import Circular, Wendland  # noqa: F401
+from lsqfitgp._kernels._zeta import Zeta  # noqa: F401

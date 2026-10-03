@@ -23,7 +23,7 @@ import textwrap
 import jax
 import numpy
 from jax import numpy as jnp
-from jax import tree_util
+from jax import tree, tree_util
 from numpy.lib import recfunctions
 
 
@@ -292,7 +292,7 @@ class StructuredArray:
         if not children:
             return cls._array(aux['shape'], aux['dtype'], {})
 
-        # convert children to arrays because tree_util.tree_flatten unpacks 0d
+        # convert children to arrays because tree.flatten unpacks 0d
         # arrays
         children = list(map(asarray, children))
 
@@ -451,7 +451,7 @@ def asarray(x, dtype=None):
 def _asarray_jaxifpossible(x):
     x = asarray(x)
     if x.dtype.names:
-        return tree_util.tree_map(_asarray_jaxifpossible, StructuredArray(x))
+        return tree.map(_asarray_jaxifpossible, StructuredArray(x))
     if isinstance(x, numpy.ndarray):
         try:
             return jnp.asarray(x)

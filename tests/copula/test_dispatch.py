@@ -21,13 +21,13 @@
 
 import operator
 
-from pytest import mark
+import pytest
 
 from lsqfitgp import copula
 from tests import util
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     'op',
     [
         operator.add,
@@ -38,7 +38,7 @@ from tests import util
         operator.mod,
     ],
 )
-@mark.parametrize('number', [False, True])
+@pytest.mark.parametrize('number', [False, True])
 def test_binary(op, number, rng):
     x = copula.beta(2, 3)
     y = 1.3 if number else copula.gamma(1, 1)
@@ -58,7 +58,7 @@ def test_binary(op, number, rng):
     util.assert_equal(out1, out2)
 
 
-@mark.parametrize('op', [operator.abs, operator.neg, operator.pos])
+@pytest.mark.parametrize('op', [operator.abs, operator.neg, operator.pos])
 def test_unary(op, rng):
     x = copula.beta(2, 3)
     z = op(x)

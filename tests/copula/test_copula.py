@@ -21,7 +21,6 @@
 
 import gvar
 import pytest
-from pytest import mark
 
 from lsqfitgp import copula
 from tests import util
@@ -96,10 +95,10 @@ def test_add_distribution(name, rng):
     util.assert_equal(out_samples_1, out_samples_2)
 
 
-@mark.parametrize('broadcast_shape', [(), (2,), (2, 3)])
-@mark.parametrize('shape', [(), (2,), (2, 3)])
-@mark.parametrize('use_gvar', [False, True])
-@mark.parametrize('double', [False, True])
+@pytest.mark.parametrize('broadcast_shape', [(), (2,), (2, 3)])
+@pytest.mark.parametrize('shape', [(), (2,), (2, 3)])
+@pytest.mark.parametrize('use_gvar', [False, True])
+@pytest.mark.parametrize('double', [False, True])
 def test_partial_invfcn(rng, broadcast_shape, shape, use_gvar, double):
     """Check that a Distr used through a Copula works the same"""
     distr = copula.beta(1, 2, shape=shape)
@@ -122,7 +121,7 @@ def test_partial_invfcn(rng, broadcast_shape, shape, use_gvar, double):
         util.assert_equal(out_samples_1, out_samples_2)
 
 
-@mark.parametrize('broadcast_shape', [(), (2,), (2, 3)])
+@pytest.mark.parametrize('broadcast_shape', [(), (2,), (2, 3)])
 def test_dependencies(rng, broadcast_shape):
     """Check that dependencies are respected"""
     d = {}
@@ -139,8 +138,8 @@ def test_dependencies(rng, broadcast_shape):
     util.assert_equal(out_samples_1['b'], out_samples_2b)
 
 
-@mark.parametrize('double', [False, True])
-@mark.parametrize('attr', ['shape', 'distrshape', 'dtype'])
+@pytest.mark.parametrize('double', [False, True])
+@pytest.mark.parametrize('attr', ['shape', 'distrshape', 'dtype'])
 def test_out_attrs(double, attr):
     d = {'a': copula.beta(1, 2), 'b': copula.beta(1, 2, shape=(2,))}
     c = copula.Copula(d)

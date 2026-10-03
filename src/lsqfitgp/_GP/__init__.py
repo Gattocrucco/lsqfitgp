@@ -17,4 +17,4 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from lsqfitgp._GP._gp import GP
+from lsqfitgp._GP._gp import GP  # noqa: F401

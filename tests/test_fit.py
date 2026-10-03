@@ -23,7 +23,6 @@ import gvar
 import numpy as np
 import pytest
 from jax import numpy as jnp
-from pytest import mark
 from scipy import stats
 
 import lsqfitgp as lgp
@@ -79,7 +78,9 @@ def check_fit(hyperprior, gpfactory, alpha=1e-5):
     chisq_test(fit.p - truehp, alpha)
 
 
-@mark.xfail(reason='I guess Laplace approximation bad for this model. Seen passing.')
+@pytest.mark.xfail(
+    reason='I guess Laplace approximation bad for this model. Seen passing.'
+)
 def test_period():
     hp = {'log(scale)': gvar.log(gvar.gvar(1, 0.1))}
     x = np.linspace(0, 6, 10)

@@ -23,7 +23,7 @@ import operator
 import jax
 import numpy
 from jax import numpy as jnp
-from jax import tree_util
+from jax import tree
 
 from lsqfitgp import _array
 
@@ -137,7 +137,7 @@ def ufunc_recurse_dtype(ufunc, x, *args):
         out = ufunc(*allargs)
     else:
         args = map(_array.StructuredArray, allargs)
-        out = tree_util.tree_map(ufunc, *args)
+        out = tree.map(ufunc, *args)
 
     assert out.shape == expected_shape
     return out

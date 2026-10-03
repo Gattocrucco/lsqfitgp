@@ -17,9 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import jax
 import numpy
-from jax import lax
+from jax import jit, lax
 from jax import numpy as jnp
 
 from lsqfitgp import _jaxext
@@ -255,7 +254,7 @@ def _ar_evolve(phi, start, noise):
     return _ar_evolve_jit(phi, start, noise)
 
 
-@jax.jit
+@jit
 def _ar_evolve_jit(phi, start, noise):
 
     def f(carry, eps):
@@ -320,7 +319,7 @@ def _pseudo_solve(a, b):
     return jnp.einsum('ij,j,jk,k', vh.conj().T, invs, u.conj().T, b)
 
 
-@jax.jit
+@jit
 def _gamma_from_ampl_matmul(slnr, lnc, lag, ampl, lagnorm=None):
 
     vec = ampl.ndim == 1

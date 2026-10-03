@@ -17,5 +17,5 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from lsqfitgp._linalg._decomp import Chol, Decomposition, solve_batched
-from lsqfitgp._linalg._stdcplx import predtime
+from lsqfitgp._linalg._decomp import Chol, Decomposition, solve_batched  # noqa: F401
+from lsqfitgp._linalg._stdcplx import predtime  # noqa: F401

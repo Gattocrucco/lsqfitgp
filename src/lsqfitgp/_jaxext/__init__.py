@@ -23,8 +23,8 @@ import traceback
 import jax
 from jax import numpy as jnp
 
-from lsqfitgp._jaxext._batcher import batchufunc
-from lsqfitgp._jaxext._fasthash import fasthash32, fasthash64
+from lsqfitgp._jaxext._batcher import batchufunc  # noqa: F401
+from lsqfitgp._jaxext._fasthash import fasthash32, fasthash64  # noqa: F401
 
 
 def makejaxufunc(ufunc, *derivs, excluded=None, floatcast=False):

@@ -17,5 +17,5 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from lsqfitgp.bayestree._bart import bart
-from lsqfitgp.bayestree._bcf import bcf
+from lsqfitgp.bayestree._bart import bart  # noqa: F401
+from lsqfitgp.bayestree._bcf import bcf  # noqa: F401

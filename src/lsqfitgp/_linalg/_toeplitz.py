@@ -17,8 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import jax
 import numpy
+from jax import jit
 from jax import numpy as jnp
 
 from lsqfitgp._linalg import _seqalg
@@ -114,47 +114,47 @@ class SymLevinson(_seqalg.Producer):
         self.nu = nu
 
 
-@jax.jit
+@jit
 def chol(t):
     _, out = _seqalg.sequential_algorithm(len(t), [SymSchur(t), _seqalg.Stack(0)])
     return out.T
 
 
-@jax.jit
+@jit
 def chol_solve(t, *bs):
     ops = [SymSchur(t)] + [_seqalg.SolveTriLowerColByFull(0, b) for b in bs]
     out = _seqalg.sequential_algorithm(len(t), ops)
     return out[1] if len(bs) == 1 else out[1:]
 
 
-@jax.jit
+@jit
 def chol_matmul(t, b):
     ops = [SymSchur(t), _seqalg.Rows(b), _seqalg.MatMulColByRow(0, 1)]
     _, _, out = _seqalg.sequential_algorithm(len(t), ops)
     return out
 
 
-@jax.jit
+@jit
 def chol_transp_matmul(t, b):
     ops = [SymSchur(t), _seqalg.MatMulRowByFull(0, b), _seqalg.Stack(1)]
     _, _, out = _seqalg.sequential_algorithm(len(t), ops)
     return out
 
 
-@jax.jit
+@jit
 def logdet(t):
     _, out = _seqalg.sequential_algorithm(len(t), [SymSchur(t), _seqalg.SumLogDiag(0)])
     return 2 * out
 
 
-@jax.jit
+@jit
 def solve(t, b):
     ops = [SymLevinson(t), _seqalg.MatMulRowByFull(0, b), _seqalg.MatMulColByRow(0, 1)]
     _, _, out = _seqalg.sequential_algorithm(len(t), ops)
     return out
 
 
-@jax.jit
+@jit
 def chol_transp_solve(t, b):
     ops = [SymLevinson(t), _seqalg.Rows(b), _seqalg.MatMulColByRow(0, 1)]
     _, _, out = _seqalg.sequential_algorithm(len(t), ops)

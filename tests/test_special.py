@@ -22,7 +22,6 @@ import mpmath
 import numpy as np
 import pytest
 from jax import test_util
-from pytest import mark
 from scipy import special
 
 from lsqfitgp import _jaxext, _special
@@ -36,7 +35,7 @@ def test_sinc():
     util.assert_allclose(s2, s1, atol=1e-15, rtol=1e-15)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     'name,wrap',
     [
         ('j0', lambda f: lambda x: f(x)),
@@ -206,9 +205,11 @@ def periodic_zeta(x, s):
         return _periodic_zeta(x, s)
 
 
-@mark.parametrize('i', [pytest.param(False, id='real'), pytest.param(True, id='imag')])
-@mark.parametrize('sgn', [pytest.param(1, id='pos'), pytest.param(-1, id='neg')])
-@mark.parametrize(
+@pytest.mark.parametrize(
+    'i', [pytest.param(False, id='real'), pytest.param(True, id='imag')]
+)
+@pytest.mark.parametrize('sgn', [pytest.param(1, id='pos'), pytest.param(-1, id='neg')])
+@pytest.mark.parametrize(
     'd',
     [
         pytest.param(0, id='at'),
@@ -216,7 +217,7 @@ def periodic_zeta(x, s):
         pytest.param(1e-13, id='veryclose'),
     ],
 )
-@mark.parametrize(
+@pytest.mark.parametrize(
     's',
     [
         pytest.param(1 + 1e-15, id='near1'),
@@ -245,7 +246,9 @@ def test_periodic_zeta(s, d, sgn, i, cached):
     assert np.all(maxdiff < tol)
 
 
-@mark.parametrize('i', [pytest.param(False, id='real'), pytest.param(True, id='imag')])
+@pytest.mark.parametrize(
+    'i', [pytest.param(False, id='real'), pytest.param(True, id='imag')]
+)
 def test_periodic_zeta_deriv(i, cached):
     x = np.linspace(-1, 2, 52)
     s = np.linspace(2.01, 16, 20)[:, None]
@@ -266,7 +269,7 @@ def zeta_zero(s):
         return float(mpmath.zeta(s) - mpmath.zeta(0))
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     's',
     [
         pytest.param((1 - 1e-15) * np.linspace(-1, 1, 101), id='widerange'),
@@ -290,8 +293,8 @@ def gamma_incr(x, e):
         return float(mpmath.gamma(x + e) / denom - 1)
 
 
-@mark.parametrize('s', [pytest.param(1, id='pos'), pytest.param(-1, id='neg')])
-@mark.parametrize(
+@pytest.mark.parametrize('s', [pytest.param(1, id='pos'), pytest.param(-1, id='neg')])
+@pytest.mark.parametrize(
     'e',
     [
         pytest.param(0.5 * np.linspace(0, 1, 51), id='medrange'),
@@ -299,7 +302,7 @@ def gamma_incr(x, e):
         pytest.param(1e-14 * np.linspace(0, 1, 51), id='tinyrange'),
     ],
 )
-@mark.parametrize(
+@pytest.mark.parametrize(
     'x', [pytest.param(2, id='2'), pytest.param(np.arange(3, 15), id='farpole')]
 )
 def test_gamma_incr(x, e, s, cached):
@@ -318,8 +321,8 @@ def gammaln1(x):
         return float(mpmath.loggamma(1 + x))
 
 
-@mark.parametrize('s', [pytest.param(1, id='pos'), pytest.param(-1, id='neg')])
-@mark.parametrize(
+@pytest.mark.parametrize('s', [pytest.param(1, id='pos'), pytest.param(-1, id='neg')])
+@pytest.mark.parametrize(
     'x',
     [
         pytest.param(0.5 * np.linspace(0, 1, 51), id='medrange'),
@@ -348,8 +351,8 @@ def zeta_series_power_diff(x, q, a):
         return float(power + term)
 
 
-@mark.parametrize('s', [pytest.param(1, id='pos'), pytest.param(-1, id='neg')])
-@mark.parametrize(
+@pytest.mark.parametrize('s', [pytest.param(1, id='pos'), pytest.param(-1, id='neg')])
+@pytest.mark.parametrize(
     'a',
     [
         pytest.param(0.5 * np.linspace(0.04, 1, 25), id='medrange'),
@@ -357,7 +360,7 @@ def zeta_series_power_diff(x, q, a):
         pytest.param(1e-14 * np.linspace(0.04, 1, 25), id='tinyrange'),
     ],
 )
-@mark.parametrize(
+@pytest.mark.parametrize(
     'x',
     [
         pytest.param(0, id='xzero'),
@@ -365,7 +368,7 @@ def zeta_series_power_diff(x, q, a):
         pytest.param(np.linspace(0.02, 0.5, 25), id='xother'),
     ],
 )
-@mark.parametrize(
+@pytest.mark.parametrize(
     'q',
     [
         pytest.param(0, id='qzero'),
@@ -402,7 +405,7 @@ def zeta_zeros(s):
         return float(mpmath.diff(mpmath.zeta, s))
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     's',
     [
         pytest.param(-2, id='-2'),
