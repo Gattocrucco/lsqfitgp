@@ -463,7 +463,7 @@ def test_splits_1d():
     k1 = lgp.BART(splits=(l, s))
     k2 = lgp.BART(splits=(l, s[:, None]))
     v1 = k1(x, x.T)
-    v2 = k1(x, x.T)
+    v2 = k2(x, x.T)
     util.assert_equal(v1, v2)
 
 

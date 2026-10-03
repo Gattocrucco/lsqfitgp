@@ -463,7 +463,7 @@ class TestTransf:
         assert a.transf('ciao', 1, 2) == '1 2'
         assert b.transf('ciao', 1, 2) == 'ciao 1 2'
 
-    def test_super_multiple_inheritance(constcore):
+    def test_super_multiple_inheritance(self, constcore):
         """Check that `super_transf` follows the MRO with multiple inheritance."""
 
         # class D has mro C, B, A
@@ -1258,7 +1258,7 @@ def test_crossmro():
     assert tuple(B._crossmro()) == (lgp.CrossKernel,)
 
 
-def test_swap():
+def test_swap(constcore):
     """Check that `_swap` is a no-op on `Kernel` and demotes cross subclasses."""
 
     class A(lgp.Kernel):
