@@ -119,7 +119,7 @@ class Stack(Consumer, SingleInput):
     """`input` = an operation producing arrays."""
 
     def init(self, n, a0):
-        out = jnp.zeros((n,) + a0.shape, a0.dtype)
+        out = jnp.zeros((n, *a0.shape), a0.dtype)
         self.out = out.at[0, ...].set(a0)
 
     def iter(self, i, ai):
@@ -160,18 +160,18 @@ class MatMulIterByFull(Consumer, SingleInput):
 
 
 class MatMulRowByFull(Producer, MatMulIterByFull):
-    def init(self, n, a0):
+    def init(self, n, a0):  # noqa: ARG002, interface method
         assert a0.ndim == 1
         assert self.b.shape[0] == len(a0)
         self.abi = a0 @ self.b
 
-    def iter_out(self, i):
+    def iter_out(self, i):  # noqa: ARG002, interface method
         abi = self.abi
         if self.vec:
             abi = jnp.squeeze(abi, -1)
         return abi
 
-    def iter(self, i, ai):
+    def iter(self, i, ai):  # noqa: ARG002, interface method
         """`i`-th row of `input @ b`."""
         self.abi = ai @ self.b
 
@@ -219,15 +219,16 @@ class MatMulColByRow(Consumer):
 
     inputs = None
 
-    def init(self, n, a0, b0):
-        assert a0.ndim == 1 and b0.ndim <= 1
+    def init(self, n, a0, b0):  # noqa: ARG002, interface method
+        assert a0.ndim == 1
+        assert b0.ndim <= 1
         self.vec = b0.ndim > 0
         if self.vec:
             self.ab = a0[:, None] * b0[None, :]
         else:
             self.ab = a0 * b0
 
-    def iter(self, i, ai, bi):
+    def iter(self, i, ai, bi):  # noqa: ARG002, interface method
         if self.vec:
             self.ab = self.ab + ai[:, None] * bi[None, :]
         else:

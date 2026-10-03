@@ -80,12 +80,12 @@ class GPBase:
                 raise RuntimeError(msg)
 
             # Check that the function is elementwise.
-            if elementwise:
-                if out0.shape != shape or not (
-                    jnp.allclose(out0[zeros], 0) and jnp.allclose(out1[zeros], 0)
-                ):
-                    msg = 'the transformation is not elementwise'
-                    raise RuntimeError(msg)
+            if elementwise and (
+                out0.shape != shape
+                or not (jnp.allclose(out0[zeros], 0) and jnp.allclose(out1[zeros], 0))
+            ):
+                msg = 'the transformation is not elementwise'
+                raise RuntimeError(msg)
 
 
 def newself(meth):

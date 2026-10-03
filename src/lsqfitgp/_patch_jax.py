@@ -36,7 +36,7 @@ class BufferDictPyTreeDef:
 
     def __init__(self, bd):
         self.skeleton = self._skeleton(bd)
-        self.layout = {k: tuple(bd.slice_shape(k)) for k in bd.keys()}
+        self.layout = {k: tuple(bd.slice_shape(k)) for k in bd}
         # it is not necessary to save the data type because that's in buf
 
     def __eq__(self, other):

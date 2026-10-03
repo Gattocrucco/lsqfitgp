@@ -42,7 +42,7 @@ def token_getter(x):
 
 
 @functools.singledispatch
-def token_setter(x, token):
+def token_setter(x, token):  # noqa: ARG001, the dispatch argument
     return token
 
 
@@ -163,15 +163,15 @@ class empbayes_fit(Logger):
         data,
         *,
         raises=True,
-        minkw={},
-        gpfactorykw={},
+        minkw={},  # noqa: B006, read only
+        gpfactorykw={},  # noqa: B006, read only
         jit=True,
         method='gradient',
         initial='priormean',
         verbosity=0,
         covariance='auto',
         fix=None,
-        mlkw={},
+        mlkw={},  # noqa: B006, read only
         forward=False,
         additional_loss=None,
     ):
@@ -629,7 +629,7 @@ class empbayes_fit(Logger):
 
         return data, cachedargs
 
-    def _prepare_functions(
+    def _prepare_functions(  # noqa: C901, PLR0915
         self,
         *,
         gpfactory,
@@ -862,7 +862,7 @@ class empbayes_fit(Logger):
             else:
                 self.log(msg)
 
-    def _posterior_covariance(self, method, covariance, minimizer_result, fisher_func):
+    def _posterior_covariance(self, method, covariance, minimizer_result, fisher_func):  # noqa: C901
 
         if covariance == 'auto':
             if hasattr(minimizer_result, 'hess_inv') or hasattr(
@@ -930,7 +930,7 @@ class empbayes_fit(Logger):
             self.tail_overhead = 0
             self.tail_overhead_iter = 0
 
-        def __call__(self, intermediate_result, arg2=None):
+        def __call__(self, intermediate_result, arg2=None):  # noqa: ARG002, scipy's callback signature
 
             if isinstance(intermediate_result, optimize.OptimizeResult):
                 p = intermediate_result.x
@@ -1026,6 +1026,7 @@ class empbayes_fit(Logger):
             if self.tail_overhead_iter and hasattr(self, 'first_overhead'):
                 typical_overhead = self.tail_overhead / self.tail_overhead_iter
                 return self.first_overhead - typical_overhead
+            return None
 
     @staticmethod
     def _copyasarrayorbufferdict(x):
@@ -1046,13 +1047,12 @@ class empbayes_fit(Logger):
     @staticmethod
     def _unflatview(x, original):
         if isinstance(original, numpy.ndarray):
-            out = x.reshape(original.shape)
+            return x.reshape(original.shape)
             # if not out.shape:
             #     try:
             #         out = out.item()
             #     except jax.errors.ConcretizationTypeError:
             #         pass
-            return out
         elif isinstance(original, gvar.BufferDict):
             # normally I would do BufferDict(original, buf=x) but it does not
             # work with JAX tracers

@@ -261,6 +261,7 @@ ignore = [
     "PLR0913", # Too many arguments in function definition. Maybe I should do something about this?
     "PLR0917", # Too many positional arguments. Fixing means keyword-only signatures everywhere, a big mechanical change; deferred.
     "PLR2004", # Magic value used in comparison, consider replacing `*` with a constant variable
+    "PLW2901", # `for` loop variable overwritten. lsqfitgp normalizes loop variables in place (`for x in xs: x = asarray(x)`), using a second name would leave the raw value around to be used by mistake.
     "RET505",  # Unnecessary `{branch}` after `return` statement. I ignore this because I like to keep branches for readability.
     "RET506",  # Unnecessary `else` after `raise` statement. I ignore this because I like to keep branches for readability.
     "RUF036",  # `None` not at the end of a union. Ignored because None is often semantic and ordered meaningfully in the hint.
@@ -298,6 +299,10 @@ ignore = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.ruff.lint.flake8-unused-arguments]
+# `*args, **kw` in signatures fixed by an interface
+ignore-variadic-names = true
 
 [tool.ruff.lint.flake8-copyright]
 min-file-size = 1

@@ -27,7 +27,7 @@ def _wendland_derivable(k=0, **_):
     return k
 
 
-def _wendland_maxdim(k=0, alpha=1):
+def _wendland_maxdim(k=0, alpha=1):  # noqa: ARG001, called with the kernel parameters
     with _jaxext.skipifabstract():
         return int(jnp.floor(2 * alpha - 1))
 

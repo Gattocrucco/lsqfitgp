@@ -70,7 +70,7 @@ for (year,), stratum in df.filter(pl.col('post') == 0).group_by('year'):
     posttreatment = posttreatment.join(
         stratum.select(
             'id.practice',
-            pl.col(['Y', 'n.patients'] + V_columns).name.suffix(f'_year{year}'),
+            pl.col(['Y', 'n.patients', *V_columns]).name.suffix(f'_year{year}'),
         ),
         on='id.practice',
     )

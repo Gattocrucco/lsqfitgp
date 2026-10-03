@@ -53,8 +53,8 @@ pmtoev = np.array(
 qnames = ['d', 'dbar', 'u', 'ubar', 's', 'sbar', 'c', 'cbar']
 pmnames = ['d+', 'd-', 'u+', 'u-', 's+', 's-', 'c+', 'c-']
 evnames = ['Sigma', 'V', 'V3', 'V8', 'V15', 'T3', 'T8', 'T15']
-pnames = evnames + ['g']
-tpnames = ['xSigma'] + evnames[1:] + ['xg']
+pnames = [*evnames, 'g']
+tpnames = ['xSigma', *evnames[1:], 'xg']
 
 nflav = len(pnames)
 
@@ -427,7 +427,7 @@ for i in range(nflav):
 for ax in axs[:, 0]:
     ax.legend(fontsize='small')
 
-for ax, label in zip(axs[:, 1], ['data', 'data2']):
+for ax, label in zip(axs[:, 1], ['data', 'data2'], strict=True):
     d = pred[label]
     m = gvar.mean(d)
     s = gvar.sdev(d)
@@ -445,7 +445,7 @@ for ax, label in zip(axs[:, 1], ['data', 'data2']):
     )
     ax.plot(x, truedata[label], drawstyle='steps-mid', color='black', label='truth')
 
-for ax, label in zip(axs[:, 2], ['Mparams', 'M2params']):
+for ax, label in zip(axs[:, 2], ['Mparams', 'M2params'], strict=True):
     p = fit.p[label]
     m = gvar.mean(p)
     s = gvar.sdev(p)

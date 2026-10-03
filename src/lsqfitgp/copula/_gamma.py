@@ -111,11 +111,10 @@ def _gammaisf_normcdf_large_neg_x(x, a):
     )
     logq = logphi(x)
     loggammaa = jspecial.gammaln(a)
-    f = lambda y: (a - 1) * jnp.log(y) - y - loggammaa - logq
-    f1 = lambda y: (a - 1) / y - 1
+    # f = lambda y: (a - 1) * jnp.log(y) - y - loggammaa - logq
+    # f1 = lambda y: (a - 1) / y - 1
     y0 = -logq
-    y1 = y0 - ((a - 1) * jnp.log(y0) - loggammaa) / ((a - 1) / y0 - 1)
-    return y1
+    return y0 - ((a - 1) * jnp.log(y0) - loggammaa) / ((a - 1) / y0 - 1)
 
     # x -> -∞,  q -> 0+,  y -> ∞
     # q = Φ(x) ≈ -1/√2π exp(-x²/2)/x
@@ -136,11 +135,10 @@ def _loggammaisf_normcdf_large_neg_x(x, a):
     )
     logq = logphi(x)
     loggammaa = jspecial.gammaln(a)
-    g = lambda logy: (a - 1) * logy - jnp.exp(logy) - loggammaa - logq
-    g1 = lambda logy: (a - 1) - jnp.exp(logy)
+    # g = lambda logy: (a - 1) * logy - jnp.exp(logy) - loggammaa - logq
+    # g1 = lambda logy: (a - 1) - jnp.exp(logy)
     logy0 = jnp.log(-logq)
-    logy1 = logy0 - ((a - 1) * logy0 - loggammaa) / ((a - 1) + logq)
-    return logy1
+    return logy0 - ((a - 1) * logy0 - loggammaa) / ((a - 1) + logq)
 
 
 class gamma:

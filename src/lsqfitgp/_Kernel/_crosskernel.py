@@ -163,7 +163,7 @@ class CrossKernel:
         dim=None,
         forcekron=False,
         batchbytes=None,
-        dynkw={},
+        dynkw={},  # noqa: B006, read only
         **initkw,
     ):
         self = super().__new__(cls)
@@ -711,7 +711,7 @@ class CrossKernel:
         return func
 
     @classmethod
-    def register_linop(cls, op, transfname=None, doc=None, argparser=None):
+    def register_linop(cls, op, transfname=None, doc=None, argparser=None):  # noqa: C901
         """
         Register a transformation for use with `linop`.
 
@@ -746,10 +746,10 @@ class CrossKernel:
             transfname = op.__name__  # for result type error message
 
         @functools.wraps(op)
-        def func(tcls, self, *allargs):
+        def func(tcls, self, *allargs):  # noqa: C901
 
             # split the arguments in kernels and non-kernels
-            for pos, arg in enumerate(allargs):
+            for pos, arg in enumerate(allargs):  # noqa: B007, `pos` used after the loop
                 if not isinstance(arg, __class__):  # ty: ignore[unresolved-reference]
                     break
             else:
@@ -1011,7 +1011,7 @@ class CrossKernel:
         return ufunc
 
     @classmethod
-    def make_linop_family(
+    def make_linop_family(  # noqa: C901, PLR0915
         cls,
         transfname,
         bothker,
@@ -1216,7 +1216,7 @@ class AffineSpan(CrossKernel, abc.ABC):
 
     _affine_dynkw = dict(lloc=0, rloc=0, lscale=1, rscale=1, offset=0, ampl=1)  # noqa: RUF012, read-only
 
-    def __new__(cls, *args, dynkw={}, **kw):
+    def __new__(cls, *args, dynkw={}, **kw):  # noqa: B006, read only
         if cls is __class__:
             msg = f'cannot instantiate {__class__.__name__} directly'
             raise TypeError(msg)

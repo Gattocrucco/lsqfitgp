@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import functools
+import itertools
 
 from jax import jit, lax
 from jax import numpy as jnp
@@ -310,7 +311,7 @@ class BART(_BARTBase):
         return cls._searchsorted_vectorized(checked_splits[1], x)
 
     @classmethod
-    def correlation(
+    def correlation(  # noqa: C901, PLR0915
         cls,
         splitsbefore_or_totalsplits,
         splitsbetween_or_index1,
@@ -394,7 +395,8 @@ class BART(_BARTBase):
 
         # get splitting probabilities
         if pnt is None:
-            assert maxd == int(maxd) and maxd >= 0, maxd
+            assert maxd == int(maxd), maxd
+            assert maxd >= 0, maxd
             alpha = jnp.asarray(alpha)
             beta = jnp.asarray(beta)
             with _jaxext.skipifabstract():
@@ -416,7 +418,8 @@ class BART(_BARTBase):
         # get interpolation coefficients
         if isinstance(gamma, str):
             if gamma == 'auto':
-                assert reset is None and 1 <= pnt.shape[-1] - 1 <= 3
+                assert reset is None
+                assert 1 <= pnt.shape[-1] - 1 <= 3
                 p = weights.shape[-1]
                 gamma = cls._gamma(p, pnt)
             else:
@@ -440,12 +443,13 @@ class BART(_BARTBase):
             reset = []
         if not hasattr(reset, '__len__'):
             reset = [reset]
-        reset = [0] + list(reset) + [pnt.shape[-1] - 1]
-        for i, j in zip(reset, reset[1:]):
-            assert int(j) == j and i <= j, (i, j)
+        reset = [0, *reset, pnt.shape[-1] - 1]
+        for i, j in itertools.pairwise(reset):
+            assert int(j) == j, (i, j)
+            assert i <= j, (i, j)
 
         # convert reset depths list to brackets with repetition
-        brackets_norep = list(zip(reset, reset[1:]))
+        brackets_norep = list(itertools.pairwise(reset))
         brackets = [brackets_norep[0] + (1,)]
         for t, b in brackets_norep[1:]:
             lt, lb, lr = brackets[-1]
@@ -464,16 +468,17 @@ class BART(_BARTBase):
                 head = probs[..., 0:1]
                 one = jnp.ones_like(head)
                 probs = jnp.concatenate(
-                    sum(
-                        reversed(
-                            [
-                                [head if i == 0 else one, p]
-                                for i, p in enumerate(
-                                    jnp.split(probs[..., 1:], repeat, axis=-1)
-                                )
-                            ]
-                        ),
-                        start=[],
+                    list(
+                        itertools.chain.from_iterable(
+                            reversed(
+                                [
+                                    [head if i == 0 else one, p]
+                                    for i, p in enumerate(
+                                        jnp.split(probs[..., 1:], repeat, axis=-1)
+                                    )
+                                ]
+                            )
+                        )
                     ),
                     axis=-1,
                 )
@@ -553,11 +558,13 @@ class BART(_BARTBase):
 
     @classmethod
     @functools.partial(jit, static_argnums=(0, 7))
-    def _correlation_old(cls, nminus, n0, nplus, pnt, gamma, w, debug):
+    def _correlation_old(cls, nminus, n0, nplus, pnt, gamma, w, debug):  # noqa: PLR0915
         """Old version, kept around for cross-checking."""
         assert nminus.shape == n0.shape == nplus.shape == w.shape
-        assert nminus.ndim == 1 and nminus.size >= 0
-        assert pnt.ndim == 1 and pnt.size > 0
+        assert nminus.ndim == 1
+        assert nminus.size >= 0
+        assert pnt.ndim == 1
+        assert pnt.size > 0
 
         # optimization to avoid looping over ignored axes
         nminus = jnp.where(w, nminus, 0)
@@ -670,7 +677,7 @@ class BART(_BARTBase):
 
     @classmethod
     @functools.partial(jit, static_argnums=(0, 7, 8))
-    def _correlation(cls, n, ix, iy, pnt, gamma, w, debug, repeat):
+    def _correlation(cls, n, ix, iy, pnt, gamma, w, debug, repeat):  # noqa: C901, PLR0915
         # this implementation is optimized assuming that the shapes are as
         # follows:
         #   n     (p,)
@@ -682,17 +689,16 @@ class BART(_BARTBase):
 
         assert n.ndim == 1
         assert n.shape == ix.shape == iy.shape == w.shape
-        assert pnt.ndim == 1 and pnt.size > 0
+        assert pnt.ndim == 1
+        assert pnt.size > 0
         assert gamma.ndim == 0
 
         # check the strict conditions under which `repeat` is implemented
         if repeat is not None:
-            assert (
-                not debug
-                and repeat > 0
-                and pnt.size % repeat == 0
-                and pnt.size // repeat <= 3
-            )
+            assert not debug
+            assert repeat > 0
+            assert pnt.size % repeat == 0
+            assert pnt.size // repeat <= 3
         else:
             repeat = 1
 

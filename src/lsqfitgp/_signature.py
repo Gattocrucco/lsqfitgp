@@ -99,7 +99,7 @@ class Signature:
             known_args = []
             known_cores = []
             missing_cores = []
-            for arg, core in zip(args, sig.incores):
+            for arg, core in zip(args, sig.incores, strict=True):
                 if arg is None:
                     missing_cores.append(core)
                 else:

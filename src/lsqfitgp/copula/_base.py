@@ -167,6 +167,7 @@ class DistrBase(metaclass=abc.ABCMeta):
         if self in cache:
             return cache[self]
         cache[self] = self._Path(path)
+        return None
 
     @functools.cached_property
     def _staticdescr(self):
@@ -178,9 +179,11 @@ class DistrBase(metaclass=abc.ABCMeta):
         if self in cache:
             return 0
         cache.add(self)
+        return None
 
     @abc.abstractmethod
     def _partial_invfcn_internal(self, x, i, cache):
         assert x.ndim == 1
         if self in cache:
             return cache[self], i
+        return None

@@ -129,7 +129,8 @@ def makedict(variables, prefix='__copula_'):
     for k, v in variables.items():
         if isinstance(v, _base.DistrBase):
             name = str(v._staticdescr).replace('(', '{').replace(')', '}')
-            assert '(' not in prefix and ')' not in prefix
+            assert '(' not in prefix
+            assert ')' not in prefix
             # gvar does not currently check presence of parentheses, see
             # https://github.com/gplepage/gvar/issues/39
             name = prefix + name

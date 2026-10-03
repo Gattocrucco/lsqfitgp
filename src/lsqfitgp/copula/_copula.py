@@ -144,7 +144,7 @@ class Copula(_base.DistrBase):
 
         @classmethod
         def tree_unflatten(cls, treedef, values):
-            return cls(zip(treedef, values))
+            return cls(zip(treedef, values, strict=True))
 
     def __init__(self, variables):
         variables = self._jaxext_dict_sorting(variables)
@@ -250,7 +250,7 @@ class Copula(_base.DistrBase):
             x = _array.asarray(x)
             assert x.shape[-1:] == self.in_shape
             head = x.shape[:-1]
-            x = x.reshape((-1,) + self.in_shape)
+            x = x.reshape((-1, *self.in_shape))
             y = partial_invfcn_2(x)
 
             def reshape_y(y, shape):
@@ -272,7 +272,7 @@ class Copula(_base.DistrBase):
         def subrepr(k, obj):
             if isinstance(obj, _base.DistrBase):
                 k = self._tree_path_str(k)
-                return obj.__repr__('.'.join((path, k)).lstrip('.'), cache)
+                return obj.__repr__(f'{path}.{k}'.lstrip('.'), cache)
             else:
                 return repr(obj)
 
@@ -290,6 +290,6 @@ class Copula(_base.DistrBase):
 
     def _compute_staticdescr(self, path, cache):
         def compute(key, x):
-            return x._compute_staticdescr(path + [key], cache)
+            return x._compute_staticdescr([*path, key], cache)
 
         return tree_util.tree_map_with_path(compute, self._variables)  # noqa: TID251  # WORKAROUND(jax<0.4.38): use tree.map_with_path

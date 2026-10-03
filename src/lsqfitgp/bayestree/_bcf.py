@@ -57,7 +57,7 @@ def _recursive_cast(dtype, default, mapping):
         return default
 
 
-def cast(dtype, default, mapping={}):
+def cast(dtype, default, mapping={}):  # noqa: B006, read only
     """
     Recursively cast a numpy data type.
 
@@ -87,7 +87,7 @@ def cast(dtype, default, mapping={}):
 
 
 class bcf:
-    def __init__(
+    def __init__(  # noqa: C901, PLR0915
         self,
         *,
         y,
@@ -97,13 +97,13 @@ class bcf:
         pihat,
         include_pi='mu',
         weights=None,
-        fitkw={},
-        kernelkw_mu={},
-        kernelkw_tau={},
+        fitkw={},  # noqa: B006, read only
+        kernelkw_mu={},  # noqa: B006, read only
+        kernelkw_tau={},  # noqa: B006, read only
         marginalize_mean=True,
         gpaux=None,
         x_aux=None,
-        otherhp={},
+        otherhp={},  # noqa: B006, read only
         transf='standardize',
     ):
         r"""
@@ -500,9 +500,9 @@ class bcf:
 
     def _append_pihat(self, x_mu, x_tau, pihat):
         ip = self._include_pi
-        if ip == 'mu' or ip == 'both':
+        if ip in {'mu', 'both'}:
             x_mu = _array.StructuredArray.from_dict(dict(x=x_mu, pihat=pihat))
-        if x_tau is not None and (ip == 'tau' or ip == 'both'):
+        if x_tau is not None and ip in {'tau', 'both'}:
             x_tau = _array.StructuredArray.from_dict(dict(x=x_tau, pihat=pihat))
         return x_mu, x_tau
 
@@ -688,7 +688,7 @@ class bcf:
         hp = self._gethp(hp, rng)
         return self.fit.data(hp, **self.fit.gpfactorykw)
 
-    def pred(
+    def pred(  # noqa: C901
         self,
         *,
         hp='map',
@@ -1016,7 +1016,7 @@ Meaning of hyperparameters:
 
         return _utils.top_bottom_rule('BCF', out)
 
-    def _get_transf(self, *, transf, y, weights):
+    def _get_transf(self, *, transf, y, weights):  # noqa: C901
 
         from_datas = []
         to_datas = []
@@ -1056,10 +1056,10 @@ Meaning of hyperparameters:
                     loc = jnp.average(y, weights=weights)
                     scale = jnp.sqrt(jnp.average((y - loc) ** 2, weights=weights))
 
-                def from_data(hp, y):
+                def from_data(_hp, y, loc=loc, scale=scale):
                     return (y - loc) / scale
 
-                def to_data(hp, eta):
+                def to_data(_hp, eta, loc=loc, scale=scale):
                     return loc + scale * eta
 
             elif tr == 'yeojohnson':
@@ -1093,8 +1093,8 @@ Meaning of hyperparameters:
                     eta = td(hp, eta)
                 return eta
         else:
-            from_data = lambda hp, y: y  # ty: ignore[conflicting-declarations]
-            to_data = lambda hp, eta: eta  # ty: ignore[conflicting-declarations]
+            from_data = lambda _hp, y: y  # ty: ignore[conflicting-declarations]
+            to_data = lambda _hp, eta: eta  # ty: ignore[conflicting-declarations]
 
         from_data_grad = _jaxext.elementwise_grad(from_data, 1)
 

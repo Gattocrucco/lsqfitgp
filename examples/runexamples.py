@@ -48,16 +48,15 @@ for file in sys.argv[1:]:
     print(f'\nrunexamples.py: running {file}...')
 
     # reset working environment and run
-    with lgp.switchgvar():
-        with plt.style.context('tableau-colorblind10', after_reset=True):
-            plt.close('all')
-            np.random.seed(0)
-            gvar.ranseed(0)
+    with lgp.switchgvar(), plt.style.context('tableau-colorblind10', after_reset=True):
+        plt.close('all')
+        np.random.seed(0)
+        gvar.ranseed(0)
 
-            runpy.run_path(str(file))
+        runpy.run_path(str(file))
 
-            gc.collect()
-            jax.clear_caches()
+        gc.collect()
+        jax.clear_caches()
 
     # save figures
     nums = plt.get_fignums()

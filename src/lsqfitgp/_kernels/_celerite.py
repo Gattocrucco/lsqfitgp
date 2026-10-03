@@ -131,7 +131,7 @@ def _matern32(x):
     return (1 + x) * jnp.exp(-x)
 
 
-_matern32.defjvps(lambda g, ans, x: g * -x * jnp.exp(-x))
+_matern32.defjvps(lambda g, _ans, x: g * -x * jnp.exp(-x))
 
 
 def _harmonic(x, Q):

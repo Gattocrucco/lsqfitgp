@@ -30,7 +30,7 @@ from lsqfitgp._Kernel._crosskernel import AffineSpan, CrossKernel
 
 
 @CrossKernel.register_algop
-def add(tcls, self, other):
+def add(_tcls, self, other):
     r"""
 
     Sum of kernels.
@@ -57,7 +57,7 @@ def add(tcls, self, other):
 
 
 @CrossKernel.register_algop
-def mul(tcls, self, other):
+def mul(_tcls, self, other):
     r"""
 
     Product of kernels.
@@ -84,7 +84,7 @@ def mul(tcls, self, other):
 
 
 @CrossKernel.register_algop
-def pow(tcls, self, *, exponent):  # noqa: A001, the name of the algop
+def pow(_tcls, self, *, exponent):  # noqa: A001, the name of the algop
     r"""
 
     Power of the kernel.
@@ -107,7 +107,7 @@ def pow(tcls, self, *, exponent):  # noqa: A001, the name of the algop
 
 
 @CrossKernel.register_algop
-def rpow(tcls, self, *, base):
+def rpow(_tcls, self, *, base):
     r"""
 
     Exponentiation of the kernel.
@@ -151,7 +151,7 @@ CrossKernel.register_ufuncalgop(jspecial.i1)
 
 
 @functools.partial(AffineSpan.register_algop, transfname='add')
-def affine_add(tcls, self, other):
+def affine_add(_tcls, self, other):
     newself = AffineSpan.super_transf('add', self, other)
     if _util.is_numerical_scalar(other):
         dynkw = dict(self.dynkw)
@@ -162,7 +162,7 @@ def affine_add(tcls, self, other):
 
 
 @functools.partial(AffineSpan.register_algop, transfname='mul')
-def affine_mul(tcls, self, other):
+def affine_mul(_tcls, self, other):
     newself = AffineSpan.super_transf('mul', self, other)
     if _util.is_numerical_scalar(other):
         dynkw = dict(self.dynkw)

@@ -85,7 +85,7 @@ def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
     else:
         assert len(headers) == len(columns)
     if headers is not None:
-        columns = (_head(col, head) for col, head in zip(columns, headers))
+        columns = (_head(col, head) for col, head in zip(columns, headers, strict=True))
     return textwrap.indent(_join(columns), offset)
 
 
@@ -114,4 +114,4 @@ def _head(col, head):
 
 def _join(cols):
     split = (col.split('\n') for col in cols)
-    return '\n'.join(''.join(lines) for lines in zip(*split))
+    return '\n'.join(''.join(lines) for lines in zip(*split, strict=True))

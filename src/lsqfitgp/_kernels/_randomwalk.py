@@ -150,8 +150,10 @@ def BrownianBridge(x, y):
     It is a Wiener process conditioned on being zero at x = 1.
     """
     with _jaxext.skipifabstract():
-        assert jnp.all(x >= 0) and jnp.all(x <= 1)
-        assert jnp.all(y >= 0) and jnp.all(y <= 1)
+        assert jnp.all(x >= 0)
+        assert jnp.all(x <= 1)
+        assert jnp.all(y >= 0)
+        assert jnp.all(y <= 1)
     return jnp.minimum(x, y) - x * y
 
 

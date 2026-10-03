@@ -237,8 +237,7 @@ def _yule_walker_inv(phi):
     a = _yule_walker_inv_mat(phi)
     b = jnp.zeros(len(a)).at[0].set(1)
     # gamma = _pseudo_solve(a, b)
-    gamma = jnp.linalg.solve(a, b)
-    return gamma
+    return jnp.linalg.solve(a, b)
 
 
 def _ar_evolve(phi, start, noise):
@@ -251,7 +250,9 @@ def _ar_evolve(phi, start, noise):
     phi = jnp.asarray(phi)
     start = jnp.asarray(start)
     noise = jnp.asarray(noise)
-    assert phi.ndim == 1 and phi.shape == start.shape and noise.ndim == 1
+    assert phi.ndim == 1
+    assert phi.shape == start.shape
+    assert noise.ndim == 1
     return _ar_evolve_jit(phi, start, noise)
 
 
@@ -280,8 +281,7 @@ def _ar_with_roots(delta, slnr, lnc, norm):
     if norm:
         gamma /= gamma[0]
     ampl = AR.ampl_from_roots(slnr, lnc, gamma)
-    acf = AR.cov_from_ampl(slnr, lnc, ampl, delta)
-    return acf
+    return AR.cov_from_ampl(slnr, lnc, ampl, delta)
 
     # Is numerical integration of the spectrum a feasible way to get the
     # covariance? The roots correspond to peaks, and they get very high as the
@@ -546,7 +546,8 @@ class AR(_ARBase):
     @staticmethod
     def _process_gamma(gamma):
         gamma = jnp.asarray(gamma, float)
-        assert gamma.ndim == 1 and gamma.size >= 1
+        assert gamma.ndim == 1
+        assert gamma.size >= 1
         return gamma
 
     @staticmethod
@@ -558,7 +559,8 @@ class AR(_ARBase):
     @staticmethod
     def _process_ampl(ampl):
         ampl = jnp.asarray(ampl, float)
-        assert ampl.ndim == 1 and ampl.size >= 1
+        assert ampl.ndim == 1
+        assert ampl.size >= 1
         return ampl
 
     @staticmethod

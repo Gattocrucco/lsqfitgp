@@ -221,7 +221,7 @@ for i in range(nflav):
 for ax in axs[:, 0]:
     ax.legend(fontsize='small')
 
-for ax, label in zip(axs[:, 1], ['data', 'data2']):
+for ax, label in zip(axs[:, 1], ['data', 'data2'], strict=True):
     d = pred[label]
     m = gvar.mean(d)
     s = gvar.sdev(d)
@@ -239,7 +239,7 @@ for ax, label in zip(axs[:, 1], ['data', 'data2']):
     )
     ax.plot(x, truedata[label], drawstyle='steps-mid', color='black', label='truth')
 
-for ax, label in zip(axs[:, 2], ['Mparams', 'M2params']):
+for ax, label in zip(axs[:, 2], ['Mparams', 'M2params'], strict=True):
     p = fit.p[label]
     m = gvar.mean(p)
     s = gvar.sdev(p)

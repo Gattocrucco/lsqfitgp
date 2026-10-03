@@ -87,7 +87,7 @@ time_pred = np.linspace(
     np.min(time), np.max(time) + 1.5 * (np.max(time) - np.min(time)), 100
 )
 
-for style, params_sample in zip(['-', '--'], gvar.raniter(fit.p, 2)):
+for style, params_sample in zip(['-', '--'], gvar.raniter(fit.p, 2), strict=True):
     gp = makegp(params_sample)
     xpred = makex(time_pred, params_sample['delay'])
     gp = gp.addx(xpred, 'B')

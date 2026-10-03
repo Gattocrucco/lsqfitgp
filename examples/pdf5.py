@@ -184,7 +184,7 @@ for i in range(nflav):
 
 axs[0].legend(fontsize='small')
 
-for ax, label in zip(axs[1:], ['data', 'data2']):
+for ax, label in zip(axs[1:], ['data', 'data2'], strict=True):
     m = gvar.mean(pred[label])
     s = gvar.sdev(pred[label]) if len(m) else []
     x = np.arange(len(m))

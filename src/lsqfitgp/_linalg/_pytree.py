@@ -65,7 +65,7 @@ class AutoPyTree:
         self = cls.__new__(cls)
         self._aux_data = aux_data
         jax_vars, other_vars = aux_data
-        for n, v in zip(jax_vars, children):
+        for n, v in zip(jax_vars, children, strict=True):
             setattr(self, n, v)
         for n, v in other_vars:
             setattr(self, n, v)

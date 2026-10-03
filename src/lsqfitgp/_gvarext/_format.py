@@ -25,7 +25,7 @@ import gvar
 
 
 def exponent(x):
-    return int(math.floor(math.log10(abs(x))))
+    return math.floor(math.log10(abs(x)))
 
 
 def int_mantissa(x, n, e):
@@ -34,7 +34,7 @@ def int_mantissa(x, n, e):
 
 def naive_ndigits(x, n):
     log10x = math.log10(abs(x))
-    n_int = int(math.floor(n))
+    n_int = math.floor(n)
     n_frac = n - n_int
     log10x_frac = log10x - math.floor(log10x)
     return n_int + (log10x_frac < n_frac)
@@ -79,7 +79,7 @@ def tostring(x):
     return '0' if x == 0 else f'{x:#.6g}'
 
 
-def uformat(
+def uformat(  # noqa: C901, PLR0915
     mu,
     s,
     errdig=2,

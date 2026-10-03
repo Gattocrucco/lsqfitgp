@@ -31,16 +31,16 @@ def benchmark(func, *args, **kwargs):
     timer = timeit.Timer('func(*args, **kwargs)', globals=locals())
     n, _ = timer.autorange()
     times = timer.repeat(5, n)
-    time = min(times) / n
-    return time
+    return min(times) / n
 
 
+# the lambdas fix the number of arguments, counted with `inspect.signature`
 ops = {
     'chol': [
-        lambda x: jnp.linalg.cholesky(x),  # function performing the operation
+        lambda x: jnp.linalg.cholesky(x),  # noqa: PLW0108, the operation
         lambda s: s[0] ** 3,  # complexity in terms of arguments' shapes
     ],
-    'eigh': [lambda x: jnp.linalg.eigh(x), lambda s: s[0] ** 3],
+    'eigh': [lambda x: jnp.linalg.eigh(x), lambda s: s[0] ** 3],  # noqa: PLW0108
     'qr-red': [
         lambda x: jnp.linalg.qr(x, mode='reduced'),
         lambda s: min(s) ** 2 * max(s),
@@ -55,10 +55,10 @@ ops = {
         lambda s: max(s) ** 3,
     ],
     'solve_triangular': [
-        lambda x, y: jlinalg.solve_triangular(x, y),
+        lambda x, y: jlinalg.solve_triangular(x, y),  # noqa: PLW0108
         lambda s, t: s[0] ** 2 * t[1],
     ],
-    'matmul': [lambda x, y: jnp.matmul(x, y), lambda s, t: s[0] * s[1] * t[1]],
+    'matmul': [lambda x, y: jnp.matmul(x, y), lambda s, t: s[0] * s[1] * t[1]],  # noqa: PLW0108
 }
 
 

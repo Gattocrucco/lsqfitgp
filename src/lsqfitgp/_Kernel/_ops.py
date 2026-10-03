@@ -118,7 +118,7 @@ def diff_argparser(deriv):
 
 
 @functools.partial(CrossKernel.register_corelinop, argparser=diff_argparser)
-def diff(core, xderiv, yderiv):
+def diff(core, xderiv, yderiv):  # noqa: C901
     r"""
 
     Derive the function.
@@ -204,14 +204,12 @@ def diff(core, xderiv, yderiv):
         args = []
 
         if not xderiv.implicit:
-            for dim in xderiv:
-                args.append(_asfloat(x[dim]))
+            args.extend(_asfloat(x[dim]) for dim in xderiv)
         elif xderiv:
             x = _asfloat(x)
 
         if not yderiv.implicit:
-            for dim in yderiv:
-                args.append(_asfloat(y[dim]))
+            args.extend(_asfloat(y[dim]) for dim in yderiv)
         elif yderiv:
             y = _asfloat(y)
 

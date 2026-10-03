@@ -44,4 +44,4 @@ def top_bottom_rule(title, body):
     post_length = width - title_width - pre_length
     toprule = '=' * pre_length + ' ' + title + ' ' + '=' * post_length
     bottomrule = '=' * width
-    return '\n'.join([toprule, body, bottomrule])
+    return f'{toprule}\n{body}\n{bottomrule}'

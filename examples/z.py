@@ -69,7 +69,7 @@ samples = list(gvar.raniter(pred, 1))
 print('figure...')
 fig, axs = plt.subplots(3, 1, num='z', clear=True, figsize=[6, 7], layout='constrained')
 
-for ax, comp in zip(axs, ['', 'short', 'long']):
+for ax, comp in zip(axs, ['', 'short', 'long'], strict=True):
     key = 'pred' + comp
 
     m = mean[key]

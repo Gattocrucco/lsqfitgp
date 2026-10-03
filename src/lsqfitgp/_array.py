@@ -317,7 +317,7 @@ class StructuredArray:
         else:
             dtype = None
 
-        d = dict(zip(oldtype.names, children))
+        d = dict(zip(oldtype.names, children, strict=True))
 
         return cls._array(None, dtype, d)
 
@@ -484,7 +484,7 @@ def unstructured_to_structured(
     if not arr.ndim:
         msg = 'arr must have at least one dimension'
         raise ValueError(msg)
-    mockup = numpy.empty((0,) + arr.shape[-1:], arr.dtype)
+    mockup = numpy.empty((0, *arr.shape[-1:]), arr.dtype)
     dummy = recfunctions.unstructured_to_structured(
         mockup, dtype=dtype, names=names, align=align, copy=copy, casting=casting
     )
@@ -504,7 +504,7 @@ def _unstructured_to_structured_recursive(
         subshape = shape + dtype[i].shape
         size = math.prod(dtype[i].shape)
         stride = _nd(base)
-        substrides = strides + ((size, stride),)
+        substrides = (*strides, (size, stride))
         if base.names is not None:
             y, newidx = _unstructured_to_structured_recursive(
                 idx, subshape, arr, base, copy, casting, *substrides
@@ -516,7 +516,6 @@ def _unstructured_to_structured_recursive(
             assert stride == 1
             if all(size == 1 for size, _ in strides):
                 indices = numpy.s_[idx : idx + size]
-                srcsize = size
             else:
                 indices = sum(
                     (
@@ -526,7 +525,6 @@ def _unstructured_to_structured_recursive(
                     start=idx,
                 )
                 indices = indices.reshape(-1)
-                srcsize = indices.size
             key = numpy.s_[..., indices]
             x = arr[key]
             x = x.reshape(arr.shape[:-1] + subshape)
@@ -577,7 +575,7 @@ def _structured_to_unstructured_recursive(idx, arr, out, *strides):
         base = dtype[i].base
         size = math.prod(dtype[i].shape)
         stride = _nd(base)
-        substrides = strides + ((size, stride),)
+        substrides = (*strides, (size, stride))
         if base.names is not None:
             out, newidx = _structured_to_unstructured_recursive(
                 idx, subarr, out, *substrides
@@ -601,7 +599,7 @@ def _structured_to_unstructured_recursive(idx, arr, out, *strides):
                 indices = indices.reshape(-1)
                 srcsize = indices.size
             key = numpy.s_[..., indices]
-            src = subarr.reshape(out.shape[:-1] + (srcsize,))
+            src = subarr.reshape((*out.shape[:-1], srcsize))
             if hasattr(out, 'at'):
                 out = out.at[key].set(src)
             else:
@@ -670,7 +668,8 @@ def _concatenate(arrays, axis=0, dtype=None, casting='same_kind'):
     )
 
     out = _concatenate_recursive(arrays, axis, dtype, shape, casting)
-    assert out.shape == shape and out.dtype == dtype
+    assert out.shape == shape
+    assert out.dtype == dtype
     return out
 
 
@@ -699,9 +698,10 @@ def _append_fields(base, names, data, usemask=True):
         data = [data]
     assert len(names) == len(data)
     arrays = base._dict.copy()
-    arrays.update(zip(names, data))
+    arrays.update(zip(names, data, strict=True))
     dtype = numpy.dtype(
-        base.dtype.descr + [(name, array.dtype) for name, array in zip(names, data)]
+        base.dtype.descr
+        + [(name, array.dtype) for name, array in zip(names, data, strict=True)]
     )
     return StructuredArray._array(base.shape, dtype, arrays)
 

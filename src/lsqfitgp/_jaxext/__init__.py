@@ -75,7 +75,12 @@ def makejaxufunc(ufunc, *derivs, excluded=None, floatcast=False):
 
         result = func(*args)
         tangent = sum(
-            [d(*args) * t for t, d in zip(dargst, (d for d in derivs if d is not None))]
+            [
+                d(*args) * t
+                for t, d in zip(
+                    dargst, (d for d in derivs if d is not None), strict=True
+                )
+            ]
         )
         return result, tangent
 
@@ -83,7 +88,8 @@ def makejaxufunc(ufunc, *derivs, excluded=None, floatcast=False):
 
 
 def elementwise_grad(fun, argnum=0):
-    assert int(argnum) == argnum and argnum >= 0, argnum
+    assert int(argnum) == argnum, argnum
+    assert argnum >= 0, argnum
 
     @functools.wraps(fun)
     def funderiv(*args, **kw):
@@ -91,14 +97,14 @@ def elementwise_grad(fun, argnum=0):
         postargs = args[argnum + 1 :]
 
         def oneargfun(arg):
-            args = preargs + (arg,) + postargs
+            args = (*preargs, arg, *postargs)
             return fun(*args, **kw)
 
         primal = args[argnum]
         shape = getattr(primal, 'shape', ())
         dtype = getattr(primal, 'dtype', type(primal))
         tangent = jnp.ones(shape, dtype)
-        primal_out, tangent_out = jax.jvp(oneargfun, (primal,), (tangent,))
+        _primal_out, tangent_out = jax.jvp(oneargfun, (primal,), (tangent,))
         return tangent_out
 
     return funderiv
@@ -139,6 +145,7 @@ class skipifabstract:
         )
         if weird_cond:  # pragma: no cover
             return True
+        return None
 
 
 def float_type(*args):

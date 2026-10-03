@@ -373,7 +373,6 @@ class GPProcesses(_base.GPBase):
 
     def _crosskernel_transf_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]
-        yp = self._procs[ypkey]
 
         kernelsum = self._zerokernel
 
@@ -383,7 +382,7 @@ class GPProcesses(_base.GPBase):
                 continue
 
             if not callable(factor):
-                factor = (lambda f: lambda _: f)(factor)
+                factor = (lambda f: lambda _: f)(factor)  # noqa: PLC3002, bind the value
             kernel = kernel.linop('rescale', factor, None)
 
             if kernelsum is self._zerokernel:
@@ -395,15 +394,12 @@ class GPProcesses(_base.GPBase):
 
     def _crosskernel_lintransf_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]
-        yp = self._procs[ypkey]
 
         kernels = [self._crosskernel(pk, ypkey) for pk in xp.keys]
         kernel = _Kernel.CrossKernel._nary(
             xp.transf, kernels, _Kernel.CrossKernel._side.LEFT
         )
-        kernel = kernel.linop('diff', xp.deriv, 0)
-
-        return kernel
+        return kernel.linop('diff', xp.deriv, 0)
 
     def _crosskernel_kerneltransf_any(self, xpkey, ypkey):
         xp = self._procs[xpkey]

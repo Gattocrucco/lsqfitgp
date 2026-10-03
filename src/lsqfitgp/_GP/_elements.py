@@ -132,9 +132,9 @@ class GPElements(_base.GPBase):
             transf = vmap(self.transf, 0, 0)
             for i, elem in enumerate(elems):
                 inputs = [
-                    jnp.eye(elem.size).reshape((elem.size,) + elem.shape)
+                    jnp.eye(elem.size).reshape((elem.size, *elem.shape))
                     if j == i
-                    else jnp.zeros((elem.size,) + ej.shape)
+                    else jnp.zeros((elem.size, *ej.shape))
                     for j, ej in enumerate(elems)
                 ]
                 output = transf(*inputs).reshape(elem.size, self.size).T
@@ -152,7 +152,7 @@ class GPElements(_base.GPBase):
             self.shape = shape
 
     @_base.newself
-    def addx(self, x, key=None, *, deriv=0, proc=_base.GPBase.DefaultProcess):
+    def addx(self, x, key=None, *, deriv=0, proc=_base.GPBase.DefaultProcess):  # noqa: C901
         """
         Add points where the Gaussian process is evaluated.
 
@@ -201,7 +201,7 @@ class GPElements(_base.GPBase):
                 raise ValueError(msg)
             x = {key: x}
 
-        for key in x:
+        for key in x:  # noqa: PLR1704, the argument is not needed anymore
             if key in self._elements:
                 msg = f'key {key!r} already in GP'
                 raise KeyError(msg)
@@ -243,7 +243,7 @@ class GPElements(_base.GPBase):
         """Get the data type of x points."""
         return self._dtype
 
-    def addtransf(self, tensors, key, *, axes=1):
+    def addtransf(self, tensors, key, *, axes=1):  # noqa: C901
         """
         Apply a linear transformation to already specified process points. The
         result of the transformation is represented by a new key.
@@ -280,7 +280,8 @@ class GPElements(_base.GPBase):
         # not enough axes. How many axes do you sum over on the other?
 
         # Check axes.
-        assert isinstance(axes, int) and axes >= 0, axes
+        assert isinstance(axes, int), axes
+        assert axes >= 0, axes
 
         # Check key.
         if key is None:
@@ -318,10 +319,10 @@ class GPElements(_base.GPBase):
         elements = [self._elements[k] for k in tens]
         shapes = (
             t.shape[: t.ndim - axes] + e.shape[axes:] if t.shape else e.shape
-            for t, e in zip(arrays, elements)
+            for t, e in zip(arrays, elements, strict=True)
         )
         try:
-            shape = jnp.broadcast_shapes(*shapes)
+            jnp.broadcast_shapes(*shapes)
         except ValueError as exc:
             msg = 'can not broadcast tensors with shapes ['
             msg += ', '.join(repr(t.shape) for t in arrays)
@@ -333,7 +334,7 @@ class GPElements(_base.GPBase):
         def equiv_lintransf(*args):
             assert len(args) == len(tens)
             out = None
-            for a, (k, t) in zip(args, tens.items()):
+            for a, (_k, t) in zip(args, tens.items(), strict=True):
                 if t.shape:
                     b = jnp.tensordot(t, a, axes)
                 else:
@@ -407,7 +408,7 @@ class GPElements(_base.GPBase):
         self._elements[key] = self._LinTransf(transf, keys, shape)
 
     @_base.newself
-    def addcov(self, covblocks, key=None, *, decomps=None):
+    def addcov(self, covblocks, key=None, *, decomps=None):  # noqa: C901, PLR0915
         """
         Add user-defined prior covariance matrix blocks.
 
@@ -469,7 +470,7 @@ class GPElements(_base.GPBase):
         shapes = {}
         preblocks = {}
         for keys, block in covblocks.items():
-            for key in keys:
+            for key in keys:  # noqa: PLR1704, the argument is not needed anymore
                 if key in self._elements:
                     msg = f'key {key!r} already in GP'
                     raise KeyError(msg)
@@ -600,13 +601,13 @@ class GPElements(_base.GPBase):
             elem = self._elements[k]
             cov = self._covblock(k, ykey)
             assert cov.shape == (elem.size, y.size)
-            cov = cov.reshape(elem.shape + (y.size,))
+            cov = cov.reshape((*elem.shape, y.size))
             covs.append(cov)
 
         # Apply transformation.
         t = vmap(x.transf, -1, -1)
         cov = t(*covs)
-        assert cov.shape == x.shape + (y.size,)
+        assert cov.shape == (*x.shape, y.size)
         return cov.reshape((x.size, y.size))  # don't leave out the ()!
         # the () probably was an obscure autograd bug, I don't think it will
         # be a problem again with jax
@@ -686,7 +687,7 @@ class GPElements(_base.GPBase):
                     msg += f'mineigv = {mineigv:.4g} < {bound:.4g}'
                     raise numpy.linalg.LinAlgError(msg)
 
-    _checkpos_cache = functools.cached_property(lambda self: [])
+    _checkpos_cache = functools.cached_property(lambda _: [])
 
     def _checkpos_keys(self, keys):
         if not self._checkpositive:
@@ -744,7 +745,7 @@ class GPElements(_base.GPBase):
         jac, indices = _gvarext.jacobian(g)
         jacs = [
             jac[s].reshape(self._elements[k].shape + indices.shape)
-            for s, k in zip(slices, x.keys)
+            for s, k in zip(slices, x.keys, strict=True)
         ]
 
         # Apply transformation.
@@ -753,8 +754,7 @@ class GPElements(_base.GPBase):
         assert outjac.shape == x.shape + indices.shape
 
         # Rebuild gvars.
-        outg = _gvarext.from_jacobian(numpy.zeros(x.shape), outjac, indices)
-        return outg
+        return _gvarext.from_jacobian(numpy.zeros(x.shape), outjac, indices)
 
     def _prior(self, key):
         prior = self._priordict.get(key, None)

@@ -50,7 +50,7 @@ class SymSchur(_seqalg.Producer):
         self.g = jnp.stack([t, t])
         self.snorm = jnp.sqrt(norm)
 
-    def iter_out(self, i):
+    def iter_out(self, i):  # noqa: ARG002, interface method
         """`i`-th column of Cholesky factor L."""
         return self.g[0, :] * self.snorm
 

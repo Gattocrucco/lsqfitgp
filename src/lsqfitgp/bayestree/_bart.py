@@ -34,8 +34,8 @@ class bart:
         y_train,
         *,
         weights=None,
-        fitkw={},
-        kernelkw={},
+        fitkw={},  # noqa: B006, read only
+        kernelkw={},  # noqa: B006, read only
         marginalize_mean=True,
     ):
         """

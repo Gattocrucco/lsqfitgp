@@ -79,20 +79,19 @@ def runcode(file):
     np.random.seed(0)
     gvar.ranseed(0)
     globals_dict = {}
-    with plt.style.context('tableau-colorblind10', after_reset=True):
-        with lgp.switchgvar():
-            # run code
-            for match in pattern.finditer(text):
-                codeblock = match.group(1)
-                print(58 * '-' + '\n')
-                code = textwrap.dedent(codeblock).strip()
-                printcode = '\n'.join(
-                    f' {i + 1:2d}  ' + l for i, l in enumerate(code.split('\n'))
-                )
-                pyprint(printcode)
+    with plt.style.context('tableau-colorblind10', after_reset=True), lgp.switchgvar():
+        # run code
+        for match in pattern.finditer(text):
+            codeblock = match.group(1)
+            print(58 * '-' + '\n')
+            code = textwrap.dedent(codeblock).strip()
+            printcode = '\n'.join(
+                f' {i + 1:2d}  ' + l for i, l in enumerate(code.split('\n'))
+            )
+            pyprint(printcode)
 
-                with chdir(file.parent):
-                    exec(code, globals_dict)  # noqa: S102, running the docs code is the point
+            with chdir(file.parent):
+                exec(code, globals_dict)  # noqa: S102, running the docs code is the point
 
     # cleanup
     gc.collect()

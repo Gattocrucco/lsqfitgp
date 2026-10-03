@@ -81,7 +81,7 @@ def hurwitz_zeta_series(m, x, a1, onlyeven=False, onlyodd=False, skipterm=None):
 
 def hze_nmax(t):
     minz = 0.0037  # = min(2 gamma(s) / (2 pi)^s) for s <= 0
-    return int(math.ceil(-math.log2(jnp.finfo(t).eps * minz)))
+    return math.ceil(-math.log2(jnp.finfo(t).eps * minz))
 
 
 # @jit

@@ -65,8 +65,8 @@ pmtoev = np.array(
 qnames = ['d', 'dbar', 'u', 'ubar', 's', 'sbar', 'c', 'cbar']
 pmnames = ['d+', 'd-', 'u+', 'u-', 's+', 's-', 'c+', 'c-']
 evnames = ['Sigma', 'V', 'V3', 'V8', 'V15', 'T3', 'T8', 'T15']
-pnames = evnames + ['g']
-tpnames = ['xSigma'] + evnames[1:] + ['xg']
+pnames = [*evnames, 'g']
+tpnames = ['xSigma', *evnames[1:], 'xg']
 
 nflav = len(pnames)
 
@@ -254,13 +254,11 @@ def makegp(hp, **kw):
     # define a matrix of PDF values over the plot grid
     for proc in tpnames:
         gp = gp.addx(plotgrid, proc + '-plotgrid', proc=proc)
-    gp = gp.addlintransf(
+    return gp.addlintransf(
         lambda *args: jnp.stack(args),
         [proc + '-plotgrid' for proc in tpnames],
         'plotgrid',
     )
-
-    return gp
 
 
 constraints = {

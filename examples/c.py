@@ -77,7 +77,7 @@ phipred = gp.predfromfit({'data': fit.p['phi']}, 'pred')
 fig, axs = plt.subplots(1, 2, num='c', clear=True)
 
 preds = dict(ypred=ypred, ypredalt=ypredalt, phipred=phipred)
-for ax, variable in zip(axs, ['y', 'phi']):
+for ax, variable in zip(axs, ['y', 'phi'], strict=True):
     ax.set_title(variable)
 
     for label in 'pred', 'predalt':

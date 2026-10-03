@@ -22,8 +22,8 @@ gvar.ranseed(s2.generate_state(1))
 ndata = 3000  # number of datapoints
 
 evnames = ['Sigma', 'V', 'V3', 'V8', 'V15', 'T3', 'T8', 'T15']
-pnames = evnames + ['g']
-tpnames = ['xSigma'] + evnames[1:] + ['xg']
+pnames = [*evnames, 'g']
+tpnames = ['xSigma', *evnames[1:], 'xg']
 
 nflav = len(pnames)
 
@@ -214,13 +214,11 @@ def makegp(hp):
     # define a matrix of PDF values over the plot grid
     for proc in tpnames:
         gp = gp.addx(plotgrid, proc + '-plotgrid', proc=proc)
-    gp = gp.addlintransf(
+    return gp.addlintransf(
         lambda *args: jnp.stack(args),
         [proc + '-plotgrid' for proc in tpnames],
         'plotgrid',
     )
-
-    return gp
 
 
 constraints = {
@@ -389,7 +387,7 @@ ax.set(
 )
 
 x = list(range(len(hyperprior)))
-keys = [hyperprior.extension_pattern.fullmatch(k).group(2) for k in hyperprior.keys()]
+keys = [hyperprior.extension_pattern.fullmatch(k).group(2) for k in hyperprior]
 yprior = list(hyperprior.values())
 ypost = list(fit.p.values())
 ytrue = list(truehp.values())

@@ -134,7 +134,7 @@ class GPCompute(_base.GPBase):
 
         return ylist, keylist, covblocks
 
-    def pred(
+    def pred(  # noqa: C901, PLR0915
         self, given, key=None, givencov=None, *, fromdata=None, raw=False, keepcorr=None
     ):
         """
@@ -220,10 +220,9 @@ class GPCompute(_base.GPBase):
 
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = self._concatenate(ylist)
-        if y.dtype == object:
-            if ycovblocks is not None:
-                msg = 'given may contain gvars but a separate covariance matrix has been provided'
-                raise ValueError(msg)
+        if y.dtype == object and ycovblocks is not None:
+            msg = 'given may contain gvars but a separate covariance matrix has been provided'
+            raise ValueError(msg)
 
         self._checkpos_keys(inkeys + outkeys)
 
@@ -258,14 +257,13 @@ class GPCompute(_base.GPBase):
             mean = solver.pinv_bilinear(Kxxs, ymean)
             cov = Kxsxs - solver.ginv_quad(Kxxs)
 
-            if not fromdata:
-                # cov = Kxsxs - Kxsx Kxx^-1 (Kxx - ycov) Kxx^-1 Kxxs =
-                #     = Kxsxs - Kxsx Kxx^-1 Kxxs + Kxsx Kxx^-1 ycov Kxx^-1 Kxxs
-                if ycov is not None:
-                    # if isinstance(ycov, _linalg.Decomposition): # for woodbury, currently un-implemented
-                    #     ycov = ycov.matrix()
-                    A = solver.ginv_linear(Kxxs)
-                    cov += A.T @ ycov @ A
+            # cov = Kxsxs - Kxsx Kxx^-1 (Kxx - ycov) Kxx^-1 Kxxs =
+            #     = Kxsxs - Kxsx Kxx^-1 Kxxs + Kxsx Kxx^-1 ycov Kxx^-1 Kxxs
+            if not fromdata and ycov is not None:
+                # if isinstance(ycov, _linalg.Decomposition): # for woodbury, currently un-implemented
+                #     ycov = ycov.matrix()
+                A = solver.ginv_linear(Kxxs)
+                cov += A.T @ ycov @ A
 
         else:  # (keepcorr and not raw)
             yplist = [numpy.reshape(self._prior(key), -1) for key in inkeys]
@@ -285,15 +283,15 @@ class GPCompute(_base.GPBase):
         if raw and not strip:
             meandict = {
                 key: mean[slic].reshape(self._elements[key].shape)
-                for key, slic in zip(outkeys, outslices)
+                for key, slic in zip(outkeys, outslices, strict=True)
             }
 
             covdict = {
                 (row, col): cov[rowslice, colslice].reshape(
                     self._elements[row].shape + self._elements[col].shape
                 )
-                for row, rowslice in zip(outkeys, outslices)
-                for col, colslice in zip(outkeys, outslices)
+                for row, rowslice in zip(outkeys, outslices, strict=True)
+                for col, colslice in zip(outkeys, outslices, strict=True)
             }
 
             return meandict, covdict
@@ -314,7 +312,7 @@ class GPCompute(_base.GPBase):
         if not strip:
             return {
                 key: flatout[slic].reshape(self._elements[key].shape)
-                for key, slic in zip(outkeys, outslices)
+                for key, slic in zip(outkeys, outslices, strict=True)
             }
         else:
             (outkey,) = outkeys

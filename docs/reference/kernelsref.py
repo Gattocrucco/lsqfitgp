@@ -35,8 +35,7 @@ figdir.mkdir(exist_ok=True)
 def make_figpath(name):
     path = figdir / name
     path = path.with_suffix('.png')
-    path = path.relative_to(pathlib.Path().absolute())
-    return path
+    return path.relative_to(pathlib.Path().absolute())
 
 
 def make_figref(name):
@@ -49,9 +48,8 @@ titles = ('Isotropic kernels', 'Stationary kernels', 'Other kernels')
 
 kernels = []
 for name, obj in vars(lgp).items():
-    if inspect.isclass(obj) and issubclass(obj, lgp.Kernel):
-        if obj not in classes:
-            kernels.append(name)
+    if inspect.isclass(obj) and issubclass(obj, lgp.Kernel) and obj not in classes:
+        kernels.append(name)
 kernels.sort()
 
 out = """\
@@ -104,8 +102,8 @@ Index
 
 # index of kernels
 kernels2 = list(kernels)
-kernels = kernels[::-1]
-for superclass, title in zip(classes, titles):
+kernels.reverse()
+for superclass, title in zip(classes, titles, strict=True):
     out += f"""
 {title}
 {'^' * len(title)}

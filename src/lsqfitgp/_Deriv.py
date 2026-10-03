@@ -59,7 +59,7 @@ class Deriv:  # noqa: PLW1641, unhashable
         integers.
     """
 
-    def __new__(cls, *args):
+    def __new__(cls, *args):  # noqa: C901
         c = collections.Counter()
         if len(args) == 1:
             arg = args[0]

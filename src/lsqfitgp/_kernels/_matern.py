@@ -45,7 +45,8 @@ def Maternp(r2, p=None):
     Reference: Rasmussen and Williams (2006, p. 85).
     """
     with _jaxext.skipifabstract():
-        assert int(p) == p and p >= 0, p
+        assert int(p) == p, p
+        assert p >= 0, p
     r2 = (2 * p + 1) * r2
     return _special.kvmodx2_hi(r2 + 1e-30, p)
 

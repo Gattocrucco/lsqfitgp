@@ -101,7 +101,8 @@ def Color(delta, n=2):
 
     # Bartosch, L. (2001). "Generation of colored noise". International Journal of Modern Physics C. 12 (6): 851–855. Bibcode:2001IJMPC..12..851B. doi:10.1142/S0129183101002012. S2CID 54500670.
 
-    assert int(n) == n and n >= 2, n
+    assert int(n) == n, n
+    assert n >= 2, n
     return (n - 1) * _special.expn_imag(n, delta).real
 
 

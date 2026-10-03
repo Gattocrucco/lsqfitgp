@@ -496,7 +496,7 @@ class Distr(_base.DistrBase):
         params = []
         for i, p in enumerate(self.params):
             if isinstance(p, __class__):
-                p = p._compute_staticdescr(path + [i], cache)
+                p = p._compute_staticdescr([*path, i], cache)
             else:
                 p = numpy.asarray(p).tolist()
             params.append(p)
@@ -567,7 +567,7 @@ class UFunc:
         # this __new__ serves to forbid keyword arguments
 
     @classmethod
-    def invfcn(cls, x, *args):
+    def invfcn(cls, x, *args):  # noqa: ARG003, the signature is inspected
         return cls._ufunc(*args)
 
     def _get_x_core_shape(self, *_):

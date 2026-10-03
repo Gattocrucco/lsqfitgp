@@ -442,7 +442,7 @@ class Chol(Decomposition):
         # = L⁻¹x
         return jlinalg.solve_triangular(self._L, x, lower=True)
 
-    def minus_log_normal_density(
+    def minus_log_normal_density(  # noqa: C901, PLR0915
         self,
         r,  # 1d array, the residuals (data - prior mean)
         *,
@@ -605,9 +605,9 @@ class Chol(Decomposition):
         primal,
         *,
         args=(),
-        kw={},
+        kw={},  # noqa: B006, read only
         vec=None,
-        value=False,
+        value=False,  # noqa: ARG003, no derivatives needed for the value
         gradrev=False,
         gradfwd=False,
         fisher=False,

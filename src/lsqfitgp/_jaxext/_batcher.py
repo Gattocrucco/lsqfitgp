@@ -69,9 +69,9 @@ def batchufunc(func, *, maxnbytes):
 
         def combine_args(short_args, long_args):
             args = [None] * (len(short_args) + len(long_args))
-            for i, arg in zip(short_args_idx, short_args):
+            for i, arg in zip(short_args_idx, short_args, strict=True):
                 args[i] = arg
-            for i, arg in zip(long_args_idx, long_args):
+            for i, arg in zip(long_args_idx, long_args, strict=True):
                 args[i] = arg
             return args
 
@@ -84,7 +84,7 @@ def batchufunc(func, *, maxnbytes):
 
             sliced_args = [arg[:batchedsize] for arg in long_args]
             batched_args = [
-                arg.reshape((nbatches, batchsize) + arg.shape[1:])
+                arg.reshape((nbatches, batchsize, *arg.shape[1:]))
                 for arg in sliced_args
             ]
 
@@ -93,17 +93,17 @@ def batchufunc(func, *, maxnbytes):
                 assert all(arg.ndim == len(shape) for arg in batched_args)
                 args = combine_args(short_args, batched_args)
                 out = func(*args, **kw)
-                assert out.shape == (batchsize,) + shape[1:]
+                assert out.shape == (batchsize, *shape[1:])
                 return short_args, out
 
             _, out = lax.scan(scan_loop_body, short_args, batched_args)
-            assert out.shape == (nbatches, batchsize) + shape[1:]
-            out = out.reshape((batchedsize,) + shape[1:])
+            assert out.shape == (nbatches, batchsize, *shape[1:])
+            out = out.reshape((batchedsize, *shape[1:]))
 
             remainder_args = [arg[batchedsize:] for arg in long_args]
             args = combine_args(short_args, remainder_args)
             remainder = func(*args)
-            assert remainder.shape == (shape[0] - batchedsize,) + shape[1:]
+            assert remainder.shape == (shape[0] - batchedsize, *shape[1:])
 
             out = jnp.concatenate([out, remainder])
 

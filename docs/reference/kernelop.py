@@ -86,7 +86,7 @@ for obj in classes:
         transfs.setdefault(name, []).append(transf)
 
 # check that there are no namesakes with different documentation or kind
-for name, tlist in transfs.items():
+for tlist in transfs.values():
     t0 = tlist[0]
     for t in tlist[1:]:
         assert t.doc is None or t.doc == t0.doc

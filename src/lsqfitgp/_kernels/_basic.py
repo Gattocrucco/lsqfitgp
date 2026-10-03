@@ -154,7 +154,7 @@ def NNKernel(x, y, sigma0=1):
 
 
 @kernel
-def Gibbs(x, y, scalefun=lambda x: 1):
+def Gibbs(x, y, scalefun=lambda _: 1):
     """
     Gibbs kernel.
 
