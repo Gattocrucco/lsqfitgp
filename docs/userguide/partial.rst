@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/partial.rst
+.. lsqfitgp/docs/userguide/partial.rst
 ..
-.. Copyright (c) 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -33,18 +33,18 @@ has value 0 at the four corners of the unitary square::
     import numpy as np
     import lsqfitgp as lgp
     import gvar
-    
+
     gp = lgp.GP(lgp.ExpQuad(scale=0.25))
-    
+
     xydata = np.array([
         (0, 0),
         (0, 1),
         (1, 0),
         (1, 1),
     ], dtype=[('x', float), ('y', float)])
-    
+
     zdata = np.zeros(4)
-    
+
     gp = gp.addx(xydata, 'corners')
 
 Next, we have to specify the saddle point using derivatives. For simplicity,
@@ -53,11 +53,11 @@ curvature is negative along `x` and positive along `y`. This implies that:
 
   * the second derivatives w.r.t. `x` and `y` are respectively negative and
     positive;
- 
+
   * the cross second derivative is zero;
-  
+
   * the first derivatives are zero.
-  
+
 To specify partial derivatives, we pass a field name, a tuple of field names, or
 a pair ``(order, field name)`` as ``deriv`` argument to ``addx``::
 
@@ -75,9 +75,9 @@ Now we add a grid of points to do the plot and then ask for the prediction::
     xyplot = np.empty((30, 30), dtype=xydata.dtype)
     xyplot['x'] = np.linspace(0, 1, xyplot.shape[0])[:, None]
     xyplot['y'] = np.linspace(0, 1, xyplot.shape[1])[None, :]
-    
+
     gp = gp.addx(xyplot, 'plot')
-    
+
     zplot = gp.predfromdata({
         'corners': zdata,
         'dx'     : 0,
@@ -90,15 +90,15 @@ Now we add a grid of points to do the plot and then ask for the prediction::
 And plot it::
 
     from matplotlib import pyplot as plt
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example', subplot_kw=dict(
         projection='3d',
         computed_zorder=False,
     ))
-    
+
     ax.plot_surface(xyplot['x'], xyplot['y'], gvar.mean(zplot), cmap='viridis', alpha=0.9)
     ax.scatter(xydata['x'], xydata['y'], zdata, c='black', depthshade=False, zorder=10)
-    
+
     fig.savefig('partial1.png')
 
 .. image:: partial1.png

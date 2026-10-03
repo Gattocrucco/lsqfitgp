@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/installation.rst
+.. lsqfitgp/docs/userguide/installation.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..

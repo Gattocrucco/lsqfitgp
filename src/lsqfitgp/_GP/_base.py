@@ -1,6 +1,6 @@
 # lsqfitgp/_GP/_base.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -22,11 +22,10 @@ import functools
 import jax
 from jax import numpy as jnp
 
-from .. import _jaxext
-from .. import _utils
+from lsqfitgp import _jaxext, _utils
+
 
 class GPBase:
-
     def __init__(self, *, checkfinite=True, checklin=True):
         self._checkfinite = bool(checkfinite)
         self._checklin = bool(checklin)
@@ -38,28 +37,27 @@ class GPBase:
         return newself
 
     class _SingletonMeta(type):
-    
         def __repr__(cls):
             return cls.__name__
 
     class _Singleton(metaclass=_SingletonMeta):
-    
         def __new__(cls):
-            raise NotImplementedError(f"{cls.__name__} can not be instantiated")
+            raise NotImplementedError(f'{cls.__name__} can not be instantiated')
 
     class DefaultProcess(_Singleton):
-        """ Key of the default process. """
+        """Key of the default process."""
+
         pass
 
     def _checklinear(self, func, inshapes, elementwise=False):
-        
+
         # Make input arrays.
         rkey = jax.random.PRNGKey(202206091600)
         inp = []
         for shape in inshapes:
             rkey, subkey = jax.random.split(rkey)
             inp.append(jax.random.normal(subkey, shape))
-        
+
         # Put zeros into the arrays to check they are preserved.
         if elementwise:
             shape = jnp.broadcast_shapes(*inshapes)
@@ -67,7 +65,7 @@ class GPBase:
             zeros = jax.random.bernoulli(subkey, 0.5, shape)
             for i, a in enumerate(inp):
                 inp[i] = a.at[zeros].set(0)
-            
+
         # Compute JVP and check it is identical to the function itself.
         with _jaxext.skipifabstract():
             out0, out1 = jax.jvp(func, inp, inp)
@@ -77,14 +75,17 @@ class GPBase:
                 cond = jnp.allclose(out0, out1)
             if not cond:
                 raise RuntimeError('the transformation is not linear')
-        
+
             # Check that the function is elementwise.
             if elementwise:
-                if out0.shape != shape or not (jnp.allclose(out0[zeros], 0) and jnp.allclose(out1[zeros], 0)):
+                if out0.shape != shape or not (
+                    jnp.allclose(out0[zeros], 0) and jnp.allclose(out1[zeros], 0)
+                ):
                     raise RuntimeError('the transformation is not elementwise')
-    
+
+
 def newself(meth):
-    """ Decorator to create a new GP object and pass it to the method. """
+    """Decorator to create a new GP object and pass it to the method."""
 
     @functools.wraps(meth)
     def newmeth(self, *args, **kw):

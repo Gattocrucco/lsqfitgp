@@ -1,6 +1,6 @@
 # lsqfitgp/_fastraniter.py
 #
-# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -22,8 +22,7 @@ import itertools
 import gvar
 import numpy
 
-from . import _linalg
-
+from lsqfitgp import _linalg
 
 
 def _toslice(s):
@@ -33,14 +32,14 @@ def _toslice(s):
         return slice(s, s + 1)
     raise TypeError(f'cannot convert {s!r} to slice')
 
+
 def raniter(mean, cov, n=None, eps=None, rng=None):
     """
-    
     Take random samples from a multivariate Gaussian.
-    
+
     This generator mimics the interface of `gvar.raniter`, but takes as input
     the mean and covariance separately instead of a collection of gvars.
-    
+
     Parameters
     ----------
     mean : scalar, array, or dictionary of scalars/arrays
@@ -57,24 +56,21 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
     rng : seed or random generator, optional
         ``rng`` is passed through `numpy.random.default_rng` to produce a random
         number generator.
-    
+
     Yields
     ------
     samp : scalar, array, or dictionary of scalars/arrays
         The random sample in the same format of ``mean``.
-    
+
     Examples
     --------
-    
     >>> mean = {'a': np.arange(3)}
     >>> cov = {('a', 'a'): np.eye(3)}
     >>> for sample in lgp.raniter(mean, cov, 3):
     >>>     print(sample)
-    
     """
-
     # convert mean and cov to 1d and 2d arrays
-    if hasattr(mean, 'keys'): # a dict or gvar.BufferDict
+    if hasattr(mean, 'keys'):  # a dict or gvar.BufferDict
         if not hasattr(mean, 'buf'):
             mean = gvar.BufferDict(mean)
         flatmean = mean.buf
@@ -85,7 +81,7 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
                 slic2 = _toslice(mean.slice(k2))
                 sqshape = (slic1.stop - slic1.start, slic2.stop - slic2.start)
                 squarecov[slic1, slic2] = cov[k1, k2].reshape(sqshape)
-    else: # an array or scalar
+    else:  # an array or scalar
         mean = numpy.array(mean, copy=False)
         cov = numpy.array(cov, copy=False)
         flatmean = mean.reshape(-1)
@@ -95,11 +91,13 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
     try:
         covdec = _linalg.Chol(squarecov, epsrel='auto' if eps is None else eps)
     except numpy.linalg.LinAlgError:
-        raise numpy.linalg.LinAlgError('covariance matrix not positive definite with eps={}'.format(eps))
+        raise numpy.linalg.LinAlgError(
+            f'covariance matrix not positive definite with eps={eps}'
+        )
 
     # get random number generator
     rng = numpy.random.default_rng(rng)
-    
+
     # take samples
     iterable = itertools.count() if n is None else range(n)
     for _ in iterable:
@@ -114,8 +112,7 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
 
         yield samp
 
+
 def sample(*args, **kw):
-    """
-    Shortcut for ``next(raniter(..., n=1))``.
-    """
+    """Shortcut for ``next(raniter(..., n=1))``."""
     return next(raniter(*args, n=1, **kw))

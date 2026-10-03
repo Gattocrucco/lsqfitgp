@@ -1,6 +1,6 @@
-<!--- lsqfitgp/docs/changelog.md
+<!--- lsqfitgp/docs/development/changelog.md
 
-  Copyright (c) 2023, 2024, 2025, Giacomo Petrillo
+  Copyright (c) 2023, 2024, 2025, 2026, Giacomo Petrillo
 
   This file is part of lsqfitgp.
 
@@ -141,7 +141,7 @@ This release pins `jax` and `jaxlib` to <0.4.16 to avoid a new inaccurate implem
 ## 0.19. Miss the Forest for Two Forests and an Auxiliary Regression Term (2023-08-22)
 
 ### Release highlights
-  
+
   * GP version of BCF (Bayesian Causal Forests).
   * Extension of the `copula` submodule to a full PPL (Probabilistic Programming Language) to specify the hyperparameter priors.
 

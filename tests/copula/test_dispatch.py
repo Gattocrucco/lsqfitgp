@@ -1,6 +1,6 @@
-# lsqfitgp/tests/test_dispatch.py
+# lsqfitgp/tests/copula/test_dispatch.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,30 +17,33 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Test numpy array protocols on Distr """
+"""Test numpy array protocols on Distr"""
 
 import operator
 
 from pytest import mark
 
 from lsqfitgp import copula
+from tests import util
 
-from .. import util
 
-@mark.parametrize('op', [
-    operator.add,
-    operator.sub,
-    operator.mul,
-    operator.truediv,
-    operator.pow,
-    operator.mod,    
-])
+@mark.parametrize(
+    'op',
+    [
+        operator.add,
+        operator.sub,
+        operator.mul,
+        operator.truediv,
+        operator.pow,
+        operator.mod,
+    ],
+)
 @mark.parametrize('number', [False, True])
 def test_binary(op, number, rng):
     x = copula.beta(2, 3)
-    y = 1.3 if number else copula.gamma(1, 1)    
+    y = 1.3 if number else copula.gamma(1, 1)
     z = op(x, y)
-    
+
     def invfcn(n):
         xval = x.partial_invfcn(n[..., 0])
         if number:
@@ -54,15 +57,12 @@ def test_binary(op, number, rng):
     out2 = invfcn(n if z.in_shape else n[..., None])
     util.assert_equal(out1, out2)
 
-@mark.parametrize('op', [
-    operator.abs,
-    operator.neg,
-    operator.pos,
-])
+
+@mark.parametrize('op', [operator.abs, operator.neg, operator.pos])
 def test_unary(op, rng):
-    x = copula.beta(2, 3)    
+    x = copula.beta(2, 3)
     z = op(x)
-    
+
     def invfcn(n):
         xval = x.partial_invfcn(n)
         return op(xval)
@@ -71,6 +71,7 @@ def test_unary(op, rng):
     out1 = z.partial_invfcn(n)
     out2 = invfcn(n)
     util.assert_equal(out1, out2)
+
 
 def test_repr():
     x = copula.beta(1, 1) + copula.gamma(1, 1)

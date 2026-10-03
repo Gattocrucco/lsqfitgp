@@ -17,40 +17,39 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
-import warnings
-import functools
-import time
-import textwrap
 import datetime
+import functools
+import re
+import textwrap
+import time
+import warnings
 
 import gvar
 import jax
-from jax import numpy as jnp
 import numpy
-from scipy import optimize
+from jax import numpy as jnp
 from jax import tree_util
+from scipy import optimize
 
-from . import _GP
-from . import _linalg
-from . import _jaxext
-from . import _gvarext
-from . import _array
+from lsqfitgp import _GP, _array, _gvarext, _linalg
 
 
 @functools.singledispatch
 def token_getter(x):
     return x
 
+
 @functools.singledispatch
 def token_setter(x, token):
     return token
+
 
 @token_getter.register(jax.core.Tracer)
 @token_getter.register(jnp.ndarray)
 @token_getter.register(numpy.ndarray)
 def _(x):
     return x[x.ndim * (0,)] if x.size else x
+
 
 @token_setter.register(jax.core.Tracer)
 @token_setter.register(jnp.ndarray)
@@ -59,15 +58,19 @@ def _(x, token):
     x = jnp.asarray(x)
     return x.at[x.ndim * (0,)].set(token) if x.size else token
 
+
 def token_map_leaf(func, x):
     if isinstance(x, (jnp.ndarray, numpy.ndarray)):
         token = token_getter(x)
+
         @jax.custom_jvp
         def jaxfunc(token):
             return jax.pure_callback(func, token, token, vmap_method='expand_dims')
+
         @jaxfunc.defjvp
         def _(p, t):
             return (jaxfunc(*p), *t)
+
         token = jaxfunc(token)
         return token_setter(x, token)
     else:
@@ -75,21 +78,24 @@ def token_map_leaf(func, x):
         token = func(token)
         return token_setter(x, token)
 
+
 def token_map(func, x):
     return tree_util.tree_map(lambda x: token_map_leaf(func, x), x)
 
+
 class Logger:
-    """ Class to manage a log. Can be used as superclass. Each line of the log
+    """Class to manage a log. Can be used as superclass. Each line of the log
     has a verbosity level (an integer >= 0) and is printed only if this level is
-    below a threshold. All lines are saved and the log can be retrieved. """
+    below a threshold. All lines are saved and the log can be retrieved.
+    """
 
     def __init__(self, target_verbosity=0):
-        """ set the threshold used to exclude log lines """
+        """Set the threshold used to exclude log lines."""
         self._verbosity = target_verbosity
         self._loggedlines = []
-    
+
     def _indent(self, text, level=0):
-        """ indent a text by provided level or by global current level """
+        """Indent a text by provided level or by global current level."""
         level = max(0, level + self.loglevel._level)
         prefix = 4 * level * ' '
         return textwrap.indent(text, prefix)
@@ -101,7 +107,7 @@ class Logger:
             return target_verbosity >= verbosity
         else:
             return target_verbosity in verbosity
-    
+
     def log(self, message, verbosity=1, *, level=0):
         """
         Print and record a message.
@@ -122,7 +128,7 @@ class Logger:
         self._loggedlines.append((message, verbosity, level + self.loglevel._level))
 
     def getlog(self, target_verbosity=None, *, base_level=0):
-        """ return all logged line as a single string """
+        """Return all logged line as a single string."""
         return '\n'.join(
             self._indent(message, base_level + level)
             for message, verbosity, level in self._loggedlines
@@ -130,22 +136,22 @@ class Logger:
         )
 
     class _LogLevel:
-        """ shared context manager to indent messages """
-        
+        """Shared context manager to indent messages."""
+
         _level = 0
-                
+
         @classmethod
         def __enter__(cls):
             cls._level += 1
-        
+
         @classmethod
         def __exit__(cls, *_):
             cls._level -= 1
-    
+
     loglevel = _LogLevel()
 
-class empbayes_fit(Logger):
 
+class empbayes_fit(Logger):
     SEPARATE_JAC = False
 
     def __init__(
@@ -168,13 +174,12 @@ class empbayes_fit(Logger):
         additional_loss=None,
     ):
         """
-    
         Maximum a posteriori fit.
-    
+
         Maximizes the marginal likelihood of the data with a Gaussian process
         model that depends on hyperparameters, multiplied by a prior on the
         hyperparameters.
-    
+
         Parameters
         ----------
         hyperprior : scalar, array or dictionary of scalars/arrays
@@ -206,7 +211,7 @@ class empbayes_fit(Logger):
             If True (default), use `jax.jit` to compile the minimization target.
         method : str
             Minimization strategy. Options:
-        
+
             'nograd'
                 Use a gradient-free method.
             'gradient' (default)
@@ -217,7 +222,7 @@ class empbayes_fit(Logger):
         initial : str, scalar, array, dictionary of scalars/arrays
             Starting point for the minimization, matching the format of
             ``hyperprior``, or one of the following options:
-            
+
             'priormean' (default)
                 Start from the hyperprior mean.
             'priorsample'
@@ -225,7 +230,7 @@ class empbayes_fit(Logger):
         verbosity : int
             An integer indicating how much information is printed on the
             terminal:
-    
+
             0 (default)
                 No logging.
             1
@@ -241,7 +246,7 @@ class empbayes_fit(Logger):
         covariance : str
             Method to estimate the posterior covariance matrix of the
             hyperparameters:
-    
+
             'fisher'
                 Use the Fisher information in the MAP, plus the prior precision,
                 as precision matrix.
@@ -265,7 +270,7 @@ class empbayes_fit(Logger):
             A function with signature ``additional_loss(hyperparams) -> float``
             which is added to the minus log marginal posterior of the
             hyperparameters.
-    
+
         Attributes
         ----------
         p : scalar, array or dictionary of scalars/arrays
@@ -298,27 +303,31 @@ class empbayes_fit(Logger):
         ------
         RuntimeError
             The minimization failed and ``raises`` is True.
-    
         """
-
         Logger.__init__(self, verbosity)
         del verbosity
         self.log('**** call lsqfitgp.empbayes_fit ****')
-    
+
         assert callable(gpfactory)
-        
+
         # analyze the hyperprior
         hpinitial, hpunflat = self._parse_hyperprior(hyperprior, initial, fix)
         del hyperprior, initial, fix
-        
+
         # analyze data
         data, cachedargs = self._parse_data(data)
 
         # define functions
         timer, functions = self._prepare_functions(
-            gpfactory=gpfactory, gpfactorykw=gpfactorykw, data=data,
-            cachedargs=cachedargs, hpunflat=hpunflat, mlkw=mlkw, jit=jit,
-            forward=forward, additional_loss=additional_loss,
+            gpfactory=gpfactory,
+            gpfactorykw=gpfactorykw,
+            data=data,
+            cachedargs=cachedargs,
+            hpunflat=hpunflat,
+            mlkw=mlkw,
+            jit=jit,
+            forward=forward,
+            additional_loss=additional_loss,
         )
         del gpfactory, gpfactorykw, data, cachedargs, mlkw, forward, additional_loss
 
@@ -332,7 +341,7 @@ class empbayes_fit(Logger):
         # check invalid argument before running minimizer
         if not covariance in ('auto', 'fisher', 'minhess', 'none'):
             raise KeyError(covariance)
-        
+
         # add user arguments and minimize
         minargs.update(minkw)
         self.log(f'minimizer method {minargs["method"]!r}', 2)
@@ -341,10 +350,12 @@ class empbayes_fit(Logger):
 
         # check the minimization was successful
         self._check_success(result, raises)
-        
+
         # compute posterior covariance of the hyperparameters
-        cov = self._posterior_covariance(method, covariance, result, functions['fisher'])    
-        
+        cov = self._posterior_covariance(
+            method, covariance, result, functions['fisher']
+        )
+
         # log total timings and function calls
         total = time.perf_counter() - total
         self._log_totals(total, timer, callback, jit, functions)
@@ -352,10 +363,10 @@ class empbayes_fit(Logger):
         ##### temporary fix for gplepage/gvar#50 #####
         cov = numpy.array(cov, order='C')
         ##############################################
-        
+
         # join posterior mean and covariance matrix
         uresult = gvar.gvar(result.x, cov)
-        
+
         # set attributes
         self.p = gvar.gvar(hpunflat(uresult))
         self.pmean = gvar.mean(self.p)
@@ -365,52 +376,55 @@ class empbayes_fit(Logger):
 
         # tabulate hyperparameter prior and posterior
         if self._verbosity >= 2:
-            self.log(_gvarext.tabulate_together(
-                self.prior, self.p,
-                headers=['param', 'prior', 'posterior'],
-            ))
-        
+            self.log(
+                _gvarext.tabulate_together(
+                    self.prior, self.p, headers=['param', 'prior', 'posterior']
+                )
+            )
+
         self.log('**** exit lsqfitgp.empbayes_fit ****')
 
     class _CountCalls:
-        """ wrap a callable to count calls """
-        
+        """Wrap a callable to count calls."""
+
         def __init__(self, func):
             self._func = func
             self._total = 0
             self._partial = 0
             functools.update_wrapper(self, func)
-        
+
         def __call__(self, *args, **kw):
             self._total += 1
             self._partial += 1
             return self._func(*args, **kw)
-        
+
         def partial(self):
-            """ return the partial counter and reset it """
+            """Return the partial counter and reset it."""
             result = self._partial
             self._partial = 0
             return result
-        
+
         def total(self):
-            """ return the total number of calls """
+            """Return the total number of calls."""
             return self._total
 
         @staticmethod
         def fmtcalls(method, functions):
             """
-            format summary of number of calls
+            Format summary of number of calls
             method : str
-            functions: dict[str, _CountCalls]
+            functions: dict[str, _CountCalls].
             """
+
             def counts():
                 for name, func in functions.items():
                     if count := getattr(func, method)():
                         yield f'{name} {count}'
+
             return ', '.join(counts())
 
     class _Timer:
-        """ object to time likelihood computations """
+        """Object to time likelihood computations."""
 
         def __init__(self):
             self.totals = {}
@@ -423,7 +437,7 @@ class empbayes_fit(Logger):
         def _start(self, token):
             self.stamp = time.perf_counter()
             self.counter = 0
-            assert not self._last_start # forbid consecutive start() calls
+            assert not self._last_start  # forbid consecutive start() calls
             self._last_start = True
             return token
 
@@ -442,9 +456,9 @@ class empbayes_fit(Logger):
             self.counter += 1
             self._last_start = False
             return token
-    
+
     def _parse_hyperprior(self, hyperprior, initial, fix):
-        
+
         # check fix against hyperprior and fill missing values
         hyperprior = self._copyasarrayorbufferdict(hyperprior)
         self._check_no_redundant_keys(hyperprior)
@@ -459,17 +473,18 @@ class empbayes_fit(Logger):
         dec = _linalg.Chol(cov)
         assert dec.n == freehp.size
         self.log(f'{freehp.size}/{flathp.size} free hyperparameters', 2)
-        
+
         # determine starting point for minimization
         initial = self._parse_initial(hyperprior, initial, dec)
         flatinitial = self._flatview(initial)
         x0 = dec.pinv_correlate(flatinitial[~flatfix] - mean)
-        
+
         # make function to correlate, add fixed values, and reshape to original
         # format
-        fixed_indices, = jnp.nonzero(flatfix)
-        unfixed_indices, = jnp.nonzero(~flatfix)
+        (fixed_indices,) = jnp.nonzero(flatfix)
+        (unfixed_indices,) = jnp.nonzero(~flatfix)
         fixed_values = jnp.asarray(flatinitial[flatfix])
+
         def unflat(x):
             assert x.ndim == 1
             if x.dtype == object:
@@ -486,10 +501,10 @@ class empbayes_fit(Logger):
                 y = y.at[unfixed_indices].set(x)
                 y = y.at[fixed_indices].set(fixed_values)
             return self._unflatview(y, hyperprior)
-        
+
         self.prior = hyperprior
         return x0, unflat
-    
+
     @staticmethod
     def _check_no_redundant_keys(hyperprior):
         if not hasattr(hyperprior, 'keys'):
@@ -502,17 +517,23 @@ class empbayes_fit(Logger):
                     raise ValueError(f'duplicate keys {altk!r} and {k!r} in hyperprior')
 
     def _parse_fix(self, hyperprior, fix):
-        
+
         if fix is None:
             if hasattr(hyperprior, 'keys'):
-                fix = gvar.BufferDict(hyperprior, buf=numpy.zeros(hyperprior.size, bool))
+                fix = gvar.BufferDict(
+                    hyperprior, buf=numpy.zeros(hyperprior.size, bool)
+                )
             else:
                 fix = numpy.zeros(hyperprior.shape, bool)
         else:
             fix = self._copyasarrayorbufferdict(fix)
             if hasattr(fix, 'keys'):
-                assert hasattr(hyperprior, 'keys'), 'fix is dictionary but hyperprior is array'
-                assert all(hyperprior.has_dictkey(k) for k in fix), 'some keys in fix are missing in hyperprior'
+                assert hasattr(hyperprior, 'keys'), (
+                    'fix is dictionary but hyperprior is array'
+                )
+                assert all(hyperprior.has_dictkey(k) for k in fix), (
+                    'some keys in fix are missing in hyperprior'
+                )
                 newfix = {}
                 for k, v in hyperprior.items():
                     key = None
@@ -520,7 +541,9 @@ class empbayes_fit(Logger):
                     if m and m.group(1) in hyperprior.invfcn:
                         altk = m.group(2)
                         if altk in fix:
-                            assert k not in fix, f'duplicate keys {k!r} and {altk!r} in fix'
+                            assert k not in fix, (
+                                f'duplicate keys {k!r} and {altk!r} in fix'
+                            )
                             key = altk
                     if key is None and k in fix:
                         key = k
@@ -531,29 +554,35 @@ class empbayes_fit(Logger):
                     newfix[k] = elem
                 fix = gvar.BufferDict(newfix, dtype=bool)
             else:
-                assert not hasattr(hyperprior, 'keys'), 'fix is array but hyperprior is dictionary'
+                assert not hasattr(hyperprior, 'keys'), (
+                    'fix is array but hyperprior is dictionary'
+                )
                 fix = numpy.broadcast_to(fix, hyperprior.shape).astype(bool)
-        
+
         self.fix = fix
         return fix
-    
+
     def _parse_initial(self, hyperprior, initial, dec):
-        
+
         if not isinstance(initial, str):
             self.log('start from provided point', 2)
             initial = self._copyasarrayorbufferdict(initial)
             if hasattr(hyperprior, 'keys'):
-                assert hasattr(initial, 'keys'), 'hyperprior is dictionary but initial is array'
+                assert hasattr(initial, 'keys'), (
+                    'hyperprior is dictionary but initial is array'
+                )
                 assert set(hyperprior.keys()) == set(initial.keys())
                 assert all(hyperprior[k].shape == initial[k].shape for k in hyperprior)
             else:
-                assert not hasattr(initial, 'keys'), 'hyperprior is array but initial is dictionary'
+                assert not hasattr(initial, 'keys'), (
+                    'hyperprior is array but initial is dictionary'
+                )
                 assert hyperprior.shape == initial.shape
-        
+
         elif initial == 'priormean':
             self.log('start from prior mean', 2)
             initial = gvar.mean(hyperprior)
-        
+
         elif initial == 'priorsample':
             self.log('start from a random sample from the prior', 2)
             if dec.n < hyperprior.size:
@@ -565,18 +594,18 @@ class empbayes_fit(Logger):
             iid = numpy.random.randn(fulldec.m)
             flatinitial = numpy.asarray(fulldec.correlate(iid))
             initial = self._unflatview(flatinitial, hyperprior)
-        
+
         else:
             raise KeyError(initial)
-        
+
         self.initial = initial
         return initial
-    
+
     def _parse_data(self, data):
-        
+
         self.data = data
         if isinstance(data, tuple) and len(data) == 1:
-            data, = data
+            (data,) = data
 
         if callable(data):
             self.log('data is callable', 2)
@@ -594,26 +623,36 @@ class empbayes_fit(Logger):
         else:
             self.log('data has no errors', 2)
             cachedargs = (data,)
-        
+
         return data, cachedargs
 
-    def _prepare_functions(self, *, gpfactory, gpfactorykw, data, cachedargs,
-        hpunflat, mlkw, jit, forward, additional_loss):
+    def _prepare_functions(
+        self,
+        *,
+        gpfactory,
+        gpfactorykw,
+        data,
+        cachedargs,
+        hpunflat,
+        mlkw,
+        jit,
+        forward,
+        additional_loss,
+    ):
 
         timer = self._Timer()
         firstcall = [None]
-        
-        def make_decomp(p, **kw):
-            """ decomposition of the prior covariance and data """
 
+        def make_decomp(p, **kw):
+            """Decomposition of the prior covariance and data."""
             # start timer and convert hypers to user format
             p = timer.start(p)
             hp = hpunflat(p)
-            
+
             # create GP object
             gp = gpfactory(hp, **kw)
             assert isinstance(gp, _GP.GP)
-            
+
             # extract data
             if cachedargs:
                 args = cachedargs
@@ -624,8 +663,8 @@ class empbayes_fit(Logger):
 
             # decompose covariance matrix and flatten data
             decomp, r = gp._prior_decomp(*args, covtransf=timer.partial, **mlkw)
-            r = r.astype(float) # int data upsets jax
-        
+            r = r.astype(float)  # int data upsets jax
+
             # log number of datapoints
             if firstcall:
                 # it is convenient to do here because the data is flattened.
@@ -637,7 +676,7 @@ class empbayes_fit(Logger):
 
             # compute user loss
             if additional_loss is None:
-                loss = 0.
+                loss = 0.0
             else:
                 loss = additional_loss(hp)
 
@@ -650,18 +689,18 @@ class empbayes_fit(Logger):
                 func = jax.jit(func)
             func = functools.partial(func, **gpfactorykw)
             return self._CountCalls(func)
+
         if jit:
-            self.log('compile functions with jax jit', 2)        
-        
+            self.log('compile functions with jax jit', 2)
+
         # log derivation method
         modename = 'forward' if forward else 'reverse'
         self.log(f'{modename}-mode autodiff (if used)', 2)
 
-
         def prior(p):
             # the marginal prior of the hyperparameters is a Normal with
             # identity covariance matrix because p is transformed to make it so
-            return 1/2 * (len(p) * jnp.log(2 * jnp.pi) + p @ p)
+            return 1 / 2 * (len(p) * jnp.log(2 * jnp.pi) + p @ p)
 
         def grad_prior(p):
             return p
@@ -671,8 +710,9 @@ class empbayes_fit(Logger):
 
         @wrap
         def fun(p, **kw):
-            """ minus log marginal posterior of the hyperparameters (not
-            normalized) """
+            """Minus log marginal posterior of the hyperparameters (not
+            normalized).
+            """
             decomp, r, loss = make_decomp(p, **kw)
             cond, _, _, _, _ = decomp.minus_log_normal_density(r, value=True)
             post = cond + prior(p) + loss
@@ -682,7 +722,10 @@ class empbayes_fit(Logger):
             def make_decomp_tee(p):
                 decomp, r, loss = make_decomp(p, **kw)
                 return (decomp.matrix(), r, loss), (decomp, r, loss)
-            (dK, dr, grad_loss), (decomp, r, loss) = jax.jacfwd(make_decomp_tee, has_aux=True)(p)
+
+            (dK, dr, grad_loss), (decomp, r, loss) = jax.jacfwd(
+                make_decomp_tee, has_aux=True
+            )(p)
             lkw = dict(dK=dK, dr=dr)
             return decomp, r, lkw, loss, grad_loss
 
@@ -692,11 +735,20 @@ class empbayes_fit(Logger):
                     def make_decomp_K(p):
                         decomp, r, loss = make_decomp(p, **kw)
                         return decomp.matrix(), (decomp, r, loss)
-                    _, dK_vjp, (decomp, r, loss) = jax.vjp(make_decomp_K, p, has_aux=True)
+
+                    _, dK_vjp, (decomp, r, loss) = jax.vjp(
+                        make_decomp_K, p, has_aux=True
+                    )
                     return r, (decomp, r, dK_vjp, loss)
-                _, dr_vjp, (decomp, r, dK_vjp, loss) = jax.vjp(make_decomp_r, p, has_aux=True)
+
+                _, dr_vjp, (decomp, r, dK_vjp, loss) = jax.vjp(
+                    make_decomp_r, p, has_aux=True
+                )
                 return loss, (decomp, r, dK_vjp, dr_vjp, loss)
-            grad_loss, (decomp, r, dK_vjp, dr_vjp, loss) = jax.grad(make_decomp_loss, has_aux=True)(p)
+
+            grad_loss, (decomp, r, dK_vjp, dr_vjp, loss) = jax.grad(
+                make_decomp_loss, has_aux=True
+            )(p)
             unpack = lambda f: lambda x: f(x)[0]
             dK_vjp = unpack(dK_vjp)
             dr_vjp = unpack(dr_vjp)
@@ -706,7 +758,7 @@ class empbayes_fit(Logger):
         def make_jac_args(p, **kw):
             if forward:
                 out = make_gradfwd_fisher_args(p, **kw)
-                out[2].update(gradfwd=True) # out[2] is lkw
+                out[2].update(gradfwd=True)  # out[2] is lkw
             else:
                 out = make_gradrev_args(p, **kw)
                 out[2].update(gradrev=True)
@@ -714,17 +766,19 @@ class empbayes_fit(Logger):
 
         @wrap
         def fun_and_jac(p, **kw):
-            """ `fun` and its gradient """
+            """`fun` and its gradient."""
             decomp, r, lkw, loss, grad_loss = make_jac_args(p, **kw)
-            cond, gradrev, gradfwd, _, _ = decomp.minus_log_normal_density(r, value=True, **lkw)
+            cond, gradrev, gradfwd, _, _ = decomp.minus_log_normal_density(
+                r, value=True, **lkw
+            )
             post = cond + prior(p) + loss
             grad_cond = gradfwd if forward else gradrev
             grad_post = grad_cond + grad_prior(p) + grad_loss
             return timer.partial((post, grad_post))
-        
+
         @wrap
         def jac(p, **kw):
-            """ gradient of fun """
+            """Gradient of fun."""
             decomp, r, lkw, _, grad_loss = make_jac_args(p, **kw)
             _, gradrev, gradfwd, _, _ = decomp.minus_log_normal_density(r, **lkw)
             grad_cond = gradfwd if forward else gradrev
@@ -733,27 +787,25 @@ class empbayes_fit(Logger):
 
         @wrap
         def fisher(p, **kw):
-            """ fisher matrix """
+            """Fisher matrix."""
             if additional_loss is not None:
                 raise NotImplementedError(
                     'Fisher matrix not implemented with additional_loss. It '
                     'is possible but I did not prioritize it. If you need it, '
-                    'open an issue on github.')
+                    'open an issue on github.'
+                )
             decomp, r, lkw, _, _ = make_gradfwd_fisher_args(p, **kw)
-            _, _, _, fisher_cond, _ = decomp.minus_log_normal_density(r, fisher=True, **lkw)
+            _, _, _, fisher_cond, _ = decomp.minus_log_normal_density(
+                r, fisher=True, **lkw
+            )
             fisher_post = fisher_cond + fisher_prior(p)
             return timer.partial(fisher_post)
-        
+
         # set attributes
         self.gpfactory = gpfactory
         self.gpfactorykw = gpfactorykw
 
-        return timer, {
-            'fun': fun,
-            'jac': jac,
-            'fun&jac': fun_and_jac,
-            'fisher': fisher,
-        }
+        return timer, {'fun': fun, 'jac': jac, 'fun&jac': fun_and_jac, 'fisher': fisher}
 
     def _prepare_minargs(self, method, functions, hpinitial):
         minargs = dict(fun=functions['fun&jac'], jac=True, x0=hpinitial)
@@ -773,13 +825,12 @@ class empbayes_fit(Logger):
         self.log(f'method {method!r}', 2)
         return minargs
 
-
     def _log_totals(self, total, timer, callback, jit, functions):
         times = {
             'gp&cov': timer.totals[0],
             'decomp': timer.totals[1],
             'likelihood': timer.totals[2],
-            'jit': None, # set now and delete later to keep it before 'other'
+            'jit': None,  # set now and delete later to keep it before 'other'
             'other': total - sum(timer.totals.values()),
         }
         if jit:
@@ -808,9 +859,11 @@ class empbayes_fit(Logger):
                 self.log(msg)
 
     def _posterior_covariance(self, method, covariance, minimizer_result, fisher_func):
-        
+
         if covariance == 'auto':
-            if hasattr(minimizer_result, 'hess_inv') or hasattr(minimizer_result, 'hess'):
+            if hasattr(minimizer_result, 'hess_inv') or hasattr(
+                minimizer_result, 'hess'
+            ):
                 covariance = 'minhess'
             else:
                 covariance = 'none'
@@ -827,16 +880,23 @@ class empbayes_fit(Logger):
             if hasattr(minimizer_result, 'hess_inv'):
                 hessinv = minimizer_result.hess_inv
                 if isinstance(hessinv, optimize.LbfgsInvHessProduct):
-                    self.log(f'convert LBFGS({hessinv.n_corrs}) hessian inverse to BFGS as covariance', 2)
+                    self.log(
+                        f'convert LBFGS({hessinv.n_corrs}) hessian inverse to BFGS as covariance',
+                        2,
+                    )
                     cov = self._invhess_lbfgs_to_bfgs(hessinv)
                 elif isinstance(hessinv, numpy.ndarray):
-                    self.log('use minimizer estimate of inverse hessian as covariance', 2)
+                    self.log(
+                        'use minimizer estimate of inverse hessian as covariance', 2
+                    )
                     cov = hessinv
             elif hasattr(minimizer_result, 'hess'):
                 self.log('use minimizer hessian as precision', 2)
                 cov = _linalg.Chol(minimizer_result.hess).ginv()
             else:
-                raise RuntimeError('the minimizer did not return an estimate of the hessian')
+                raise RuntimeError(
+                    'the minimizer did not return an estimate of the hessian'
+                )
 
         elif covariance == 'none':
             cov = numpy.full(minimizer_result.x.size, numpy.nan)
@@ -855,8 +915,8 @@ class empbayes_fit(Logger):
         return bfgs.get_matrix()
 
     class _Callback:
-        """ Iteration callback for scipy.optimize.minimize """
-        
+        """Iteration callback for scipy.optimize.minimize."""
+
         def __init__(self, this, functions, timer, unflat):
             self.it = 0
             self.stamp = time.perf_counter()
@@ -868,7 +928,7 @@ class empbayes_fit(Logger):
             self.tail_overhead_iter = 0
 
         def __call__(self, intermediate_result, arg2=None):
-            
+
             if isinstance(intermediate_result, optimize.OptimizeResult):
                 p = intermediate_result.x
             elif isinstance(intermediate_result, numpy.ndarray):
@@ -879,7 +939,7 @@ class empbayes_fit(Logger):
             self.it += 1
             now = time.perf_counter()
             duration = now - self.stamp
-            
+
             worktime = sum(self.timer.partials.values())
             if worktime:
                 overhead = duration - worktime
@@ -922,8 +982,7 @@ class empbayes_fit(Logger):
             self.stamp = now
             self.timer.reset()
 
-        pattern = re.compile(
-            r'((\d+) days, )?(\d{1,2}):(\d\d):(\d\d(\.\d{6})?)')
+        pattern = re.compile(r'((\d+) days, )?(\d{1,2}):(\d\d):(\d\d(\.\d{6})?)')
 
         @classmethod
         def fmttime(cls, seconds):
@@ -957,7 +1016,7 @@ class empbayes_fit(Logger):
 
         @classmethod
         def fmttimes(cls, times):
-            """ `times` = dict label -> seconds """
+            """`times` = dict label -> seconds."""
             return ', '.join(f'{k} {cls.fmttime(v)}' for k, v in times.items())
 
         def estimate_firstcall_overhead(self):
@@ -978,7 +1037,7 @@ class empbayes_fit(Logger):
             return x.reshape(-1)
         elif hasattr(x, 'buf'):
             return x.buf
-        else: # pragma: no cover
+        else:  # pragma: no cover
             raise NotImplementedError
 
     @staticmethod
@@ -1000,22 +1059,5 @@ class empbayes_fit(Logger):
             # b.buf = x does not work because BufferDict checks that the
             # array is a numpy array
             return b
-        else: # pragma: no cover
+        else:  # pragma: no cover
             raise NotImplementedError
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

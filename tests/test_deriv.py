@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_deriv.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,31 +17,30 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
-from jax import numpy as jnp
-import gvar
-from scipy import stats
 import pytest
 
 import lsqfitgp as lgp
 
-from . import util
 
 def test_manyargs():
     with pytest.raises(ValueError):
         lgp.Deriv(1, 2)
 
+
 def test_alienargs():
     with pytest.raises(TypeError):
         lgp.Deriv((None,))
+
 
 def test_manyintegers():
     with pytest.raises(ValueError):
         lgp.Deriv((1, 2))
 
+
 def test_alienarg():
     with pytest.raises(TypeError):
         lgp.Deriv(object)
+
 
 def test_orphan():
     with pytest.raises(ValueError):
@@ -49,11 +48,14 @@ def test_orphan():
     with pytest.raises(ValueError):
         lgp.Deriv(('ciao', 1))
 
+
 def test_length():
     assert len(lgp.Deriv([1, 'ciao', 2, 'pippo'])) == 2
 
+
 def test_compare():
     assert not lgp.Deriv() == 'cippa'
+
 
 def test_repr():
     assert repr(lgp.Deriv()) == '{}'

@@ -19,33 +19,41 @@
 
 """Run the python code in the rst files specified on the command line, but
 only if the leading indentation is at least 4 spaces and there is a blank line
-after the code block"""
+after the code block
+"""
 
+import contextlib
+import gc
+import os
+import pathlib
 import re
 import sys
 import textwrap
-import contextlib
-import os
-import pathlib
 import warnings
-import gc
 
-import numpy as np
-from matplotlib import pyplot as plt
 import gvar
-import pygments
-from pygments import lexers, formatters
 import jax
+import numpy as np
+import pygments
+from matplotlib import pyplot as plt
+from pygments import formatters, lexers
+
 import lsqfitgp as lgp
 
 warnings.filterwarnings('ignore', r'Negative eigenvalue with ')
 
+
 def pyprint(text):
-    print(pygments.highlight(text, lexers.PythonLexer(), formatters.TerminalFormatter()))
+    print(
+        pygments.highlight(text, lexers.PythonLexer(), formatters.TerminalFormatter())
+    )
+
 
 # a literal block (`::`) of lines indented by at least 4 spaces, possibly
 # separated by blank lines, ended by a blank line
-pattern = re.compile(r'(?m)(?!\.\..+?)^.*?::\n\s*?\n((?: {4,}.*\n)(?:(?:[ \t]*\n)*(?: {4,}.*\n))*)\s*?\n')
+pattern = re.compile(
+    r'(?m)(?!\.\..+?)^.*?::\n\s*?\n((?: {4,}.*\n)(?:(?:[ \t]*\n)*(?: {4,}.*\n))*)\s*?\n'
+)
 
 
 @contextlib.contextmanager
@@ -58,13 +66,14 @@ def chdir(dir):
     finally:
         os.chdir(old_dir)
 
+
 def runcode(file):
 
     file = pathlib.Path(file)
 
     # read source
     text = pathlib.Path(file).read_text()
-    
+
     # reset working environment
     plt.close('all')
     np.random.seed(0)
@@ -72,15 +81,13 @@ def runcode(file):
     globals_dict = {}
     with plt.style.context('tableau-colorblind10', after_reset=True):
         with lgp.switchgvar():
-
             # run code
             for match in pattern.finditer(text):
                 codeblock = match.group(1)
                 print(58 * '-' + '\n')
                 code = textwrap.dedent(codeblock).strip()
                 printcode = '\n'.join(
-                    f' {i + 1:2d}  ' + l
-                    for i, l in enumerate(code.split('\n'))
+                    f' {i + 1:2d}  ' + l for i, l in enumerate(code.split('\n'))
                 )
                 pyprint(printcode)
 
@@ -90,6 +97,7 @@ def runcode(file):
     # cleanup
     gc.collect()
     jax.clear_caches()
+
 
 for file in sys.argv[1:]:
     s = f'*  running {file}  *'

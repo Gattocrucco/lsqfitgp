@@ -2,13 +2,17 @@
 
 import warnings
 
-import lsqfitgp as lgp
+import gvar
 import numpy as np
 from matplotlib import pyplot as plt
-import gvar
+
+import lsqfitgp as lgp
 
 np.random.seed(20220416)
-warnings.filterwarnings('ignore', r'total derivative orders \(\d+, \d+\) greater than kernel minimum \(\d+, \d+\)')
+warnings.filterwarnings(
+    'ignore',
+    r'total derivative orders \(\d+, \d+\) greater than kernel minimum \(\d+, \d+\)',
+)
 
 #### DEFINE MODEL ####
 # for each gluon:
@@ -17,53 +21,46 @@ warnings.filterwarnings('ignore', r'total derivative orders \(\d+, \d+\) greater
 # int_0^1 dx f(x) = [h'(x)]_0^1 = h'(1) - h'(0)
 # int_0^1 dx x f(x) = [xh'(x) - h(x)]_0^1 = h'(1) - h(1) + h(0)
 
-xtype = np.dtype([
-    ('x'    , float),
-    ('gluon', int  ),
-])
+xtype = np.dtype([('x', float), ('gluon', int)])
 
 kernel = lgp.ExpQuad(dim='x') * lgp.White(dim='gluon')
 
 xdata = np.empty((8, 30), xtype)
 xdata['gluon'] = np.arange(8)[:, None]
-xdata[    'x'] = np.linspace(0, 1, 30)
-    
-M = np.random.randn(20, 8, 30) # xdata -> data transform
+xdata['x'] = np.linspace(0, 1, 30)
+
+M = np.random.randn(20, 8, 30)  # xdata -> data transform
 
 xinteg = np.empty((8, 2), xtype)
 xinteg['gluon'] = np.arange(8)[:, None]
-xinteg[    'x'] = [0, 1]
+xinteg['x'] = [0, 1]
 
 suminteg = np.empty(xinteg.shape)
 suminteg[:, 0] = -1
-suminteg[:, 1] =  1
+suminteg[:, 1] = 1
 
 xintegx = np.empty(8, xtype)
 xintegx['gluon'] = np.arange(8)
-xintegx[    'x'] = 1
+xintegx['x'] = 1
 
 #### CREATE GP OBJECT ####
 
-gp = (lgp
-    .GP(kernel)
-
+gp = (
+    lgp.GP(kernel)
     .addx(xdata, 'xdata', deriv=(2, 'x'))
     .addtransf({'xdata': M}, 'data', axes=2)
-
     .addx(xinteg, 'xinteg', deriv='x')
     .addtransf({'xinteg': suminteg}, 'suminteg', axes=2)
-
     .addx(xinteg, 'xintegx0')
     .addx(xintegx[None], 'xintegx1', deriv='x')
-    .addtransf({'xintegx1': np.ones((1, 8)), 'xintegx0': -suminteg}, 'sumintegx', axes=2)
+    .addtransf(
+        {'xintegx1': np.ones((1, 8)), 'xintegx0': -suminteg}, 'sumintegx', axes=2
+    )
 )
 
 #### GENERATE FAKE DATA ####
 
-prior = gp.predfromdata({
-    'suminteg' : 1,
-    'sumintegx': 1,
-}, ['data', 'xdata'])
+prior = gp.predfromdata({'suminteg': 1, 'sumintegx': 1}, ['data', 'xdata'])
 priorsample = next(gvar.raniter(prior))
 
 datamean = priorsample['data']
@@ -74,23 +71,19 @@ data = gvar.gvar(datamean, dataerr)
 # check the integral is one with trapezoid rule
 x = xdata['x']
 y = priorsample['xdata']
-checksum = np.sum((      y[:, 1:] +       y[:, :-1]) / 2 * np.diff(x, axis=1))
+checksum = np.sum((y[:, 1:] + y[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx   f_i(x) =', checksum)
 checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx x f_i(x) =', checksum)
 
 #### FIT ####
 
-pred = gp.predfromdata({
-    'suminteg' :    1,
-    'sumintegx':    1,
-    'data'     : data,
-}, ['data', 'xdata'])
+pred = gp.predfromdata({'suminteg': 1, 'sumintegx': 1, 'data': data}, ['data', 'xdata'])
 
 # check the integral is one with trapezoid rule
 x = xdata['x']
 y = pred['xdata']
-checksum = np.sum((      y[:, 1:] +       y[:, :-1]) / 2 * np.diff(x, axis=1))
+checksum = np.sum((y[:, 1:] + y[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx   f_i(x) =', checksum)
 checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx x f_i(x) =', checksum)

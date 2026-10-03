@@ -1,6 +1,6 @@
 # lsqfitgp/copula/_makedict.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,15 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" defines makedict """
+"""Defines makedict."""
 
 import gvar
 
-from . import _base
+from lsqfitgp.copula import _base
+
 
 def makedict(variables, prefix='__copula_'):
     """
-
     Expand distributions in a dictionary.
 
     Parameters
@@ -51,7 +51,6 @@ def makedict(variables, prefix='__copula_'):
 
     Examples
     --------
-
     Put a `Distr` into a `gvar.BufferDict`:
 
     >>> bd = lgp.copula.makedict({'x': lgp.copula.beta(1, 1)})
@@ -98,9 +97,7 @@ def makedict(variables, prefix='__copula_'):
     >>> lgp.copula.makedict({'x': x, 'y': y})
     ValueError: cross-key occurrences of object(s):
     beta with id 10952248976: <x>, <y.1>
-
     """
-
     # collect all objects and their representations in DistrBase instances
     caches = {}
     for k, v in variables.items():
@@ -119,7 +116,9 @@ def makedict(variables, prefix='__copula_'):
     multiple = ''
     for obj, descrs in allobjects.items():
         if len(descrs) > 1:
-            multiple += f'{obj.__class__.__name__} with id {id(obj)}: {", ".join(descrs)}\n'
+            multiple += (
+                f'{obj.__class__.__name__} with id {id(obj)}: {", ".join(descrs)}\n'
+            )
 
     # raise an error if there are
     if multiple:
@@ -130,8 +129,8 @@ def makedict(variables, prefix='__copula_'):
         if isinstance(v, _base.DistrBase):
             name = str(v._staticdescr).replace('(', '{').replace(')', '}')
             assert '(' not in prefix and ')' not in prefix
-                # gvar does not currently check presence of parentheses, see
-                # https://github.com/gplepage/gvar/issues/39
+            # gvar does not currently check presence of parentheses, see
+            # https://github.com/gplepage/gvar/issues/39
             name = prefix + name
             v.add_distribution(name)
             v = v.gvars()
@@ -139,5 +138,3 @@ def makedict(variables, prefix='__copula_'):
         assert k not in out
         out[k] = v
     return gvar.BufferDict(out)
-
-

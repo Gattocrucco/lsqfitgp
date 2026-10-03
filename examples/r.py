@@ -1,6 +1,6 @@
 # lsqfitgp/examples/r.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,21 +19,21 @@
 
 """
 
-                            EXAMPLE R.
+EXAMPLE R.
 
-    Where we decide to introduce a strong anisotropy despite
-    evidence of its absence.
+Where we decide to introduce a strong anisotropy despite
+evidence of its absence.
 
 """
 
-import lsqfitgp as lgp
-from lsqfitgp import _linalg
-from matplotlib import pyplot as plt
 import numpy as np
-import gvar
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata1d = np.linspace(-4, 4, 10)
 xpred1d = np.linspace(-10, 10, 50)
+
 
 def makegrid(array1d):
     x, y = np.meshgrid(array1d, array1d)
@@ -42,12 +42,13 @@ def makegrid(array1d):
     out['y'] = y.reshape(-1)
     return out
 
+
 xdata = makegrid(xdata1d)
 xpred = makegrid(xpred1d)
 z = np.cos(xdata['x']) * np.cos(xdata['y'])
 
-gp = (lgp
-    .GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=1, dim='y'))
+gp = (
+    lgp.GP(lgp.ExpQuad(scale=3, dim='x') * lgp.ExpQuad(scale=1, dim='y'))
     .addx(xdata, 'pere')
     .addx(xpred, 'banane')
 )
@@ -56,14 +57,24 @@ print('fit...')
 m, cov = gp.predfromdata({'pere': z}, 'banane', raw=True)
 
 print('samples...')
-samples = m + gp.decompose(cov, solver='chol', epsrel=1e-5).correlate(np.random.randn(len(cov)))
+samples = m + gp.decompose(cov, solver='chol', epsrel=1e-5).correlate(
+    np.random.randn(len(cov))
+)
 
 print('plot...')
-fig, ax = plt.subplots(num='r', clear=True, subplot_kw=dict(projection='3d', computed_zorder=False))
+fig, ax = plt.subplots(
+    num='r', clear=True, subplot_kw=dict(projection='3d', computed_zorder=False)
+)
 
 ax.scatter(xdata['x'], xdata['y'], z, color='black', zorder=10)
 plotxpred = xpred.reshape(len(xpred1d), len(xpred1d))
-ax.plot_surface(plotxpred['x'], plotxpred['y'], samples.reshape(plotxpred.shape), alpha=0.85, cmap='viridis')
+ax.plot_surface(
+    plotxpred['x'],
+    plotxpred['y'],
+    samples.reshape(plotxpred.shape),
+    alpha=0.85,
+    cmap='viridis',
+)
 
 ax.view_init(elev=60, azim=30)
 for axis in 'xyz':

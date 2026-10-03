@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/userguide.rst
+.. lsqfitgp/docs/userguide/userguide.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -28,7 +28,7 @@ look at the :ref:`examplesref` chapter.
 .. toctree::
     :maxdepth: 1
     :numbered:
-    
+
     installation.rst
     sine.rst
     kernels.rst

@@ -1,6 +1,6 @@
 # lsqfitgp/examples/i.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,29 +19,26 @@
 
 """
 
-                            EXAMPLE I.
+EXAMPLE I.
 
-    Where, due to obscure political reasons, we insist on forgetting
-    important details that a reasonable man's mind would be fond of
-    recalling later.
+Where, due to obscure political reasons, we insist on forgetting
+important details that a reasonable man's mind would be fond of
+recalling later.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 300)
 y = np.sin(xdata)
 yerr = 0.1
 
-gp = (lgp
-    .GP(lgp.ExpQuad(scale=3))
-    .addx(xdata, 'pere')
-    .addx(xpred, 'banane')
-)
+gp = lgp.GP(lgp.ExpQuad(scale=3)).addx(xdata, 'pere').addx(xpred, 'banane')
 
 uy = gvar.gvar(y + yerr * np.random.randn(len(y)), yerr * np.ones_like(y))
 u = gp.predfromdata({'pere': uy}, 'banane', keepcorr=False)

@@ -1,6 +1,6 @@
 # lsqfitgp/copula/_base.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,14 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" define DistrBase """
+"""Define DistrBase."""
 
 import abc
-import functools
 import collections
+import functools
 
 import gvar
 import numpy
+
 
 class DistrBase(metaclass=abc.ABCMeta):
     r"""
@@ -54,7 +55,7 @@ class DistrBase(metaclass=abc.ABCMeta):
         Return an array of gvars with the appropriate shape for usage with
         `gvar.BufferDict`.
 
-    See also
+    See Also
     --------
     Distr, Copula
 
@@ -71,7 +72,6 @@ class DistrBase(metaclass=abc.ABCMeta):
 
     def partial_invfcn(self, x):
         """
-            
         Map independent Normal variables to the desired distribution.
 
         This function is a generalized ufunc. It is jax traceable and
@@ -87,20 +87,18 @@ class DistrBase(metaclass=abc.ABCMeta):
         -------
         y : (tree of) ``(..., *shape)`` array
             An array of values representing draws of the desired distribution.
-
         """
         return self._partial_invfcn(x)
 
     @abc.abstractmethod
     def _partial_invfcn(self, x):
         pass
-    
+
     def _is_same_family(self, invfcn):
         return getattr(invfcn, '__self__', None).__class__ is self.__class__
 
     def add_distribution(self, name):
         """
-
         Register the distribution for usage with `gvar.BufferDict`.
 
         Parameters
@@ -113,30 +111,29 @@ class DistrBase(metaclass=abc.ABCMeta):
             shape and parameters are identical to those used for the existing
             definition.
 
-        See also
+        See Also
         --------
         gvar.BufferDict.add_distribution, gvar.BufferDict.del_distribution
-
         """
-
         if gvar.BufferDict.has_distribution(name):
             invfcn = gvar.BufferDict.invfcn[name]
             if not self._is_same_family(invfcn):
                 raise ValueError(f'distribution {name} already defined')
             existing = self._named[name]
             if existing != self._staticdescr:
-                raise ValueError('Attempt to overwrite existing'
-                    f' {self.__class__.__name__} distribution with name {name}')
+                raise ValueError(
+                    'Attempt to overwrite existing'
+                    f' {self.__class__.__name__} distribution with name {name}'
+                )
                 # cls._named is not updated by
                 # gvar.BufferDict.del_distribution, but it is not a problem
-        
+
         else:
             gvar.BufferDict.add_distribution(name, self.partial_invfcn)
             self._named[name] = self._staticdescr
-    
+
     def gvars(self):
         """
-
         Return an array of gvars intended as value in a `gvar.BufferDict`.
 
         Returns
@@ -144,15 +141,14 @@ class DistrBase(metaclass=abc.ABCMeta):
         gvars : array of gvars
             An array of i.i.d. standard Normal primary gvars with shape
             `in_shape`.
-
         """
-
         return gvar.gvar(numpy.zeros(self.in_shape), numpy.ones(self.in_shape))
 
     @abc.abstractmethod
     def __repr__(self, path='', cache=None):
-        """ produce a representation where no object appears more than once,
-        later appearances are replaced by a user-friendly identifier """
+        """Produce a representation where no object appears more than once,
+        later appearances are replaced by a user-friendly identifier.
+        """
         if cache is None:
             cache = {}
         if self in cache:
@@ -160,11 +156,12 @@ class DistrBase(metaclass=abc.ABCMeta):
         cache[self] = f'<{path}>'
         return cache
 
-    class _Path(collections.namedtuple('Path', ['path'])): pass
+    class _Path(collections.namedtuple('Path', ['path'])):
+        pass
 
     @abc.abstractmethod
     def _compute_staticdescr(self, path, cache):
-        """ compute static description of self, can be compared """
+        """Compute static description of self, can be compared."""
         if self in cache:
             return cache[self]
         cache[self] = self._Path(path)
@@ -175,7 +172,7 @@ class DistrBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _compute_in_size(self, cache):
-        """ compute input size to partial_invfcn, without double counting """
+        """Compute input size to partial_invfcn, without double counting."""
         if self in cache:
             return 0
         cache.add(self)

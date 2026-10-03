@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/index.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2024, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -43,12 +43,12 @@ Contents
 
 .. toctree::
     :maxdepth: 2
-    
+
     userguide/userguide.rst
     reference/reference.rst
     examplesref.rst
     development/development.rst
-    
+
 * :ref:`genindex`
 * :ref:`search`
 

@@ -1,6 +1,6 @@
 # lsqfitgp/examples/u.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,25 +19,23 @@
 
 """
 
-                            EXAMPLE U.
+EXAMPLE U.
 
-    Where we infer the temporal scale of a process assuming
-    another process is correlated with its derivative.
+Where we infer the temporal scale of a process assuming
+another process is correlated with its derivative.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 data_deriv = 1
 
 time = np.linspace(-5, 5, 10)
-x = np.empty(len(time), dtype=[
-    ('time', float),
-    ('label', int)
-])
+x = np.empty(len(time), dtype=[('time', float), ('label', int)])
 x['time'] = time
 x['label'] = 1
 
@@ -50,18 +48,18 @@ label_scale = 5
 corr = lgp.ExpQuad(scale=label_scale)(0, 1)
 print(f'corr = {corr:.3g}')
 
+
 def makegp(params):
     kernel_time = lgp.ExpQuad(scale=params['time_scale'], dim='time')
     kernel_label = lgp.ExpQuad(scale=label_scale, dim='label')
-    return (lgp
-        .GP(kernel_time * kernel_label)
+    return (
+        lgp.GP(kernel_time * kernel_label)
         .addx(x, 'data', deriv=(data_deriv, 'time'))
         .addx(np.array([(0, 0)], dtype=x.dtype), 'fixed_point')
     )
 
-prior = {
-    'log(time_scale)': gvar.log(gvar.gvar(3, 2))
-}
+
+prior = {'log(time_scale)': gvar.log(gvar.gvar(3, 2))}
 datadict = {'data': data, 'fixed_point': [gvar.gvar(0, 1e2)]}
 params = lgp.empbayes_fit(prior, makegp, datadict, raises=False).p
 print('time_scale:', params['time_scale'])
@@ -71,10 +69,7 @@ xpred = np.empty((2, len(time_pred)), dtype=x.dtype)
 xpred['time'] = time_pred
 xpred['label'][0] = 0
 xpred['label'][1] = 1
-gp = (makegp(gvar.mean(params))
-    .addx(xpred[0], 0)
-    .addx(xpred[1], 1, deriv=(1, 'time'))
-)
+gp = makegp(gvar.mean(params)).addx(xpred[0], 0).addx(xpred[1], 1, deriv=(1, 'time'))
 
 pred = gp.predfromdata(datadict, [0, 1])
 
@@ -91,7 +86,15 @@ for sample in gvar.raniter(pred, 3):
     for deriv in pred:
         ax.plot(time_pred, sample[deriv], color=colors[deriv])
 
-ax.errorbar(time, gvar.mean(data), yerr=gvar.sdev(data), fmt='.', color=colors[data_deriv], alpha=1, label='data')
+ax.errorbar(
+    time,
+    gvar.mean(data),
+    yerr=gvar.sdev(data),
+    fmt='.',
+    color=colors[data_deriv],
+    alpha=1,
+    label='data',
+)
 
 ax.legend(loc='best')
 ax.set_xlabel('time')

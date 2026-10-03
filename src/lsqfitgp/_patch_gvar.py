@@ -1,6 +1,6 @@
 # lsqfitgp/_patch_gvar.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" modifications to the global state of gvar """
+"""Modifications to the global state of gvar."""
 
 import functools
 
@@ -54,7 +54,7 @@ for fname in gvar_ufuncs:
     fboth = functools.singledispatch(fgvar)
     fboth.register(jnp.ndarray, fjax)
     fboth.register(jax.core.Tracer, fjax)
-        # in recent jax, tracers are not virtual subclasses of jax.Array
+    # in recent jax, tracers are not virtual subclasses of jax.Array
     setattr(gvar, fname, fboth)
 
 # reset transformations to support jax arrays

@@ -1,6 +1,6 @@
-# lsqfitgp/tests/test_bcf.py
+# lsqfitgp/tests/bayestree/test_bcf.py
 #
-# Copyright (c) 2024, Giacomo Petrillo
+# Copyright (c) 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,89 +17,103 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" test lgp.bayestree.bcf """
+"""test lgp.bayestree.bcf"""
 
 import numpy as np
-import jax
-from jax import random
-from jax import numpy as jnp
-import statsmodels.api as sm
 import pytest
+import statsmodels.api as sm
+from jax import numpy as jnp
+from jax import random
 
 import lsqfitgp as lgp
+from tests import util
 
-from .. import util
 
 def gen_X(key, p, n):
     return random.uniform(key, (p, n), float, -2, 2)
 
-T = 2 # base period
 
-def ps(X): # treatment probability
+T = 2  # base period
+
+
+def ps(X):  # treatment probability
     minps = 0.05
     ps = 0.5 + 0.5 * jnp.sum(jnp.cos(2 * jnp.pi / (T / 2) * X), axis=0)
     return jnp.clip(ps, minps, 1 - minps)
 
+
 def gen_z(key, X):
     return random.bernoulli(key, ps(X))
 
-def f(X, z): # outcome mean
+
+def f(X, z):  # outcome mean
     mu = jnp.sum(jnp.cos(2 * jnp.pi / T * X), axis=0)
     tau = jnp.sum(jnp.sin(2 * jnp.pi / T * X), axis=0)
     return mu + z * tau
+
 
 def gen_y(key, X, z):
     sigma = 0.1
     return f(X, z) + sigma * random.normal(key, z.shape)
 
+
 def estimate_ps(X, z):
-    """ use a GLM """
+    """Use a GLM"""
     z = np.array(z)
     X = np.concatenate([X, np.ones((1, z.size))]).T
     model = sm.GLM(z, X, family=sm.families.Binomial())
     result = model.fit()
     return result.predict()
 
+
 @pytest.fixture
 def n():
     return 101
+
 
 @pytest.fixture
 def p():
     return 11
 
+
 @pytest.fixture
 def X(n, p, key):
-    key = random.fold_in(key, 0xd9b0963d)
+    key = random.fold_in(key, 0xD9B0963D)
     return gen_X(key, p, n)
+
 
 @pytest.fixture
 def z(X, key):
-    key = random.fold_in(key, 0x1a7c4e8d)
+    key = random.fold_in(key, 0x1A7C4E8D)
     return gen_z(key, X)
+
 
 @pytest.fixture
 def y(z, X, key):
-    key = random.fold_in(key, 0x1391bc96)
+    key = random.fold_in(key, 0x1391BC96)
     return gen_y(key, X, z)
+
 
 @pytest.fixture
 def pihat(X, z):
     return estimate_ps(X, z)
 
+
 @pytest.fixture(params=[1, 2, 3])
 def kw(request, X):
     variant = request.param
-    
+
     if variant == 1:
         return dict()
 
     if variant == 2:
+
         def gpaux(hp, gp):
             kernel = lgp.ExpQuad(scale=hp['scale'], dim='aux')
             return gp.defproc('aux', kernel)
+
         return dict(
-            x_tau=X.T ** 2,
+            x_tau=X.T**2,
             include_pi='both',
             marginalize_mean=False,
             gpaux=gpaux,
@@ -110,11 +124,13 @@ def kw(request, X):
     if variant == 3:
         return dict(include_pi='tau')
 
+
 def getkw(kw, key):
     return kw.get(key, lgp.bayestree.bcf.__init__.__kwdefaults__[key])
 
+
 def test_scale_shift(y, z, X, pihat, key, kw):
-    
+
     kw.update(z=z, x_mu=X.T, pihat=pihat, transf='standardize')
     bcf1 = lgp.bayestree.bcf(y=y, **kw)
 
@@ -127,8 +143,8 @@ def test_scale_shift(y, z, X, pihat, key, kw):
     rng1 = np.random.default_rng(seed.item())
     rng2 = np.random.default_rng(seed.item())
     predkw = dict(transformed=False, samples=1, error=True)
-    y1, = bcf1.pred(**predkw, rng=rng1)
-    y2, = bcf2.pred(**predkw, rng=rng2)
+    (y1,) = bcf1.pred(**predkw, rng=rng1)
+    (y2,) = bcf2.pred(**predkw, rng=rng2)
     util.assert_allclose(y2, offset + y1 * scale, rtol=1e-7, atol=1e-7)
 
     eta1 = bcf1.from_data(y)
@@ -140,14 +156,9 @@ def test_scale_shift(y, z, X, pihat, key, kw):
     else:
         assert hasattr(bcf1.m, 'sdev')
 
+
 def test_to_from_data(y, z, X, pihat, kw, key):
-    kw.update(
-        y=y,
-        z=z,
-        x_mu=X.T,
-        pihat=pihat,
-        transf=['standardize', 'yeojohnson'],
-    )
+    kw.update(y=y, z=z, x_mu=X.T, pihat=pihat, transf=['standardize', 'yeojohnson'])
     bcf = lgp.bayestree.bcf(**kw)
 
     eta = bcf.from_data(y)
@@ -161,12 +172,15 @@ def test_to_from_data(y, z, X, pihat, kw, key):
     y2 = bcf.to_data(eta, hp='sample', rng=rng2)
     util.assert_allclose(y, y2, rtol=1e-15, atol=1e-15)
 
+
 def test_yeojohnson():
-    """ check the Yeo-Johnson transformation """
+    """Check the Yeo-Johnson transformation"""
     testinput = np.linspace(-2, 2, 100)
     lamda = 1.5
     mod = lgp.bayestree._bcf
     np.testing.assert_allclose(
         mod.yeojohnson_inverse(mod.yeojohnson(testinput, lamda), lamda),
-        testinput, atol=0, rtol=1e-14)
-
+        testinput,
+        atol=0,
+        rtol=1e-14,
+    )

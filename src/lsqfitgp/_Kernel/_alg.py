@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel/_alg.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,33 +17,33 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" register algops on CrossKernel and AffineSpan """
+"""Register algops on CrossKernel and AffineSpan."""
 
 import functools
 
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
-from .. import _special
+from lsqfitgp import _special
+from lsqfitgp._Kernel import _util
+from lsqfitgp._Kernel._crosskernel import AffineSpan, CrossKernel
 
-from . import _util
-from ._crosskernel import CrossKernel, AffineSpan
 
 @CrossKernel.register_algop
 def add(tcls, self, other):
     r"""
-    
+
     Sum of kernels.
-    
+
     .. math::
         \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}(x, y), \\
         \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}.
-    
+
     Parameters
     ----------
     other : CrossKernel or scalar
         The other kernel.
-    
+
     """
     core = self.core
     if _util.is_numerical_scalar(other):
@@ -55,21 +55,22 @@ def add(tcls, self, other):
         return NotImplemented
     return self._clone(core=newcore)
 
+
 @CrossKernel.register_algop
 def mul(tcls, self, other):
     r"""
-    
+
     Product of kernels.
-    
+
     .. math::
         \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}(x, y), \\
         \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}.
-    
+
     Parameters
     ----------
     other : CrossKernel or scalar
         The other kernel.
-    
+
     """
     core = self.core
     if _util.is_numerical_scalar(other):
@@ -81,20 +82,21 @@ def mul(tcls, self, other):
         return NotImplemented
     return self._clone(core=newcore)
 
+
 @CrossKernel.register_algop
 def pow(tcls, self, *, exponent):
     r"""
-    
+
     Power of the kernel.
-    
+
     .. math::
         \mathrm{newkernel}(x, y) = \mathrm{kernel}(x, y)^{\mathrm{exponent}}
-    
+
     Parameters
     ----------
     exponent : nonnegative integer
         The exponent. If traced by jax, it must have unsigned integer type.
-    
+
     """
     if _util.is_nonnegative_integer_scalar(exponent):
         core = self.core
@@ -107,17 +109,17 @@ def pow(tcls, self, *, exponent):
 @CrossKernel.register_algop
 def rpow(tcls, self, *, base):
     r"""
-    
+
     Exponentiation of the kernel.
-    
+
     .. math::
         \text{newkernel}(x, y) = \text{base}^{\text{kernel}(x, y)}
-    
+
     Parameters
     ----------
     base : scalar
         A number >= 1. If traced by jax, the value is not checked.
-    
+
     """
     if _util.is_scalar_cond_trueontracer(base, lambda x: x >= 1):
         core = self.core
@@ -125,6 +127,7 @@ def rpow(tcls, self, *, base):
         return self._clone(core=newcore)
     else:
         return NotImplemented
+
 
 CrossKernel.register_ufuncalgop(jnp.tan)
 # CrossKernel.register_ufuncalgop(lambda x: 1 / jnp.sinc(x), '1/sinc')
@@ -156,6 +159,7 @@ def affine_add(tcls, self, other):
         return newself._clone(self.__class__, dynkw=dynkw)
     else:
         return newself
+
 
 @functools.partial(AffineSpan.register_algop, transfname='mul')
 def affine_mul(tcls, self, other):

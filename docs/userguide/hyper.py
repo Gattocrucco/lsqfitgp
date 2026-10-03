@@ -1,10 +1,10 @@
+import gvar  ####
+import numpy as np  ####
 import pymc3 as pm
-import numpy as np ####
-import gvar ####
-from scipy import stats ####
+from scipy import stats  ####
 
-x = np.linspace(-5, 5, 11) ####
-y = np.sin(x) ####
+x = np.linspace(-5, 5, 11)  ####
+y = np.sin(x)  ####
 
 model = pm.Model()
 with model:
@@ -42,5 +42,5 @@ p = params['logsdev']
 prob_gauss = stats.norm.cdf(np.log(1), loc=gvar.mean(p), scale=gvar.sdev(p))
 true_prob = np.sum(df['logsdev'] <= np.log(1)) / len(df)
 print('\nProbability of having sdev < 1:')
-print('prob_gauss {:.3g}'.format(prob_gauss))
-print('true_prob {:.3g}'.format(true_prob))
+print(f'prob_gauss {prob_gauss:.3g}')
+print(f'true_prob {true_prob:.3g}')

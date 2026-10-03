@@ -1,6 +1,6 @@
 # lsqfitgp/examples/g.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,25 +19,26 @@
 
 """
 
-                            EXAMPLE G.
+EXAMPLE G.
 
-    Where two ways of expressing one's beliefs are compared and found,
-    satisfactorily, to be quite similar.
+Where two ways of expressing one's beliefs are compared and found,
+satisfactorily, to be quite similar.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 200)
 y = np.sin(xdata)
 
 print('make GP...')
-gp = (lgp
-    .GP(lgp.ExpQuad(scale=3))
+gp = (
+    lgp.GP(lgp.ExpQuad(scale=3))
     .addx(xdata, 'data')
     .addx(xpred, 'pred', deriv=0)
     .addx(xpred, 'predderiv', deriv=1)
@@ -56,7 +57,7 @@ for label in umean:
     s = np.sqrt(np.diag(ucov[label, label]))
     patch = ax.fill_between(xpred, m - s, m + s, label=label + ' (raw)', alpha=0.5)
     colors[label] = patch.get_facecolor()[0]
-    
+
 for label in ualt:
     m = gvar.mean(ualt[label])
     s = gvar.sdev(ualt[label])

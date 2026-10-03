@@ -17,18 +17,18 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Generate documentation of kernel transformations """
+"""Generate documentation of kernel transformations"""
 
+import collections
 import inspect
 import pathlib
-import collections
-import textwrap
 import re
+import textwrap
 
-import numpy as np
-import lsqfitgp as lgp
-import tabulate
 import polars as pl
+import tabulate
+
+import lsqfitgp as lgp
 
 out = """\
 .. file generated automatically by lsqfitgp/docs/reference/kernelop.py
@@ -75,7 +75,8 @@ generic = [
     lgp.IsotropicKernel,
 ]
 classes = [
-    obj for obj in vars(lgp).values()
+    obj
+    for obj in vars(lgp).values()
     if inspect.isclass(obj) and issubclass(obj, lgp.CrossKernel)
 ]
 classes.sort(key=lambda c: generic.index(c) if c in generic else len(generic))
@@ -92,30 +93,39 @@ for name, tlist in transfs.items():
         assert t.kind == t0.kind
 
 # define how to print method in table
-kind = {
-    'algop': 'algop',
-    'linop': 'linop',
-    None: 'transf',
-}
+kind = {'algop': 'algop', 'linop': 'linop', None: 'transf'}
+
+
 def get_method(tlist):
     meth = kind[tlist[0].kind]
     return f'`~CrossKernel.{meth}`'
+
 
 # define how to print name in table
 def get_name(name):
     return f'`{name}`_'
 
+
 # define how to print class list in table
 groups = {
-    frozenset({
-        lgp.IsotropicKernel, lgp.StationaryKernel, lgp.Kernel,
-        lgp.CrossKernel, lgp.CrossStationaryKernel, lgp.CrossIsotropicKernel,
-    }): ':ref:`All generic classes <generickernel>`',
+    frozenset(
+        {
+            lgp.IsotropicKernel,
+            lgp.StationaryKernel,
+            lgp.Kernel,
+            lgp.CrossKernel,
+            lgp.CrossStationaryKernel,
+            lgp.CrossIsotropicKernel,
+        }
+    ): ':ref:`All generic classes <generickernel>`'
 }
+
+
 def get_classes(tlist):
     classes = [t.tcls for t in tlist]
     default = ', '.join(f'`{c.__name__}`' for c in classes)
     return groups.get(frozenset(classes), default)
+
 
 # make table
 columns = collections.defaultdict(list)
@@ -125,7 +135,9 @@ for name, tlist in transfs.items():
     columns['Method'].append(get_method(tlist))
     columns['Name'].append(get_name(name))
     columns['Classes'].append(get_classes(tlist))
-table = pl.DataFrame(columns, schema_overrides={'tlist': pl.Object}).sort('Method', 'Name')
+table = pl.DataFrame(columns, schema_overrides={'tlist': pl.Object}).sort(
+    'Method', 'Name'
+)
 
 # write index table to text
 index_table = table.select('Method', 'Name', 'Classes').to_dict()
@@ -137,6 +149,7 @@ Transformations
 ---------------
 """
 
+
 # define how to deduce signature
 def get_sig(name, tlist):
     t = tlist[0]
@@ -144,31 +157,29 @@ def get_sig(name, tlist):
     ps = list(sig.parameters.values())
 
     if t.kind == 'linop':
-        if len(ps) == 1: # xtransf
+        if len(ps) == 1:  # xtransf
             p = ps[0]
-            ps = [
-                inspect.Parameter(prefix + p.name, p.kind)
-                for prefix in 'xy'
-            ]
+            ps = [inspect.Parameter(prefix + p.name, p.kind) for prefix in 'xy']
         else:
-            ps = ps[3:] + ps[1:3] # drop self, switch order
-    
+            ps = ps[3:] + ps[1:3]  # drop self, switch order
+
     elif t.kind == 'algop':
-        if not t.func.__module__.startswith('lsqfitgp'): # external ufunc
-            ps = []
-        elif len(ps) == 1: # ufunc
+        if (
+            not t.func.__module__.startswith('lsqfitgp') or len(ps) == 1
+        ):  # external ufunc
             ps = []
         else:
-            ps = ps[1:] # drop self
-    
+            ps = ps[1:]  # drop self
+
     else:
-        ps = ps[2:] # drop tcls, self
+        ps = ps[2:]  # drop tcls, self
 
     s = str(inspect.Signature(ps)).strip('()')
     if t.kind == 'linop':
         s, last = s.rsplit(',', 1)
         s = s + f'[, {last}]'
     return f"('{name}', {s})"
+
 
 TRY_NATIVE = False
 
@@ -205,7 +216,8 @@ for name, tlist in table.select('name', 'tlist').iter_rows():
 """
 
 # write file
-outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
+outfile = (
+    pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
+)
 print(f'writing to {outfile}...')
 outfile.write_text(out)
-

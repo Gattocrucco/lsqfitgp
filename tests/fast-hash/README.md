@@ -6,7 +6,7 @@ The fast-hash is a simple, robust, and efficient general-purpose hash function.
 
     Simple - ~30 lines of code.
     Robust - Passes all tests of SMHasher(http://code.google.com/p/smhasher).
-    Efficient - Faster than Google MurmurHash2. 
+    Efficient - Faster than Google MurmurHash2.
 
 The fast-hash primarily computes 64-bit and 32-bit hash values. For 128-bit hash functions, I recommend Google MurmurHash3 and SpookyHash. However, they can be an overkill for 64-bit hashing applications.
 
@@ -22,14 +22,14 @@ The fast-hash primarily computes 64-bit and 32-bit hash values. For 128-bit hash
    * Fast incremental JSON parser - https://github.com/bjouhier/i-json.
    * jelly-hash - Low memory multithreaded hash table. https://github.com/noporpoise/jelly-hash.
    * probing - Linear probing hash tables in Go. https://github.com/kho/probing.
-   * mrkcommon - Markiyan's library of "commonly used" functions. https://github.com/mkushnir/mrkcommon. 
+   * mrkcommon - Markiyan's library of "commonly used" functions. https://github.com/mkushnir/mrkcommon.
 
 ## How does it work?
 
 First, interested readers can learn more about the math from the seminar paper:
-http://www.jstatsoft.org/v08/i14/paper. 
+http://www.jstatsoft.org/v08/i14/paper.
 
-##Mix Function 
+##Mix Function
 
 The mix function of the fast-hash consists of two Xorshifts and one multiplication:
 
@@ -51,7 +51,7 @@ Whereas MurmurHash2's mix function has two multiplications and one Xorshift:
 
 Generally, multiplication, which takes tens of CPU clocks, is much more expensive than Xorshift, which takes only several CPU clocks, on almost all platforms. Thus the fast-hash should be more efficient than MurmurHash2, especially when the size of input data grows. Furthermore, the mix function of Murmurhash2 is slightly flawed as it produces biased bits according to the SMHasher results.
 
-## Hash Value of Other Bit Lengths 
+## Hash Value of Other Bit Lengths
 
 To obtain hash values of other bit lengths than 32 or 64, the simplest way is to use bitwise AND to extract bits from the the 64-bit hash value calculated by the fast-hash. Another more robust technique suggested by Knuth in his masterpiece "The Art of Computer Programming Vol2" follows:
 
@@ -60,7 +60,7 @@ Let H be the 64-bit hash value. A 32-bit hash value can be computed using (H - (
     H = (H >> 32) * 2^32 + H & (2^32 - 1)
       = (H >> 32) * (2^32 + 1) - (H >> 32) + H & (2^32 - 1)
 
-## Results 
+## Results
 
 The fast-hash was tested using the SMHasher(http://code.google.com/p/smhasher), which is known as the "DieHarder" hash testing. The test results show that the fast-hash is a better choice than Google MurmurHash2 (slightly biased and slower than the fast-hash), Jenkins hash function (moderately biased and notably slower than the fast-hash), and a few other popular ones such as Bernstein, CRC, SDBM, FNV, and etc.
 ```
@@ -134,22 +134,22 @@ Testing 2796416 up-to-3-bit differentials in 256-bit keys -> 64 bit hashes.
 
 [[[ Avalanche Tests ]]]
 
-Testing  32-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 9.372000% !!!!! 
-Testing  40-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.293333% !!!!! 
-Testing  48-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.561333% !!!!! 
-Testing  56-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.418000% !!!!! 
+Testing  32-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 9.372000% !!!!!
+Testing  40-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.293333% !!!!!
+Testing  48-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.561333% !!!!!
+Testing  56-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.418000% !!!!!
 Testing  64-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 0.734667%
 Testing  72-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 0.724000%
 Testing  80-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 0.702000%
 Testing  88-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 0.826667%
-Testing  96-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 9.629333% !!!!! 
-Testing 104-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.272667% !!!!! 
-Testing 112-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.328667% !!!!! 
-Testing 120-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.716667% !!!!! 
+Testing  96-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 9.629333% !!!!!
+Testing 104-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.272667% !!!!!
+Testing 112-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.328667% !!!!!
+Testing 120-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 12.716667% !!!!!
 Testing 128-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 0.724000%
 Testing 136-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 0.682667%
 Testing 144-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 0.719333%
-Testing 152-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 1.038000% !!!!! 
+Testing 152-bit keys ->  64-bit hashes,   300000 reps.......... worst bias is 1.038000% !!!!!
 *********FAIL*********
 
 [[[ Keyset 'Cyclic' Tests ]]]

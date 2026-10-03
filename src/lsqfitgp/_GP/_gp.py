@@ -1,6 +1,6 @@
 # lsqfitgp/_GP/_gp.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import _base, _compute, _elements, _processes
+from lsqfitgp._GP import _base, _compute, _elements, _processes
+
 
 class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
     """
-    
     Object that represents a Gaussian process.
 
     A `GP` is structured like a pair of dictionaries, one for "processes", and
@@ -32,7 +32,7 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
 
     The methods to define processes start with "def", while those to define
     elements starts with "add". The basic methods are `defproc` and `addx`.
-    
+
     A `GP` object is immutable. Methods that modify the Gaussian process return
     a new object which differs only in the requested modification, leaving the
     original untouched.
@@ -66,6 +66,11 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
         inputs.
     **kw
         Additional keyword arguments are passed to the solver, see `decompose`.
+
+    Attributes
+    ----------
+    DefaultProcess :
+        Key that identifies the default process.
 
     Methods
     -------
@@ -103,15 +108,10 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
         Compute the probability density.
     decompose
         Decompose a pos. semidef. matrix.
-
-    Attributes
-    ----------
-    DefaultProcess :
-        Key that identifies the default process.
-    
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         covfun=None,
         *,
         solver='chol',
@@ -125,5 +125,11 @@ class GP(_compute.GPCompute, _elements.GPElements, _processes.GPProcesses):
     ):
         _base.GPBase.__init__(self, checkfinite=checkfinite, checklin=checklin)
         _processes.GPProcesses.__init__(self, covfun=covfun)
-        _elements.GPElements.__init__(self, checkpos=checkpos, checksym=checksym, posepsfac=posepsfac, halfmatrix=halfmatrix)
+        _elements.GPElements.__init__(
+            self,
+            checkpos=checkpos,
+            checksym=checksym,
+            posepsfac=posepsfac,
+            halfmatrix=halfmatrix,
+        )
         _compute.GPCompute.__init__(self, solver=solver, solverkw=kw)

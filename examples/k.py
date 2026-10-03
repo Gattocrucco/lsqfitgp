@@ -1,6 +1,6 @@
 # lsqfitgp/examples/k.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,25 +19,26 @@
 
 """
 
-                            EXAMPLE K.
+EXAMPLE K.
 
-    Where lady K finds out that every gentleman hides his rougher
-    corners in his derivative.
+Where lady K finds out that every gentleman hides his rougher
+corners in his derivative.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 200)
 y = np.sin(xdata)
 
 print('make GP...')
-gp = (lgp
-    .GP(lgp.Maternp(p=2, scale=3), checkpos=False)
+gp = (
+    lgp.GP(lgp.Maternp(p=2, scale=3), checkpos=False)
     .addx(xdata, 'data')
     .addx(xpred, 'pred')
     .addx(xpred, 'deriv', deriv=1)
@@ -55,7 +56,7 @@ for label in u:
     s = gvar.sdev(u[label])
     patch = ax.fill_between(xpred, m - s, m + s, label=label, alpha=0.5)
     colors[label] = patch.get_facecolor()[0]
-    
+
 print('samples...')
 for sample in gvar.raniter(u, 1):
     for label in u:

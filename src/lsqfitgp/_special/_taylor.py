@@ -23,6 +23,7 @@ import jax
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
+
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1, 2, 3))
 def taylor(coefgen, args, n, m, x):
     """
@@ -30,15 +31,16 @@ def taylor(coefgen, args, n, m, x):
     args : tuple = additional arguments to coefgen
     n : int = derivation order
     m : int = number of coefficients used
-    x : argument
+    x : argument.
     """
     c = coefgen(n, n + m, *args)
     k = jnp.arange(n, n + m)
     c = c * jnp.exp(jspecial.gammaln(1 + k) - jspecial.gammaln(1 + k - n))
     return jnp.polyval(c[::-1], x)
 
+
 @taylor.defjvp
 def taylor_jvp(coefgen, args, n, m, primals, tangents):
-    x, = primals
-    xt, = tangents
+    (x,) = primals
+    (xt,) = tangents
     return taylor(coefgen, args, n, m, x), taylor(coefgen, args, n + 1, m, x) * xt

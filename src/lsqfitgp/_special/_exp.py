@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_exp.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -20,6 +20,7 @@
 import jax
 from jax import numpy as jnp
 
+
 @jax.custom_jvp
 @jax.jit
 def expm1x(x):
@@ -32,12 +33,13 @@ def expm1x(x):
     coef = jnp.array(1, x.dtype) / f[::-1]
     smallx = x * x * jnp.polyval(coef, x, unroll=n)
     return jnp.where(jnp.abs(x) < 1, smallx, jnp.expm1(x) - x)
-    
+
     # see also the GSL
     # https://www.gnu.org/software/gsl/doc/html/specfunc.html#relative-exponential-functions
 
+
 @expm1x.defjvp
 def _expm1x_jvp(p, t):
-    x, = p
-    xt, = t
+    (x,) = p
+    (xt,) = t
     return expm1x(x), jnp.expm1(x) * xt

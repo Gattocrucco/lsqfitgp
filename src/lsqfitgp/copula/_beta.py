@@ -1,6 +1,6 @@
 # lsqfitgp/copula/_beta.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,16 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" JAX-compatible implementation of the beta distribution """
+"""JAX-compatible implementation of the beta distribution."""
 
 import functools
 
-from scipy import special
 import jax
-from jax.scipy import special as jspecial
 from jax import numpy as jnp
+from jax.scipy import special as jspecial
+from scipy import special
 
-from .. import _jaxext
+from lsqfitgp import _jaxext
+
 
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1))
 def betaincinv(a, b, y):
@@ -35,22 +36,23 @@ def betaincinv(a, b, y):
     y = jnp.asarray(y)
     dtype = _jaxext.float_type(a.dtype, b.dtype, y.dtype)
     return _jaxext.pure_callback_ufunc(
-        lambda *args: special.betaincinv(*args).astype(dtype),
-        dtype, a, b, y,
+        lambda *args: special.betaincinv(*args).astype(dtype), dtype, a, b, y
     )
+
 
 dIdx_ = _jaxext.elementwise_grad(jspecial.betainc, 2)
 
+
 @betaincinv.defjvp
 def betaincinv_jvp(a, b, primals, tangents):
-    y, = primals
-    yt, = tangents
+    (y,) = primals
+    (yt,) = tangents
     x = betaincinv(a, b, y)
     dIdx = dIdx_(a, b, x)
     return x, yt / dIdx
 
+
 class beta:
-    
     @staticmethod
     def ppf(q, a, b):
         return betaincinv(a, b, q)

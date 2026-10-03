@@ -1,6 +1,6 @@
 # lsqfitgp/tests/copula/test_makedict.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,18 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" test copula.makedict """
+"""test copula.makedict"""
 
-from jax import test_util
-from scipy import stats
 import pytest
-import numpy as np
-from pytest import mark
 
 from lsqfitgp import copula
 
+
 def test_dependencies():
-    """ check that makedict forbids interdependencies between the keys """
+    """Check that makedict forbids interdependencies between the keys"""
     x = copula.beta(1, 1)
     y = copula.beta(1, x)
     with pytest.raises(ValueError):

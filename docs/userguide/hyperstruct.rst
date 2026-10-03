@@ -1,4 +1,4 @@
-.. lsqfitgp/docs/hyperstruct.rst
+.. lsqfitgp/docs/userguide/hyperstruct.rst
 ..
 .. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
@@ -41,7 +41,7 @@ recovers the correct hyperparameters. ::
     import gvar
     import lsqfitgp as lgp
     from matplotlib import pyplot as plt
-    
+
     def makepoints(time):
         points = np.empty((2, len(time)), dtype=[
             ('time', float),
@@ -50,40 +50,40 @@ recovers the correct hyperparameters. ::
         points['time'] = time
         points['series'] = np.arange(2)[:, None]
         return points
-    
+
     time = np.arange(20)
-    
+
     def makegp(hp):
         delay = hp['delay']
         corr = hp['corr']
         scale = hp['scale']
-        
+
         kernel = lgp.ExpQuad(dim='time', scale=scale)
         cov = np.array([[1, corr], [corr, 1]])
         kernel *= lgp.Categorical(dim='series', cov=cov)
-        
+
         gp = lgp.GP(kernel)
-        
+
         points = makepoints(time)
         points['time'][0] -= delay
         return gp.addx(points, 'data')
-    
+
     truehp = {
         'delay': 10,
         'corr': 0.70,
         'scale': 3
     }
-    
+
     gp = makegp(truehp)
     prior = gp.prior('data')
     data = gvar.sample(prior)
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example')
-    
+
     ax.plot(time, data[0], '.k', label='cats')
     ax.plot(time, data[1], 'xk', label='cars')
     ax.legend()
-    
+
     fig.savefig('hyperstruct1.png')
 
 .. image:: hyperstruct1.png
@@ -117,28 +117,28 @@ values into a numpy structured array without assigning to it. For this reason,
 assigning to fields without breaking :mod:`jax`::
 
     from jax import numpy as jnp
-    
+
     def makegp(hp):
         delay = hp['delay']
         corr = hp['corr']
         scale = hp['scale']
-        
+
         kernel = lgp.ExpQuad(dim='time', scale=scale)
         cov = jnp.array([[1, corr], [corr, 1]]) # <- jax numpy
         kernel *= lgp.Categorical(dim='series', cov=cov)
-        
+
         gp = lgp.GP(kernel)
-        
+
         points = makepoints(time)
         points = lgp.StructuredArray(points)
         points = points.at['time'].set(jnp.array([time - delay, time]))
         #                              ~~~ jax numpy
         # this creates a copy of the array with the modified field
         return gp.addx(points, 'data')
-    
+
     fit = lgp.empbayes_fit(hprior, makegp, {'data': data}, raises=False)
         # we use raises=False because the minimizer is a bit picky.
-    
+
     for k in truehp:
         print(k, truehp[k], fit.p[k])
 
@@ -154,16 +154,16 @@ It seems to work. Let's plot some samples::
 
     timeplot = np.linspace(0, 19, 200)
     xplot = makepoints(timeplot)
-    
+
     for hpsamp in gvar.raniter(fit.p, 2):
         xplot[0]['time'] = timeplot - hpsamp['delay']
         gp = makegp(hpsamp).addx(xplot, 'plot')
         yplot = gp.predfromdata({'data': data}, 'plot')
-        
+
         for sample in gvar.raniter(yplot, 1):
             ax.plot(timeplot, sample[0], color='blue', alpha=0.5)
             ax.plot(timeplot, sample[1], color='red', alpha=0.5)
-    
+
     fig.savefig('hyperstruct2.png')
 
 .. image:: hyperstruct2.png

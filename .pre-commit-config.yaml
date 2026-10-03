@@ -39,7 +39,7 @@ repos:
   - repo: https://github.com/sbrunner/hooks
     rev: 60041b789c098988bd01ddff70e7e3a31c1700f1  # frozen: 1.8.0
     hooks:
-      # config in .github/copyright.yaml, adapted to the `Copyright (c) 2022,
+      # config in .github/copyright.yaml, adapted to the `Copyright (c) 2022, 2026,
       # 2023, 2024, Giacomo Petrillo` year lists of the GPL headers
       - id: copyright
       - id: copyright-required

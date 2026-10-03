@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_meta.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,17 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Tests of the test system """
+"""Tests of the test system"""
 
 import functools
 
-from . import util
+from tests import util
+
 
 class TestTryAgain:
-
     @functools.partial(util.tryagain, method=True)
     def test_warning_nonstring(self):
-        """ Check that exceptions with non-str args are formatted correctly """
+        """Check that exceptions with non-str args are formatted correctly"""
         fail = getattr(self, 'fail', True)
         if fail:
             self.fail = False

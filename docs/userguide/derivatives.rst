@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/derivatives.rst
+.. lsqfitgp/docs/userguide/derivatives.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -39,7 +39,7 @@ automatic derivative calculations are implemented with `jax
     import lsqfitgp as lgp
     import numpy as np
     import gvar
-    
+
     gp = lgp.GP(lgp.ExpQuad())
     x = np.linspace(-5, 5, 200)
     gp = (gp
@@ -51,18 +51,18 @@ We said ``deriv=1`` to :meth:`~GP.addx`, easy as that. Let's plot a sample from
 the prior::
 
     from matplotlib import pyplot as plt
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example')
-    
+
     y = gp.prior()
     sample = gvar.sample(y)
-    
+
     ax.plot(x, sample['foo'], label='function')
     ax.plot(x, sample['bar'], label='derivative', linestyle='--')
     ax.axhline(0, linestyle=':', color='gray', zorder=-1)
-    
+
     ax.legend()
-    
+
     fig.savefig('derivatives1.png')
 
 .. image:: derivatives1.png
@@ -98,10 +98,10 @@ correspond to minima/maxima of the function. Let's check this more accurately::
     condition = np.diff(np.sign(sample['bar'])) != 0
     xcenter = 1/2 * (x[1:] + x[:-1])
     zeros = xcenter[condition]
-    
+
     for zero in zeros:
         ax.axvline(zero, linestyle=':', color='gray', zorder=-1)
-    
+
     fig.savefig('derivatives2.png')
 
 .. image:: derivatives2.png
@@ -121,34 +121,34 @@ names to the points::
     y = np.cos(x) # we got bored of sines already
     y += yerr * np.random.randn(len(x))
     y = gvar.gvar(y, yerr * np.ones(len(x)))
-    
+
     gp = (lgp
         .GP(lgp.ExpQuad(scale=2))
         .addx(x, 'data')
         .addx(0, 'maximum-slope', deriv=1) # the cosine maximum is in 0
         .addx(0, 'maximum-curvature', deriv=2)
     )
-    
+
     xplot = np.linspace(-6, 6, 200)
     gp = gp.addx(xplot, 'plot')
-    
+
     given = {
-        'data': y,  
+        'data': y,
         'maximum-slope': 0, # exactly zero
         'maximum-curvature': gvar.gvar(-1, 0.3) # -1 ± 0.3
     }
-    
+
     ypost = gp.predfromdata(given)
-    
+
     ax.cla()
-    
+
     ax.errorbar(x, gvar.mean(y), yerr=gvar.sdev(y), fmt='.k', capsize=2)
     for sample in gvar.raniter(ypost, 4):
         deriv2 = sample['maximum-curvature']
         ax.plot(xplot, sample['plot'], label='deriv2 = {:.2f}'.format(deriv2))
-    
+
     ax.legend()
-    
+
     fig.savefig('derivatives3.png')
 
 .. image:: derivatives3.png

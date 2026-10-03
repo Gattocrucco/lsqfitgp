@@ -1,6 +1,6 @@
 .. lsqfitgp/docs/reference/gp.rst
 ..
-.. Copyright (c) 2020, 2022, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..

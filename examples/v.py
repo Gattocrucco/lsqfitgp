@@ -1,6 +1,6 @@
 # lsqfitgp/examples/v.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,16 +19,17 @@
 
 """
 
-                            EXAMPLE V.
+EXAMPLE V.
 
-    Where we go on an expedition to survey the many and wondrous
-    kernels that inhabit our software.
+Where we go on an expedition to survey the many and wondrous
+kernels that inhabit our software.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 fig, ax = plt.subplots(num='v', clear=True)
 
@@ -37,9 +38,9 @@ kernels = [
     ['cos', lgp.ExpQuad(scale=3) * lgp.Cos()],
     ['wiener', lgp.Wiener()],
     ['fb1/2', lgp.FracBrownian()],
-    ['fb1/10', lgp.FracBrownian(H=1/10)],
-    ['fb9/10', lgp.FracBrownian(H=9/10)],
-    ['fb0.99', lgp.FracBrownian(H=99/100)],
+    ['fb1/10', lgp.FracBrownian(H=1 / 10)],
+    ['fb9/10', lgp.FracBrownian(H=9 / 10)],
+    ['fb0.99', lgp.FracBrownian(H=99 / 100)],
     ['NN', lgp.NNKernel(loc=10)],
     ['Zeta(nu=0.5)', lgp.Zeta(nu=0.5, scale=10)],
     ['Zeta(nu=1.5)', lgp.Zeta(nu=1.5, scale=10)],

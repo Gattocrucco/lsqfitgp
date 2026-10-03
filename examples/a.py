@@ -1,6 +1,6 @@
 # lsqfitgp/examples/a.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,24 +19,25 @@
 
 """
 
-                            EXAMPLE A.
+EXAMPLE A.
 
-    Where the oscillating nature of an unknown function is revealed
-    from but a few points, though only to a certain distance.
+Where the oscillating nature of an unknown function is revealed
+from but a few points, though only to a certain distance.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 300)
 y = np.sin(xdata)
 
-u = (lgp
-    .GP(lgp.ExpQuad(scale=3))
+u = (
+    lgp.GP(lgp.ExpQuad(scale=3))
     .addx(xdata, 'pere')
     .addx(xpred, 'banane')
     .predfromdata({'pere': y}, 'banane')

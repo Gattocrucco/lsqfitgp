@@ -1,6 +1,6 @@
 # lsqfitgp/tests/linalg/test_seqalg.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -20,6 +20,7 @@
 import pytest
 
 from lsqfitgp._linalg import _seqalg
+
 
 def test_acausal_alg():
     with pytest.raises(ValueError):

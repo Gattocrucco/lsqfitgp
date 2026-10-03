@@ -1,6 +1,6 @@
 # lsqfitgp/_patch_jax.py
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,20 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" modifications to the global state of jax """
+"""Modifications to the global state of jax."""
 
-from jax import config
-from jax import tree_util
 import gvar
 import numpy
+from jax import config, tree_util
 
-config.update("jax_enable_x64", True)
+config.update('jax_enable_x64', True)
+
 
 class BufferDictPyTreeDef:
-
     @staticmethod
     def _skeleton(bd):
-        """ Return a memoryless BufferDict with the same layout as `bd` """
+        """Return a memoryless BufferDict with the same layout as `bd`."""
         return gvar.BufferDict(bd, buf=numpy.empty(bd.buf.shape, []))
         # BufferDict mirrors the data type of the _buf attribute, so we do not
         # need to preserve it to maintain consistency. buf is not copied.
@@ -57,14 +56,15 @@ class BufferDictPyTreeDef:
 
     @classmethod
     def unflatten(cls, self, children):
-        buf, = children
+        (buf,) = children
         new = cls._skeleton(self.skeleton)
         # copy the skeleton to permit multiple unflattening
         new._extension = {}
         new._buf = buf
         return new
 
+
 # register BufferDict as a pytree
-tree_util.register_pytree_node(gvar.BufferDict, BufferDictPyTreeDef.flatten, BufferDictPyTreeDef.unflatten)
-
-
+tree_util.register_pytree_node(
+    gvar.BufferDict, BufferDictPyTreeDef.flatten, BufferDictPyTreeDef.unflatten
+)

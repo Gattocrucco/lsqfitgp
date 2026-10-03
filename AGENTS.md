@@ -85,7 +85,7 @@ Other directories:
     - for some heavily used big (sub)modules, e.g., `from jax import numpy as jnp`, `from jax import random; random.foo` is preferred to `from jax.random import foo, foo1, foo2, ..., foo999999`.
 - **Headers:** all source files carry a GPL-3 license header
     - the first line is a comment with the path of the file, `lsqfitgp/<path relative to src/>` for files in the package, `lsqfitgp/<path relative to the repository>` otherwise (checked by `make lint`)
-    - the copyright notice lists the years, e.g. `Copyright (c) 2022, 2023, 2024, Giacomo Petrillo`
+    - the copyright notice lists the years, e.g. `Copyright (c) 2022, 2023, 2024, 2026, Giacomo Petrillo`
     - when creating a new file, use only the current year for the copyright notice
 - **docstrings:**
     - numpydoc convention, rendered with the sphinx `numpydoc` extension

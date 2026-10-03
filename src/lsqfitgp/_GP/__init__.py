@@ -1,6 +1,6 @@
 # lsqfitgp/_GP/__init__.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,6 +17,4 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from ._gp import GP
-
-
+from lsqfitgp._GP._gp import GP

@@ -1,6 +1,6 @@
 # lsqfitgp/tests/test_fit.py
 #
-# Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,20 +19,21 @@
 
 import sys
 
-import numpy as np
-from jax import numpy as jnp
 import gvar
-from scipy import stats
+import numpy as np
 import pytest
+from jax import numpy as jnp
 from pytest import mark
+from scipy import stats
 
 import lsqfitgp as lgp
-from . import util
+from tests import util
 
 FITKW = dict()
 
+
 def flat(g):
-    """convert dictionary or array to 1D array"""
+    """Convert dictionary or array to 1D array"""
     if hasattr(g, 'buf'):
         return g.buf
     elif hasattr(g, 'keys'):
@@ -40,15 +41,17 @@ def flat(g):
     else:
         return np.reshape(g, -1)
 
+
 def quad(A, v):
-    """compute v.T @ A^-1 @ v"""
+    """Compute v.T @ A^-1 @ v"""
     w, u = np.linalg.eigh(A)
     utv = u.T @ v
     eps = len(A) * 1e-12 * np.max(w)
     return (utv.T / np.maximum(w, eps)) @ utv
 
+
 def chisq_test(g, alpha):
-    """chisquare test on g being 0"""
+    """Chisquare test on g being 0"""
     g = flat(g)
     mean = gvar.mean(g)
     cov = gvar.evalcov(g)
@@ -57,51 +60,55 @@ def chisq_test(g, alpha):
     assert stats.chi2(n).sf(q) > alpha / 2
     assert stats.chi2(n).cdf(q) > alpha / 2
 
+
 def check_fit(hyperprior, gpfactory, alpha=1e-5):
-    """do a fit with empbayes_fit and check the fitted hyperparameters
-    are compatible with the ones used to generate the data"""
-    
+    """Do a fit with empbayes_fit and check the fitted hyperparameters
+    are compatible with the ones used to generate the data
+    """
     # generate hyperparameters
     truehp = gvar.sample(hyperprior)
-    
+
     # generate data
     gp = gpfactory(truehp)
     data = gvar.sample(gp.prior())
-        
+
     # run fit
     fit = lgp.empbayes_fit(hyperprior, gpfactory, data, raises=False, **FITKW)
-    
+
     # check fit result against hyperparameters
     chisq_test(fit.p - truehp, alpha)
 
+
 @mark.xfail(reason='I guess Laplace approximation bad for this model. Seen passing.')
 def test_period():
-    hp = {
-        'log(scale)': gvar.log(gvar.gvar(1, 0.1))
-    }
+    hp = {'log(scale)': gvar.log(gvar.gvar(1, 0.1))}
     x = np.linspace(0, 6, 10)
+
     def gpfactory(hp):
         return lgp.GP(lgp.Periodic(scale=hp['scale'])).addx(x, 'x')
+
     check_fit(hp, gpfactory)
 
+
 def test_scale():
-    hp = {
-        'log(scale)': gvar.log(gvar.gvar(3, 0.2))
-    }
+    hp = {'log(scale)': gvar.log(gvar.gvar(3, 0.2))}
     x = np.linspace(0, 2 * np.pi * 5, 20)
+
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad(scale=hp['scale'])).addx(x, 'x')
+
     check_fit(hp, gpfactory, alpha=1e-7)
 
+
 def test_sdev():
-    hp = {
-        'log(sdev)': gvar.log(gvar.gvar(1, 1))
-    }
+    hp = {'log(sdev)': gvar.log(gvar.gvar(1, 1))}
     x = np.linspace(0, 5, 10)
+
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
+
     check_fit(hp, gpfactory, alpha=1e-8)
-    
+
 
 def test_scale_sdev():
     hp = {
@@ -109,51 +116,56 @@ def test_scale_sdev():
         'log(sdev)': gvar.log(gvar.gvar(1, 1)),
     }
     x = np.linspace(0, 2 * np.pi * 5, 20)
+
     def gpfactory(hp):
         kernel = hp['sdev'] ** 2 * lgp.ExpQuad(scale=hp['scale'])
         return lgp.GP(kernel).addx(x, 'x')
+
     check_fit(hp, gpfactory, alpha=1e-7)
 
+
 def test_flat_scalar():
-    hp = gvar.BufferDict({
-        'log(sdev)': gvar.log(gvar.gvar(1, 1)),
-    })
+    hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
-    
+
     def gpfactory1(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
+
     def gpfactory2(hp):
         return lgp.GP(lgp.ExpQuad() * jnp.exp(hp[0]) ** 2).addx(x, 'x')
+
     def gpfactory3(hp):
         return lgp.GP(lgp.ExpQuad() * jnp.exp(hp) ** 2).addx(x, 'x')
-    
+
     truehp = gvar.sample(hp)
     truegp = gpfactory1(truehp)
     trueprior = truegp.prior()
     data = gvar.sample(trueprior)
-    
+
     kw = dict(raises=False, **FITKW)
     fit1 = lgp.empbayes_fit(hp, gpfactory1, data, **kw)
     fit2 = lgp.empbayes_fit(hp.buf, gpfactory2, data, **kw)
     fit3 = lgp.empbayes_fit(hp.buf[0], gpfactory3, data, **kw)
-    
+
     util.assert_similar_gvars(fit1.p.buf[0], fit2.p[0], fit3.p)
 
+
 def test_method():
-    
-    hp = gvar.BufferDict({
-        'log(sdev)': gvar.log(gvar.gvar(1, 1))
-    })
+
+    hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
+
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
+
     truehp = gvar.sample(hp)
     truegp = gpfactory(truehp)
     trueprior = truegp.prior()
     data_fixed = gvar.sample(trueprior)
+
     def data_variable(hp):
         return {k: v + hp['log(sdev)'] for k, v in data_fixed.items()}
-    
+
     for data in [data_fixed, data_variable]:
         fits = []
         kws = [
@@ -175,43 +187,57 @@ def test_method():
         for fit in fits[1:]:
             util.assert_allclose(fit.minresult.x, p, atol=1e-5)
 
+
 def test_checks():
     with pytest.raises(KeyError):
-        lgp.empbayes_fit(gvar.gvar(0, 1), lambda: None, lambda: None, method='cippa', **FITKW)
+        lgp.empbayes_fit(
+            gvar.gvar(0, 1), lambda: None, lambda: None, method='cippa', **FITKW
+        )
     with pytest.raises(RuntimeError) as err:
+
         def makegp(x):
             return lgp.GP(lgp.ExpQuad()).addx(x, 'x')
-        lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0.}, minkw=dict(options=dict(maxiter=0)), **FITKW)
+
+        lgp.empbayes_fit(
+            gvar.gvar(0, 1),
+            makegp,
+            {'x': 0.0},
+            minkw=dict(options=dict(maxiter=0)),
+            **FITKW,
+        )
     assert 'minimization failed: ' in str(err.value)
+
 
 def test_int_data():
     def makegp(x):
         return lgp.GP(lgp.ExpQuad()).addx(x, 'x')
+
     lgp.empbayes_fit(gvar.gvar(0, 1), makegp, {'x': 0}, **FITKW)
 
+
 def test_data_formats():
-    """ check that presenting data in different formats does not change the
-    result """
-    
-    hp = gvar.BufferDict({
-        'log(sdev)': gvar.log(gvar.gvar(1, 1))
-    })
+    """Check that presenting data in different formats does not change the
+    result
+    """
+    hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
+
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
+
     truehp = gvar.sample(hp)
     truegp = gpfactory(truehp)
     trueprior = truegp.prior()
-    
+
     def makeerr(bd, err):
         return gvar.BufferDict(bd, buf=np.full_like(bd.buf, err))
-    
+
     data_noerr = gvar.sample(trueprior)
     error = makeerr(data_noerr, 0.1)
     zeroerror = makeerr(data_noerr, 0)
     zerocov = gvar.evalcov(gvar.gvar(data_noerr, zeroerror))
     data_err = gvar.make_fake_data(gvar.gvar(data_noerr, error))
-    
+
     datas = [
         [
             data_noerr,
@@ -232,7 +258,7 @@ def test_data_formats():
             lambda _: (gvar.mean(data_err), gvar.evalcov(data_err)),
         ],
     ]
-    
+
     for datasets in datas:
         fits = []
         for data in datasets:
@@ -243,16 +269,15 @@ def test_data_formats():
         for fit in fits[1:]:
             util.assert_allclose(fit.minresult.x, p, atol=1e-6)
 
+
 def test_loss_zero():
-    """ check that adding a zero loss function does not change the result """
-    
-    hp = gvar.BufferDict({
-        'log(sdev)': gvar.log(gvar.gvar(1, 1))
-    })
+    """Check that adding a zero loss function does not change the result"""
+    hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
+
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
-    
+
     truehp = gvar.sample(hp)
     truegp = gpfactory(truehp)
     trueprior = truegp.prior()
@@ -263,12 +288,9 @@ def test_loss_zero():
         gpfactory=gpfactory,
         data=data,
         minkw=dict(method='bfgs'),
-            # for backward compatibility when I change the default to l-bfgs-b
+        # for backward compatibility when I change the default to l-bfgs-b
     )
-    varying_args = [
-        dict(),
-        dict(additional_loss=lambda _: 0.),
-    ]
+    varying_args = [dict(), dict(additional_loss=lambda _: 0.0)]
 
     fits = []
     for kw in varying_args:
@@ -278,17 +300,17 @@ def test_loss_zero():
     for fit in fits[1:]:
         util.assert_allclose(fit.minresult.fun, f0)
 
+
 def test_loss_offset():
-    """ check that adding a constant loss function changes the function value
-    but not the location of the minimum """
-    
-    hp = gvar.BufferDict({
-        'log(sdev)': gvar.log(gvar.gvar(1, 1))
-    })
+    """Check that adding a constant loss function changes the function value
+    but not the location of the minimum
+    """
+    hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
+
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
-    
+
     truehp = gvar.sample(hp)
     truegp = gpfactory(truehp)
     trueprior = truegp.prior()
@@ -299,27 +321,27 @@ def test_loss_offset():
         gpfactory=gpfactory,
         data=data,
         minkw=dict(method='bfgs'),
-            # for backward compatibility when I change the default to l-bfgs-b
+        # for backward compatibility when I change the default to l-bfgs-b
     )
-    
-    offset = 100.
+
+    offset = 100.0
     fit0 = lgp.empbayes_fit(**common_args, **FITKW)
     fit1 = lgp.empbayes_fit(**common_args, additional_loss=lambda _: offset, **FITKW)
 
     util.assert_allclose(fit0.minresult.fun + offset, fit1.minresult.fun, rtol=1e-13)
     util.assert_allclose(fit0.minresult.x, fit1.minresult.x, rtol=1e-12)
 
+
 def test_loss_shrinkage():
-    """ check that a loss with minimum in a different position moves the
-    result towards there """
-    
-    hp = gvar.BufferDict({
-        'log(sdev)': gvar.log(gvar.gvar(1, 1))
-    })
+    """Check that a loss with minimum in a different position moves the
+    result towards there
+    """
+    hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
+
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
-    
+
     truehp = gvar.sample(hp)
     truegp = gpfactory(truehp)
     trueprior = truegp.prior()
@@ -330,34 +352,37 @@ def test_loss_shrinkage():
         gpfactory=gpfactory,
         data=data,
         minkw=dict(method='bfgs'),
-            # for backward compatibility when I change the default to l-bfgs-b
+        # for backward compatibility when I change the default to l-bfgs-b
     )
 
     fit0 = lgp.empbayes_fit(**common_args, **FITKW)
     loc = (fit0.pmean['log(sdev)'] + 10).item()
-        # .item() is for a shape bug, presumed due to old gvar-old numpy interaction
+
+    # .item() is for a shape bug, presumed due to old gvar-old numpy interaction
     def loss(hp):
         return (hp['log(sdev)'] - loc) ** 2
+
     fit1 = lgp.empbayes_fit(**common_args, additional_loss=loss, **FITKW)
 
     assert fit1.minresult.fun > fit0.minresult.fun
     dist = lambda x, y: np.linalg.norm(x - y)
     assert dist(fit1.minresult.x, loc) < dist(fit0.minresult.x, loc)
 
+
 def test_loss_fisher():
-    """ check that using fisher with a user loss raises """
-    
-    hp = gvar.BufferDict({
-        'log(sdev)': gvar.log(gvar.gvar(1, 1))
-    })
+    """Check that using fisher with a user loss raises"""
+    hp = gvar.BufferDict({'log(sdev)': gvar.log(gvar.gvar(1, 1))})
     x = np.linspace(0, 5, 10)
+
     def gpfactory(hp):
         return lgp.GP(lgp.ExpQuad() * hp['sdev'] ** 2).addx(x, 'x')
-    
+
     truehp = gvar.sample(hp)
     truegp = gpfactory(truehp)
     trueprior = truegp.prior()
     data = gvar.sample(trueprior)
 
     with pytest.raises(NotImplementedError):
-        fit = lgp.empbayes_fit(hp, gpfactory, data, method='fisher', additional_loss=lambda _: 0., **FITKW)
+        fit = lgp.empbayes_fit(
+            hp, gpfactory, data, method='fisher', additional_loss=lambda _: 0.0, **FITKW
+        )

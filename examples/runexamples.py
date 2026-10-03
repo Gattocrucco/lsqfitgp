@@ -1,6 +1,6 @@
 # lsqfitgp/examples/runexamples.py
 #
-# Copyright (c) 2022, 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -18,41 +18,47 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 """Run the scripts given on the command line and saves the figures produced
-in the same directory of each corresponding script."""
+in the same directory of each corresponding script.
+"""
 
-import sys
-import warnings
 import gc
 import pathlib
 import runpy
+import sys
+import warnings
 
+import gvar
+import jax
 import numpy as np
 from matplotlib import pyplot as plt
-import gvar
-import lsqfitgp as lgp
-import jax
 
-warnings.filterwarnings('ignore', r'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure\.')
-warnings.filterwarnings('ignore', r'FigureCanvasAgg is non-interactive, and thus cannot be shown')
+import lsqfitgp as lgp
+
+warnings.filterwarnings(
+    'ignore',
+    r'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure\.',
+)
+warnings.filterwarnings(
+    'ignore', r'FigureCanvasAgg is non-interactive, and thus cannot be shown'
+)
 warnings.filterwarnings('ignore', r'Negative eigenvalue with ')
 
 for file in sys.argv[1:]:
-
     file = pathlib.Path(file)
     print(f'\nrunexamples.py: running {file}...')
-    
+
     # reset working environment and run
     with lgp.switchgvar():
         with plt.style.context('tableau-colorblind10', after_reset=True):
             plt.close('all')
             np.random.seed(0)
             gvar.ranseed(0)
-            
+
             runpy.run_path(str(file))
-            
+
             gc.collect()
             jax.clear_caches()
-    
+
     # save figures
     nums = plt.get_fignums()
     directory = file.parent / 'plot'

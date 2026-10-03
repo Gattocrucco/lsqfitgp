@@ -1,6 +1,6 @@
 # lsqfitgp/_gvarext/__init__.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -21,10 +21,11 @@ import contextlib
 
 import gvar
 
-from ._jacobian import jacobian, from_jacobian
-from ._tabulate import tabulate_together
-from ._ufunc import gvar_gufunc
-from ._format import uformat, fmtspec_kwargs, gvar_format
+from lsqfitgp._gvarext._format import fmtspec_kwargs, gvar_format, uformat
+from lsqfitgp._gvarext._jacobian import from_jacobian, jacobian
+from lsqfitgp._gvarext._tabulate import tabulate_together
+from lsqfitgp._gvarext._ufunc import gvar_gufunc
+
 
 @contextlib.contextmanager
 def switchgvar():
@@ -35,20 +36,19 @@ def switchgvar():
     keeps the gvars created within its context in a separate pool that is freed
     when all such gvars are deleted. They can not be mixed in operations with
     other gvars created outside of the context.
-    
+
     Returns
     -------
     gvar : gvar.GVarFactory
         The new gvar-creating function that uses a new pool. The change is also
         reflected in the global `gvar.gvar`.
 
-    See also
+    See Also
     --------
     gvar.switch_gvar, gvar.restore_gvar
 
     Examples
     --------
-
     >>> x = gvar.gvar(0, 1)
     >>> with lgp.switchgvar():
     >>>     y = gvar.gvar(0, 1)
@@ -58,7 +58,6 @@ def switchgvar():
     >>> p = x + w  # allowed, x and w created in the same pool
     >>> h = x + y  # x and y created in different pools: this will silently
     ...            # fail and possibly crash python immediately or later on
-
     """
     try:
         yield gvar.switch_gvar()

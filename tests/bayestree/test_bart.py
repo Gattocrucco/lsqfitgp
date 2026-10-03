@@ -1,6 +1,6 @@
-# lsqfitgp/tests/test_bart.py
+# lsqfitgp/tests/bayestree/test_bart.py
 #
-# Copyright (c) 2024, Giacomo Petrillo
+# Copyright (c) 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,53 +17,59 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" test lgp.bayestree.bart """
+"""test lgp.bayestree.bart"""
 
-import numpy as np
-import jax
-from jax import random
-from jax import numpy as jnp
 import pytest
+from jax import numpy as jnp
+from jax import random
 
 from lsqfitgp import bayestree
+from tests import util
 
-from .. import util
 
 def gen_X(key, p, n):
     return random.uniform(key, (p, n), float, -2, 2)
+
 
 def f(X):
     T = 2
     return jnp.sum(jnp.cos(2 * jnp.pi / T * X), axis=0)
 
+
 def gen_y(key, X):
     sigma = 0.1
     return f(X) + sigma * random.normal(key, X.shape[1:])
+
 
 @pytest.fixture
 def n():
     return 101
 
+
 @pytest.fixture
 def p():
     return 11
 
+
 @pytest.fixture
 def X(n, p, key):
-    key = random.fold_in(key, 0xd9b0963d)
+    key = random.fold_in(key, 0xD9B0963D)
     return gen_X(key, p, n)
+
 
 @pytest.fixture
 def y(X, key):
-    key = random.fold_in(key, 0x1391bc96)
+    key = random.fold_in(key, 0x1391BC96)
     return gen_y(key, X)
+
 
 @pytest.fixture
 def kw():
     return dict()
 
+
 def test_scale_shift(X, y, kw):
-    
+
     X = X.T
     bart1 = bayestree.bart(X, y, **kw)
 
@@ -75,5 +81,4 @@ def test_scale_shift(X, y, kw):
     m1, cov1 = bart1.pred()
     m2, cov2 = bart2.pred()
     util.assert_allclose(m2, offset + m1 * scale, rtol=1e-10)
-    util.assert_allclose(cov2, cov1 * scale ** 2, rtol=1e-11)
-
+    util.assert_allclose(cov2, cov1 * scale**2, rtol=1e-11)

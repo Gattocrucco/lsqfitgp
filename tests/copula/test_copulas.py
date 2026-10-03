@@ -1,6 +1,6 @@
-# lsqfitgp/tests/test_copulas.py
+# lsqfitgp/tests/copula/test_copulas.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,23 +17,23 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Test the predefined distributions """
+"""Test the predefined distributions"""
 
-import functools
 import contextlib
+import functools
 import string
 
-import numpy as np
 import gvar
 import jax
-from jax import numpy as jnp
+import numpy as np
 import pytest
+from jax import numpy as jnp
 from pytest import mark
-from scipy import stats, special
+from scipy import special, stats
 
 import lsqfitgp as lgp
+from tests import util
 
-from .. import util
 
 @contextlib.contextmanager
 def jaxconfig(**opts):
@@ -46,25 +46,21 @@ def jaxconfig(**opts):
         for k, v in prev.items():
             jax.config.update(k, v)
 
+
 class DistrTestBase:
     """
     Base class for tests of a Distr subclass
     """
 
     testfor = {}
-    
+
     def __init_subclass__(cls):
         assert cls.__name__.startswith('Test')
-        attrs = dict(
-            copcls=getattr(lgp.copula, cls.__name__[4:].lower()),
-        )
+        attrs = dict(copcls=getattr(lgp.copula, cls.__name__[4:].lower()))
         for k, v in attrs.items():
             if not hasattr(cls, k):
                 setattr(cls, k, v)
-        specialmethods = dict(
-            scipy_params=staticmethod,
-            rvs=classmethod,
-        )
+        specialmethods = dict(scipy_params=staticmethod, rvs=classmethod)
         for name, kind in specialmethods.items():
             if not isinstance(meth := getattr(cls, name), kind):
                 setattr(cls, name, kind(meth))
@@ -73,7 +69,7 @@ class DistrTestBase:
     params = ()
     recparams = ()
     accurate_range = (-np.inf, np.inf)
-    
+
     def scipy_params(*params):
         return params
 
@@ -84,9 +80,11 @@ class DistrTestBase:
         cdf = distr(*params).cdf
         cdf0 = cdf(self.accurate_range[0])
         cdf1 = cdf(self.accurate_range[1])
+
         @functools.wraps(cdf)
         def clipped_cdf(x):
             return (np.clip(cdf(x), cdf0, cdf1) - cdf0) / (cdf1 - cdf0)
+
         return clipped_cdf
 
     def rvs(cls, *params, size=(), random_state=None):
@@ -97,10 +95,10 @@ class DistrTestBase:
 
     @classmethod
     def recrvs(cls, level):
-        
+
         distrname = cls.copcls.__name__
         distr = getattr(stats, distrname)
-        
+
         def rvs(size, rng):
             if level > 0:
                 params = []
@@ -112,7 +110,7 @@ class DistrTestBase:
             else:
                 params = cls.params
             return cls.rvs(*params, size=size, random_state=rng)
-                    
+
         return rvs
 
     @classmethod
@@ -134,7 +132,7 @@ class DistrTestBase:
         else:
             params = cls.params
         return params
-        
+
     @pytest.fixture
     def name(self, request):
         return request.node.nodeid
@@ -144,8 +142,7 @@ class DistrTestBase:
         assert np.ndim(variables) in (0, 1)
         assert np.ndim(variables) == 0 or variables.size > 1
         x = gvar.gvar(
-            rng.standard_normal(variables.shape),
-            rng.gamma(10, 1/10, variables.shape),
+            rng.standard_normal(variables.shape), rng.gamma(10, 1 / 10, variables.shape)
         )
         invfcn = gvar.BufferDict.invfcn[name]
         y = invfcn(x)
@@ -153,8 +150,10 @@ class DistrTestBase:
         ymean = invfcn(gvar.mean(x))
         ycov = np.dot(deriv * gvar.var(x), deriv.T)
         util.assert_close_matrices(gvar.mean(y), ymean, rtol=1e-6)
-        util.assert_close_matrices(gvar.evalcov(y).reshape(2 * y.shape), ycov, rtol=1e-6)
-    
+        util.assert_close_matrices(
+            gvar.evalcov(y).reshape(2 * y.shape), ycov, rtol=1e-6
+        )
+
     def test_partial_invfcn_gvar_vectorized(self, name, rng):
 
         distr = self.copcls(*self.params)
@@ -162,25 +161,32 @@ class DistrTestBase:
         shape = (13,)
         x = gvar.gvar(
             rng.standard_normal(shape + distr.in_shape),
-            rng.gamma(10, 1/10, shape + distr.in_shape),
+            rng.gamma(10, 1 / 10, shape + distr.in_shape),
         )
-        
+
         y = distr.partial_invfcn(x)
         assert y.shape == shape + distr.shape
-        
+
         ymean = distr.partial_invfcn(gvar.mean(x))
         assert ymean.shape == shape + distr.shape
         deriv = jax.vmap(jax.jacfwd(distr.partial_invfcn))(gvar.mean(x))
         assert deriv.shape == shape + distr.shape + distr.in_shape
-        
-        ii = string.ascii_lowercase[:len(distr.in_shape)]
-        io1 = string.ascii_uppercase[:len(distr.shape)]
-        io2 = string.ascii_uppercase[len(distr.shape):2 * len(distr.shape)]
-        ycov = np.einsum(f'...{io1}{ii}, ...{ii}, ...{io2}{ii} -> ...{io1}{io2}', deriv, gvar.var(x), deriv)
+
+        ii = string.ascii_lowercase[: len(distr.in_shape)]
+        io1 = string.ascii_uppercase[: len(distr.shape)]
+        io2 = string.ascii_uppercase[len(distr.shape) : 2 * len(distr.shape)]
+        ycov = np.einsum(
+            f'...{io1}{ii}, ...{ii}, ...{io2}{ii} -> ...{io1}{io2}',
+            deriv,
+            gvar.var(x),
+            deriv,
+        )
 
         for i in np.ndindex(*shape):
             util.assert_close_matrices(gvar.mean(y[i]), ymean[i], rtol=1e-6)
-            util.assert_close_matrices(gvar.evalcov(y[i]).reshape(2 * y[i].shape), ycov[i], rtol=1e-6)
+            util.assert_close_matrices(
+                gvar.evalcov(y[i]).reshape(2 * y[i].shape), ycov[i], rtol=1e-6
+            )
 
     def test_overwrite(self, name):
         gvar.BufferDict.add_distribution(name, gvar.exp)
@@ -192,39 +198,42 @@ class DistrTestBase:
 
     def test_bufferdict_gvar(self, name):
         key = f'{name}(x)'
-        b = gvar.BufferDict({
-            key: self.copcls(*self.params, name=name)
-        })
+        b = gvar.BufferDict({key: self.copcls(*self.params, name=name)})
         x = b['x']
         mean = gvar.mean(b[key])
         xmean = self.copcls.invfcn(mean, *self.array_params)
         jac = jax.jacfwd(self.copcls.invfcn)(mean, *self.array_params)
         xcov = np.dot(jac * gvar.var(b[key]), jac.T)
         util.assert_close_matrices(gvar.mean(x), xmean, rtol=1e-6)
-        util.assert_close_matrices(gvar.evalcov(x).reshape(2 * x.shape), xcov, rtol=1e-6)
+        util.assert_close_matrices(
+            gvar.evalcov(x).reshape(2 * x.shape), xcov, rtol=1e-6
+        )
 
     def test_bufferdict(self, name):
         key = f'{name}(x)'
         variables = self.copcls(*self.params, name=name)
-        b = gvar.BufferDict({
-            key: np.zeros_like(variables, float)
-        })
+        b = gvar.BufferDict({key: np.zeros_like(variables, float)})
         x = b['x']
         x2 = self.copcls.invfcn(b[key], *self.array_params)
         util.assert_allclose(x, x2, rtol=1e-6)
 
     def test_continuity_zero(self, name):
-        """ check that invfcn is continuous in zero, since it is a common
-        cutpoint to switch from ppf(cdf(·)) to isf(sf(·)) """
+        """Check that invfcn is continuous in zero, since it is a common
+        cutpoint to switch from ppf(cdf(·)) to isf(sf(·))
+        """
         eps = np.finfo(float).eps
         x1 = self.copcls.invfcn(-eps, *self.array_params)
         x2 = self.copcls.invfcn(eps, *self.array_params)
         util.assert_allclose(x1, x2, atol=8 * eps, rtol=8 * eps)
 
     def test_decorator(self):
-        """ check that recreating the distrution with the decorator works """
-        alt = lgp.copula.distribution(self.copcls.invfcn, signature=self.copcls.signature.signature, dtype=self.copcls.dtype)
-        for attr in 'dtype',:
+        """Check that recreating the distrution with the decorator works"""
+        alt = lgp.copula.distribution(
+            self.copcls.invfcn,
+            signature=self.copcls.signature.signature,
+            dtype=self.copcls.dtype,
+        )
+        for attr in ('dtype',):
             assert getattr(alt, attr) == getattr(self.copcls, attr)
         d1 = self.copcls(*self.params)
         d2 = alt(*self.params)
@@ -248,7 +257,7 @@ class DistrTestBase:
     def test_correct_distribution(self, rng, nsamples, significance):
         sig = self.copcls.signature.eval(None, *self.array_params)
         in_shape = sig.in_shapes[0]
-        out_shape, = sig.out_shapes
+        (out_shape,) = sig.out_shapes
         samples_norm = rng.standard_normal((nsamples,) + in_shape)
         samples = self.copcls.invfcn(samples_norm, *self.array_params)
         assert samples.shape == (nsamples,) + out_shape
@@ -278,24 +287,26 @@ class DistrTestBase:
         out_shape = samples.shape[1:]
         samples = self.trim(samples, len(out_shape))
         refsamples = self.trim(refsamples, len(out_shape))
-        
+
         for i in np.ndindex(*out_shape):
             i = (...,) + i
             test = stats.ks_2samp(samples[i], refsamples[i])
             assert test.pvalue >= significance
-        
+
         direction = rng.standard_normal(out_shape)
         samples_1d = np.tensordot(samples, direction, direction.ndim)
         refsamples_1d = np.tensordot(refsamples, direction, direction.ndim)
         test = stats.ks_2samp(samples_1d, refsamples_1d)
         assert test.pvalue >= significance
 
+
 class TestBeta(DistrTestBase):
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfcauchy'
 
+
 class TestDirichlet(DistrTestBase):
-    params = [1, 4, 3],
+    params = ([1, 4, 3],)
     recparams = params
     # recparams = 'gamma' <shape=5>
 
@@ -316,29 +327,34 @@ class TestDirichlet(DistrTestBase):
         # eps, scipy piggybacks on numpy, see
         # https://github.com/numpy/numpy/issues/24475
 
+
 class TestGamma(DistrTestBase):
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfnorm'
     scipy_params = lambda alpha, beta: (alpha, 0, 1 / beta)
 
+
 class TestHalfCauchy(DistrTestBase):
-    params = 0.7,
-    recparams = 'invgamma',
+    params = (0.7,)
+    recparams = ('invgamma',)
     scipy_params = lambda gamma: (0, gamma)
 
+
 class TestHalfNorm(DistrTestBase):
-    params = 1.3,
-    recparams = 'invgamma',
+    params = (1.3,)
+    recparams = ('invgamma',)
     scipy_params = lambda sigma: (0, sigma)
+
 
 class TestInvGamma(DistrTestBase):
     params = 1.2, 2.3
     recparams = 'invgamma', 'halfnorm'
     scipy_params = lambda alpha, beta: (alpha, 0, beta)
 
+
 class TestLogGamma(DistrTestBase):
-    params = 1.2,
-    recparams = 'invgamma',
+    params = (1.2,)
+    recparams = ('invgamma',)
 
     def rvs(cls, c, size=(), random_state=None):
         # old scipy versions do not handle small c, so I copied the code from
@@ -353,19 +369,22 @@ class TestLogGamma(DistrTestBase):
         )
         # return stats.loggamma.rvs(c, size=size, random_state=random_state)
 
+
 class TestUniform(DistrTestBase):
     params = -0.5, 2
     recparams = -1, 'uniform'
     scipy_params = lambda a, b: (a, b - a)
 
+
 def test_invgamma_divergence():
-    y = lgp.copula.invgamma.invfcn(10., 1, 1)
+    y = lgp.copula.invgamma.invfcn(10.0, 1, 1)
     assert np.isfinite(y)
+
 
 @mark.parametrize('distr', ['gamma', 'invgamma', 'loggamma'])
 @mark.parametrize('x64', [False, True])
 def test_gamma_asymp(distr, x64):
-    
+
     test = DistrTestBase.testfor[distr]
 
     # check there's no over/underflow
@@ -375,20 +394,21 @@ def test_gamma_asymp(distr, x64):
     elif distr == 'invgamma':
         y = test.copcls.invfcn(-100, *test.params)
         assert y > 0
-    
+
     # check continuity at asymptotic series switchpoint
     with jaxconfig(jax_enable_x64=x64):
         dtype = [np.float32, np.float64][x64]
         rtol = [2e-4, 1e-5][x64]
-        boundary = test.copcls._boundary(dtype(0.))
+        boundary = test.copcls._boundary(dtype(0.0))
         y1 = test.copcls.invfcn(boundary * (1 + np.finfo(dtype).eps), *test.params)
         y2 = test.copcls.invfcn(boundary * (1 - np.finfo(dtype).eps), *test.params)
         assert 0 < y1 < np.inf and 0 < y2 < np.inf
         assert y1 != y2
         np.testing.assert_allclose(y1, y2, atol=0, rtol=rtol)
-    
+
+
 def test_staticdescr_repr():
-    
+
     x = lgp.copula.beta(1, 2)
     assert repr(x._staticdescr) == 'beta(1, 2)'
 
@@ -404,14 +424,20 @@ def test_staticdescr_repr():
     x = lgp.copula.beta([[1, 2], [3, 4]], [1, 2])
     assert repr(x._staticdescr) == 'beta([[1, 2], [3, 4]], [1, 2], shape=(2, 2))'
 
-    x = lgp.copula.dirichlet(lgp.copula.invgamma(1, 1, shape=(4, 1)) * np.array([1, 1, 1]))
-    assert repr(x._staticdescr) == 'dirichlet(multiply(invgamma(1, 1, shape=(4, 1)), [1, 1, 1], shape=(4, 3)), shape=(4, 3))'
+    x = lgp.copula.dirichlet(
+        lgp.copula.invgamma(1, 1, shape=(4, 1)) * np.array([1, 1, 1])
+    )
+    assert (
+        repr(x._staticdescr)
+        == 'dirichlet(multiply(invgamma(1, 1, shape=(4, 1)), [1, 1, 1], shape=(4, 3)), shape=(4, 3))'
+    )
 
-    x = lgp.copula.beta(np.array([1, 2.]), 3)
+    x = lgp.copula.beta(np.array([1, 2.0]), 3)
     assert repr(x._staticdescr) == 'beta([1.0, 2.0], 3, shape=2)'
 
-    x = lgp.copula.beta(jnp.array([1, 2.]), 3)
+    x = lgp.copula.beta(jnp.array([1, 2.0]), 3)
     assert repr(x._staticdescr) == 'beta([1.0, 2.0], 3, shape=2)'
+
 
 def test_repr():
 
@@ -433,11 +459,12 @@ def test_repr():
     x = lgp.copula.dirichlet(lgp.copula.invgamma(1, 1, shape=4))
     assert repr(x) == 'dirichlet(invgamma(1, 1, shape=4), shape=4)'
 
-    x = lgp.copula.beta(np.array([1, 2.]), 3)
+    x = lgp.copula.beta(np.array([1, 2.0]), 3)
     assert repr(x) == 'beta(Array[2], 3, shape=2)'
 
     x = lgp.copula.beta(jnp.ones((2, 3)), 3)
     assert repr(x) == 'beta(Array[2,3], 3, shape=(2, 3))'
+
 
 def test_repr_recursive():
 
@@ -446,9 +473,9 @@ def test_repr_recursive():
     z = lgp.copula.beta(y, x)
     assert repr(z) == 'beta(uniform(beta(1, 2), <0.0>), <0.0>)'
 
+
 def test_shared_basic(rng):
-    """ test that a shared variable is not duplicated """
-    
+    """Test that a shared variable is not duplicated"""
     x = lgp.copula.invgamma(1, 1)
     y = lgp.copula.halfnorm(x)
     z = lgp.copula.halfcauchy(x)
@@ -466,10 +493,11 @@ def test_shared_basic(rng):
     s2 = q_invfcn(samples)
     util.assert_allclose(s1, s2)
 
-def test_shared_degeneracy(rng):
-    """ test that a shared variable is not duplicated, by checking the
-    degeneracy in the model """
 
+def test_shared_degeneracy(rng):
+    """Test that a shared variable is not duplicated, by checking the
+    degeneracy in the model
+    """
     x = lgp.copula.loggamma(1)
     y = lgp.copula.uniform(x, x)
     samples = rng.standard_normal((10000, 2))
@@ -477,9 +505,9 @@ def test_shared_degeneracy(rng):
     s2 = y.partial_invfcn(samples)
     util.assert_allclose(s1, s2)
 
-def test_shared_hierarchy(rng):
-    """ test that a shared variable is not duplicated, with complex hierachy """
 
+def test_shared_hierarchy(rng):
+    """Test that a shared variable is not duplicated, with complex hierachy"""
     x = lgp.copula.invgamma(1, 1)
     y = lgp.copula.halfnorm(x)
     z = lgp.copula.halfcauchy(x)
@@ -499,17 +527,18 @@ def test_shared_hierarchy(rng):
     s2 = r_invfcn(samples)
     util.assert_allclose(s1, s2)
 
-def test_shared_shapes(rng):
-    """ test that a shared variable is not duplicated, with complex hierachy
-    and shapes """
 
-    a = lgp.copula.invgamma(2, 2, shape=(2, 1)) # 2
-    x = lgp.copula.invgamma(1, 1, shape=3)      # 3
-    y = lgp.copula.halfnorm(x)                  # 3
-    z = lgp.copula.halfcauchy(x)                # 3
+def test_shared_shapes(rng):
+    """Test that a shared variable is not duplicated, with complex hierachy
+    and shapes
+    """
+    a = lgp.copula.invgamma(2, 2, shape=(2, 1))  # 2
+    x = lgp.copula.invgamma(1, 1, shape=3)  # 3
+    y = lgp.copula.halfnorm(x)  # 3
+    z = lgp.copula.halfcauchy(x)  # 3
     q = lgp.copula.uniform(y, z, shape=(2, 3))  # 6
-    r = lgp.copula.beta(q, x)                   # 6
-    s = lgp.copula.dirichlet(a * r)             # 6
+    r = lgp.copula.beta(q, x)  # 6
+    s = lgp.copula.dirichlet(a * r)  # 6
 
     assert a.in_shape == (2,)
     assert x.in_shape == (3,)
@@ -537,17 +566,19 @@ def test_shared_shapes(rng):
     assert s2.shape == shape + s.shape
     util.assert_allclose(s1, s2)
 
+
 def test_wrong_nargs():
     with pytest.raises(TypeError):
         lgp.copula.beta(1)
     with pytest.raises(TypeError):
         lgp.copula.beta(1, 2, 3)
 
+
 def test_staticdescr():
     x1 = lgp.copula.beta(1, 2)
     x2 = x1.__class__(*x1.params)
     assert x1._staticdescr == x2._staticdescr
-    
+
     y1 = lgp.copula.beta(x1, x1)
     y2 = lgp.copula.beta(x2, x2)
     assert y1._staticdescr == y2._staticdescr

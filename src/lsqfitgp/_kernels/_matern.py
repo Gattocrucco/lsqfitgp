@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels/_matern.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,18 +19,19 @@
 
 from jax import numpy as jnp
 
-from .. import _jaxext
-from .. import _special
-from .._Kernel import isotropickernel
+from lsqfitgp import _jaxext, _special
+from lsqfitgp._Kernel import isotropickernel
+
 
 def _maternp_derivable(p=None):
     return p
 
+
 @isotropickernel(derivable=_maternp_derivable)
 def Maternp(r2, p=None):
     """
-    Matérn kernel of half-integer order. 
-    
+    Matérn kernel of half-integer order.
+
     .. math::
         k(r) &= \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x) = \\\\
         &= \\exp(-x) \\frac{p!}{(2p)!}
@@ -38,7 +39,7 @@ def Maternp(r2, p=None):
         \\nu &= p + 1/2,
         p \\in \\mathbb N,
         x = \\sqrt{2\\nu} r
-    
+
     The degree of derivability is :math:`p`.
 
     Reference: Rasmussen and Williams (2006, p. 85).
@@ -48,20 +49,22 @@ def Maternp(r2, p=None):
     r2 = (2 * p + 1) * r2
     return _special.kvmodx2_hi(r2 + 1e-30, p)
 
+
 def _matern_derivable(nu=None):
     with _jaxext.skipifabstract():
         return int(max(0, jnp.ceil(nu) - 1))
 
+
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
     """
-    Matérn kernel of real order. 
-    
+    Matérn kernel of real order.
+
     .. math::
         k(r) = \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x),
         \\quad \\nu \\ge 0,
         \\quad x = \\sqrt{2\\nu} r
-    
+
     The process is :math:`\\lceil\\nu\\rceil-1` times derivable: so for
     :math:`0 \\le \\nu \\le 1` it is not derivable, for :math:`1 < \\nu \\le 2`
     it is derivable but has not a second derivative, etc. The highest
@@ -72,13 +75,13 @@ def Matern(r2, nu=None):
     with _jaxext.skipifabstract():
         assert 0 <= nu < jnp.inf, nu
     r2 = 2 * jnp.where(nu, nu, 1) * r2  # for v = 0 the correct limit is white
-                                        # noise, so I avoid doing r2 * 0
+    # noise, so I avoid doing r2 * 0
     return _special.kvmodx2(nu, r2)
-    
-    
+
     # The GSL has log K_nu
     # https://www.gnu.org/software/gsl/doc/html/specfunc.html#irregular-modified-bessel-functions-fractional-order
-    
+
+
 # def _bessel_scale(nu):
 #     lnu = numpy.floor(nu)
 #     rnu = numpy.ceil(nu)
@@ -89,6 +92,7 @@ def Matern(r2, nu=None):
 #         zr, = special.jn_zeros(rnu, 1)
 #         return zl + (nu - lnu) * (zr - zl) / (rnu - lnu)
 
+
 def _bessel_derivable(nu=0):
     with _jaxext.skipifabstract():
         return int(nu // 2)
@@ -98,19 +102,20 @@ def _bessel_maxdim(nu=0):
     with _jaxext.skipifabstract():
         return 2 * int(jnp.floor(nu) + 1)
 
+
 @isotropickernel(derivable=_bessel_derivable, maxdim=_bessel_maxdim)
 def Bessel(r2, nu=0):
     """
     Bessel kernel.
-    
+
     .. math:: k(r) = \\Gamma(\\nu + 1) 2^\\nu (sr)^{-\\nu} J_{\\nu}(sr),
         \\quad s = 2 + \\nu / 2,
         \\quad \\nu \\ge 0,
-    
+
     where :math:`s` is a crude estimate of the half width at half maximum of
     :math:`J_\\nu`. Can be used in up to :math:`2(\\lfloor\\nu\\rfloor + 1)`
     dimensions and derived up to :math:`\\lfloor\\nu/2\\rfloor` times.
-    
+
     Reference: Rasmussen and Williams (2006, p. 89).
     """
     with _jaxext.skipifabstract():

@@ -1,6 +1,6 @@
 # lsqfitgp/tests/linalg/test_decomp.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,21 +17,21 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-from scipy import linalg, stats
-import numpy as np
+import gvar
 import jax
+import numpy as np
+import pytest
 from jax import numpy as jnp
 from jax.scipy import linalg as jlinalg
-import gvar
+from scipy import linalg, stats
 
-from lsqfitgp import _linalg, _jaxext
-from .. import util
+from lsqfitgp import _jaxext, _linalg
+from tests import util
+
 
 class TestChol:
-
     def randortho(self, n, *, rng=None):
-        """ generate a random nxn orthogonal matrix """
+        """Generate a random nxn orthogonal matrix"""
         rng = np.random.default_rng(rng)
         if n > 1:
             return stats.ortho_group.rvs(n, random_state=rng)
@@ -71,8 +71,7 @@ class TestChol:
         eigvals = jnp.where(jnp.arange(n) < rank, eigvals, 0)
         transf = self.randortho(n, rng=rng)
         if n >= 2:
-            rot = jnp.array([[jnp.cos(s), -jnp.sin(s)],
-                             [jnp.sin(s),  jnp.cos(s)]])
+            rot = jnp.array([[jnp.cos(s), -jnp.sin(s)], [jnp.sin(s), jnp.cos(s)]])
             indices = rng.choice(n, size=2, replace=False)
             rot = jnp.eye(n).at[jnp.ix_(indices, indices)].set(rot)
             transf = rot @ transf
@@ -82,64 +81,74 @@ class TestChol:
 
     @pytest.fixture(params=[1, 2, 10])
     def n(self, request):
-        """ Size of the test matrix """
+        """Size of the test matrix"""
         return request.param
 
     @pytest.fixture
     def s(self, rng):
-        """ A value for the namesake `mat` parameter """
+        """A value for the namesake `mat` parameter"""
         return rng.uniform(-np.pi, np.pi, 1)
 
     @pytest.fixture
     def K_factory(self, n, rng):
-        """ A function of `s` producing the matrix to be decomposed """
+        """A function of `s` producing the matrix to be decomposed"""
         high = np.iinfo(np.uint64).max
         seed = rng.integers(high, dtype=np.uint64, endpoint=True)
+
         def K_factory(s):
             return self.mat(n, s, rng=seed)
+
         return K_factory
 
     @pytest.fixture
     def K(self, s, K_factory):
-        """ The matrix to be decomposed """
+        """The matrix to be decomposed"""
         return K_factory(s)
 
     @pytest.fixture
     def r_factory(self, n, rng):
-        """ A function of `s` producing an auxiliary vector """
+        """A function of `s` producing an auxiliary vector"""
         high = np.iinfo(np.uint64).max
         seed = rng.integers(high, dtype=np.uint64, endpoint=True)
+
         def r_factory(s):
             rng = np.random.default_rng(seed)
             return s[0] * rng.standard_normal(n)
+
         return r_factory
 
     @pytest.fixture
     def r(self, s, r_factory):
-        """ Auxiliary vector with as many rows as K """
+        """Auxiliary vector with as many rows as K"""
         return r_factory(s)
 
     @pytest.fixture
     def A(self, n, rng):
-        """ Auxiliary matrix with as many rows as K """
+        """Auxiliary matrix with as many rows as K"""
         return rng.standard_normal((n, 2 * n))
 
     @pytest.fixture
     def likelihood(self, n, K_factory, r_factory):
-        """ A likelihood w.r.t. the `s` parameter """
+        """A likelihood w.r.t. the `s` parameter"""
+
         def likelihood(s):
             K = K_factory(s)
             r = r_factory(s)
-            return 1/2 * (
-                n * jnp.log(2 * jnp.pi) +
-                jnp.sum(jnp.log(jnp.linalg.eigvalsh(K))) +
-                r @ jlinalg.solve(K, r, assume_a='pos')
+            return (
+                1
+                / 2
+                * (
+                    n * jnp.log(2 * jnp.pi)
+                    + jnp.sum(jnp.log(jnp.linalg.eigvalsh(K)))
+                    + r @ jlinalg.solve(K, r, assume_a='pos')
+                )
             )
+
         return likelihood
 
     @pytest.fixture
     def decomp(self, K):
-        """ Decomposition of K """
+        """Decomposition of K"""
         return _linalg.Chol(K)
 
     def test_ginv_linear(self, n, K, A, decomp):
@@ -201,8 +210,8 @@ class TestChol:
         util.assert_close_matrices(result, expected, rtol=1e-14)
 
     def test_pinv_correlate(self, n, K, decomp):
-        result = decomp.pinv_correlate(K) # = Z⁺K = Z⁺ZZ' = Z'
-        expected = decomp.back_correlate(np.eye(n)) # = Z'I = Z'
+        result = decomp.pinv_correlate(K)  # = Z⁺K = Z⁺ZZ' = Z'
+        expected = decomp.back_correlate(np.eye(n))  # = Z'I = Z'
         util.assert_close_matrices(result, expected, rtol=1e-13)
 
     def test_correlate_back_correlate(self, n, K, decomp, r):
@@ -217,10 +226,14 @@ class TestChol:
 
     def test_normal_value(self, n, K, decomp, r):
         result, _, _, _, _ = decomp.minus_log_normal_density(r, value=True)
-        expected = 1/2 * (
-            n * np.log(2 * np.pi) +
-            np.sum(np.log(linalg.eigvalsh(K))) +
-            r @ linalg.solve(K, r, assume_a='pos')
+        expected = (
+            1
+            / 2
+            * (
+                n * np.log(2 * np.pi)
+                + np.sum(np.log(linalg.eigvalsh(K)))
+                + r @ linalg.solve(K, r, assume_a='pos')
+            )
         )
         util.assert_allclose(result, expected, atol=1e-9)
 
@@ -244,7 +257,7 @@ class TestChol:
         dK = jax.jacfwd(K_factory)(s)
         dr = jax.jacfwd(r_factory)(s)
         invK_dK = _linalg.solve_batched(K, np.moveaxis(dK, 2, 0), assume_a='pos')
-        expected = 1/2 * np.einsum('kij,qji->kq', invK_dK, invK_dK)
+        expected = 1 / 2 * np.einsum('kij,qji->kq', invK_dK, invK_dK)
         expected += dr.T @ linalg.solve(K, dr, assume_a='pos')
         util.assert_close_matrices(result, expected, rtol=1e-12)
 
@@ -255,7 +268,7 @@ class TestChol:
         dK = jax.jacfwd(K_factory)(s)
         dr = jax.jacfwd(r_factory)(s)
         invK_dK = _linalg.solve_batched(K, np.moveaxis(dK, 2, 0), assume_a='pos')
-        fisher = 1/2 * np.einsum('kij,qji->kq', invK_dK, invK_dK)
+        fisher = 1 / 2 * np.einsum('kij,qji->kq', invK_dK, invK_dK)
         fisher += dr.T @ linalg.solve(K, dr, assume_a='pos')
         expected = fisher @ vec
         util.assert_close_matrices(result, expected, rtol=1e-11)

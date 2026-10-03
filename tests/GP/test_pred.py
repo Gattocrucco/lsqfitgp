@@ -1,6 +1,6 @@
 # lsqfitgp/tests/GP/test_pred.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -18,15 +18,14 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
-import time
 
-import numpy as np
 import gvar
-from pytest import mark
+import numpy as np
 import pytest
+from pytest import mark
 
 import lsqfitgp as lgp
-from .. import util
+from tests import util
 
 
 def pred(seed, err, **kw):
@@ -34,34 +33,38 @@ def pred(seed, err, **kw):
     x = rng.uniform(-5, 5, size=20)
     xpred = rng.uniform(-10, 10, size=100)
 
-    gp = (lgp
-        .GP(lgp.ExpQuad())
-        .addx(x, 'data')
-        .addx(xpred, 'pred')
-    )
-    
+    gp = lgp.GP(lgp.ExpQuad()).addx(x, 'data').addx(xpred, 'pred')
+
     y = np.tanh(x)
     if err:
-        datagp = (lgp
-            .GP(0.1 ** 2 * lgp.Cauchy(scale=0.3))
-            .addx(x, 'data')
-        )
+        datagp = lgp.GP(0.1**2 * lgp.Cauchy(scale=0.3)).addx(x, 'data')
         y = y + datagp.prior('data')
-    
+
     result = gp.pred({'data': y}, 'pred', **kw)
     if isinstance(result, tuple) and len(result) == 2:
         mean, cov = result
     elif isinstance(result, np.ndarray):
         mean = gvar.mean(result)
         cov = gvar.evalcov(result)
-    
+
     return mean, cov
 
-@mark.parametrize('kw1,kw2', list(itertools.combinations([
-    dict(fromdata=fromdata, raw=raw, keepcorr=keepcorr)
-    for fromdata, raw, keepcorr in itertools.product([False, True], repeat=3)
-    if not (raw and keepcorr)
-], 2)))
+
+@mark.parametrize(
+    'kw1,kw2',
+    list(
+        itertools.combinations(
+            [
+                dict(fromdata=fromdata, raw=raw, keepcorr=keepcorr)
+                for fromdata, raw, keepcorr in itertools.product(
+                    [False, True], repeat=3
+                )
+                if not (raw and keepcorr)
+            ],
+            2,
+        )
+    ),
+)
 @mark.parametrize('err', [False, True])
 def test_pred(err, kw1, kw2, rng):
     if err and kw1['fromdata'] != kw2['fromdata']:
@@ -74,6 +77,7 @@ def test_pred(err, kw1, kw2, rng):
     # this test, fix the seed and apply functools.cache to pred.
     util.assert_allclose(m1, m2, rtol=1e-5 if err else 1e-6)
     util.assert_close_matrices(cov1, cov2, rtol=1e-5 if err else 1e-1)
+
 
 def test_double_pred(rng):
     n = 50

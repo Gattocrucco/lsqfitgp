@@ -71,7 +71,9 @@ def check(path: Path) -> str | None:
             got = match.group('path')
             expected = expected_path(path)
             if got != expected:
-                return f'path header is `lsqfitgp/{got}`, expected `lsqfitgp/{expected}`'
+                return (
+                    f'path header is `lsqfitgp/{got}`, expected `lsqfitgp/{expected}`'
+                )
             return None
     return 'license header present but no `lsqfitgp/<path>` line above it'
 

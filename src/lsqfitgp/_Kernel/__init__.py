@@ -17,14 +17,26 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from ._util import prod_recurse_dtype, sum_recurse_dtype, is_numerical_scalar
-from ._crosskernel import CrossKernel, AffineSpan, PreservedBySwap
+from lsqfitgp._Kernel._crosskernel import AffineSpan, CrossKernel, PreservedBySwap
+from lsqfitgp._Kernel._util import (
+    is_numerical_scalar,
+    prod_recurse_dtype,
+    sum_recurse_dtype,
+)
+
 # isort: off
-from . import _ops # keep first
-from . import _alg # keep first
+from lsqfitgp._Kernel import _ops  # keep first
+from lsqfitgp._Kernel import _alg  # keep first
+
 # isort: on
-from ._kernel import Kernel
-from ._stationary import CrossStationaryKernel, StationaryKernel
-from ._isotropic import CrossIsotropicKernel, IsotropicKernel, Zero
-from ._decorators import (crosskernel, kernel, crossstationarykernel,
-    stationarykernel, crossisotropickernel, isotropickernel)
+from lsqfitgp._Kernel._decorators import (
+    crossisotropickernel,
+    crosskernel,
+    crossstationarykernel,
+    isotropickernel,
+    kernel,
+    stationarykernel,
+)
+from lsqfitgp._Kernel._isotropic import CrossIsotropicKernel, IsotropicKernel, Zero
+from lsqfitgp._Kernel._kernel import Kernel
+from lsqfitgp._Kernel._stationary import CrossStationaryKernel, StationaryKernel

@@ -1,6 +1,6 @@
 # lsqfitgp/examples/n.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,17 +19,18 @@
 
 """
 
-                            EXAMPLE N.
+EXAMPLE N.
 
-    Where we wonder how much a derivative is allowed to do her own
-    business compared to her mistress.
+Where we wonder how much a derivative is allowed to do her own
+business compared to her mistress.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 x = np.linspace(-10, 10, 200)
 derivs = [0, 1, 2]
@@ -50,7 +51,7 @@ for deriv in derivs:
     s = gvar.sdev(u[deriv])
     patch = ax.fill_between(x, m - s, m + s, label=f'deriv {deriv}', alpha=0.5)
     colors[deriv] = patch.get_facecolor()[0]
-    
+
 for sample in gvar.raniter(u, 1):
     for deriv in derivs:
         ax.plot(x, sample[deriv], '-', color=colors[deriv])

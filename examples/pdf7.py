@@ -1,56 +1,64 @@
 """Fit of parton distributions functions (PDFs)
 
-Like pdf6, but with hyperparameters"""
+Like pdf6, but with hyperparameters
+"""
 
+import time
 import warnings
 
-import lsqfitgp as lgp
-import numpy as np
-from scipy import linalg
-from matplotlib import pyplot as plt
 import gvar
 import lsqfit
-import time
+import numpy as np
+from matplotlib import pyplot as plt
+from scipy import linalg
+
+import lsqfitgp as lgp
 
 np.random.seed(20220416)
-warnings.filterwarnings('ignore', r'total derivative orders \(\d+, \d+\) greater than kernel minimum \(\d+, \d+\)')
+warnings.filterwarnings(
+    'ignore',
+    r'total derivative orders \(\d+, \d+\) greater than kernel minimum \(\d+, \d+\)',
+)
 
 #### SETTINGS ####
 
-flavor = np.array([
-    ( 1, 'd'    ), # 0
-    (-1, 'dbar' ), # 1
-    ( 2, 'u'    ), # 2
-    (-2, 'ubar' ), # 3
-    ( 3, 's'    ), # 4
-    (-3, 'sbar' ), # 5
-    ( 4, 'c'    ), # 6
-    (-4, 'cbar' ), # 7
-    (21, 'gluon'), # 8
-], 'i8, U16')
+flavor = np.array(
+    [
+        (1, 'd'),  # 0
+        (-1, 'dbar'),  # 1
+        (2, 'u'),  # 2
+        (-2, 'ubar'),  # 3
+        (3, 's'),  # 4
+        (-3, 'sbar'),  # 5
+        (4, 'c'),  # 6
+        (-4, 'cbar'),  # 7
+        (21, 'gluon'),  # 8
+    ],
+    'i8, U16',
+)
 
 indices = dict(
     # quark, antiquark
-    d = [0, 1],
-    u = [2, 3],
-    s = [4, 5],
-    c = [6, 7],
+    d=[0, 1],
+    u=[2, 3],
+    s=[4, 5],
+    c=[6, 7],
 )
 
-pid  = flavor['f0']
+pid = flavor['f0']
 name = flavor['f1']
 
-nflav  = len(flavor)
+nflav = len(flavor)
 
 # linear data
-nx        = 30 # number of PDF points used for the transformation
-ndata     = 10 # number of datapoints
-rankmcov  =  9 # rank of the covariance matrix of the theory error
+nx = 30  # number of PDF points used for the transformation
+ndata = 10  # number of datapoints
+rankmcov = 9  # rank of the covariance matrix of the theory error
 
 # quadratic data
-nx2       = 30 # must be <= nx
-ndata2    = 10
-rankmcov2 =  9
+nx2 = 30  # must be <= nx
+ndata2 = 10
+rankmcov2 = 9
 
 #### MODEL ####
 # for each PDF:
@@ -61,21 +69,19 @@ rankmcov2 =  9
 # for the flavor sum rules:
 # int_0^1 dx (f_i(x) - f_j(x)) = [h_i'(x) - h_j'(x)]_0^1
 
-xtype = np.dtype([
-    ('x'  , float),
-    ('pid', int  ),
-])
+xtype = np.dtype([('x', float), ('pid', int)])
 
-hyperprior = {
-    'log(scale)': np.log(gvar.gvar(0.5, 0.5)),
-}
+hyperprior = {'log(scale)': np.log(gvar.gvar(0.5, 0.5))}
+
+
 def makekernel(hp):
     return lgp.ExpQuad(dim='x', scale=hp['scale']) * lgp.White(dim='pid')
+
 
 # grid of points to which we apply the transformation
 xdata = np.empty((nflav, nx), xtype)
 xdata['pid'] = pid[:, None]
-xdata[  'x'] = np.linspace(0, 1, nx)
+xdata['x'] = np.linspace(0, 1, nx)
 
 # linear map PDF(xdata) -> data
 Mcomps = np.random.randn(rankmcov, ndata, nflav, nx)
@@ -93,45 +99,34 @@ M2 = lambda params: np.tensordot(params, M2comps, 1)
 # endpoints of the integral for each PDF
 xinteg = np.empty((nflav, 2), xtype)
 xinteg['pid'] = pid[:, None]
-xinteg[  'x'] = [0, 1]
+xinteg['x'] = [0, 1]
 
 # matrix to subtract the endpoints
 suminteg = np.empty(xinteg.shape)
 suminteg[:, 0] = -1
-suminteg[:, 1] =  1
+suminteg[:, 1] = 1
 
 # matrix to subtract two quarks
 qdiff = np.array([1, -1])[:, None]
 
-constraints = {
-    'momrule': 1,
-    'uubar'  : 2,
-    'ddbar'  : 1,
-    'ccbar'  : 0,
-    'ssbar'  : 0,
-}
+constraints = {'momrule': 1, 'uubar': 2, 'ddbar': 1, 'ccbar': 0, 'ssbar': 0}
 
 #### GP OBJECT ####
+
 
 def makegp(hp):
     gp = lgp.GP()
 
     kernel = makekernel(hp)
-    
-    gp = (gp
-        .defproc('h', kernel)
-        .deftransf('primitive', {'h': 1}, deriv='x'     )
-        .deftransf('f'        , {'h': 1}, deriv=(2, 'x'))
-        .deftransf('primitive of xf(x)', {
-            'primitive': lambda x: x['x'],
-            'h'        : -1,
-        })
 
+    gp = (
+        gp.defproc('h', kernel)
+        .deftransf('primitive', {'h': 1}, deriv='x')
+        .deftransf('f', {'h': 1}, deriv=(2, 'x'))
+        .deftransf('primitive of xf(x)', {'primitive': lambda x: x['x'], 'h': -1})
         .addx(xdata, 'xdata', proc='f')
-
         # linear data (used for warmup fit)
         .addtransf({'xdata': M(gvar.mean(Mparams))}, 'data', axes=2)
-
         # total momentum rule
         .addx(xinteg, 'xmomrule', proc='primitive of xf(x)')
         .addtransf({'xmomrule': suminteg}, 'momrule', axes=2)
@@ -139,35 +134,39 @@ def makegp(hp):
 
     # quark sum rules
     for quark in 'ducs':
-        idx = indices[quark] # [quark, antiquark] indices
-        label = f'{quark}{quark}bar' # the one appearing in `constraints`
+        idx = indices[quark]  # [quark, antiquark] indices
+        label = f'{quark}{quark}bar'  # the one appearing in `constraints`
         xlabel = f'x{label}'
         gp = gp.addx(xinteg[idx], xlabel, proc='primitive')
         gp = gp.addtransf({xlabel: suminteg[idx] * qdiff}, label, axes=2)
-    
+
     return gp
-    
+
+
 #### NONLINEAR FUNCTION ####
+
 
 def fcn(params):
     xdata = params['xdata']
     Mparams = params['Mparams']
     M2params = params['M2params']
-    
+
     data = np.tensordot(M(Mparams), xdata, 2)
-    
+
     # data2 = np.einsum('dfxy,fx,fy->d', M2, xdata, xdata)
     # np.einsum does not work with gvar
     xdata2 = xdata[:, None, :nx2] * xdata[:, :nx2, None]
     data2 = np.tensordot(M2(M2params), xdata2, 3)
-    
+
     return dict(data=data, data2=data2)
+
 
 def makeprior(gp):
     prior = gp.predfromdata(constraints, ['xdata'])
     prior['Mparams'] = Mparams
     prior['M2params'] = M2params
     return prior
+
 
 #### FAKE DATA ####
 
@@ -177,10 +176,10 @@ trueparams = gvar.sample(makeprior(truegp))
 truedata = fcn(trueparams)
 
 dataerr = {
-    k: np.full_like(v, 0.1 * (np.max(v) - np.min(v)))
-    for k, v in truedata.items()
+    k: np.full_like(v, 0.1 * (np.max(v) - np.min(v))) for k, v in truedata.items()
 }
 data = gvar.make_fake_data(gvar.gvar(truedata, dataerr))
+
 
 # check sum rules approximately with trapezoid rule
 def check_integrals(x, y):
@@ -192,6 +191,7 @@ def check_integrals(x, y):
         qy = y[idx]
         checksum = np.sum(qdiff * (qy[:, 1:] + qy[:, :-1]) / 2 * np.diff(qx, axis=1))
         print(f'sum_i={q}{q}bar int dx f_i(x) =', checksum)
+
 
 print('check integrals in fake data:')
 check_integrals(xdata['x'], trueparams['xdata'])
@@ -209,6 +209,8 @@ hyperchol = linalg.cholesky(hypercov)
 
 i = 0
 lasttime = time.time()
+
+
 def analyzer(hp):
     global i, lasttime
     i += 1
@@ -217,19 +219,16 @@ def analyzer(hp):
     print(f'iteration {i:3d} ({interval:#.2g} s): {hp}')
     lasttime = now
 
+
 def fitargs(hp):
     analyzer(hp)
     gp = makegp(hp)
     prior = makeprior(gp)
-    args = dict(
-        data = data,
-        fcn = fcn,
-        prior = prior,
-        p0 = p0,
-    )
+    args = dict(data=data, fcn=fcn, prior=prior, p0=p0)
     residuals = linalg.solve_triangular(hyperchol, hp.buf - hypermean)
-    plausibility = -1/2 * (residuals @ residuals)
+    plausibility = -1 / 2 * (residuals @ residuals)
     return args, plausibility
+
 
 z0 = gvar.mean(hyperprior)
 fit, fithp = lsqfit.empbayes_fit(z0, fitargs)
@@ -260,16 +259,15 @@ axs[1, 2].set_title('M2 parameters')
 ax = axs[0, 0]
 
 for i in range(nflav):
-    
     if i >= 4:
         ax = axs[1, 0]
-    
+
     x = xdata[i]['x']
     ypdf = fit.p['xdata'][i]
     ydata = trueparams['xdata'][i]
     m = gvar.mean(ypdf)
     s = gvar.sdev(ypdf)
-    
+
     color = 'C' + str(i // 2)
     if i % 2:
         kw = dict(hatch='//////', edgecolor=color, facecolor='none')
@@ -277,7 +275,7 @@ for i in range(nflav):
     else:
         kw = dict(alpha=0.6, facecolor=color)
         kwp = dict(color=color)
-    
+
     ax.fill_between(x, m - s, m + s, label=name[i], **kw)
     ax.plot(x, ydata, **kwp)
 
@@ -291,7 +289,15 @@ for ax, label in zip(axs[:, 1], ['data', 'data2']):
     x = np.arange(len(m))
     ax.fill_between(x, m - s, m + s, step='mid', color='lightgray', label='fit')
     d = data[label]
-    ax.errorbar(x, gvar.mean(d), gvar.sdev(d), color='black', linestyle='', capsize=2, label='data')
+    ax.errorbar(
+        x,
+        gvar.mean(d),
+        gvar.sdev(d),
+        color='black',
+        linestyle='',
+        capsize=2,
+        label='data',
+    )
     ax.plot(x, truedata[label], drawstyle='steps-mid', color='black', label='truth')
 
 for ax, label in zip(axs[:, 2], ['Mparams', 'M2params']):
@@ -301,7 +307,15 @@ for ax, label in zip(axs[:, 2], ['Mparams', 'M2params']):
     x = np.arange(len(m))
     ax.fill_between(x, m - s, m + s, step='mid', color='lightgray', label='fit')
     p = prior[label]
-    ax.errorbar(x, gvar.mean(p), gvar.sdev(p), color='black', linestyle='', capsize=2, label='data')
+    ax.errorbar(
+        x,
+        gvar.mean(p),
+        gvar.sdev(p),
+        color='black',
+        linestyle='',
+        capsize=2,
+        label='data',
+    )
     ax.plot(x, trueparams[label], drawstyle='steps-mid', color='black', label='truth')
 
 for ax in axs[:, 1:].flat:

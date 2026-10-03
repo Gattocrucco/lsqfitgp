@@ -1,6 +1,6 @@
 # lsqfitgp/docs/reference/copula.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,17 +17,20 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Generate the reference page for the copula module """
+"""Generate the reference page for the copula module"""
 
 import inspect
 import pathlib
 
-import numpy as np
 from lsqfitgp import copula
 
 distrs = []
 for name, obj in vars(copula).items():
-    if inspect.isclass(obj) and issubclass(obj, copula.Distr) and obj is not copula.Distr:
+    if (
+        inspect.isclass(obj)
+        and issubclass(obj, copula.Distr)
+        and obj is not copula.Distr
+    ):
         distrs.append(name)
 
 out = """\
@@ -52,7 +55,7 @@ parametrization, put them in a `gvar.BufferDict` using `makedict`. To apply
 the transformation manually, use `~DistrBase.partial_invfcn`.
 
 ..  note::
-    
+
     I define "Gaussian copula" to mean a representation of an arbitrary random
     variable as the transformation of a multivariate Normal random variable, as
     explained, e.g., `here
@@ -114,6 +117,8 @@ for name in sorted(distrs):
 """
 
 
-outfile = pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
+outfile = (
+    pathlib.Path(__file__).with_suffix('.rst').relative_to(pathlib.Path().absolute())
+)
 print(f'writing to {outfile}...')
 outfile.write_text(out)

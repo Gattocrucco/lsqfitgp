@@ -1,6 +1,6 @@
 # lsqfitgp/examples/barteasy.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -23,11 +23,11 @@ BART with the simplified subpackage.
 
 import pathlib
 
-import lsqfitgp as lgp
 import numpy as np
 import polars as pl
-import gvar
 from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 # Load and preprocess data
 
@@ -47,10 +47,10 @@ columns = """
 columns = list(filter(None, map(str.strip, columns.split('\n'))))
 
 n = 500
-df = (pl
-    .read_csv(datafile, new_columns=columns, has_header=False)
+df = (
+    pl.read_csv(datafile, new_columns=columns, has_header=False)
     .to_dummies(columns='Sex')
-    .sample(2 * n, seed=20230605) # drop most data to keep the script fast
+    .sample(2 * n, seed=20230605)  # drop most data to keep the script fast
 )
 
 X = df.drop('Rings')
@@ -77,8 +77,5 @@ yhat_std = np.sqrt(np.diag(yhat_cov))
 fig, ax = plt.subplots(num='barteasy', clear=True)
 ax.errorbar(yhat_mean, y_test, xerr=yhat_std, fmt='.')
 ax.plot(y_test, y_test, 'k-')
-ax.set(
-    ylabel='truth',
-    xlabel='prediction',
-)
+ax.set(ylabel='truth', xlabel='prediction')
 fig.show()

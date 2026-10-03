@@ -19,29 +19,24 @@
 
 import abc
 import functools
-import warnings
 import math
+import warnings
 
 import gvar
-import numpy
-from scipy import sparse
 import jax
+import numpy
 from jax import numpy as jnp
+from scipy import sparse
 
-from .. import _Deriv
-from .. import _array
-from .. import _jaxext
-from .. import _gvarext
-from .. import _linalg
+from lsqfitgp import _array, _Deriv, _gvarext, _jaxext, _linalg
+from lsqfitgp._GP import _base
 
-from . import _base
 
 class GPElements(_base.GPBase):
-
     def __init__(self, *, checkpos, checksym, posepsfac, halfmatrix):
-        self._elements = dict() # key -> _Element
-        self._covblocks = dict() # (key, key) -> matrix (2d flattened)
-        self._priordict = {} # key -> gvar array (shaped)
+        self._elements = dict()  # key -> _Element
+        self._covblocks = dict()  # (key, key) -> matrix (2d flattened)
+        self._priordict = {}  # key -> gvar array (shaped)
         self._checkpositive = bool(checkpos)
         self._posepsfac = float(posepsfac)
         self._checksym = bool(checksym)
@@ -91,45 +86,45 @@ class GPElements(_base.GPBase):
         Abstract class for an object holding information associated to a key in
         a GP object.
         """
-    
+
         @property
         @abc.abstractmethod
-        def shape(self): # pragma: no cover
-            """Output shape"""
+        def shape(self):  # pragma: no cover
+            """Output shape."""
             pass
-    
+
         @property
         def size(self):
             return math.prod(self.shape)
 
     class _Points(_Element):
-        """Points where the process is evaluated"""
-    
+        """Points where the process is evaluated."""
+
         def __init__(self, x, deriv, proc):
             assert isinstance(x, (numpy.ndarray, jnp.ndarray, _array.StructuredArray))
             assert isinstance(deriv, _Deriv.Deriv)
             self.x = x
             self.deriv = deriv
             self.proc = proc
-    
+
         @property
         def shape(self):
             return self.x.shape
 
     class _LinTransf(_Element):
-        """Linear transformation of other _Element objects"""
-    
+        """Linear transformation of other _Element objects."""
+
         shape = None
-    
+
         def __init__(self, transf, keys, shape):
             self.transf = transf
             self.keys = keys
             self.shape = shape
-    
+
         def matrices(self, gp):
             """
             Matrix coefficients of the transformation (with flattened inputs
-            and output)
+            and output).
             """
             elems = [gp._elements[key] for key in self.keys]
             matrices = []
@@ -137,8 +132,8 @@ class GPElements(_base.GPBase):
             for i, elem in enumerate(elems):
                 inputs = [
                     jnp.eye(elem.size).reshape((elem.size,) + elem.shape)
-                    if j == i else
-                    jnp.zeros((elem.size,) + ej.shape)
+                    if j == i
+                    else jnp.zeros((elem.size,) + ej.shape)
                     for j, ej in enumerate(elems)
                 ]
                 output = transf(*inputs).reshape(elem.size, self.size).T
@@ -146,30 +141,29 @@ class GPElements(_base.GPBase):
             return matrices
 
     class _Cov(_Element):
-        """User-provided covariance matrix block(s)"""
-    
+        """User-provided covariance matrix block(s)."""
+
         shape = None
-    
+
         def __init__(self, blocks, shape):
-            """ `blocks` = dict (key, key) -> matrix """
+            """`blocks` = dict (key, key) -> matrix."""
             self.blocks = blocks
             self.shape = shape
 
     @_base.newself
     def addx(self, x, key=None, *, deriv=0, proc=_base.GPBase.DefaultProcess):
         """
-        
         Add points where the Gaussian process is evaluated.
-        
+
         The GP object keeps the various x arrays in a dictionary. If ``x`` is an
         array, you have to specify its dictionary key with the ``key`` parameter.
         Otherwise, you can directly pass a dictionary for ``x``.
-        
+
         To specify that on the given ``x`` a derivative of the process instead of
         the process itself should be evaluated, use the parameter ``deriv``.
-        
+
         `addx` may or may not copy the input arrays.
-        
+
         Parameters
         ----------
         x : array or dictionary of arrays
@@ -183,19 +177,15 @@ class GPElements(_base.GPBase):
         proc : hashable
             The process to be evaluated on the points. If not specified, use
             the default process.
-        
         """
-        
-        
-        
         # this interface does not allow adding a single dictionary as x element
         # unless it's wrapped as a 0d numpy array, but this is for the best
-        
+
         deriv = _Deriv.Deriv(deriv)
 
         if proc not in self._procs:
             raise KeyError(f'process named {proc!r} not found')
-                
+
         if hasattr(x, 'keys'):
             if key is not None:
                 raise ValueError('can not specify key if x is a dictionary')
@@ -205,13 +195,13 @@ class GPElements(_base.GPBase):
             if key is None:
                 raise ValueError('x is not dictionary but key is None')
             x = {key: x}
-        
+
         for key in x:
             if key in self._elements:
-                raise KeyError('key {!r} already in GP'.format(key))
-            
+                raise KeyError(f'key {key!r} already in GP')
+
             gx = x[key]
-            
+
             # Convert to JAX array, numpy array or StructuredArray.
             # convert eagerly to jax to avoid problems with tracing.
             gx = _array._asarray_jaxifpossible(gx)
@@ -238,19 +228,18 @@ class GPElements(_base.GPBase):
                 for dim in deriv:
                     if dim not in gx.dtype.names:
                         raise ValueError(f'deriv field {dim!r} not in x')
-            
+
             self._elements[key] = self._Points(gx, deriv, proc)
 
     def _get_x_dtype(self):
-        """ Get the data type of x points """
+        """Get the data type of x points."""
         return self._dtype
-        
+
     def addtransf(self, tensors, key, *, axes=1):
         """
-        
         Apply a linear transformation to already specified process points. The
         result of the transformation is represented by a new key.
-        
+
         Parameters
         ----------
         tensors : dict
@@ -264,39 +253,38 @@ class GPElements(_base.GPBase):
             Number of axes to be summed over for matrix multiplication,
             referring to trailing axes for tensors in ` tensors``, and to
             heading axes for process points. Default 1.
-        
+
         Returns
         -------
         gp : GP
             A new GP object with the applied modifications.
-       
+
         Notes
         -----
         The multiplication between the tensors and the process is done with
         np.tensordot with, by default, 1-axis contraction. For >2d arrays this
         is different from numpy's matrix multiplication, which would act on the
         second-to-last dimension of the second array.
-        
-        """        
+        """
         # Note: it may seem nice that when an array has less axes than `axes`,
         # the summation would be restricted only on the existing axes. However
         # this brings about the ambiguous case where only one of the factors has
         # not enough axes. How many axes do you sum over on the other?
-        
+
         # Check axes.
         assert isinstance(axes, int) and axes >= 0, axes
-        
+
         # Check key.
         if key is None:
             raise ValueError('key can not be None')
         if key in self._elements:
             raise KeyError(f'key {key!r} already in GP')
-        
+
         # Check keys.
         for k in tensors:
             if k not in self._elements:
                 raise KeyError(k)
-        
+
         # Check tensors and convert them to jax arrays.
         if len(tensors) == 0:
             raise ValueError('empty tensors, undetermined output shape')
@@ -308,15 +296,17 @@ class GPElements(_base.GPBase):
                 if self._checkfinite and not jnp.all(jnp.isfinite(t)):
                     raise ValueError(f'tensors[{k!r}] contains infs/nans')
             rshape = self._elements[k].shape
-            if t.shape and t.shape[t.ndim - axes:] != rshape[:axes]:
-                raise ValueError(f'tensors[{k!r}].shape = {t.shape!r} can not be multiplied with shape {rshape!r} with {axes}-axes contraction')
+            if t.shape and t.shape[t.ndim - axes :] != rshape[:axes]:
+                raise ValueError(
+                    f'tensors[{k!r}].shape = {t.shape!r} can not be multiplied with shape {rshape!r} with {axes}-axes contraction'
+                )
             tens[k] = t
-        
+
         # Check shapes broadcast correctly.
         arrays = tens.values()
         elements = (self._elements[k] for k in tens)
         shapes = (
-            t.shape[:t.ndim - axes] + e.shape[axes:] if t.shape else e.shape
+            t.shape[: t.ndim - axes] + e.shape[axes:] if t.shape else e.shape
             for t, e in zip(arrays, elements)
         )
         try:
@@ -327,7 +317,7 @@ class GPElements(_base.GPBase):
             msg += '] contracted with arrays with shapes ['
             msg += ', '.join(repr(e.shape) for e in elements) + ']'
             raise ValueError(msg)
-        
+
         # Define linear transformation.
         def equiv_lintransf(*args):
             assert len(args) == len(tens)
@@ -342,15 +332,15 @@ class GPElements(_base.GPBase):
                 else:
                     out = out + b
             return out
+
         keys = list(tens.keys())
         return self.addlintransf(equiv_lintransf, keys, key, checklin=False)
-    
+
     @_base.newself
     def addlintransf(self, transf, keys, key, *, checklin=None):
         """
-        
         Define a finite linear transformation of the evaluated process.
-        
+
         Parameters
         ----------
         transf : callable
@@ -366,55 +356,52 @@ class GPElements(_base.GPBase):
             If True (default), check that the given function is linear in its
             inputs. The default can be overridden at initialization of the GP
             object. Note that an affine function (x -> a + bx) is not linear.
-        
+
         Raises
         ------
         RuntimeError :
             The transformation seems not to be linear. To disable the linearity
             check, initialize the GP with ``checklin=False``.
-        
         """
-        
-        
         # Check key.
         if key is None:
             raise ValueError('key can not be None')
         if key in self._elements:
             raise KeyError(f'key {key!r} already in GP')
-        
+
         # Check keys.
         for k in keys:
             if k not in self._elements:
                 raise KeyError(k)
-        
+
         # Determine shape.
         class ArrayMockup:
             def __init__(self, elem):
                 self.shape = elem.shape
                 self.dtype = float
+
         inp = [ArrayMockup(self._elements[k]) for k in keys]
         out = jax.eval_shape(transf, *inp)
         shape = out.shape
-        
+
         # Check that the transformation is linear.
         if checklin is None:
             checklin = self._checklin
         if checklin:
             shapes = [self._elements[k].shape for k in keys]
             self._checklinear(transf, shapes)
-        
+
         self._elements[key] = self._LinTransf(transf, keys, shape)
-    
+
     @_base.newself
     def addcov(self, covblocks, key=None, *, decomps=None):
         """
-        
         Add user-defined prior covariance matrix blocks.
-        
+
         Covariance matrices defined with `addcov` represent arbitrary
         finite-dimensional zero-mean Gaussian variables, assumed independent
         from all other variables in the GP object.
-                
+
         Parameters
         ----------
         covblocks : array or dictionary of arrays
@@ -431,7 +418,7 @@ class GPElements(_base.GPBase):
             Pre-computed decompositions of (not necessarily all) diagonal
             blocks, as produced by `decompose`. The keys are single
             GP keys and not pairs like in ``covblocks``.
-        
+
         Raises
         ------
         KeyError :
@@ -441,11 +428,7 @@ class GPElements(_base.GPBase):
             inconsistent.
         TypeError :
             Wrong type of ``covblocks`` or ``decomps``.
-        
         """
-        
-        
-        
         # Check type of `covblocks` and standardize it to dictionary.
         if hasattr(covblocks, 'keys'):
             if key is not None:
@@ -460,10 +443,10 @@ class GPElements(_base.GPBase):
             covblocks = {(key, key): covblocks}
             if decomps is not None:
                 decomps = {key: decomps}
-        
+
         if decomps is None:
             decomps = {}
-        
+
         # Convert blocks to jax arrays and determine shapes from diagonal
         # blocks.
         shapes = {}
@@ -478,25 +461,26 @@ class GPElements(_base.GPBase):
                 # because jnp.asarray(None) interprets None as nan
                 # (see jax issue #14506)
             block = jnp.asarray(block)
-            
+
             if xkey == ykey:
-                
                 if block.ndim % 2 == 1:
                     raise ValueError(f'diagonal block {key!r} has odd number of axes')
-                
+
                 half = block.ndim // 2
                 head = block.shape[:half]
                 tail = block.shape[half:]
                 if head != tail:
-                    raise ValueError(f'shape {block.shape!r} of diagonal block {key!r} is not symmetric')
+                    raise ValueError(
+                        f'shape {block.shape!r} of diagonal block {key!r} is not symmetric'
+                    )
                 shapes[xkey] = head
-                
+
                 with _jaxext.skipifabstract():
                     if self._checksym and not jnp.allclose(block, block.T):
                         raise ValueError(f'diagonal block {key!r} is not symmetric')
-                
+
             preblocks[keys] = block
-        
+
         # Check decomps is consistent with covblocks.
         for key, dec in decomps.items():
             if key not in shapes:
@@ -505,8 +489,10 @@ class GPElements(_base.GPBase):
                 raise TypeError(f'decomps[{key!r}] = {dec!r} is not a decomposition')
             n = math.prod(shapes[key])
             if dec.n != n:
-                raise ValueError(f'decomposition matrix size {dec.n} != diagonal block size {n} for key {key!r}')
-        
+                raise ValueError(
+                    f'decomposition matrix size {dec.n} != diagonal block size {n} for key {key!r}'
+                )
+
         # Reshape blocks to square matrices and check that the shapes of out of
         # diagonal blocks match those of diagonal ones.
         blocks = {}
@@ -521,10 +507,14 @@ class GPElements(_base.GPBase):
             else:
                 for key in keys:
                     if key not in shapes:
-                        raise KeyError(f'key {key!r} from off-diagonal block {keys!r} not found in diagonal blocks')
+                        raise KeyError(
+                            f'key {key!r} from off-diagonal block {keys!r} not found in diagonal blocks'
+                        )
                 eshape = shapes[xkey] + shapes[ykey]
                 if block.shape != eshape:
-                    raise ValueError(f'shape {block.shape!r} of block {keys!r} is not {eshape!r} as expected from diagonal blocks')
+                    raise ValueError(
+                        f'shape {block.shape!r} of block {keys!r} is not {eshape!r} as expected from diagonal blocks'
+                    )
                 xsize = math.prod(shapes[xkey])
                 ysize = math.prod(shapes[ykey])
                 block = block.reshape((xsize, ysize))
@@ -533,7 +523,7 @@ class GPElements(_base.GPBase):
                 blockT = preblocks.get(revkeys)
                 if blockT is None:
                     blocks[revkeys] = block.T
-        
+
         # Check symmetry of out of diagonal blocks.
         if self._checksym:
             with _jaxext.skipifabstract():
@@ -542,8 +532,10 @@ class GPElements(_base.GPBase):
                     if xkey != ykey:
                         blockT = blocks[ykey, xkey]
                         if not jnp.allclose(block.T, blockT):
-                            raise ValueError(f'block {keys!r} is not the transpose of block {revkeys!r}')
-        
+                            raise ValueError(
+                                f'block {keys!r} is not the transpose of block {revkeys!r}'
+                            )
+
         # Create _Cov objects.
         for key, shape in shapes.items():
             self._elements[key] = self._Cov(blocks, shape)
@@ -554,16 +546,16 @@ class GPElements(_base.GPBase):
     def _makecovblock_points(self, xkey, ykey):
         x = self._elements[xkey]
         y = self._elements[ykey]
-        
+
         assert isinstance(x, self._Points)
         assert isinstance(y, self._Points)
-        
+
         kernel = self._crosskernel(x.proc, y.proc)
         if kernel is self._zerokernel:
             return jnp.zeros((x.size, y.size))
-        
+
         kernel = kernel.linop('diff', x.deriv, y.deriv)
-        
+
         if x is y and not self._checksym and self._halfmatrix:
             ix, iy, back = self._triu_indices_and_back(x.size)
             flat = x.x.reshape(-1)
@@ -575,14 +567,14 @@ class GPElements(_base.GPBase):
             ax = x.x.reshape(-1)[:, None]
             ay = y.x.reshape(-1)[None, :]
             cov = kernel(ax, ay)
-        
+
         return cov
-    
+
     def _makecovblock_lintransf_any(self, xkey, ykey):
         x = self._elements[xkey]
         y = self._elements[ykey]
         assert isinstance(x, self._LinTransf)
-        
+
         # Gather covariance matrices to be transformed.
         covs = []
         for k in x.keys:
@@ -591,15 +583,15 @@ class GPElements(_base.GPBase):
             assert cov.shape == (elem.size, y.size)
             cov = cov.reshape(elem.shape + (y.size,))
             covs.append(cov)
-        
+
         # Apply transformation.
         t = jax.vmap(x.transf, -1, -1)
         cov = t(*covs)
         assert cov.shape == x.shape + (y.size,)
-        return cov.reshape((x.size, y.size)) # don't leave out the ()!
+        return cov.reshape((x.size, y.size))  # don't leave out the ()!
         # the () probably was an obscure autograd bug, I don't think it will
         # be a problem again with jax
-            
+
     def _makecovblock(self, xkey, ykey):
         x = self._elements[xkey]
         y = self._elements[ykey]
@@ -610,21 +602,28 @@ class GPElements(_base.GPBase):
         elif isinstance(y, self._LinTransf):
             cov = self._makecovblock_lintransf_any(ykey, xkey)
             cov = cov.T
-        elif isinstance(x, self._Cov) and isinstance(y, self._Cov) and x.blocks is y.blocks and (xkey, ykey) in x.blocks:
+        elif (
+            isinstance(x, self._Cov)
+            and isinstance(y, self._Cov)
+            and x.blocks is y.blocks
+            and (xkey, ykey) in x.blocks
+        ):
             cov = x.blocks[xkey, ykey]
         else:
             cov = jnp.zeros((x.size, y.size))
-        
+
         with _jaxext.skipifabstract():
             if self._checkfinite and not jnp.all(jnp.isfinite(cov)):
                 raise RuntimeError(f'covariance block {(xkey, ykey)!r} is not finite')
             if self._checksym and xkey == ykey and not jnp.allclose(cov, cov.T):
-                raise RuntimeError(f'covariance block {(xkey, ykey)!r} is not symmetric')
+                raise RuntimeError(
+                    f'covariance block {(xkey, ykey)!r} is not symmetric'
+                )
 
         return cov
-    
+
     def _covblock(self, row, col):
-        
+
         if (row, col) not in self._covblocks:
             block = self._makecovblock(row, col)
             if row != col:
@@ -638,23 +637,24 @@ class GPElements(_base.GPBase):
             self._covblocks[row, col] = block
 
         return self._covblocks[row, col]
-        
+
     def _assemblecovblocks(self, rowkeys, colkeys=None):
         if colkeys is None:
             colkeys = rowkeys
-        blocks = [
-            [self._covblock(row, col) for col in colkeys]
-            for row in rowkeys
-        ]
+        blocks = [[self._covblock(row, col) for col in colkeys] for row in rowkeys]
         return jnp.block(blocks)
-    
+
     def _checkpos(self, cov):
         with _jaxext.skipifabstract():
             # eigv = jnp.linalg.eigvalsh(cov)
             # mineigv, maxeigv = jnp.min(eigv), jnp.max(eigv)
             with warnings.catch_warnings():
-                warnings.filterwarnings('ignore', r'Exited at iteration .+? with accuracies')
-                warnings.filterwarnings('ignore', r'Exited postprocessing with accuracies')
+                warnings.filterwarnings(
+                    'ignore', r'Exited at iteration .+? with accuracies'
+                )
+                warnings.filterwarnings(
+                    'ignore', r'Exited postprocessing with accuracies'
+                )
                 X = numpy.random.randn(len(cov), 1)
                 A = numpy.asarray(cov)
                 (mineigv,), _ = sparse.linalg.lobpcg(A, X, largest=False)
@@ -664,10 +664,11 @@ class GPElements(_base.GPBase):
                 bound = -len(cov) * jnp.finfo(cov.dtype).eps * maxeigv * self._posepsfac
                 if mineigv < bound:
                     msg = 'covariance matrix is not positive definite: '
-                    msg += 'mineigv = {:.4g} < {:.4g}'.format(mineigv, bound)
+                    msg += f'mineigv = {mineigv:.4g} < {bound:.4g}'
                     raise numpy.linalg.LinAlgError(msg)
-    
+
     _checkpos_cache = functools.cached_property(lambda self: [])
+
     def _checkpos_keys(self, keys):
         if not self._checkpositive:
             return
@@ -678,9 +679,9 @@ class GPElements(_base.GPBase):
         cov = self._assemblecovblocks(list(keys))
         self._checkpos(cov)
         self._checkpos_cache.append(keys)
-    
+
     def _priorpointscov(self, key):
-        
+
         x = self._elements[key]
         classes = (self._Points, self._Cov)
         assert isinstance(x, classes)
@@ -691,40 +692,34 @@ class GPElements(_base.GPBase):
         ##### temporary fix for gplepage/gvar#49 #####
         cov = numpy.array(cov)
         ##############################################
-        
+
         # get preexisting primary gvars to be correlated with the new ones
         preitems = [
             k
             for k, px in self._elements.items()
-            if isinstance(px, classes)
-            and k in self._priordict
+            if isinstance(px, classes) and k in self._priordict
         ]
         if preitems:
-            prex = numpy.concatenate([
-                numpy.reshape(self._priordict[k], -1)
-                for k in preitems
-            ])
-            precov = numpy.concatenate([
-                self._covblock(k, key).astype(float)
-                for k in preitems
-            ])
+            prex = numpy.concatenate(
+                [numpy.reshape(self._priordict[k], -1) for k in preitems]
+            )
+            precov = numpy.concatenate(
+                [self._covblock(k, key).astype(float) for k in preitems]
+            )
             g = gvar.gvar(mean, cov, prex, precov, fast=True)
         else:
             g = gvar.gvar(mean, cov, fast=True)
-        
+
         return g.reshape(x.shape)
-    
+
     def _priorlintransf(self, key):
         x = self._elements[key]
         assert isinstance(x, self._LinTransf)
-        
+
         # Gather all gvars to be transformed.
-        elems = [
-            self._prior(k).reshape(-1)
-            for k in x.keys
-        ]
+        elems = [self._prior(k).reshape(-1) for k in x.keys]
         g = numpy.concatenate(elems)
-        
+
         # Extract jacobian and split it.
         slices = self._slices(x.keys)
         jac, indices = _gvarext.jacobian(g)
@@ -732,16 +727,16 @@ class GPElements(_base.GPBase):
             jac[s].reshape(self._elements[k].shape + indices.shape)
             for s, k in zip(slices, x.keys)
         ]
-        
+
         # Apply transformation.
         t = jax.vmap(x.transf, -1, -1)
         outjac = t(*jacs)
         assert outjac.shape == x.shape + indices.shape
-        
+
         # Rebuild gvars.
         outg = _gvarext.from_jacobian(numpy.zeros(x.shape), outjac, indices)
         return outg
-    
+
     def _prior(self, key):
         prior = self._priordict.get(key, None)
         if prior is None:
@@ -750,22 +745,21 @@ class GPElements(_base.GPBase):
                 prior = self._priorpointscov(key)
             elif isinstance(x, self._LinTransf):
                 prior = self._priorlintransf(key)
-            else: # pragma: no cover
+            else:  # pragma: no cover
                 raise TypeError(type(x))
             self._priordict[key] = prior
         return prior
-    
+
     def prior(self, key=None, *, raw=False):
         """
-        
         Return an array or a dictionary of arrays of gvars representing the
         prior for the Gaussian process. The returned object is not unique but
         the gvars stored inside are, so all the correlations are kept between
         objects returned by different calls to `prior`.
-        
+
         Calling without arguments returns the complete prior as a dictionary.
         If you specify ``key``, only the array for the requested key is returned.
-        
+
         Parameters
         ----------
         key : None, key or list of keys
@@ -775,36 +769,34 @@ class GPElements(_base.GPBase):
             If True, instead of returning a collection of gvars return
             their covariance matrix as would be returned by `gvar.evalcov`.
             Default False.
-        
+
         Returns
         -------
         If raw=False (default):
-        
+
         prior : np.ndarray or dict
             A collection of gvars representing the prior.
-        
+
         If raw=True:
-        
+
         cov : np.ndarray or dict
             The covariance matrix of the prior.
         """
         raw = bool(raw)
-        
+
         if key is None:
             outkeys = list(self._elements)
         elif isinstance(key, list):
             outkeys = key
         else:
             outkeys = None
-        
+
         self._checkpos_keys([key] if outkeys is None else outkeys)
-        
+
         if raw and outkeys is not None:
             return {
-                (row, col):
-                self._covblock(row, col).reshape(
-                    self._elements[row].shape +
-                    self._elements[col].shape
+                (row, col): self._covblock(row, col).reshape(
+                    self._elements[row].shape + self._elements[col].shape
                 )
                 for row in outkeys
                 for col in outkeys
@@ -815,7 +807,7 @@ class GPElements(_base.GPBase):
             return {key: self._prior(key) for key in outkeys}
         else:
             return self._prior(key)
-        
+
     def _slices(self, keylist):
         """
         Return list of slices for the positions of flattened arrays

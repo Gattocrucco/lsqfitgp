@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels/_zeta.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,29 +17,33 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import functools
 
 from jax import numpy as jnp
 
-from .. import _special
-from .. import _jaxext
-from .. import _Kernel
+from lsqfitgp import _jaxext, _Kernel, _special
+
 
 def check_nu(nu):
     with _jaxext.skipifabstract():
         assert 0 <= nu < jnp.inf, nu
-        
+
+
 def zeta_derivable(*, nu):
     check_nu(nu)
     with _jaxext.skipifabstract():
         return int(max(0, jnp.ceil(nu) - 1))
 
-@_Kernel.crosskernel(bases=(_Kernel.AffineSpan, _Kernel.StationaryKernel,), maxdim=1, derivable=zeta_derivable)
+
+@_Kernel.crosskernel(
+    bases=(_Kernel.AffineSpan, _Kernel.StationaryKernel),
+    maxdim=1,
+    derivable=zeta_derivable,
+)
 def Zeta(delta, *, nu, **_):
     r"""
-    
+
     Zeta kernel.
-    
+
     .. math::
         k(\Delta)
         &= \frac{\Re F(\Delta, s)}{\zeta(s)} =
@@ -50,31 +54,29 @@ def Zeta(delta, *, nu, **_):
         \frac {(2\pi)^s} {2s!}
         \frac {\tilde B_s(\Delta)} {\zeta(s)}
         \quad \text{for even integer $s$.}
-    
+
     It is equivalent to fitting with a Fourier series of period 1 with
     independent priors on the coefficients with mean zero and variance
     :math:`1/(\zeta(s)k^s)` for the :math:`k`-th term. Analogously to
     :class:`Matern`, the process is :math:`\lceil\nu\rceil - 1` times
     derivable, and the highest derivative is continuous iff :math:`\nu\bmod 1
     \ge 1/2`.
-    
+
     The :math:`k = 0` term is not included in the summation, so the mean of the
     process over one period is forced to be zero.
 
     Reference: Petrillo (2022).
-    
+
     """
     check_nu(nu)
     s = 1 + 2 * nu
     nupos = _special.periodic_zeta(delta, s) / _special.zeta(s)
     nuzero = jnp.where(delta % 1, 0, 1)
     return jnp.where(s > 1, nupos, nuzero)
-    
-    # return -(-1) ** (s // 2) * _special.scaled_periodic_bernoulli(s, delta) / jspecial.zeta(s, 1)
-    
 
-    
-    
+    # return -(-1) ** (s // 2) * _special.scaled_periodic_bernoulli(s, delta) / jspecial.zeta(s, 1)
+
+
 @_Kernel.kernel(maxdim=1, derivable=False)
 def ZetaFourier(k, q, *, nu, lloc, rloc, lscale, rscale, offset, ampl):
     check_nu(nu)
@@ -83,31 +85,39 @@ def ZetaFourier(k, q, *, nu, lloc, rloc, lscale, rscale, offset, ampl):
     rorder = jnp.ceil(q / 2)
     lodd = k % 2
     rodd = q % 2
-    var = ampl / (lorder ** s * _special.zeta(s))
+    var = ampl / (lorder**s * _special.zeta(s))
     arg = 2 * jnp.pi * lorder * (lloc / lscale - rloc / rscale)
-    return jnp.where(lorder == rorder,
-        jnp.where(lodd == rodd,
+    return jnp.where(
+        lorder == rorder,
+        jnp.where(
+            lodd == rodd,
             jnp.where(lorder, var * jnp.cos(arg), offset),
             var * jnp.sin(arg) * jnp.where(lodd, 1, -1),
         ),
         0,
     )
 
+
 def crosszeta_derivable(*, nu, **_):
     return 0, zeta_derivable(nu=nu)
 
-@_Kernel.crosskernel(bases=(_Kernel.PreservedBySwap, _Kernel.CrossKernel), maxdim=1, derivable=crosszeta_derivable)
+
+@_Kernel.crosskernel(
+    bases=(_Kernel.PreservedBySwap, _Kernel.CrossKernel),
+    maxdim=1,
+    derivable=crosszeta_derivable,
+)
 def CrossZetaFourier(k, y, *, nu, lloc, rloc, lscale, rscale, offset, ampl):
     check_nu(nu)
     s = 1 + 2 * nu
     order = jnp.ceil(k / 2)
     odd = k % 2
-    var = ampl / (order ** s * _special.zeta(s))
+    var = ampl / (order**s * _special.zeta(s))
     arg = 2 * jnp.pi * order * (lloc / lscale + (y - rloc) / rscale)
-    return jnp.where(odd,
-        var * jnp.sin(arg),
-        jnp.where(order, var * jnp.cos(arg), offset),
+    return jnp.where(
+        odd, var * jnp.sin(arg), jnp.where(order, var * jnp.cos(arg), offset)
     )
+
 
 fourier_doc = r"""
 
@@ -123,16 +133,25 @@ Compute the Fourier series transform of the function.
             \sin\left(\frac{2\pi}T \frac{k+1}2 x\right)
             & \text{if $k$ is odd}
         \end{cases}
-    
+
 The period :math:`T` is 1.
 
 """
 
+
 def fourier_argparser(do):
-    return do if do else None
+    return do or None
+
 
 def translkw(*, dynkw, **initkw):
     return dict(**dynkw, **initkw)
 
-Zeta.make_linop_family('fourier', ZetaFourier, CrossZetaFourier, translkw=translkw, doc=fourier_doc, argparser=fourier_argparser)
 
+Zeta.make_linop_family(
+    'fourier',
+    ZetaFourier,
+    CrossZetaFourier,
+    translkw=translkw,
+    doc=fourier_doc,
+    argparser=fourier_argparser,
+)
