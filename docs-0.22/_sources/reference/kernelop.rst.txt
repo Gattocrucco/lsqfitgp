@@ -109,39 +109,39 @@ Transformations
 
         Compute element-wise inverse of trigonometric sine of input.
 
-          JAX implementation of :obj:`numpy.arcsin`.
+        JAX implementation of :obj:`numpy.arcsin`.
 
-          Args:
-            x: input array or scalar.
+        Args:
+          x: input array or scalar.
 
-          Returns:
-            An array containing the inverse trigonometric sine of each element of ``x``
-            in radians in the range ``[-pi/2, pi/2]``, promoting to inexact dtype.
+        Returns:
+          An array containing the inverse trigonometric sine of each element of ``x``
+          in radians in the range ``[-pi/2, pi/2]``, promoting to inexact dtype.
 
-          Note:
-            - ``jnp.arcsin`` returns ``nan`` when ``x`` is real-valued and not in the closed
-              interval ``[-1, 1]``.
-            - ``jnp.arcsin`` follows the branch cut convention of :obj:`numpy.arcsin` for
-              complex inputs.
+        Note:
+          - ``jnp.arcsin`` returns ``nan`` when ``x`` is real-valued and not in the closed
+            interval ``[-1, 1]``.
+          - ``jnp.arcsin`` follows the branch cut convention of :obj:`numpy.arcsin` for
+            complex inputs.
 
-          See also:
-            - :func:`jax.numpy.sin`: Computes a trigonometric sine of each element of input.
-            - :func:`jax.numpy.arccos` and :func:`jax.numpy.acos`: Computes the inverse of
-              trigonometric cosine of each element of input.
-            - :func:`jax.numpy.arctan` and :func:`jax.numpy.atan`: Computes the inverse of
-              trigonometric tangent of each element of input.
+        See also:
+          - :func:`jax.numpy.sin`: Computes a trigonometric sine of each element of input.
+          - :func:`jax.numpy.arccos` and :func:`jax.numpy.acos`: Computes the inverse of
+            trigonometric cosine of each element of input.
+          - :func:`jax.numpy.arctan` and :func:`jax.numpy.atan`: Computes the inverse of
+            trigonometric tangent of each element of input.
 
-          Examples:
-            >>> x = jnp.array([-2, -1, -0.5, 0, 0.5, 1, 2])
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.arcsin(x)
-            Array([   nan, -1.571, -0.524,  0.   ,  0.524,  1.571,    nan], dtype=float32)
+        Examples:
+          >>> x = jnp.array([-2, -1, -0.5, 0, 0.5, 1, 2])
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.arcsin(x)
+          Array([   nan, -1.571, -0.524,  0.   ,  0.524,  1.571,    nan], dtype=float32)
 
-            For complex-valued inputs:
+          For complex-valued inputs:
 
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.arcsin(3+4j)
-            Array(0.634+2.306j, dtype=complex64, weak_type=True)
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.arcsin(3+4j)
+          Array(0.634+2.306j, dtype=complex64, weak_type=True)
 
 
 .. _arctanh:
@@ -152,46 +152,46 @@ Transformations
 
         Calculate element-wise inverse of hyperbolic tangent of input.
 
-          JAX implementation of :obj:`numpy.arctanh`.
+        JAX implementation of :obj:`numpy.arctanh`.
 
-          The inverse of hyperbolic tangent is defined by:
+        The inverse of hyperbolic tangent is defined by:
 
-          .. math:
+        .. math:
 
-            arctanh(x) = \frac{1}{2} [\ln(1 + x) - \ln(1 - x)]
+          arctanh(x) = \frac{1}{2} [\ln(1 + x) - \ln(1 - x)]
 
-          Args:
-            x: input array or scalar.
+        Args:
+          x: input array or scalar.
 
-          Returns:
-            An array of same shape as ``x`` containing the inverse of hyperbolic tangent
-            of each element of ``x``, promoting to inexact dtype.
+        Returns:
+          An array of same shape as ``x`` containing the inverse of hyperbolic tangent
+          of each element of ``x``, promoting to inexact dtype.
 
-          Note:
-            - ``jnp.arctanh`` returns ``nan`` for real-values outside the range ``[-1, 1]``.
-            - ``jnp.arctanh`` follows the branch cut convention of :obj:`numpy.arctanh`
-              for complex inputs.
+        Note:
+          - ``jnp.arctanh`` returns ``nan`` for real-values outside the range ``[-1, 1]``.
+          - ``jnp.arctanh`` follows the branch cut convention of :obj:`numpy.arctanh`
+            for complex inputs.
 
-          See also:
-            - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
-              input.
-            - :func:`jax.numpy.arcsinh`: Computes the element-wise inverse of hyperbolic
-              sine of the input.
-            - :func:`jax.numpy.arccosh`: Computes the element-wise inverse of hyperbolic
-              cosine of the input.
+        See also:
+          - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
+            input.
+          - :func:`jax.numpy.arcsinh`: Computes the element-wise inverse of hyperbolic
+            sine of the input.
+          - :func:`jax.numpy.arccosh`: Computes the element-wise inverse of hyperbolic
+            cosine of the input.
 
-          Examples:
-            >>> x = jnp.array([-2, -1, -0.5, 0, 0.5, 1, 2])
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.arctanh(x)
-            Array([   nan,   -inf, -0.549,  0.   ,  0.549,    inf,    nan], dtype=float32)
+        Examples:
+          >>> x = jnp.array([-2, -1, -0.5, 0, 0.5, 1, 2])
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.arctanh(x)
+          Array([   nan,   -inf, -0.549,  0.   ,  0.549,    inf,    nan], dtype=float32)
 
-            For complex-valued input:
+          For complex-valued input:
 
-            >>> x1 = jnp.array([-2+0j, 3+0j, 4-1j])
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.arctanh(x1)
-            Array([-0.549+1.571j,  0.347+1.571j,  0.239-1.509j], dtype=complex64)
+          >>> x1 = jnp.array([-2+0j, 3+0j, 4-1j])
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.arctanh(x1)
+          Array([-0.549+1.571j,  0.347+1.571j,  0.239-1.509j], dtype=complex64)
 
 
 .. _cosh:
@@ -202,51 +202,64 @@ Transformations
 
         Calculate element-wise hyperbolic cosine of input.
 
-          JAX implementation of :obj:`numpy.cosh`.
+        JAX implementation of :obj:`numpy.cosh`.
 
-          The hyperbolic cosine is defined by:
+        The hyperbolic cosine is defined by:
 
-          .. math:
+        .. math:
 
-            cosh(x) = \frac{e^x + e^{-x}}{2}
+          cosh(x) = \frac{e^x + e^{-x}}{2}
 
-          Args:
-            x: input array or scalar.
+        Args:
+          x: input array or scalar.
 
-          Returns:
-            An array containing the hyperbolic cosine of each element of ``x``, promoting
-            to inexact dtype.
+        Returns:
+          An array containing the hyperbolic cosine of each element of ``x``, promoting
+          to inexact dtype.
 
-          Note:
-            ``jnp.cosh`` is equivalent to computing ``jnp.cos(1j * x)``.
+        Note:
+          ``jnp.cosh`` is equivalent to computing ``jnp.cos(1j * x)``.
 
-          See also:
-            - :func:`jax.numpy.sinh`: Computes the element-wise hyperbolic sine of the input.
-            - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
-              input.
-            - :func:`jax.numpy.arccosh`:  Computes the element-wise inverse of hyperbolic
-              cosine of the input.
+        Numerical Precision:
+          Maximum error in units in the last place (ULPs):
 
-          Examples:
-            >>> x = jnp.array([[3, -1, 0],
-            ...                [4, 7, -5]])
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.cosh(x)
-            Array([[ 10.068,   1.543,   1.   ],
-                   [ 27.308, 548.317,  74.21 ]], dtype=float32)
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.cos(1j * x)
-            Array([[ 10.068+0.j,   1.543+0.j,   1.   +0.j],
-                   [ 27.308+0.j, 548.317+0.j,  74.21 +0.j]],      dtype=complex64, weak_type=True)
+          ==============  ============  ===========  ===========
+          Platform        ``bfloat16``  ``float16``  ``float32``
+          ==============  ============  ===========  ===========
+          CPU             0             1            24
+          NVIDIA GPU      0             1            2
+          TPU v2–v5e      0             1            93
+          TPU v5p         1             1            99
+          TPU v6e, 7x     1             1            59
+          ==============  ============  ===========  ===========
 
-            For complex-valued input:
+        See also:
+          - :func:`jax.numpy.sinh`: Computes the element-wise hyperbolic sine of the input.
+          - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
+            input.
+          - :func:`jax.numpy.arccosh`:  Computes the element-wise inverse of hyperbolic
+            cosine of the input.
 
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.cosh(5+1j)
-            Array(40.096+62.44j, dtype=complex64, weak_type=True)
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.cos(1j * (5+1j))
-            Array(40.096+62.44j, dtype=complex64, weak_type=True)
+        Examples:
+          >>> x = jnp.array([[3, -1, 0],
+          ...                [4, 7, -5]])
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.cosh(x)
+          Array([[ 10.068,   1.543,   1.   ],
+                 [ 27.308, 548.317,  74.21 ]], dtype=float32)
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.cos(1j * x)
+          Array([[ 10.068+0.j,   1.543+0.j,   1.   +0.j],
+                 [ 27.308+0.j, 548.317+0.j,  74.21 +0.j]],      dtype=complex64, weak_type=True)
+
+          For complex-valued input:
+
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.cosh(5+1j)
+          Array(40.096+62.44j, dtype=complex64, weak_type=True)
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.cos(1j * (5+1j))
+          Array(40.096+62.44j, dtype=complex64, weak_type=True)
 
 
 .. _exp:
@@ -257,39 +270,53 @@ Transformations
 
         Calculate element-wise exponential of the input.
 
-          JAX implementation of :obj:`numpy.exp`.
+        JAX implementation of :obj:`numpy.exp`.
 
-          Args:
-            x: input array or scalar
+        Args:
+          x: input array or scalar
 
-          Returns:
-            An array containing the exponential of each element in ``x``, promotes to
-            inexact dtype.
+        Returns:
+          An array containing the exponential of each element in ``x``, promotes to
+          inexact dtype.
 
-          See also:
-            - :func:`jax.numpy.log`: Calculates element-wise logarithm of the input.
-            - :func:`jax.numpy.expm1`: Calculates :math:`e^x-1` of each element of the
-              input.
-            - :func:`jax.numpy.exp2`: Calculates base-2 exponential of each element of
-              the input.
+        Numerical Precision:
+          Maximum error in units in the last place (ULPs):
 
-          Examples:
-            ``jnp.exp`` follows the properties of exponential such as :math:`e^{(a+b)}
-            = e^a * e^b`.
+          ==============  ============  ===========  ===========
+          Platform        ``bfloat16``  ``float16``  ``float32``
+          ==============  ============  ===========  ===========
+          CPU             0             1            1
+          NVIDIA GPU      1             1            2
+          TPU v2–v5e      1             1            116
+          TPU v5p         1             1            109
+          TPU v6e         1             1            64
+          TPU 7x          1             1            65
+          ==============  ============  ===========  ===========
 
-            >>> x1 = jnp.array([2, 4, 3, 1])
-            >>> x2 = jnp.array([1, 3, 2, 3])
-            >>> with jnp.printoptions(precision=2, suppress=True):
-            ...   print(jnp.exp(x1+x2))
-            [  20.09 1096.63  148.41   54.6 ]
-            >>> with jnp.printoptions(precision=2, suppress=True):
-            ...   print(jnp.exp(x1)*jnp.exp(x2))
-            [  20.09 1096.63  148.41   54.6 ]
+        See also:
+          - :func:`jax.numpy.log`: Calculates element-wise logarithm of the input.
+          - :func:`jax.numpy.expm1`: Calculates :math:`e^x-1` of each element of the
+            input.
+          - :func:`jax.numpy.exp2`: Calculates base-2 exponential of each element of
+            the input.
 
-            This property holds for complex input also:
+        Examples:
+          ``jnp.exp`` follows the properties of exponential such as :math:`e^{(a+b)}
+          = e^a * e^b`.
 
-            >>> jnp.allclose(jnp.exp(3-4j), jnp.exp(3)*jnp.exp(-4j))
-            Array(True, dtype=bool)
+          >>> x1 = jnp.array([2, 4, 3, 1])
+          >>> x2 = jnp.array([1, 3, 2, 3])
+          >>> with jnp.printoptions(precision=2, suppress=True):
+          ...   print(jnp.exp(x1+x2))
+          [  20.09 1096.63  148.41   54.6 ]
+          >>> with jnp.printoptions(precision=2, suppress=True):
+          ...   print(jnp.exp(x1)*jnp.exp(x2))
+          [  20.09 1096.63  148.41   54.6 ]
+
+          This property holds for complex input also:
+
+          >>> jnp.allclose(jnp.exp(3-4j), jnp.exp(3)*jnp.exp(-4j))
+          Array(True, dtype=bool)
 
 
 .. _expm1:
@@ -300,42 +327,42 @@ Transformations
 
         Calculate ``exp(x)-1`` of each element of the input.
 
-          JAX implementation of :obj:`numpy.expm1`.
+        JAX implementation of :obj:`numpy.expm1`.
 
-          Args:
-            x: input array or scalar.
+        Args:
+          x: input array or scalar.
 
-          Returns:
-            An array containing ``exp(x)-1`` of each element in ``x``, promotes to inexact
-            dtype.
+        Returns:
+          An array containing ``exp(x)-1`` of each element in ``x``, promotes to inexact
+          dtype.
 
-          Note:
-            ``jnp.expm1`` has much higher precision than the naive computation of
-            ``exp(x)-1`` for small values of ``x``.
+        Note:
+          ``jnp.expm1`` has much higher precision than the naive computation of
+          ``exp(x)-1`` for small values of ``x``.
 
-          See also:
-            - :func:`jax.numpy.log1p`: Calculates element-wise logarithm of one plus input.
-            - :func:`jax.numpy.exp`: Calculates element-wise exponential of the input.
-            - :func:`jax.numpy.exp2`: Calculates base-2 exponential of each element of
-              the input.
+        See also:
+          - :func:`jax.numpy.log1p`: Calculates element-wise logarithm of one plus input.
+          - :func:`jax.numpy.exp`: Calculates element-wise exponential of the input.
+          - :func:`jax.numpy.exp2`: Calculates base-2 exponential of each element of
+            the input.
 
-          Examples:
-            >>> x = jnp.array([2, -4, 3, -1])
-            >>> with jnp.printoptions(precision=2, suppress=True):
-            ...   print(jnp.expm1(x))
-            [ 6.39 -0.98 19.09 -0.63]
-            >>> with jnp.printoptions(precision=2, suppress=True):
-            ...   print(jnp.exp(x)-1)
-            [ 6.39 -0.98 19.09 -0.63]
+        Examples:
+          >>> x = jnp.array([2, -4, 3, -1])
+          >>> with jnp.printoptions(precision=2, suppress=True):
+          ...   print(jnp.expm1(x))
+          [ 6.39 -0.98 19.09 -0.63]
+          >>> with jnp.printoptions(precision=2, suppress=True):
+          ...   print(jnp.exp(x)-1)
+          [ 6.39 -0.98 19.09 -0.63]
 
-            For values very close to 0, ``jnp.expm1(x)`` is much more accurate than
-            ``jnp.exp(x)-1``:
+          For values very close to 0, ``jnp.expm1(x)`` is much more accurate than
+          ``jnp.exp(x)-1``:
 
-            >>> x1 = jnp.array([1e-4, 1e-6, 2e-10])
-            >>> jnp.expm1(x1)
-            Array([1.0000500e-04, 1.0000005e-06, 2.0000000e-10], dtype=float32)
-            >>> jnp.exp(x1)-1
-            Array([1.00016594e-04, 9.53674316e-07, 0.00000000e+00], dtype=float32)
+          >>> x1 = jnp.array([1e-4, 1e-6, 2e-10])
+          >>> jnp.expm1(x1)
+          Array([1.0000500e-04, 1.0000005e-06, 2.0000000e-10], dtype=float32)
+          >>> jnp.exp(x1)-1
+          Array([1.00016594e-04, 9.53674316e-07, 0.00000000e+00], dtype=float32)
 
 
 .. _expm1x:
@@ -355,22 +382,22 @@ Transformations
 
         Modified bessel function of zeroth order.
 
-          JAX implementation of :obj:`scipy.special.i0`.
+        JAX implementation of :obj:`scipy.special.i0`.
 
-          .. math:
+        .. math:
 
-             \mathrm{i0}(x) = I_0(x) = \sum_{k=0}^\infty \frac{(x^2/4)^k}{(k!)^2}
+           \mathrm{i0}(x) = I_0(x) = \sum_{k=0}^\infty \frac{(x^2/4)^k}{(k!)^2}
 
-          Args:
-            x: array, real-valued
+        Args:
+          x: array, real-valued
 
-          Returns:
-            array of bessel function values.
+        Returns:
+          array of bessel function values.
 
-          See also:
-            - :func:`jax.scipy.special.i0e`
-            - :func:`jax.scipy.special.i1`
-            - :func:`jax.scipy.special.i1e`
+        See also:
+          - :func:`jax.scipy.special.i0e`
+          - :func:`jax.scipy.special.i1`
+          - :func:`jax.scipy.special.i1e`
 
 
 .. _i1:
@@ -381,22 +408,22 @@ Transformations
 
         Modified bessel function of first order.
 
-          JAX implementation of :obj:`scipy.special.i1`.
+        JAX implementation of :obj:`scipy.special.i1`.
 
-          .. math:
+        .. math:
 
-             \mathrm{i1}(x) = I_1(x) = \frac{1}{2}x\sum_{k=0}^\infty\frac{(x^2/4)^k}{k!(k+1)!}
+           \mathrm{i1}(x) = I_1(x) = \frac{1}{2}x\sum_{k=0}^\infty\frac{(x^2/4)^k}{k!(k+1)!}
 
-          Args:
-            x: array, real-valued
+        Args:
+          x: array, real-valued
 
-          Returns:
-            array of bessel function values
+        Returns:
+          array of bessel function values
 
-          See also:
-            - :func:`jax.scipy.special.i0`
-            - :func:`jax.scipy.special.i0e`
-            - :func:`jax.scipy.special.i1e`
+        See also:
+          - :func:`jax.scipy.special.i0`
+          - :func:`jax.scipy.special.i0e`
+          - :func:`jax.scipy.special.i1e`
 
 
 .. _mul:
@@ -459,52 +486,65 @@ Transformations
 
         Calculate element-wise hyperbolic sine of input.
 
-          JAX implementation of :obj:`numpy.sinh`.
+        JAX implementation of :obj:`numpy.sinh`.
 
-          The hyperbolic sine is defined by:
+        The hyperbolic sine is defined by:
 
-          .. math:
+        .. math:
 
-            sinh(x) = \frac{e^x - e^{-x}}{2}
+          sinh(x) = \frac{e^x - e^{-x}}{2}
 
-          Args:
-            x: input array or scalar.
+        Args:
+          x: input array or scalar.
 
-          Returns:
-            An array containing the hyperbolic sine of each element of ``x``, promoting
-            to inexact dtype.
+        Returns:
+          An array containing the hyperbolic sine of each element of ``x``, promoting
+          to inexact dtype.
 
-          Note:
-            ``jnp.sinh`` is equivalent to computing ``-1j * jnp.sin(1j * x)``.
+        Note:
+          ``jnp.sinh`` is equivalent to computing ``-1j * jnp.sin(1j * x)``.
 
-          See also:
-            - :func:`jax.numpy.cosh`: Computes the element-wise hyperbolic cosine of the
-              input.
-            - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
-              input.
-            - :func:`jax.numpy.arcsinh`:  Computes the element-wise inverse of hyperbolic
-              sine of the input.
+        Numerical Precision:
+          Maximum error in units in the last place (ULPs):
 
-          Examples:
-            >>> x = jnp.array([[-2, 3, 5],
-            ...                [0, -1, 4]])
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.sinh(x)
-            Array([[-3.627, 10.018, 74.203],
-                   [ 0.   , -1.175, 27.29 ]], dtype=float32)
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   -1j * jnp.sin(1j * x)
-            Array([[-3.627+0.j, 10.018-0.j, 74.203-0.j],
-                   [ 0.   -0.j, -1.175+0.j, 27.29 -0.j]],      dtype=complex64, weak_type=True)
+          ==============  ============  ===========  ===========
+          Platform        ``bfloat16``  ``float16``  ``float32``
+          ==============  ============  ===========  ===========
+          CPU             0             1            24
+          NVIDIA GPU      0             0            3
+          TPU v2–v5e      1             1            1794
+          TPU v5p         1             1            1332
+          TPU v6e, 7x     1             1            59
+          ==============  ============  ===========  ===========
 
-            For complex-valued input:
+        See also:
+          - :func:`jax.numpy.cosh`: Computes the element-wise hyperbolic cosine of the
+            input.
+          - :func:`jax.numpy.tanh`: Computes the element-wise hyperbolic tangent of the
+            input.
+          - :func:`jax.numpy.arcsinh`:  Computes the element-wise inverse of hyperbolic
+            sine of the input.
 
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   jnp.sinh(3-2j)
-            Array(-4.169-9.154j, dtype=complex64, weak_type=True)
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   -1j * jnp.sin(1j * (3-2j))
-            Array(-4.169-9.154j, dtype=complex64, weak_type=True)
+        Examples:
+          >>> x = jnp.array([[-2, 3, 5],
+          ...                [0, -1, 4]])
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.sinh(x)
+          Array([[-3.627, 10.018, 74.203],
+                 [ 0.   , -1.175, 27.29 ]], dtype=float32)
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   -1j * jnp.sin(1j * x)
+          Array([[-3.627+0.j, 10.018-0.j, 74.203-0.j],
+                 [ 0.   -0.j, -1.175+0.j, 27.29 -0.j]],      dtype=complex64, weak_type=True)
+
+          For complex-valued input:
+
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   jnp.sinh(3-2j)
+          Array(-4.169-9.154j, dtype=complex64, weak_type=True)
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   -1j * jnp.sin(1j * (3-2j))
+          Array(-4.169-9.154j, dtype=complex64, weak_type=True)
 
 
 .. _tan:
@@ -515,28 +555,41 @@ Transformations
 
         Compute a trigonometric tangent of each element of input.
 
-          JAX implementation of :obj:`numpy.tan`.
+        JAX implementation of :obj:`numpy.tan`.
 
-          Args:
-            x: scalar or array. Angle in radians.
+        Args:
+          x: scalar or array. Angle in radians.
 
-          Returns:
-            An array containing the tangent of each element in ``x``, promotes to inexact
-            dtype.
+        Returns:
+          An array containing the tangent of each element in ``x``, promotes to inexact
+          dtype.
 
-          See also:
-            - :func:`jax.numpy.sin`: Computes a trigonometric sine of each element of input.
-            - :func:`jax.numpy.cos`: Computes a trigonometric cosine of each element of
-              input.
-            - :func:`jax.numpy.arctan` and :func:`jax.numpy.atan`: Computes the inverse of
-              trigonometric tangent of each element of input.
+        Numerical Precision:
+          Maximum error in units in the last place (ULPs):
 
-          Examples:
-            >>> pi = jnp.pi
-            >>> x = jnp.array([0, pi/6, pi/4, 3*pi/4, 5*pi/6])
-            >>> with jnp.printoptions(precision=3, suppress=True):
-            ...   print(jnp.tan(x))
-            [ 0.     0.577  1.    -1.    -0.577]
+          ==============  ============  ===========  ===========
+          Platform        ``bfloat16``  ``float16``  ``float32``
+          ==============  ============  ===========  ===========
+          CPU             0             1            0
+          NVIDIA GPU      0             1            3
+          TPU v2–v5e      0             1            6
+          TPU v5p         0             1            7
+          TPU v6e, 7x     0             1            5
+          ==============  ============  ===========  ===========
+
+        See also:
+          - :func:`jax.numpy.sin`: Computes a trigonometric sine of each element of input.
+          - :func:`jax.numpy.cos`: Computes a trigonometric cosine of each element of
+            input.
+          - :func:`jax.numpy.arctan` and :func:`jax.numpy.atan`: Computes the inverse of
+            trigonometric tangent of each element of input.
+
+        Examples:
+          >>> pi = jnp.pi
+          >>> x = jnp.array([0, pi/6, pi/4, 3*pi/4, 5*pi/6])
+          >>> with jnp.printoptions(precision=3, suppress=True):
+          ...   print(jnp.tan(x))
+          [ 0.     0.577  1.    -1.    -0.577]
 
 
 .. _cond:

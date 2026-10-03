@@ -10,10 +10,10 @@
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=f6a572b4" />
     <script src="../_static/documentation_options.js?v=feaa0556"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="8. Partial derivatives" href="partial.html" />
@@ -133,9 +133,9 @@ structured arrays have named fields:</p>
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
 
-<span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">)])</span>
-<span class="n">xy</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
-<span class="n">xy</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+<span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">'x'</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="s1">'y'</span><span class="p">,</span> <span class="nb">float</span><span class="p">)])</span>
+<span class="n">xy</span><span class="p">[</span><span class="s1">'x'</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">xy</span><span class="p">[</span><span class="s1">'y'</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
 </pre></div>
 </div>
 <p>Here we used a bit of Numpy indexing and broadcasting to fill a 30x30 array
@@ -162,21 +162,21 @@ prior.</p>
 
 <span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
     <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
-    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">'foo'</span><span class="p">)</span>
 <span class="p">)</span>
 
-<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">'foo'</span><span class="p">)</span>
 <span class="n">sample</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>We plot the sample in 3d:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">&#39;lsqfitgp example&#39;</span><span class="p">,</span> <span class="n">subplot_kw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">))</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="s1">'lsqfitgp example'</span><span class="p">,</span> <span class="n">subplot_kw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s1">'3d'</span><span class="p">))</span>
 
-<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xy</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">xy</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xy</span><span class="p">[</span><span class="s1">'x'</span><span class="p">],</span> <span class="n">xy</span><span class="p">[</span><span class="s1">'y'</span><span class="p">],</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'viridis'</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;in1.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'in1.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/in1.png" src="../_images/in1.png" />
@@ -192,17 +192,17 @@ as long as it can apply Pythagoras’ theorem. So the kernel we used is:</p>
 dimension. Let’s use a random walk along <span class="math notranslate nohighlight">\(x\)</span> and an exponential
 quadratic along <span class="math notranslate nohighlight">\(y\)</span>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
-    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">Wiener</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=-</span><span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">))</span>
-    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">Wiener</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">'x'</span><span class="p">,</span> <span class="n">loc</span><span class="o">=-</span><span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">'y'</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">'foo'</span><span class="p">)</span>
 <span class="p">)</span>
 
-<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">'foo'</span><span class="p">)</span>
 <span class="n">sample</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xy</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">xy</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xy</span><span class="p">[</span><span class="s1">'x'</span><span class="p">],</span> <span class="n">xy</span><span class="p">[</span><span class="s1">'y'</span><span class="p">],</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'viridis'</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;in2.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'in2.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/in2.png" src="../_images/in2.png" />
@@ -211,30 +211,30 @@ keyword to specify the dimension, and <code class="docutils literal notranslate"
 (it raises an error if it gets negative input points).</p>
 <p>In many dimensions it can get tedious to specify all the field names, it would
 be simpler if multidimensional input was implemented with arrays. Luckily
-<a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v2.3)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> supports array data types in fields. Let’s redo the first example,
+<a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v2.5)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> supports array data types in fields. Let’s redo the first example,
 this time without named fields:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="mi">2</span><span class="p">)])</span>
-<span class="n">xy</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
-<span class="n">xy</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">'foo'</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="mi">2</span><span class="p">)])</span>
+<span class="n">xy</span><span class="p">[</span><span class="s1">'foo'</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">xy</span><span class="p">[</span><span class="s1">'foo'</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
 </pre></div>
 </div>
 <p>Ok, I lied a bit, there’s still a field name around. It is needed because
 otherwise <a class="reference internal" href="../index.html#module-lsqfitgp" title="lsqfitgp"><code class="xref py py-mod docutils literal notranslate"><span class="pre">lsqfitgp</span></code></a> would not know that the last axis with size 2 is a
 2-dimensional point instead of a pair of points, so we encapsulate it in a
-field. <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v2.3)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> treats the ellipsis <code class="docutils literal notranslate"><span class="pre">...</span></code> as a string of colons <code class="docutils literal notranslate"><span class="pre">:</span></code> of
+field. <a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v2.5)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> treats the ellipsis <code class="docutils literal notranslate"><span class="pre">...</span></code> as a string of colons <code class="docutils literal notranslate"><span class="pre">:</span></code> of
 the appropriate length.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="p">(</span><span class="n">lgp</span>
     <span class="o">.</span><span class="n">GP</span><span class="p">(</span><span class="n">lgp</span><span class="o">.</span><span class="n">ExpQuad</span><span class="p">())</span>
-    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">addx</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="s1">'foo'</span><span class="p">)</span>
 <span class="p">)</span>
 
-<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+<span class="n">prior</span> <span class="o">=</span> <span class="n">gp</span><span class="o">.</span><span class="n">prior</span><span class="p">(</span><span class="s1">'foo'</span><span class="p">)</span>
 <span class="n">sample</span> <span class="o">=</span> <span class="n">gvar</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">prior</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xy</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">xy</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">xy</span><span class="p">[</span><span class="s1">'foo'</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">xy</span><span class="p">[</span><span class="s1">'foo'</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'viridis'</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;in3.png&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'in3.png'</span><span class="p">)</span>
 </pre></div>
 </div>
 <img alt="../_images/in3.png" src="../_images/in3.png" />
@@ -268,10 +268,10 @@ write your own kernel.</p>
     <div class="clearer"></div>
   </div>
     <div class="footer">
-      &#169;2020-2025, Giacomo Petrillo.
+      &#169;2020-2026, Giacomo Petrillo.
       
       |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
       
       |
