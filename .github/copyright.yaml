@@ -1,0 +1,13 @@
+# Configuration of the `copyright` pre-commit hook (sbrunner/hooks), adapted to
+# the year lists in the lsqfitgp license headers, e.g. `Copyright (c) 2022,
+# 2023, 2024, Giacomo Petrillo`. The hook only manages the years: when a file is
+# modified in a year missing from the list, the year is appended. The license
+# text is never touched.
+
+# a single year, not followed by more years
+one_date_re: '\bCopyright \(c\) (?P<year>[0-9]{4})\b(?!, [0-9]{4}\b)'
+one_date_format: 'Copyright (c) {year}'
+# a list of two or more years: `from` captures the whole list (via a lookahead),
+# `to` the last year
+two_date_re: '\bCopyright \(c\) (?=(?P<from>[0-9]{4}(?:, [0-9]{4})+)\b)(?:[0-9]{4}, )+(?P<to>[0-9]{4})\b'
+two_date_format: 'Copyright (c) {from}, {to}'
