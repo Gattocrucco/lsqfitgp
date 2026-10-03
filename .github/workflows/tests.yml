@@ -1,6 +1,6 @@
-# lsqfitgp/workflows/tests.yml
+# lsqfitgp/.github/workflows/tests.yml
 #
-# Copyright (c) 2022, 2023, 2024 Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,156 +17,308 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-name: tests
+name: ci
+permissions:
+  contents: read
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  
-  tests:
+  pre-commit:
+    runs-on: ubuntu-latest
+    env:
+      SKIP: no-commit-to-branch
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
-    if: github.repository == 'Gattocrucco/lsqfitgp'
+      - name: Install uv
+        uses: ./.github/actions/setup-uv
+
+      - name: Determine base ref
+        id: refs
+        run: |
+          from='${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || (startsWith(github.ref, 'refs/heads/') && github.event.before) || '' }}'
+          # The first push to a branch reports the all-zeros SHA as `before`:
+          # there is no prior commit to diff against, so blank it out and let
+          # the "all files" run below provide coverage.
+          if [ "$from" = '0000000000000000000000000000000000000000' ]; then from=''; fi
+          echo "from=$from" >> "$GITHUB_OUTPUT"
+
+      - name: Run pre-commit on changed files
+        # even if we run it on all files below, it's convenient to see if something fails in new changes first
+        if: steps.refs.outputs.from != ''
+        run: make lint ARGS='--verbose --show-diff-on-failure --from-ref=${{ steps.refs.outputs.from }} --to-ref=HEAD'
+
+      - name: Run pre-commit on all files
+        # this is for when pre-commit itself is changed, which may affect unchanged files
+        run: make lint ARGS='--verbose --all-files'
+
+  gitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: ./.github/actions/setup-uv
+
+      - name: Determine base ref
+        id: refs
+        run: |
+          from='${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || (startsWith(github.ref, 'refs/heads/') && github.event.before) || '' }}'
+          # The first push to a branch reports the all-zeros SHA as `before`:
+          # there is no prior commit to lint against, so skip.
+          if [ "$from" = '0000000000000000000000000000000000000000' ]; then from=''; fi
+          echo "from=$from" >> "$GITHUB_OUTPUT"
+
+      - name: Run gitlint on new commits
+        if: steps.refs.outputs.from != ''
+        run: uvx --from gitlint-core gitlint --commits=${{ steps.refs.outputs.from }}..HEAD --fail-without-commits --debug
+
+  tests:
+    name: ${{ matrix.target }}-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental != '' }}
+
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.14"]
+        target: [tests]
         include:
-          - os: macos-latest # macos-latest is presently the faster runner
-            python-version: "3.10"
+          - os: ubuntu-latest
+            target: tests-old
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          python-version: ${{ matrix.python-version }}
-      
-      - name: Install package and dependencies
-        if: matrix.python-version == '3.14'
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install '.[tests]'
-      
-      - name: Install package and outdated dependencies
-        if: matrix.python-version == '3.10'
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install '.[tests-old]'
-      
-      - name: Run unit tests
-        run: make COVERAGE_SUFFIX=-${{ matrix.os }}-py${{ matrix.python-version }} tests
+          # full history with tags, so hatch-vcs can derive the version
+          fetch-depth: 0
 
-      - name: List files (for debug)
-        run: ls -aR
-      
-      - name: Save coverage information
-        uses: actions/upload-artifact@v4
+      - name: Install uv
+        uses: ./.github/actions/setup-uv
         with:
-          name: coverage.tests-${{ matrix.os }}-py${{ matrix.python-version }}
-          path: .coverage.tests-${{ matrix.os }}-py${{ matrix.python-version }}
+          cache-suffix: -${{ matrix.target }}
+
+      - name: Run unit tests
+        # tests-old is several times slower than tests
+        timeout-minutes: 180
+        run: make ${{ matrix.target }} COVERAGE_SUFFIX=-${{ matrix.os }} NPROC=auto
+
+      - name: Save coverage information
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          archive: false # the artifact name is equal to the file name
+          path: .coverage.${{ matrix.target }}-${{ matrix.os }}
           include-hidden-files: true
           if-no-files-found: error
 
   docs:
-
-    runs-on: macos-latest
     # run on macos because of a linux bug which breaks docs/components4.png
-    needs: tests
+    runs-on: macos-latest
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          python-version: "3.14"
-      - name: Install package and dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install '.[docs]'
-      - name: Run examples
-        run: make COVERAGE_SUFFIX=-macos-latest-py3.14 examples
-      - name: Run documentation code
-        run: make COVERAGE_SUFFIX=-macos-latest-py3.14 docscode
-      - name: Generate documentation
-        run: make docs
-      - name: Copy documentation to github pages
-        if: github.event_name == 'push'
-        uses: JamesIves/github-pages-deploy-action@v4.6.8
-        with:
-          branch: gh-pages
-          folder: docs/_build/html
-          target-folder: docs
-      - name: Get version number
-        run: echo lsqfitgp_version=`python -c 'import re, lsqfitgp; print(re.fullmatch(r"(\d+(\.\d+)*)(.dev\d+)?", lsqfitgp.__version__).group(1))'` >> $GITHUB_ENV
-      - name: Copy documentation to github pages (versioned directory)
-        if: github.event_name == 'push'
-        uses: JamesIves/github-pages-deploy-action@v4.6.8
-        with:
-          branch: gh-pages
-          folder: docs/_build/html
-          target-folder: docs-${{ env.lsqfitgp_version }}
-      - name: Save coverage from examples
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage.examples-macos-latest-py3.14
-          path: .coverage.examples-macos-latest-py3.14
-          include-hidden-files: true
-          if-no-files-found: error
-      - name: Save coverage from tutorials
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage.docs-macos-latest-py3.14
-          path: .coverage.docs-macos-latest-py3.14
-          include-hidden-files: true
-          if-no-files-found: error
+          fetch-depth: 0 # this fetches the full history
 
-  postcov:
+      - name: Build documentation
+        uses: ./.github/actions/build-docs
+        with:
+          coverage-suffix: -macos-latest
 
+  covreport:
     runs-on: ubuntu-latest
     needs: [tests, docs]
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          python-version: "3.14"
-      - name: Install coverage
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install coverage
+          # full history with tags, so hatch-vcs can derive the version
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: ./.github/actions/setup-uv
+
       - name: Get coverage files
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          pattern: coverage.*
+          pattern: .coverage*
           merge-multiple: true
+
       - name: List files
         run: |
           pwd
           ls -a
           ls src/lsqfitgp
+
       - name: Print coverage debug
         run: |
-          coverage debug config
-          coverage debug sys
-          coverage debug data
+          uv run --dev python -m coverage debug config
+          uv run --dev python -m coverage debug sys
+
       - name: Generate coverage report
         run: make covreport
-      - name: Remove gitignore file
-        run: rm htmlcov/.gitignore
-      - name: Copy report to github pages
-        if: github.event_name == 'push'
-        uses: JamesIves/github-pages-deploy-action@v4.6.8
+
+      - name: Save coverage report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: covreport
+          path: htmlcov
+          if-no-files-found: error
+
+      - name: Check coverage threshold
+        run: make covcheck
+
+  diffcov:
+    name: diffcov
+    # Changed-lines coverage only makes sense relative to a PR base branch.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs: [tests, docs]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # fetch-depth 0 fetches all branches/tags, so origin/<base> and the
+          # PR merge base are available for the diff.
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: ./.github/actions/setup-uv
+
+      - name: Get coverage files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: .coverage*
+          merge-multiple: true
+
+      - name: Check changed-lines coverage
+        run: make diffcov DIFF_BASE=origin/${{ github.base_ref }}
+
+      - name: Write report to job summary
+        if: always()
+        run: |
+          if [ -f diffcov.md ]; then
+            cat diffcov.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  deploy:
+    # Publishes the development docs and the coverage report to the gh-pages
+    # branch for ordinary main pushes. The versioned docs of a release are
+    # published by release-docs.yml on the tag push.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [docs, covreport]
+    # don't push to gh-pages concurrently with release-docs.yml
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Get documentation
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: docs
+          path: _site/docs
+
+      - name: Get coverage report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: covreport
+          path: _site/htmlcov
+
+      - name: List files
+        # coverage writes a `*` .gitignore in the report, which would make the
+        # deploy action skip all the files
+        run: |
+          rm -f _site/htmlcov/.gitignore
+          ls -a _site _site/docs _site/htmlcov
+
+      - name: Copy documentation to github pages
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
         with:
           branch: gh-pages
-          folder: htmlcov
+          folder: _site/docs
+          target-folder: docs
+
+      - name: Copy coverage report to github pages
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
+        with:
+          branch: gh-pages
+          folder: _site/htmlcov
           target-folder: htmlcov
+
+  dev-commands:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # full history with tags, so hatch-vcs can derive the version
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: ./.github/actions/setup-uv
+
+      - name: run IPython
+        run: make ipython ARGS=config/ipython/profile_default/startup/startup.ipy
+
+      - name: run IPython with old toolchain
+        run: make ipython-old ARGS=config/ipython/profile_default/startup/startup.ipy
+
+      - name: Check the version is derived from git
+        run: uv run --dev python -c 'import lsqfitgp; print(lsqfitgp.__version__)' | grep -E '^[0-9]+(\.[0-9]+)+(\.dev[0-9]+\+g[0-9a-f]+)?$'
+
+      - name: Build and install the package
+        run: make build smoke-test
+
+      - name: Update locked dependencies
+        run: make update-deps
+
+      - name: Bump oldest supported dependencies
+        run: make update-oldest-deps
+
+  required-dummy:
+    # single required check for branch protection; `always()` makes it run (and
+    # fail) even when a needed job failed, instead of being skipped, which
+    # would count as passing
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - pre-commit
+      - gitlint
+      - tests
+      - docs
+      - covreport
+      - diffcov
+      - dev-commands
+    steps:
+      - name: Check the needed jobs succeeded or were skipped
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "some needed jobs failed or were cancelled"
+          exit 1
+
+      - name: Do nothing
+        run: echo "Hey doc what's up"

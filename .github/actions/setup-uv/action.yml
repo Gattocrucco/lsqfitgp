@@ -1,0 +1,50 @@
+# lsqfitgp/.github/actions/setup-uv/action.yml
+#
+# Copyright (c) 2026, Giacomo Petrillo
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
+name: Install uv
+description: >-
+  Install uv at the version of the uv-pre-commit hook in .pre-commit-config.yaml,
+  the single pin for all the workflows and for the uv that rewrites uv.lock. The
+  repository must already be checked out.
+
+inputs:
+  cache-suffix:
+    description: Suffix appended to the uv cache key.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Read pinned uv version
+      id: pin
+      shell: bash
+      # the version is in the `# frozen: <version>` comment on the rev line
+      # right below the repo line (see the header of .pre-commit-config.yaml)
+      run: |
+        config="$GITHUB_WORKSPACE/.pre-commit-config.yaml"
+        version=$(grep -A1 'repo: https://github.com/astral-sh/uv-pre-commit' "$config" | sed -n 's/.*# *frozen: *v\{0,1\}//p')
+        test -n "$version" || { echo "no frozen uv-pre-commit rev in $config" >&2; exit 1; }
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      with:
+        version: ${{ steps.pin.outputs.version }}
+        cache-suffix: ${{ inputs.cache-suffix }}
