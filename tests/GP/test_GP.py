@@ -526,7 +526,9 @@ def test_addcov_wrong_blocks(rng):
         gp.addcov(
             {(0, 0): np.ones((2, 2)), (1, 1): np.ones((3, 3)), (0, 1): np.ones((3, 2))}
         )
-    with pytest.raises(ValueError, match='is not the transpose of block'):
+    with pytest.raises(
+        ValueError, match=r'^block \(0, 1\) is not the transpose of block \(1, 0\)$'
+    ):
         gp.addcov(
             {
                 (0, 0): np.ones((2, 2)),

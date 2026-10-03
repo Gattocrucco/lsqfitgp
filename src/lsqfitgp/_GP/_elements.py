@@ -546,7 +546,7 @@ class GPElements(_base.GPBase):
                     if xkey != ykey:
                         blockT = blocks[ykey, xkey]
                         if not jnp.allclose(block.T, blockT):
-                            msg = f'block {keys!r} is not the transpose of block {revkeys!r}'
+                            msg = f'block {keys!r} is not the transpose of block {(ykey, xkey)!r}'
                             raise ValueError(msg)
 
         # Create _Cov objects.
