@@ -92,7 +92,7 @@ def runcode(file):
                 pyprint(printcode)
 
                 with chdir(file.parent):
-                    exec(code, globals_dict)
+                    exec(code, globals_dict)  # noqa: S102, running the docs code is the point
 
     # cleanup
     gc.collect()

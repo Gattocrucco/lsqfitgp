@@ -151,11 +151,12 @@ class Copula(_base.DistrBase):
 
         def check_type(path, obj):
             if not isinstance(obj, _base.DistrBase):
-                raise TypeError(
+                msg = (
                     f'only Distr or Copula objects can be '
                     f'contained in a Copula, found {obj!r} at '
                     f'<{self._tree_path_str(path)}>'
                 )
+                raise TypeError(msg)
             return obj
 
         self._variables = tree_util.tree_map_with_path(check_type, variables)  # noqa: TID251  # WORKAROUND(jax<0.4.38): use tree.map_with_path

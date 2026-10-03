@@ -43,7 +43,8 @@ class GPBase:
 
     class _Singleton(metaclass=_SingletonMeta):
         def __new__(cls):
-            raise NotImplementedError(f'{cls.__name__} can not be instantiated')
+            msg = f'{cls.__name__} can not be instantiated'
+            raise NotImplementedError(msg)
 
     class DefaultProcess(_Singleton):
         """Key of the default process."""
@@ -75,14 +76,16 @@ class GPBase:
             else:
                 cond = jnp.allclose(out0, out1)
             if not cond:
-                raise RuntimeError('the transformation is not linear')
+                msg = 'the transformation is not linear'
+                raise RuntimeError(msg)
 
             # Check that the function is elementwise.
             if elementwise:
                 if out0.shape != shape or not (
                     jnp.allclose(out0[zeros], 0) and jnp.allclose(out1[zeros], 0)
                 ):
-                    raise RuntimeError('the transformation is not elementwise')
+                    msg = 'the transformation is not elementwise'
+                    raise RuntimeError(msg)
 
 
 def newself(meth):

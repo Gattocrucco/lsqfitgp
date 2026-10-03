@@ -180,7 +180,8 @@ class StructuredArray:
         if self.shape:
             return self.shape[0]
         else:
-            raise TypeError('len() of unsized object')
+            msg = 'len() of unsized object'
+            raise TypeError(msg)
 
     def __getitem__(self, key):
         if isinstance(key, str):
@@ -347,15 +348,13 @@ class StructuredArray:
 
     def __array__(self, copy=None, dtype=None):
         if copy is False:
-            raise ValueError(
-                'StructuredArray has to be copied when converted to a numpy array'
-            )
+            msg = 'StructuredArray has to be copied when converted to a numpy array'
+            raise ValueError(msg)
         if dtype is not None:
             dtype = numpy.dtype(dtype)
             if dtype != self.dtype:
-                raise ValueError(
-                    'StructuredArray can not be converted to a numpy array with a different dtype'
-                )
+                msg = 'StructuredArray can not be converted to a numpy array with a different dtype'
+                raise ValueError(msg)
         array = numpy.empty(self.shape, self.dtype)
         self._copy_into_array(array)
         return array
@@ -483,7 +482,8 @@ def unstructured_to_structured(
     """
     arr = asarray(arr)
     if not arr.ndim:
-        raise ValueError('arr must have at least one dimension')
+        msg = 'arr must have at least one dimension'
+        raise ValueError(msg)
     mockup = numpy.empty((0,) + arr.shape[-1:], arr.dtype)
     dummy = recfunctions.unstructured_to_structured(
         mockup, dtype=dtype, names=names, align=align, copy=copy, casting=casting
@@ -645,7 +645,8 @@ def _concatenate(arrays, axis=0, dtype=None, casting='same_kind'):
     # checks arrays is a non-empty sequence
     arrays = list(arrays)
     if not arrays:
-        raise ValueError('need at least one array to concatenate')
+        msg = 'need at least one array to concatenate'
+        raise ValueError(msg)
 
     # parse axis argument
     if axis is None:

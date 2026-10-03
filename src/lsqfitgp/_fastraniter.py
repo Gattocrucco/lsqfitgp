@@ -30,7 +30,8 @@ def _toslice(s):
         return s
     if isinstance(s, int):
         return slice(s, s + 1)
-    raise TypeError(f'cannot convert {s!r} to slice')
+    msg = f'cannot convert {s!r} to slice'
+    raise TypeError(msg)
 
 
 def raniter(mean, cov, n=None, eps=None, rng=None):
@@ -90,10 +91,9 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
     # decompose the covariance matrix
     try:
         covdec = _linalg.Chol(squarecov, epsrel='auto' if eps is None else eps)
-    except numpy.linalg.LinAlgError:
-        raise numpy.linalg.LinAlgError(
-            f'covariance matrix not positive definite with eps={eps}'
-        )
+    except numpy.linalg.LinAlgError as e:
+        msg = f'covariance matrix not positive definite with eps={eps}'
+        raise numpy.linalg.LinAlgError(msg) from e
 
     # get random number generator
     rng = numpy.random.default_rng(rng)

@@ -182,7 +182,8 @@ def _ARBase(delta, phi=None, gamma=None, maxlag=None, slnr=None, lnc=None, norm=
         )
     )
     if not cond:
-        raise ValueError('invalid set of specified parameters')
+        msg = 'invalid set of specified parameters'
+        raise ValueError(msg)
 
     if phi is None and gamma is None:
         return _ar_with_roots(delta, slnr, lnc, norm)

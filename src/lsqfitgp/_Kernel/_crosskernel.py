@@ -309,9 +309,8 @@ class CrossKernel:
     @classmethod
     def _settransf(cls, transfname, transf):
         if transfname in cls._transf:
-            raise KeyError(
-                f'transformation {transfname!r} already registered for {cls.__name__}'
-            )
+            msg = f'transformation {transfname!r} already registered for {cls.__name__}'
+            raise KeyError(msg)
         cls._transf[transfname] = cls._Transf(*transf)
 
     @classmethod
@@ -350,10 +349,8 @@ class CrossKernel:
         if transfmro is None:
             transfmro = cls._transfmro()
         for c in transfmro:
-            try:
+            if transfname in c._transf:
                 return c, c._transf[transfname]
-            except KeyError:
-                pass
         raise KeyError(transfname)
 
     @classmethod
@@ -609,11 +606,12 @@ class CrossKernel:
         """
         tcls, transf = self._gettransf(transfname)
         if transf.kind is not self._linopmarker:
-            raise ValueError(
+            msg = (
                 f'the transformation {transfname!r} was not '
                 f'defined with register_linop and so can not be invoked '
                 f'by linop'
             )
+            raise ValueError(msg)
         return transf.func(tcls, self, *args)
 
     def algop(self, transfname, *operands, **kw):
@@ -660,11 +658,12 @@ class CrossKernel:
         """
         tcls, transf = self._gettransf(transfname)
         if transf.kind is not self._algopmarker:
-            raise ValueError(
+            msg = (
                 f'the transformation {transfname!r} was not '
                 f'defined with register_algop and so can not be invoked '
                 f'by algop'
             )
+            raise ValueError(msg)
         return transf.func(tcls, self, *operands, **kw)
 
     @classmethod
@@ -760,10 +759,11 @@ class CrossKernel:
 
             # check the arguments from the first non-kernel onwards are 1 or 2
             if len(args) not in (1, 2):
-                raise ValueError(
+                msg = (
                     f'incorrect number of non-kernel tail '
                     f'arguments {len(args)}, expected 1 or 2'
                 )
+                raise ValueError(msg)
 
             # wrap argument parser to enforce preserving None
             if argparser:
@@ -799,11 +799,12 @@ class CrossKernel:
 
             # check result is a kernel
             if not isinstance(result, __class__):  # ty: ignore[unresolved-reference]
-                raise TypeError(
+                msg = (
                     f'linop {transfname!r} returned '
                     f'object of type {result.__class__.__name__}, expected '
                     f'subclass of {__class__.__name__}'  # ty: ignore[unresolved-reference]
                 )
+                raise TypeError(msg)
 
             # modify class of the result
             rcls = result.__class__
@@ -929,11 +930,12 @@ class CrossKernel:
             if result is NotImplemented:
                 return result
             elif not isinstance(result, __class__):  # ty: ignore[unresolved-reference]
-                raise TypeError(
+                msg = (
                     f'algop {transfname!r} returned '
                     f'object of type {result.__class__.__name__}, expected '
                     f'subclass of {__class__.__name__}'  # ty: ignore[unresolved-reference]
                 )
+                raise TypeError(msg)
 
             def classes():
                 yield tcls
@@ -945,10 +947,11 @@ class CrossKernel:
                     elif _util.is_numerical_scalar(o):
                         yield CrossConstant
                     else:
-                        raise TypeError(
+                        msg = (
                             f'operands to algop {transfname!r} '
                             f'must be CrossKernel or numbers, found {o!r}'
                         )
+                        raise TypeError(msg)
                         # this type check comes after letting the implementation
                         # return NotImplemented, to support overloading
                 yield result.__class__
@@ -1102,7 +1105,7 @@ class CrossKernel:
                     if self.__class__ is cls:
                         self = self._swap()
                         if not isinstance(self, leftker):
-                            raise TypeError(
+                            msg = (
                                 f'newly created instance of '
                                 f'automatically defined {rightker.__name__} is not an '
                                 f'instance of {leftker.__name__} after '
@@ -1110,6 +1113,7 @@ class CrossKernel:
                                 f'for {leftker.__name__}, or define '
                                 f'{rightker.__name__} manually'
                             )
+                            raise TypeError(msg)
                         return self._clone(cls)
 
                     else:
@@ -1136,10 +1140,11 @@ class CrossKernel:
 
             def translkw(*, dynkw, **initkw):
                 if dynkw:
-                    raise ValueError(
+                    msg = (
                         'found non-empty `dynkw`, the default '
                         'implementation of `translkw` does not support it'
                     )
+                    raise ValueError(msg)
                 return initkw
 
         # function to produce the arguments to the transformed objects
@@ -1171,11 +1176,12 @@ class CrossKernel:
             if arg1 is None:
                 return bothker(**makekw(self, arg1, arg2))
             else:
-                raise ValueError(
+                msg = (
                     f'cannot further transform '
                     f'`{leftker.__name__}` on left side with linop '
                     f'{transfname!r}'
                 )
+                raise ValueError(msg)
 
         # register linop mapping rightker to bothker
         @functools.partial(rightker.register_linop, **regkw)
@@ -1183,11 +1189,12 @@ class CrossKernel:
             if arg2 is None:
                 return bothker(**makekw(self, arg1, arg2))
             else:
-                raise ValueError(
+                msg = (
                     f'cannot further transform '
                     f'`{rightker.__name__}` on right side with linop '
                     f'{transfname!r}'
                 )
+                raise ValueError(msg)
 
 
 class AffineSpan(CrossKernel, abc.ABC):
@@ -1208,7 +1215,8 @@ class AffineSpan(CrossKernel, abc.ABC):
 
     def __new__(cls, *args, dynkw={}, **kw):
         if cls is __class__:
-            raise TypeError(f'cannot instantiate {__class__.__name__} directly')
+            msg = f'cannot instantiate {__class__.__name__} directly'
+            raise TypeError(msg)
         new_dynkw = dict(cls._affine_dynkw)
         new_dynkw.update(dynkw)
         return super().__new__(cls, *args, dynkw=new_dynkw, **kw)
@@ -1266,7 +1274,8 @@ class AffineSpan(CrossKernel, abc.ABC):
 class PreservedBySwap(CrossKernel):
     def __new__(cls, *args, **kw):
         if cls is __class__:
-            raise TypeError(f'cannot instantiate {__class__.__name__} directly')
+            msg = f'cannot instantiate {__class__.__name__} directly'
+            raise TypeError(msg)
         return super().__new__(cls, *args, **kw)
 
     def _swap(self):

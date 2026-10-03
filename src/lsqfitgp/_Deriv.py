@@ -67,7 +67,8 @@ class Deriv:
                 return arg
             elif isinstance(arg, (int, np.integer)):
                 if arg < 0:
-                    raise ValueError(f'degree {arg} is negative')
+                    msg = f'degree {arg} is negative'
+                    raise ValueError(msg)
                 if arg:
                     c.update({None: arg})
             elif isinstance(arg, str):
@@ -85,14 +86,18 @@ class Deriv:
                     elif isinstance(obj, (int, np.integer)):
                         assert obj >= 0, obj
                         if integer is not None:
-                            raise ValueError('consecutive integers in iterable')
+                            msg = 'consecutive integers in iterable'
+                            raise ValueError(msg)
                         integer = int(obj)
                     else:
-                        raise TypeError('objects in iterable must be int or str')
+                        msg = 'objects in iterable must be int or str'
+                        raise TypeError(msg)
                 if integer is not None:
-                    raise ValueError('dangling derivative order')
+                    msg = 'dangling derivative order'
+                    raise ValueError(msg)
             elif arg is not None:
-                raise TypeError('argument must be None, int, str, or iterable')
+                msg = 'argument must be None, int, str, or iterable'
+                raise TypeError(msg)
         elif len(args) != 0:
             raise ValueError(len(args))
         assert all(c.values())

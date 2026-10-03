@@ -92,10 +92,12 @@ class GPCompute(_base.GPBase):
     def _flatgiven(self, given, givencov):
 
         if not hasattr(given, 'keys'):
-            raise TypeError('`given` must be dict')
+            msg = '`given` must be dict'
+            raise TypeError(msg)
         gcblack = givencov is None or isinstance(givencov, _linalg.Decomposition)
         if not gcblack and not hasattr(givencov, 'keys'):
-            raise TypeError('`givenconv` must be None, dict or Decomposition')
+            msg = '`givenconv` must be None, dict or Decomposition'
+            raise TypeError(msg)
 
         ylist = []
         keylist = []
@@ -196,13 +198,15 @@ class GPCompute(_base.GPBase):
         # Diag).
 
         if fromdata is None:
-            raise ValueError('you must specify if `given` is data or fit result')
+            msg = 'you must specify if `given` is data or fit result'
+            raise ValueError(msg)
         fromdata = bool(fromdata)
         raw = bool(raw)
         if keepcorr is None:
             keepcorr = not raw
         if keepcorr and raw:
-            raise ValueError('both keepcorr=True and raw=True')
+            msg = 'both keepcorr=True and raw=True'
+            raise ValueError(msg)
 
         strip = False
         if key is None:
@@ -218,9 +222,8 @@ class GPCompute(_base.GPBase):
         y = self._concatenate(ylist)
         if y.dtype == object:
             if ycovblocks is not None:
-                raise ValueError(
-                    'given may contain gvars but a separate covariance matrix has been provided'
-                )
+                msg = 'given may contain gvars but a separate covariance matrix has been provided'
+                raise ValueError(msg)
 
         self._checkpos_keys(inkeys + outkeys)
 
@@ -364,16 +367,19 @@ class GPCompute(_base.GPBase):
     def _check_ymean(self, ymean):
         with _jaxext.skipifabstract():
             if self._checkfinite and not jnp.all(jnp.isfinite(ymean)):
-                raise ValueError('mean of `given` is not finite')
+                msg = 'mean of `given` is not finite'
+                raise ValueError(msg)
 
     def _check_ycov(self, ycov):
         if ycov is None or isinstance(ycov, _linalg.Decomposition):
             return
         with _jaxext.skipifabstract():
             if self._checkfinite and not jnp.all(jnp.isfinite(ycov)):
-                raise ValueError('covariance matrix of `given` is not finite')
+                msg = 'covariance matrix of `given` is not finite'
+                raise ValueError(msg)
             if self._checksym and not jnp.allclose(ycov, ycov.T):
-                raise ValueError('covariance matrix of `given` is not symmetric')
+                msg = 'covariance matrix of `given` is not symmetric'
+                raise ValueError(msg)
 
     def marginal_likelihood(self, given, givencov=None, **kw):
         """

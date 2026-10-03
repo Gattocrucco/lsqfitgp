@@ -345,7 +345,8 @@ class bcf:
 
         # check include_pi
         if include_pi not in ('mu', 'tau', 'both'):
-            raise KeyError(f'invalid value include_pi={include_pi!r}')
+            msg = f'invalid value include_pi={include_pi!r}'
+            raise KeyError(msg)
         self._include_pi = include_pi
 
         # add pihat to covariates
@@ -414,12 +415,13 @@ class bcf:
 
             gp = _GP.GP(checkpos=False, checksym=False, solver='chol')
 
+            splits = dict(mu=splits_mu, tau=splits_tau)
             for name, kernelkw in dict(mu=kernelkw_mu, tau=kernelkw_tau).items():
                 kw = dict(
                     alpha=hp[f'alpha_{name}'],
                     beta=hp[f'beta_{name}'],
                     dim=name,
-                    splits=eval(f'splits_{name}'),
+                    splits=splits[name],
                     **kw_overridable,
                 )
                 kw.update(kernelkw)
@@ -766,7 +768,7 @@ class bcf:
         # check consistency of output choice
         if samples is None:
             if not transformed:
-                raise ValueError(
+                msg = (
                     'Posterior is required in analytical form '
                     '(samples=None) and in data space '
                     '(transformed=False), this is not possible as '
@@ -774,15 +776,17 @@ class bcf:
                     'is arbitrary. Either sample the posterior or '
                     'get the result in model space.'
                 )
+                raise ValueError(msg)
         else:
             if not transformed and not error:
-                raise ValueError(
+                msg = (
                     'Posterior is required in data space '
                     '(transformed=False) and without error term '
                     '(error=False), this is not possible as the '
                     'transformation model space -> data space '
                     'applies after adding the error.'
                 )
+                raise ValueError(msg)
             assert not gvars, 'can not represent posterior samples as gvars'
 
         # get hyperparameters
@@ -908,7 +912,8 @@ class bcf:
 
             def check_numerical(path, dtype):
                 if not numpy.issubdtype(dtype, numpy.number):
-                    raise TypeError(f'covariate `{path}` is not numerical')
+                    msg = f'covariate `{path}` is not numerical'
+                    raise TypeError(msg)
 
             cls._walk_dtype(x.dtype, check_numerical)
 
@@ -922,7 +927,8 @@ class bcf:
             x = x.to_numpy()
         x = jnp.asarray(x)
         if x.ndim != 1:
-            raise ValueError(f'array is not 1d vector, ndim={x.ndim}')
+            msg = f'array is not 1d vector, ndim={x.ndim}'
+            raise ValueError(msg)
         return x
 
     @classmethod

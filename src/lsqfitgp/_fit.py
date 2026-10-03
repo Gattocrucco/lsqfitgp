@@ -516,7 +516,8 @@ class empbayes_fit(Logger):
             if m and m.group(1) in hyperprior.invfcn:
                 altk = m.group(2)
                 if altk in hyperprior:
-                    raise ValueError(f'duplicate keys {altk!r} and {k!r} in hyperprior')
+                    msg = f'duplicate keys {altk!r} and {k!r} in hyperprior'
+                    raise ValueError(msg)
 
     def _parse_fix(self, hyperprior, fix):
 
@@ -791,11 +792,12 @@ class empbayes_fit(Logger):
         def fisher(p, **kw):
             """Fisher matrix."""
             if additional_loss is not None:
-                raise NotImplementedError(
+                msg = (
                     'Fisher matrix not implemented with additional_loss. It '
                     'is possible but I did not prioritize it. If you need it, '
                     'open an issue on github.'
                 )
+                raise NotImplementedError(msg)
             decomp, r, lkw, _, _ = make_gradfwd_fisher_args(p, **kw)
             _, _, _, fisher_cond, _ = decomp.minus_log_normal_density(
                 r, fisher=True, **lkw
@@ -896,9 +898,8 @@ class empbayes_fit(Logger):
                 self.log('use minimizer hessian as precision', 2)
                 cov = _linalg.Chol(minimizer_result.hess).ginv()
             else:
-                raise RuntimeError(
-                    'the minimizer did not return an estimate of the hessian'
-                )
+                msg = 'the minimizer did not return an estimate of the hessian'
+                raise RuntimeError(msg)
 
         elif covariance == 'none':
             cov = numpy.full(minimizer_result.x.size, numpy.nan)

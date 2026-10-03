@@ -76,6 +76,7 @@ phipred = gp.predfromfit({'data': fit.p['phi']}, 'pred')
 
 fig, axs = plt.subplots(1, 2, num='c', clear=True)
 
+preds = dict(ypred=ypred, ypredalt=ypredalt, phipred=phipred)
 for ax, variable in zip(axs, ['y', 'phi']):
     ax.set_title(variable)
 
@@ -83,7 +84,7 @@ for ax, variable in zip(axs, ['y', 'phi']):
         if variable == 'phi' and label == 'predalt':
             continue
 
-        pred = eval(variable + label)
+        pred = preds[variable + label]
 
         m = gvar.mean(pred)
         s = gvar.sdev(pred)

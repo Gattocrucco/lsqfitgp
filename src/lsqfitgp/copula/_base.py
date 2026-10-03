@@ -118,13 +118,15 @@ class DistrBase(metaclass=abc.ABCMeta):
         if gvar.BufferDict.has_distribution(name):
             invfcn = gvar.BufferDict.invfcn[name]
             if not self._is_same_family(invfcn):
-                raise ValueError(f'distribution {name} already defined')
+                msg = f'distribution {name} already defined'
+                raise ValueError(msg)
             existing = self._named[name]
             if existing != self._staticdescr:
-                raise ValueError(
+                msg = (
                     'Attempt to overwrite existing'
                     f' {self.__class__.__name__} distribution with name {name}'
                 )
+                raise ValueError(msg)
                 # cls._named is not updated by
                 # gvar.BufferDict.del_distribution, but it is not a problem
 

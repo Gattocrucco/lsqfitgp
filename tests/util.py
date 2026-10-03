@@ -145,8 +145,8 @@ def tryagain(fun, rep=2, method=False):
                         + ', '.join(map(str, exc.args))  # noqa: F821
                         + ')'
                     )
-                return x
-            except Exception as e:
+                return x  # noqa: TRY300, a warning error must trigger a retry too
+            except Exception as e:  # noqa: BLE001, PERF203, retry on any failure
                 exc = e
 
         # if rep > 1:
@@ -198,14 +198,16 @@ def assert_close_matrices(actual, desired, *, rtol=0, atol=0, tozero=False):
     desired = np.atleast_1d(desired)
 
     if tozero:
+        diff = actual
         expr = 'actual'
         ref = 'zero'
     else:
+        diff = actual - desired
         expr = 'actual - desired'
         ref = 'desired'
 
     dnorm = linalg.norm(desired, 2)
-    adnorm = linalg.norm(eval(expr), 2)
+    adnorm = linalg.norm(diff, 2)
     ratio = adnorm / dnorm if dnorm else np.nan
 
     msg = f"""\

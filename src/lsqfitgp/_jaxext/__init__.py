@@ -152,11 +152,12 @@ def is_jax_type(dtype):
     dtype = jnp.dtype(dtype)
     try:
         jnp.empty(0, dtype)
-        return True
     except TypeError as e:
         if 'JAX only supports number' in str(e):
             return False
         raise
+    else:
+        return True
 
 
 def pure_callback_ufunc(callback, dtype, *args, excluded=None, **kwargs):

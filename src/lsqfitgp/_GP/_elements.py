@@ -185,21 +185,26 @@ class GPElements(_base.GPBase):
         deriv = _Deriv.Deriv(deriv)
 
         if proc not in self._procs:
-            raise KeyError(f'process named {proc!r} not found')
+            msg = f'process named {proc!r} not found'
+            raise KeyError(msg)
 
         if hasattr(x, 'keys'):
             if key is not None:
-                raise ValueError('can not specify key if x is a dictionary')
+                msg = 'can not specify key if x is a dictionary'
+                raise ValueError(msg)
             if None in x:
-                raise ValueError('None key in x not allowed')
+                msg = 'None key in x not allowed'
+                raise ValueError(msg)
         else:
             if key is None:
-                raise ValueError('x is not dictionary but key is None')
+                msg = 'x is not dictionary but key is None'
+                raise ValueError(msg)
             x = {key: x}
 
         for key in x:
             if key in self._elements:
-                raise KeyError(f'key {key!r} already in GP')
+                msg = f'key {key!r} already in GP'
+                raise KeyError(msg)
 
             gx = x[key]
 
@@ -213,10 +218,10 @@ class GPElements(_base.GPBase):
                     self._dtype = numpy.result_type(self._dtype, gx.dtype)
                     # do not use jnp.result_type, it does not support
                     # structured types
-                except TypeError:
+                except TypeError as e:
                     msg = 'x[{!r}].dtype = {!r} not compatible with {!r}'
                     msg = msg.format(key, gx.dtype, self._dtype)
-                    raise TypeError(msg)
+                    raise TypeError(msg) from e
             else:
                 self._dtype = gx.dtype
 
@@ -224,11 +229,13 @@ class GPElements(_base.GPBase):
             # array data type.
             if gx.dtype.names is None:
                 if not deriv.implicit:
-                    raise ValueError('x has no fields but derivative has')
+                    msg_0 = 'x has no fields but derivative has'
+                    raise ValueError(msg_0)
             else:
                 for dim in deriv:
                     if dim not in gx.dtype.names:
-                        raise ValueError(f'deriv field {dim!r} not in x')
+                        msg_0 = f'deriv field {dim!r} not in x'
+                        raise ValueError(msg_0)
 
             self._elements[key] = self._Points(gx, deriv, proc)
 
@@ -277,9 +284,11 @@ class GPElements(_base.GPBase):
 
         # Check key.
         if key is None:
-            raise ValueError('key can not be None')
+            msg = 'key can not be None'
+            raise ValueError(msg)
         if key in self._elements:
-            raise KeyError(f'key {key!r} already in GP')
+            msg = f'key {key!r} already in GP'
+            raise KeyError(msg)
 
         # Check keys.
         for k in tensors:
@@ -288,19 +297,20 @@ class GPElements(_base.GPBase):
 
         # Check tensors and convert them to jax arrays.
         if len(tensors) == 0:
-            raise ValueError('empty tensors, undetermined output shape')
+            msg = 'empty tensors, undetermined output shape'
+            raise ValueError(msg)
         tens = {}
         for k, t in tensors.items():
             t = jnp.asarray(t)
             # no need to check dtype since jax supports only numerical arrays
             with _jaxext.skipifabstract():
                 if self._checkfinite and not jnp.all(jnp.isfinite(t)):
-                    raise ValueError(f'tensors[{k!r}] contains infs/nans')
+                    msg = f'tensors[{k!r}] contains infs/nans'
+                    raise ValueError(msg)
             rshape = self._elements[k].shape
             if t.shape and t.shape[t.ndim - axes :] != rshape[:axes]:
-                raise ValueError(
-                    f'tensors[{k!r}].shape = {t.shape!r} can not be multiplied with shape {rshape!r} with {axes}-axes contraction'
-                )
+                msg = f'tensors[{k!r}].shape = {t.shape!r} can not be multiplied with shape {rshape!r} with {axes}-axes contraction'
+                raise ValueError(msg)
             tens[k] = t
 
         # Check shapes broadcast correctly.
@@ -312,12 +322,12 @@ class GPElements(_base.GPBase):
         )
         try:
             shape = jnp.broadcast_shapes(*shapes)
-        except ValueError:
+        except ValueError as exc:
             msg = 'can not broadcast tensors with shapes ['
             msg += ', '.join(repr(t.shape) for t in arrays)
             msg += '] contracted with arrays with shapes ['
             msg += ', '.join(repr(e.shape) for e in elements) + ']'
-            raise ValueError(msg)
+            raise ValueError(msg) from exc
 
         # Define linear transformation.
         def equiv_lintransf(*args):
@@ -366,9 +376,11 @@ class GPElements(_base.GPBase):
         """
         # Check key.
         if key is None:
-            raise ValueError('key can not be None')
+            msg = 'key can not be None'
+            raise ValueError(msg)
         if key in self._elements:
-            raise KeyError(f'key {key!r} already in GP')
+            msg = f'key {key!r} already in GP'
+            raise KeyError(msg)
 
         # Check keys.
         for k in keys:
@@ -433,14 +445,18 @@ class GPElements(_base.GPBase):
         # Check type of `covblocks` and standardize it to dictionary.
         if hasattr(covblocks, 'keys'):
             if key is not None:
-                raise ValueError('can not specify key if covblocks is a dictionary')
+                msg = 'can not specify key if covblocks is a dictionary'
+                raise ValueError(msg)
             if None in covblocks:
-                raise ValueError('None key in covblocks not allowed')
+                msg = 'None key in covblocks not allowed'
+                raise ValueError(msg)
             if decomps is not None and not hasattr(decomps, 'keys'):
-                raise TypeError('covblocks is dictionary but decomps is not')
+                msg = 'covblocks is dictionary but decomps is not'
+                raise TypeError(msg)
         else:
             if key is None:
-                raise ValueError('covblocks is not dictionary but key is None')
+                msg = 'covblocks is not dictionary but key is None'
+                raise ValueError(msg)
             covblocks = {(key, key): covblocks}
             if decomps is not None:
                 decomps = {key: decomps}
@@ -455,44 +471,48 @@ class GPElements(_base.GPBase):
         for keys, block in covblocks.items():
             for key in keys:
                 if key in self._elements:
-                    raise KeyError(f'key {key!r} already in GP')
+                    msg = f'key {key!r} already in GP'
+                    raise KeyError(msg)
             xkey, ykey = keys
             if block is None:
-                raise TypeError(f'block {keys!r} is None')
+                msg = f'block {keys!r} is None'
+                raise TypeError(msg)
                 # because jnp.asarray(None) interprets None as nan
                 # (see jax issue #14506)
             block = jnp.asarray(block)
 
             if xkey == ykey:
                 if block.ndim % 2 == 1:
-                    raise ValueError(f'diagonal block {key!r} has odd number of axes')
+                    msg = f'diagonal block {key!r} has odd number of axes'
+                    raise ValueError(msg)
 
                 half = block.ndim // 2
                 head = block.shape[:half]
                 tail = block.shape[half:]
                 if head != tail:
-                    raise ValueError(
-                        f'shape {block.shape!r} of diagonal block {key!r} is not symmetric'
-                    )
+                    msg = f'shape {block.shape!r} of diagonal block {key!r} is not symmetric'
+                    raise ValueError(msg)
                 shapes[xkey] = head
 
                 with _jaxext.skipifabstract():
                     if self._checksym and not jnp.allclose(block, block.T):
-                        raise ValueError(f'diagonal block {key!r} is not symmetric')
+                        msg = f'diagonal block {key!r} is not symmetric'
+                        raise ValueError(msg)
 
             preblocks[keys] = block
 
         # Check decomps is consistent with covblocks.
         for key, dec in decomps.items():
             if key not in shapes:
-                raise KeyError(f'key {key!r} in decomps not found in diagonal blocks')
+                msg = f'key {key!r} in decomps not found in diagonal blocks'
+                raise KeyError(msg)
             if not isinstance(dec, _linalg.Decomposition):
-                raise TypeError(f'decomps[{key!r}] = {dec!r} is not a decomposition')
+                msg = f'decomps[{key!r}] = {dec!r} is not a decomposition'
+                raise TypeError(msg)
             n = math.prod(shapes[key])
             if dec.n != n:
-                raise ValueError(
-                    f'decomposition matrix size {dec.n} != diagonal block size {n} for key {key!r}'
-                )
+                msg = f'decomposition matrix size {dec.n} != diagonal block size {n} for key {key!r}'
+                raise ValueError(msg)
 
         # Reshape blocks to square matrices and check that the shapes of out of
         # diagonal blocks match those of diagonal ones.
@@ -500,7 +520,8 @@ class GPElements(_base.GPBase):
         for keys, block in preblocks.items():
             with _jaxext.skipifabstract():
                 if self._checkfinite and not jnp.all(jnp.isfinite(block)):
-                    raise ValueError(f'block {keys!r} not finite')
+                    msg = f'block {keys!r} not finite'
+                    raise ValueError(msg)
             xkey, ykey = keys
             if xkey == ykey:
                 size = math.prod(shapes[xkey])
@@ -508,14 +529,12 @@ class GPElements(_base.GPBase):
             else:
                 for key in keys:
                     if key not in shapes:
-                        raise KeyError(
-                            f'key {key!r} from off-diagonal block {keys!r} not found in diagonal blocks'
-                        )
+                        msg = f'key {key!r} from off-diagonal block {keys!r} not found in diagonal blocks'
+                        raise KeyError(msg)
                 eshape = shapes[xkey] + shapes[ykey]
                 if block.shape != eshape:
-                    raise ValueError(
-                        f'shape {block.shape!r} of block {keys!r} is not {eshape!r} as expected from diagonal blocks'
-                    )
+                    msg = f'shape {block.shape!r} of block {keys!r} is not {eshape!r} as expected from diagonal blocks'
+                    raise ValueError(msg)
                 xsize = math.prod(shapes[xkey])
                 ysize = math.prod(shapes[ykey])
                 block = block.reshape((xsize, ysize))
@@ -533,9 +552,8 @@ class GPElements(_base.GPBase):
                     if xkey != ykey:
                         blockT = blocks[ykey, xkey]
                         if not jnp.allclose(block.T, blockT):
-                            raise ValueError(
-                                f'block {keys!r} is not the transpose of block {revkeys!r}'
-                            )
+                            msg = f'block {keys!r} is not the transpose of block {revkeys!r}'
+                            raise ValueError(msg)
 
         # Create _Cov objects.
         for key, shape in shapes.items():
@@ -615,11 +633,11 @@ class GPElements(_base.GPBase):
 
         with _jaxext.skipifabstract():
             if self._checkfinite and not jnp.all(jnp.isfinite(cov)):
-                raise RuntimeError(f'covariance block {(xkey, ykey)!r} is not finite')
+                msg = f'covariance block {(xkey, ykey)!r} is not finite'
+                raise RuntimeError(msg)
             if self._checksym and xkey == ykey and not jnp.allclose(cov, cov.T):
-                raise RuntimeError(
-                    f'covariance block {(xkey, ykey)!r} is not symmetric'
-                )
+                msg = f'covariance block {(xkey, ykey)!r} is not symmetric'
+                raise RuntimeError(msg)
 
         return cov
 

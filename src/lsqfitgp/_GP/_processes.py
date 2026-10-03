@@ -31,7 +31,8 @@ class GPProcesses(_base.GPBase):
         self._kernels = {}  # (proc key, proc key) -> CrossKernel
         if covfun is not None:
             if not isinstance(covfun, _Kernel.Kernel):
-                raise TypeError('covariance function must be of class Kernel')
+                msg = 'covariance function must be of class Kernel'
+                raise TypeError(msg)
             self._procs[self.DefaultProcess] = self._ProcKernel(covfun)
 
     def _clone(self):
@@ -101,7 +102,8 @@ class GPProcesses(_base.GPBase):
             Derivatives to take on the process defined by the kernel.
         """
         if key in self._procs:
-            raise KeyError(f'process key {key!r} already used in GP')
+            msg = f'process key {key!r} already used in GP'
+            raise KeyError(msg)
 
         if kernel is None:
             kernel = self._procs[self.DefaultProcess].kernel
@@ -134,14 +136,15 @@ class GPProcesses(_base.GPBase):
         """
         for k, func in ops.items():
             if k not in self._procs:
-                raise KeyError(f'process key {k!r} not in GP object')
+                msg = f'process key {k!r} not in GP object'
+                raise KeyError(msg)
             if not _Kernel.is_numerical_scalar(func) and not callable(func):
-                raise TypeError(
-                    f'object of type {type(func)!r} for key {k!r} is neither scalar nor callable'
-                )
+                msg = f'object of type {type(func)!r} for key {k!r} is neither scalar nor callable'
+                raise TypeError(msg)
 
         if key in self._procs:
-            raise KeyError(f'process key {key!r} already used in GP')
+            msg = f'process key {key!r} already used in GP'
+            raise KeyError(msg)
 
         deriv = _Deriv.Deriv(deriv)
 
@@ -195,7 +198,8 @@ class GPProcesses(_base.GPBase):
         operations with the inner function input.
         """
         if key in self._procs:
-            raise KeyError(f'process key {key!r} already used in GP')
+            msg = f'process key {key!r} already used in GP'
+            raise KeyError(msg)
 
         for k in procs:
             if k not in self._procs:
@@ -243,9 +247,11 @@ class GPProcesses(_base.GPBase):
             Key of the process to be transformed.
         """
         if key in self._procs:
-            raise KeyError(f'process key {key!r} already used in GP')
+            msg = f'process key {key!r} already used in GP'
+            raise KeyError(msg)
         if proc not in self._procs:
-            raise KeyError(f'process {proc!r} not found')
+            msg = f'process {proc!r} not found'
+            raise KeyError(msg)
         self._procs[key] = self._ProcKernelTransf(proc, transfname, arg)
 
     def defderiv(self, key, deriv, proc):
@@ -347,7 +353,8 @@ class GPProcesses(_base.GPBase):
         elif isinstance(yp, self._ProcKernelTransf):
             kernel = self._crosskernel_kerneltransf_any(ypkey, xpkey)._swap()
         else:  # pragma: no cover
-            raise TypeError(f'unrecognized process types {type(xp)!r} and {type(yp)!r}')
+            msg = f'unrecognized process types {type(xp)!r} and {type(yp)!r}'
+            raise TypeError(msg)
 
         # Save cache.
         self._kernels[xpkey, ypkey] = kernel

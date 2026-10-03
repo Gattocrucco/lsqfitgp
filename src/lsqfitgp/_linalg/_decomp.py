@@ -391,9 +391,8 @@ class Chol(Decomposition):
         L = jlinalg.cholesky(K, lower=True)
         with _jaxext.skipifabstract():
             if not jnp.all(jnp.isfinite(L)):
-                raise numpy.linalg.LinAlgError(
-                    'cholesky decomposition not finite, probably matrix not pos def numerically'
-                )
+                msg = 'cholesky decomposition not finite, probably matrix not pos def numerically'
+                raise numpy.linalg.LinAlgError(msg)
         self._L = L * s[:, None]
         self._eps = eps * jnp.min(s * s)
 

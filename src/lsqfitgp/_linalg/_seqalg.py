@@ -80,9 +80,8 @@ def sequential_algorithm(n, ops):
     for i, op in enumerate(ops):
         inputs = op.inputs
         if any(j >= i for j in inputs):
-            raise ValueError(
-                f'{i}-th operation {op.__class__.__name__} requested inputs {inputs!r} with forward references'
-            )
+            msg = f'{i}-th operation {op.__class__.__name__} requested inputs {inputs!r} with forward references'
+            raise ValueError(msg)
         args = (ops[j].iter_out(0) for j in inputs)
         op.init(n, *args)
 

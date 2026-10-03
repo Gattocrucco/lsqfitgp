@@ -132,7 +132,7 @@ class Formula:
         return self.formula
 
     def __call__(self, x):
-        return eval(self.formula, vars(np), dict(x=x))
+        return eval(self.formula, vars(np), dict(x=x))  # noqa: S307, formulas written below
 
 
 def bart_splits(n):

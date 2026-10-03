@@ -145,7 +145,8 @@ def uformat(
         The quantity (mu +/- s) nicely formatted.
     """
     if errdig < 1:
-        raise ValueError('errdig < 1')
+        msg = 'errdig < 1'
+        raise ValueError(msg)
     if not math.isfinite(mu) or not math.isfinite(s) or s <= 0:
         if sep is None:
             return f'{tostring(mu)}({tostring(s)})'
@@ -279,9 +280,8 @@ def fmtspec_kwargs(spec):
     pat = r'([-+#$]*)(\d*\.?\d*)(:\d+)?(p|s|u|U)'
     m = re.fullmatch(pat, spec)
     if not m:
-        raise ValueError(
-            f'format specification {spec!r} not understood, format is r"{pat}"'
-        )
+        msg = f'format specification {spec!r} not understood, format is r"{pat}"'
+        raise ValueError(msg)
     kw = {}
     options = m.group(1)
     kw['possign'] = '+' in options

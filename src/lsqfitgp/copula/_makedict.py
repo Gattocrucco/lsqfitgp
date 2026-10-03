@@ -122,7 +122,8 @@ def makedict(variables, prefix='__copula_'):
 
     # raise an error if there are
     if multiple:
-        raise ValueError(f'cross-key occurrences of object(s):\n{multiple}')
+        msg = f'cross-key occurrences of object(s):\n{multiple}'
+        raise ValueError(msg)
 
     out = {}
     for k, v in variables.items():

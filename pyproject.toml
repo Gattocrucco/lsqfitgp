@@ -279,6 +279,10 @@ ignore = [
     "SLF001", # Private member accessed: `*`
     "TID253", # `{module}` is banned at the module level
 ]
+"docs/conf.py" = [
+    "BLE001",  # Do not catch blind exception, linkcode_resolve gives up on any error
+    "PERF203", # `try`-`except` within a loop
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

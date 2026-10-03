@@ -58,11 +58,12 @@ class Signature:
         ):
             return
         if len(sig.parameters) != len(self.incores):
-            raise ValueError(
+            msg = (
                 f'function {func} has {len(sig.parameters)} '
                 f'arguments, but signature {self.signature} '
                 f'requires {len(self.incores)}'
             )
+            raise ValueError(msg)
 
     @property
     def nin(self):
@@ -112,9 +113,8 @@ class Signature:
             missing_indices = set(sum(missing_cores, ()))
             missing_indices.difference_update(self.sizes)
             if missing_indices:
-                raise ValueError(
-                    f'cannot infer sizes of dimesions {missing_indices} from signature {sig.signature}'
-                )
+                msg = f'cannot infer sizes of dimesions {missing_indices} from signature {sig.signature}'
+                raise ValueError(msg)
 
             self.core_out_shapes, self.out_shapes = self._compute_shapes(sig.outcores)
             self.core_in_shapes, self.in_shapes = self._compute_shapes(sig.incores)

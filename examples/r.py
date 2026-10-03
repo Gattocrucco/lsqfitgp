@@ -78,6 +78,6 @@ ax.plot_surface(
 
 ax.view_init(elev=60, azim=30)
 for axis in 'xyz':
-    exec(f'ax.set_{axis}label("{axis}")')
+    getattr(ax, f'set_{axis}label')(axis)
 
 fig.show()

@@ -302,10 +302,11 @@ class BART(_BARTBase):
     def _indices_from_coord(cls, x, checked_splits):
         x = cls._check_x(x)
         if x.shape[-1] != checked_splits[0].size:
-            raise ValueError(
+            msg = (
                 f'splitting grid is for {checked_splits[0].size} '
                 f'dimensions, found {x.shape[-1]}'
             )
+            raise ValueError(msg)
         return cls._searchsorted_vectorized(checked_splits[1], x)
 
     @classmethod

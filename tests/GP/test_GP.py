@@ -667,7 +667,7 @@ def test_priortransf():
 def test_new_element():
     gp = lgp.GP()
     gp._elements[0] = None
-    with pytest.raises(Exception):
+    with pytest.raises(AttributeError):
         gp.prior()
 
 

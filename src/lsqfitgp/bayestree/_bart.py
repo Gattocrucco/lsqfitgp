@@ -408,7 +408,8 @@ class bart:
 
         def check_numerical(path, dtype):
             if not numpy.issubdtype(dtype, numpy.number):
-                raise TypeError(f'covariate `{path}` is not numerical')
+                msg = f'covariate `{path}` is not numerical'
+                raise TypeError(msg)
 
         cls._walk_dtype(x.dtype, check_numerical)
 

@@ -32,7 +32,8 @@ from lsqfitgp._Kernel._crosskernel import AffineSpan, CrossKernel
 
 def rescale_argparser(fun):
     if not callable(fun):
-        raise ValueError("argument to 'rescale' must be a function")
+        msg = "argument to 'rescale' must be a function"
+        raise ValueError(msg)  # noqa: TRY004, changing the type would break callers
     return fun
 
 
@@ -78,16 +79,18 @@ def derivable(derivable):
     if isinstance(derivable, bool):
         derivable = sys.maxsize if derivable else 0
     elif not isinstance(derivable, numbers.Integral) or derivable < 0:
-        raise ValueError(f'derivability degree {derivable!r} not valid')
+        msg = f'derivability degree {derivable!r} not valid'
+        raise ValueError(msg)
 
     def error_func(current, n):
-        raise ValueError(
+        msg = (
             f'Took {current} derivatives > limit {n} on argument '
             'of a kernel. This error may be spurious if there are '
             'derivatives on values that define the input to the kernel, for '
             'example if a hyperparameter enters the calculation of x. To '
             'suppress the error, initialize the kernel with derivable=True.'
         )
+        raise ValueError(msg)
 
     def xtransf(x):
         if hasattr(x, 'dtype'):
@@ -175,21 +178,23 @@ def diff(core, xderiv, yderiv):
         if x.dtype.names is not None:
             for dim in deriv:
                 if dim not in x.dtype.names:
-                    raise ValueError(
-                        f'derivative along missing field {dim!r} on {pos} argument'
-                    )
+                    msg = f'derivative along missing field {dim!r} on {pos} argument'
+                    raise ValueError(msg)
                 if not jnp.issubdtype(x.dtype[dim], jnp.number):
-                    raise TypeError(
+                    msg = (
                         f'derivative along non-numeric field {dim!r} on {pos} argument'
                     )
+                    raise TypeError(msg)
             return _array.StructuredArray(x)
         elif not deriv.implicit:
-            raise ValueError(
+            msg = (
                 'derivative on named fields with non-structured '
                 f'array on {pos} argument'
             )
+            raise ValueError(msg)
         elif not jnp.issubdtype(x.dtype, jnp.number):
-            raise TypeError(f'derivative along non-numeric array on {pos} argument')
+            msg = f'derivative along non-numeric array on {pos} argument'
+            raise TypeError(msg)
         return x
 
     def newcore(x, y, **kw):
@@ -232,7 +237,8 @@ def xtransf(fun):
 
     """
     if not callable(fun):
-        raise ValueError("argument to 'xtransf' must be a function")
+        msg = "argument to 'xtransf' must be a function"
+        raise ValueError(msg)  # noqa: TRY004, changing the type would break callers
     return fun
 
 
@@ -253,11 +259,13 @@ def dim(dim):
         Field names or lists of field names.
     """
     if not isinstance(dim, (str, list)):
-        raise TypeError(f'dim must be a (list of) string, found {dim!r}')
+        msg = f'dim must be a (list of) string, found {dim!r}'
+        raise TypeError(msg)
 
     def fun(x):
         if x.dtype.names is None:
-            raise ValueError(f'cannot get dim={dim!r} from non-structured input')
+            msg = f'cannot get dim={dim!r} from non-structured input'
+            raise ValueError(msg)
         elif x.dtype[dim].shape:
             return x[[dim]]
         else:
@@ -283,15 +291,15 @@ def maxdim(maxdim):
     limit.
     """
     if not isinstance(maxdim, numbers.Integral) or maxdim < 0:
-        raise ValueError(f'maximum dimensionality {maxdim!r} not valid')
+        msg = f'maximum dimensionality {maxdim!r} not valid'
+        raise ValueError(msg)
 
     def fun(x):
         nd = _array._nd(x.dtype)
         with _jaxext.skipifabstract():
             if nd > maxdim:
-                raise ValueError(
-                    f'kernel applied to input with {nd} fields > maxdim={maxdim}'
-                )
+                msg = f'kernel applied to input with {nd} fields > maxdim={maxdim}'
+                raise ValueError(msg)
         return x
 
     return fun

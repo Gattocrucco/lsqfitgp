@@ -323,11 +323,12 @@ class Distr(_base.DistrBase):
 
         # check number of parameters
         if self.signature.nin != 1 + len(self.params):
-            raise TypeError(
+            msg = (
                 f'{self.__class__.__name__} distribution has '
                 f'{self.signature.nin - 1} parameters, but {len(self.params)} '
                 'parameters were passed to the constructor'
             )
+            raise TypeError(msg)
 
         # convert shape to tuple
         if isinstance(shape, numbers.Integral):
@@ -390,11 +391,12 @@ class Distr(_base.DistrBase):
 
         y = self.invfcn(last, *concrete_params)
         if y.shape != self.shape or y.dtype != self.dtype:
-            raise ValueError(
+            msg = (
                 f'{self.__class__.__name__}.invfcn returned '
                 f'array with shape {y.shape} and dtype {y.dtype}, while '
                 f'{self.shape} and {self.dtype} were expected'
             )
+            raise ValueError(msg)
 
         cache[self] = y
         return y, i + in_size
@@ -436,10 +438,11 @@ class Distr(_base.DistrBase):
                 )
                 for p in sig.parameters.values()
             ):
-                raise ValueError(
+                msg = (
                     'can not automatically infer signature of '
                     f'{cls.__qualname__}.invfcn'
                 )
+                raise ValueError(msg)
             cls.signature = ','.join(['()'] * len(sig.parameters)) + '->()'
         if not isinstance(cls.signature, _signature.Signature):
             cls.signature = _signature.Signature(cls.signature)
