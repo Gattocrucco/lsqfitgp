@@ -357,7 +357,7 @@ def eigval_bound(K):
 def diag_scale_pow2(K):
     """Compute a vector s of powers of 2 such that diag(K / outer(s, s)) ~ 1."""
     d = jnp.diag(K)
-    return jnp.where(d, jnp.exp2(jnp.rint(0.5 * jnp.log2(d))), 1)
+    return jnp.where(d, 2 ** jnp.rint(0.5 * jnp.log2(d)), 1)
 
     # Golub and Van Loan (2013) say this is not a totally general heuristic
 
