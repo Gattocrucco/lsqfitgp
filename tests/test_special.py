@@ -358,7 +358,7 @@ def test_power_diff(x, q, a, s, cached):
         cond = np.abs(p1) < tol
         cp1 = np.where(cond, tol, p1)
         cp2 = np.where(cond, tol, p2)
-        np.testing.assert_array_max_ulp(cp2, cp1, 23) # 23 on windows-latest py3.12 2024-10-11
+        np.testing.assert_array_max_ulp(cp2, cp1, 27) # 23 on windows-latest py3.12 2024-10-11, 27 on macos py3.14 2026-10-03
 
 @np.vectorize
 def zeta_zeros(s):

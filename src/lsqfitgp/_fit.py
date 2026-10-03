@@ -46,11 +46,13 @@ def token_getter(x):
 def token_setter(x, token):
     return token
 
+@token_getter.register(jax.core.Tracer)
 @token_getter.register(jnp.ndarray)
 @token_getter.register(numpy.ndarray)
 def _(x):
     return x[x.ndim * (0,)] if x.size else x
 
+@token_setter.register(jax.core.Tracer)
 @token_setter.register(jnp.ndarray)
 @token_setter.register(numpy.ndarray)
 def _(x, token):
