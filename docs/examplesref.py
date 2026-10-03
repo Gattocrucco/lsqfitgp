@@ -36,7 +36,7 @@ for example in examples:
     name = example.name
     if name == 'runexamples.py':
         continue
-    url = f'https://github.com/Gattocrucco/lsqfitgp/blob/master/examples/{name}'
+    url = f'https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/{name}'
     
     # get description from docstring
     with open(example, 'r') as stream:
@@ -76,7 +76,7 @@ Example scripts
 ===============
 
 This is an index of the example scripts in the `examples directory
-<https://github.com/Gattocrucco/lsqfitgp/tree/master/examples>`_ in the
+<https://github.com/Gattocrucco/lsqfitgp/tree/main/examples>`_ in the
 repository. The links point to the file preview on github.
 
 Short index
