@@ -66,13 +66,13 @@ def gen_ops_factors(n):  # pragma: no cover
     key = random.key(202208101236)
     factors = {}
     for op, (job, est) in ops.items():
-        print(f'{op}({n})... ', end='', flush=True)
+        print(f'{op}({n})... ', end='', flush=True)  # noqa: T201
         nparams = len(inspect.signature(job).parameters)
         key, subkey = random.split(key)
         m = random.normal(subkey, (nparams, n, n), jnp.float32)
         args = m @ jnp.swapaxes(m, -2, -1)
         time = benchmark(job, *args)
-        print(f'{time:.2g} s')
+        print(f'{time:.2g} s')  # noqa: T201
         factors[op] = time / est(*(a.shape for a in args))
     return factors
 

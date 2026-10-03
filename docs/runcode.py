@@ -57,11 +57,11 @@ pattern = re.compile(
 
 
 @contextlib.contextmanager
-def chdir(dir):
+def chdir(path):
     """Change current working directory, and restore it when done."""
-    old_dir = os.getcwd()
+    old_dir = pathlib.Path.cwd()
     try:
-        os.chdir(dir)
+        os.chdir(path)
         yield
     finally:
         os.chdir(old_dir)

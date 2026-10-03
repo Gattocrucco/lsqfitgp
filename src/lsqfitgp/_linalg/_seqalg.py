@@ -109,7 +109,7 @@ class Consumer(SequentialOperation):
 
 
 class SingleInput(SequentialOperation):
-    def __init__(self, input):
+    def __init__(self, input):  # noqa: A002, `inputs` are the ops consumed
         self.inputs = (input,)
 
     inputs = NotImplemented
@@ -131,7 +131,7 @@ class Stack(Consumer, SingleInput):
 
 
 class MatMulIterByFull(Consumer, SingleInput):
-    def __init__(self, input, b):
+    def __init__(self, input, b):  # noqa: A002
         """`input` = an operation producing pieces of left operand (a)
         b = right operand.
         """

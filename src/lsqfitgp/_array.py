@@ -373,7 +373,7 @@ class StructuredArray:
             return NotImplemented
         return self._handled_functions[func](*args, **kwargs)
 
-    _handled_functions = {}
+    _handled_functions = {}  # noqa: RUF012, registry shared by design
 
     @classmethod
     def _implements(cls, np_function):

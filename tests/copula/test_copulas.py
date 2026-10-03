@@ -52,7 +52,7 @@ class DistrTestBase:
     Base class for tests of a Distr subclass
     """
 
-    testfor = {}
+    testfor = {}  # noqa: RUF012, registry shared by design
 
     def __init_subclass__(cls):
         assert cls.__name__.startswith('Test')
@@ -226,7 +226,7 @@ class DistrTestBase:
         x2 = self.copcls.invfcn(eps, *self.array_params)
         util.assert_allclose(x1, x2, atol=8 * eps, rtol=8 * eps)
 
-    def test_decorator(self):
+    def test_decorator(self, rng):
         """Check that recreating the distrution with the decorator works"""
         alt = lgp.copula.distribution(
             self.copcls.invfcn,
@@ -239,7 +239,7 @@ class DistrTestBase:
         d2 = alt(*self.params)
         for attr in 'in_shape', 'shape', 'distrshape':
             assert getattr(d1, attr) == getattr(d2, attr)
-        x = np.random.standard_normal((7,) + d1.in_shape)
+        x = rng.standard_normal((7,) + d1.in_shape)
         util.assert_equal(d1.partial_invfcn(x), d2.partial_invfcn(x))
 
     @pytest.fixture

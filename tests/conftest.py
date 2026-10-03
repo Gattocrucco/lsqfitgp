@@ -65,7 +65,7 @@ def reset_random_seeds(rng):
     def toseed(bitgen):
         return np.array([bitgen.random_raw()], np.uint64).view(np.uint32)
 
-    np.random.seed(toseed(bitgen1))
+    np.random.seed(toseed(bitgen1))  # noqa: NPY002, the legacy global state
     gvar.ranseed(toseed(bitgen2))
 
 

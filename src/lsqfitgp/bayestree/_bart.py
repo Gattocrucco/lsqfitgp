@@ -321,7 +321,7 @@ class bart:
         *,
         hp='map',
         error=False,
-        format='matrices',
+        format='matrices',  # noqa: A002, public parameter
         x_test=None,
         weights=None,
         rng=None,

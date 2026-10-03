@@ -201,6 +201,10 @@ split-on-trailing-comma = false
 known-third-party = ["jax"]
 
 [tool.ruff.lint]
+# typographic characters used on purpose: the multiplication sign in formatted
+# uncertainties, en dashes in page ranges, quotes in the punctuation of
+# BagOfWords
+allowed-confusables = ["×", "–", "‘", "’", "‚"]
 select = [
     "ICN",  # flake8-import-conventions
     "ERA",  # eradicate
@@ -251,6 +255,7 @@ ignore = [
     "B028",    # warn with stacklevel = 2
     "C408",    # Unnecessary `dict()` call (rewrite as a literal), it's too convenient for kwargs
     "D105",    # Missing docstring in magic method
+    "ERA001",  # Found commented-out code. lsqfitgp keeps commented-out alternative implementations and checks as notes, and has comments with math and shapes that look like code.
     "PIE790",  # Unnecessary ... or pass. Ignored because sometimes I use ... as sentinel to tell the rest of ruff and pyright that an implementation is a stub.
     "PLR0912", # Too many branches; ignore bc C901 already handles this
     "PLR0913", # Too many arguments in function definition. Maybe I should do something about this?
@@ -261,6 +266,7 @@ ignore = [
     "RUF036",  # `None` not at the end of a union. Ignored because None is often semantic and ordered meaningfully in the hint.
     "S101",    # Use of `assert` detected. Too annoying.
     "SIM108",  # SIM108 Use ternary operator `*` instead of `if`-`else`-block, I find blocks more readable
+    "SLF001",  # Private member accessed. In lsqfitgp a leading underscore marks names internal to the package, not to the class or module.
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -274,6 +280,12 @@ ignore = [
 ]
 "{config/*,docs/*,examples/*,tests/*}" = [
     "T201", # `print` found
+]
+"{docs/*,examples/*}" = [
+    "NPY002", # Replace legacy `np.random` call. The scripts seed the global generator to reproduce the figures in the manual.
+]
+"tests/fast-hash/*" = [
+    "INP001", # File * is part of an implicit namespace package, the directory holds a script
 ]
 "tests/*" = [
     "SLF001", # Private member accessed: `*`

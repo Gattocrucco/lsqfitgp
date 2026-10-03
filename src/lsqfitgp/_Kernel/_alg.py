@@ -84,7 +84,7 @@ def mul(tcls, self, other):
 
 
 @CrossKernel.register_algop
-def pow(tcls, self, *, exponent):
+def pow(tcls, self, *, exponent):  # noqa: A001, the name of the algop
     r"""
 
     Power of the kernel.

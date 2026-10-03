@@ -126,7 +126,7 @@ class Logger:
             The indentation level of the message.
         """
         if self._select(verbosity):
-            print(self._indent(message, level))
+            print(self._indent(message, level))  # noqa: T201, the fit log
         self._loggedlines.append((message, verbosity, level + self.loglevel._level))
 
     def getlog(self, target_verbosity=None, *, base_level=0):
@@ -594,7 +594,7 @@ class empbayes_fit(Logger):
                 fulldec = _linalg.Chol(cov)
             else:
                 fulldec = dec
-            iid = numpy.random.randn(fulldec.m)
+            iid = numpy.random.randn(fulldec.m)  # noqa: NPY002, uses the global numpy state on purpose
             flatinitial = numpy.asarray(fulldec.correlate(iid))
             initial = self._unflatview(flatinitial, hyperprior)
 

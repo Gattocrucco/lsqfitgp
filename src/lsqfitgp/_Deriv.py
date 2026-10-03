@@ -22,7 +22,7 @@ import collections
 import numpy as np
 
 
-class Deriv:
+class Deriv:  # noqa: PLW1641, unhashable
     """
     Class for specifying derivatives. Behaves like a dictionary str -> int,
     where the keys represent variables and values the derivation order. An

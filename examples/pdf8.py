@@ -216,7 +216,6 @@ def makegp(hp, quick=False):
 
     if not quick:
         # linear data (used for warmup fit)
-        global M_mean
         gp = gp.addtransf({'datagrid': M_mean}, 'data', axes=2)
 
         # define flavor basis PDFs
@@ -343,7 +342,7 @@ lasttime = time.time()
 
 
 def analyzer(hp):
-    global i, lasttime
+    global i, lasttime  # noqa: PLW0603, progress counter
     i += 1
     now = time.time()
     interval = now - lasttime

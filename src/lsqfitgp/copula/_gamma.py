@@ -29,10 +29,10 @@ from scipy import special
 from lsqfitgp import _jaxext
 
 
-def _castto(func, type):
+def _castto(func, dtype):
     @functools.wraps(func)
     def newfunc(*args, **kw):
-        return func(*args, **kw).astype(type)
+        return func(*args, **kw).astype(dtype)
 
     return newfunc
 

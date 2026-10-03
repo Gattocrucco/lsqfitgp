@@ -33,13 +33,13 @@ import sys
 project = 'lsqfitgp'
 author = 'Giacomo Petrillo'
 
-from datetime import datetime
+from datetime import datetime, timezone
 
-now = datetime.now()
+now = datetime.now(timezone.utc)
 year = '2020'
 if now.year > int(year):
     year += '-' + str(now.year)
-copyright = year + ', ' + author
+copyright = year + ', ' + author  # noqa: A001, sphinx setting
 
 
 # The full version, derived from git by hatch-vcs, e.g. '0.21.3.dev4+g42e25cebd'

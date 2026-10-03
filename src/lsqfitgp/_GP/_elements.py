@@ -674,7 +674,7 @@ class GPElements(_base.GPBase):
                 warnings.filterwarnings(
                     'ignore', r'Exited postprocessing with accuracies'
                 )
-                X = numpy.random.randn(len(cov), 1)
+                X = numpy.random.randn(len(cov), 1)  # noqa: NPY002, uses the global numpy state on purpose
                 A = numpy.asarray(cov)
                 (mineigv,), _ = sparse.linalg.lobpcg(A, X, largest=False)
                 (maxeigv,), _ = sparse.linalg.lobpcg(A, X, largest=True)

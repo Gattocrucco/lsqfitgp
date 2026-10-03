@@ -124,14 +124,14 @@ class skipifabstract:
     def __exit__(self, exc_type, exc_value, tb):
         if not self.ENABLED:
             return None
-        exit = None
+        suppress = None
         if self.ENSURE_COMPILE_TIME_EVAL:
-            exit = self.mgr.__exit__(exc_type, exc_value, tb)
+            suppress = self.mgr.__exit__(exc_type, exc_value, tb)
         ignorable_error = exc_type is not None and issubclass(
             exc_type,
             (jax.errors.ConcretizationTypeError, jax.errors.TracerArrayConversionError),
         )
-        if exit or ignorable_error:
+        if suppress or ignorable_error:
             return True
 
         weird_cond = exc_type is IndexError and (

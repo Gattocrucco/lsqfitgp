@@ -38,7 +38,7 @@ for example in examples:
     url = f'https://github.com/Gattocrucco/lsqfitgp/blob/main/examples/{name}'
 
     # get description from docstring
-    with open(example) as stream:
+    with example.open() as stream:
         text = stream.read()
     if match := re.search(r'(?s)"""(.+?)"""', text):
         descr = match.group(1)

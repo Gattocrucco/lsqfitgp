@@ -289,7 +289,7 @@ class CrossKernel:
             if c is __class__:
                 break
 
-    _transf = {}
+    _transf = {}  # noqa: RUF012, registry shared by design, replaced in subclasses
 
     _Transf = collections.namedtuple('_Transf', ['func', 'doc', 'kind'])
 
@@ -1211,7 +1211,7 @@ class AffineSpan(CrossKernel, abc.ABC):
     superclass. It must be the first base before concrete superclasses.
     """
 
-    _affine_dynkw = dict(lloc=0, rloc=0, lscale=1, rscale=1, offset=0, ampl=1)
+    _affine_dynkw = dict(lloc=0, rloc=0, lscale=1, rscale=1, offset=0, ampl=1)  # noqa: RUF012, read-only
 
     def __new__(cls, *args, dynkw={}, **kw):
         if cls is __class__:

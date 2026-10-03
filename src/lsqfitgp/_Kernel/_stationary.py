@@ -44,7 +44,7 @@ class CrossStationaryKernel(_crosskernel.CrossKernel):
         constructor.
     """
 
-    def __new__(cls, core, *, input='signed', **kw):
+    def __new__(cls, core, *, input='signed', **kw):  # noqa: A002, public parameter
 
         if input == 'posabs':
             dist = lambda x, y: _softabs(x - y)

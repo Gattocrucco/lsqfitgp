@@ -212,7 +212,7 @@ lasttime = time.time()
 
 
 def analyzer(hp):
-    global i, lasttime
+    global i, lasttime  # noqa: PLW0603, progress counter
     i += 1
     now = time.time()
     interval = now - lasttime

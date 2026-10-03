@@ -51,7 +51,7 @@ class CrossIsotropicKernel(_stationary.CrossStationaryKernel):
     more than one dimension.
     """
 
-    def __new__(cls, core, *, input='squared', **kw):
+    def __new__(cls, core, *, input='squared', **kw):  # noqa: A002, public parameter
         if input == 'raw':
             return _crosskernel.CrossKernel.__new__(cls, core, **kw)
 
