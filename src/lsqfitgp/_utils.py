@@ -1,6 +1,6 @@
 # lsqfitgp/_utils.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -28,7 +28,7 @@ def append_to_docstring(docs, doctail, front=False):
     if front:
         newdocs = doctail + dedocs
     else:
-        newdocs = dedocs + doctail
+        newdocs = dedocs.rstrip() + '\n\n' + doctail
     return textwrap.indent(newdocs, indent)
 
 def top_bottom_rule(title, body):
