@@ -507,7 +507,7 @@ def test_nonsense_tensors():
 def test_fail_broadcast():
     """Check that `addtransf` raises `ValueError` if the shapes do not broadcast."""
     gp = lgp.GP(lgp.ExpQuad()).addx([0, 1], 0).addx([0, 1, 2], 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'with shapes \[\(2,\), \(3,\)\]$'):
         gp.addtransf({0: 1, 1: 1}, 2)
 
 

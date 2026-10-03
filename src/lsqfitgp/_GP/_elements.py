@@ -315,7 +315,7 @@ class GPElements(_base.GPBase):
 
         # Check shapes broadcast correctly.
         arrays = tens.values()
-        elements = (self._elements[k] for k in tens)
+        elements = [self._elements[k] for k in tens]
         shapes = (
             t.shape[: t.ndim - axes] + e.shape[axes:] if t.shape else e.shape
             for t, e in zip(arrays, elements)
