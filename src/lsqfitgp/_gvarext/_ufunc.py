@@ -30,7 +30,7 @@ from lsqfitgp._gvarext._jacobian import from_jacobian, jacobian
 
 def gvar_gufunc(func, *, signature=None):
     """
-    Wraps a jax-traceable generalized ufunc with one argument to support gvars.
+    Wrap a jax-traceable generalized ufunc with one argument to support gvars.
 
     Parameters
     ----------

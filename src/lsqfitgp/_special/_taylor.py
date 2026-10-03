@@ -27,6 +27,8 @@ from jax.scipy import special as jspecial
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0, 1, 2, 3))
 def taylor(coefgen, args, n, m, x):
     """
+    Evaluate the n-th derivative of a truncated Taylor series.
+
     `coefgen` : function = start, end -> taylor coefficients for powers start:end
     args : tuple = additional arguments to coefgen
     n : int = derivation order

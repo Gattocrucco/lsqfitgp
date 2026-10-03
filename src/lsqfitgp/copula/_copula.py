@@ -119,8 +119,10 @@ class Copula(_base.DistrBase):
 
     @classmethod
     def _jaxext_dict_sorting(cls, pytree):
-        """Replace dicts in pytree with a custom dict subclass such their
-        insertion order is maintained, see
+        """
+        Replace dicts in pytree with a custom dict subclass.
+
+        The subclass is such that the insertion order is maintained, see
         https://github.com/google/jax/issues/4085.
         """
 

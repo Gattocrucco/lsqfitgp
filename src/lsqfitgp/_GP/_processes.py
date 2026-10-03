@@ -42,10 +42,7 @@ class GPProcesses(_base.GPBase):
         return newself
 
     class _Proc(abc.ABC):
-        """
-        Abstract base class for an object holding information about a process
-        in a GP object.
-        """
+        """Abstract base class for the information about a process in a GP object."""
 
         @abc.abstractmethod
         def __init__(self):  # pragma: no cover
@@ -196,7 +193,7 @@ class GPProcesses(_base.GPBase):
         -----
         The linearity check may fail if the transformation does nontrivial
         operations with the inner function input.
-        """
+        """  # noqa: DOC201
         if key in self._procs:
             msg = f'process key {key!r} already used in GP'
             raise KeyError(msg)
@@ -241,7 +238,7 @@ class GPProcesses(_base.GPBase):
         transfname : hashable
             A transformation recognized by the `~CrossKernel.transf` method
             of the kernel.
-        arg :
+        arg : object
             A valid argument to the transformation.
         proc : hashable
             Key of the process to be transformed.
@@ -255,11 +252,11 @@ class GPProcesses(_base.GPBase):
         self._procs[key] = self._ProcKernelTransf(proc, transfname, arg)
 
     def defderiv(self, key, deriv, proc):
-        """
+        r"""
         Define a new process as the derivative of an existing one.
 
         .. math::
-            g(x) = \\frac{\\partial^n}{\\partial x^n} f(x)
+            g(x) = \frac{\partial^n}{\partial x^n} f(x)
 
         Parameters
         ----------

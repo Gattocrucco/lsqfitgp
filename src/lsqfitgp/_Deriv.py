@@ -24,10 +24,11 @@ import numpy as np
 
 class Deriv:  # noqa: PLW1641, unhashable
     """
-    Class for specifying derivatives. Behaves like a dictionary str -> int,
-    where the keys represent variables and values the derivation order. An
-    empty Deriv means no derivatives. A Deriv with one single key None means
-    that the variable is implicit.
+    Class for specifying derivatives.
+
+    Behaves like a dictionary str -> int, where the keys represent variables
+    and values the derivation order. An empty Deriv means no derivatives. A
+    Deriv with one single key None means that the variable is implicit.
 
     Deriv(int) -> specified order derivative
 

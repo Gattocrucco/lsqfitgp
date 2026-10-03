@@ -69,7 +69,7 @@ def raniter(mean, cov, n=None, eps=None, rng=None):
     >>> cov = {('a', 'a'): np.eye(3)}
     >>> for sample in lgp.raniter(mean, cov, 3):
     >>>     print(sample)
-    """
+    """  # noqa: DOC403
     # convert mean and cov to 1d and 2d arrays
     if hasattr(mean, 'keys'):  # a dict or gvar.BufferDict
         if not hasattr(mean, 'buf'):

@@ -163,8 +163,9 @@ def chol_transp_solve(t, b):
 
 def chol_solve_numpy(t, b, diageps=None):
     """
-    Solve a linear system for the cholesky factor of a symmetric Toeplitz
-    matrix. The algorithm is:
+    Solve a linear system for the cholesky factor of a symmetric Toeplitz matrix.
+
+    The algorithm is:
 
     t[0] += diageps
     m = toeplitz(t)
@@ -181,6 +182,11 @@ def chol_solve_numpy(t, b, diageps=None):
         The right hand side of the linear system.
     diageps : scalar, optional
         Term added to the diagonal elements of the matrix for regularization.
+
+    Returns
+    -------
+    x : (..., n, m) or (..., n) array
+        The solution ``solve(l, b)``.
     """
     t = numpy.array(t, subok=True)
     n = t.shape[-1]

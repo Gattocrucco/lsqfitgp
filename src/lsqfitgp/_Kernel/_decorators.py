@@ -56,7 +56,7 @@ def makekernelsubclass(core, bases, **prekw):
 
 def crosskernel(*args, bases=None, **kw):
     """
-    Decorator to convert a function to a subclass of `CrossKernel`.
+    Decorate a function to convert it to a subclass of `CrossKernel`.
 
     Parameters
     ----------
@@ -108,7 +108,7 @@ def kernel(*args, **kw):
     >>> @lgp.kernel(loc=10) # the default loc will be 10
     ... def MyKernel(x, y, cippa=1, lippa=42):
     ...     return cippa * (x * y) ** lippa
-    """
+    """  # noqa: DOC101, DOC103, DOC201, see `crosskernel`
     return crosskernel(*args, bases=(_kernel.Kernel,), **kw)
 
 
@@ -129,7 +129,7 @@ def stationarykernel(*args, **kw):
     ...         jnp.exp(-absdelta[name] / lippa)
     ...         for name in absdelta.dtype.names
     ...     )
-    """
+    """  # noqa: DOC101, DOC103, DOC201, see `crosskernel`
     return crosskernel(*args, bases=(_stationary.StationaryKernel,), **kw)
 
 
@@ -147,5 +147,5 @@ def isotropickernel(*args, **kw):
     >>> @lgp.isotropickernel(derivable=True)
     ... def MyKernel(distsquared, cippa=1, lippa=42):
     ...     return cippa * jnp.exp(-distsquared) + lippa
-    """
+    """  # noqa: DOC101, DOC103, DOC201, see `crosskernel`
     return crosskernel(*args, bases=(_isotropic.IsotropicKernel,), **kw)

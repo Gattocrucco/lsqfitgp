@@ -35,17 +35,17 @@ def _Celerite_derivable(**kw):
 
 @stationarykernel(derivable=_Celerite_derivable, input='abs', maxdim=1)
 def Celerite(delta, gamma=1, B=0):
-    """
+    r"""
     Celerite kernel.
 
     .. math::
-        k(\\Delta) = \\exp(-\\gamma|\\Delta|)
-        \\big( \\cos(\\Delta) + B \\sin(|\\Delta|) \\big)
+        k(\Delta) = \exp(-\gamma|\Delta|)
+        \big( \cos(\Delta) + B \sin(|\Delta|) \big)
 
     This is the covariance function of an AR(2) process with complex roots. The
-    parameters must satisfy the condition :math:`|B| \\le \\gamma`. For
-    :math:`B = \\gamma` it is equivalent to the `Harmonic` kernel with
-    :math:`\\eta Q = 1/B, Q > 1`, and it is derivable.
+    parameters must satisfy the condition :math:`|B| \le \gamma`. For
+    :math:`B = \gamma` it is equivalent to the `Harmonic` kernel with
+    :math:`\eta Q = 1/B, Q > 1`, and it is derivable.
 
     Reference: Daniel Foreman-Mackey, Eric Agol, Sivaram Ambikasaran, and Ruth
     Angus: *Fast and Scalable Gaussian Process Modeling With Applications To
@@ -59,21 +59,21 @@ def Celerite(delta, gamma=1, B=0):
 
 @stationarykernel(derivable=1, maxdim=1)
 def Harmonic(delta, Q=1):
-    """
+    r"""
     Damped stochastically driven harmonic oscillator kernel.
 
     .. math::
-        k(\\Delta) =
-        \\exp\\left( -\\frac {|\\Delta|} {Q} \\right)
-        \\begin{cases}
-            \\cosh(\\eta\\Delta) + \\sinh(\\eta|\\Delta|) / (\\eta Q)
-            & 0 < Q < 1 \\\\
-            1 + |\\Delta| & Q = 1 \\\\
-            \\cos(\\eta\\Delta) + \\sin(\\eta|\\Delta|) / (\\eta Q)
+        k(\Delta) =
+        \exp\left( -\frac {|\Delta|} {Q} \right)
+        \begin{cases}
+            \cosh(\eta\Delta) + \sinh(\eta|\Delta|) / (\eta Q)
+            & 0 < Q < 1 \\
+            1 + |\Delta| & Q = 1 \\
+            \cos(\eta\Delta) + \sin(\eta|\Delta|) / (\eta Q)
             & Q > 1,
-        \\end{cases}
+        \end{cases}
 
-    where :math:`\\eta = \\sqrt{|1 - 1/Q^2|}`.
+    where :math:`\eta = \sqrt{|1 - 1/Q^2|}`.
 
     The process is the solution to the stochastic differential equation
 

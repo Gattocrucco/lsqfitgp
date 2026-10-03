@@ -58,7 +58,7 @@ def switchgvar():
     >>> p = x + w  # allowed, x and w created in the same pool
     >>> h = x + y  # x and y created in different pools: this will silently
     ...            # fail and possibly crash python immediately or later on
-    """
+    """  # noqa: DOC202, DOC402
     try:
         yield gvar.switch_gvar()
     finally:

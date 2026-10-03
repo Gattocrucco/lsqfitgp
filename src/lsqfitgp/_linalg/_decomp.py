@@ -18,6 +18,8 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+Matrix decompositions.
+
 Copy-pasted from the notes:
 
 2023-02-14
@@ -129,7 +131,7 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
 
     @abc.abstractmethod
     def matrix(self):
-        """The input matrix."""
+        """Return the input matrix."""
         pass
 
     @abc.abstractmethod
@@ -190,8 +192,9 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
         fishvec=False,
     ):
         """
-        Compute minus log a Normal density and its derivatives, with covariance
-        matrix K.
+        Compute minus log a Normal density and its derivatives.
+
+        The covariance matrix of the Normal is K.
 
         If an input derivative is not specified, it is assumed to be zero.
 
@@ -234,7 +237,7 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
               - 2 tr(K⁺dK(I-KK⁺)d'KK⁺)
               + dr'(K⁺+(I-KK⁺)/ε)d'r
         fishvec : fisher matrix @ vec
-        """
+        """  # noqa: DOC202
         pass
 
     def _parseeps(self, K, epsrel, epsabs, maxeigv=None):
@@ -273,8 +276,9 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
 
 def solve_triangular_python(a, b, *, lower=False):
     """
-    Pure python implementation of scipy.linalg.solve_triangular for when
-    a or b are object arrays.
+    Pure python implementation of scipy.linalg.solve_triangular.
+
+    For when a or b are object arrays.
     """
     a = numpy.asarray(a)
     x = numpy.copy(b)
@@ -348,8 +352,9 @@ def solve_batched(a, b, **kw):
 
 def eigval_bound(K):
     """
-    Upper bound on the largest magnitude eigenvalue of the matrix, from
-    Gershgorin's theorem.
+    Upper bound on the largest magnitude eigenvalue of the matrix.
+
+    The bound is from Gershgorin's theorem.
     """
     return jnp.max(jnp.sum(jnp.abs(K), axis=1))
 
@@ -363,8 +368,11 @@ def diag_scale_pow2(K):
 
 
 def transpose(x):
-    """Swap the last two axes of array x, corresponds to matrix tranposition
-    with the broadcasting convention of matmul.
+    """
+    Swap the last two axes of array x.
+
+    Corresponds to matrix tranposition with the broadcasting convention of
+    matmul.
     """
     if x.ndim < 2:
         return x
@@ -376,8 +384,10 @@ def transpose(x):
 
 
 class Chol(Decomposition):
-    """Cholesky decomposition. The matrix is regularized adding a small multiple
-    of the identity.
+    """
+    Cholesky decomposition.
+
+    The matrix is regularized adding a small multiple of the identity.
     """
 
     def __init__(self, K, *, epsrel='auto', epsabs=0):
@@ -614,13 +624,16 @@ class Chol(Decomposition):
         fishvec=False,
     ):
         """
-        Prepares arguments for `minus_log_normal_density`.
+        Prepare arguments for `minus_log_normal_density`.
 
         Parameters
         ----------
-        K_fun, r_fun : callable
-            Functions with signature ``f(primal, *args, **kw)`` that produce the
-            `K` init argument and the `r` `minus_log_normal_density` argument.
+        K_fun : callable
+            Function with signature ``f(primal, *args, **kw)`` that produces the
+            `K` init argument.
+        r_fun : callable
+            Function with signature ``f(primal, *args, **kw)`` that produces the
+            `r` `minus_log_normal_density` argument.
         primal : 1d array
             The first argument to `K_fun` and `r_fun`.
         args : tuple
@@ -629,9 +642,17 @@ class Chol(Decomposition):
             Keyword arguments to `K_fun` and `r_fun`.
         vec : 1d array
             A tangent vector to compute the jacobian-vector products.
-        value, gradrev, gradfwd, fisher, fishvec : bool
-            Arguments to `minus_log_normal_density`, used to determine which
+        value : bool
+            Argument to `minus_log_normal_density`, used to determine which
             derivatives are needed.
+        gradrev : bool
+            Like `value`.
+        gradfwd : bool
+            Like `value`.
+        fisher : bool
+            Like `value`.
+        fishvec : bool
+            Like `value`.
 
         Returns
         -------

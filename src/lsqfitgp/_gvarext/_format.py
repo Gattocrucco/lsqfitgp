@@ -305,7 +305,7 @@ def fmtspec_kwargs(spec):
 
 
 def gvar_formatter(g, spec):
-    """A formatter for `gvar.GVar.set` that uses `uformat`."""
+    """Format a gvar with `uformat`, as formatter for `gvar.GVar.set`."""
     mu = gvar.mean(g)
     s = gvar.sdev(g)
     kw = fmtspec_kwargs(spec)
@@ -334,7 +334,7 @@ def gvar_format(spec=None, *, lsqfitgp_format=True):
     -----
     See `fmtspec_kwargs` for the format specification, and `uformat` for all
     details.
-    """
+    """  # noqa: DOC402
     if lsqfitgp_format:
         if spec is None:
             spec = '#1.5p'

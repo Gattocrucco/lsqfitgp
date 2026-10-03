@@ -32,8 +32,9 @@ from lsqfitgp._special import _gamma
 
 def hurwitz_zeta_series(m, x, a1, onlyeven=False, onlyodd=False, skipterm=None):
     """
-    Hurwitz zeta(s = m + x, a = 1 - a1) with integer m
-    meant to be used with |x| ≤ 1/2, but no actual restriction
+    Hurwitz zeta(s = m + x, a = 1 - a1) with integer m.
+
+    Meant to be used with |x| ≤ 1/2, but no actual restriction
     assuming -S <= s <= 0 and |a1| <= 1/2 with S ~ some decade
     https://dlmf.nist.gov/25.11.E10.
     """
@@ -151,6 +152,8 @@ def periodic_zeta_larges(x, s, nmax, imag):
 
 def periodic_zeta_smalls(x, s, imag):
     """
+    Compute `periodic_zeta` for small s.
+
     See https://dlmf.nist.gov/25.11.E10 and https://dlmf.nist.gov/25.11.E3 expanded
     into https://dlmf.nist.gov/25.13.E2.
     """

@@ -95,8 +95,9 @@ def expn_asymp_coefgen(s, e, n):
 
 def expn_asymp(n, z, nt):
     """
-    Compute E_n(z) for large |z|, |arg z| < 3/2 π. ``nt`` is the number of terms
-    used in the asymptotic series.
+    Compute E_n(z) for large |z|, |arg z| < 3/2 π.
+
+    ``nt`` is the number of terms used in the asymptotic series.
     """
     # DLMF 8.20.2
 
@@ -262,7 +263,8 @@ def _exp1_imag_largex(x):
 @jit
 def exp1_imag(x):
     """
-    Compute E_1(-ix) = int_1^oo dt e^ixt / t, for x > 0
+    Compute E_1(-ix) = int_1^oo dt e^ixt / t, for x > 0.
+
     Reference: Rowe et al. (2015, app. B).
     """
     return jnp.where(x < 4, _exp1_imag_smallx(x), _exp1_imag_largex(x))

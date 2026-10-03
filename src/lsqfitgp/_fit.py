@@ -86,9 +86,12 @@ def token_map(func, x):
 
 
 class Logger:
-    """Class to manage a log. Can be used as superclass. Each line of the log
-    has a verbosity level (an integer >= 0) and is printed only if this level is
-    below a threshold. All lines are saved and the log can be retrieved.
+    """
+    Class to manage a log.
+
+    Can be used as superclass. Each line of the log has a verbosity level (an
+    integer >= 0) and is printed only if this level is below a threshold. All
+    lines are saved and the log can be retrieved.
     """
 
     def __init__(self, target_verbosity=0):
@@ -413,7 +416,8 @@ class empbayes_fit(Logger):
         @staticmethod
         def fmtcalls(method, functions):
             """
-            Format summary of number of calls
+            Format summary of number of calls.
+
             method : str
             functions: dict[str, _CountCalls].
             """
@@ -713,9 +717,7 @@ class empbayes_fit(Logger):
 
         @wrap
         def fun(p, **kw):
-            """Minus log marginal posterior of the hyperparameters (not
-            normalized).
-            """
+            """Minus log marginal posterior of the hyperparameters (not normalized)."""
             decomp, r, loss = make_decomp(p, **kw)
             cond, _, _, _, _ = decomp.minus_log_normal_density(r, value=True)
             post = cond + prior(p) + loss
@@ -1019,7 +1021,7 @@ class empbayes_fit(Logger):
 
         @classmethod
         def fmttimes(cls, times):
-            """`times` = dict label -> seconds."""
+            """Format `times` = dict label -> seconds."""
             return ', '.join(f'{k} {cls.fmttime(v)}' for k, v in times.items())
 
         def estimate_firstcall_overhead(self):

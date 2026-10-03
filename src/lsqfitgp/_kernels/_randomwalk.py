@@ -26,11 +26,11 @@ from lsqfitgp._Kernel import kernel, stationarykernel
 
 @kernel(derivable=False, maxdim=1)
 def Wiener(x, y):
-    """
+    r"""
     Wiener kernel.
 
     .. math::
-        k(x, y) = \\min(x, y), \\quad x, y > 0
+        k(x, y) = \min(x, y), \quad x, y > 0
 
     A kernel representing a non-differentiable random walk starting at 0.
 
@@ -48,16 +48,16 @@ def _fracbrownian_derivable(H=1 / 2, K=1):
 
 @kernel(derivable=_fracbrownian_derivable, maxdim=1)
 def FracBrownian(x, y, H=1 / 2, K=1):
-    """
+    r"""
     Bifractional Brownian motion kernel.
 
     .. math::
-        k(x, y) = \\frac 1{2^K} \\big(
+        k(x, y) = \frac 1{2^K} \big(
             (|x|^{2H} + |y|^{2H})^K - |x-y|^{2HK}
-        \\big), \\quad H, K \\in (0, 1]
+        \big), \quad H, K \in (0, 1]
 
-    For :math:`H = 1/2` (default) it is the Wiener kernel. For :math:`H \\in (0, 1/2)` the
-    increments are anticorrelated (strong oscillation), for :math:`H \\in (1/2, 1]`
+    For :math:`H = 1/2` (default) it is the Wiener kernel. For :math:`H \in (0, 1/2)` the
+    increments are anticorrelated (strong oscillation), for :math:`H \in (1/2, 1]`
     the increments are correlated (tends to keep a slope).
 
     Reference: Houdré and Villa (2003).
@@ -103,12 +103,12 @@ def _maximum_jvp(primals, tangents):
 
 @kernel(derivable=1, maxdim=1)
 def WienerIntegral(x, y):
-    """
+    r"""
     Kernel for a process whose derivative is a Wiener process.
 
     .. math::
-        k(x, y) = \\frac 12 a^2 \\left(b - \\frac a3 \\right),
-        \\quad a = \\min(x, y), b = \\max(x, y)
+        k(x, y) = \frac 12 a^2 \left(b - \frac a3 \right),
+        \quad a = \min(x, y), b = \max(x, y)
     """
     with _jaxext.skipifabstract():
         assert jnp.all(x >= 0)
@@ -120,12 +120,12 @@ def WienerIntegral(x, y):
 
 @kernel(derivable=False, maxdim=1)
 def OrnsteinUhlenbeck(x, y):
-    """
+    r"""
     Ornstein-Uhlenbeck process kernel.
 
     .. math::
-        k(x, y) = \\exp(-|x - y|) - \\exp(-(x + y)),
-        \\quad x, y \\ge 0
+        k(x, y) = \exp(-|x - y|) - \exp(-(x + y)),
+        \quad x, y \ge 0
 
     It is a random walk plus a negative feedback term that keeps the
     asymptotical variance constant. It is asymptotically stationary; often the
@@ -140,12 +140,12 @@ def OrnsteinUhlenbeck(x, y):
 
 @kernel(derivable=False, maxdim=1)
 def BrownianBridge(x, y):
-    """
+    r"""
     Brownian bridge kernel.
 
     .. math::
-        k(x, y) = \\min(x, y) - xy,
-        \\quad x, y \\in [0, 1]
+        k(x, y) = \min(x, y) - xy,
+        \quad x, y \in [0, 1]
 
     It is a Wiener process conditioned on being zero at x = 1.
     """
@@ -163,12 +163,12 @@ def _stationaryfracbrownian_derivable(H=1 / 2):
 
 @stationarykernel(derivable=_stationaryfracbrownian_derivable, input='signed', maxdim=1)
 def StationaryFracBrownian(delta, H=1 / 2):
-    """
+    r"""
     Stationary fractional Brownian motion kernel.
 
     .. math::
-        k(\\Delta) = \\frac 12 (|\\Delta+1|^{2H} + |\\Delta-1|^{2H} - 2|\\Delta|^{2H}),
-        \\quad H \\in (0, 1]
+        k(\Delta) = \frac 12 (|\Delta+1|^{2H} + |\Delta-1|^{2H} - 2|\Delta|^{2H}),
+        \quad H \in (0, 1]
 
     Reference: Gneiting and Schlather (2006, p. 272).
     """

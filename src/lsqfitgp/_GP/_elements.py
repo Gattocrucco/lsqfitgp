@@ -59,10 +59,7 @@ class GPElements(_base.GPBase):
 
     @staticmethod
     def _concatenate(alist):
-        """
-        Decides to use numpy.concatenate or jnp.concatenate depending on the
-        input to support gvars.
-        """
+        """Concatenate with numpy if there are gvars, else with jax."""
         if any(a.dtype == object for a in alist):
             return numpy.concatenate(alist)
         else:
@@ -71,9 +68,10 @@ class GPElements(_base.GPBase):
     @staticmethod
     def _triu_indices_and_back(n):
         """
-        Return indices to get the upper triangular part of a matrix, and indices
-        to convert a flat array of upper triangular elements to a symmetric
-        matrix.
+        Return indices to go from a symmetric matrix to its upper triangle and back.
+
+        The indices get the upper triangular part of a matrix, and convert a
+        flat array of upper triangular elements to a symmetric matrix.
         """
         ix, iy = jnp.triu_indices(n)
         q = jnp.empty((n, n), ix.dtype)
@@ -83,10 +81,7 @@ class GPElements(_base.GPBase):
         return ix, iy, q
 
     class _Element(abc.ABC):
-        """
-        Abstract class for an object holding information associated to a key in
-        a GP object.
-        """
+        """Abstract class for the information associated to a key in a GP object."""
 
         @property
         @abc.abstractmethod
@@ -123,10 +118,7 @@ class GPElements(_base.GPBase):
             self.shape = shape
 
         def matrices(self, gp):
-            """
-            Matrix coefficients of the transformation (with flattened inputs
-            and output).
-            """
+            """Matrix coefficients of the transformation, with flattened in/output."""
             elems = [gp._elements[key] for key in self.keys]
             matrices = []
             transf = vmap(self.transf, 0, 0)
@@ -245,8 +237,9 @@ class GPElements(_base.GPBase):
 
     def addtransf(self, tensors, key, *, axes=1):  # noqa: C901
         """
-        Apply a linear transformation to already specified process points. The
-        result of the transformation is represented by a new key.
+        Apply a linear transformation to already specified process points.
+
+        The result of the transformation is represented by a new key.
 
         Parameters
         ----------
@@ -771,10 +764,12 @@ class GPElements(_base.GPBase):
 
     def prior(self, key=None, *, raw=False):
         """
-        Return an array or a dictionary of arrays of gvars representing the
-        prior for the Gaussian process. The returned object is not unique but
-        the gvars stored inside are, so all the correlations are kept between
-        objects returned by different calls to `prior`.
+        Return gvars representing the prior for the Gaussian process.
+
+        The output is an array or a dictionary of arrays of gvars. The returned
+        object is not unique but the gvars stored inside are, so all the
+        correlations are kept between objects returned by different calls to
+        `prior`.
 
         Calling without arguments returns the complete prior as a dictionary.
         If you specify ``key``, only the array for the requested key is returned.
@@ -791,15 +786,11 @@ class GPElements(_base.GPBase):
 
         Returns
         -------
-        If raw=False (default):
-
         prior : np.ndarray or dict
-            A collection of gvars representing the prior.
-
-        If raw=True:
-
+            If ``raw=False`` (default), a collection of gvars representing the
+            prior.
         cov : np.ndarray or dict
-            The covariance matrix of the prior.
+            If ``raw=True``, the covariance matrix of the prior.
         """
         raw = bool(raw)
 
@@ -829,8 +820,9 @@ class GPElements(_base.GPBase):
 
     def _slices(self, keylist):
         """
-        Return list of slices for the positions of flattened arrays
-        corresponding to keys in ``keylist`` into their concatenation.
+        Return the slices of the flattened arrays of ``keylist``.
+
+        The slices are the positions of the arrays into their concatenation.
         """
         sizes = [self._elements[key].size for key in keylist]
         stops = numpy.pad(numpy.cumsum(sizes), (1, 0))

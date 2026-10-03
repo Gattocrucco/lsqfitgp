@@ -36,7 +36,7 @@ def makejaxufunc(ufunc, *derivs, excluded=None, floatcast=False):
     ufunc : callable
         Elementwise function following numpy broadcasting and type promotion
         rules. Keyword arguments not supported.
-    derivs : sequence of callable
+    *derivs : sequence of callable
         Derivatives of the function w.r.t. each positional argument, with the
         same signature as `ufunc`. Pass None to indicate a missing derivative.
         There must be as many derivatives as the arguments to `ufunc`.
@@ -112,8 +112,10 @@ def elementwise_grad(fun, argnum=0):
 
 class skipifabstract:
     """
-    Context manager to try to do all operations eagerly even during jit, and
-    skip entirely if it is not possible.
+    Context manager to do all operations eagerly, or skip them.
+
+    It tries to do all operations eagerly even during jit, and skips entirely
+    if it is not possible.
     """
 
     # I feared this would be slow because of the slow jax exception handling,
@@ -168,8 +170,10 @@ def is_jax_type(dtype):
 
 
 def pure_callback_ufunc(callback, dtype, *args, excluded=None, **kwargs):
-    """Version of jax.pure_callback that deals correctly with ufuncs,
-    see https://github.com/google/jax/issues/17187.
+    """
+    Version of jax.pure_callback that deals correctly with ufuncs.
+
+    See https://github.com/google/jax/issues/17187.
     """
     if excluded is None:
         excluded = ()

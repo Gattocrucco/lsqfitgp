@@ -148,8 +148,10 @@ class DistrBase(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def __repr__(self, path='', cache=None):
-        """Produce a representation where no object appears more than once,
-        later appearances are replaced by a user-friendly identifier.
+        """
+        Produce a representation where no object appears more than once.
+
+        Later appearances are replaced by a user-friendly identifier.
         """
         if cache is None:
             cache = {}

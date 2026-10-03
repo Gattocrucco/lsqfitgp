@@ -79,7 +79,7 @@ class Signature:
 
         Parameters
         ----------
-        args : sequence of numpy.ndarray or None
+        *args : sequence of numpy.ndarray or None
             A missing argument can be replaced with None, provided the other
             arguments are sufficient to infer all dimension sizes.
 

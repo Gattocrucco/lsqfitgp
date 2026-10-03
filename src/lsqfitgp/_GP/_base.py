@@ -89,7 +89,7 @@ class GPBase:
 
 
 def newself(meth):
-    """Decorator to create a new GP object and pass it to the method."""
+    """Decorate a method to create a new GP object and pass it to the method."""
 
     @functools.wraps(meth)
     def newmeth(self, *args, **kw):

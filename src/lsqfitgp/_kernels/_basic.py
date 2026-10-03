@@ -45,25 +45,25 @@ def Constant(x, y):
 
 @isotropickernel(derivable=False, input='raw')
 def White(x, y):
-    """
+    r"""
     White noise kernel.
 
     .. math::
-        k(x, y) = \\begin{cases}
-            1 & x = y     \\\\
-            0 & x \\neq y
-        \\end{cases}
+        k(x, y) = \begin{cases}
+            1 & x = y     \\
+            0 & x \neq y
+        \end{cases}
     """
     return _Kernel.prod_recurse_dtype(lambda x, y: x == y, x, y).astype(int)
 
 
 @isotropickernel(derivable=True)
 def ExpQuad(r2):
-    """
+    r"""
     Exponential quadratic kernel.
 
     .. math::
-        k(r) = \\exp \\left( -\\frac 12 r^2 \\right)
+        k(r) = \exp \left( -\frac 12 r^2 \right)
 
     It is smooth and has a strict typical lengthscale, i.e., oscillations are
     strongly suppressed under a certain wavelength, and correlations are
@@ -80,11 +80,11 @@ def _dot(x, y):
 
 @kernel(derivable=True)
 def Linear(x, y):
-    """
+    r"""
     Dot product kernel.
 
     .. math::
-        k(x, y) = x \\cdot y = \\sum_i x_i y_i
+        k(x, y) = x \cdot y = \sum_i x_i y_i
 
     In 1D it is equivalent to fitting with a line passing by the origin.
 
@@ -95,17 +95,17 @@ def Linear(x, y):
 
 @isotropickernel(derivable=lambda gamma=1: gamma == 2)
 def GammaExp(r2, gamma=1):
-    """
+    r"""
     Gamma exponential kernel.
 
     .. math::
-        k(r) = \\exp(-r^\\gamma), \\quad
-        \\gamma \\in (0, 2]
+        k(r) = \exp(-r^\gamma), \quad
+        \gamma \in (0, 2]
 
-    For :math:`\\gamma = 2` it is the squared exponential kernel, for
-    :math:`\\gamma = 1` (default) it is the Matérn 1/2 kernel, for
-    :math:`\\gamma \\to 0` it tends to white noise plus a constant. The process
-    is differentiable only for :math:`\\gamma = 2`, however as :math:`\\gamma`
+    For :math:`\gamma = 2` it is the squared exponential kernel, for
+    :math:`\gamma = 1` (default) it is the Matérn 1/2 kernel, for
+    :math:`\gamma \to 0` it tends to white noise plus a constant. The process
+    is differentiable only for :math:`\gamma = 2`, however as :math:`\gamma`
     gets closer to 2 the variance of the non-derivable component goes to zero.
 
     Reference: Rasmussen and Williams (2006, p. 86).
@@ -122,20 +122,20 @@ def GammaExp(r2, gamma=1):
 
 @kernel(derivable=True)
 def NNKernel(x, y, sigma0=1):
-    """
+    r"""
     Neural network kernel.
 
     .. math::
-        k(x, y) = \\frac 2 \\pi
-        \\arcsin \\left( \\frac
+        k(x, y) = \frac 2 \pi
+        \arcsin \left( \frac
         {
-            2 (q + x \\cdot y)
+            2 (q + x \cdot y)
         }{
-            (1 + 2 (q + x \\cdot x))
-            (1 + 2 (q + y \\cdot y))
+            (1 + 2 (q + x \cdot x))
+            (1 + 2 (q + y \cdot y))
         }
-        \\right),
-        \\quad q = \\texttt{sigma0}^2
+        \right),
+        \quad q = \texttt{sigma0}^2
 
     Kernel which is equivalent to a neural network with one infinite hidden
     layer with Gaussian priors on the weights and error function response. In
@@ -155,13 +155,13 @@ def NNKernel(x, y, sigma0=1):
 
 @kernel
 def Gibbs(x, y, scalefun=lambda _: 1):
-    """
+    r"""
     Gibbs kernel.
 
     .. math::
-        k(x, y) = \\sqrt{ \\frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
-        \\exp \\left( -\\frac {(x - y)^2} {s(x)^2 + s(y)^2} \\right),
-        \\quad s = \\texttt{scalefun}.
+        k(x, y) = \sqrt{ \frac {2 s(x) s(y)} {s(x)^2 + s(y)^2} }
+        \exp \left( -\frac {(x - y)^2} {s(x)^2 + s(y)^2} \right),
+        \quad s = \texttt{scalefun}.
 
     Kernel which in some sense is like a Gaussian kernel where the scale
     changes at every point. The scale is computed by the parameter `scalefun`
@@ -255,11 +255,11 @@ def Rescaling(x, y, stdfun=None):
 
 @stationarykernel(derivable=False, input='abs', maxdim=1)
 def Expon(delta):
-    """
+    r"""
     Exponential kernel.
 
     .. math::
-        k(\\Delta) = \\exp(-|\\Delta|)
+        k(\Delta) = \exp(-|\Delta|)
 
     In 1D it is equivalent to the Matérn 1/2 kernel, however in more dimensions
     it acts separately while the Matérn kernel is isotropic.
@@ -275,12 +275,12 @@ _bow_regexp = re.compile(r'\s|[!«»"“”‘’/()\'?¡¿„‚<>,;.:-–—]'
 @kernel(derivable=False, maxdim=1)
 @numpy.vectorize
 def BagOfWords(x, y):
-    """
+    r"""
     Bag of words kernel.
 
     .. math::
-        k(x, y) &= \\sum_{w \\in \\text{words}} c_w(x) c_w(y), \\\\
-        c_w(x) &= \\text{number of times word $w$ appears in $x$}
+        k(x, y) &= \sum_{w \in \text{words}} c_w(x) c_w(y), \\
+        c_w(x) &= \text{number of times word $w$ appears in $x$}
 
     The words are defined as non-empty substrings delimited by spaces or one of
     the following punctuation characters: ! « » " “ ” ‘ ’ / ( ) ' ? ¡ ¿ „ ‚ < >
@@ -298,10 +298,10 @@ def BagOfWords(x, y):
 
 @stationarykernel(derivable=False, input='abs', maxdim=1)
 def HoleEffect(delta):
-    """
+    r"""
     Hole effect kernel.
 
-    .. math:: k(\\Delta) = (1 - \\Delta) \\exp(-\\Delta)
+    .. math:: k(\Delta) = (1 - \Delta) \exp(-\Delta)
 
     Reference: Dietrich and Newsam (1997, p. 1096).
     """
@@ -381,11 +381,11 @@ def Decaying(x, y, alpha=1):
 
 @isotropickernel(derivable=False, input='posabs')
 def Log(r):
-    """
+    r"""
     Log kernel.
 
     .. math::
-        k(r) = \\log(1 + r) / r
+        k(r) = \log(1 + r) / r
 
     From https://github.com/wesselb/mlkernels.
     """
@@ -394,12 +394,12 @@ def Log(r):
 
 @kernel(derivable=True, maxdim=1)
 def Taylor(x, y):
-    """
+    r"""
     Exponential-like power series kernel.
 
     .. math::
-        k(x, y) = \\sum_{k=0}^\\infty \\frac {x^k}{k!} \\frac {y^k}{k!}
-        = I_0(2 \\sqrt{xy})
+        k(x, y) = \sum_{k=0}^\infty \frac {x^k}{k!} \frac {y^k}{k!}
+        = I_0(2 \sqrt{xy})
 
     It is equivalent to fitting with a Taylor series expansion in zero with
     independent priors on the coefficients k with mean zero and standard

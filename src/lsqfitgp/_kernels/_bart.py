@@ -44,7 +44,7 @@ def _BARTBase(
     reset=None,
     indices=False,
 ):
-    """
+    r"""
     BART kernel.
 
     Good default parameters: ``maxd=4, reset=2`` if ``alpha`` and ``beta`` are
@@ -105,18 +105,18 @@ def _BARTBase(
     of the trees. This prior is the distribution of the function
 
     .. math::
-        f(\\mathbf x) = \\lim_{m\\to\\infty}
-        \\sum_{j=1}^m g(\\mathbf x; T_j, M_j),
+        f(\mathbf x) = \lim_{m\to\infty}
+        \sum_{j=1}^m g(\mathbf x; T_j, M_j),
 
-    where each :math:`g(\\mathbf x; T_j, M_j)` is a decision tree evaluated at
-    :math:`\\mathbf x`, with structure :math:`T_j` and leaf values :math:`M_j`.
+    where each :math:`g(\mathbf x; T_j, M_j)` is a decision tree evaluated at
+    :math:`\mathbf x`, with structure :math:`T_j` and leaf values :math:`M_j`.
     The trees are i.i.d., with the following distribution for :math:`T_j`: for
     a node at depth :math:`d`, with :math:`d = 0` for the root, the probability
     of not being a leaf, conditional on its existence and its ancestors only, is
 
     .. math::
-        P_d = \\alpha (1+d)^{-\\beta}, \\quad
-        \\alpha \\in [0, 1], \\quad \\beta \\ge 0.
+        P_d = \alpha (1+d)^{-\beta}, \quad
+        \alpha \in [0, 1], \quad \beta \ge 0.
 
     For a non-leaf node, conditional on existence and ancestors, the splitting
     variable has uniform distribution amongst the variables with any splitting
@@ -126,57 +126,57 @@ def _BARTBase(
 
     The distribution of leaves :math:`M_j` is i.i.d. Normal with variance
     :math:`1/m`, such that :math:`f(x)` has variance 1. In the limit
-    :math:`m\\to\\infty`, the distribution of :math:`f(x)` becomes a Gaussian
+    :math:`m\to\infty`, the distribution of :math:`f(x)` becomes a Gaussian
     process.
 
     Since the trees are independent, the covariance function can be computed
     for a single tree. Consider two coordinates :math:`x` and :math:`y`, with
-    :math:`x \\le y`. Let :math:`n^-`, :math:`n^0` and :math:`n^+` be the
+    :math:`x \le y`. Let :math:`n^-`, :math:`n^0` and :math:`n^+` be the
     number of splitting points respectively before :math:`x`, between
-    :math:`x`, :math:`y` and after :math:`y`. Next, define :math:`\\mathbf
-    n^-`, :math:`\\mathbf n^0` and :math:`\\mathbf n^+` as the vectors of such
+    :math:`x`, :math:`y` and after :math:`y`. Next, define :math:`\mathbf
+    n^-`, :math:`\mathbf n^0` and :math:`\mathbf n^+` as the vectors of such
     quantities for each dimension, with a total of :math:`p` dimensions, and
-    :math:`\\mathbf n = \\mathbf n^- + \\mathbf n^0 + \\mathbf n^+`. Then the
+    :math:`\mathbf n = \mathbf n^- + \mathbf n^0 + \mathbf n^+`. Then the
     covariance function can be written recursively as
 
     .. math::
-        \\newcommand{\\nvecs}{\\mathbf n^-, \\mathbf n^0, \\mathbf n^+}
-        k(\\mathbf x, \\mathbf y) &= k_0(\\nvecs), \\\\
-        k_D(\\nvecs) &= 1 - (1 - \\gamma) P_D,
-            \\quad \\mathbf n^0 \\ne \\mathbf 0, \\\\
-        k_d(\\mathbf 0, \\mathbf 0, \\mathbf 0) &= 1, \\\\
-        k_d(\\nvecs) &= 1 - P_d \\Bigg(1 - \\frac1{W(\\mathbf n)}
-            \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p
-                \\frac{w_i}{n_i} \\Bigg( \\\\
-                &\\qquad \\sum_{k=0}^{n^-_i - 1}
-                k_{d+1}(\\mathbf n^-_{n^-_i=k}, \\mathbf n^0, \\mathbf n^+)
-                + {} \\\\
-                &\\qquad \\sum_{k=0}^{n^+_i - 1}
-                k_{d+1}(\\mathbf n^-, \\mathbf n^0, \\mathbf n^+_{n^+_i=k})
-            \\Bigg)
-        \\Bigg), \\quad d < D, \\\\
-        W(\\mathbf n) &= \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p w_i.
+        \newcommand{\nvecs}{\mathbf n^-, \mathbf n^0, \mathbf n^+}
+        k(\mathbf x, \mathbf y) &= k_0(\nvecs), \\
+        k_D(\nvecs) &= 1 - (1 - \gamma) P_D,
+            \quad \mathbf n^0 \ne \mathbf 0, \\
+        k_d(\mathbf 0, \mathbf 0, \mathbf 0) &= 1, \\
+        k_d(\nvecs) &= 1 - P_d \Bigg(1 - \frac1{W(\mathbf n)}
+            \sum_{\substack{i=1 \\ n_i\ne 0}}^p
+                \frac{w_i}{n_i} \Bigg( \\
+                &\qquad \sum_{k=0}^{n^-_i - 1}
+                k_{d+1}(\mathbf n^-_{n^-_i=k}, \mathbf n^0, \mathbf n^+)
+                + {} \\
+                &\qquad \sum_{k=0}^{n^+_i - 1}
+                k_{d+1}(\mathbf n^-, \mathbf n^0, \mathbf n^+_{n^+_i=k})
+            \Bigg)
+        \Bigg), \quad d < D, \\
+        W(\mathbf n) &= \sum_{\substack{i=1 \\ n_i\ne 0}}^p w_i.
 
     The introduction of a maximum depth :math:`D` is necessary for
     computational feasibility. As :math:`D` increases, the result converges to
-    the one without depth limit. For :math:`D \\le 2` (the default value), the
+    the one without depth limit. For :math:`D \le 2` (the default value), the
     covariance is implemented in closed form and takes :math:`O(p)` to compute.
     For :math:`D > 2`, the computational complexity grows exponentially as
-    :math:`O(p(\\bar np)^{D-2})`, where :math:`\\bar n` is the average number of splitting
+    :math:`O(p(\bar np)^{D-2})`, where :math:`\bar n` is the average number of splitting
     points along a dimension.
 
     In the maximum allowed depth is 1, i.e., either :math:`D = 1` or
-    :math:`\\beta\\to\\infty`, the kernel assumes the simple form
+    :math:`\beta\to\infty`, the kernel assumes the simple form
 
     .. math::
-        k(\\mathbf x, \\mathbf y) &= 1 - P_0 \\left(
-            1 - Q + \\frac Q{W(\\mathbf n)}
-            \\sum_{\\substack{i=1 \\\\ n_i\\ne 0}}^p w_i
-            \\frac{n^0_i}{n_i} \\right), \\\\
-        Q &= \\begin{cases}
-            1 - (1 - \\gamma) P_1 & \\mathbf n^0 \\ne \\mathbf 0, \\\\
-            1 & \\mathbf n^0 = \\mathbf 0,
-        \\end{cases}
+        k(\mathbf x, \mathbf y) &= 1 - P_0 \left(
+            1 - Q + \frac Q{W(\mathbf n)}
+            \sum_{\substack{i=1 \\ n_i\ne 0}}^p w_i
+            \frac{n^0_i}{n_i} \right), \\
+        Q &= \begin{cases}
+            1 - (1 - \gamma) P_1 & \mathbf n^0 \ne \mathbf 0, \\
+            1 & \mathbf n^0 = \mathbf 0,
+        \end{cases}
 
     which is separable along dimensions, i.e., it has no interactions.
 
@@ -185,7 +185,7 @@ def _BARTBase(
     .. [1] Hugh A. Chipman, Edward I. George, Robert E. McCulloch "BART:
         Bayesian additive regression trees," The Annals of Applied Statistics,
         Ann. Appl. Stat. 4(1), 266-298, (March 2010).
-    """
+    """  # noqa: DOC001
     splits = BART._check_splits(splits, indices)
     if not x.dtype.names:
         x = x[..., None]
@@ -247,10 +247,11 @@ class BART(_BARTBase):
     @jit
     def _splits_from_coord(x):
         """
-        Jitted implementation of splits_from_coord. Applying jit avoids the
-        recompilation in lax.scan each time the method is called, and
-        splits_from_coord can not be jitted directly because x could be a numpy
-        structured array.
+        Jitted implementation of splits_from_coord.
+
+        Applying jit avoids the recompilation in lax.scan each time the method
+        is called, and splits_from_coord can not be jitted directly because x
+        could be a numpy structured array.
         """
         x = x.reshape(-1, x.shape[-1]) if x.size else x.reshape(1, x.shape[-1])
         if jnp.issubdtype(x.dtype, jnp.inexact):
@@ -348,15 +349,29 @@ class BART(_BARTBase):
             The number of splitting points greater than the two points,
             separately along each coordinate, or the index in the splitting bins
             of the second point if ``altinput``.
+        alpha : scalar
+            See `BART`.
+        beta : scalar
+            See `BART`.
+        gamma : scalar or str
+            See `BART`.
+        maxd : int
+            See `BART`.
         debug : bool
             If True, disable shortcuts in the tree recursion. Default False.
+        pnt : (maxd + 1,) array, optional
+            See `BART`.
+        intercept : bool, default True
+            See `BART`.
+        weights : (p,) array, optional
+            See `BART`.
+        reset : int or sequence of int, optional
+            See `BART`.
         altinput : bool
             If True, take as input the indices in the splitting bins of the
             points instead of the counts of splitting points separating them,
             and use a different implementation optimized for that case. Default
             False. The `BART` kernel uses ``altinput=True``.
-        Other parameters :
-            See `BART`.
 
         Returns
         -------
@@ -545,6 +560,8 @@ class BART(_BARTBase):
     @functools.partial(jit, static_argnames=('side',))
     def _searchsorted_vectorized(A, V, **kw):
         """
+        Apply `jnp.searchsorted` separately on each column.
+
         A : (n, p)
         V : (..., p)
         out : (..., p).
@@ -660,9 +677,11 @@ class BART(_BARTBase):
 
     @staticmethod
     def _scan_but_first(f, init, xs):
-        """`lax.scan`, but execute separately the first cycle. The point is that
-        I use it when the first cycle works on smaller arrays due to
-        broadcasting.
+        """
+        `lax.scan`, but execute separately the first cycle.
+
+        The point is that I use it when the first cycle works on smaller arrays
+        due to broadcasting.
         """
         assert isinstance(xs, jnp.ndarray)
         assert len(xs) > 0

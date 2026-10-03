@@ -29,16 +29,16 @@ def _maternp_derivable(p=None):
 
 @isotropickernel(derivable=_maternp_derivable)
 def Maternp(r2, p=None):
-    """
+    r"""
     Matérn kernel of half-integer order.
 
     .. math::
-        k(r) &= \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x) = \\\\
-        &= \\exp(-x) \\frac{p!}{(2p)!}
-        \\sum_{i=0}^p \\frac{(p+i)!}{i!(p-i)!} (2x)^{p-i} \\\\
-        \\nu &= p + 1/2,
-        p \\in \\mathbb N,
-        x = \\sqrt{2\\nu} r
+        k(r) &= \frac {2^{1-\nu}} {\Gamma(\nu)} x^\nu K_\nu(x) = \\
+        &= \exp(-x) \frac{p!}{(2p)!}
+        \sum_{i=0}^p \frac{(p+i)!}{i!(p-i)!} (2x)^{p-i} \\
+        \nu &= p + 1/2,
+        p \in \mathbb N,
+        x = \sqrt{2\nu} r
 
     The degree of derivability is :math:`p`.
 
@@ -58,18 +58,18 @@ def _matern_derivable(nu=None):
 
 @isotropickernel(derivable=_matern_derivable)
 def Matern(r2, nu=None):
-    """
+    r"""
     Matérn kernel of real order.
 
     .. math::
-        k(r) = \\frac {2^{1-\\nu}} {\\Gamma(\\nu)} x^\\nu K_\\nu(x),
-        \\quad \\nu \\ge 0,
-        \\quad x = \\sqrt{2\\nu} r
+        k(r) = \frac {2^{1-\nu}} {\Gamma(\nu)} x^\nu K_\nu(x),
+        \quad \nu \ge 0,
+        \quad x = \sqrt{2\nu} r
 
-    The process is :math:`\\lceil\\nu\\rceil-1` times derivable: so for
-    :math:`0 \\le \\nu \\le 1` it is not derivable, for :math:`1 < \\nu \\le 2`
+    The process is :math:`\lceil\nu\rceil-1` times derivable: so for
+    :math:`0 \le \nu \le 1` it is not derivable, for :math:`1 < \nu \le 2`
     it is derivable but has not a second derivative, etc. The highest
-    derivative is (Lipschitz) continuous iff :math:`\\nu\\bmod 1 \\ge 1/2`.
+    derivative is (Lipschitz) continuous iff :math:`\nu\bmod 1 \ge 1/2`.
 
     Reference: Rasmussen and Williams (2006, p. 84).
     """
@@ -106,16 +106,16 @@ def _bessel_maxdim(nu=0):
 
 @isotropickernel(derivable=_bessel_derivable, maxdim=_bessel_maxdim)
 def Bessel(r2, nu=0):
-    """
+    r"""
     Bessel kernel.
 
-    .. math:: k(r) = \\Gamma(\\nu + 1) 2^\\nu (sr)^{-\\nu} J_{\\nu}(sr),
-        \\quad s = 2 + \\nu / 2,
-        \\quad \\nu \\ge 0,
+    .. math:: k(r) = \Gamma(\nu + 1) 2^\nu (sr)^{-\nu} J_{\nu}(sr),
+        \quad s = 2 + \nu / 2,
+        \quad \nu \ge 0,
 
     where :math:`s` is a crude estimate of the half width at half maximum of
-    :math:`J_\\nu`. Can be used in up to :math:`2(\\lfloor\\nu\\rfloor + 1)`
-    dimensions and derived up to :math:`\\lfloor\\nu/2\\rfloor` times.
+    :math:`J_\nu`. Can be used in up to :math:`2(\lfloor\nu\rfloor + 1)`
+    dimensions and derived up to :math:`\lfloor\nu/2\rfloor` times.
 
     Reference: Rasmussen and Williams (2006, p. 89).
     """

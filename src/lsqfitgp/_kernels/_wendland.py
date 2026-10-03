@@ -34,19 +34,19 @@ def _wendland_maxdim(k=0, alpha=1):  # noqa: ARG001, called with the kernel para
 
 @isotropickernel(input='posabs', derivable=_wendland_derivable, maxdim=_wendland_maxdim)
 def Wendland(r, k=0, alpha=1):
-    """
+    r"""
     Wendland kernel.
 
     .. math::
-        k(r) &= \\frac1{B(2k+1,\\nu)}
-        \\int_r^\\infty \\mathrm du\\, (u^2 - r^2)^k (1 - u)_+^{\\nu-1}, \\\\
-        \\quad k &\\in \\mathbb N,\\ \\nu = k + \\alpha,\\ \\alpha \\ge 1.
+        k(r) &= \frac1{B(2k+1,\nu)}
+        \int_r^\infty \mathrm du\, (u^2 - r^2)^k (1 - u)_+^{\nu-1}, \\
+        \quad k &\in \mathbb N,\ \nu = k + \alpha,\ \alpha \ge 1.
 
     An isotropic kernel with finite support. The covariance is nonzero only
-    when the distance between the points is less than 1. Parameter :math:`k \\in \\{0,
-    1, 2, 3\\}` sets the differentiability, while the maximum dimensionality the
-    kernel can be used in is :math:`\\lfloor 2\\alpha-1 \\rfloor`. Default is
-    :math:`k = 0` (non derivable), :math:`\\alpha = 1` (can be used only in
+    when the distance between the points is less than 1. Parameter :math:`k \in \{0,
+    1, 2, 3\}` sets the differentiability, while the maximum dimensionality the
+    kernel can be used in is :math:`\lfloor 2\alpha-1 \rfloor`. Default is
+    :math:`k = 0` (non derivable), :math:`\alpha = 1` (can be used only in
     1D).
 
     Reference: Gneiting (2002), Wendland (2004, p. 128), Rasmussen and Williams
@@ -78,14 +78,14 @@ def Wendland(r, k=0, alpha=1):
 
 @stationarykernel(derivable=1, maxdim=1, input='posabs')
 def Circular(delta, tau=4, c=1 / 2):
-    """
+    r"""
     Circular kernel.
 
-    .. math:: k(x, y) &= W_c(d_{\\text{geo}}(x, y)), \\\\
-        W_c(t) &= \\left(1 + \\tau\\frac tc\\right)
-            \\left(1 - \\frac tc\\right)^\\tau_+,
-        \\quad c \\in (0, 1/2], \\tau \\ge 4, \\\\
-        d_{\\text{geo}}(x, y) &= \\arccos\\cos(2\\pi(x-y)).
+    .. math:: k(x, y) &= W_c(d_{\text{geo}}(x, y)), \\
+        W_c(t) &= \left(1 + \tau\frac tc\right)
+            \left(1 - \frac tc\right)^\tau_+,
+        \quad c \in (0, 1/2], \tau \ge 4, \\
+        d_{\text{geo}}(x, y) &= \arccos\cos(2\pi(x-y)).
 
     It is a stationary periodic kernel with period 1.
 

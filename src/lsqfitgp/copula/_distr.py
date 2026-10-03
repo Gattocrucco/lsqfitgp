@@ -38,7 +38,7 @@ from lsqfitgp.copula import _base
 
 
 def _disables_array_ufunc(obj):
-    """True when __array_ufunc__ is set to None."""
+    """Check if __array_ufunc__ is set to None."""
     return getattr(obj, '__array_ufunc__', NotImplemented) is None
 
 
@@ -117,16 +117,12 @@ class Distr(_base.DistrBase):
 
     Returns
     -------
-    If `name` is None (default):
-
     distr : Distr
-        An object representing the distribution.
-
-    Else:
-
+        If `name` is None (default), an object representing the distribution.
     gvars : array of gvars
-        An array of primary gvars that can be set as value in a
-        `gvar.BufferDict` under a key that uses the just defined name.
+        If `name` is specified, an array of primary gvars that can be set as
+        value in a `gvar.BufferDict` under a key that uses the just defined
+        name.
 
     Attributes
     ----------
@@ -292,7 +288,7 @@ class Distr(_base.DistrBase):
     def invfcn(cls, x, *params):
         r"""
 
-        Normal to desired distribution transformation.
+        Transform a Normal variable to the desired distribution.
 
         Maps a (multivariate) Normal variable to a variable with the desired
         marginal distribution. In symbols: :math:`y = F^{-1}(\Phi(x))`. This
@@ -312,7 +308,7 @@ class Distr(_base.DistrBase):
         y : array_like
             The output variable with the desired marginal distribution.
 
-        """
+        """  # noqa: DOC202
         pass
 
     def _get_x_core_shape(self, *preprocessed_params):
@@ -586,7 +582,7 @@ class UFunc:
 def distribution(invfcn, signature=None, dtype=None):
     r"""
 
-    Decorator to define a distribution from a transformation function.
+    Decorate a transformation function to define a distribution.
 
     Parameters
     ----------

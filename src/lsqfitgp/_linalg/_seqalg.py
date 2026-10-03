@@ -40,13 +40,15 @@ class SequentialOperation(_pytree.AutoPyTree, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def init(self, n, *inputs):  # pragma: no cover
-        """Called before the cycle starts with the requested inputs."""
+        """Initialize before the cycle starts, with the requested inputs."""
         pass
 
     @abc.abstractmethod
     def iter_out(self, i):  # pragma: no cover
-        """Output passed to other ops who request it through `inputs`,
-        guaranteed to be called after `init`.
+        """
+        Output passed to other ops who request it through `inputs`.
+
+        Guaranteed to be called after `init`.
         """
         pass
 
@@ -126,13 +128,16 @@ class Stack(Consumer, SingleInput):
         self.out = self.out.at[i, ...].set(ai)
 
     def finalize(self):
-        """The stacked arrays."""
+        """Return the stacked arrays."""
         return self.out
 
 
 class MatMulIterByFull(Consumer, SingleInput):
     def __init__(self, input, b):  # noqa: A002
-        """`input` = an operation producing pieces of left operand (a)
+        """
+        Initialize the matrix multiplication.
+
+        `input` = an operation producing pieces of left operand (a)
         b = right operand.
         """
         self.inputs = (input,)

@@ -205,6 +205,8 @@ known-third-party = ["jax"]
 # uncertainties, en dashes in page ranges, quotes in the punctuation of
 # BagOfWords
 allowed-confusables = ["×", "–", "‘", "’", "‚"]
+# pydoclint codes, used in `noqa` comments read by the pydoclint hook
+external = ["DOC"]
 select = [
     "ICN",  # flake8-import-conventions
     "ERA",  # eradicate
@@ -345,6 +347,10 @@ check-style-mismatch = true
 show-filenames-in-every-violation-message = true
 allow-init-docstring = true
 check-class-attributes = false
+# numpydoc recommends to list in "Raises" only the non-obvious errors, while
+# pydoclint wants all the exceptions raised in the body, including the many
+# input checks
+skip-checking-raises = true
 
 [tool.pydocstringformatter]
 # numpydoc-only style: this leaves out the pep257 `split-summary-body`

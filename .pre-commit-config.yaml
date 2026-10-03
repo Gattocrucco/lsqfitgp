@@ -65,6 +65,10 @@ repos:
     rev: 24412c5f73ad438a08146132ea86a9a72c8bd5ad  # frozen: 0.11.0
     hooks:
       - id: pydoclint
+        # pydoclint does not support the "Methods" section of the `GP` class
+        # docstring, and offers no `noqa` placement to suppress the error for
+        # an `__init__` without docstring
+        exclude: ^src/lsqfitgp/_GP/_gp\.py$
   - repo: https://github.com/henryiii/validate-pyproject-schema-store
     rev: 562b381732c1d2bec9a3a66cc89f63e16d486470  # frozen: 2026.09.30
     hooks:

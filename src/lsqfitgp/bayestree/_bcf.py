@@ -324,7 +324,7 @@ class bcf:
         .. [2] Yeo, In-Kwon; Johnson, Richard A. (2000). "A New Family of Power
             Transformations to Improve Normality or Symmetry". Biometrika. 87
             (4): 954–959. https://doi.org/10.1093/biomet/87.4.954
-        """
+        """  # noqa: DOC001
         # convert covariates to StructuredArray
         x_mu = self._to_structured(x_mu)
         if x_tau is not None:
@@ -593,9 +593,11 @@ class bcf:
 
     def _gp(self, hp, z, x_mu, x_tau, pihat, x_aux, weights, gpfactorykw):
         """
-        Internal function to create the GP object. This function must work
-        both if the arguments are user-provided and need to be checked and
-        converted to standard format, or if they are traced jax values.
+        Create the GP object.
+
+        This function must work both if the arguments are user-provided and
+        need to be checked and converted to standard format, or if they are
+        traced jax values.
         """
         # create GP object
         gp = self.fit.gpfactory(hp, **gpfactorykw)
@@ -746,24 +748,17 @@ class bcf:
 
         Returns
         -------
-        If ``samples`` is `None` and ``gvars`` is `False` (default):
-
         mean, cov : (m,) and (m, m) arrays
-            The mean and covariance matrix of the Normal posterior distribution
+            If ``samples`` is `None` and ``gvars`` is `False` (default), the
+            mean and covariance matrix of the Normal posterior distribution
             over the regression function or :math:`\eta` at the specified
             locations.
-
-        If ``samples`` is `None` and ``gvars`` is `True`:
-
         out : (m,) array of gvars
-            The same distribution represented as an array of `~gvar.GVar`
-            objects.
-
-        If ``samples`` is an integer:
-
+            If ``samples`` is `None` and ``gvars`` is `True`, the same
+            distribution represented as an array of `~gvar.GVar` objects.
         sample : (samples, m) array
-            Posterior samples over either the regression function, :math:`\eta`,
-            or :math:`y`.
+            If ``samples`` is an integer, posterior samples over either the
+            regression function, :math:`\eta`, or :math:`y`.
         """
         # check consistency of output choice
         if samples is None:
@@ -845,8 +840,8 @@ class bcf:
         return _pred
 
     def from_data(self, y, *, hp='map', rng=None):
-        """
-        Transforms outcomes :math:`y` to the regression variable :math:`\\eta`.
+        r"""
+        Transform outcomes :math:`y` to the regression variable :math:`\eta`.
 
         Parameters
         ----------
@@ -868,8 +863,8 @@ class bcf:
         return self._from_data(hp, y)
 
     def to_data(self, eta, *, hp='map', rng=None):
-        """
-        Convert the regression variable :math:`\\eta` to outcomes :math:`y`.
+        r"""
+        Convert the regression variable :math:`\eta` to outcomes :math:`y`.
 
         Parameters
         ----------

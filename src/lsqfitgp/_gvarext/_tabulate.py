@@ -45,6 +45,11 @@ def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
         If ``gs`` are dictionaries, a subset of keys to be extracted from each
         dictionary. Ignored if they are arrays.
 
+    Returns
+    -------
+    table : str
+        The formatted table.
+
     See Also
     --------
     gvar.tabulate
@@ -56,7 +61,7 @@ def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
     key/index   value1   value2
     ---------------------------
             a    1 (0)    2 (0)
-    """
+    """  # noqa: DOC001
     if not gs:
         return ''
     gs = [g if hasattr(g, 'keys') else numpy.asarray(g) for g in gs]

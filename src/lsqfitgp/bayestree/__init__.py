@@ -17,5 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Classes to set up a Gaussian process regression with the BART kernel."""
+
 from lsqfitgp.bayestree._bart import bart  # noqa: F401
 from lsqfitgp.bayestree._bcf import bcf  # noqa: F401

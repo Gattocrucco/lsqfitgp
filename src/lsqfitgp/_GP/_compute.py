@@ -42,8 +42,9 @@ class GPCompute(_base.GPBase):
 
     def _solver(self, keys, ycov=None, *, covtransf=None, **kw):
         """
-        Return a decomposition of the covariance matrix of the keys in ``keys``
-        plus the matrix ycov. Keyword arguments are passed to the decomposition.
+        Return a decomposition of the covariance matrix of ``keys`` plus ycov.
+
+        Keyword arguments are passed to the decomposition.
         """
         keys = tuple(keys)
 
@@ -180,19 +181,16 @@ class GPCompute(_base.GPBase):
 
         Returns
         -------
-        If raw=False (default):
-
         posterior : array or dictionary of arrays
-            A collections of gvars representing the posterior.
-
-        If raw=True:
-
+            If ``raw=False`` (default), a collection of gvars representing the
+            posterior.
         pmean : array or dictionary of arrays
-            The mean of the posterior. Equivalent to ``gvar.mean(posterior)``.
+            If ``raw=True``, the mean of the posterior. Equivalent to
+            ``gvar.mean(posterior)``.
         pcov : 2D array or dictionary of 2D arrays
-            The covariance matrix of the posterior. If ``pmean`` is a
-            dictionary, the keys of ``pcov`` are pairs of keys of ``pmean``.
-            Equivalent to ``gvar.evalcov(posterior)``.
+            If ``raw=True``, the covariance matrix of the posterior. If
+            ``pmean`` is a dictionary, the keys of ``pcov`` are pairs of keys
+            of ``pmean``. Equivalent to ``gvar.evalcov(posterior)``.
         """
         # variance (requires actually implementing diagquad at least in Chol and
         # Diag).
@@ -327,8 +325,10 @@ class GPCompute(_base.GPBase):
         return self.pred(*args, fromdata=True, **kw)
 
     def _prior_decomp(self, given, givencov=None, **kw):
-        """Internal implementation of marginal_likelihood. Keyword arguments
-        are passed to _solver.
+        """
+        Implement marginal_likelihood.
+
+        Keyword arguments are passed to _solver.
         """
         ylist, inkeys, ycovblocks = self._flatgiven(given, givencov)
         y = self._concatenate(ylist)
@@ -380,7 +380,7 @@ class GPCompute(_base.GPBase):
                 raise ValueError(msg)
 
     def marginal_likelihood(self, given, givencov=None, **kw):
-        """
+        r"""
         Compute the logarithm of the probability of the data.
 
         The probability is computed under the Gaussian prior and Gaussian error
@@ -388,7 +388,7 @@ class GPCompute(_base.GPBase):
         and :math:`g` is the Gaussian process, this is
 
         .. math::
-            \\log \\int p(y|g) p(g) \\mathrm{d} g.
+            \log \int p(y|g) p(g) \mathrm{d} g.
 
         Unlike `pred`, you can't compute this with a fit result instead of
         data. If you used the Gaussian process as latent variable in a fit,

@@ -28,9 +28,7 @@ class AutoPyTree:
     """Class adding automatic recursive support for jax pytree flattening."""
 
     def _jax_vars(self):
-        """Returns list of object attribute names which are to be considered
-        children of the PyTree node.
-        """
+        """List the names of the attributes that are children of the PyTree node."""
         return [
             n
             for n, v in vars(self).items()

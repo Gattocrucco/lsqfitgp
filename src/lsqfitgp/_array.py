@@ -135,8 +135,9 @@ class StructuredArray:
     @classmethod
     def from_dataframe(cls, df):
         """
-        Make a StructuredArray from a DataFrame. Data is not copied if not
-        necessary.
+        Make a StructuredArray from a DataFrame.
+
+        Data is not copied if not necessary.
         """
         d = {
             col: cls._readonlyview_wrapifstructured(df[col].to_numpy())
@@ -239,8 +240,9 @@ class StructuredArray:
 
     def reshape(self, *shape):
         """
-        Reshape the array without changing its contents. See
-        numpy.ndarray.reshape.
+        Reshape the array without changing its contents.
+
+        See numpy.ndarray.reshape.
         """
         if len(shape) == 1 and hasattr(shape[0], '__len__'):
             shape = shape[0]
@@ -269,8 +271,9 @@ class StructuredArray:
 
     def broadcast_to(self, shape, **kw):
         """
-        Return a view of the array broadcasted to another shape. See
-        numpy.broadcast_to.
+        Return a view of the array broadcasted to another shape.
+
+        See numpy.broadcast_to.
         """
         # raises if not broadcastable
         numpy.broadcast_to(numpy.empty(self.shape, []), shape, **kw)
@@ -397,10 +400,7 @@ Implementation of `{np_function.__module__}.{np_function.__name__}` for `Structu
 
 @StructuredArray._implements(numpy.broadcast_to)
 def broadcast_to(x, shape, **kw):
-    """
-    Version of numpy.broadcast_to that works with StructuredArray and JAX
-    arrays.
-    """
+    """Version of numpy.broadcast_to for StructuredArray and JAX arrays."""
     if isinstance(x, StructuredArray):
         return x.broadcast_to(shape, **kw)
     elif isinstance(x, jnp.ndarray):
@@ -411,10 +411,7 @@ def broadcast_to(x, shape, **kw):
 
 @StructuredArray._implements(numpy.broadcast_arrays)
 def broadcast_arrays(*arrays, **kw):
-    """
-    Version of numpy.broadcast_arrays that works with StructuredArray and JAX
-    arrays.
-    """
+    """Version of numpy.broadcast_arrays for StructuredArray and JAX arrays."""
     shapes = [a.shape for a in arrays]
     shape = numpy.broadcast_shapes(*shapes)
     return [broadcast_to(a, shape, **kw) for a in arrays]
@@ -433,6 +430,7 @@ class broadcast:
 def asarray(x, dtype=None):
     """
     Version of `numpy.asarray` that works with `StructuredArray` and JAX arrays.
+
     If `x` is not an array already, returns a JAX array if possible.
     """
     if isinstance(x, (StructuredArray, jnp.ndarray, numpy.ndarray)):
@@ -477,7 +475,10 @@ def _ix(*args):
 def unstructured_to_structured(
     arr, dtype=None, names=None, align=False, copy=False, casting='unsafe'
 ):
-    """Like `numpy.lib.recfunctions.unstructured_to_structured`, but outputs a
+    """
+    Convert an unstructured array to a `StructuredArray`.
+
+    Like `numpy.lib.recfunctions.unstructured_to_structured`, but outputs a
     `StructuredArray`.
     """
     arr = asarray(arr)

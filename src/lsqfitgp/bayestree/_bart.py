@@ -38,7 +38,7 @@ class bart:
         kernelkw={},  # noqa: B006, read only
         marginalize_mean=True,
     ):
-        """
+        r"""
         Nonparametric Bayesian regression with a GP version of BART.
 
         Evaluate a Gaussian process regression with a kernel which accurately
@@ -65,19 +65,19 @@ class bart:
         Attributes
         ----------
         mean : gvar
-            The prior mean :math:`\\mu`.
+            The prior mean :math:`\mu`.
         sigma : float or gvar
-            The error term standard deviation :math:`\\sigma`. If there are
+            The error term standard deviation :math:`\sigma`. If there are
             weights, the sdev for each unit is obtained dividing ``sigma`` by
             sqrt(weight).
         alpha : gvar
-            The numerator of the tree spawn probability :math:`\\alpha` (named
+            The numerator of the tree spawn probability :math:`\alpha` (named
             ``base`` in BayesTree and BART).
         beta : gvar
-            The depth exponent of the tree spawn probability :math:`\\beta`
+            The depth exponent of the tree spawn probability :math:`\beta`
             (named ``power`` in BayesTree and BART).
         meansdev : gvar
-            The prior standard deviation :math:`\\lambda` of the latent
+            The prior standard deviation :math:`\lambda` of the latent
             regression function.
         fit : empbayes_fit
             The hyperparameters fit object.
@@ -101,31 +101,31 @@ class bart:
         The regression model is:
 
         .. math::
-            y_i &= \\mu + \\lambda f(\\mathbf x_i) + \\varepsilon_i, \\\\
-            \\varepsilon_i &\\overset{\\mathrm{i.i.d.}}{\\sim}
-                N(0, \\sigma^2 / w_i), \\\\
-            \\mu &\\sim N(
-                (\\max(\\mathbf y) + \\min(\\mathbf y)) / 2,
-                (\\max(\\mathbf y) - \\min(\\mathbf y))^2 / 4
-            ), \\\\
-            \\log \\sigma^2 &\\sim N(
-                \\log(\\overline{w(y - \\bar y)^2}),
+            y_i &= \mu + \lambda f(\mathbf x_i) + \varepsilon_i, \\
+            \varepsilon_i &\overset{\mathrm{i.i.d.}}{\sim}
+                N(0, \sigma^2 / w_i), \\
+            \mu &\sim N(
+                (\max(\mathbf y) + \min(\mathbf y)) / 2,
+                (\max(\mathbf y) - \min(\mathbf y))^2 / 4
+            ), \\
+            \log \sigma^2 &\sim N(
+                \log(\overline{w(y - \bar y)^2}),
                 4
-            ), \\\\
-            \\log \\lambda &\\sim N(
-                \\log ((\\max(\\mathbf y) - \\min(\\mathbf y)) / 4),
+            ), \\
+            \log \lambda &\sim N(
+                \log ((\max(\mathbf y) - \min(\mathbf y)) / 4),
                 4
-            ), \\\\
-            f &\\sim \\mathrm{GP}(
+            ), \\
+            f &\sim \mathrm{GP}(
                 0,
-                \\mathrm{BART}(\\alpha,\\beta)
-            ), \\\\
-            \\alpha &\\sim \\mathrm{B}(2, 1), \\\\
-            \\beta &\\sim \\mathrm{IG}(1, 1).
+                \mathrm{BART}(\alpha,\beta)
+            ), \\
+            \alpha &\sim \mathrm{B}(2, 1), \\
+            \beta &\sim \mathrm{IG}(1, 1).
 
-        To make the inference, :math:`(f, \\boldsymbol\\varepsilon, \\mu)` are
+        To make the inference, :math:`(f, \boldsymbol\varepsilon, \mu)` are
         marginalized analytically, and the marginal posterior mode of
-        :math:`(\\sigma, \\lambda, \\alpha, \\beta)` is found by numerical
+        :math:`(\sigma, \lambda, \alpha, \beta)` is found by numerical
         minimization, after transforming them to express their prior as a
         Gaussian copula. Their marginal posterior covariance matrix is estimated
         with an approximation of the hessian inverse. See
@@ -136,7 +136,7 @@ class bart:
         observed covariates. This corresponds to settings ``usequants=True``,
         ``numcut=inf`` in the R packages BayesTree and BART. Use the
         ``kernelkw`` parameter to customize the grid.
-        """
+        """  # noqa: DOC001
         # convert covariates to StructuredArray
         x_train = self._to_structured(x_train)
 
@@ -351,16 +351,13 @@ class bart:
 
         Returns
         -------
-        If ``format`` is 'matrices' (default):
-
         mean, cov : arrays
-            The mean and covariance matrix of the Normal posterior distribution
-            over the regression function at the specified locations.
-
-        If ``format`` is 'gvar':
-
+            If ``format`` is 'matrices' (default), the mean and covariance
+            matrix of the Normal posterior distribution over the regression
+            function at the specified locations.
         out : array of `GVar`
-            The same distribution represented as an array of `GVar` objects.
+            If ``format`` is 'gvar', the same distribution represented as an
+            array of `GVar` objects.
         """
         hp = self._gethp(hp, rng)
         if x_test is not None:

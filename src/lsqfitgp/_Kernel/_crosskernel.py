@@ -39,8 +39,10 @@ CrossConstant: type = None
 @functools.cache
 def least_common_superclass(*classes):
     """
-    Find a "least" common superclass. The class is searched in all the MROs,
-    but the comparison is done with `issubclass` to support virtual inheritance.
+    Find a "least" common superclass.
+
+    The class is searched in all the MROs, but the comparison is done with
+    `issubclass` to support virtual inheritance.
     """
     mros = [c.__mro__ for c in classes]
     indices = [0] * len(mros)
@@ -300,7 +302,7 @@ class CrossKernel:
 
     @classmethod
     def _transfmro(cls):
-        """Iterator of superclasses with a _transf attribute."""
+        """Iterate over the superclasses with a _transf attribute."""
         for c in cls.mro():  # pragma: no branch
             yield c
             if c is __class__:
@@ -333,6 +335,8 @@ class CrossKernel:
         ----------
         transfname : hashable
             The transformation name.
+        transfmro : iterable of types, optional
+            The classes to search, by default the MRO up to `CrossKernel`.
 
         Returns
         -------
@@ -507,8 +511,10 @@ class CrossKernel:
         ----------
         transfname : hashable
             A name identifying the transformation.
-        *args, **kw :
-            Arguments to the transformation.
+        *args :
+            Positional arguments to the transformation.
+        **kw :
+            Keyword arguments to the transformation.
 
         Returns
         -------
@@ -538,10 +544,14 @@ class CrossKernel:
 
         Parameters
         ----------
-        transfname, *args, **kw :
+        transfname : hashable
             See `transf`.
         self : CrossKernel
             The object to transform.
+        *args :
+            See `transf`.
+        **kw :
+            See `transf`.
 
         Returns
         -------
@@ -576,6 +586,8 @@ class CrossKernel:
             identity, this is a no-op. If there is only one argument, it is
             intended that the two arguments are equal. `None` always represents
             the identity.
+        **kw :
+            Ignored.
 
         Returns
         -------
@@ -722,7 +734,9 @@ class CrossKernel:
             that returns the new kernel, where ``arg1`` and ``arg2`` represent
             the operators acting on each side of the kernels, and ``operands``
             are the other kernels beyond ``self``.
-        transfname, doc : optional
+        transfname : hashable, optional
+            See `register_transf`.
+        doc : str, optional
             See `register_transf`.
         argparser : callable, optional
             A function applied to ``arg1`` and ``arg2``. Not called if the
@@ -837,7 +851,11 @@ class CrossKernel:
             A function ``corefunc(core, arg1, arg2, *cores) -> newcore``, where
             ``core`` is the function that implements the kernel passed at
             initialization, and ``cores`` for other operands.
-        transfname, doc, argparser :
+        transfname : hashable, optional
+            See `register_linop`.
+        doc : str, optional
+            See `register_linop`.
+        argparser : callable, optional
             See `register_linop`.
 
         Returns
@@ -870,10 +888,12 @@ class CrossKernel:
             A function ``xfunc(arg) -> (lambda x: newx)`` that takes in a
             `linop` argument and produces a function to transform the input. Not
             called if ``arg`` is `None`. To indicate the identity, return
-            `None`.
-        transfname, doc :
-            See `register_linop`. `argparser` is not provided because its
-            functionality can be included in `xfunc`.
+            `None`. There is no `argparser` parameter (see `register_linop`)
+            because its functionality can be included in `xfunc`.
+        transfname : hashable, optional
+            See `register_linop`.
+        doc : str, optional
+            See `register_linop`.
 
         Returns
         -------
@@ -908,7 +928,9 @@ class CrossKernel:
             A function ``op(tcls, *kernels, **kw) -> CrossKernel |
             NotImplemented`` that returns the new kernel. ``kernels`` may be
             scalars but for the first argument.
-        transfname, doc :
+        transfname : hashable, optional
+            See `register_transf`.
+        doc : str, optional
             See `register_transf`.
 
         Returns
@@ -970,15 +992,16 @@ class CrossKernel:
     @classmethod
     def register_ufuncalgop(cls, ufunc, transfname=None, doc=None):
         """
-        Register an algebraic operation with a function that acts only on the
-        kernel value.
+        Register an algebraic operation that acts only on the kernel value.
 
         Parameters
         ----------
-        corefunc : callable
+        ufunc : callable
             A function ``ufunc(*values, **kw) -> value``, where ``values`` are
             the values yielded by the operands.
-        transfname, doc :
+        transfname : hashable, optional
+            See `register_transf`.
+        doc : str, optional
             See `register_transf`.
 
         Returns
@@ -1034,14 +1057,20 @@ class CrossKernel:
         ----------
         transfname : str
             The name of the new transformation.
-        bothker, leftker, rightker : CrossKernel
-            The kernel classes to be obtained by applying the operator to a seed
-            class object respectively on both sides, only left, or only right.
-            All classes are assumed to require no positional arguments at
-            construction, and recognize the same set of keyword arguments. If
-            `rightker` is not specified, it is defined by subclassing `leftker`
-            and transposing the kernel on object construction.
-        doc, argparser : callable, optional
+        bothker : CrossKernel
+            The kernel class to be obtained by applying the operator to a seed
+            class object on both sides. All classes (`bothker`, `leftker`,
+            `rightker`) are assumed to require no positional arguments at
+            construction, and recognize the same set of keyword arguments.
+        leftker : CrossKernel
+            Like `bothker`, but applying the operator only on the left.
+        rightker : CrossKernel, optional
+            Like `bothker`, but applying the operator only on the right. If not
+            specified, it is defined by subclassing `leftker` and transposing
+            the kernel on object construction.
+        doc : str, optional
+            See `register_linop`.
+        argparser : callable, optional
             See `register_linop`.
         argnames : pair of str, optional
             If specified, `leftker` is passed an additional keyword argument

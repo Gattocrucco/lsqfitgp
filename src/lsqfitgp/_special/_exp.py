@@ -25,9 +25,7 @@ from jax import numpy as jnp
 @jax.custom_jvp
 @jit
 def expm1x(x):
-    r"""
-    Compute accurately :math:`e^x - 1 - x = x^2/2 {}_1F_1(1, 3, x)`.
-    """
+    r"""Compute accurately :math:`e^x - 1 - x = x^2/2 {}_1F_1(1, 3, x)`."""
     n = 10 if x.dtype == jnp.float32 else 17
     k = jnp.arange(2, n + 1)
     f = jnp.cumprod(k)

@@ -51,7 +51,7 @@ def rescale(core, xfun, yfun):
     xfun, yfun : callable or None
         Functions from the type of the arguments of the kernel to scalar.
 
-    """
+    """  # noqa: DOC101, DOC103, DOC201
     if not xfun:
         return lambda x, y, **kw: core(x, y, **kw) * yfun(y)
     elif not yfun:
@@ -75,7 +75,7 @@ def derivable(derivable):
     The derivability check is hardcoded into the kernel core and it is not
     possible to remove it afterwards by applying ``'derivable'`` again with a
     higher limit.
-    """
+    """  # noqa: DOC103, DOC201
     if isinstance(derivable, bool):
         derivable = sys.maxsize if derivable else 0
     elif not isinstance(derivable, numbers.Integral) or derivable < 0:
@@ -136,7 +136,7 @@ def diff(core, xderiv, yderiv):  # noqa: C901
     RuntimeError
         The derivative orders are greater than the `derivative` attribute.
 
-    """
+    """  # noqa: DOC101, DOC103, DOC201
     # reparse derivatives because they could be None
     xderiv = _Deriv.Deriv(xderiv)
     yderiv = _Deriv.Deriv(yderiv)
@@ -233,7 +233,7 @@ def xtransf(fun):
         Functions mapping a new kind of input to the kind of input accepted by
         the kernel.
 
-    """
+    """  # noqa: DOC103, DOC201
     if not callable(fun):
         msg = "argument to 'xtransf' must be a function"
         raise ValueError(msg)  # noqa: TRY004, changing the type would break callers
@@ -243,7 +243,9 @@ def xtransf(fun):
 @CrossKernel.register_xtransf
 def dim(dim):
     """
-    Restrict the function to a field of a structured input::
+    Restrict the function to a field of a structured input.
+
+    That is::
 
         T(f)(x) = f(x[dim])
 
@@ -255,7 +257,7 @@ def dim(dim):
     ----------
     xdim, ydim : None, str, list of str
         Field names or lists of field names.
-    """
+    """  # noqa: DOC103, DOC201
     if not isinstance(dim, (str, list)):
         msg = f'dim must be a (list of) string, found {dim!r}'
         raise TypeError(msg)
@@ -287,7 +289,7 @@ def maxdim(maxdim):
     Once applied a restriction, the check is hardcoded into the kernel core and
     it is not possible to remove it by applying again `maxdim` with a larger
     limit.
-    """
+    """  # noqa: DOC103, DOC201
     if not isinstance(maxdim, numbers.Integral) or maxdim < 0:
         msg = f'maximum dimensionality {maxdim!r} not valid'
         raise ValueError(msg)
@@ -306,7 +308,7 @@ def maxdim(maxdim):
 @CrossKernel.register_xtransf
 def loc(loc):
     r"""
-    Translate the process inputs:
+    Translate the process inputs.
 
     .. math::
         T(f)(x) = f(x - \mathrm{loc})
@@ -316,7 +318,7 @@ def loc(loc):
     xloc, yloc: None, number
         Translations.
 
-    """
+    """  # noqa: DOC103, DOC201
     with _jaxext.skipifabstract():
         assert -jnp.inf < loc < jnp.inf, loc
     return lambda x: _util.ufunc_recurse_dtype(lambda x: x - loc, x)
@@ -325,7 +327,7 @@ def loc(loc):
 @CrossKernel.register_xtransf
 def scale(scale):
     r"""
-    Rescale the process inputs:
+    Rescale the process inputs.
 
     .. math::
         T(f)(x) = f(x / \mathrm{scale})
@@ -335,7 +337,7 @@ def scale(scale):
     xscale, yscale: None, number
         Rescaling factors.
 
-    """
+    """  # noqa: DOC103, DOC201
     with _jaxext.skipifabstract():
         assert 0 < scale < jnp.inf, scale
     return lambda x: _util.ufunc_recurse_dtype(lambda x: x / scale, x)
@@ -358,7 +360,7 @@ def normalize(core, dox, doy):
     ----------
     dox, doy : bool
         Whether to rescale.
-    """
+    """  # noqa: DOC101, DOC103, DOC201
     if dox and doy:
         return lambda x, y, **kw: (
             core(x, y, **kw) / jnp.sqrt(core(x, x, **kw) * core(y, y, **kw))
@@ -386,10 +388,10 @@ def cond(core, cond1, cond2, other):
     cond1, cond2 : callable
         Function that is applied on an array of points and must return
         a boolean array with the same shape.
-    other :
+    other : CrossKernel
         Kernel of the process used where the condition is false.
 
-    """
+    """  # noqa: DOC101, DOC103, DOC201
 
     def newcore(x, y, **kw):
         xcond = cond1(x)

@@ -44,7 +44,7 @@ def add(_tcls, self, other):
     other : CrossKernel or scalar
         The other kernel.
 
-    """
+    """  # noqa: DOC101, DOC103, DOC201
     core = self.core
     if _util.is_numerical_scalar(other):
         newcore = lambda x, y, **kw: core(x, y, **kw) + other
@@ -71,7 +71,7 @@ def mul(_tcls, self, other):
     other : CrossKernel or scalar
         The other kernel.
 
-    """
+    """  # noqa: DOC101, DOC103, DOC201
     core = self.core
     if _util.is_numerical_scalar(other):
         newcore = lambda x, y, **kw: core(x, y, **kw) * other
@@ -97,7 +97,7 @@ def pow(_tcls, self, *, exponent):  # noqa: A001, the name of the algop
     exponent : nonnegative integer
         The exponent. If traced by jax, it must have unsigned integer type.
 
-    """
+    """  # noqa: DOC101, DOC103, DOC201
     if _util.is_nonnegative_integer_scalar(exponent):
         core = self.core
         newcore = lambda x, y, **kw: core(x, y, **kw) ** exponent
@@ -120,7 +120,7 @@ def rpow(_tcls, self, *, base):
     base : scalar
         A number >= 1. If traced by jax, the value is not checked.
 
-    """
+    """  # noqa: DOC101, DOC103, DOC201
     if _util.is_scalar_cond_trueontracer(base, lambda x: x >= 1):
         core = self.core
         newcore = lambda x, y, **kw: base ** core(x, y, **kw)
