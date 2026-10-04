@@ -139,10 +139,8 @@ NPROC ?= 4
 # different CI jobs.
 COVERAGE_SUFFIX =
 
-# COVERAGE_CORE=ctrace: the default sysmon core of python>=3.14 does not support
-# the per-test dynamic contexts (--cov-context=test)
-TESTS_VARS = COVERAGE_FILE=.coverage.$@$(COVERAGE_SUFFIX) COVERAGE_CORE=ctrace
-TESTS_COMMAND = python -m pytest --cov --cov-context=test --numprocesses=$(NPROC) --dist=worksteal
+TESTS_VARS = COVERAGE_FILE=.coverage.$@$(COVERAGE_SUFFIX)
+TESTS_COMMAND = python -m pytest --cov --numprocesses=$(NPROC) --dist=worksteal
 
 .PHONY: tests
 tests:

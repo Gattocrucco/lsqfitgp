@@ -150,6 +150,10 @@ addopts = [
 
 [tool.coverage.run]
 branch = true
+# static context for the unit tests; the examples and the documentation code
+# override it (see the Makefile). Per-test dynamic contexts are not used because
+# with ~10k tests they bloat the data files to >100 MB.
+context = "tests"
 # the make targets write the data of each run to .coverage.<run> and combine them
 # into this file, see the Makefile
 data_file = ".coverage-combined"

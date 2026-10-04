@@ -111,8 +111,7 @@ jobs:
           cache-suffix: -${{ matrix.target }}
 
       - name: Run unit tests
-        # tests-old is several times slower than tests
-        timeout-minutes: 180
+        timeout-minutes: 45
         run: make ${{ matrix.target }} COVERAGE_SUFFIX=-${{ matrix.os }} NPROC=auto
 
       - name: Save coverage information
