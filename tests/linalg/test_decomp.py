@@ -1,6 +1,6 @@
 # lsqfitgp/tests/linalg/test_decomp.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,21 +17,25 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-from scipy import linalg, stats
-import numpy as np
+"""Test the matrix decompositions in the `_linalg._decomp` submodule."""
+
+import gvar
 import jax
+import numpy as np
+import pytest
 from jax import numpy as jnp
 from jax.scipy import linalg as jlinalg
-import gvar
+from scipy import linalg, stats
 
-from lsqfitgp import _linalg, _jaxext
-from .. import util
+from lsqfitgp import _jaxext, _linalg
+from tests import util
+
 
 class TestChol:
+    """Test the `Chol` decomposition."""
 
     def randortho(self, n, *, rng=None):
-        """ generate a random nxn orthogonal matrix """
+        """Generate a random nxn orthogonal matrix."""
         rng = np.random.default_rng(rng)
         if n > 1:
             return stats.ortho_group.rvs(n, random_state=rng)
@@ -71,8 +75,7 @@ class TestChol:
         eigvals = jnp.where(jnp.arange(n) < rank, eigvals, 0)
         transf = self.randortho(n, rng=rng)
         if n >= 2:
-            rot = jnp.array([[jnp.cos(s), -jnp.sin(s)],
-                             [jnp.sin(s),  jnp.cos(s)]])
+            rot = jnp.array([[jnp.cos(s), -jnp.sin(s)], [jnp.sin(s), jnp.cos(s)]])
             indices = rng.choice(n, size=2, replace=False)
             rot = jnp.eye(n).at[jnp.ix_(indices, indices)].set(rot)
             transf = rot @ transf
@@ -82,83 +85,97 @@ class TestChol:
 
     @pytest.fixture(params=[1, 2, 10])
     def n(self, request):
-        """ Size of the test matrix """
+        """Return the size of the test matrix."""
         return request.param
 
     @pytest.fixture
     def s(self, rng):
-        """ A value for the namesake `mat` parameter """
+        """Return a value for the namesake `mat` parameter."""
         return rng.uniform(-np.pi, np.pi, 1)
 
     @pytest.fixture
     def K_factory(self, n, rng):
-        """ A function of `s` producing the matrix to be decomposed """
+        """Return a function of `s` producing the matrix to be decomposed."""
         high = np.iinfo(np.uint64).max
         seed = rng.integers(high, dtype=np.uint64, endpoint=True)
+
         def K_factory(s):
             return self.mat(n, s, rng=seed)
+
         return K_factory
 
     @pytest.fixture
     def K(self, s, K_factory):
-        """ The matrix to be decomposed """
+        """Return the matrix to be decomposed."""
         return K_factory(s)
 
     @pytest.fixture
     def r_factory(self, n, rng):
-        """ A function of `s` producing an auxiliary vector """
+        """Return a function of `s` producing an auxiliary vector."""
         high = np.iinfo(np.uint64).max
         seed = rng.integers(high, dtype=np.uint64, endpoint=True)
+
         def r_factory(s):
             rng = np.random.default_rng(seed)
             return s[0] * rng.standard_normal(n)
+
         return r_factory
 
     @pytest.fixture
     def r(self, s, r_factory):
-        """ Auxiliary vector with as many rows as K """
+        """Return an auxiliary vector with as many rows as K."""
         return r_factory(s)
 
     @pytest.fixture
     def A(self, n, rng):
-        """ Auxiliary matrix with as many rows as K """
+        """Return an auxiliary matrix with as many rows as K."""
         return rng.standard_normal((n, 2 * n))
 
     @pytest.fixture
     def likelihood(self, n, K_factory, r_factory):
-        """ A likelihood w.r.t. the `s` parameter """
+        """Return a likelihood w.r.t. the `s` parameter."""
+
         def likelihood(s):
             K = K_factory(s)
             r = r_factory(s)
-            return 1/2 * (
-                n * jnp.log(2 * jnp.pi) +
-                jnp.sum(jnp.log(jnp.linalg.eigvalsh(K))) +
-                r @ jlinalg.solve(K, r, assume_a='pos')
+            return (
+                1
+                / 2
+                * (
+                    n * jnp.log(2 * jnp.pi)
+                    + jnp.sum(jnp.log(jnp.linalg.eigvalsh(K)))
+                    + r @ jlinalg.solve(K, r, assume_a='pos')
+                )
             )
+
         return likelihood
 
     @pytest.fixture
     def decomp(self, K):
-        """ Decomposition of K """
+        """Return the decomposition of K."""
         return _linalg.Chol(K)
 
-    def test_ginv_linear(self, n, K, A, decomp):
+    def test_ginv_linear(self, n, K, A, decomp):  # noqa: ARG002, parametrization
+        """Check `ginv_linear` against a direct solve."""
         result = decomp.ginv_linear(A)
         expected = jlinalg.solve(K, A, assume_a='pos')
         util.assert_close_matrices(result, expected, rtol=1e-11)
 
     def test_pinv_bilinear_direct(self, n, K, A, r, decomp):
+        """Check `pinv_bilinear` against a direct solve with the regularized matrix."""
         result = decomp.pinv_bilinear(A, r)
         K_reg = K + np.eye(n) * decomp.eps
         expected = A.T @ linalg.solve(K_reg, r, assume_a='pos')
         util.assert_close_matrices(result, expected, rtol=1e-14)
 
-    def test_pinv_bilinear_proj(self, n, K, r, decomp):
+    def test_pinv_bilinear_proj(self, n, K, r, decomp):  # noqa: ARG002, parametrization
+        """Check that `pinv_bilinear(K, r)` returns `r`."""
         result = decomp.pinv_bilinear(K, r)
         expected = r
         util.assert_close_matrices(result, expected, rtol=1e-12)
 
     def test_pinv_bilinear_robj_direct(self, n, K, A, rng, decomp):
+        """Check `pinv_bilinear_robj` on gvars against a direct solve with the regularized matrix."""
         r = gvar.gvar(rng.standard_normal(n), rng.gamma(2, 1 / 2, n))
         result = decomp.pinv_bilinear_robj(A, r)
         K_reg = K + np.eye(n) * decomp.eps
@@ -166,17 +183,20 @@ class TestChol:
         util.assert_same_gvars(result, expected, rtol=1e-11)
 
     def test_ginv_quad_direct(self, n, K, A, decomp):
+        """Check `ginv_quad` against a direct solve with the regularized matrix."""
         result = decomp.ginv_quad(A)
         K_reg = K + np.eye(n) * decomp.eps
         expected = A.T @ linalg.solve(K_reg, A, assume_a='pos')
         util.assert_close_matrices(result, expected, rtol=1e-12)
 
     def test_ginv_quad_mp1(self, K, decomp):
+        """Check that `ginv_quad(K)` returns `K`."""
         result = decomp.ginv_quad(K)
         expected = K
         util.assert_close_matrices(result, expected, rtol=1e-14)
 
     def test_ginv_diagquad_direct(self, n, K, A, decomp):
+        """Check `ginv_diagquad` against a direct solve with the regularized matrix."""
         result = decomp.ginv_diagquad(A)
         K_reg = K + np.eye(n) * decomp.eps
         expected = A.T @ linalg.solve(K_reg, A, assume_a='pos')
@@ -184,47 +204,59 @@ class TestChol:
         util.assert_close_matrices(result, expected, rtol=1e-12)
 
     def test_ginv_diagquad_mp1(self, K, decomp):
+        """Check that `ginv_diagquad(K)` returns the diagonal of `K`."""
         result = decomp.ginv_diagquad(K)
         expected = np.diag(K)
         util.assert_close_matrices(result, expected, rtol=1e-13)
 
     def test_correlate(self, n, K, decomp):
+        """Check that `correlate` gives a factor Z with ZZ' = K."""
         Z = decomp.correlate(np.eye(n))
         result = Z @ Z.T
         expected = K
         util.assert_close_matrices(result, expected, rtol=1e-14)
 
     def test_back_correlate(self, n, K, decomp):
+        """Check that `back_correlate` gives a factor Z' with ZZ' = K."""
         Zt = decomp.back_correlate(np.eye(n))
         result = Zt.T @ Zt
         expected = K
         util.assert_close_matrices(result, expected, rtol=1e-14)
 
     def test_pinv_correlate(self, n, K, decomp):
-        result = decomp.pinv_correlate(K) # = Z⁺K = Z⁺ZZ' = Z'
-        expected = decomp.back_correlate(np.eye(n)) # = Z'I = Z'
+        """Check that `pinv_correlate(K)` returns Z'."""
+        result = decomp.pinv_correlate(K)  # = Z⁺K = Z⁺ZZ' = Z'
+        expected = decomp.back_correlate(np.eye(n))  # = Z'I = Z'
         util.assert_close_matrices(result, expected, rtol=1e-13)
 
-    def test_correlate_back_correlate(self, n, K, decomp, r):
+    def test_correlate_back_correlate(self, n, K, decomp, r):  # noqa: ARG002, parametrization
+        """Check that `correlate` after `back_correlate` multiplies by K."""
         result = decomp.correlate(decomp.back_correlate(r))
         expected = K @ r
         util.assert_close_matrices(result, expected, rtol=1e-14)
 
     def test_normal_nothing(self, decomp, r):
+        """Check that `minus_log_normal_density` returns all `None` if nothing is requested."""
         result = decomp.minus_log_normal_density(r)
         expected = 5 * (None,)
         assert result == expected
 
     def test_normal_value(self, n, K, decomp, r):
+        """Check the value of `minus_log_normal_density` against a direct computation."""
         result, _, _, _, _ = decomp.minus_log_normal_density(r, value=True)
-        expected = 1/2 * (
-            n * np.log(2 * np.pi) +
-            np.sum(np.log(linalg.eigvalsh(K))) +
-            r @ linalg.solve(K, r, assume_a='pos')
+        expected = (
+            1
+            / 2
+            * (
+                n * np.log(2 * np.pi)
+                + np.sum(np.log(linalg.eigvalsh(K)))
+                + r @ linalg.solve(K, r, assume_a='pos')
+            )
         )
         util.assert_allclose(result, expected, atol=1e-9)
 
     def test_normal_gradrev(self, likelihood, s, decomp, r, r_factory, K_factory):
+        """Check the gradient of `minus_log_normal_density` against `jax.jacrev`."""
         _, _, kw = decomp.make_derivs(K_factory, r_factory, s, gradrev=True)
         _, result, _, _, _ = decomp.minus_log_normal_density(r, gradrev=True, **kw)
         jac = jax.jacrev(likelihood)
@@ -232,6 +264,7 @@ class TestChol:
         util.assert_close_matrices(result, expected, rtol=1e-11)
 
     def test_normal_gradfwd(self, likelihood, s, decomp, r, r_factory, K_factory):
+        """Check the forward gradient of `minus_log_normal_density` against `jax.jacfwd`."""
         _, _, kw = decomp.make_derivs(K_factory, r_factory, s, gradfwd=True)
         _, _, result, _, _ = decomp.minus_log_normal_density(r, gradfwd=True, **kw)
         jac = jax.jacfwd(likelihood)
@@ -239,23 +272,25 @@ class TestChol:
         util.assert_close_matrices(result, expected, rtol=1e-10)
 
     def test_normal_fisher(self, s, decomp, r, K, K_factory, r_factory):
+        """Check the Fisher matrix of `minus_log_normal_density` against a direct computation."""
         _, _, kw = decomp.make_derivs(K_factory, r_factory, s, fisher=True)
         _, _, _, result, _ = decomp.minus_log_normal_density(r, fisher=True, **kw)
         dK = jax.jacfwd(K_factory)(s)
         dr = jax.jacfwd(r_factory)(s)
         invK_dK = _linalg.solve_batched(K, np.moveaxis(dK, 2, 0), assume_a='pos')
-        expected = 1/2 * np.einsum('kij,qji->kq', invK_dK, invK_dK)
+        expected = 1 / 2 * np.einsum('kij,qji->kq', invK_dK, invK_dK)
         expected += dr.T @ linalg.solve(K, dr, assume_a='pos')
         util.assert_close_matrices(result, expected, rtol=1e-12)
 
     def test_normal_fishvec(self, s, decomp, r, K, K_factory, r_factory, rng):
+        """Check the Fisher matrix-vector product of `minus_log_normal_density` against a direct computation."""
         vec = rng.standard_normal(s.shape)
         _, _, kw = decomp.make_derivs(K_factory, r_factory, s, fishvec=True, vec=vec)
         _, _, _, _, result = decomp.minus_log_normal_density(r, fishvec=True, **kw)
         dK = jax.jacfwd(K_factory)(s)
         dr = jax.jacfwd(r_factory)(s)
         invK_dK = _linalg.solve_batched(K, np.moveaxis(dK, 2, 0), assume_a='pos')
-        fisher = 1/2 * np.einsum('kij,qji->kq', invK_dK, invK_dK)
+        fisher = 1 / 2 * np.einsum('kij,qji->kq', invK_dK, invK_dK)
         fisher += dr.T @ linalg.solve(K, dr, assume_a='pos')
         expected = fisher @ vec
         util.assert_close_matrices(result, expected, rtol=1e-11)

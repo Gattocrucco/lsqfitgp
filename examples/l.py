@@ -1,6 +1,6 @@
 # lsqfitgp/examples/l.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,25 +19,26 @@
 
 """
 
-                            EXAMPLE L.
+EXAMPLE L.
 
-    Where two formulas give the same results and so math triumphs
-    once again.
+Where two formulas give the same results and so math triumphs
+once again.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 fig, ax = plt.subplots(num='l', clear=True)
 
 x = np.linspace(0, 10, 1000)
 
 for p in range(2):
-    y1 = lgp.Matern(nu=p + 1/2)([0.], x)
-    y2 = lgp.Maternp(p=p)([0.], x)
-    line, = ax.plot(x, y1, label=f'{2 * p + 1}/2', alpha=0.5)
+    y1 = lgp.Matern(nu=p + 1 / 2)([0.0], x)
+    y2 = lgp.Maternp(p=p)([0.0], x)
+    (line,) = ax.plot(x, y1, label=f'{2 * p + 1}/2', alpha=0.5)
     ax.plot(x, y2, '--', color=line.get_color(), alpha=0.5)
 
 ax.legend(loc='best')

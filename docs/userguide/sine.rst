@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/sine.rst
+.. lsqfitgp/docs/userguide/sine.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, 2024, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2024, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -120,20 +120,20 @@ second is the label of the points on which we want the estimate.
 Now we make a plot of everything::
 
     from matplotlib import pyplot as plt
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example')
-    
+
     ax.set_title('Gaussian process on a sine')
     ax.set_xlabel('x')
     ax.set_ylabel('y')
-    
+
     ax.plot(x, y, marker='.', linestyle='', color='black', label='data')
-    
+
     ypred_mean = gvar.mean(ypred)
     ax.plot(xpred, ypred_mean, label='posterior mean')
-    
+
     ax.legend()
-    
+
     fig.savefig('sine1.png')
 
 .. image:: sine1.png
@@ -149,7 +149,7 @@ make an error band for the fit by computing the standard deviations with
     bottom = ypred_mean - ypred_sdev
     top = ypred_mean + ypred_sdev
     ax.fill_between(xpred, bottom, top, alpha=0.3, color='blue')
-    
+
     fig.savefig('sine2.png')
 
 .. image:: sine2.png
@@ -186,7 +186,7 @@ has a function for doing that, :func:`gvar.raniter`::
 
     for ypred_sample in gvar.raniter(ypred, 4):
         ax.plot(xpred, ypred_sample, color='red', alpha=0.3)
-    
+
     fig.savefig('sine3.png')
 
 .. image:: sine3.png
@@ -213,13 +213,13 @@ let's do everything again, rescaling by a factor of 3::
         .addx(xpred, 'bar')
     )
     ypred = gp.predfromdata({'foo': y}, 'bar')
-    
+
     ax.cla() # clear the plot
-    
+
     ax.plot(x, y, '.k')
     for sample in gvar.raniter(ypred, 5):
         ax.plot(xpred, sample, 'r', alpha=0.3)
-    
+
     fig.savefig('sine4.png')
 
 .. image:: sine4.png
@@ -231,15 +231,15 @@ from -20 to 20::
 
     xpred_long = np.linspace(-20, 20, 200)
     gp = gp.addx(xpred_long, 'baz')
-    
+
     ypred = gp.predfromdata({'foo': y}, 'baz')
-    
+
     ax.cla()
-    
+
     ax.plot(x, y, '.k')
     for sample in gvar.raniter(ypred, 5):
         ax.plot(xpred_long, sample, 'r', alpha=0.3)
-    
+
     fig.savefig('sine5.png')
 
 .. image:: sine5.png
@@ -263,13 +263,13 @@ Now ``gy`` represents an array of independent Gaussian distributions with mean
 using ``gy`` instead of ``y``::
 
     ypred = gp.predfromdata({'foo': gy}, 'baz')
-    
+
     ax.cla()
-    
+
     ax.errorbar(x, gvar.mean(gy), yerr=gvar.sdev(gy), fmt='.k', capsize=2)
     for sample in gvar.raniter(ypred, 5):
         ax.plot(xpred_long, sample, 'r', alpha=0.3)
-    
+
     fig.savefig('sine6.png')
 
 .. image:: sine6.png

@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/integrals.rst
+.. lsqfitgp/docs/userguide/integrals.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -35,30 +35,30 @@ Let's compute the primitive of our dear friend cosine::
     import lsqfitgp as lgp
     import numpy as np
     import gvar
-    
+
     x = np.linspace(-5, 5, 11)
     y = np.cos(x)
     xplot = np.linspace(-5, 5, 200)
-    
+
     gp = (lgp
         .GP(lgp.ExpQuad(scale=2))
         .addx(xplot, 'primitive')
         .addx(x, 'cosine', deriv=1)
     )
-    
+
     yplot = gp.predfromdata({'cosine': y}, 'primitive')
 
 We gave the data for the ``'cosine'`` label which has ``deriv=1``, and asked for
 the posterior on the label ``'primitive'`` which is not derived. Now we plot::
 
     from matplotlib import pyplot as plt
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example')
-    
+
     ax.plot(x, y, '.k')
     for sample in gvar.raniter(yplot, 8):
         ax.plot(xplot, sample, color='blue', alpha=0.5, zorder=-1)
-    
+
     fig.savefig('integrals1.png')
 
 .. image:: integrals1.png
@@ -107,15 +107,15 @@ Cauchy pdf, pretending we only know its area and some values of the function
 not too close to the center::
 
     from scipy import stats
-    
+
     x = np.array([-5, -4, -3, -2, 2, 3, 4, 5])
     xplot = np.linspace(-5, 5, 200)
-    
+
     true_function = stats.cauchy.pdf
     true_area = np.subtract(*stats.cauchy.cdf([x[-1], x[0]]))
-    
+
     y = true_function(x)
-    
+
     gp = (lgp
         .GP(lgp.ExpQuad(scale=2))
         .addx(x, 'datapoints', deriv=1)
@@ -124,17 +124,17 @@ not too close to the center::
         .addx(5, 'right')
         .addlintransf(lambda l, r: r - l, ['left', 'right'], 'area')
     )
-    
+
     yplot = gp.predfromdata({'datapoints': y, 'area': true_area}, 'plot')
-    
+
     ax.cla()
-    
+
     m = gvar.mean(yplot)
     s = gvar.sdev(yplot)
     ax.fill_between(xplot, m - s, m + s, alpha=0.5)
     ax.plot(xplot, true_function(xplot), color='gray', linestyle='--')
     ax.plot(x, y, '.k')
-    
+
     fig.savefig('integrals2.png')
 
 .. image:: integrals2.png

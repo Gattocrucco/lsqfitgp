@@ -1,6 +1,6 @@
 # lsqfitgp/_gvarext/_format.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,35 +17,40 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+import contextlib
 import math
 import re
-import contextlib
 
 import gvar
 
+
 def exponent(x):
-    return int(math.floor(math.log10(abs(x))))
+    return math.floor(math.log10(abs(x)))
+
 
 def int_mantissa(x, n, e):
     return round(x * 10 ** (n - 1 - e))
 
+
 def naive_ndigits(x, n):
     log10x = math.log10(abs(x))
-    n_int = int(math.floor(n))
+    n_int = math.floor(n)
     n_frac = n - n_int
     log10x_frac = log10x - math.floor(log10x)
     return n_int + (log10x_frac < n_frac)
 
+
 def ndigits(x, n):
     ndig = naive_ndigits(x, n)
     xexp = exponent(x)
-    rounded_x = int_mantissa(x, ndig, xexp) * 10 ** xexp
+    rounded_x = int_mantissa(x, ndig, xexp) * 10**xexp
     if rounded_x > x:
         rounded_ndig = naive_ndigits(rounded_x, n)
         if rounded_ndig > ndig:
             x = rounded_x
             ndig = rounded_ndig
     return x, ndig
+
 
 def mantissa(x, n, e):
     m = int_mantissa(x, n, e)
@@ -56,22 +61,30 @@ def mantissa(x, n, e):
         s = s[:-1]
     return s, e
 
+
 def insert_dot(s, n, e, *, add_leading_zeros=True, trailing_zero_char='0'):
     e = e + len(s) - n
     n = len(s)
     if e >= n - 1:
         s = s + trailing_zero_char * (e - n + 1)
     elif e >= 0:
-        s = s[:1 + e] + '.' + s[1 + e:]
+        s = s[: 1 + e] + '.' + s[1 + e :]
     elif e <= -1 and add_leading_zeros:
         s = '0' * -e + s
         s = s[:1] + '.' + s[1:]
     return s
 
+
 def tostring(x):
     return '0' if x == 0 else f'{x:#.6g}'
 
-def uformat(mu, s, errdig=2, sep=None, *,
+
+def uformat(  # noqa: C901, PLR0915
+    mu,
+    s,
+    errdig=2,
+    sep=None,
+    *,
     shareexp=True,
     outersign=False,
     uniexp=False,
@@ -79,10 +92,10 @@ def uformat(mu, s, errdig=2, sep=None, *,
     minposexp=4,
     padzero=None,
     possign=False,
-    ):
+):
     """
     Format a number with uncertainty.
-    
+
     Parameters
     ----------
     mu : number
@@ -132,13 +145,14 @@ def uformat(mu, s, errdig=2, sep=None, *,
         The quantity (mu +/- s) nicely formatted.
     """
     if errdig < 1:
-        raise ValueError('errdig < 1')
+        msg = 'errdig < 1'
+        raise ValueError(msg)
     if not math.isfinite(mu) or not math.isfinite(s) or s <= 0:
         if sep is None:
             return f'{tostring(mu)}({tostring(s)})'
         else:
             return f'{tostring(mu)}{sep}{tostring(s)}'
-    
+
     s, sndig = ndigits(s, errdig)
     sexp = exponent(s)
     muexp = exponent(mu) if mu != 0 else sexp - sndig - 1
@@ -146,30 +160,42 @@ def uformat(mu, s, errdig=2, sep=None, *,
     mundig = sndig + muexp - sexp
     mumant, muexp = mantissa(mu, mundig, muexp)
     musign = '-' if mu < 0 else '+' if possign else ''
-    
+
     if mundig >= sndig:
         use_exp = muexp >= mundig + minposexp or muexp <= -minnegexp
         base_exp = muexp
     else:
         use_exp = sexp >= sndig + minposexp or sexp <= -minnegexp
         base_exp = sexp
-    
+
     if use_exp:
         mumant = insert_dot(mumant, mundig, muexp - base_exp)
-        smant = insert_dot(smant, sndig, sexp - base_exp, add_leading_zeros=sep is not None)
+        smant = insert_dot(
+            smant, sndig, sexp - base_exp, add_leading_zeros=sep is not None
+        )
     elif base_exp >= max(mundig, sndig) and padzero is None:
         mumant = str(abs(round(mu)))
         smant = str(abs(round(s)))
     else:
         zerochar = '0' if padzero is None else padzero
         mumant = insert_dot(mumant, mundig, muexp, trailing_zero_char=zerochar)
-        if len(mumant) >= 2 and mumant.startswith('0') and all(c == zerochar for c in mumant[1:]):
+        if (
+            len(mumant) >= 2
+            and mumant.startswith('0')
+            and all(c == zerochar for c in mumant[1:])
+        ):
             mumant = zerochar + mumant[1:]
-        smant = insert_dot(smant, sndig, sexp, add_leading_zeros=sep is not None, trailing_zero_char=zerochar)
-    
+        smant = insert_dot(
+            smant,
+            sndig,
+            sexp,
+            add_leading_zeros=sep is not None,
+            trailing_zero_char=zerochar,
+        )
+
     if not outersign:
         mumant = musign + mumant
-    
+
     if use_exp:
         if uniexp:
             asc = '0123456789+-'
@@ -189,11 +215,12 @@ def uformat(mu, s, errdig=2, sep=None, *,
         r = mumant + '(' + smant + ')'
     else:
         r = mumant + sep + smant
-    
+
     if outersign:
         r = musign + r
-    
+
     return r
+
 
 def fmtspec_kwargs(spec):
     """
@@ -218,7 +245,7 @@ def fmtspec_kwargs(spec):
     Full format:
 
     Options: any combination these characters:
-    
+
     '+' :
         Put a '+' before positive central values.
     '-' :
@@ -239,7 +266,7 @@ def fmtspec_kwargs(spec):
     exponential notation is used.
 
     Mode: one of these characters:
-    
+
     'p' :
         Put the error between parentheses.
     's' :
@@ -253,7 +280,8 @@ def fmtspec_kwargs(spec):
     pat = r'([-+#$]*)(\d*\.?\d*)(:\d+)?(p|s|u|U)'
     m = re.fullmatch(pat, spec)
     if not m:
-        raise ValueError(f'format specification {spec!r} not understood, format is r"{pat}"')
+        msg = f'format specification {spec!r} not understood, format is r"{pat}"'
+        raise ValueError(msg)
     kw = {}
     options = m.group(1)
     kw['possign'] = '+' in options
@@ -275,20 +303,20 @@ def fmtspec_kwargs(spec):
     kw['uniexp'] = mode == 'U'
     return kw
 
+
 def gvar_formatter(g, spec):
-    """
-    A formatter for `gvar.GVar.set` that uses `uformat`.
-    """
+    """Format a gvar with `uformat`, as formatter for `gvar.GVar.set`."""
     mu = gvar.mean(g)
     s = gvar.sdev(g)
     kw = fmtspec_kwargs(spec)
     return uformat(mu, s, **kw)
 
+
 @contextlib.contextmanager
 def gvar_format(spec=None, *, lsqfitgp_format=True):
     """
     Context manager to set the default format specification of gvars.
-    
+
     Parameters
     ----------
     spec : str, optional
@@ -298,22 +326,24 @@ def gvar_format(spec=None, *, lsqfitgp_format=True):
         Whether to use a modified version of the `gvar` formatting
         specification, provided by `lsqfitgp`.
 
+    See Also
+    --------
+    gvar.fmt, gvar.GVar.set
+
     Notes
     -----
     See `fmtspec_kwargs` for the format specification, and `uformat` for all
     details.
-
-    See also
-    --------
-    gvar.fmt, gvar.GVar.set
-    """
+    """  # noqa: DOC402
     if lsqfitgp_format:
         if spec is None:
             spec = '#1.5p'
+
         def formatter(g, spec, defaultspec=spec):
             if spec == '':
                 spec = defaultspec
             return gvar_formatter(g, spec)
+
         kw = dict(formatter=formatter)
     else:
         kw = {} if spec is None else dict(default_format=spec)

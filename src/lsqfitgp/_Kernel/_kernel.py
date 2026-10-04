@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel/_kernel.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,13 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import _util
-from . import _crosskernel
+from lsqfitgp._Kernel import _crosskernel, _util
+
 
 class Kernel(_crosskernel.CrossKernel):
     r"""
 
-    Subclass of `CrossKernel` to represent the kernel of a single function:
+    Subclass of `CrossKernel` to represent the kernel of a single function.
 
     .. math::
         \mathrm{kernel}(x, y) = \mathrm{Cov}[f(x), f(y)].
@@ -33,28 +33,30 @@ class Kernel(_crosskernel.CrossKernel):
     def _swap(self):
         return self
 
+
 Kernel.inherit_transf('xtransf')
 Kernel.inherit_transf('diff')
 # other transformations are registered by IsotropicKernel
 
+
 @Kernel.register_transf
 def forcekron(tcls, self):
     r"""
-    
-    Force the kernel to be a separate product over dimensions:
+
+    Force the kernel to be a separate product over dimensions.
 
     .. math::
         \mathrm{newkernel}(x, y) = \prod_i \mathrm{kernel}(x_i, y_i)
-    
+
     Returns
     -------
     newkernel : Kernel
         The transformed kernel.
 
-    """
-
+    """  # noqa: DOC101, DOC103
     core = self.core
     newcore = lambda x, y, **kw: _util.prod_recurse_dtype(core, x, y, **kw)
     return self._clone(tcls, core=newcore)
+
 
 _crosskernel.Kernel = Kernel

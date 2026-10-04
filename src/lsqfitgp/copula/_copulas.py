@@ -1,6 +1,6 @@
 # lsqfitgp/copula/_copulas.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,19 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" predefined distributions """
+"""Predefined distributions."""
 
 import functools
-import collections
 
-from jax.scipy import special as jspecial
 import jax
 from jax import numpy as jnp
+from jax.scipy import special as jspecial
 
-from .. import _jaxext
-from .. import _array
-from . import _beta, _gamma
-from . import _distr
+from lsqfitgp import _jaxext
+from lsqfitgp.copula import _beta, _distr, _gamma
+
 
 def _normcdf(x):
     x = jnp.asarray(x)
@@ -40,22 +38,20 @@ def _normcdf(x):
     # instead of cdf(-x), defeating the purpose of numerical accuracy. Use
     # _normcdf(-x) instead. See https://github.com/google/jax/issues/17199
 
+
 class beta(_distr.Distr):
-    """
-    https://en.wikipedia.org/wiki/Beta_distribution
-    """
-    
+    """`Beta distribution <https://en.wikipedia.org/wiki/Beta_distribution>`_."""
+
     @staticmethod
     def invfcn(x, alpha, beta):
         return _beta.beta.ppf(_normcdf(x), a=alpha, b=beta)
 
+
 class dirichlet(_distr.Distr):
-    """
-    https://en.wikipedia.org/wiki/Dirichlet_distribution
-    """
+    """`Dirichlet distribution <https://en.wikipedia.org/wiki/Dirichlet_distribution>`_."""
 
     signature = '(n),(n)->(n)'
-    
+
     @classmethod
     def invfcn(cls, x, alpha):
         lny = loggamma.invfcn(x, alpha)
@@ -70,54 +66,55 @@ class dirichlet(_distr.Distr):
     #     lnnorm = jspecial.logsumexp(lny, axis=-1, keepdims=True)
     #     return jnp.exp(lny - lnnorm)
 
-        # For a -> 0:
-        #
-        # gamma.cdf(x, a) = P(a, x)
-        #                 = gamma(a, x) / Gamma(a)
-        #                 = int_0^x dt e^-t t^(a - 1) / (1 / a)
-        #                 = a [t^a / a]_0^x
-        #                 = a x^a / a
-        #                 = x^a
-        #
-        # gamma.ppf(q, a) = P^-1(a, q)
-        #                 = q^1/a
+    # For a -> 0:
+    #
+    # gamma.cdf(x, a) = P(a, x)
+    #                 = gamma(a, x) / Gamma(a)
+    #                 = int_0^x dt e^-t t^(a - 1) / (1 / a)
+    #                 = a [t^a / a]_0^x
+    #                 = a x^a / a
+    #                 = x^a
+    #
+    # gamma.ppf(q, a) = P^-1(a, q)
+    #                 = q^1/a
+
 
 class gamma(_distr.Distr):
-    """
-    https://en.wikipedia.org/wiki/Gamma_distribution
-    """
-    
+    """`Gamma distribution <https://en.wikipedia.org/wiki/Gamma_distribution>`_."""
+
     @staticmethod
     def _boundary(x):
-        return {
-            jnp.dtype(jnp.float32): 12,
-            jnp.dtype(jnp.float64): 37,
-        }[x.dtype]
+        return {jnp.dtype(jnp.float32): 12, jnp.dtype(jnp.float64): 37}[x.dtype]
 
     @classmethod
     def invfcn(cls, x, alpha, beta):
         x = jnp.asarray(x)
         x = x.astype(_jaxext.float_type(x))
         boundary = cls._boundary(x)
-        return _piecewise_multiarg(
-            [x < 0, x < boundary, x >= boundary],
-            [
-                lambda x, a: _gamma.gamma.ppf(_normcdf(x), a),
-                lambda x, a: _gamma.gamma.isf(_normcdf(-x), a),
-                lambda x, a: _gamma._gammaisf_normcdf_large_neg_x(-x, a),
-            ],
-            x, alpha,
-        ) / beta
+        return (
+            _piecewise_multiarg(
+                [x < 0, x < boundary, x >= boundary],
+                [
+                    lambda x, a: _gamma.gamma.ppf(_normcdf(x), a),
+                    lambda x, a: _gamma.gamma.isf(_normcdf(-x), a),
+                    lambda x, a: _gamma._gammaisf_normcdf_large_neg_x(-x, a),
+                ],
+                x,
+                alpha,
+            )
+            / beta
+        )
+
 
 class loggamma(_distr.Distr):
     """
-    https://en.wikipedia.org/wiki/Gamma_distribution, `scipy.stats.loggamma`
+    `Gamma distribution <https://en.wikipedia.org/wiki/Gamma_distribution>`_, `scipy.stats.loggamma`.
 
     This is the distribution of the logarithm of a Gamma variable. The naming
     convention is the opposite of lognorm, which is the distribution of the
     exponential of a Normal variable.
     """
-    
+
     @staticmethod
     def _boundary(x):
         return gamma._boundary(x)
@@ -134,15 +131,14 @@ class loggamma(_distr.Distr):
                 lambda x, alpha: _gamma.loggamma.isf(_normcdf(-x), alpha),
                 lambda x, alpha: _gamma._loggammaisf_normcdf_large_neg_x(-x, alpha),
             ],
-            x, alpha,
+            x,
+            alpha,
         )
 
 
 class invgamma(_distr.Distr):
-    """
-    https://en.wikipedia.org/wiki/Inverse-gamma_distribution
-    """
-    
+    """`Inverse-gamma distribution <https://en.wikipedia.org/wiki/Inverse-gamma_distribution>`_."""
+
     @staticmethod
     def _boundary(x):
         return -gamma._boundary(x)
@@ -159,43 +155,41 @@ class invgamma(_distr.Distr):
                 lambda x, a: _gamma.invgamma.ppf(_normcdf(x), a),
                 lambda x, a: _gamma.invgamma.isf(_normcdf(-x), a),
             ],
-            x, alpha,
+            x,
+            alpha,
         )
+
 
 def _piecewise_multiarg(conds, functions, *operands):
     conds = jnp.stack(conds, axis=-1)
     index = jnp.argmax(conds, axis=-1)
     return _vectorized_switch(index, functions, *operands)
 
+
 @functools.partial(jnp.vectorize, excluded=(1,))
 def _vectorized_switch(index, branches, *operands):
     return jax.lax.switch(index, branches, *operands)
 
+
 class halfcauchy(_distr.Distr):
-    """
-    https://en.wikipedia.org/wiki/Cauchy_distribution, `scipy.stats.halfcauchy`
-    """
-    
+    """`Cauchy distribution <https://en.wikipedia.org/wiki/Cauchy_distribution>`_, `scipy.stats.halfcauchy`."""
+
     @staticmethod
     def _ppf(p):
         return jnp.tan(jnp.pi * p / 2)
-    
+
     @staticmethod
     def _isf(p):
         return 1 / jnp.tan(jnp.pi * p / 2)
-    
+
     @classmethod
     def invfcn(cls, x, gamma):
-        return gamma * jnp.where(x < 0,
-            cls._ppf(_normcdf(x)),
-            cls._isf(_normcdf(-x)),
-        )
+        return gamma * jnp.where(x < 0, cls._ppf(_normcdf(x)), cls._isf(_normcdf(-x)))
+
 
 class halfnorm(_distr.Distr):
-    """
-    https://en.wikipedia.org/wiki/Half-normal_distribution
-    """
-    
+    """`Half-normal distribution <https://en.wikipedia.org/wiki/Half-normal_distribution>`_."""
+
     @staticmethod
     def _ppf(p):
         # F(x) = 2 Φ(x) - 1
@@ -215,25 +209,20 @@ class halfnorm(_distr.Distr):
 
     @classmethod
     def invfcn(cls, x, sigma):
-        return sigma * jnp.where(x < 0,
-            cls._ppf(_normcdf(x)),
-            cls._isf(_normcdf(-x)),
-        )
+        return sigma * jnp.where(x < 0, cls._ppf(_normcdf(x)), cls._isf(_normcdf(-x)))
+
 
 class uniform(_distr.Distr):
-    """
-    https://en.wikipedia.org/wiki/Continuous_uniform_distribution
-    """
-    
+    """`Continuous uniform distribution <https://en.wikipedia.org/wiki/Continuous_uniform_distribution>`_."""
+
     @staticmethod
     def invfcn(x, a, b):
         return a + (b - a) * _normcdf(x)
 
+
 class lognorm(_distr.Distr):
-    """
-    https://en.wikipedia.org/wiki/Log-normal_distribution
-    """
-    
+    """`Log-normal distribution <https://en.wikipedia.org/wiki/Log-normal_distribution>`_."""
+
     @staticmethod
     def invfcn(x, mu, sigma):
         return jnp.exp(mu + sigma * x)

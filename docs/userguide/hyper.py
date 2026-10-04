@@ -1,10 +1,29 @@
-import pymc3 as pm
-import numpy as np ####
-import gvar ####
-from scipy import stats ####
+# lsqfitgp/docs/userguide/hyper.py
+#
+# Copyright (c) 2020, 2023, 2026, Giacomo Petrillo
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-x = np.linspace(-5, 5, 11) ####
-y = np.sin(x) ####
+import gvar  ####
+import numpy as np  ####
+import pymc3 as pm  # ty: ignore[unresolved-import]
+from scipy import stats  ####
+
+x = np.linspace(-5, 5, 11)  ####
+y = np.sin(x)  ####
 
 model = pm.Model()
 with model:
@@ -42,5 +61,5 @@ p = params['logsdev']
 prob_gauss = stats.norm.cdf(np.log(1), loc=gvar.mean(p), scale=gvar.sdev(p))
 true_prob = np.sum(df['logsdev'] <= np.log(1)) / len(df)
 print('\nProbability of having sdev < 1:')
-print('prob_gauss {:.3g}'.format(prob_gauss))
-print('true_prob {:.3g}'.format(true_prob))
+print(f'prob_gauss {prob_gauss:.3g}')
+print(f'true_prob {true_prob:.3g}')

@@ -1,6 +1,6 @@
 # lsqfitgp/bayestree/_bcf.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -20,31 +20,34 @@
 import functools
 import warnings
 
-import numpy
-from scipy import stats
-from jax import numpy as jnp
-import jax
 import gvar
+import numpy
+from jax import jit
+from jax import numpy as jnp
 
-from .. import copula
-from .. import _kernels
-from .. import _fit
-from .. import _array
-from .. import _GP
-from .. import _fastraniter
-from .. import _jaxext
-from .. import _gvarext
-from .. import _utils
+from lsqfitgp import (
+    _GP,
+    _array,
+    _fastraniter,
+    _fit,
+    _gvarext,
+    _jaxext,
+    _kernels,
+    _utils,
+    copula,
+)
 
 
 def _recursive_cast(dtype, default, mapping):
     if dtype in mapping:
         return mapping[dtype]
     elif dtype.names is not None:
-        return numpy.dtype([
-            (name, _recursive_cast(dtype[name], default, mapping))
-            for name in dtype.names
-        ])
+        return numpy.dtype(
+            [
+                (name, _recursive_cast(dtype[name], default, mapping))
+                for name in dtype.names
+            ]
+        )
     elif dtype.subdtype is not None:
         # note: has names => does not have subdtype
         return numpy.dtype((_recursive_cast(dtype.base, default, mapping), dtype.shape))
@@ -53,7 +56,8 @@ def _recursive_cast(dtype, default, mapping):
     else:
         return default
 
-def cast(dtype, default, mapping={}):
+
+def cast(dtype, default, mapping={}):  # noqa: B006, read only
     """
     Recursively cast a numpy data type.
 
@@ -83,8 +87,9 @@ def cast(dtype, default, mapping={}):
 
 
 class bcf:
-    
-    def __init__(self, *,
+    def __init__(  # noqa: C901, PLR0915
+        self,
+        *,
         y,
         z,
         x_mu,
@@ -92,13 +97,13 @@ class bcf:
         pihat,
         include_pi='mu',
         weights=None,
-        fitkw={},
-        kernelkw_mu={},
-        kernelkw_tau={},
+        fitkw={},  # noqa: B006, read only
+        kernelkw_mu={},  # noqa: B006, read only
+        kernelkw_tau={},  # noqa: B006, read only
         marginalize_mean=True,
         gpaux=None,
         x_aux=None,
-        otherhp={},
+        otherhp={},  # noqa: B006, read only
         transf='standardize',
     ):
         r"""
@@ -168,7 +173,7 @@ class bcf:
                 values.
             'aux' : structured
                 The values in `x_aux`, if specified.
-        
+
         x_aux : (n, k) array, series or dataframe, optional
             Additional covariates for the ``'aux'`` process.
         otherhp : dictionary of gvar
@@ -200,7 +205,7 @@ class bcf:
                 :math:`\lambda` parameter is bounded in :math:`(0, 2)`
                 for implementation convenience, this restriction may be lifted
                 in future versions.
-        
+
         Notes
         -----
         The regression model is:
@@ -305,10 +310,10 @@ class bcf:
         to_data :
             Convert :math:`\eta` to :math:`y`.
 
-        See also
+        See Also
         --------
         lsqfitgp.BART
-        
+
         References
         ----------
         .. [1] P. Richard Hahn, Jared S. Murray, Carlos M. Carvalho "Bayesian
@@ -319,8 +324,7 @@ class bcf:
         .. [2] Yeo, In-Kwon; Johnson, Richard A. (2000). "A New Family of Power
             Transformations to Improve Normality or Symmetry". Biometrika. 87
             (4): 954–959. https://doi.org/10.1093/biomet/87.4.954
-        """
-
+        """  # noqa: DOC001
         # convert covariates to StructuredArray
         x_mu = self._to_structured(x_mu)
         if x_tau is not None:
@@ -329,7 +333,7 @@ class bcf:
         if x_aux is not None:
             x_aux = self._to_structured(x_aux)
             assert x_aux.shape == x_mu.shape
-    
+
         # convert outcomes, treatment, propensity score, weights to 1d arrays
         y = self._to_vector(y)
         z = self._to_vector(z)
@@ -341,12 +345,13 @@ class bcf:
 
         # check include_pi
         if include_pi not in ('mu', 'tau', 'both'):
-            raise KeyError(f'invalid value include_pi={include_pi!r}')
+            msg = f'invalid value include_pi={include_pi!r}'
+            raise KeyError(msg)
         self._include_pi = include_pi
 
         # add pihat to covariates
         x_mu, x_tau = self._append_pihat(x_mu, x_tau, pihat)
-    
+
         # grid and indices
         splits_mu = _kernels.BART.splits_from_coord(x_mu)
         i_mu = self._toindices(x_mu, splits_mu)
@@ -359,23 +364,26 @@ class bcf:
 
         # get functions for data transformation
         from_data, to_data, transfloss, transfhp = self._get_transf(
-            transf=transf, weights=weights, y=y)
+            transf=transf, weights=weights, y=y
+        )
 
         # scale of error variance
         logsigma2_loc = 0 if weights is None else numpy.log(jnp.mean(weights))
 
         # prior on hyperparams
-        hyperprior = copula.makedict({
-            'm': gvar.gvar(0, 1),
-            'sigma^2': copula.lognorm(logsigma2_loc, 2),
-            'lambda_mu': copula.halfcauchy(2),
-            'lambda_tau': copula.halfnorm(1.48),
-            'alpha_mu': copula.beta(2, 1),
-            'alpha_tau': copula.beta(2, 1),
-            'beta_mu': copula.invgamma(1, 1),
-            'beta_tau': copula.invgamma(1, 1),
-            'z_0': copula.uniform(0, 1),
-        })
+        hyperprior = copula.makedict(
+            {
+                'm': gvar.gvar(0, 1),
+                'sigma^2': copula.lognorm(logsigma2_loc, 2),
+                'lambda_mu': copula.halfcauchy(2),
+                'lambda_tau': copula.halfnorm(1.48),
+                'alpha_mu': copula.beta(2, 1),
+                'alpha_tau': copula.beta(2, 1),
+                'beta_mu': copula.invgamma(1, 1),
+                'beta_tau': copula.invgamma(1, 1),
+                'z_0': copula.uniform(0, 1),
+            }
+        )
 
         # remove explicit mean parameter if it's baked into the Gaussian process
         if marginalize_mean:
@@ -392,36 +400,34 @@ class bcf:
                     else:
                         warnings.warn(message)
             hyperprior.update(new)
+
         update_hyperparams(transfhp, 'data transformation', True)
-            # the hypers handed by _get_transf are not allowed to override
+        # the hypers handed by _get_transf are not allowed to override
         update_hyperparams(otherhp, 'user', False)
 
         # GP factory
-        def gpfactory(hp, *, z, i_mu, i_tau, pihat, x_aux, weights,
-            splits_mu, splits_tau, **_):
-            
+        def gpfactory(
+            hp, *, z, i_mu, i_tau, pihat, x_aux, weights, splits_mu, splits_tau, **_
+        ):
 
-            kw_overridable = dict(
-                maxd=10,
-                reset=[2, 4, 6, 8],
-                intercept=False,
-            )
+            kw_overridable = dict(maxd=10, reset=[2, 4, 6, 8], intercept=False)
             kw_not_overridable = dict(indices=True)
 
             gp = _GP.GP(checkpos=False, checksym=False, solver='chol')
 
+            splits = dict(mu=splits_mu, tau=splits_tau)
             for name, kernelkw in dict(mu=kernelkw_mu, tau=kernelkw_tau).items():
                 kw = dict(
                     alpha=hp[f'alpha_{name}'],
                     beta=hp[f'beta_{name}'],
                     dim=name,
-                    splits=eval(f'splits_{name}'),
+                    splits=splits[name],
                     **kw_overridable,
                 )
                 kw.update(kernelkw)
                 kernel = _kernels.BART(**kw, **kw_not_overridable)
                 kernel *= hp[f'lambda_{name}'] ** 2
-                
+
                 gp = gp.defproc(name, kernel)
 
             if 'm' in hp:
@@ -437,17 +443,17 @@ class bcf:
 
             gp = gp.deflintransf(
                 gp.DefaultProcess,
-                lambda m, mu, tau, aux: lambda x:
-                m(x) + mu(x) + tau(x) * (x['z'] - hp['z_0']) + aux(x),
+                lambda m, mu, tau, aux: (
+                    lambda x: m(x) + mu(x) + tau(x) * (x['z'] - hp['z_0']) + aux(x)
+                ),
                 ['m', 'mu', 'tau', 'aux'],
             )
-            
+
             x = self._join_points(True, z, i_mu, i_tau, pihat, x_aux)
             gp = gp.addx(x, 'trainmean')
             errcov = self._error_cov(hp, weights, x)
-            return (gp
-                .addcov(errcov, 'trainnoise')
-                .addtransf({'trainmean': 1, 'trainnoise': 1}, 'train')
+            return gp.addcov(errcov, 'trainnoise').addtransf(
+                {'trainmean': 1, 'trainnoise': 1}, 'train'
             )
 
         # data factory
@@ -457,16 +463,8 @@ class bcf:
         # fit hyperparameters
         options = dict(
             verbosity=3,
-            minkw=dict(
-                method='l-bfgs-b',
-                options=dict(
-                    maxls=4,
-                    maxiter=100,
-                ),
-            ),
-            mlkw=dict(
-                epsrel=0,
-            ),
+            minkw=dict(method='l-bfgs-b', options=dict(maxls=4, maxiter=100)),
+            mlkw=dict(epsrel=0),
             forward=True,
             gpfactorykw=dict(
                 y=y,
@@ -483,7 +481,7 @@ class bcf:
         )
         options.update(fitkw)
         fit = _fit.empbayes_fit(hyperprior, gpfactory, data, **options)
-        
+
         # extract hyperparameters from minimization result
         self.m = fit.p.get('m', 0)
         self.sigma = gvar.sqrt(fit.p['sigma^2'])
@@ -502,21 +500,15 @@ class bcf:
 
     def _append_pihat(self, x_mu, x_tau, pihat):
         ip = self._include_pi
-        if ip == 'mu' or ip == 'both':
-            x_mu = _array.StructuredArray.from_dict(dict(
-                x=x_mu,
-                pihat=pihat,
-            ))
-        if x_tau is not None and (ip == 'tau' or ip == 'both'):
-            x_tau = _array.StructuredArray.from_dict(dict(
-                x=x_tau,
-                pihat=pihat,
-            ))
+        if ip in {'mu', 'both'}:
+            x_mu = _array.StructuredArray.from_dict(dict(x=x_mu, pihat=pihat))
+        if x_tau is not None and ip in {'tau', 'both'}:
+            x_tau = _array.StructuredArray.from_dict(dict(x=x_tau, pihat=pihat))
         return x_mu, x_tau
 
     @staticmethod
     def _join_points(train, z, i_mu, i_tau, pihat, x_aux):
-        """ join covariates into a single StructuredArray """
+        """Join covariates into a single StructuredArray."""
         columns = dict(
             train=jnp.broadcast_to(bool(train), z.shape),
             i=jnp.arange(z.size).reshape(z.shape),
@@ -531,7 +523,7 @@ class bcf:
 
     @staticmethod
     def _error_cov(hp, weights, x):
-        """ fill error covariance matrix """
+        """Fill error covariance matrix."""
         if weights is None:
             error_var = jnp.broadcast_to(hp['sigma^2'], len(x))
         else:
@@ -548,8 +540,18 @@ class bcf:
         else:
             raise KeyError(hp)
 
-    def gp(self, *, hp='map', z=None, x_mu=None, x_tau=None, pihat=None,
-        x_aux=None, weights=None, rng=None):
+    def gp(
+        self,
+        *,
+        hp='map',
+        z=None,
+        x_mu=None,
+        x_tau=None,
+        pihat=None,
+        x_aux=None,
+        weights=None,
+        rng=None,
+    ):
         """
         Create a Gaussian process with the fitted hyperparameters.
 
@@ -586,23 +588,22 @@ class bcf:
 
             This Gaussian process is defined on the transformed data ``eta``.
         """
-
         hp = self._gethp(hp, rng)
         return self._gp(hp, z, x_mu, x_tau, pihat, x_aux, weights, self.fit.gpfactorykw)
 
     def _gp(self, hp, z, x_mu, x_tau, pihat, x_aux, weights, gpfactorykw):
         """
-        Internal function to create the GP object. This function must work
-        both if the arguments are user-provided and need to be checked and
-        converted to standard format, or if they are traced jax values.
-        """
+        Create the GP object.
 
+        This function must work both if the arguments are user-provided and
+        need to be checked and converted to standard format, or if they are
+        traced jax values.
+        """
         # create GP object
         gp = self.fit.gpfactory(hp, **gpfactorykw)
 
         # add test points
         if z is not None:
-
             # check presence/absence of arguments is coherent
             self._check_coherent_covariates(z, x_mu, x_tau, pihat, x_aux)
 
@@ -641,9 +642,8 @@ class bcf:
             x = self._join_points(False, z, i_mu, i_tau, pihat, x_aux)
             gp = gp.addx(x, 'testmean')
             errcov = self._error_cov(hp, weights, x)
-            gp = (gp
-                .addcov(errcov, 'testnoise')
-                .addtransf({'testmean': 1, 'testnoise': 1}, 'test')
+            gp = gp.addcov(errcov, 'testnoise').addtransf(
+                {'testmean': 1, 'testnoise': 1}, 'test'
             )
 
         return gp
@@ -687,13 +687,25 @@ class bcf:
             A dictionary representing ``eta`` in the format required by the
             `GP.pred` method.
         """
-
         hp = self._gethp(hp, rng)
         return self.fit.data(hp, **self.fit.gpfactorykw)
 
-    def pred(self, *, hp='map', error=False, z=None, x_mu=None, x_tau=None,
-        pihat=None, x_aux=None, weights=None, transformed=True, samples=None,
-        gvars=False, rng=None):
+    def pred(  # noqa: C901
+        self,
+        *,
+        hp='map',
+        error=False,
+        z=None,
+        x_mu=None,
+        x_tau=None,
+        pihat=None,
+        x_aux=None,
+        weights=None,
+        transformed=True,
+        samples=None,
+        gvars=False,
+        rng=None,
+    ):
         r"""
         Predict the transformed outcome at given locations.
 
@@ -736,48 +748,45 @@ class bcf:
 
         Returns
         -------
-        If ``samples`` is `None` and ``gvars`` is `False` (default):
-
         mean, cov : (m,) and (m, m) arrays
-            The mean and covariance matrix of the Normal posterior distribution
+            If ``samples`` is `None` and ``gvars`` is `False` (default), the
+            mean and covariance matrix of the Normal posterior distribution
             over the regression function or :math:`\eta` at the specified
             locations.
-
-        If ``samples`` is `None` and ``gvars`` is `True`:
-
         out : (m,) array of gvars
-            The same distribution represented as an array of `~gvar.GVar`
-            objects.
-
-        If ``samples`` is an integer:
-
+            If ``samples`` is `None` and ``gvars`` is `True`, the same
+            distribution represented as an array of `~gvar.GVar` objects.
         sample : (samples, m) array
-            Posterior samples over either the regression function, :math:`\eta`,
-            or :math:`y`.
+            If ``samples`` is an integer, posterior samples over either the
+            regression function, :math:`\eta`, or :math:`y`.
         """
-
         # check consistency of output choice
         if samples is None:
             if not transformed:
-                raise ValueError('Posterior is required in analytical form '
-                                 '(samples=None) and in data space '
-                                 '(transformed=False), this is not possible as '
-                                 'the transformation model space -> data space '
-                                 'is arbitrary. Either sample the posterior or '
-                                 'get the result in model space.')
+                msg = (
+                    'Posterior is required in analytical form '
+                    '(samples=None) and in data space '
+                    '(transformed=False), this is not possible as '
+                    'the transformation model space -> data space '
+                    'is arbitrary. Either sample the posterior or '
+                    'get the result in model space.'
+                )
+                raise ValueError(msg)
         else:
             if not transformed and not error:
-                raise ValueError('Posterior is required in data space '
-                                 '(transformed=False) and without error term '
-                                 '(error=False), this is not possible as the '
-                                 'transformation model space -> data space '
-                                 'applies after adding the error.')
+                msg = (
+                    'Posterior is required in data space '
+                    '(transformed=False) and without error term '
+                    '(error=False), this is not possible as the '
+                    'transformation model space -> data space '
+                    'applies after adding the error.'
+                )
+                raise ValueError(msg)
             assert not gvars, 'can not represent posterior samples as gvars'
 
-        
         # get hyperparameters
         hp = self._gethp(hp, rng)
-        
+
         # check presence of covariates is coherent
         self._check_coherent_covariates(z, x_mu, x_tau, pihat, x_aux)
 
@@ -793,9 +802,11 @@ class bcf:
                 x_aux = self._to_structured(x_aux)
         if weights is not None:
             weights = self._to_vector(weights)
-        
+
         # GP regression
-        mean, cov = self._pred(hp, z, x_mu, x_tau, pihat, x_aux, weights, self.fit.gpfactorykw, bool(error))
+        mean, cov = self._pred(
+            hp, z, x_mu, x_tau, pihat, x_aux, weights, self.fit.gpfactorykw, bool(error)
+        )
 
         # return Normal posterior moments
         if samples is None:
@@ -810,11 +821,10 @@ class bcf:
             sample = self._to_data(hp, sample)
         return sample
 
-
     @functools.cached_property
     def _pred(self):
-        
-        @functools.partial(jax.jit, static_argnums=(8,))
+
+        @functools.partial(jit, static_argnums=(8,))
         def _pred(hp, z, x_mu, x_tau, pihat, x_aux, weights, gpfactorykw, error):
             gp = self._gp(hp, z, x_mu, x_tau, pihat, x_aux, weights, gpfactorykw)
             data = self.fit.data(hp, **gpfactorykw)
@@ -827,12 +837,11 @@ class bcf:
             outmean, outcov = gp.predfromdata(data, label, raw=True)
             return outmean + hp.get('m', 0), outcov
 
-
         return _pred
 
     def from_data(self, y, *, hp='map', rng=None):
-        """
-        Transforms outcomes :math:`y` to the regression variable :math:`\\eta`.
+        r"""
+        Transform outcomes :math:`y` to the regression variable :math:`\eta`.
 
         Parameters
         ----------
@@ -850,13 +859,12 @@ class bcf:
         eta : (n,) array
             Transformed outcomes.
         """
-
         hp = self._gethp(hp, rng)
         return self._from_data(hp, y)
 
     def to_data(self, eta, *, hp='map', rng=None):
-        """
-        Convert the regression variable :math:`\\eta` to outcomes :math:`y`.
+        r"""
+        Convert the regression variable :math:`\eta` to outcomes :math:`y`.
 
         Parameters
         ----------
@@ -874,7 +882,6 @@ class bcf:
         y : (n,) array
             Outcomes.
         """
-
         hp = self._gethp(hp, rng)
         return self._to_data(hp, eta)
 
@@ -885,9 +892,9 @@ class bcf:
         if hasattr(x, 'columns'):
             x = _array.StructuredArray.from_dataframe(x)
         elif hasattr(x, 'to_numpy'):
-            x = _array.StructuredArray.from_dict({
-                'f0' if x.name is None else x.name: x.to_numpy()
-            })
+            x = _array.StructuredArray.from_dict(
+                {'f0' if x.name is None else x.name: x.to_numpy()}
+            )
         elif x.dtype.names is None:
             x = _array.unstructured_to_structured(x)
         else:
@@ -897,22 +904,26 @@ class bcf:
         if check_numerical:
             assert x.ndim == 1
             assert x.size > len(x.dtype)
+
             def check_numerical(path, dtype):
                 if not numpy.issubdtype(dtype, numpy.number):
-                    raise TypeError(f'covariate `{path}` is not numerical')
+                    msg = f'covariate `{path}` is not numerical'
+                    raise TypeError(msg)
+
             cls._walk_dtype(x.dtype, check_numerical)
 
         return x
 
     @staticmethod
     def _to_vector(x):
-        if hasattr(x, 'columns'): # dataframe
+        if hasattr(x, 'columns'):  # dataframe
             x = x.to_numpy().squeeze(axis=1)
-        elif hasattr(x, 'to_numpy'): # series (dataframe column)
+        elif hasattr(x, 'to_numpy'):  # series (dataframe column)
             x = x.to_numpy()
         x = jnp.asarray(x)
         if x.ndim != 1:
-            raise ValueError(f'array is not 1d vector, ndim={x.ndim}')
+            msg = f'array is not 1d vector, ndim={x.ndim}'
+            raise ValueError(msg)
         return x
 
     @classmethod
@@ -972,10 +983,10 @@ Hyperparameter posterior:
             if weights is None:
                 out += f"""
     sigma = {self.sigma}"""
-            
+
             else:
-                weights = numpy.array(weights) # to avoid jax taking over the ops
-                avgsigma = numpy.sqrt(numpy.mean(self.sigma ** 2 / weights))
+                weights = numpy.array(weights)  # to avoid jax taking over the ops
+                avgsigma = numpy.sqrt(numpy.mean(self.sigma**2 / weights))
                 out += f"""
     sqrt(mean(sigma^2/w))  = {avgsigma}
     sigma = {self.sigma}"""
@@ -997,11 +1008,10 @@ Meaning of hyperparameters:
         lambda small: confident extrapolation
         lambda large: conservative extrapolation
     sigma in (0, ∞): standard deviation of i.i.d. error"""
-        
+
         return _utils.top_bottom_rule('BCF', out)
 
-
-    def _get_transf(self, *, transf, y, weights):
+    def _get_transf(self, *, transf, y, weights):  # noqa: C901
 
         from_datas = []
         to_datas = []
@@ -1014,22 +1024,21 @@ Meaning of hyperparameters:
         else:
             name = lambda n: n
             transf = [transf]
-        
+
         for i, tr in enumerate(transf):
-
             hyper = {}
-        
-            if not isinstance(tr, str):
-                
-                from_data, to_data = tr
-                
-            elif tr == 'standardize':
 
+            if not isinstance(tr, str):
+                from_data, to_data = tr
+
+            elif tr == 'standardize':
                 if i > 0:
-                    warnings.warn('standardization applied after other '
+                    warnings.warn(
+                        'standardization applied after other '
                         'transformations: standardization always uses the '
                         'initial data mean and standard deviation, so it may '
-                        'not work as intended')
+                        'not work as intended'
+                    )
 
                     # It's not possible to overcome this limitation if one wants
                     # to stick to transformations that act on one point at a
@@ -1041,41 +1050,49 @@ Meaning of hyperparameters:
                 else:
                     loc = jnp.average(y, weights=weights)
                     scale = jnp.sqrt(jnp.average((y - loc) ** 2, weights=weights))
-                
-                def from_data(hp, y):
+
+                def from_data(_hp, y, loc=loc, scale=scale):
                     return (y - loc) / scale
-                def to_data(hp, eta):
+
+                def to_data(_hp, eta, loc=loc, scale=scale):
                     return loc + scale * eta
 
             elif tr == 'yeojohnson':
-                    
-                def from_data(hp, y):
-                    return yeojohnson(y, hp[name('lambda_yj')])
-                def to_data(hp, eta):
-                    return yeojohnson_inverse(eta, hp[name('lambda_yj')])
-                hyper[name('lambda_yj')] = 2 * copula.beta(2, 2)
+                # bind the key now, `name` depends on the loop variable `i`
+                key = name('lambda_yj')
+
+                def from_data(hp, y, key=key):
+                    return yeojohnson(y, hp[key])
+
+                def to_data(hp, eta, key=key):
+                    return yeojohnson_inverse(eta, hp[key])
+
+                hyper[key] = 2 * copula.beta(2, 2)
 
             else:
                 raise KeyError(tr)
-            
+
             from_datas.append(from_data)
             to_datas.append(to_data)
             hypers.update(hyper)
 
         if transf:
+
             def from_data(hp, y):
                 for fd in from_datas:
                     y = fd(hp, y)
                 return y
+
             def to_data(hp, eta):
                 for td in reversed(to_datas):
                     eta = td(hp, eta)
                 return eta
         else:
-            from_data = lambda hp, y: y
-            to_data = lambda hp, eta: eta
+            from_data = lambda _hp, y: y  # ty: ignore[conflicting-declarations]
+            to_data = lambda _hp, eta: eta  # ty: ignore[conflicting-declarations]
 
         from_data_grad = _jaxext.elementwise_grad(from_data, 1)
+
         def loss(hp):
             return -jnp.sum(jnp.log(from_data_grad(hp, y)))
 
@@ -1083,12 +1100,13 @@ Meaning of hyperparameters:
 
         return from_data, to_data, loss, hypers
 
+
 def yeojohnson(x, lmbda):
-    """ Yeo-Johnson transformation with lamda != 0, 2 """
+    """Yeo-Johnson transformation with lamda != 0, 2."""
     return jnp.where(
         x >= 0,
         (jnp.power(x + 1, lmbda) - 1) / lmbda,
-        -((jnp.power(-x + 1, 2 - lmbda) - 1) / (2 - lmbda))
+        -((jnp.power(-x + 1, 2 - lmbda) - 1) / (2 - lmbda)),
     )
 
 
@@ -1096,5 +1114,5 @@ def yeojohnson_inverse(y, lmbda):
     return jnp.where(
         y >= 0,
         jnp.power(y * lmbda + 1, 1 / lmbda) - 1,
-        -jnp.power(-(2 - lmbda) * y + 1, 1 / (2 - lmbda)) + 1
+        -jnp.power(-(2 - lmbda) * y + 1, 1 / (2 - lmbda)) + 1,
     )

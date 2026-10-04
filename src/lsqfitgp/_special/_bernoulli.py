@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_bernoulli.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,11 +19,12 @@
 
 import functools
 
-import numpy
-from scipy import special
 import jax
+import numpy
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
+from scipy import special
+
 
 def periodic_bernoulli(n, x):
     n = int(n)
@@ -39,9 +40,10 @@ def periodic_bernoulli(n, x):
         out = out * jnp.where(cond, 1, -1)
     return out
 
+
 @functools.partial(jax.custom_jvp, nondiff_argnums=(0,))
 def scaled_periodic_bernoulli(n, x):
-    """ periodic Bernoulli polynomial scaled such that B_n(0) = ζ(n) """
+    """Periodic Bernoulli polynomial scaled such that B_n(0) = ζ(n)."""
     tau = 2 * jnp.pi
     lognorm = n * jnp.log(tau) - jspecial.gammaln(n + 1)
     norm = jnp.exp(lognorm) / 2
@@ -54,10 +56,11 @@ def scaled_periodic_bernoulli(n, x):
     larges = sign * jnp.where(n % 2, jnp.sin(arg), jnp.cos(arg))
     return jnp.where(cond, smalls, larges)
 
+
 @scaled_periodic_bernoulli.defjvp
 def _scaled_periodic_bernoulli_jvp(n, primals, tangents):
-    x, = primals
-    xt, = tangents
+    (x,) = primals
+    (xt,) = tangents
     primal = scaled_periodic_bernoulli(n, x)
     tangent = 2 * jnp.pi * scaled_periodic_bernoulli(n - 1, x) * xt
     return primal, tangent

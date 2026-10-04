@@ -1,6 +1,6 @@
 # lsqfitgp/examples/e.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,17 +19,18 @@
 
 """
 
-                            EXAMPLE E.
+EXAMPLE E.
 
-    Where observing both a function and its derivative put some
-    restraint on their behaviour.
+Where observing both a function and its derivative put some
+restraint on their behaviour.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(-5, 5, 10)
 xpred = np.linspace(-15, 25, 200)
@@ -37,8 +38,8 @@ y = np.sin(xdata)
 y[1::2] = np.cos(xdata[1::2])
 
 print('make GP...')
-gp = (lgp
-    .GP(lgp.ExpQuad(scale=3))
+gp = (
+    lgp.GP(lgp.ExpQuad(scale=3))
     .addx(xdata[0::2], 'data', deriv=0)
     .addx(xdata[1::2], 'dataderiv', deriv=1)
     .addx(xpred, 'pred', deriv=0)
@@ -57,7 +58,7 @@ for label in u:
     s = gvar.sdev(u[label])
     patch = ax.fill_between(xpred, m - s, m + s, label=label, alpha=0.5)
     colors[label] = patch.get_facecolor()[0]
-    
+
 print('samples...')
 for sample in gvar.raniter(u, 30):
     for label in u:

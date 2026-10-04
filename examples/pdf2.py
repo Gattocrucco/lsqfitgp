@@ -1,17 +1,41 @@
-"""Fit of parton distributions functions (PDFs)
+# lsqfitgp/examples/pdf2.py
+#
+# Copyright (c) 2022, 2023, 2026, Giacomo Petrillo
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Fit of parton distributions functions (PDFs).
 
 The difference from pdf1.py is that we define the transformation on processes
-instead of on their finite realizations"""
+instead of on their finite realizations
+"""
 
 import warnings
 
-import lsqfitgp as lgp
+import gvar
 import numpy as np
 from matplotlib import pyplot as plt
-import gvar
+
+import lsqfitgp as lgp
 
 np.random.seed(20220416)
-warnings.filterwarnings('ignore', r'total derivative orders \(\d+, \d+\) greater than kernel minimum \(\d+, \d+\)')
+warnings.filterwarnings(
+    'ignore',
+    r'total derivative orders \(\d+, \d+\) greater than kernel minimum \(\d+, \d+\)',
+)
 
 #### DEFINE MODEL ####
 # for each gluon:
@@ -20,53 +44,43 @@ warnings.filterwarnings('ignore', r'total derivative orders \(\d+, \d+\) greater
 # int_0^1 dx f(x) = [h'(x)]_0^1
 # int_0^1 dx x f(x) = [xh'(x) - h(x)]_0^1
 
-xtype = np.dtype([
-    ('x'    , float),
-    ('gluon', int  ),
-])
+xtype = np.dtype([('x', float), ('gluon', int)])
 
 kernel = lgp.ExpQuad(dim='x') * lgp.White(dim='gluon')
 
 xdata = np.empty((8, 30), xtype)
 xdata['gluon'] = np.arange(8)[:, None]
-xdata[    'x'] = np.linspace(0, 1, 30)
-    
-M = np.random.randn(20, 8, 30) # xdata -> data transform
+xdata['x'] = np.linspace(0, 1, 30)
+
+M = np.random.randn(20, 8, 30)  # xdata -> data transform
 
 xinteg = np.empty((8, 2), xtype)
 xinteg['gluon'] = np.arange(8)[:, None]
-xinteg[    'x'] = [0, 1]
+xinteg['x'] = [0, 1]
 
 suminteg = np.empty(xinteg.shape)
 suminteg[:, 0] = -1
-suminteg[:, 1] =  1
+suminteg[:, 1] = 1
 
 #### CREATE GP OBJECT ####
 
-gp = (lgp
-    .GP()
-
+gp = (
+    lgp.GP()
     .defproc('h', kernel)
     .deftransf('primitive of f', {'h': 1}, deriv='x')
     .deftransf('f', {'h': 1}, deriv=(2, 'x'))
     .deftransf('primitive of xf(x)', {'primitive of f': lambda x: x['x'], 'h': -1})
-
     .addx(xdata, 'xdata', proc='f')
     .addtransf({'xdata': M}, 'data', axes=2)
-
     .addx(xinteg, 'xinteg', proc='primitive of f')
     .addtransf({'xinteg': suminteg}, 'suminteg', axes=2)
-
     .addx(xinteg, 'xintegx', proc='primitive of xf(x)')
     .addtransf({'xintegx': suminteg}, 'sumintegx', axes=2)
 )
 
 #### GENERATE FAKE DATA ####
 
-prior = gp.predfromdata({
-    'suminteg' : 1,
-    'sumintegx': 1,
-}, ['data', 'xdata'])
+prior = gp.predfromdata({'suminteg': 1, 'sumintegx': 1}, ['data', 'xdata'])
 priorsample = next(gvar.raniter(prior))
 
 datamean = priorsample['data']
@@ -77,23 +91,19 @@ data = gvar.gvar(datamean, dataerr)
 # check the integral is one with trapezoid rule
 x = xdata['x']
 y = priorsample['xdata']
-checksum = np.sum((      y[:, 1:] +       y[:, :-1]) / 2 * np.diff(x, axis=1))
+checksum = np.sum((y[:, 1:] + y[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx   f_i(x) =', checksum)
 checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx x f_i(x) =', checksum)
 
 #### FIT ####
 
-pred = gp.predfromdata({
-    'suminteg' :    1,
-    'sumintegx':    1,
-    'data'     : data,
-}, ['data', 'xdata'])
+pred = gp.predfromdata({'suminteg': 1, 'sumintegx': 1, 'data': data}, ['data', 'xdata'])
 
 # check the integral is one with trapezoid rule
 x = xdata['x']
 y = pred['xdata']
-checksum = np.sum((      y[:, 1:] +       y[:, :-1]) / 2 * np.diff(x, axis=1))
+checksum = np.sum((y[:, 1:] + y[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx   f_i(x) =', checksum)
 checksum = np.sum(((y * x)[:, 1:] + (y * x)[:, :-1]) / 2 * np.diff(x, axis=1))
 print('sum_i int dx x f_i(x) =', checksum)

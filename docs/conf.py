@@ -1,6 +1,6 @@
 # lsqfitgp/docs/conf.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -23,29 +23,37 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import sys
 import inspect
 import pathlib
+import re
+import sys
 
 # -- Project information -----------------------------------------------------
 
 project = 'lsqfitgp'
 author = 'Giacomo Petrillo'
 
-from datetime import datetime
-now = datetime.now()
+from datetime import datetime, timezone
+
+now = datetime.now(timezone.utc)
 year = '2020'
 if now.year > int(year):
     year += '-' + str(now.year)
-copyright = year + ', ' + author
+copyright = year + ', ' + author  # noqa: A001, sphinx setting
 
 
-# # The full version, including alpha/beta/rc tags
+# The full version, derived from git by hatch-vcs, e.g. '0.21.3.dev4+g42e25cebd'
+# for a development version, or '0.21.2' for a release
 import lsqfitgp
+
 release = lsqfitgp.__version__
 version = release
-if 'dev' not in version:
-    project += ' ' + version
+project += ' ' + version
+
+# GitHub ref for source links: the commit node from a dev version string, or the
+# release tag when building from a clean tagged commit.
+MATCH = re.search(r'\+g([0-9a-f]+)', release)
+GITHUB_REF = MATCH.group(1) if MATCH else f'v{release.partition("+")[0]}'
 
 # -- General configuration ---------------------------------------------------
 
@@ -59,13 +67,13 @@ extensions = [
     'numpydoc',
     'sphinx.ext.intersphinx',
     # 'sphinx.ext.viewcode', # local version of linkcode
-    'sphinx.ext.linkcode', # [source] links to code on github
-    'myst_parser', # markdown support
+    'sphinx.ext.linkcode',  # [source] links to code on github
+    'myst_parser',  # markdown support
 ]
 
 myst_enable_extensions = [
     # "amsmath",
-    "dollarmath",
+    'dollarmath'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -87,13 +95,13 @@ html_theme = 'alabaster'
 html_title = f'{project} documentation'
 
 html_theme_options = dict(
-    description = 'A general purpose Gaussian process regression module',
-    fixed_sidebar = True,
-    github_button = True,
-    github_type = 'star',
-    github_repo = 'lsqfitgp',
-    github_user = 'Gattocrucco',
-    show_relbars = True,
+    description='A general purpose Gaussian process regression module',
+    fixed_sidebar=True,
+    github_button=True,
+    github_type='star',
+    github_repo='lsqfitgp',
+    github_user='Gattocrucco',
+    show_relbars=True,
 )
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -106,9 +114,9 @@ master_doc = 'index'
 
 # -- Other options -------------------------------------------------
 
-autoclass_content = 'both' # concatenate the class and __init__ docstrings
-autodoc_preserve_defaults = True # default arguments are printed as in source
-                                 # instead of being evaluated
+autoclass_content = 'both'  # concatenate the class and __init__ docstrings
+autodoc_preserve_defaults = True  # default arguments are printed as in source
+# instead of being evaluated
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
@@ -123,9 +131,10 @@ intersphinx_mapping = dict(
     jax=('https://jax.readthedocs.io/en/latest/', None),
 )
 
-def linkcode_resolve(domain, info):
+
+def linkcode_resolve(domain, info):  # noqa: C901
     """
-    Determine the URL corresponding to Python object, for extension linkcode
+    Determine the URL corresponding to Python object, for extension linkcode.
 
     Adapted from scipy/doc/release/conf.py
     """
@@ -147,8 +156,8 @@ def linkcode_resolve(domain, info):
             return None
 
     # Use the original function object if it is wrapped.
-    obj = getattr(obj, "__wrapped__", obj)
-    
+    obj = getattr(obj, '__wrapped__', obj)
+
     try:
         fn = inspect.getsourcefile(obj)
     except Exception:
@@ -172,7 +181,6 @@ def linkcode_resolve(domain, info):
         linespec = ''
 
     prefix = 'https://github.com/Gattocrucco/lsqfitgp/blob'
-    version = 'main' if 'dev' in release else f'v{release}'
     root = pathlib.Path(lsqfitgp.__file__).parent
     path = pathlib.Path(fn).relative_to(root).as_posix()
-    return f'{prefix}/{version}/src/lsqfitgp/{path}{linespec}'
+    return f'{prefix}/{GITHUB_REF}/src/lsqfitgp/{path}{linespec}'

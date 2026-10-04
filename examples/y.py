@@ -1,6 +1,6 @@
 # lsqfitgp/examples/y.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,27 +19,24 @@
 
 """
 
-                            EXAMPLE Y.
+EXAMPLE Y.
 
-    Where a Zeta kernel forces some random samples to have
-    zero mean.
+Where a Zeta kernel forces some random samples to have
+zero mean.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(0, 1, 10)
 xpred = np.linspace(0, 1, 500)
 y = np.ones_like(xdata)
 
-gp = (lgp.
-    GP(lgp.Zeta(nu=1.5))
-    .addx(xdata, 'pere')
-    .addx(xpred, 'banane')
-)
+gp = lgp.GP(lgp.Zeta(nu=1.5)).addx(xdata, 'pere').addx(xpred, 'banane')
 
 u = gp.predfromdata({'pere': y}, 'banane')
 m = gvar.mean(u)

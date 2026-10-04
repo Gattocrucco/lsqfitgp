@@ -1,6 +1,6 @@
 # lsqfitgp/examples/o.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,16 +19,16 @@
 
 """
 
-                            EXAMPLE O.
+EXAMPLE O.
 
-    Where mister N's enquiry is repeated by different means.
+Where mister N's enquiry is repeated by different means.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
 import numpy as np
-import gvar
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 x = np.linspace(-10, 10, 200)
 derivs = [0, 1, 2]
@@ -47,7 +47,7 @@ for deriv in derivs:
     s = np.sqrt(np.diag(cov[deriv, deriv]))
     patch = ax.fill_between(x, m - s, m + s, label=f'deriv {deriv}', alpha=0.5)
     colors[deriv] = patch.get_facecolor()[0]
-    
+
 for deriv in derivs:
     samples = np.random.multivariate_normal(m, cov[deriv, deriv], size=5)
     ax.plot(x, samples.T, '-', color=colors[deriv])

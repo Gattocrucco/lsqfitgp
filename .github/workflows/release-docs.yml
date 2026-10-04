@@ -1,0 +1,103 @@
+# lsqfitgp/.github/workflows/release-docs.yml
+#
+# Copyright (c) 2026, Giacomo Petrillo
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
+# Publish the documentation of a release to the versioned directory
+# `docs-<version>` on the gh-pages branch, where <version> is the tag without
+# the leading `v`. Runs on the tag push, or manually for an existing tag.
+
+name: release-docs
+permissions:
+  contents: read
+
+on:
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish the documentation of (e.g. v0.21.2).
+        type: string
+        required: true
+
+jobs:
+  docs:
+    # run on macos because of a linux bug which breaks docs/components4.png
+    runs-on: macos-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0 # this fetches the full history
+
+      - name: Determine version
+        id: version
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main \
+            || { echo "::error::tag $TAG is not on main"; exit 1; }
+          version="${TAG#v}"
+          echo "$version" | grep -E '^[0-9]+(\.[0-9]+)+$' \
+            || { echo "::error::tag $TAG is not a release tag"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build documentation
+        uses: ./.github/actions/build-docs
+
+      - name: Check the documented version matches the tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          installed=$(uv run --dev python -c 'import lsqfitgp; print(lsqfitgp.__version__)')
+          test "$installed" = "$VERSION" \
+            || { echo "::error::lsqfitgp version $installed does not match tag version $VERSION"; exit 1; }
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [docs]
+    # don't push to gh-pages concurrently with tests.yml
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Get documentation
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: docs
+          path: _site/docs
+
+      - name: Copy documentation to github pages (versioned directory)
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
+        with:
+          branch: gh-pages
+          folder: _site/docs
+          target-folder: docs-${{ needs.docs.outputs.version }}

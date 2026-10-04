@@ -1,6 +1,6 @@
 # lsqfitgp/_gvarext/_tabulate.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -22,11 +22,11 @@ import textwrap
 import gvar
 import numpy
 
+
 def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
     """
-    
     Format a table comparing side by side various collections of gvars.
-    
+
     Parameters
     ----------
     *gs : sequence of arrays or dictionaries of gvars
@@ -44,23 +44,30 @@ def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
     keys : sequence, optional
         If ``gs`` are dictionaries, a subset of keys to be extracted from each
         dictionary. Ignored if they are arrays.
-    
+
+    Returns
+    -------
+    table : str
+        The formatted table.
+
+    See Also
+    --------
+    gvar.tabulate
+
     Examples
     --------
     >>> print(tabulate_together(gvar.gvar(dict(a=1)), gvar.gvar(dict(a=2))))
+
     key/index   value1   value2
     ---------------------------
             a    1 (0)    2 (0)
-    
-    See also
-    --------
-    gvar.tabulate
-    
-    """
+    """  # noqa: DOC001
     if not gs:
         return ''
     gs = [g if hasattr(g, 'keys') else numpy.asarray(g) for g in gs]
-    assert all(hasattr(g, 'keys') for g in gs) or all(not hasattr(g, 'keys') for g in gs)
+    assert all(hasattr(g, 'keys') for g in gs) or all(
+        not hasattr(g, 'keys') for g in gs
+    )
     if keys is not None and hasattr(gs[0], 'keys'):
         gs = [{k: g[k] for k in keys} for g in gs]
     g0 = gs[0]
@@ -72,20 +79,20 @@ def tabulate_together(*gs, headers=True, offset='', ndecimal=None, keys=None):
         if g0.shape == ():
             gs = [{'--': g} for g in gs]
     tables = [
-        _splittable(gvar.tabulate(g, headers=['@', ''], ndecimal=ndecimal))
-        for g in gs
+        _splittable(gvar.tabulate(g, headers=['@', ''], ndecimal=ndecimal)) for g in gs
     ]
     columns = list(tables[0]) + [t[1] for t in tables[1:]]
     if not hasattr(headers, '__len__'):
         if headers:
-            headers = ['key/index'] + [f'value{i+1}' for i in range(len(gs))]
+            headers = ['key/index'] + [f'value{i + 1}' for i in range(len(gs))]
         else:
             headers = None
     else:
         assert len(headers) == len(columns)
     if headers is not None:
-        columns = (_head(col, head) for col, head in zip(columns, headers))
+        columns = (_head(col, head) for col, head in zip(columns, headers, strict=True))
     return textwrap.indent(_join(columns), offset)
+
 
 def _splittable(table):
     lines = table.split('\n')
@@ -95,6 +102,7 @@ def _splittable(table):
     col1 = '\n'.join(line[:col] for line in contentlines)
     col2 = '\n'.join(line[col:] for line in contentlines)
     return col1, col2
+
 
 def _head(col, head):
     head = str(head)
@@ -108,6 +116,7 @@ def _head(col, head):
         head = (width - hwidth) * ' ' + head
     return head + '\n' + len(head) * '-' + '\n' + col
 
+
 def _join(cols):
     split = (col.split('\n') for col in cols)
-    return '\n'.join(''.join(lines) for lines in zip(*split))
+    return '\n'.join(''.join(lines) for lines in zip(*split, strict=True))

@@ -1,6 +1,6 @@
 # lsqfitgp/examples/fourier.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,29 +17,25 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
-import gvar
+"""Constrain the values of Fourier series coefficients."""
 
-"""Constrain the values of Fourier series coefficients"""
+import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 x = np.linspace(0, 1, 100)
 
-gp = (lgp
-    .GP(lgp.Zeta(nu=2.5))
+gp = (
+    lgp.GP(lgp.Zeta(nu=2.5))
     .deflinop('F', 'fourier', True, lgp.GP.DefaultProcess)
     .addx(x, 'x')
     .addx(1, 's1', proc='F')
     .addx(2, 'c1', proc='F')
 )
 
-comb = [
-    [0, 0],
-    [1, 0],
-    [0, 1],
-    [1, 1],
-]
+comb = [[0, 0], [1, 0], [0, 1], [1, 1]]
 
 fig, ax = plt.subplots(num='fourier', clear=True)
 

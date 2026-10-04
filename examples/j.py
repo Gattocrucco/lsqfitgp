@@ -1,6 +1,6 @@
 # lsqfitgp/examples/j.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,27 +19,24 @@
 
 """
 
-                            EXAMPLE J.
+EXAMPLE J.
 
-    Where the excessive smoothness of the prediction is found not
-    to satisfy our manly tastes.
+Where the excessive smoothness of the prediction is found not
+to satisfy our manly tastes.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 300)
 y = np.sin(xdata)
 
-gp = (lgp
-    .GP(lgp.Matern(scale=5, nu=3.1))
-    .addx(xdata, 'pere')
-    .addx(xpred, 'banane')
-)
+gp = lgp.GP(lgp.Matern(scale=5, nu=3.1)).addx(xdata, 'pere').addx(xpred, 'banane')
 
 u = gp.predfromdata({'pere': y}, 'banane')
 m = gvar.mean(u)

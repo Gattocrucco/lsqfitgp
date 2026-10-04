@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_gamma.py
 #
-# Copyright (c) 2022, 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -20,26 +20,27 @@
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
-from .. import _jaxext
+from lsqfitgp import _jaxext
+
 
 def sgngamma(x):
     return jnp.where((x > 0) | (x % 2 < 1), 1, -1)
 
+
 def gamma(x):
     return sgngamma(x) * jnp.exp(jspecial.gammaln(x))
 
+
 def poch(x, k):
-    return jnp.exp(jspecial.gammaln(x + k) - jspecial.gammaln(x)) # DLMF 5.2.5
+    return jnp.exp(jspecial.gammaln(x + k) - jspecial.gammaln(x))  # DLMF 5.2.5
+
 
 def gamma_incr(x, e):
-    """
-    Compute Γ(x+e) / (Γ(x)Γ(1+e)) - 1 accurately for x >= 2 and |e| < 1/2
-    """
-    
+    """Compute Γ(x+e) / (Γ(x)Γ(1+e)) - 1 accurately for x >= 2 and |e| < 1/2."""
     # G(x + e) / G(x)G(1+e) - 1 =
     # = expm1(log(G(x + e) / G(x)G(1+e))) =
     # = expm1(log G(x + e) - log G(x) - log G(1 + e))
-    
+
     t = _jaxext.float_type(x, e)
     n = 23 if t == jnp.float64 else 10
     # n such that 1/2^n 1/n! d^n/dx^n log G(x) |_x=2 < eps
@@ -49,22 +50,23 @@ def gamma_incr(x, e):
     coef /= fact
     gammaln = e * jnp.polyval(coef[::-1], e)
     return jnp.expm1(gammaln - gammaln1(e))
-    
+
     # Like gammaln1, I thought that writing as log Γ(1+x+e) - log Γ(1+x) +
     # - log1p(e/x) would increase accuracy, instead it deteriorates
 
+
 def gammaln1(x):
-    """ compute log Γ(1+x) accurately for |x| <= 1/2 """
-    
+    """Compute log Γ(1+x) accurately for |x| <= 1/2."""
     t = _jaxext.float_type(x)
-    coef = jnp.array(_gammaln1_coef_1[:48], t) # 48 found by trial and error
+    coef = jnp.array(_gammaln1_coef_1[:48], t)  # 48 found by trial and error
     return x * jnp.polyval(coef[::-1], x)
-    
+
     # I thought that writing this as log Γ(2+x) - log1p(x) would be more
     # accurate but it isn't, probably there's a cancellation for some values of
     # x
 
-_gammaln1_coef_1 = [        # = _gen_gammaln1_coef(53, 1)
+
+_gammaln1_coef_1 = [  # = _gen_gammaln1_coef(53, 1)
     -0.5772156649015329,
     0.8224670334241132,
     -0.40068563438653143,
@@ -120,8 +122,10 @@ _gammaln1_coef_1 = [        # = _gen_gammaln1_coef(53, 1)
     -0.01886792452830189,
 ]
 
-def _gen_gammaln1_coef(n, x): # pragma: no cover
-    """ compute Taylor coefficients of log Γ(x) """
-    import mpmath as mp
+
+def _gen_gammaln1_coef(n, x):  # pragma: no cover
+    """Compute Taylor coefficients of log Γ(x)."""
+    import mpmath as mp  # noqa: PLC0415, mpmath is only a dev dependency
+
     with mp.workdps(32):
         return [float(mp.polygamma(k, x) / mp.fac(k + 1)) for k in range(n)]

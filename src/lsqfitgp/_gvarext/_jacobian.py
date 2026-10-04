@@ -1,6 +1,6 @@
 # lsqfitgp/_gvarext/_jacobian.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -20,14 +20,14 @@
 import gvar
 import numpy
 
+
 def _getsvec(x):
-    """
-    Get the sparse vector of derivatives of a GVar.
-    """
+    """Get the sparse vector of derivatives of a GVar."""
     if isinstance(x, gvar.GVar):
         return x.internaldata[1]
     else:
         return gvar.svec(0)
+
 
 def _merge_svec(gvlist, start=None, stop=None):
     if start is None:
@@ -41,15 +41,16 @@ def _merge_svec(gvlist, start=None, stop=None):
     right = _merge_svec(gvlist, start + n // 2, stop)
     return left.add(right, 1, 1)
 
+
 def jacobian(g):
     """
     Extract the jacobian of gvars w.r.t. primary gvars.
-    
+
     Parameters
     ----------
     g : array_like
         An array of numbers or gvars.
-    
+
     Returns
     -------
     jac : array
@@ -59,7 +60,7 @@ def jacobian(g):
         The indices that map the last axis of jac to primary gvars in the
         global covariance matrix.
 
-    See also
+    See Also
     --------
     from_jacobian
     """
@@ -74,10 +75,11 @@ def jacobian(g):
     jac = jac.reshape(g.shape + indices.shape)
     return jac, indices
 
+
 def from_jacobian(mean, jac, indices):
     """
     Create new gvars from a jacobian w.r.t. primary gvars.
-    
+
     Parameters
     ----------
     mean : array_like
@@ -86,13 +88,13 @@ def from_jacobian(mean, jac, indices):
         The derivatives of each new gvar w.r.t. m primary gvars.
     indices : (m,) int array
         The indices of the primary gvars.
-    
+
     Returns
     -------
     g : mean.shape array
         The new gvars.
 
-    See also
+    See Also
     --------
     jacobian
     """

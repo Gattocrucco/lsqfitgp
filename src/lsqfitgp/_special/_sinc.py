@@ -1,6 +1,6 @@
 # lsqfitgp/_special/_sinc.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -20,11 +20,13 @@
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
-from . import _taylor
+from lsqfitgp._special import _taylor
+
 
 def coefgen_sinc(s, e):
     m = jnp.arange(s, e)
     return (-1) ** m / jnp.exp(jspecial.gammaln(2 + 2 * m))
+
 
 def sinc(x):
     nearzero = _taylor.taylor(coefgen_sinc, (), 0, 6, jnp.square(jnp.pi * x))

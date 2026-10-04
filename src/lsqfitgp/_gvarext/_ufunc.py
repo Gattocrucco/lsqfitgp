@@ -1,6 +1,6 @@
 # lsqfitgp/_gvarext/_ufunc.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -20,19 +20,17 @@
 import functools
 import string
 
-import jax
 import gvar
+import jax
 from jax import numpy as jnp
 
-from .. import _signature
+from lsqfitgp import _signature
+from lsqfitgp._gvarext._jacobian import from_jacobian, jacobian
 
-from ._jacobian import jacobian, from_jacobian
-from ._tabulate import tabulate_together
 
 def gvar_gufunc(func, *, signature=None):
     """
-
-    Wraps a jax-traceable generalized ufunc with one argument to support gvars.
+    Wrap a jax-traceable generalized ufunc with one argument to support gvars.
 
     Parameters
     ----------
@@ -49,20 +47,18 @@ def gvar_gufunc(func, *, signature=None):
         A function that, in addition to numerical arrays, accepts gvars and
         returns gvars.
 
-    See also
+    See Also
     --------
     numpy.vectorize
-
     """
-
     # parse signature
     if signature is None:
         signature = '()->()'
     sig = _signature.Signature(signature)
-    inp, = sig.incores
-    out, = sig.outcores
+    (inp,) = sig.incores
+    (out,) = sig.outcores
     jac_sig = _signature.Signature.from_tuples([inp], [out + inp])
-    
+
     # make jacobian function
     deriv = jnp.vectorize(jax.jacfwd(func), signature=jac_sig.signature)
 
@@ -71,7 +67,7 @@ def gvar_gufunc(func, *, signature=None):
     nout = len(out)
     head_indices = '...'
     out_indices = string.ascii_letters[:nout]
-    in_indices = string.ascii_letters[nout:nout + ninp]
+    in_indices = string.ascii_letters[nout : nout + ninp]
     gvar_indices = string.ascii_letters[nout + ninp]
 
     # make summation formula
@@ -92,7 +88,7 @@ def gvar_gufunc(func, *, signature=None):
 
         # check shapes match
         head_ndim = jac.ndim - nout - ninp
-        assert jac.shape[:head_ndim] == in_jac.shape[:in_jac.ndim - 1 - ninp]
+        assert jac.shape[:head_ndim] == in_jac.shape[: in_jac.ndim - 1 - ninp]
 
         # contract
         out_jac = jnp.einsum(formula, jac, in_jac)
@@ -113,4 +109,3 @@ def gvar_gufunc(func, *, signature=None):
             return func(x)
 
     return decorated_func
-

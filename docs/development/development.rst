@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/development.rst
+.. lsqfitgp/docs/development/development.rst
 ..
-.. Copyright (c) 2023, Giacomo Petrillo
+.. Copyright (c) 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -22,7 +22,7 @@ Development
 
 .. toctree::
     :maxdepth: 1
-    
+
     setup.rst
     changelog.md
     sources.rst

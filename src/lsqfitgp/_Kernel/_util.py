@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel/_util.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -20,30 +20,40 @@
 import numbers
 import operator
 
-import numpy
 import jax
+import numpy
 from jax import numpy as jnp
-from jax import tree_util
+from jax import tree
 
-from .. import _array
+from lsqfitgp import _array
+
 
 def is_numerical_scalar(x):
-    return (
-        isinstance(x, numbers.Number) or
-        (isinstance(x, (numpy.ndarray, jnp.ndarray)) and x.ndim == 0)
+    return isinstance(x, numbers.Number) or (
+        isinstance(x, (numpy.ndarray, jnp.ndarray)) and x.ndim == 0
     )
     # do not use jnp.isscalar because it returns False for strongly
     # typed 0-dim arrays; do not use jnp.ndim(•) == 0 because it accepts
     # non-numerical types
 
+
 def is_nonnegative_integer_scalar(x):
     if isinstance(x, numbers.Integral) and x >= 0:
         # python scalars and numpy scalars
         return True
-    if isinstance(x, numpy.ndarray) and x.ndim == 0 and numpy.issubdtype(x.dtype, numpy.integer) and x.item() >= 0:
+    if (
+        isinstance(x, numpy.ndarray)
+        and x.ndim == 0
+        and numpy.issubdtype(x.dtype, numpy.integer)
+        and x.item() >= 0
+    ):
         # 0-dim numpy arrays
         return True
-    if isinstance(x, jnp.ndarray) and x.ndim == 0 and jnp.issubdtype(x.dtype, jnp.integer):
+    if (
+        isinstance(x, jnp.ndarray)
+        and x.ndim == 0
+        and jnp.issubdtype(x.dtype, jnp.integer)
+    ):
         try:
             # concrete jax arrays
             return x.item() >= 0
@@ -52,14 +62,24 @@ def is_nonnegative_integer_scalar(x):
             return jnp.issubdtype(x.dtype, jnp.unsignedinteger)
     return False
 
+
 def is_scalar_cond_trueontracer(x, cond):
     if isinstance(x, numbers.Number) and cond(x):
         # python scalars and numpy scalars
         return True
-    if isinstance(x, numpy.ndarray) and x.ndim == 0 and numpy.issubdtype(x.dtype, numpy.number) and cond(x.item()):
+    if (
+        isinstance(x, numpy.ndarray)
+        and x.ndim == 0
+        and numpy.issubdtype(x.dtype, numpy.number)
+        and cond(x.item())
+    ):
         # 0-dim numpy arrays
         return True
-    if isinstance(x, jnp.ndarray) and x.ndim == 0 and jnp.issubdtype(x.dtype, jnp.number):
+    if (
+        isinstance(x, jnp.ndarray)
+        and x.ndim == 0
+        and jnp.issubdtype(x.dtype, jnp.number)
+    ):
         try:
             # concrete jax arrays
             return cond(x.item())
@@ -68,8 +88,10 @@ def is_scalar_cond_trueontracer(x, cond):
             return True
     return False
 
+
 def is_nonnegative_scalar_trueontracer(x):
     return is_scalar_cond_trueontracer(x, lambda x: x >= 0)
+
 
 def _reduce_recurse_dtype(fun, args, reductor, npreductor, jnpreductor, **kw):
     x = args[0]
@@ -79,31 +101,35 @@ def _reduce_recurse_dtype(fun, args, reductor, npreductor, jnpreductor, **kw):
         acc = None
         for name in x.dtype.names:
             recargs = tuple(arg[name] for arg in args)
-            result = _reduce_recurse_dtype(fun, recargs, reductor, npreductor, jnpreductor, **kw)
-            
+            result = _reduce_recurse_dtype(
+                fun, recargs, reductor, npreductor, jnpreductor, **kw
+            )
+
             dtype = x.dtype[name]
             if dtype.ndim:
                 axis = tuple(range(-dtype.ndim, 0))
                 red = jnpreductor if isinstance(result, jnp.ndarray) else npreductor
                 result = red(result, axis=axis)
-            
+
             if acc is None:
                 acc = result
             else:
                 acc = reductor(acc, result)
-        
+
         assert acc.shape == _array.broadcast(*args).shape
         return acc
+
 
 def sum_recurse_dtype(fun, *args, **kw):
     return _reduce_recurse_dtype(fun, args, operator.add, numpy.sum, jnp.sum, **kw)
 
+
 def prod_recurse_dtype(fun, *args, **kw):
     return _reduce_recurse_dtype(fun, args, operator.mul, numpy.prod, jnp.prod, **kw)
 
+
 def ufunc_recurse_dtype(ufunc, x, *args):
-    """ apply an ufunc to all the leaf fields """
-    
+    """Apply an ufunc to all the leaf fields."""
     allargs = (x, *args)
     expected_shape = jnp.broadcast_shapes(*(x.shape for x in allargs))
 
@@ -111,7 +137,7 @@ def ufunc_recurse_dtype(ufunc, x, *args):
         out = ufunc(*allargs)
     else:
         args = map(_array.StructuredArray, allargs)
-        out = tree_util.tree_map(ufunc, *args)
-    
+        out = tree.map(ufunc, *args)
+
     assert out.shape == expected_shape
     return out

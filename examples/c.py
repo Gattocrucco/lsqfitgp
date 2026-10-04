@@ -1,6 +1,6 @@
 # lsqfitgp/examples/c.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,34 +19,29 @@
 
 """
 
-                            EXAMPLE C.
+EXAMPLE C.
 
-    Where a nonlinear transformation hides the true height of some
-    crosses.
+Where a nonlinear transformation hides the true height of some
+crosses.
 
 """
 
-import lsqfitgp as lgp
-import lsqfit
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import lsqfit
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 plot_simulated_lines = True
 
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 300)
 
-gp = (lgp
-    .GP(lgp.ExpQuad(scale=3))
-    .addx(xdata, 'data')
-    .addx(xpred, 'pred')
-)
+gp = lgp.GP(lgp.ExpQuad(scale=3)).addx(xdata, 'data').addx(xpred, 'pred')
 
-true_par = dict(
-    phi=np.sin(xdata),
-    y0=10
-)
+true_par = dict(phi=np.sin(xdata), y0=10)
+
 
 def fcn(data_or_pred, p):
     if data_or_pred == 'data':
@@ -55,8 +50,9 @@ def fcn(data_or_pred, p):
         phi = gp.predfromfit({'data': p['phi']}, 'pred')
     else:
         raise KeyError(data_or_pred)
-    
+
     return gvar.tanh(1 + phi) + p['y0']
+
 
 yerr = 0.05
 ysdev = yerr * np.ones(len(xdata))
@@ -64,12 +60,9 @@ true_y = fcn('data', true_par)
 ymean = true_y + ysdev * np.random.randn(len(ysdev))
 y = gvar.gvar(ymean, ysdev)
 
-prior = dict(
-    phi=gp.prior('data'),
-    y0=gvar.gvar(0, 1000)
-)
+prior = dict(phi=gp.prior('data'), y0=gvar.gvar(0, 1000))
 
-p0=dict(
+p0 = dict(
     phi=np.random.multivariate_normal(np.zeros(len(xdata)), gvar.evalcov(prior['phi']))
 )
 
@@ -83,26 +76,27 @@ phipred = gp.predfromfit({'data': fit.p['phi']}, 'pred')
 
 fig, axs = plt.subplots(1, 2, num='c', clear=True)
 
-for ax, variable in zip(axs, ['y', 'phi']):
+preds = dict(ypred=ypred, ypredalt=ypredalt, phipred=phipred)
+for ax, variable in zip(axs, ['y', 'phi'], strict=True):
     ax.set_title(variable)
-    
+
     for label in 'pred', 'predalt':
         if variable == 'phi' and label == 'predalt':
             continue
-        
-        pred = eval(variable + label)
+
+        pred = preds[variable + label]
 
         m = gvar.mean(pred)
         s = gvar.sdev(pred)
 
         patch = ax.fill_between(xpred, m - s, m + s, label=label, alpha=0.5)
         color = patch.get_facecolor()[0]
-    
+
         if plot_simulated_lines:
             cov = gvar.evalcov(pred)
             simulated_lines = np.random.multivariate_normal(m, cov, size=10)
             ax.plot(xpred, simulated_lines.T, '-', color=color)
-    
+
     if variable == 'phi':
         ax.plot(xdata, true_par['phi'], 'rx', label='true')
 

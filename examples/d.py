@@ -1,6 +1,6 @@
 # lsqfitgp/examples/d.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,25 +19,26 @@
 
 """
 
-                            EXAMPLE D.
+EXAMPLE D.
 
-    Where the primitive of our function takes some freedom to move
-    up and down.
+Where the primitive of our function takes some freedom to move
+up and down.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(-5, 5, 10)
 xpred = np.linspace(-15, 25, 200)
 y = np.cos(xdata)
 
 print('make GP...')
-gp = (lgp
-    .GP(lgp.ExpQuad(scale=3))
+gp = (
+    lgp.GP(lgp.ExpQuad(scale=3))
     .addx(xdata, 'data', deriv=1)
     .addx(xpred, 'integral')
     .addx(xpred, 'pred', deriv=1)
@@ -55,7 +56,7 @@ for label in u:
     s = gvar.sdev(u[label])
     patch = ax.fill_between(xpred, m - s, m + s, label=label, alpha=0.5)
     colors[label] = patch.get_facecolor()[0]
-    
+
 print('samples...')
 for sample in gvar.raniter(u, 30):
     for label in u:

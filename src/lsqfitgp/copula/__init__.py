@@ -1,6 +1,6 @@
 # lsqfitgp/copula/__init__.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,23 +17,23 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Reparametrize probability distributions as Normal """
+"""Reparametrize probability distributions as Normal."""
 
-from ._base import DistrBase
-from ._distr import Distr, distribution
-from ._copula import Copula
-from ._makedict import makedict
-from ._copulas import (
+from lsqfitgp.copula._base import DistrBase  # noqa: F401
+from lsqfitgp.copula._copula import Copula  # noqa: F401
+from lsqfitgp.copula._copulas import (  # noqa: F401
     beta,
     dirichlet,
     gamma,
-    loggamma,
-    invgamma,
     halfcauchy,
     halfnorm,
-    uniform,
+    invgamma,
+    loggamma,
     lognorm,
+    uniform,
 )
+from lsqfitgp.copula._distr import Distr, distribution  # noqa: F401
+from lsqfitgp.copula._makedict import makedict  # noqa: F401
 
 # Copula({
 #     'x': beta(1, 2),

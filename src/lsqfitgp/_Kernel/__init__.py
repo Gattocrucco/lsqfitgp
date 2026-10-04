@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel/__init__.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,12 +17,37 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-from ._util import prod_recurse_dtype, sum_recurse_dtype, is_numerical_scalar
-from ._crosskernel import CrossKernel, AffineSpan, PreservedBySwap
-from . import _ops # keep first
-from . import _alg # keep first
-from ._kernel import Kernel
-from ._stationary import CrossStationaryKernel, StationaryKernel
-from ._isotropic import CrossIsotropicKernel, IsotropicKernel, Zero
-from ._decorators import (crosskernel, kernel, crossstationarykernel,
-    stationarykernel, crossisotropickernel, isotropickernel)
+from lsqfitgp._Kernel._crosskernel import (  # noqa: F401
+    AffineSpan,
+    CrossKernel,
+    PreservedBySwap,
+)
+from lsqfitgp._Kernel._util import (  # noqa: F401
+    is_numerical_scalar,
+    prod_recurse_dtype,
+    sum_recurse_dtype,
+)
+
+# isort: off
+from lsqfitgp._Kernel import _ops  # noqa: F401  # keep first
+from lsqfitgp._Kernel import _alg  # noqa: F401  # keep first
+
+# isort: on
+from lsqfitgp._Kernel._decorators import (  # noqa: F401
+    crossisotropickernel,
+    crosskernel,
+    crossstationarykernel,
+    isotropickernel,
+    kernel,
+    stationarykernel,
+)
+from lsqfitgp._Kernel._isotropic import (  # noqa: F401
+    CrossIsotropicKernel,
+    IsotropicKernel,
+    Zero,
+)
+from lsqfitgp._Kernel._kernel import Kernel  # noqa: F401
+from lsqfitgp._Kernel._stationary import (  # noqa: F401
+    CrossStationaryKernel,
+    StationaryKernel,
+)

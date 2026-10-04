@@ -1,6 +1,6 @@
 # lsqfitgp/_jaxext/_batcher.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -22,11 +22,10 @@ import math
 
 from jax import lax
 from jax import numpy as jnp
-import numpy
+
 
 def batchufunc(func, *, maxnbytes):
     """
-
     Make a batched version of an universal function.
 
     The function is modified to process its inputs in chunks.
@@ -45,9 +44,7 @@ def batchufunc(func, *, maxnbytes):
     batched_func : callable
         The batched version of `func`. Keywords arguments are passed as-is to
         the function.
-
     """
-
     maxnbytes = int(maxnbytes)
     assert maxnbytes > 0
 
@@ -72,9 +69,9 @@ def batchufunc(func, *, maxnbytes):
 
         def combine_args(short_args, long_args):
             args = [None] * (len(short_args) + len(long_args))
-            for i, arg in zip(short_args_idx, short_args):
+            for i, arg in zip(short_args_idx, short_args, strict=True):
                 args[i] = arg
-            for i, arg in zip(long_args_idx, long_args):
+            for i, arg in zip(long_args_idx, long_args, strict=True):
                 args[i] = arg
             return args
 
@@ -84,28 +81,30 @@ def batchufunc(func, *, maxnbytes):
             batchsize = maxnbytes // rownbytes
             nbatches = shape[0] // batchsize
             batchedsize = nbatches * batchsize
-            
+
             sliced_args = [arg[:batchedsize] for arg in long_args]
             batched_args = [
-                arg.reshape((nbatches, batchsize) + arg.shape[1:])
+                arg.reshape((nbatches, batchsize, *arg.shape[1:]))
                 for arg in sliced_args
             ]
+
             def scan_loop_body(short_args, batched_args):
                 assert all(arg.ndim == len(shape) - 1 for arg in short_args)
                 assert all(arg.ndim == len(shape) for arg in batched_args)
                 args = combine_args(short_args, batched_args)
                 out = func(*args, **kw)
-                assert out.shape == (batchsize,) + shape[1:]
+                assert out.shape == (batchsize, *shape[1:])
                 return short_args, out
+
             _, out = lax.scan(scan_loop_body, short_args, batched_args)
-            assert out.shape == (nbatches, batchsize) + shape[1:]
-            out = out.reshape((batchedsize,) + shape[1:])
-            
+            assert out.shape == (nbatches, batchsize, *shape[1:])
+            out = out.reshape((batchedsize, *shape[1:]))
+
             remainder_args = [arg[batchedsize:] for arg in long_args]
             args = combine_args(short_args, remainder_args)
             remainder = func(*args)
-            assert remainder.shape == (shape[0] - batchedsize,) + shape[1:]
-            
+            assert remainder.shape == (shape[0] - batchedsize, *shape[1:])
+
             out = jnp.concatenate([out, remainder])
 
         else:
@@ -117,6 +116,7 @@ def batchufunc(func, *, maxnbytes):
                 out = batched_func(*args, **kw)
                 assert out.shape == shape[1:]
                 return short_args, out
+
             _, out = lax.scan(scan_loop_body, short_args, long_args)
 
         assert out.shape == shape

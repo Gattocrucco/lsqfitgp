@@ -1,6 +1,6 @@
 # lsqfitgp/tests/linalg/test_seqalg.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,10 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test the `_linalg._seqalg` submodule."""
+
 import pytest
 
 from lsqfitgp._linalg import _seqalg
 
+
 def test_acausal_alg():
-    with pytest.raises(ValueError):
+    """Check that an operation with forward-reference inputs raises `ValueError`."""
+    with pytest.raises(ValueError, match='forward references'):
         _seqalg.sequential_algorithm(2, [_seqalg.Stack(0)])

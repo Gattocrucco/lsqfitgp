@@ -1,6 +1,6 @@
 # lsqfitgp/examples/h.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,27 +19,24 @@
 
 """
 
-                            EXAMPLE H.
+EXAMPLE H.
 
-    Where at first sight nothing has changed, but behind the scenes
-    important information has been lost forever.
+Where at first sight nothing has changed, but behind the scenes
+important information has been lost forever.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
 import gvar
+import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 300)
 y = np.sin(xdata)
 
-gp = (lgp
-    .GP(lgp.ExpQuad(scale=3))
-    .addx(xdata, 'pere')
-    .addx(xpred, 'banane')
-)
+gp = lgp.GP(lgp.ExpQuad(scale=3)).addx(xdata, 'pere').addx(xpred, 'banane')
 
 u = gp.predfromdata({'pere': y}, 'banane', keepcorr=False)
 m = gvar.mean(u)

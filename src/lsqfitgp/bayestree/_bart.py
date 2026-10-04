@@ -1,6 +1,6 @@
 # lsqfitgp/bayestree/_bart.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,31 +19,26 @@
 
 import functools
 
-import numpy
-from jax import numpy as jnp
-import jax
 import gvar
+import numpy
+from jax import jit
+from jax import numpy as jnp
 
-from .. import copula
-from .. import _kernels
-from .. import _fit
-from .. import _array
-from .. import _GP
-from .. import _fastraniter
+from lsqfitgp import _GP, _array, _fastraniter, _fit, _kernels, copula
 
 
 class bart:
-    
-    def __init__(self,
+    def __init__(
+        self,
         x_train,
         y_train,
         *,
         weights=None,
-        fitkw={},
-        kernelkw={},
+        fitkw={},  # noqa: B006, read only
+        kernelkw={},  # noqa: B006, read only
         marginalize_mean=True,
     ):
-        """
+        r"""
         Nonparametric Bayesian regression with a GP version of BART.
 
         Evaluate a Gaussian process regression with a kernel which accurately
@@ -66,64 +61,23 @@ class bart:
             defaults.
         marginalize_mean : bool
             If True (default), marginalize the intercept of the model.
-        
-        Notes
-        -----
-        The regression model is:
-
-        .. math::
-            y_i &= \\mu + \\lambda f(\\mathbf x_i) + \\varepsilon_i, \\\\
-            \\varepsilon_i &\\overset{\\mathrm{i.i.d.}}{\\sim}
-                N(0, \\sigma^2 / w_i), \\\\
-            \\mu &\\sim N(
-                (\\max(\\mathbf y) + \\min(\\mathbf y)) / 2,
-                (\\max(\\mathbf y) - \\min(\\mathbf y))^2 / 4
-            ), \\\\
-            \\log \\sigma^2 &\\sim N(
-                \\log(\\overline{w(y - \\bar y)^2}),
-                4
-            ), \\\\
-            \\log \\lambda &\\sim N(
-                \\log ((\\max(\\mathbf y) - \\min(\\mathbf y)) / 4),
-                4
-            ), \\\\
-            f &\\sim \\mathrm{GP}(
-                0,
-                \\mathrm{BART}(\\alpha,\\beta)
-            ), \\\\
-            \\alpha &\\sim \\mathrm{B}(2, 1), \\\\
-            \\beta &\\sim \\mathrm{IG}(1, 1).
-
-        To make the inference, :math:`(f, \\boldsymbol\\varepsilon, \\mu)` are
-        marginalized analytically, and the marginal posterior mode of
-        :math:`(\\sigma, \\lambda, \\alpha, \\beta)` is found by numerical
-        minimization, after transforming them to express their prior as a
-        Gaussian copula. Their marginal posterior covariance matrix is estimated
-        with an approximation of the hessian inverse. See
-        `~lsqfitgp.empbayes_fit` and use the parameter ``fitkw`` to customize
-        this procedure.
-
-        The tree splitting grid of the BART kernel is set using quantiles of the
-        observed covariates. This corresponds to settings ``usequants=True``,
-        ``numcut=inf`` in the R packages BayesTree and BART. Use the
-        ``kernelkw`` parameter to customize the grid.
 
         Attributes
         ----------
         mean : gvar
-            The prior mean :math:`\\mu`.
+            The prior mean :math:`\mu`.
         sigma : float or gvar
-            The error term standard deviation :math:`\\sigma`. If there are
+            The error term standard deviation :math:`\sigma`. If there are
             weights, the sdev for each unit is obtained dividing ``sigma`` by
             sqrt(weight).
         alpha : gvar
-            The numerator of the tree spawn probability :math:`\\alpha` (named
+            The numerator of the tree spawn probability :math:`\alpha` (named
             ``base`` in BayesTree and BART).
         beta : gvar
-            The depth exponent of the tree spawn probability :math:`\\beta`
+            The depth exponent of the tree spawn probability :math:`\beta`
             (named ``power`` in BayesTree and BART).
         meansdev : gvar
-            The prior standard deviation :math:`\\lambda` of the latent
+            The prior standard deviation :math:`\lambda` of the latent
             regression function.
         fit : empbayes_fit
             The hyperparameters fit object.
@@ -138,19 +92,58 @@ class bart:
         pred :
             Evaluate the regression function at given locations.
 
-        See also
+        See Also
         --------
         lsqfitgp.BART
-        
-        """
 
+        Notes
+        -----
+        The regression model is:
+
+        .. math::
+            y_i &= \mu + \lambda f(\mathbf x_i) + \varepsilon_i, \\
+            \varepsilon_i &\overset{\mathrm{i.i.d.}}{\sim}
+                N(0, \sigma^2 / w_i), \\
+            \mu &\sim N(
+                (\max(\mathbf y) + \min(\mathbf y)) / 2,
+                (\max(\mathbf y) - \min(\mathbf y))^2 / 4
+            ), \\
+            \log \sigma^2 &\sim N(
+                \log(\overline{w(y - \bar y)^2}),
+                4
+            ), \\
+            \log \lambda &\sim N(
+                \log ((\max(\mathbf y) - \min(\mathbf y)) / 4),
+                4
+            ), \\
+            f &\sim \mathrm{GP}(
+                0,
+                \mathrm{BART}(\alpha,\beta)
+            ), \\
+            \alpha &\sim \mathrm{B}(2, 1), \\
+            \beta &\sim \mathrm{IG}(1, 1).
+
+        To make the inference, :math:`(f, \boldsymbol\varepsilon, \mu)` are
+        marginalized analytically, and the marginal posterior mode of
+        :math:`(\sigma, \lambda, \alpha, \beta)` is found by numerical
+        minimization, after transforming them to express their prior as a
+        Gaussian copula. Their marginal posterior covariance matrix is estimated
+        with an approximation of the hessian inverse. See
+        `~lsqfitgp.empbayes_fit` and use the parameter ``fitkw`` to customize
+        this procedure.
+
+        The tree splitting grid of the BART kernel is set using quantiles of the
+        observed covariates. This corresponds to settings ``usequants=True``,
+        ``numcut=inf`` in the R packages BayesTree and BART. Use the
+        ``kernelkw`` parameter to customize the grid.
+        """  # noqa: DOC001
         # convert covariates to StructuredArray
         x_train = self._to_structured(x_train)
-    
+
         # convert outcomes to 1d array
         if hasattr(y_train, 'to_numpy'):
             y_train = y_train.to_numpy()
-            y_train = y_train.squeeze() # for dataframes
+            y_train = y_train.squeeze()  # for dataframes
         y_train = jnp.asarray(y_train)
         assert y_train.shape == x_train.shape
 
@@ -159,62 +152,56 @@ class bart:
         if self._no_weights:
             weights = jnp.ones_like(y_train)
         assert weights.shape == y_train.shape
-    
+
         # prior mean and variance
         ymin = jnp.min(y_train)
         ymax = jnp.max(y_train)
         mu_mu = (ymax + ymin) / 2
         k_sigma_mu = (ymax - ymin) / 2
-        
+
         # splitting points and indices
         splits = _kernels.BART.splits_from_coord(x_train)
         i_train = self._toindices(x_train, splits)
 
         # prior on hyperparams
         sigma2_priormean = numpy.mean((y_train - y_train.mean()) ** 2 * weights)
-        hyperprior = copula.makedict({
-            'alpha': copula.beta(2, 1), # base of tree gen prob
-            'beta': copula.invgamma(1, 1), # exponent of tree gen prob
-            'log(k)': gvar.gvar(numpy.log(2), 2), # denominator of prior sdev
-            'log(sigma2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
+        hyperprior = copula.makedict(
+            {
+                'alpha': copula.beta(2, 1),  # base of tree gen prob
+                'beta': copula.invgamma(1, 1),  # exponent of tree gen prob
+                'log(k)': gvar.gvar(numpy.log(2), 2),  # denominator of prior sdev
+                'log(sigma2)': gvar.gvar(numpy.log(sigma2_priormean), 2),
                 # i.i.d. error variance, scaled with weights
-            'mean': gvar.gvar(mu_mu, k_sigma_mu), # mean of the GP
-        })
+                'mean': gvar.gvar(mu_mu, k_sigma_mu),  # mean of the GP
+            }
+        )
         if marginalize_mean:
             hyperprior.pop('mean')
 
         # GP factory
         def makegp(hp, *, i_train, weights, splits, **_):
-            kw = dict(
-                alpha=hp['alpha'], beta=hp['beta'],
-                maxd=10, reset=[2, 4, 6, 8],
-            )
+            kw = dict(alpha=hp['alpha'], beta=hp['beta'], maxd=10, reset=[2, 4, 6, 8])
             kw.update(kernelkw)
             kernel = _kernels.BART(splits=splits, indices=True, **kw)
             kernel *= (k_sigma_mu / hp['k']) ** 2
-            
-            gp = (_GP
-                .GP(kernel, checkpos=False, checksym=False, solver='chol')
+
+            gp = (
+                _GP.GP(kernel, checkpos=False, checksym=False, solver='chol')
                 .addx(i_train, 'trainmean')
                 .addcov(jnp.diag(hp['sigma2'] / weights), 'trainnoise')
             )
             pieces = {'trainmean': 1, 'trainnoise': 1}
             if 'mean' not in hp:
-                gp = gp.addcov(k_sigma_mu ** 2, 'mean')
+                gp = gp.addcov(k_sigma_mu**2, 'mean')
                 pieces.update({'mean': 1})
             return gp.addtransf(pieces, 'train')
-            
+
         # data factory
         def info(hp, *, mu_mu, **_):
             return {'train': y_train - hp.get('mean', mu_mu)}
 
         # fit hyperparameters
-        gpkw = dict(
-            i_train=i_train,
-            weights=weights,
-            splits=splits,
-            mu_mu=mu_mu,
-        )
+        gpkw = dict(i_train=i_train, weights=weights, splits=splits, mu_mu=mu_mu)
         options = dict(
             verbosity=3,
             raises=False,
@@ -225,7 +212,7 @@ class bart:
         )
         options.update(fitkw)
         fit = _fit.empbayes_fit(hyperprior, makegp, info, **options)
-        
+
         # extract hyperparameters from minimization result
         self.sigma = gvar.sqrt(fit.p['sigma2'])
         self.alpha = fit.p['alpha']
@@ -274,7 +261,6 @@ class bart:
             'Xmean', 'Xnoise', and 'X', where the "X" stands either for 'train'
             or 'test', and X = Xmean + Xnoise.
         """
-
         hp = self._gethp(hp, rng)
         return self._gp(hp, x_test, weights, self.fit.gpfactorykw)
 
@@ -285,7 +271,6 @@ class bart:
 
         # add test points
         if x_test is not None:
-
             # convert covariates to indices
             x_test = self._to_structured(x_test)
             i_test = self._toindices(x_test, gpfactorykw['splits'])
@@ -299,9 +284,8 @@ class bart:
                 weights = jnp.ones(i_test.shape)
 
             # add test points
-            gp = (gp
-                .addx(i_test, 'testmean')
-                .addcov(jnp.diag(hp['sigma2'] / weights), 'testnoise')
+            gp = gp.addx(i_test, 'testmean').addcov(
+                jnp.diag(hp['sigma2'] / weights), 'testnoise'
             )
             pieces = {'testmean': 1, 'testnoise': 1}
             if 'mean' not in hp:
@@ -329,12 +313,19 @@ class bart:
             A dictionary representing ``y_train`` in the format required by the
             `GP.pred` method.
         """
-
         hp = self._gethp(hp, rng)
         return self.fit.data(hp, **self.fit.gpfactorykw)
 
-    def pred(self, *, hp='map', error=False, format='matrices', x_test=None,
-        weights=None, rng=None):
+    def pred(
+        self,
+        *,
+        hp='map',
+        error=False,
+        format='matrices',  # noqa: A002, public parameter
+        x_test=None,
+        weights=None,
+        rng=None,
+    ):
         """
         Predict the outcome at given locations.
 
@@ -346,7 +337,7 @@ class bart:
             posterior. If a dict, use the given hyperparameters.
         error : bool
             If ``False`` (default), make a prediction for the latent mean. If
-            ``True``, add the error term.     
+            ``True``, add the error term.
         format : {'matrices', 'gvar'}
             If 'matrices' (default), return the mean and covariance matrix
             separately. If 'gvar', return an array of gvars.
@@ -360,19 +351,14 @@ class bart:
 
         Returns
         -------
-        If ``format`` is 'matrices' (default):
-
         mean, cov : arrays
-            The mean and covariance matrix of the Normal posterior distribution
-            over the regression function at the specified locations.
-
-        If ``format`` is 'gvar':
-
+            If ``format`` is 'matrices' (default), the mean and covariance
+            matrix of the Normal posterior distribution over the regression
+            function at the specified locations.
         out : array of `GVar`
-            The same distribution represented as an array of `GVar` objects.
+            If ``format`` is 'gvar', the same distribution represented as an
+            array of `GVar` objects.
         """
-
-        
         hp = self._gethp(hp, rng)
         if x_test is not None:
             x_test = self._to_structured(x_test)
@@ -387,8 +373,8 @@ class bart:
 
     @functools.cached_property
     def _pred(self):
-        
-        @functools.partial(jax.jit, static_argnums=(4,))
+
+        @functools.partial(jit, static_argnums=(4,))
         def _pred(hp, x_test, weights, gpfactorykw, error):
             gp = self._gp(hp, x_test, weights, gpfactorykw)
             data = self.fit.data(hp, **gpfactorykw)
@@ -416,9 +402,12 @@ class bart:
 
         # check
         assert x.ndim == 1
+
         def check_numerical(path, dtype):
             if not numpy.issubdtype(dtype, numpy.number):
-                raise TypeError(f'covariate `{path}` is not numerical')
+                msg = f'covariate `{path}` is not numerical'
+                raise TypeError(msg)
+
         cls._walk_dtype(x.dtype, check_numerical)
 
         return x
@@ -450,7 +439,7 @@ data total sdev = {self._ystd:.3g}"""
 error sdev = {self.sigma}"""
         else:
             weights = numpy.array(self.fit.gpfactorykw['weights'])
-            avgsigma = numpy.sqrt(numpy.mean(self.sigma ** 2 / weights))
+            avgsigma = numpy.sqrt(numpy.mean(self.sigma**2 / weights))
             out += f"""
 error sdev (avg weighted) = {avgsigma}
 error sdev (unweighted) = {self.sigma}"""

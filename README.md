@@ -23,7 +23,7 @@ Python module to do inference with Gaussian processes. Features:
     (Bayesian Additive Regression Trees) and
     [BCF](https://gattocrucco.github.io/lsqfitgp/docs/reference/bayestree.html#lsqfitgp.bayestree.bcf)
     (Bayesian Causal Forests).
-  
+
 See [chapter 3 of my thesis](https://hdl.handle.net/2158/1420172) for the
 theory behind lsqfitgp.
 

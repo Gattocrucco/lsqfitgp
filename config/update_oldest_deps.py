@@ -1,0 +1,338 @@
+# lsqfitgp/config/update_oldest_deps.py
+#
+# Copyright (c) 2026, Giacomo Petrillo
+#
+# This file is part of lsqfitgp.
+#
+# lsqfitgp is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# lsqfitgp is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Refresh oldest-supported dependency pins per the OLD_DATE policy.
+
+Computes a new OLD_DATE as max(today - delay_days, min_old_date), queries PyPI
+for each dependency declared in pyproject.toml, picks the latest final release
+whose earliest file upload is strictly before OLD_DATE, and rewrites the
+lower bounds in pyproject.toml and the OLD_DATE line in the Makefile.
+Bounds only move forward: per-dep, the chosen version is max(pypi_candidate,
+current lower bound).
+"""
+
+import argparse
+import datetime
+import json
+import re
+import sys
+import urllib.request
+from pathlib import Path
+
+import tomli
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.version import InvalidVersion, Version
+
+PYPI_URL = 'https://pypi.org/pypi/{name}/json'
+
+# Rigid requirement grammar: `name[extra,...]>=version[,spec,...]`. The lower
+# bound is the only clause the script rewrites; package extras and any trailing
+# specifiers (e.g. `!=` exclusions) are captured verbatim and preserved. We do
+# not accept whitespace or other operators on purpose: anything else must fail
+# loudly rather than be silently reformatted.
+REQUIREMENT_RE = re.compile(
+    r'(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)'
+    r'(?P<extras>\[[A-Za-z0-9,._-]+\])?'
+    r'>=(?P<version>[^,\s]+)'
+    r'(?P<rest>(?:,[^,\s]+)*)'
+)
+
+
+def parse_datetime(s: str) -> datetime.datetime:
+    """Parse an RFC 3339 timestamp, requiring an explicit timezone offset."""
+    dt = datetime.datetime.fromisoformat(s.replace('Z', '+00:00'))
+    if dt.tzinfo is None:
+        msg = f'timestamp {s!r} must include a timezone offset'
+        raise argparse.ArgumentTypeError(msg)
+    return dt
+
+
+def format_utc(dt: datetime.datetime) -> str:
+    """Format an instant as an RFC 3339 UTC timestamp with a trailing `Z`."""
+    return dt.astimezone(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
+
+
+def compute_old_date(
+    min_old_date: datetime.datetime, delay_days: int, today: datetime.datetime
+) -> datetime.datetime:
+    return max(today - datetime.timedelta(days=delay_days), min_old_date)
+
+
+def collect_requirements(pyproject: dict) -> list[str]:
+    """Return every requirement string declared in pyproject.toml."""
+    reqs: list[str] = []
+    reqs.extend(pyproject.get('project', {}).get('dependencies', []))
+    for extra_reqs in (
+        pyproject.get('project', {}).get('optional-dependencies', {}).values()
+    ):
+        reqs.extend(extra_reqs)
+    for group_reqs in pyproject.get('dependency-groups', {}).values():
+        reqs.extend(group_reqs)
+    return reqs
+
+
+def parse_requirement(req_str: str) -> tuple[str, str, Version, str]:
+    """Parse a `name[extras]>=version[,...]` requirement, strictly.
+
+    Returns (name, bracketed extras or '', floor version, trailing clauses
+    including the leading comma or ''). Raises ValueError on any other format.
+    """
+    m = REQUIREMENT_RE.fullmatch(req_str)
+    if m is None:
+        msg = (
+            f'requirement {req_str!r} does not match the expected format '
+            'name[extras]>=version[,spec,...]'
+        )
+        raise ValueError(msg)
+    try:
+        floor = Version(m['version'])
+    except InvalidVersion as e:
+        msg = f'invalid version in requirement {req_str!r}'
+        raise ValueError(msg) from e
+    return m['name'], m['extras'] or '', floor, m['rest']
+
+
+def fetch_pypi(name: str) -> dict:
+    url = PYPI_URL.format(name=name)
+    if not url.startswith('https://'):
+        msg = f'refusing non-https URL: {url}'
+        raise ValueError(msg)
+    with urllib.request.urlopen(url, timeout=30) as resp:  # noqa: S310
+        return json.load(resp)
+
+
+def earliest_upload(files: list[dict]) -> datetime.datetime | None:
+    times = []
+    for f in files:
+        if f.get('yanked'):
+            continue
+        t = f.get('upload_time_iso_8601') or f.get('upload_time')
+        if not t:
+            continue
+        # strip trailing 'Z' and optional fractional seconds handled by fromisoformat in 3.11+
+        t = t.replace('Z', '+00:00')
+        try:
+            dt = datetime.datetime.fromisoformat(t)
+        except ValueError:
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        times.append(dt)
+    return min(times) if times else None
+
+
+def release_supports_python(files: list[dict], oldest_python: Version) -> bool:
+    """Check Python compatibility of a release.
+
+    Return True iff any non-yanked file's `requires_python` accepts
+    `oldest_python`. Files with no `requires_python` metadata are treated as
+    universally compatible (common for old releases predating PEP 345).
+    """
+    any_non_yanked = False
+    for f in files:
+        if f.get('yanked'):
+            continue
+        any_non_yanked = True
+        spec_str = f.get('requires_python')
+        if not spec_str:
+            return True
+        try:
+            spec = SpecifierSet(spec_str)
+        except InvalidSpecifier:
+            return True
+        if spec.contains(str(oldest_python), prereleases=True):
+            return True
+    return not any_non_yanked
+
+
+def latest_before(
+    name: str, cutoff: datetime.datetime, oldest_python: Version
+) -> Version | None:
+    """Return the latest final release of `name` matching the constraints.
+
+    The release must have earliest upload strictly before `cutoff` and must
+    support `oldest_python`.
+    """
+    data = fetch_pypi(name)
+    candidates: list[Version] = []
+    for vstr, files in data.get('releases', {}).items():
+        try:
+            v = Version(vstr)
+        except InvalidVersion:
+            continue
+        if v.is_prerelease or v.is_devrelease:
+            continue
+        if not files:
+            continue
+        upload = earliest_upload(files)
+        if upload is None:
+            continue
+        if upload >= cutoff:
+            continue
+        if not release_supports_python(files, oldest_python):
+            continue
+        candidates.append(v)
+    return max(candidates) if candidates else None
+
+
+def format_spec(name: str, extras: str, version: Version, rest: str) -> str:
+    return f'{name}{extras}>={version}{rest}'
+
+
+def replace_requirement_line(
+    text: str, old_req_str: str, new_req_str: str
+) -> tuple[str, bool]:
+    """Replace a quoted requirement literal in pyproject.toml text.
+
+    Matches either single- or double-quoted form of the exact old string.
+    """
+    if old_req_str == new_req_str:
+        return text, False
+    replaced = False
+    for quote in ('"', "'"):
+        old_lit = f'{quote}{old_req_str}{quote}'
+        new_lit = f'{quote}{new_req_str}{quote}'
+        if old_lit in text:
+            text = text.replace(old_lit, new_lit, 1)
+            replaced = True
+            break
+    return text, replaced
+
+
+def update_pyproject(pyproject_path: Path, updates: list[tuple[str, str]]) -> int:
+    text = pyproject_path.read_text()
+    changed = 0
+    for old, new in updates:
+        text, did = replace_requirement_line(text, old, new)
+        if did:
+            changed += 1
+        elif old != new:
+            print(
+                f'warning: could not locate {old!r} in pyproject.toml', file=sys.stderr
+            )
+    pyproject_path.write_text(text)
+    return changed
+
+
+def update_makefile_old_date(makefile_path: Path, new_date: datetime.datetime) -> bool:
+    text = makefile_path.read_text()
+    pattern = re.compile(r'^OLD_DATE\s*=\s*\S+\s*$', re.MULTILINE)
+    new_line = f'OLD_DATE = {format_utc(new_date)}'
+    new_text, n = pattern.subn(new_line, text, count=1)
+    if n == 0:
+        msg = 'OLD_DATE assignment not found in Makefile'
+        raise RuntimeError(msg)
+    if new_text == text:
+        return False
+    makefile_path.write_text(new_text)
+    return True
+
+
+def main() -> int:  # noqa: C901, PLR0915
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '--min-old-date',
+        required=True,
+        type=parse_datetime,
+        help='RFC 3339 timestamp (with timezone); floor for the new OLD_DATE.',
+    )
+    parser.add_argument(
+        '--delay-days', required=True, type=int, help='Target lag behind today in days.'
+    )
+    parser.add_argument(
+        '--today',
+        required=True,
+        type=parse_datetime,
+        help='RFC 3339 timestamp (with timezone); reference instant for the policy.',
+    )
+    parser.add_argument('--pyproject', type=Path, default=Path('pyproject.toml'))
+    parser.add_argument('--makefile', type=Path, default=Path('Makefile'))
+    parser.add_argument('--dry-run', action='store_true')
+    args = parser.parse_args()
+
+    new_old_date = compute_old_date(args.min_old_date, args.delay_days, args.today)
+    print(f'OLD_DATE: {format_utc(args.min_old_date)} -> {format_utc(new_old_date)}')
+
+    with args.pyproject.open('rb') as f:
+        pyproject = tomli.load(f)
+
+    requires_python = pyproject.get('project', {}).get('requires-python')
+    if not requires_python:
+        msg = 'project.requires-python missing from pyproject.toml'
+        raise RuntimeError(msg)
+    rp_spec = SpecifierSet(requires_python)
+    oldest_python = next(
+        (Version(s.version) for s in rp_spec if s.operator in ('>=', '==', '~=')), None
+    )
+    if oldest_python is None:
+        msg = f'cannot derive oldest Python from requires-python={requires_python!r}'
+        raise RuntimeError(msg)
+    print(f'oldest supported Python: {oldest_python}')
+
+    raw_reqs = collect_requirements(pyproject)
+    # Deduplicate while preserving order (a dep may appear in multiple groups).
+    seen: set[str] = set()
+    reqs: list[str] = []
+    for r in raw_reqs:
+        if r not in seen:
+            seen.add(r)
+            reqs.append(r)
+
+    updates: list[tuple[str, str]] = []
+    rows: list[tuple[str, str, str]] = []
+    for req_str in reqs:
+        name, extras, floor, rest = parse_requirement(req_str)
+        try:
+            pypi_cand = latest_before(name, new_old_date, oldest_python)
+        except Exception as e:  # noqa: BLE001
+            rows.append((name, 'error', str(e)))
+            continue
+        chosen = max(v for v in (pypi_cand, floor) if v is not None)
+        new_req_str = format_spec(name, extras, chosen, rest)
+        if new_req_str != req_str:
+            updates.append((req_str, new_req_str))
+            rows.append((name, str(floor), str(chosen)))
+
+    print()
+    if rows:
+        col1 = max(len(r[0]) for r in rows)
+        col2 = max(len(r[1]) for r in rows)
+        print(f'{"dep".ljust(col1)}  {"from".ljust(col2)}  to')
+        print(f'{"-" * col1}  {"-" * col2}  --')
+        for name, old, new in rows:
+            print(f'{name.ljust(col1)}  {old.ljust(col2)}  {new}')
+    else:
+        print('no dependency bumps')
+    print()
+
+    if args.dry_run:
+        print(
+            f'dry-run: {len(updates)} pyproject edit(s), OLD_DATE target {format_utc(new_old_date)}'
+        )
+        return 0
+
+    n_py = update_pyproject(args.pyproject, updates)
+    mk_changed = update_makefile_old_date(args.makefile, new_old_date)
+    print(f'pyproject.toml: {n_py} line(s) updated')
+    print(f'Makefile OLD_DATE: {"updated" if mk_changed else "unchanged"}')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -1,6 +1,6 @@
 # lsqfitgp/copula/_distr.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,63 +17,72 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" define Distr and distribution """
+"""Define Distr and distribution."""
 
 import abc
-import functools
 import collections
-import numbers
+import functools
 import inspect
-import types
 import math
+import numbers
+import types
 
-import gvar
-import numpy
 import jax
+import numpy
 from jax import numpy as jnp
 
-from .. import _gvarext
-from .. import _array
-from .. import _signature
-from . import _base
+from lsqfitgp import _gvarext, _signature
+from lsqfitgp.copula import _base
 
 ######### The following 5 functions are adapted from numpy.lib.mixins #########
 
+
 def _disables_array_ufunc(obj):
-    """True when __array_ufunc__ is set to None."""
+    """Check if __array_ufunc__ is set to None."""
     return getattr(obj, '__array_ufunc__', NotImplemented) is None
+
 
 def _binary_method(ufunc, name):
     """Implement a forward binary method with a ufunc, e.g., __add__."""
+
     def func(self, other):
         if _disables_array_ufunc(other):
             return NotImplemented
         return ufunc(self, other)
-    func.__name__ = '__{}__'.format(name)
+
+    func.__name__ = f'__{name}__'
     return func
+
 
 def _reflected_binary_method(ufunc, name):
     """Implement a reflected binary method with a ufunc, e.g., __radd__."""
+
     def func(self, other):
         if _disables_array_ufunc(other):
             return NotImplemented
         return ufunc(other, self)
-    func.__name__ = '__r{}__'.format(name)
+
+    func.__name__ = f'__r{name}__'
     return func
+
 
 def _numeric_methods(ufunc, name):
     """Implement forward and reflected binary methods with a ufunc."""
-    return (_binary_method(ufunc, name),
-            _reflected_binary_method(ufunc, name))
+    return (_binary_method(ufunc, name), _reflected_binary_method(ufunc, name))
+
 
 def _unary_method(ufunc, name):
     """Implement a unary special method with a ufunc."""
+
     def func(self):
         return ufunc(self)
-    func.__name__ = '__{}__'.format(name)
+
+    func.__name__ = f'__{name}__'
     return func
 
+
 ###############################################################################
+
 
 class Distr(_base.DistrBase):
     r"""
@@ -108,16 +117,12 @@ class Distr(_base.DistrBase):
 
     Returns
     -------
-    If `name` is None (default):
-
     distr : Distr
-        An object representing the distribution.
-
-    Else:
-
+        If `name` is None (default), an object representing the distribution.
     gvars : array of gvars
-        An array of primary gvars that can be set as value in a
-        `gvar.BufferDict` under a key that uses the just defined name.
+        If `name` is specified, an array of primary gvars that can be set as
+        value in a `gvar.BufferDict` under a key that uses the just defined
+        name.
 
     Attributes
     ----------
@@ -135,7 +140,6 @@ class Distr(_base.DistrBase):
 
     Examples
     --------
-
     Use directly with `gvar.BufferDict` by setting `name`:
 
     >>> copula = gvar.BufferDict({
@@ -203,7 +207,7 @@ class Distr(_base.DistrBase):
     with the same parameter :math:`\sigma^2` shared between the two
     distributions. However, if the distributions are now put into a
     `gvar.BufferDict`, with
-    
+
     >>> sigma2.add_distribution('distr_sigma2')
     >>> X.add_distribution('distr_X')
     >>> Y.add_distribution('distr_Y')
@@ -250,7 +254,7 @@ class Distr(_base.DistrBase):
 
     Although the actual dictionary value is a flat array, getting the unwrapped
     key reproduces the original structure.
-    
+
     To apply arbitrary transformations, use manually `invfcn`:
 
     >>> @functools.partial(lgp.gvar_gufunc, signature='(n)->(n)')
@@ -261,12 +265,12 @@ class Distr(_base.DistrBase):
     ...     X = lgp.copula.halfnorm.invfcn(normal_params[1], sigma)
     ...     Y = lgp.copula.halfcauchy.invfcn(normal_params[2], sigma)
     ...     return jnp.stack([sigma, X, Y])
-    
+
     The `jax.numpy.vectorize` decorator makes `model_invfcn` support
     broadcasting on additional input axes, while `gvar_gufunc` makes it accept
     gvars as input.
 
-    See also
+    See Also
     --------
     DistrBase, Copula, gvar.BufferDict.uniform
 
@@ -284,7 +288,7 @@ class Distr(_base.DistrBase):
     def invfcn(cls, x, *params):
         r"""
 
-        Normal to desired distribution transformation.
+        Transform a Normal variable to the desired distribution.
 
         Maps a (multivariate) Normal variable to a variable with the desired
         marginal distribution. In symbols: :math:`y = F^{-1}(\Phi(x))`. This
@@ -304,7 +308,7 @@ class Distr(_base.DistrBase):
         y : array_like
             The output variable with the desired marginal distribution.
 
-        """
+        """  # noqa: DOC202
         pass
 
     def _get_x_core_shape(self, *preprocessed_params):
@@ -315,9 +319,12 @@ class Distr(_base.DistrBase):
 
         # check number of parameters
         if self.signature.nin != 1 + len(self.params):
-            raise TypeError(f'{self.__class__.__name__} distribution has '
+            msg = (
+                f'{self.__class__.__name__} distribution has '
                 f'{self.signature.nin - 1} parameters, but {len(self.params)} '
-                'parameters were passed to the constructor')
+                'parameters were passed to the constructor'
+            )
+            raise TypeError(msg)
 
         # convert shape to tuple
         if isinstance(shape, numbers.Integral):
@@ -327,8 +334,7 @@ class Distr(_base.DistrBase):
 
         # make sure parameters have a shape
         array_params = [
-            p if hasattr(p, 'shape') else jnp.asarray(p)
-            for p in self.params
+            p if hasattr(p, 'shape') else jnp.asarray(p) for p in self.params
         ]
 
         # parse signature of cls.invfcn
@@ -336,9 +342,9 @@ class Distr(_base.DistrBase):
         x = jax.ShapeDtypeStruct(shape + x_core_shape, 'd')
         sig = self.signature.eval(x, *array_params)
         self._in_shape_1 = sig.in_shapes[0]
-        self.distrshape, = sig.core_out_shapes
-        self.shape, = sig.out_shapes
-        
+        (self.distrshape,) = sig.core_out_shapes
+        (self.shape,) = sig.out_shapes
+
         self._compute_in_shape()
 
     def _compute_in_shape(self):
@@ -350,7 +356,7 @@ class Distr(_base.DistrBase):
         if in_size == 1:
             self.in_shape = ()
         else:
-            self.in_shape = in_size,
+            self.in_shape = (in_size,)
         self._ancestor_count = len(cache)
 
     def _compute_in_size(self, cache):
@@ -368,24 +374,26 @@ class Distr(_base.DistrBase):
 
         concrete_params = []
         for p in self.params:
-            
             if isinstance(p, __class__):
                 p, i = p._partial_invfcn_internal(x, i, cache)
             else:
                 p = jnp.asarray(p)
-            
+
             concrete_params.append(p)
 
         in_size = math.prod(self._in_shape_1)
         assert i + in_size <= x.size
-        last = x[i:i + in_size].reshape(self._in_shape_1)
-        
+        last = x[i : i + in_size].reshape(self._in_shape_1)
+
         y = self.invfcn(last, *concrete_params)
         if y.shape != self.shape or y.dtype != self.dtype:
-            raise ValueError(f'{self.__class__.__name__}.invfcn returned '
+            msg = (
+                f'{self.__class__.__name__}.invfcn returned '
                 f'array with shape {y.shape} and dtype {y.dtype}, while '
-                f'{self.shape} and {self.dtype} were expected')
-        
+                f'{self.shape} and {self.dtype} were expected'
+            )
+            raise ValueError(msg)
+
         cache[self] = y
         return y, i + in_size
 
@@ -398,7 +406,7 @@ class Distr(_base.DistrBase):
 
         # wrap to support gvars
         @functools.partial(_gvarext.gvar_gufunc, signature=signature)
-        # @jax.jit
+        # @jit
         @functools.partial(jnp.vectorize, signature=signature)
         def _partial_invfcn(x):
             assert x.shape == self.in_shape
@@ -419,16 +427,23 @@ class Distr(_base.DistrBase):
         if not hasattr(cls, 'signature'):
             sig = inspect.signature(cls.invfcn)
             if not all(
-                p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                p.kind
+                in (
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                )
                 for p in sig.parameters.values()
             ):
-                raise ValueError('can not automatically infer signature of '
-                    f'{cls.__qualname__}.invfcn')
+                msg = (
+                    'can not automatically infer signature of '
+                    f'{cls.__qualname__}.invfcn'
+                )
+                raise ValueError(msg)
             cls.signature = ','.join(['()'] * len(sig.parameters)) + '->()'
         if not isinstance(cls.signature, _signature.Signature):
             cls.signature = _signature.Signature(cls.signature)
         cls.signature.check_nargs(cls.invfcn)
-        
+
         # set dtype to float if not specified
         if getattr(cls, 'dtype', NotImplemented) is NotImplemented:
             cls.dtype = jax.dtypes.canonicalize_dtype(jnp.float64)
@@ -438,8 +453,10 @@ class Distr(_base.DistrBase):
         pos_params = list(sig.parameters.values())[1:]
         sig = inspect.signature(cls.__new__)
         key_params = [
-            p for i, p in enumerate(sig.parameters.values())
-            if p.kind in (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            p
+            for i, p in enumerate(sig.parameters.values())
+            if p.kind
+            in (inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
             and i > 0
         ]
         cls.__signature__ = inspect.Signature(pos_params + key_params)
@@ -455,9 +472,9 @@ class Distr(_base.DistrBase):
         else:
             self.add_distribution(name)
             return self.gvars()
-    
+
     class _Descr(collections.namedtuple('Distr', 'family shape params')):
-        """ static representation of a Distr object """
+        """Static representation of a Distr object."""
 
         def __repr__(self):
             args = list(map(repr, self.params))
@@ -471,11 +488,11 @@ class Distr(_base.DistrBase):
     def _compute_staticdescr(self, path, cache):
         if (obj := super()._compute_staticdescr(path, cache)) is not None:
             return obj
-        
+
         params = []
         for i, p in enumerate(self.params):
             if isinstance(p, __class__):
-                p = p._compute_staticdescr(path + [i], cache)
+                p = p._compute_staticdescr([*path, i], cache)
             else:
                 p = numpy.asarray(p).tolist()
             params.append(p)
@@ -484,23 +501,23 @@ class Distr(_base.DistrBase):
 
     def _shapestr(self, shape):
         if shape:
-            return (str(shape)
+            return (
+                str(shape)
                 .replace(',)', ')')
-                .replace('(' , '[')
-                .replace(')' , ']')
+                .replace('(', '[')
+                .replace(')', ']')
                 .replace(' ', '')
             )
         else:
             return ''
-        
+
     def __repr__(self, path='', cache=None):
 
         if isinstance(cache := super().__repr__(path, cache), str):
             return cache
-        
+
         args = []
         for i, p in enumerate(self.params):
-            
             if isinstance(p, __class__):
                 p = p.__repr__('.'.join((path, str(i))).lstrip('.'), cache)
             elif hasattr(p, 'shape'):
@@ -522,7 +539,6 @@ class Distr(_base.DistrBase):
         ufunc_class = UFunc.make_subclass(ufunc)
         return ufunc_class(*inputs)
 
-
     # continuous binary operations
     __add__, __radd__ = _numeric_methods(numpy.add, 'add')
     __sub__, __rsub__ = _numeric_methods(numpy.subtract, 'sub')
@@ -540,31 +556,33 @@ class Distr(_base.DistrBase):
 
 
 class UFunc:
-    """ base class of objects representing ufuncs applied to Distr instances """
+    """Base class of objects representing ufuncs applied to Distr instances."""
 
     def __new__(cls, *args):
         return super().__new__(cls, *args)
         # this __new__ serves to forbid keyword arguments
 
     @classmethod
-    def invfcn(cls, x, *args):
+    def invfcn(cls, x, *args):  # noqa: ARG003, the signature is inspected
         return cls._ufunc(*args)
 
     def _get_x_core_shape(self, *_):
         return (0,)
 
     @classmethod
-    @functools.lru_cache(maxsize=None) # functools.cache not available in 3.8
+    @functools.cache  # functools.cache not available in 3.8
     def make_subclass(cls, ufunc):
         def exec_body(ns):
             ns['_ufunc'] = getattr(jnp, ufunc.__name__)
             ns['signature'] = ','.join(['(0)'] + ufunc.nin * ['()']) + '->()'
+
         return types.new_class(ufunc.__name__, (__class__, Distr), exec_body=exec_body)
+
 
 def distribution(invfcn, signature=None, dtype=None):
     r"""
 
-    Decorator to define a distribution from a transformation function.
+    Decorate a transformation function to define a distribution.
 
     Parameters
     ----------
@@ -587,7 +605,6 @@ def distribution(invfcn, signature=None, dtype=None):
 
     Examples
     --------
-
     >>> @lgp.copula.distribution
     ... def uniform(x, a, b):
     ...     return a + (b - a) * jax.scipy.stats.norm.cdf(x)
@@ -598,7 +615,7 @@ def distribution(invfcn, signature=None, dtype=None):
     ...     return x @ x.T
 
     """
-    
+
     def exec_body(ns):
         if signature is not None:
             ns['signature'] = signature

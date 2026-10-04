@@ -1,6 +1,6 @@
 # lsqfitgp/examples/w.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,42 +19,43 @@
 
 """
 
-                            EXAMPLE W.
+EXAMPLE W.
 
-    Manually split a process as a sum of two processes, using an additional
-    index in the input space.
+Manually split a process as a sum of two processes, using an additional
+index in the input space.
 
 """
 
+import gvar
 import numpy as np
 from matplotlib import pyplot as plt
-import gvar
 
 import lsqfitgp as lgp
 
 time = np.arange(30)
 time_pred = np.linspace(-30, 60, 200)
 
+
 def makex(time, comp):
-    x = np.empty(len(time), dtype=[
-        ('time', float),
-        ('comp', 'U8')
-    ])
+    x = np.empty(len(time), dtype=[('time', float), ('comp', 'U8')])
     x['time'] = time
     x['comp'] = comp
     return x
+
 
 kshort = lgp.ExpQuad(scale=1, dim='time')
 klong = lgp.ExpQuad(scale=10, dim='time')
 kernel = kshort.linop('cond', klong, lambda x: x['comp'] == 'short')
 gp = lgp.GP(kernel)
 
+
 def addcomps(gp, key, time):
-    return (gp
-        .addx(makex(time, 'short'), key + 'short')
+    return (
+        gp.addx(makex(time, 'short'), key + 'short')
         .addx(makex(time, 'long'), key + 'long')
         .addtransf({key + 'short': 0.3, key + 'long': 1}, key)
     )
+
 
 gp = addcomps(gp, 'data', time)
 gp = addcomps(gp, 'pred', time_pred)
@@ -74,16 +75,16 @@ samples = list(gvar.raniter(pred, 1))
 print('figure...')
 fig, axs = plt.subplots(3, 1, num='w', clear=True, figsize=[6, 7], layout='constrained')
 
-for ax, comp in zip(axs, ['', 'short', 'long']):
+for ax, comp in zip(axs, ['', 'short', 'long'], strict=True):
     key = 'pred' + comp
-    
+
     m = mean[key]
     s = sdev[key]
     ax.fill_between(time_pred, m - s, m + s, alpha=0.3, color='b')
-    
+
     for sample in samples:
         ax.plot(time_pred, sample[key], alpha=0.2, color='b')
-    
+
     ax.plot(time, data['data' + comp], '.k')
 
 axs[0].set_ylabel('A + B')

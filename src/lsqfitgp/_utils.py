@@ -1,6 +1,6 @@
 # lsqfitgp/_utils.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,17 +19,19 @@
 
 import textwrap
 
+
 def append_to_docstring(docs, doctail, front=False):
     doctail = textwrap.dedent(doctail)
     dedocs = textwrap.dedent(docs)
     lineend = docs.find('\n')
     indented_lineend = dedocs.find('\n')
-    indent = docs[:indented_lineend - lineend]
+    indent = docs[: indented_lineend - lineend]
     if front:
         newdocs = doctail + dedocs
     else:
-        newdocs = dedocs + doctail
+        newdocs = dedocs.rstrip() + '\n\n' + doctail
     return textwrap.indent(newdocs, indent)
+
 
 def top_bottom_rule(title, body):
     body = textwrap.dedent(body)
@@ -42,4 +44,4 @@ def top_bottom_rule(title, body):
     post_length = width - title_width - pre_length
     toprule = '=' * pre_length + ' ' + title + ' ' + '=' * post_length
     bottomrule = '=' * width
-    return '\n'.join([toprule, body, bottomrule])
+    return f'{toprule}\n{body}\n{bottomrule}'

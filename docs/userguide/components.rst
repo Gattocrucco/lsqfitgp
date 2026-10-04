@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/components.rst
+.. lsqfitgp/docs/userguide/components.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -36,20 +36,20 @@ component. We first generate some data::
     import lsqfitgp as lgp
     import gvar
     from matplotlib import pyplot as plt
-    
+
     kernel_long = 10 * lgp.ExpQuad(scale=10)
     kernel_short = lgp.ExpQuad(scale=1)
-    
+
     x = np.linspace(-10, 10, 21)
     fakedata = {}
     fakedata['long'] = gvar.sample(lgp.GP(kernel_long).addx(x, 'A').prior('A'))
     fakedata['short'] = gvar.sample(lgp.GP(kernel_short).addx(x, 'A').prior('A'))
     fakedata['sum'] = fakedata['long'] + fakedata['short']
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example')
-    
+
     ax.plot(x, fakedata['sum'], '.k')
-    
+
     fig.savefig('components1.png')
 
 .. image:: components1.png
@@ -95,12 +95,12 @@ Now that we have defined all the processes we care about, we evaluate them on
 the points::
 
     xplot = np.linspace(-10, 10, 200)
-    
+
     gp = (gp
         .addx(x, 'datalong' , proc='long' )
         .addx(x, 'datashort', proc='short')
         .addx(x, 'datasum'  , proc='sum'  )
-    
+
         .addx(xplot, 'plotlong' , proc='long' )
         .addx(xplot, 'plotshort', proc='short')
         .addx(xplot, 'plotsum'  , proc='sum'  )
@@ -112,19 +112,19 @@ continue as usual::
     post = gp.predfromdata({
         'datasum': fakedata['sum'],
     }, ['plotlong', 'plotshort', 'plotsum'])
-    
+
     ax.cla()
-    
+
     for sample in gvar.raniter(post, 2):
         line, = ax.plot(xplot, sample['plotsum'])
         color = line.get_color()
         ax.plot(xplot, sample['plotlong'], '--', color=color)
         ax.plot(xplot, sample['plotshort'], ':', color=color)
-    
+
     for marker, key in zip(['x', '+', '.'], ['long', 'short', 'sum']):
         ax.plot(x, fakedata[key], color='black', marker=marker, label=key, linestyle='')
     ax.legend()
-    
+
     fig.savefig('components4.png')
 
 .. image:: components4.png

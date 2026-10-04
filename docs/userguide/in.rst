@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/in.rst
+.. lsqfitgp/docs/userguide/in.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -29,10 +29,10 @@ arrays <https://numpy.org/doc/stable/user/basics.rec.html>`_. Elements of
 structured arrays have named fields::
 
     import numpy as np
-    
+
     x = np.linspace(-3, 3, 30)
     y = np.linspace(-3, 3, 30)
-    
+
     xy = np.empty((len(x), len(y)), dtype=[('x', float), ('y', float)])
     xy['x'] = x[:, None]
     xy['y'] = y[None, :]
@@ -62,23 +62,23 @@ prior. ::
 
     import lsqfitgp as lgp
     import gvar
-    
+
     gp = (lgp
         .GP(lgp.ExpQuad())
         .addx(xy, 'foo')
     )
-    
+
     prior = gp.prior('foo')
     sample = gvar.sample(prior)
 
 We plot the sample in 3d::
 
     from matplotlib import pyplot as plt
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example', subplot_kw=dict(projection='3d'))
-    
+
     ax.plot_surface(xy['x'], xy['y'], sample, cmap='viridis')
-    
+
     fig.savefig('in1.png')
 
 .. image:: in1.png
@@ -101,13 +101,13 @@ quadratic along :math:`y`::
         .GP(lgp.Wiener(dim='x', loc=-3) * lgp.ExpQuad(dim='y'))
         .addx(xy, 'foo')
     )
-    
+
     prior = gp.prior('foo')
     sample = gvar.sample(prior)
-    
+
     ax.cla()
     ax.plot_surface(xy['x'], xy['y'], sample, cmap='viridis')
-    
+
     fig.savefig('in2.png')
 
 .. image:: in2.png
@@ -135,13 +135,13 @@ the appropriate length. ::
         .GP(lgp.ExpQuad())
         .addx(xy, 'foo')
     )
-    
+
     prior = gp.prior('foo')
     sample = gvar.sample(prior)
-    
+
     ax.cla()
     ax.plot_surface(xy['foo'][..., 0], xy['foo'][..., 1], sample, cmap='viridis')
-    
+
     fig.savefig('in3.png')
 
 .. image:: in3.png

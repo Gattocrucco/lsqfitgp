@@ -1,6 +1,6 @@
 # lsqfitgp/tests/conftest.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,74 +17,96 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import pathlib
-import json
-import gzip
+"""Define the fixtures shared by all tests."""
 
-import pytest
+import gzip
+import json
+import pathlib
+
 import gvar
 import numpy as np
-import jax
+import pytest
+from jax import random
+
 
 @pytest.fixture(autouse=True)
 def clean_gvar_env():
-    """ Create a new hidden global covariance matrix for primary gvars, restore
+    """
+    Use a fresh global covariance matrix for primary gvars during the test.
+
+    Create a new hidden global covariance matrix for primary gvars, restore
     the previous one during teardown. Otherwise the global covariance matrix
-    grows arbitrarily. """
+    grows arbitrarily.
+    """
     yield gvar.switch_gvar()
     gvar.restore_gvar()
 
+
 @pytest.fixture
 def rng(request):
-    """ A random generator with a deterministic per-test seed """
+    """Return a random generator with a deterministic per-test seed."""
     nodeid = request.node.nodeid
     seed = np.array([nodeid], np.bytes_).view(np.uint8)
     return np.random.default_rng(seed)
 
+
 @pytest.fixture
 def key(rng):
-    """ A deterministic per-test jax random key """
+    """Return a deterministic per-test jax random key."""
     seed = np.array(rng.bytes(4)).view(np.uint32)
-    key = jax.random.key(seed)
-    return jax.random.fold_in(key, 0xcc755e92) # to make it independent of rng
+    key = random.key(seed)
+    return random.fold_in(key, 0xCC755E92)  # to make it independent of rng
+
 
 @pytest.fixture(autouse=True)
 def reset_random_seeds(rng):
-    """ Set seeds of global state random generators for tests that still use
-    them. Prefer `rng` for new tests. """
+    """
+    Set seeds of global state random generators for tests that still use them.
+
+    Prefer `rng` for new tests.
+    """
     bitgen0 = rng.bit_generator
     bitgen1 = bitgen0.jumped(1)
     bitgen2 = bitgen1.jumped(2)
+
     def toseed(bitgen):
         return np.array([bitgen.random_raw()], np.uint64).view(np.uint32)
-    np.random.seed(toseed(bitgen1))
+
+    np.random.seed(toseed(bitgen1))  # noqa: NPY002, the legacy global state
     gvar.ranseed(toseed(bitgen2))
 
+
 class JSONEncoder(json.JSONEncoder):
-    
+    """JSON encoder that also handles numpy arrays and scalars, and complex numbers."""
+
     def default(self, obj):
+        """Convert numpy and complex objects to JSON-serializable objects."""
         if isinstance(obj, np.generic):
             return obj.item()
         if isinstance(obj, np.ndarray):
-            return dict(__class__='array', args=(obj.tolist(),), kw=dict(dtype=obj.dtype.str))
+            return dict(
+                __class__='array', args=(obj.tolist(),), kw=dict(dtype=obj.dtype.str)
+            )
         if isinstance(obj, complex):
             return dict(__class__='complex', args=(obj.real, obj.imag))
         return super().default(obj)
 
+
 def object_hook(obj):
+    """Decode the objects encoded by `JSONEncoder` when loading JSON."""
     if classname := obj.get('__class__'):
-        constructor = dict(
-            array=np.array,
-            complex=complex
-        )[classname]
+        constructor = dict(array=np.array, complex=complex)[classname]
         args = obj.get('args', ())
         kw = obj.get('kw', {})
         return constructor(*args, **kw)
     return obj
 
+
 @pytest.fixture
 def testpath(request):
     """
+    Return the location of the test.
+
     - relative Path of the file where the test is defined
     - dotted name of the test, including classes and parametrization
     """
@@ -96,10 +118,11 @@ def testpath(request):
     assert path.suffix == '.py'
     return path, name
 
+
 @pytest.fixture
 def cached(testpath):
     """
-    A function that caches the result of a function call in a file.
+    Return a function that caches the result of a function call in a file.
 
     The cache is per test (including parametrizations) and is stored in
     a compressed json file. The cache is a dictionary where the keys must be
@@ -119,7 +142,6 @@ def cached(testpath):
     >>>     turlipu = cached('turlipu', expensive_function, arg2)
     >>>     assert lippa == turlipu
     """
-
     # determine cache file location
     file = pathlib.Path('tests') / 'cached'
     path, name = testpath
@@ -132,21 +154,25 @@ def cached(testpath):
     if file.exists():
         with gzip.open(file, 'rt') as stream:
             cache = json.load(stream, object_hook=object_hook)
-        def cached(name, func, *args, **kw):
+
+        def cached(name, func, *args, **kw):  # noqa: ARG001, same signature as the other branch
             return cache[name]
+
         yield cached
 
     # if the file does not exist, keep the cache in a dictionary, and save it
     # to file on teardown
     else:
         cache = {}
+
         def cached(name, func, *args, **kw):
             assert isinstance(name, str)
             if name not in cache:
                 cache[name] = func(*args, **kw)
             return cache[name]
+
         yield cached
-        
+
         file.parent.mkdir(parents=True, exist_ok=True)
         with gzip.open(file, 'wt') as stream:
             json.dump(cache, stream, cls=JSONEncoder)

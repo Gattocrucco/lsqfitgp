@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/optim.rst
+.. lsqfitgp/docs/userguide/optim.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, 2024, 2025, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2024, 2025, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -33,9 +33,9 @@ There are three main computational steps when doing a Gaussian process fit with
   * Compute the prior covariance matrix using the kernel. This is :math:`O((n +
     m)^2)` where :math:`n` is the number of datapoints and :math:`m` the number
     of additional points where the posterior is computed.
-    
+
   * Decompose the prior covariance matrix. This is :math:`O(n^3)`.
-  
+
   * Take random samples from the posterior. This is :math:`O(m^3)`.
 
 Additionally, by default `GP` checks that the prior covariance matrix is
@@ -88,7 +88,7 @@ Example::
     import jax
     from jax import numpy as jnp
     import lsqfitgp as lgp
-    
+
     def doinference(data, **options):
         x = jnp.linspace(0, 10, len(data))
         xplot = jnp.linspace(0, 10, 100)
@@ -102,14 +102,14 @@ Example::
         # instead of implicitly tracked into gvars
         yplot_sdev = jnp.sqrt(jnp.diag(yplot_cov))
         return yplot_mean, yplot_sdev
-    
+
     doinference_compiled = jax.jit(doinference, static_argnames=['checkpos', 'checksym'])
     # static_argnames indicates the function parameters that are not numerical
     # and should not be dealt with by the compiler, I've put some I will use
     # later
-    
+
     import timeit
-    
+
     def benchmark(func, *args, **kwargs):
         from jax import block_until_ready
         timer = timeit.Timer('block_until_ready(func(*args, **kwargs))', globals=locals())
@@ -117,7 +117,7 @@ Example::
         times = timer.repeat(5, n)
         time = min(times) / n
         print(f'{func.__name__} took {time * 1e3:7.3f} ms on average')
-    
+
     data = jnp.zeros(10)
     benchmark(doinference, data)
     benchmark(doinference_compiled, data)
@@ -201,5 +201,3 @@ accuracy. You can reset `jax`'s default with:
 to get a speedup, but this will likely give problems when the number of
 datapoints is over 1000, and will break `empbayes_fit` unless you make an effort
 to tune the minimizer parameters to make it work at `float32` precision.
-
-

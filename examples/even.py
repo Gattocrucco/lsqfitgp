@@ -1,6 +1,6 @@
 # lsqfitgp/examples/even.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,21 +17,22 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
+"""Split a function into even and odd parts."""
 
-Split a function into even and odd parts.
-
-"""
+import gvar
+import numpy as np
+from matplotlib import pyplot as plt
 
 import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-import numpy as np
-import gvar
 
-gp = (lgp
-    .GP(lgp.ExpQuad())
-    .deflintransf('even', lambda f: lambda x: (f(x) + f(-x)) / 2, [lgp.GP.DefaultProcess])
-    .deflintransf('odd', lambda f: lambda x: (f(x) - f(-x)) / 2, [lgp.GP.DefaultProcess])
+gp = (
+    lgp.GP(lgp.ExpQuad())
+    .deflintransf(
+        'even', lambda f: lambda x: (f(x) + f(-x)) / 2, [lgp.GP.DefaultProcess]
+    )
+    .deflintransf(
+        'odd', lambda f: lambda x: (f(x) - f(-x)) / 2, [lgp.GP.DefaultProcess]
+    )
 )
 
 x1, y1 = 1, 1
@@ -41,8 +42,8 @@ x2, y2 = 1, -1
 gp = gp.addx(x2, 'odd', proc='odd')
 
 xplot = np.linspace(-5, 5, 300)
-gp = (gp
-    .addx(xplot, 'function')
+gp = (
+    gp.addx(xplot, 'function')
     .addx(xplot, 'even part', proc='odd')
     .addx(xplot, 'odd part', proc='even')
 )
@@ -54,8 +55,14 @@ fig, ax = plt.subplots(num='even', clear=True)
 labels = [label for label in y if len(label) > 4]
 for j, sample in enumerate(gvar.raniter(y, 2, eps=1e-16)):
     for i, label in enumerate(labels):
-        ax.plot(xplot, sample[label], color=f'C{i}', alpha=0.8, label=label if j == 0 else None)
+        ax.plot(
+            xplot,
+            sample[label],
+            color=f'C{i}',
+            alpha=0.8,
+            label=label if j == 0 else None,
+        )
 ax.plot([x1, x2], [y1, y2], '.k')
 ax.legend()
-    
+
 fig.show()

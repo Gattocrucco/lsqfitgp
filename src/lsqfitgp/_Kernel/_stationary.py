@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel/_stationary.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,15 +19,11 @@
 
 from jax import numpy as jnp
 
-from .. import _jaxext
+from lsqfitgp._Kernel import _crosskernel, _kernel, _util
 
-from . import _util
-from . import _crosskernel
-from . import _kernel
 
 class CrossStationaryKernel(_crosskernel.CrossKernel):
     """
-    
     Subclass of `CrossKernel` for stationary kernels.
 
     A stationary kernel depends only on the difference, dimension by dimension,
@@ -46,11 +42,10 @@ class CrossStationaryKernel(_crosskernel.CrossKernel):
     **kw
         Additional keyword arguments are passed to the `CrossKernel`
         constructor.
-            
     """
 
-    def __new__(cls, core, *, input='signed', **kw):
-        
+    def __new__(cls, core, *, input='signed', **kw):  # noqa: A002, public parameter
+
         if input == 'posabs':
             dist = lambda x, y: _softabs(x - y)
         elif input == 'signed':
@@ -59,20 +54,22 @@ class CrossStationaryKernel(_crosskernel.CrossKernel):
             dist = lambda x, y: jnp.abs(x - y)
         else:
             raise KeyError(input)
-        
+
         def newcore(x, y, **kw):
             q = _util.ufunc_recurse_dtype(dist, x, y)
             return core(q, **kw)
-        
+
         return super().__new__(cls, newcore, **kw)
 
 
 class StationaryKernel(CrossStationaryKernel, _kernel.Kernel):
     pass
 
+
 # make these transformations preserve the class StationaryKernel and upwards,
 # other transformations are added by IsotropicKernel
 StationaryKernel.inherit_transf('dim', intermediates=True)
+
 
 def _eps(x):
     if jnp.issubdtype(x.dtype, jnp.inexact):
@@ -80,6 +77,7 @@ def _eps(x):
         # finfo(x) does not work in numpy 1.20
     else:
         return jnp.finfo(jnp.empty(())).eps
+
 
 def _softabs(x):
     return jnp.abs(x) + _eps(x)

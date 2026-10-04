@@ -1,6 +1,6 @@
 # lsqfitgp/_kernels/__init__.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,58 +19,38 @@
 
 # Keep this file a pure import list.
 
-from ._arma import (
-    MA,
-    AR,
-)
-from ._bart import BART
-from ._basic import (
-    Constant,
-    White,
-    ExpQuad,
-    Linear,
-    GammaExp,
-    NNKernel,
-    Gibbs,
-    Periodic,
-    Categorical,
-    Rescaling,
-    Expon,
+from lsqfitgp._kernels._arma import AR, MA  # noqa: F401
+from lsqfitgp._kernels._bart import BART  # noqa: F401
+from lsqfitgp._kernels._basic import (  # noqa: F401
     BagOfWords,
-    HoleEffect,
+    Categorical,
     Cauchy,
     CausalExpQuad,
+    Constant,
     Decaying,
+    Expon,
+    ExpQuad,
+    GammaExp,
+    Gibbs,
+    HoleEffect,
+    Linear,
     Log,
+    NNKernel,
+    Periodic,
+    Rescaling,
     Taylor,
+    White,
 )
-from ._celerite import (
-    Celerite,
-    Harmonic,
-)
-from ._matern import (
-    Maternp,
-    Matern,
-    Bessel,
-)
-from ._randomwalk import (
-    Wiener,
-    FracBrownian,
-    WienerIntegral,
-    OrnsteinUhlenbeck,
+from lsqfitgp._kernels._celerite import Celerite, Harmonic  # noqa: F401
+from lsqfitgp._kernels._matern import Bessel, Matern, Maternp  # noqa: F401
+from lsqfitgp._kernels._randomwalk import (  # noqa: F401
     BrownianBridge,
+    FracBrownian,
+    OrnsteinUhlenbeck,
     StationaryFracBrownian,
+    Wiener,
+    WienerIntegral,
 )
-from ._spectral import (
-    Cos,
-    Pink,
-    Color,
-    Sinc,
-)
-from ._wendland import (
-    Wendland,
-    Circular,
-)
-from ._zeta import Zeta
-
-
+from lsqfitgp._kernels._spectral import Color, Cos, Pink, Sinc  # noqa: F401
+from lsqfitgp._kernels._wendland import Circular, Wendland  # noqa: F401
+from lsqfitgp._kernels._zeta import Zeta  # noqa: F401

@@ -1,6 +1,6 @@
-# lsqfitgp/workflows/release.yml
+# lsqfitgp/.github/workflows/release.yml
 #
-# Copyright (c) 2022, 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,7 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
+# Check the released package can be installed from PyPI and imported.
+
 name: release
+permissions:
+  contents: read
 
 on:
   release:
@@ -25,23 +29,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  
   tests:
-
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: ["3.14", "3.10"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Update pip
-      run: python -m pip install --upgrade pip
-    - name: Install lsqfitgp
-      run: python -m pip install lsqfitgp
-    - name: Try to import lsqfitgp
-      run: python -c 'import lsqfitgp;print(lsqfitgp.__version__)'
+      - name: Check out repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: ".python-version"
+      - name: Update pip
+        run: python -m pip install --upgrade pip
+      - name: Determine expected version
+        id: version
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        # the release event carries the tag (e.g. v1.2.3); strip the leading `v`
+        # for the PyPI version. Empty on workflow_dispatch (no release context).
+        run: echo "expected=${TAG#v}" >> "$GITHUB_OUTPUT"
+      - name: Install software
+        shell: bash
+        env:
+          EXPECTED: ${{ steps.version.outputs.expected }}
+        run: python -m pip install "lsqfitgp${EXPECTED:+==$EXPECTED}"
+      - name: Check the installed version
+        shell: bash
+        env:
+          EXPECTED: ${{ steps.version.outputs.expected }}
+        run: |
+          installed=$(python -c 'import lsqfitgp; print(lsqfitgp.__version__)')
+          echo "installed lsqfitgp $installed (expected ${EXPECTED:-<latest>})"
+          if [ -n "$EXPECTED" ] && [ "$installed" != "$EXPECTED" ]; then
+            echo "::error::installed $installed does not match released $EXPECTED"
+            exit 1
+          fi

@@ -1,6 +1,6 @@
 # lsqfitgp/_linalg/_decomp.py
 #
-# Copyright (c) 2023, 2024, Giacomo Petrillo
+# Copyright (c) 2023, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -18,6 +18,7 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+Matrix decompositions.
 
 Copy-pasted from the notes:
 
@@ -105,42 +106,37 @@ To compute a Fisher-vector product when there are many parameters, do
 
     tr(K+ dK K+ dK) v =
     = K_vjp(K+ K_jvp(v) K+)
-
 """
-
-
-
 
 import abc
 import functools
 
-import numpy
 import jax
+import numpy
+from jax import lax
 from jax import numpy as jnp
 from jax.scipy import linalg as jlinalg
-from jax import lax
 
-from .. import _jaxext
-from . import _pytree
+from lsqfitgp import _jaxext
+from lsqfitgp._linalg import _pytree
+
 
 class Decomposition(_pytree.AutoPyTree, abc.ABC):
-    """
-    Abstract base class for decompositions of positive semidefinite matrices.
-    """
+    """Abstract base class for decompositions of positive semidefinite matrices."""
 
     @abc.abstractmethod
     def __init__(self, *args, **kw):
-        """ Decompose the input matrix """
+        """Decompose the input matrix."""
         pass
 
     @abc.abstractmethod
     def matrix(self):
-        """ The input matrix """
+        """Return the input matrix."""
         pass
 
     @abc.abstractmethod
     def ginv_linear(self, X):
-        """ Compute K⁻X """
+        """Compute K⁻X."""
         pass
 
     @abc.abstractmethod
@@ -165,21 +161,22 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
 
     @abc.abstractmethod
     def correlate(self, x):
-        """ Compute Zx where K = ZZ' """
+        """Compute Zx where K = ZZ'."""
         pass
 
     @abc.abstractmethod
     def back_correlate(self, X):
-        """ Compute Z'X """
+        """Compute Z'X."""
         pass
 
     @abc.abstractmethod
     def pinv_correlate(self, x):
-        """ Compute Z⁺x """
+        """Compute Z⁺x."""
         pass
 
     @abc.abstractmethod
-    def minus_log_normal_density(self,
+    def minus_log_normal_density(
+        self,
         r,
         *,
         dr_vjp=None,
@@ -193,57 +190,58 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
         gradfwd=False,
         fisher=False,
         fishvec=False,
-        ):
+    ):
         """
-        Compute minus log a Normal density and its derivatives, with covariance
-        matrix K.
+        Compute minus log a Normal density and its derivatives.
+
+        The covariance matrix of the Normal is K.
 
         If an input derivative is not specified, it is assumed to be zero.
 
         Parameters
         ----------
-        r: 1d array
+        r : 1d array
             The residuals (value - mean)
-        dr_vjp: callable
+        dr_vjp : callable
             x -> x_i ∂r_i/∂p_j, for gradrev and fishvec
-        dK_vjp: callable
+        dK_vjp : callable
             x -> x_ij ∂K_ij/∂p_k, for gradrev and fishvec
-        dr_jvp_vec: 1d array
+        dr_jvp_vec : 1d array
             ∂r_i/∂r_j vec_j, for fishvec
-        dK_jvp_vec: 2d array
+        dK_jvp_vec : 2d array
             ∂K_ij/∂p_k vec_k, for fishvec
-        dr: 2d array
+        dr : 2d array
             ∂r_i/∂p_j for gradfwd and fisher
-        dK: 3d array
+        dK : 3d array
             ∂K_ij/∂p_k, for gradfwd and fisher
-        value: bool
-        gradrev: bool
-        gradfwd: bool
-        fisher: bool
-        fishvec: bool
+        value : bool
+        gradrev : bool
+        gradfwd : bool
+        fisher : bool
+        fishvec : bool
             These parameters indicate which of the return values to compute.
             Default all False.
 
         Returns
         -------
-        value: 1/2 tr(KK⁺) log 2π
+        value : 1/2 tr(KK⁺) log 2π
              + 1/2 tr(I-KK⁺) log 2π
              + 1/2 log pdet K
              + 1/2 tr(I-KK⁺) log ε
              + 1/2 r'(K⁺+(I-KK⁺)/ε)r
         gradrev,
-        gradfwd: 1/2 tr(K⁺dK)
+        gradfwd : 1/2 tr(K⁺dK)
                 + r'(K⁺+(I-KK⁺)/ε) dr
                 - 1/2 r'(K⁺+2(I-KK⁺)/ε)dKK⁺r
-        fisher: 1/2 tr(K⁺dK(K⁺+2(I-KK⁺)/ε)d'K)
+        fisher : 1/2 tr(K⁺dK(K⁺+2(I-KK⁺)/ε)d'K)
               - 2 tr(K⁺dK(I-KK⁺)d'KK⁺)
               + dr'(K⁺+(I-KK⁺)/ε)d'r
-        fishvec: fisher matrix @ vec
-        """
+        fishvec : fisher matrix @ vec
+        """  # noqa: DOC202
         pass
 
     def _parseeps(self, K, epsrel, epsabs, maxeigv=None):
-        """ Determine eps from input arguments """
+        """Determine eps from input arguments."""
         machine_eps = jnp.finfo(_jaxext.float_type(K)).eps
         if epsrel == 'auto':
             epsrel = len(K) * machine_eps
@@ -256,31 +254,31 @@ class Decomposition(_pytree.AutoPyTree, abc.ABC):
 
     @property
     def eps(self):
-        """
-        The threshold below which eigenvalues are too small to be determined.
-        """
+        """The threshold below which eigenvalues are too small to be determined."""
         return self._eps
 
     @property
     @abc.abstractmethod
     def n(self):
-        """ Number of rows/columns of the matrix """
+        """Number of rows/columns of the matrix."""
         pass
 
     @property
     @abc.abstractmethod
     def m(self):
-        """ Number of columns of Z """
+        """Number of columns of Z."""
         pass
 
     def ginv(self):
-        """ Compute K⁻ """
+        """Compute K⁻."""
         return self.ginv_quad(jnp.eye(self.n))
+
 
 def solve_triangular_python(a, b, *, lower=False):
     """
-    Pure python implementation of scipy.linalg.solve_triangular for when
-    a or b are object arrays.
+    Pure python implementation of scipy.linalg.solve_triangular.
+
+    For when a or b are object arrays.
     """
     a = numpy.asarray(a)
     x = numpy.copy(b)
@@ -308,8 +306,9 @@ def solve_triangular_python(a, b, *, lower=False):
         x = numpy.squeeze(x, -1)
     return x
 
+
 def solve_triangular_batched(a, b, *, lower=False):
-    """ Version of jax.scipy.linalg.solve_triangular that batches matmul-like """
+    """Version of jax.scipy.linalg.solve_triangular that batches matmul-like."""
     a = jnp.asarray(a)
     b = jnp.asarray(b)
     vec = b.ndim < 2
@@ -320,8 +319,10 @@ def solve_triangular_batched(a, b, *, lower=False):
     a_shape = batch_shape + a.shape[-2:]
     b_shape = batch_shape + b.shape[-2:]
     result = lax.linalg.triangular_solve(
-        jnp.broadcast_to(a, a_shape), jnp.broadcast_to(b, b_shape),
-        left_side=True, lower=lower,
+        jnp.broadcast_to(a, a_shape),
+        jnp.broadcast_to(b, b_shape),
+        left_side=True,
+        lower=lower,
     )
     assert result.shape == b_shape
 
@@ -329,8 +330,9 @@ def solve_triangular_batched(a, b, *, lower=False):
         result = result.squeeze(-1)
     return result
 
+
 def solve_batched(a, b, **kw):
-    """ Version of jax.scipy.linalg.solve that batches matmul-like """
+    """Version of jax.scipy.linalg.solve that batches matmul-like."""
     a = jnp.asarray(a)
     b = jnp.asarray(b)
     vec = b.ndim < 2
@@ -340,31 +342,38 @@ def solve_batched(a, b, **kw):
     @functools.partial(jnp.vectorize, signature='(i,j),(j,k)->(i,k)')
     def solve_batched(a, b):
         return jlinalg.solve(a, b, **kw)
+
     result = solve_batched(a, b)
 
     if vec:
         result = result.squeeze(-1)
     return result
 
+
 def eigval_bound(K):
     """
-    Upper bound on the largest magnitude eigenvalue of the matrix, from
-    Gershgorin's theorem.
+    Upper bound on the largest magnitude eigenvalue of the matrix.
+
+    The bound is from Gershgorin's theorem.
     """
     return jnp.max(jnp.sum(jnp.abs(K), axis=1))
 
+
 def diag_scale_pow2(K):
-    """
-    Compute a vector s of powers of 2 such that diag(K / outer(s, s)) ~ 1.
-    """
+    """Compute a vector s of powers of 2 such that diag(K / outer(s, s)) ~ 1."""
     d = jnp.diag(K)
-    return jnp.where(d, jnp.exp2(jnp.rint(0.5 * jnp.log2(d))), 1)
+    return jnp.where(d, 2 ** jnp.rint(0.5 * jnp.log2(d)), 1)
 
     # Golub and Van Loan (2013) say this is not a totally general heuristic
 
+
 def transpose(x):
-    """ swap the last two axes of array x, corresponds to matrix tranposition
-    with the broadcasting convention of matmul """
+    """
+    Swap the last two axes of array x.
+
+    Corresponds to matrix tranposition with the broadcasting convention of
+    matmul.
+    """
     if x.ndim < 2:
         return x
     elif isinstance(x, jnp.ndarray):
@@ -373,9 +382,13 @@ def transpose(x):
         # need to support numpy because this function is used with gvars
         return numpy.swapaxes(x, -2, -1)
 
+
 class Chol(Decomposition):
-    """Cholesky decomposition. The matrix is regularized adding a small multiple
-    of the identity."""
+    """
+    Cholesky decomposition.
+
+    The matrix is regularized adding a small multiple of the identity.
+    """
 
     def __init__(self, K, *, epsrel='auto', epsabs=0):
         # K <- K + Iε
@@ -388,7 +401,8 @@ class Chol(Decomposition):
         L = jlinalg.cholesky(K, lower=True)
         with _jaxext.skipifabstract():
             if not jnp.all(jnp.isfinite(L)):
-                raise numpy.linalg.LinAlgError('cholesky decomposition not finite, probably matrix not pos def numerically')
+                msg = 'cholesky decomposition not finite, probably matrix not pos def numerically'
+                raise numpy.linalg.LinAlgError(msg)
         self._L = L * s[:, None]
         self._eps = eps * jnp.min(s * s)
 
@@ -438,15 +452,16 @@ class Chol(Decomposition):
         # = L⁻¹x
         return jlinalg.solve_triangular(self._L, x, lower=True)
 
-    def minus_log_normal_density(self,
-        r,               # 1d array, the residuals (data - prior mean)
+    def minus_log_normal_density(  # noqa: C901, PLR0915
+        self,
+        r,  # 1d array, the residuals (data - prior mean)
         *,
-        dr_vjp=None,     # callable, x -> x_i ∂r_i/∂p_j,   gradrev and fishvec
-        dK_vjp=None,     # callable, x -> x_ij ∂K_ij/∂p_k, gradrev and fishvec
-        dr_jvp_vec=None, # 1d array, ∂r_i/∂r_j v_j,  fishvec
-        dK_jvp_vec=None, # 2d array, ∂K_ij/∂p_k v_k, fishvec
-        dr=None,         # 2d array, ∂r_i/∂p_j,  gradfwd and fisher
-        dK=None,         # 3d array, ∂K_ij/∂p_k, gradfwd and fisher
+        dr_vjp=None,  # callable, x -> x_i ∂r_i/∂p_j,   gradrev and fishvec
+        dK_vjp=None,  # callable, x -> x_ij ∂K_ij/∂p_k, gradrev and fishvec
+        dr_jvp_vec=None,  # 1d array, ∂r_i/∂r_j v_j,  fishvec
+        dK_jvp_vec=None,  # 2d array, ∂K_ij/∂p_k v_k, fishvec
+        dr=None,  # 2d array, ∂r_i/∂p_j,  gradfwd and fisher
+        dK=None,  # 3d array, ∂K_ij/∂p_k, gradfwd and fisher
         value=False,
         gradrev=False,
         gradfwd=False,
@@ -459,9 +474,8 @@ class Chol(Decomposition):
         out = {}
 
         # compute shared factors
-        grad = (
-            (gradrev and (dK_vjp is not None or dr_vjp is not None))
-            or (gradfwd and (dK is not None or dr is not None))
+        grad = (gradrev and (dK_vjp is not None or dr_vjp is not None)) or (
+            gradfwd and (dK is not None or dr is not None)
         )
         if value or grad:
             invLr = jlinalg.solve_triangular(L, r, lower=True)
@@ -481,10 +495,14 @@ class Chol(Decomposition):
             #       = (∏_i L_ii)²
             # r'K⁻¹r = r'L'⁻¹L⁻¹r =
             #        = (L⁻¹r)'(L⁻¹r)
-            out['value'] = 1/2 * (
-                len(L) * jnp.log(2 * jnp.pi) +
-                2 * jnp.sum(jnp.log(jnp.diag(L))) +
-                invLr @ invLr
+            out['value'] = (
+                1
+                / 2
+                * (
+                    len(L) * jnp.log(2 * jnp.pi)
+                    + 2 * jnp.sum(jnp.log(jnp.diag(L)))
+                    + invLr @ invLr
+                )
             )
         else:
             out['value'] = None
@@ -506,7 +524,7 @@ class Chol(Decomposition):
             if dK_vjp is not None:
                 tr_invK_dK = dK_vjp(invK)
                 r_invK_dK_invK_r = dK_vjp(jnp.outer(invKr, invKr))
-                out['gradrev'] += 1/2 * (tr_invK_dK - r_invK_dK_invK_r)
+                out['gradrev'] += 1 / 2 * (tr_invK_dK - r_invK_dK_invK_r)
             if dr_vjp is not None:
                 r_invK_dr = dr_vjp(invKr)
                 out['gradrev'] += r_invK_dr
@@ -525,7 +543,7 @@ class Chol(Decomposition):
             if dK is not None:
                 tr_invK_dK = jnp.einsum('ij,ijk->k', invK, dK)
                 r_invK_dK_invK_r = jnp.einsum('i,ijk,j->k', invKr, dK, invKr)
-                out['gradfwd'] += 1/2 * (tr_invK_dK - r_invK_dK_invK_r)
+                out['gradfwd'] += 1 / 2 * (tr_invK_dK - r_invK_dK_invK_r)
             if dr is not None:
                 r_invK_dr = invKr @ dr
                 out['gradfwd'] += r_invK_dr
@@ -544,14 +562,16 @@ class Chol(Decomposition):
             #                = (L⁻¹dr_k)_i (L⁻¹dr_q)_i
             out['fisher'] = 0
             if dK is not None:
-                invL_dK = solve_triangular_batched(L,
-                    jnp.moveaxis(dK, 2, 0),
-                    lower=True) # kim: L⁻¹_il dK_lmk
-                invL_dK_invL = solve_triangular_batched(L,
-                    jnp.swapaxes(invL_dK, 1, 2),
-                    lower=True) # kji: L⁻¹_jm (L⁻¹_il dK_lmk)
-                tr_invK_dK_invK_dK = jnp.einsum('kij,qij->kq', invL_dK_invL, invL_dK_invL)
-                out['fisher'] += 1/2 * tr_invK_dK_invK_dK
+                invL_dK = solve_triangular_batched(
+                    L, jnp.moveaxis(dK, 2, 0), lower=True
+                )  # kim: L⁻¹_il dK_lmk
+                invL_dK_invL = solve_triangular_batched(
+                    L, jnp.swapaxes(invL_dK, 1, 2), lower=True
+                )  # kji: L⁻¹_jm (L⁻¹_il dK_lmk)
+                tr_invK_dK_invK_dK = jnp.einsum(
+                    'kij,qij->kq', invL_dK_invL, invL_dK_invL
+                )
+                out['fisher'] += 1 / 2 * tr_invK_dK_invK_dK
             if dr is not None:
                 invLdr = jlinalg.solve_triangular(L, dr, lower=True)
                 dr_invK_dr = invLdr.T @ invLdr
@@ -572,13 +592,15 @@ class Chol(Decomposition):
                 invL_dKv = jlinalg.solve_triangular(L, dK_jvp_vec, lower=True)
                 invK_dKv = jlinalg.solve_triangular(L.T, invL_dKv, lower=False)
                 invL_dKv_invK = jlinalg.solve_triangular(L, invK_dKv.T, lower=True)
-                invK_dKv_invK = jlinalg.solve_triangular(L.T, invL_dKv_invK, lower=False)
-                tr_invK_dK_invK_dK_v = dK_vjp(invK_dKv_invK)
-                out['fishvec'] += 1/2 * tr_invK_dK_invK_dK_v
+                invK_dKv_invK = jlinalg.solve_triangular(
+                    L.T, invL_dKv_invK, lower=False
+                )
+                tr_invK_dK_invK_dK_v = dK_vjp(invK_dKv_invK)  # ty: ignore[call-non-callable]
+                out['fishvec'] += 1 / 2 * tr_invK_dK_invK_dK_v
             if not (dr_jvp_vec is None and dr_vjp is None):
                 invL_drv = jlinalg.solve_triangular(L, dr_jvp_vec, lower=True)
                 invK_drv = jlinalg.solve_triangular(L.T, invL_drv, lower=False)
-                dr_invK_drv_v = dr_vjp(invK_drv)
+                dr_invK_drv_v = dr_vjp(invK_drv)  # ty: ignore[call-non-callable]
                 out['fishvec'] += dr_invK_drv_v
         else:
             out['fishvec'] = None
@@ -586,26 +608,32 @@ class Chol(Decomposition):
         return tuple(out.values())
 
     @classmethod
-    def make_derivs(cls,
-        K_fun, r_fun, primal,
+    def make_derivs(
+        cls,
+        K_fun,
+        r_fun,
+        primal,
         *,
         args=(),
-        kw={},
+        kw={},  # noqa: B006, read only
         vec=None,
-        value=False,
+        value=False,  # noqa: ARG003, no derivatives needed for the value
         gradrev=False,
         gradfwd=False,
         fisher=False,
         fishvec=False,
     ):
         """
-        Prepares arguments for `minus_log_normal_density`.
+        Prepare arguments for `minus_log_normal_density`.
 
         Parameters
         ----------
-        K_fun, r_fun : callable
-            Functions with signature ``f(primal, *args, **kw)`` that produce the
-            `K` init argument and the `r` `minus_log_normal_density` argument.
+        K_fun : callable
+            Function with signature ``f(primal, *args, **kw)`` that produces the
+            `K` init argument.
+        r_fun : callable
+            Function with signature ``f(primal, *args, **kw)`` that produces the
+            `r` `minus_log_normal_density` argument.
         primal : 1d array
             The first argument to `K_fun` and `r_fun`.
         args : tuple
@@ -614,9 +642,17 @@ class Chol(Decomposition):
             Keyword arguments to `K_fun` and `r_fun`.
         vec : 1d array
             A tangent vector to compute the jacobian-vector products.
-        value, gradrev, gradfwd, fisher, fishvec : bool
-            Arguments to `minus_log_normal_density`, used to determine which
+        value : bool
+            Argument to `minus_log_normal_density`, used to determine which
             derivatives are needed.
+        gradrev : bool
+            Like `value`.
+        gradfwd : bool
+            Like `value`.
+        fisher : bool
+            Like `value`.
+        fishvec : bool
+            Like `value`.
 
         Returns
         -------
@@ -627,7 +663,6 @@ class Chol(Decomposition):
         out : dict
             Dictionary with derivative arguments to `minus_log_normal_density`.
         """
-
         partial = lambda f: lambda x: f(x, *args, **kw)
         K_fun = partial(K_fun)
         r_fun = partial(r_fun)

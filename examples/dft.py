@@ -1,6 +1,6 @@
 # lsqfitgp/examples/dft.py
 #
-# Copyright (c) 2022, Giacomo Petrillo
+# Copyright (c) 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -18,18 +18,26 @@
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Constrain the discrete Fourier transform of a periodic process. Shows how
-to use GP.addlintransf.
+Constrain the discrete Fourier transform of a periodic process.
+
+Shows how to use GP.addlintransf.
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
+import gvar
 import numpy as np
 from jax import numpy as jnp
-import gvar
+from matplotlib import pyplot as plt
 
-class PORCO: pass
-class DUO: pass
+import lsqfitgp as lgp
+
+
+class PORCO:
+    pass
+
+
+class DUO:
+    pass
+
 
 gp = lgp.GP(lgp.Zeta(scale=2 * np.pi, nu=0.5))
 # We could do the same with a non-periodic prior, but it would not make as much
@@ -46,10 +54,12 @@ xpred = np.linspace(-2 * np.pi, 4 * np.pi, 50 * 6 + 1)
 # still be periodic though, it's just an artifact of looking at a coarse grid.
 gp = gp.addx(xpred, DUO)
 
+
 def transf(x):
     # use jax.numpy instead of numpy in this function
     f = jnp.fft.rfft(x)
     return jnp.stack([jnp.real(f), jnp.imag(f)])
+
 
 gp = gp.addlintransf(transf, [PORCO], 'dft')
 
@@ -61,10 +71,9 @@ gp = gp.addlintransf(lambda x: x[0, 3] - x[1, 3], ['dft'], '3rd coef pseudo-phas
 # is "Bayesian statistics" and that everything is subjective, so we may as
 # well hardcode the desiratum into the prior.
 
-u = gp.predfromdata({
-    '3rd real coef': gvar.gvar(10, 1),
-    '3rd coef pseudo-phase': gvar.gvar(5, 1),
-})
+u = gp.predfromdata(
+    {'3rd real coef': gvar.gvar(10, 1), '3rd coef pseudo-phase': gvar.gvar(5, 1)}
+)
 mean = gvar.mean(u)
 sdev = gvar.sdev(u)
 cov = gvar.evalcov(u)

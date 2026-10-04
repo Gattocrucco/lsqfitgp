@@ -1,6 +1,6 @@
 # lsqfitgp/examples/x.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,16 +19,17 @@
 
 """
 
-                            EXAMPLE X.
+EXAMPLE X.
 
-    Where the derivatives of an interesting correlation function
-    are put to harsh a trial.
+Where the derivatives of an interesting correlation function
+are put to harsh a trial.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
+
+import lsqfitgp as lgp
 
 fig, ax = plt.subplots(num='x', clear=True)
 
@@ -42,7 +43,7 @@ args = [
     (0.5 + eps, dict(linestyle='--')),
     (1 - eps, {}),
     (1 + eps, dict(linestyle='--')),
-    (2, {})
+    (2, {}),
 ]
 for Q, kw in args:
     y = lgp.Harmonic(Q=Q).linop('diff', 1, 1)(0, x)

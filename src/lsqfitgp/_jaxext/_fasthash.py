@@ -1,6 +1,6 @@
 # lsqfitgp/_jaxext/_fasthash.py
 #
-# Copyright (c) 2023, Giacomo Petrillo
+# Copyright (c) 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -45,29 +45,28 @@
 
 import functools
 
+from jax import jit, lax
 from jax import numpy as jnp
-from jax import lax
-import jax
-
 
 
 # Compression function for Merkle-Damgard construction.
 # This function is generated using the framework provided.
 def mix(h):
     h ^= h >> 23
-    h *= jnp.array(0x2127599bf4325c37, jnp.uint64)
+    h *= jnp.array(0x2127599BF4325C37, jnp.uint64)
     h ^= h >> 47
     return h
 
-@functools.partial(jax.jit, static_argnames=('unroll',))
+
+@functools.partial(jit, static_argnames=('unroll',))
 def fasthash64(buf, seed, *, unroll=4):
     # buf = jnp.asarray(buf) # needed without jit
     seed = jnp.array(seed, jnp.uint64)
-    assert seed.dtype == jnp.uint64 # check that jax_enable_x64=True
+    assert seed.dtype == jnp.uint64  # check that jax_enable_x64=True
     assert buf.ndim == 1
     buf = buf.view(jnp.uint8)
-    m = jnp.array(0x880355f21e6d1965, jnp.uint64)
-    pos = buf[:buf.size - buf.size % 8].view(jnp.uint64)
+    m = jnp.array(0x880355F21E6D1965, jnp.uint64)
+    pos = buf[: buf.size - buf.size % 8].view(jnp.uint64)
     h = seed ^ (buf.size * m)
 
     def loop(carry, v):
@@ -75,26 +74,35 @@ def fasthash64(buf, seed, *, unroll=4):
         h ^= mix(v)
         h *= m
         return (h, m), None
+
     (h, _), _ = lax.scan(loop, (h, m), pos, unroll=unroll)
 
-    pos2 = buf[pos.nbytes:]
+    pos2 = buf[pos.nbytes :]
     assert pos2.size < 8
     assert pos.nbytes + pos2.size == buf.size
     v = jnp.array(0, jnp.uint64)
 
-    if pos2.size >= 7: v ^= pos2[6].astype(jnp.uint64) << 48
-    if pos2.size >= 6: v ^= pos2[5].astype(jnp.uint64) << 40
-    if pos2.size >= 5: v ^= pos2[4].astype(jnp.uint64) << 32
-    if pos2.size >= 4: v ^= pos2[3].astype(jnp.uint64) << 24
-    if pos2.size >= 3: v ^= pos2[2].astype(jnp.uint64) << 16
-    if pos2.size >= 2: v ^= pos2[1].astype(jnp.uint64) << 8
-    if pos2.size >= 1: v ^= pos2[0].astype(jnp.uint64)
+    if pos2.size >= 7:
+        v ^= pos2[6].astype(jnp.uint64) << 48
+    if pos2.size >= 6:
+        v ^= pos2[5].astype(jnp.uint64) << 40
+    if pos2.size >= 5:
+        v ^= pos2[4].astype(jnp.uint64) << 32
+    if pos2.size >= 4:
+        v ^= pos2[3].astype(jnp.uint64) << 24
+    if pos2.size >= 3:
+        v ^= pos2[2].astype(jnp.uint64) << 16
+    if pos2.size >= 2:
+        v ^= pos2[1].astype(jnp.uint64) << 8
+    if pos2.size >= 1:
+        v ^= pos2[0].astype(jnp.uint64)
     if pos2.size:
         h ^= mix(v)
         h *= m
 
     assert h.dtype == jnp.uint64
     return mix(h)
+
 
 def fasthash32(buf, seed):
     seed = jnp.array(seed, jnp.uint32)

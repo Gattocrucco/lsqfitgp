@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel/_isotropic.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,20 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 
 from jax import numpy as jnp
 
-from .. import _jaxext
+from lsqfitgp._Kernel import _crosskernel, _stationary, _util
 
-from . import _util
-from . import _crosskernel
-from . import _kernel
-from . import _stationary
 
 class CrossIsotropicKernel(_stationary.CrossStationaryKernel):
     """
-    
     Subclass of `CrossStationaryKernel` for isotropic kernels.
 
     An isotropic kernel depends only on the Euclidean distance between its two
@@ -50,40 +44,39 @@ class CrossIsotropicKernel(_stationary.CrossStationaryKernel):
     **kw
         Additional keyword arguments are passed to the `CrossKernel`
         constructor.
-    
+
     Notes
     -----
     The ``input='posabs'`` option will cause problems with second derivatives in
     more than one dimension.
-            
     """
-     
-    def __new__(cls, core, *, input='squared', **kw):
+
+    def __new__(cls, core, *, input='squared', **kw):  # noqa: A002, public parameter
         if input == 'raw':
             return _crosskernel.CrossKernel.__new__(cls, core, **kw)
-        
+
         if input in ('squared', 'abs'):
             dist = lambda x, y: jnp.square(x - y)
         elif input == 'posabs':
             dist = lambda x, y: jnp.square(_stationary._softabs(x - y))
         else:
             raise KeyError(input)
-                
+
         if input in ('posabs', 'abs'):
             transf = jnp.sqrt
         else:
             transf = lambda ss: ss
-        
+
         def newcore(x, y, **kwargs):
             ss = _util.sum_recurse_dtype(dist, x, y)
             return core(transf(ss), **kwargs)
-        
+
         return _crosskernel.CrossKernel.__new__(cls, newcore, **kw)
 
-    
-    
+
 class IsotropicKernel(CrossIsotropicKernel, _stationary.StationaryKernel):
     pass
+
 
 IsotropicKernel.inherit_all_algops(intermediates=True)
 IsotropicKernel.inherit_transf('rescale', intermediates=True)
@@ -94,22 +87,25 @@ IsotropicKernel.inherit_transf('derivable', intermediates=True)
 IsotropicKernel.inherit_transf('normalize', intermediates=True)
 IsotropicKernel.inherit_transf('cond', intermediates=True)
 
+
 class CrossConstant(CrossIsotropicKernel):
     pass
+
 
 class Constant(CrossConstant, IsotropicKernel):
     pass
 
+
 def zero(x, y):
-    return jnp.broadcast_to(0., jnp.broadcast_shapes(x.shape, y.shape))
+    return jnp.broadcast_to(0.0, jnp.broadcast_shapes(x.shape, y.shape))
+
 
 class Zero(IsotropicKernel):
-    """
-    Represents a kernel that unconditionally yields zero.
-    """
+    """Represents a kernel that unconditionally yields zero."""
 
     def __new__(cls):
         return super().__new__(cls, zero, input='raw')
+
 
 _crosskernel.IsotropicKernel = IsotropicKernel
 _crosskernel.CrossIsotropicKernel = CrossIsotropicKernel

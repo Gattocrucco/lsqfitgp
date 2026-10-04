@@ -1,6 +1,6 @@
 # lsqfitgp/examples/m.py
 #
-# Copyright (c) 2020, 2022, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,46 +19,48 @@
 
 """
 
-                            EXAMPLE M.
-    
-    Where we discover that, unlike elephants, Matérn processes
-    prefer to forget after less than one data step.
+EXAMPLE M.
+
+Where we discover that, unlike elephants, Matérn processes
+prefer to forget after less than one data step.
 
 """
 
-import lsqfitgp as lgp
-from matplotlib import pyplot as plt
-from jax import numpy as jnp
-import numpy as np
-import gvar
-from scipy import optimize
 import jax
+import numpy as np
+from jax import numpy as jnp
+from matplotlib import pyplot as plt
+from scipy import optimize
+
+import lsqfitgp as lgp
 
 xdata = np.linspace(0, 10, 10)
 xpred = np.linspace(-15, 25, 500)
 y = np.sin(xdata)
 
+
 def makegp(par):
     scale = jnp.exp(par[0])
     return lgp.GP(lgp.Maternp(p=2, scale=scale))
 
+
 def fun(par):
     return -makegp(par).addx(xdata, 'data').marginal_likelihood({'data': y})
+
 
 result = optimize.minimize(fun, np.log([5]), jac=jax.jacfwd(fun))
 print(result)
 
-gp = (makegp(result.x)
-    .addx(xdata, 'data')
-    .addx(xpred, 'pred')
-)
+gp = makegp(result.x).addx(xdata, 'data').addx(xpred, 'pred')
 
 m, cov = gp.predfromdata({'data': y}, 'pred', raw=True)
 s = np.sqrt(np.diag(cov))
 
 fig, ax = plt.subplots(num='m', clear=True)
 
-patch = ax.fill_between(xpred, m - s, m + s, label=f'pred (L={result.x[0]:.2g})', alpha=0.5)
+patch = ax.fill_between(
+    xpred, m - s, m + s, label=f'pred (L={result.x[0]:.2g})', alpha=0.5
+)
 color = patch.get_facecolor()[0]
 simulated_lines = np.random.multivariate_normal(m, cov, size=10)
 ax.plot(xpred, simulated_lines.T, '-', color=color)

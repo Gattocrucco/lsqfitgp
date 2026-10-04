@@ -1,6 +1,6 @@
 # lsqfitgp/examples/z.py
 #
-# Copyright (c) 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -19,21 +19,22 @@
 
 """
 
-                            EXAMPLE Z.
+EXAMPLE Z.
 
-    Where we sail in an infinite dimensional space to sum two
-    numbers.
+Where we sail in an infinite dimensional space to sum two
+numbers.
 
 """
 
+import gvar
 import numpy as np
 from matplotlib import pyplot as plt
-import gvar
 
 import lsqfitgp as lgp
 
-gp = (lgp.GP()
-    .defproc('short', lgp.ExpQuad(scale= 1))
+gp = (
+    lgp.GP()
+    .defproc('short', lgp.ExpQuad(scale=1))
     .defproc('long', lgp.ExpQuad(scale=10))
     .deftransf('sum', {'short': 0.3, 'long': 1})
 )
@@ -41,12 +42,14 @@ gp = (lgp.GP()
 time = np.arange(30)
 time_pred = np.linspace(-30, 60, 200)
 
+
 def addcomps(gp, key, time):
-    return (gp
-        .addx(time, key + 'short', proc='short')
-        .addx(time, key + 'long' , proc='long' )
-        .addx(time, key          , proc='sum'  )
+    return (
+        gp.addx(time, key + 'short', proc='short')
+        .addx(time, key + 'long', proc='long')
+        .addx(time, key, proc='sum')
     )
+
 
 gp = addcomps(gp, 'data', time)
 gp = addcomps(gp, 'pred', time_pred)
@@ -66,16 +69,16 @@ samples = list(gvar.raniter(pred, 1))
 print('figure...')
 fig, axs = plt.subplots(3, 1, num='z', clear=True, figsize=[6, 7], layout='constrained')
 
-for ax, comp in zip(axs, ['', 'short', 'long']):
+for ax, comp in zip(axs, ['', 'short', 'long'], strict=True):
     key = 'pred' + comp
-    
+
     m = mean[key]
     s = sdev[key]
     ax.fill_between(time_pred, m - s, m + s, alpha=0.3, color='b')
-    
+
     for sample in samples:
         ax.plot(time_pred, sample[key], alpha=0.2, color='b')
-    
+
     ax.plot(time, data['data' + comp], '.k')
 
 axs[0].set_ylabel('A + B')

@@ -1,6 +1,6 @@
 # lsqfitgp/_Kernel/_alg.py
 #
-# Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -17,34 +17,34 @@
 # You should have received a copy of the GNU General Public License
 # along with lsqfitgp.  If not, see <http://www.gnu.org/licenses/>.
 
-""" register algops on CrossKernel and AffineSpan """
+"""Register algops on CrossKernel and AffineSpan."""
 
 import functools
 
 from jax import numpy as jnp
 from jax.scipy import special as jspecial
 
-from .. import _special
+from lsqfitgp import _special
+from lsqfitgp._Kernel import _util
+from lsqfitgp._Kernel._crosskernel import AffineSpan, CrossKernel
 
-from . import _util
-from ._crosskernel import CrossKernel, AffineSpan
 
 @CrossKernel.register_algop
-def add(tcls, self, other):
+def add(_tcls, self, other):
     r"""
-    
+
     Sum of kernels.
-    
+
     .. math::
         \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}(x, y), \\
         \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) + \mathrm{other}.
-    
+
     Parameters
     ----------
     other : CrossKernel or scalar
         The other kernel.
-    
-    """
+
+    """  # noqa: DOC101, DOC103, DOC201
     core = self.core
     if _util.is_numerical_scalar(other):
         newcore = lambda x, y, **kw: core(x, y, **kw) + other
@@ -55,22 +55,23 @@ def add(tcls, self, other):
         return NotImplemented
     return self._clone(core=newcore)
 
+
 @CrossKernel.register_algop
-def mul(tcls, self, other):
+def mul(_tcls, self, other):
     r"""
-    
+
     Product of kernels.
-    
+
     .. math::
         \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}(x, y), \\
         \mathrm{newkernel}(x, y) &= \mathrm{kernel}(x, y) \cdot \mathrm{other}.
-    
+
     Parameters
     ----------
     other : CrossKernel or scalar
         The other kernel.
-    
-    """
+
+    """  # noqa: DOC101, DOC103, DOC201
     core = self.core
     if _util.is_numerical_scalar(other):
         newcore = lambda x, y, **kw: core(x, y, **kw) * other
@@ -81,21 +82,22 @@ def mul(tcls, self, other):
         return NotImplemented
     return self._clone(core=newcore)
 
+
 @CrossKernel.register_algop
-def pow(tcls, self, *, exponent):
+def pow(_tcls, self, *, exponent):  # noqa: A001, the name of the algop
     r"""
-    
+
     Power of the kernel.
-    
+
     .. math::
         \mathrm{newkernel}(x, y) = \mathrm{kernel}(x, y)^{\mathrm{exponent}}
-    
+
     Parameters
     ----------
     exponent : nonnegative integer
         The exponent. If traced by jax, it must have unsigned integer type.
-    
-    """
+
+    """  # noqa: DOC101, DOC103, DOC201
     if _util.is_nonnegative_integer_scalar(exponent):
         core = self.core
         newcore = lambda x, y, **kw: core(x, y, **kw) ** exponent
@@ -105,26 +107,27 @@ def pow(tcls, self, *, exponent):
 
 
 @CrossKernel.register_algop
-def rpow(tcls, self, *, base):
+def rpow(_tcls, self, *, base):
     r"""
-    
+
     Exponentiation of the kernel.
-    
+
     .. math::
         \text{newkernel}(x, y) = \text{base}^{\text{kernel}(x, y)}
-    
+
     Parameters
     ----------
     base : scalar
         A number >= 1. If traced by jax, the value is not checked.
-    
-    """
+
+    """  # noqa: DOC101, DOC103, DOC201
     if _util.is_scalar_cond_trueontracer(base, lambda x: x >= 1):
         core = self.core
         newcore = lambda x, y, **kw: base ** core(x, y, **kw)
         return self._clone(core=newcore)
     else:
         return NotImplemented
+
 
 CrossKernel.register_ufuncalgop(jnp.tan)
 # CrossKernel.register_ufuncalgop(lambda x: 1 / jnp.sinc(x), '1/sinc')
@@ -148,7 +151,7 @@ CrossKernel.register_ufuncalgop(jspecial.i1)
 
 
 @functools.partial(AffineSpan.register_algop, transfname='add')
-def affine_add(tcls, self, other):
+def affine_add(_tcls, self, other):
     newself = AffineSpan.super_transf('add', self, other)
     if _util.is_numerical_scalar(other):
         dynkw = dict(self.dynkw)
@@ -157,8 +160,9 @@ def affine_add(tcls, self, other):
     else:
         return newself
 
+
 @functools.partial(AffineSpan.register_algop, transfname='mul')
-def affine_mul(tcls, self, other):
+def affine_mul(_tcls, self, other):
     newself = AffineSpan.super_transf('mul', self, other)
     if _util.is_numerical_scalar(other):
         dynkw = dict(self.dynkw)

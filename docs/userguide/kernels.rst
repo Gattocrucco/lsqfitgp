@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/kernels.rst
+.. lsqfitgp/docs/userguide/kernels.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -106,21 +106,21 @@ quadratic kernels with different scales, and see what happens::
     import numpy as np
     import gvar
     from matplotlib import pyplot as plt
-    
+
     kernel = lgp.ExpQuad(scale=0.3)
     kernel += 3**2 * lgp.ExpQuad(scale=10) # we also multiply the scale=10
                                            # kernel to see it better
     gp = lgp.GP(kernel)
-    
+
     x = np.linspace(-15, 15, 300)
     gp = gp.addx(x, 'baz')
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example')
-    
+
     y = gp.prior('baz')
     for sample in gvar.raniter(y, 1):
         ax.plot(x, sample)
-    
+
     fig.savefig('kernels1.png')
 
 .. image:: kernels1.png
@@ -155,13 +155,13 @@ quadratic::
         .GP(kernel)
         .addx(x, 'baz')
     )
-    
+
     ax.cla()
-    
+
     y = gp.prior('baz')
     sample = next(gvar.raniter(y, 1))
     ax.plot(x, sample)
-    
+
     fig.savefig('kernels2.png')
 
 .. image:: kernels2.png
@@ -173,7 +173,7 @@ function (cyan), and the band of the standard deviation of ``y`` (yellow)::
 
     ax.fill_between(x, -lorentz(x), lorentz(x), color='cyan', alpha=0.5)
     ax.fill_between(x, -gvar.sdev(y), gvar.sdev(y), color='yellow', alpha=0.5)
-    
+
     fig.savefig('kernels3.png')
 
 .. image:: kernels3.png

@@ -1,6 +1,6 @@
 # lsqfitgp/_Deriv.py
 #
-# Copyright (c) 2020, 2022, 2024, Giacomo Petrillo
+# Copyright (c) 2020, 2022, 2024, 2026, Giacomo Petrillo
 #
 # This file is part of lsqfitgp.
 #
@@ -21,28 +21,36 @@ import collections
 
 import numpy as np
 
-class Deriv:
+
+class Deriv:  # noqa: PLW1641, unhashable
     """
-    Class for specifying derivatives. Behaves like a dictionary str -> int,
-    where the keys represent variables and values the derivation order. An
-    empty Deriv means no derivatives. A Deriv with one single key None means
-    that the variable is implicit.
+    Class for specifying derivatives.
+
+    Behaves like a dictionary str -> int, where the keys represent variables
+    and values the derivation order. An empty Deriv means no derivatives. A
+    Deriv with one single key None means that the variable is implicit.
 
     Deriv(int) -> specified order derivative
-    
+
     Deriv(str) -> first derivative w.r.t. specified variable
-    
+
     Deriv(iter of str) -> derivative w.r.t. specified variables
-    
+
     Deriv(iter of int, str) -> an int before a str acts as a multiplier
-    
+
     Deriv(Deriv) -> pass through
-    
+
     Deriv(None) -> Deriv(0)
-    
+
     Example: Deriv(['a', 'b', 'b', 'c']) is equivalent to
     Deriv(['a', 2, 'b', 'c']).
-    
+
+    Attributes
+    ----------
+    implicit
+    order
+    max
+
     Raises
     ------
     TypeError
@@ -50,16 +58,9 @@ class Deriv:
     ValueError
         If ``*args`` ends with an integer or if there are consecutive
         integers.
-    
-    Attributes
-    ----------
-    implicit
-    order
-    max
-
     """
-   
-    def __new__(cls, *args):
+
+    def __new__(cls, *args):  # noqa: C901
         c = collections.Counter()
         if len(args) == 1:
             arg = args[0]
@@ -67,7 +68,8 @@ class Deriv:
                 return arg
             elif isinstance(arg, (int, np.integer)):
                 if arg < 0:
-                    raise ValueError(f'degree {arg} is negative')
+                    msg = f'degree {arg} is negative'
+                    raise ValueError(msg)
                 if arg:
                     c.update({None: arg})
             elif isinstance(arg, str):
@@ -85,30 +87,34 @@ class Deriv:
                     elif isinstance(obj, (int, np.integer)):
                         assert obj >= 0, obj
                         if integer is not None:
-                            raise ValueError('consecutive integers in iterable')
+                            msg = 'consecutive integers in iterable'
+                            raise ValueError(msg)
                         integer = int(obj)
                     else:
-                        raise TypeError('objects in iterable must be int or str')
+                        msg = 'objects in iterable must be int or str'
+                        raise TypeError(msg)
                 if integer is not None:
-                    raise ValueError('dangling derivative order')
+                    msg = 'dangling derivative order'
+                    raise ValueError(msg)
             elif arg is not None:
-                raise TypeError('argument must be None, int, str, or iterable')
+                msg = 'argument must be None, int, str, or iterable'
+                raise TypeError(msg)
         elif len(args) != 0:
             raise ValueError(len(args))
         assert all(c.values())
         self = super().__new__(cls)
         self._counter = c
         return self
-    
+
     def __getitem__(self, key):
         return self._counter[key]
-    
+
     def __iter__(self):
         return iter(self._counter)
-    
+
     def __len__(self):
         return len(self._counter)
-    
+
     def __bool__(self):
         return bool(self._counter)
 
@@ -117,28 +123,22 @@ class Deriv:
             return self._counter == val._counter
         else:
             return NotImplemented
-    
+
     def __repr__(self):
         return dict.__repr__(self._counter)
-    
+
     @property
     def implicit(self):
-        """
-        True if the derivative is trivial or the variable is implicit.
-        """
+        """True if the derivative is trivial or the variable is implicit."""
         return not self or next(iter(self._counter)) is None
-    
+
     @property
     def order(self):
-        """
-        The total derivation order, i.e., the sum of the values.
-        """
+        """The total derivation order, i.e., the sum of the values."""
         # return self._counter.total() # works only in Python >=3.10
         return sum(self._counter.values())
-    
+
     @property
     def max(self):
-        """
-        The maximum derivation order for any single variable.
-        """
+        """The maximum derivation order for any single variable."""
         return max(self._counter.values(), default=0)
