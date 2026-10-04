@@ -48,8 +48,7 @@ import lsqfitgp
 
 release = lsqfitgp.__version__
 version = release
-if 'dev' not in version and '+' not in version:
-    project += ' ' + version
+project += ' ' + version
 
 # GitHub ref for source links: the commit node from a dev version string, or the
 # release tag when building from a clean tagged commit.

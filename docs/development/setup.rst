@@ -138,26 +138,3 @@ shell equipped with specific versions of python and jax:
 .. code-block:: sh
 
     $ uv run --with='jax<0.7,jaxlib<0.7' --isolated --python=3.11 --dev python -m IPython
-
-Release
--------
-
-The version of a release is set by the topmost section of the changelog,
-:literal:`docs/development/changelog.md`, whose header must have the format
-:literal:`## <version>. <title> (<date>)`, with the date of the release. The
-release is tagged as :literal:`v<version>` and the package version is derived
-from the tag. The steps are:
-
-  1. Describe the release in the changelog, and link the versioned
-     documentation :literal:`docs-<version>` in :literal:`docs/index.rst`.
-  2. :literal:`make setup`, then :literal:`make update-deps`.
-  3. :literal:`make release`. On a branch other than main, it will not release,
-     but it runs all the tests, the examples, and the documentation; iterate and
-     debug.
-  4. Merge a PR with the changes and fixes.
-  5. On main, :literal:`make release`. This tags the commit, builds the package,
-     uploads it to PyPI, pushes the tag, and creates a draft GitHub release
-     from the changelog. If it fails, merge a fix PR and try again.
-  6. Publish the draft GitHub release.
-  7. The tag push triggers the deployment of the versioned documentation, check
-     it is online.

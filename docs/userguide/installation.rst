@@ -22,15 +22,10 @@
 Installation
 ============
 
-First, you have to get a working Python interpreter. There are three main options: the `official package <https://www.python.org>`_, the `Anaconda distribution <https://www.anaconda.com>`_, and the `Spyder IDE <https://www.spyder-ide.org>`_. The latter is probably the easier one if it's your first time with Python.
+First, you have to get a working Python interpreter. There are four main options: `uv <https://docs.astral.sh/uv/>`_, the `official package <https://www.python.org>`_, the `Anaconda distribution <https://www.anaconda.com>`_, and the `Spyder IDE <https://www.spyder-ide.org>`_. The latter is probably the easier one if it's your first time with Python.
 
 Then, install :mod:`lsqfitgp` by running this command in a shell:
 
 .. code-block:: sh
 
     pip install lsqfitgp
-
-Windows
--------
-
-JAX is still a bit buggy on Windows, a few tests in lsqfitgp's test suite fail due to accuracy problems.
