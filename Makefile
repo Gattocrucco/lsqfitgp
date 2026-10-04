@@ -47,7 +47,7 @@ COOLDOWN_DAYS = 7
 # drive the `update-oldest-deps` policy. The old toolchain swaps the `docs`
 # dependency group, which is not needed to run the unit tests, with `old` (see
 # the comments in pyproject.toml).
-OLD_DATE = 2024-10-23T00:00:00Z
+OLD_DATE = 2025-10-04T00:00:00Z
 OLD_DELAY_DAYS = 365
 BUMP_PYTHON_VERSION_DATE = 10-31
 NUM_SUPPORTED_PYTHON_RELEASES = 5

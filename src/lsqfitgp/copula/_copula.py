@@ -161,7 +161,7 @@ class Copula(_base.DistrBase):
                 raise TypeError(msg)
             return obj
 
-        self._variables = tree_util.tree_map_with_path(check_type, variables)  # noqa: TID251  # WORKAROUND(jax<0.4.38): use tree.map_with_path
+        self._variables = tree.map_with_path(check_type, variables)
         cache = set()
         self.in_shape = (self._compute_in_size(cache),)
         self._ancestor_count = len(cache) - 1
@@ -285,7 +285,7 @@ class Copula(_base.DistrBase):
             def __repr__(self):
                 return self.s
 
-        out = tree_util.tree_map_with_path(subrepr, self._variables)  # noqa: TID251  # WORKAROUND(jax<0.4.38): use tree.map_with_path
+        out = tree.map_with_path(subrepr, self._variables)
         out = tree.map(NoQuotesRepr, out)
         out = pprint.pformat(out, sort_dicts=False)
         return f'{self.__class__.__name__}({out})'
@@ -294,4 +294,4 @@ class Copula(_base.DistrBase):
         def compute(key, x):
             return x._compute_staticdescr([*path, key], cache)
 
-        return tree_util.tree_map_with_path(compute, self._variables)  # noqa: TID251  # WORKAROUND(jax<0.4.38): use tree.map_with_path
+        return tree.map_with_path(compute, self._variables)

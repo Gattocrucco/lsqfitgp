@@ -21,12 +21,8 @@
 
 import inspect
 
-try:
-    # WORKAROUND(numpy<2): drop numpy 1 support
-    from numpy.lib import function_base  # ty: ignore[unresolved-import]
-except ImportError:
-    from numpy.lib import _function_base_impl as function_base  # numpy 2
 import jax
+from numpy.lib import _function_base_impl as function_base
 
 
 class Signature:
