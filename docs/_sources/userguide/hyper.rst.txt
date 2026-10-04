@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/hyper.rst
+.. lsqfitgp/docs/userguide/hyper.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -51,7 +51,7 @@ Enough chatter already, let's fit this damn ``scale`` parameter::
     import numpy as np
     import lsqfitgp as lgp
     import gvar
-    
+
     x = np.linspace(-5, 5, 11)
     y = np.sin(x)
     def makegp(hyperparams):
@@ -100,20 +100,20 @@ and take some samples. However, since the hyperparameter has an uncertainty,
 we have to sample it too::
 
     from matplotlib import pyplot as plt
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example')
-    
+
     xplot = np.linspace(-15, 15, 200)
-    
+
     for hpsample in gvar.raniter(fit.p, 3):
         gp = makegp(hpsample).addx(xplot, 'plot')
         yplot = gp.predfromdata({'sine': y}, 'plot')
-        
+
         for ysample in gvar.raniter(yplot, 1):
             ax.plot(xplot, ysample, color='red', alpha=0.3)
-    
+
     ax.plot(x, y, '.k')
-    
+
     fig.savefig('hyper1.png')
 
 .. image:: hyper1.png
@@ -129,12 +129,12 @@ constant::
             .GP(kernel)
             .addx(x, 'sine')
         )
-    
+
     hyperprior = {
         'log(sdev)': gvar.log(gvar.gvar(1, 1)),
         'log(scale)': gvar.log(gvar.gvar(3, 3))
     }
-    
+
     fit = lgp.empbayes_fit(hyperprior, makegp, {'sine': y}, raises=False)
     print('sdev', fit.p['sdev'])
     print('scale', fit.p['scale'])
@@ -159,16 +159,16 @@ It did not do what I wanted! The fitted standard deviation is even higher
 than 1. ::
 
     ax.cla()
-    
+
     for hpsample in gvar.raniter(fit.p, 5):
         gp = makegp(hpsample).addx(xplot, 'plot')
         yplot = gp.predfromdata({'sine': y}, 'plot')
-        
+
         for ysample in gvar.raniter(yplot, 1):
             ax.plot(xplot, ysample, color='red', alpha=0.3)
-    
+
     ax.plot(x, y, '.k')
-    
+
     fig.savefig('hyper2.png')
 
 .. image:: hyper2.png
@@ -188,17 +188,17 @@ liked to come out, i.e., I'll use a scale of 2 and a standard deviation of, say,
 0.7::
 
     gp = makegp({'scale': 2, 'sdev': 0.7}).addx(xplot, 'plot')
-    
+
     prior = gp.prior('plot')
-    
+
     fig.clf()
     fig.set_size_inches(6.4, 30)
     axs = fig.subplots(10, 1, sharex=True)
-        
+
     for ax, sample in zip(axs, gvar.raniter(prior)):
         ax.plot(xplot, sample)
         ax.plot(x, y, '.k')
-    
+
     fig.tight_layout()
     fig.savefig('hyper3.png')
 
@@ -207,14 +207,14 @@ liked to come out, i.e., I'll use a scale of 2 and a standard deviation of, say,
 Now we do the same with the optimized hyperparameters::
 
     gp = makegp(fit.pmean).addx(xplot, 'plot')
-    
+
     prior = gp.prior('plot')
-    
+
     for ax, sample in zip(axs, gvar.raniter(prior)):
         ax.cla()
         ax.plot(xplot, sample)
         ax.plot(x, y, '.k')
-    
+
     fig.savefig('hyper4.png')
 
 .. image:: hyper4.png
@@ -229,7 +229,7 @@ integrating the Gaussian distribution, with the caveat that the parameter we
 actually used in the fit is log(sdev)::
 
     from scipy import stats
-    
+
     p = fit.p['log(sdev)']
     prob = stats.norm.cdf(np.log(1), loc=gvar.mean(p), scale=gvar.sdev(p))
     print('{:.3g}'.format(prob))
@@ -259,7 +259,7 @@ Output:
 Then I run this code to get the (I hope) correct and satisfying answer::
 
    import pymc3 as pm
-   
+
    model = pm.Model()
    with model:
        logscale = pm.Normal('logscale', mu=np.log(3), sigma=1)
@@ -267,31 +267,31 @@ Then I run this code to get the (I hope) correct and satisfying answer::
        kernel = pm.math.exp(logsdev) ** 2 * pm.gp.cov.ExpQuad(1, ls=pm.math.exp(logscale))
        gp = pm.gp.Marginal(cov_func=kernel)
        gp.marginal_likelihood('data', x[:, None], y, 0)
-   
+
    with model:
        mp = pm.find_MAP()
        trace = pm.sample(10000, cores=1)
-   
+
    print('\nMaximum a posteriori (must be the same as lsqfitgp):')
    print('log(sdev) {:.2f}'.format(mp['logsdev']))
    print('log(scale) {:.2f}'.format(mp['logscale']))
-   
+
    df = pm.trace_to_dataframe(trace)
    mean = df.mean()
    cov = df.cov()
-   
+
    meandict = {}
    covdict = {}
    for label1 in df.columns:
        meandict[label1] = mean[label1]
        for label2 in df.columns:
            covdict[label1, label2] = cov[label1][label2]
-   
+
    params = gvar.gvar(meandict, covdict)
    print('\nPosterior mean and standard deviation:')
    print('log(sdev)', params['logsdev'])
    print('log(scale)', params['logscale'])
-   
+
    p = params['logsdev']
    prob_gauss = stats.norm.cdf(np.log(1), loc=gvar.mean(p), scale=gvar.sdev(p))
    true_prob = np.sum(df['logsdev'] <= np.log(1)) / len(df)
@@ -382,12 +382,12 @@ the same second derivative::
     x = np.linspace(-4, 4, 200)
     cos = np.cos(x)
     gauss = np.exp(-1/2 * x**2)
-    
+
     fig, ax = plt.subplots(num='cosgauss')
-    
+
     ax.plot(x, cos)
     ax.plot(x, gauss)
-    
+
     fig.savefig('hyper5.png')
 
 .. image:: hyper5.png
@@ -397,7 +397,7 @@ than the sine, so let's try it::
 
     gauss_large = 3 * np.exp(-1/2 * (x / np.sqrt(3)) ** 2) - 2
     ax.plot(x, gauss_large, scaley=False)
-    
+
     fig.savefig('hyper6.png')
 
 .. image:: hyper6.png
@@ -409,7 +409,7 @@ We learned a lesson. But now how do we make the fit work? Oh well that's as
 easy as cheating actually if we use the :class:`Periodic` kernel::
 
     x = np.linspace(-5, 5, 11)
-    
+
     def makegp(hp):
         scale = hp['period'] / (2 * np.pi)
         kernel = lgp.Periodic(scale=scale)
@@ -417,24 +417,24 @@ easy as cheating actually if we use the :class:`Periodic` kernel::
             .GP(kernel)
             .addx(x, 'sine')
         )
-    
+
     hprior = {
         'log(period)': gvar.log(2 * np.pi * gvar.gvar(1, 1)),
     }
     fit = lgp.empbayes_fit(hprior, makegp, {'sine': y}, raises=False)
     for k in fit.p.all_keys():
         print(k, fit.p[k])
-    
+
     ax.cla()
-    
+
     for hpsamp in gvar.raniter(fit.p, 3):
         gp = makegp(hpsamp).addx(xplot, 'plot')
         yplot = gp.predfromdata({'sine': y}, 'plot')
-        
+
         for ysamp in gvar.raniter(yplot, 1):
             ax.plot(xplot, ysamp, alpha=0.3)
         ax.plot(x, y, '.k')
-    
+
     fig.savefig('hyper7.png')
 
 .. image:: hyper7.png

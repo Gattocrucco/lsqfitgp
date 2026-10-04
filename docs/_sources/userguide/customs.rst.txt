@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/customs.rst
+.. lsqfitgp/docs/userguide/customs.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -72,7 +72,7 @@ Let's put this into code::
 
     import lsqfitgp as lgp
     import numpy as np
-    
+
     @lgp.kernel
     @np.vectorize
     def CountLetters(x, y):
@@ -133,7 +133,7 @@ from the `English <https://en.wikipedia.org/wiki/Special:Random>`_ and `Latin
         """Chaerodrys is a genus of obese weevils (insects in the family Brachyceridae).""",
         """A photographic album, or photo album, is a series of photographic prints collected by an individual person or family in the form of a book.[1][2][3] Some book-form photo albums have compartments which the photos may be slipped into; other albums have heavy paper with an abrasive surface covered with clear plastic sheets, on which surface photos can be put.[4] Older style albums often were simply books of heavy paper on which photos could be glued to or attached to with adhesive corners or pages.[4]""",
     ]
-    
+
     latin_texts = [
         """Colloretum[1] (-i, n.) (alia nomina: Colloredum Montis Albani) (Italiane: Colloredo di Monte Albano; Foroiuliensice: Colorêt di Montalban) est oppidum Italiae et municipium, in Regione Foro Iulii-Venetia Iulia et in Provincia Utinensi situm.""",
         """Lánzhōu,[1] seu fortasse Lanceu[2] (litteris Sinicis 兰州), est urbs Serica et caput provinciae Gansu.""",
@@ -269,7 +269,7 @@ if they are English or Latin. I'll pick this time::
         flumine ad Pyrenaeos montes et eam partem Oceani quae est ad Hispaniam
         pertinet; spectat inter occasum solis et septentriones.
     """
-    
+
     paradiselost = """
         Of Man's first disobedience, and the fruit
         Of that forbidden tree whose mortal taste
@@ -288,7 +288,7 @@ if they are English or Latin. I'll pick this time::
         Above th' Aonian mount, while it pursues
         Things unattempted yet in prose or rhyme.
     """
-    
+
     gp = (gp
         .addx(debellogallico, 'caesar')
         .addx(paradiselost, 'milton')
@@ -363,12 +363,12 @@ various predefined transformations. Now let's run the fit::
         .addx(debellogallico, 'caesar')
         .addx(paradiselost, 'milton')
     )
-    
+
     post = gp.predfromdata({
         'english': -1 * np.ones(len(english_texts)),
         'latin': np.ones(len(latin_texts))
     }, ['caesar', 'milton'])
-    
+
     print(post)
 
 Output:

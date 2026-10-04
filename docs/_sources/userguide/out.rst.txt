@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/out.rst
+.. lsqfitgp/docs/userguide/out.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -39,7 +39,7 @@ of small independent increments. A random step on a plane is an increment along
 into a vector. ::
 
     import numpy as np
-    
+
     time = np.linspace(0, 0.1, 300)
     x = np.empty((2, len(time)), dtype=[('time', float), ('coord', int)])
     x['time'] = time[None, :]
@@ -50,7 +50,7 @@ the output coordinate indicator. The array is a grid where the first axis
 coordinate corresponds to the output coordinate. ::
 
     import lsqfitgp as lgp
-    
+
     gp = (lgp
         .GP(lgp.Wiener(dim='time') * lgp.White(dim='coord'))
         .addx(x, 'walk')
@@ -64,20 +64,20 @@ Just for fun, we'll force the random walk to arrive at the (1, 1) point::
 
     import gvar
     from matplotlib import pyplot as plt
-    
+
     end = np.empty(2, dtype=x.dtype)
     end['time'] = np.max(time)
     end['coord'] = np.arange(2)
     gp = gp.addx(end, 'endpoint')
-    
+
     path = gp.predfromdata({'endpoint': [1, 1]}, 'walk')
-    
+
     fig, ax = plt.subplots(num='lsqfitgp example')
-    
+
     for sample in gvar.raniter(path, 2):
         ax.plot(sample[0], sample[1])
     ax.plot([0, 1], [0, 1], '.k')
-    
+
     fig.savefig('out1.png')
 
 .. image:: out1.png
@@ -86,10 +86,10 @@ The paths go quite directly to the endpoint. This is because we allowed a total
 time of only 0.1. Let's see how far would it go a priori::
 
     prior = gp.prior('walk')
-    
+
     for sample in gvar.raniter(prior, 2):
         ax.plot(sample[0], sample[1], linewidth=1)
-    
+
     fig.savefig('out2.png')
 
 .. image:: out2.png
@@ -106,16 +106,15 @@ going directly in the top-right direction is unfavored. ::
         .addx(x, 'walk')
         .addx(end, 'endpoint')
     )
-    
+
     path = gp.predfromdata({'endpoint': [1, 1]}, 'walk')
-    
+
     ax.cla()
-    
+
     for sample in gvar.raniter(path, 2):
         ax.plot(sample[0], sample[1])
     ax.plot([0, 1], [0, 1], '.k')
-    
+
     fig.savefig('out3.png')
 
 .. image:: out3.png
-

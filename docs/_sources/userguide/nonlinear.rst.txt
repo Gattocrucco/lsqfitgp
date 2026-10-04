@@ -1,6 +1,6 @@
-.. lsqfitgp/docs/nonlinear.rst
+.. lsqfitgp/docs/userguide/nonlinear.rst
 ..
-.. Copyright (c) 2020, 2022, 2023, Giacomo Petrillo
+.. Copyright (c) 2020, 2022, 2023, 2026, Giacomo Petrillo
 ..
 .. This file is part of lsqfitgp.
 ..
@@ -50,12 +50,12 @@ data. ::
     import lsqfitgp as lgp
     import numpy as np
     import gvar
-    
+
     gp = lgp.GP(lgp.ExpQuad())
-    
+
     x = np.arange(15)
     gp = gp.addx(x, 'data')
-    
+
     data_gp = gvar.sample(gp.prior('data'))
 
 Then we map it to (-1, 1)::
@@ -97,14 +97,14 @@ Now we define the prior and model function following the requirements of
 :class:`lsqfit.nonlinear_fit` and run the fit::
 
     import lsqfit
-    
+
     prior = {
         'gproc': gp.prior('data')
     }
-    
+
     def fcn(params):
         return gvar.tanh(params['gproc'])
-    
+
     fit = lsqfit.nonlinear_fit(data=data, fcn=fcn, prior=prior)
     print(fit.format(maxline=True))
 
@@ -116,40 +116,40 @@ Output:
       chi2/dof [dof] = 1.1 [15]    Q = 0.36    logGBF = -11.047
 
     Parameters:
-            gproc 0   -0.15 (10)     [  0.0 (1.0) ]  
-                  1    0.71 (15)     [  0.0 (1.0) ]  
+            gproc 0   -0.15 (10)     [  0.0 (1.0) ]
+                  1    0.71 (15)     [  0.0 (1.0) ]
                   2   -1.30 (34)     [  0.0 (1.0) ]  *
                   3   -2.37 (56)     [  0.0 (1.0) ]  **
                   4   -1.20 (30)     [  0.0 (1.0) ]  *
-                  5    0.58 (13)     [  0.0 (1.0) ]  
-                  6    0.55 (13)     [  0.0 (1.0) ]  
-                  7    0.24 (10)     [  0.0 (1.0) ]  
-                  8   -0.52 (12)     [  0.0 (1.0) ]  
-                  9   -0.41 (11)     [  0.0 (1.0) ]  
-                 10    0.54 (13)     [  0.0 (1.0) ]  
-                 11    0.86 (18)     [  0.0 (1.0) ]  
-                 12    0.51 (12)     [  0.0 (1.0) ]  
-                 13    0.33 (11)     [  0.0 (1.0) ]  
-                 14    0.15 (10)     [  0.0 (1.0) ]  
+                  5    0.58 (13)     [  0.0 (1.0) ]
+                  6    0.55 (13)     [  0.0 (1.0) ]
+                  7    0.24 (10)     [  0.0 (1.0) ]
+                  8   -0.52 (12)     [  0.0 (1.0) ]
+                  9   -0.41 (11)     [  0.0 (1.0) ]
+                 10    0.54 (13)     [  0.0 (1.0) ]
+                 11    0.86 (18)     [  0.0 (1.0) ]
+                 12    0.51 (12)     [  0.0 (1.0) ]
+                 13    0.33 (11)     [  0.0 (1.0) ]
+                 14    0.15 (10)     [  0.0 (1.0) ]
 
     Fit:
           key        y[key]      f(p)[key]
     --------------------------------------
-            0    -0.17 (10)    -0.149 (99)  
-            1     0.67 (10)     0.610 (97)  
+            0    -0.17 (10)    -0.149 (99)
+            1     0.67 (10)     0.610 (97)
             2    -0.99 (10)    -0.861 (88)  *
-            3    -0.91 (10)    -0.983 (19)  
-            4    -0.92 (10)    -0.832 (91)  
-            5     0.57 (10)     0.523 (97)  
-            6     0.47 (10)     0.500 (96)  
-            7     0.26 (10)     0.235 (98)  
-            8    -0.50 (10)    -0.476 (96)  
-            9    -0.39 (10)    -0.388 (97)  
-           10     0.50 (10)     0.494 (96)  
-           11     0.71 (10)     0.696 (93)  
-           12     0.46 (10)     0.467 (97)  
-           13     0.33 (10)     0.322 (98)  
-           14     0.15 (10)     0.152 (99)  
+            3    -0.91 (10)    -0.983 (19)
+            4    -0.92 (10)    -0.832 (91)
+            5     0.57 (10)     0.523 (97)
+            6     0.47 (10)     0.500 (96)
+            7     0.26 (10)     0.235 (98)
+            8    -0.50 (10)    -0.476 (96)
+            9    -0.39 (10)    -0.388 (97)
+           10     0.50 (10)     0.494 (96)
+           11     0.71 (10)     0.696 (93)
+           12     0.46 (10)     0.467 (97)
+           13     0.33 (10)     0.322 (98)
+           14     0.15 (10)     0.152 (99)
 
     Settings:
       svdcut/n = 1e-12/0    tol = (1e-08,1e-10,1e-10*)    (itns/time = 22/0.1)
@@ -176,25 +176,25 @@ the fit result dictionary for good bookkeeping practice. Then we plot both the
 data space and the Gaussian process space. ::
 
     from matplotlib import pyplot as plt
-    
+
     fig, axs = plt.subplots(2, 1, sharex=True, num='lsqfitgp example', figsize=[6.4, 7])
-    
+
     for sample in gvar.raniter(fitp, 2):
         axs[0].plot(xplot, fcn(sample), color='red', alpha=0.5)
         axs[1].plot(xplot, sample['gproc'], color='red', alpha=0.5)
-    
+
     ax = axs[0]
     ax.set_title('data space')
     for boundary in 1, -1:
         ax.axhline(boundary, color='gray', linestyle=':')
     ax.errorbar(x, gvar.mean(data), yerr=gvar.sdev(data), fmt='.k', capsize=4)
-    
+
     ax = axs[1]
     ax.set_title('Gaussian process space')
     ax.plot(x, data_gp, '.k', label='true')
     ax.plot(x, np.arctanh(gvar.mean(data)), 'xk', label='with errors, mapped back')
     ax.legend()
-    
+
     fig.tight_layout()
     fig.savefig('nonlinear1.png')
 

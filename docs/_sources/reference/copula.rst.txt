@@ -19,7 +19,7 @@ parametrization, put them in a `gvar.BufferDict` using `makedict`. To apply
 the transformation manually, use `~DistrBase.partial_invfcn`.
 
 ..  note::
-    
+
     I define "Gaussian copula" to mean a representation of an arbitrary random
     variable as the transformation of a multivariate Normal random variable, as
     explained, e.g., `here

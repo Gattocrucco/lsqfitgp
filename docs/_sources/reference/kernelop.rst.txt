@@ -611,7 +611,7 @@ Transformations
         cond1, cond2 : callable
             Function that is applied on an array of points and must return
             a boolean array with the same shape.
-        other :
+        other : CrossKernel
             Kernel of the process used where the condition is false.
 
 
@@ -625,7 +625,7 @@ Transformations
 
         Parameters
         ----------
-        xderivable, yderivable: int or None
+        xderivable, yderivable : int or None
             Degree of derivability of the function. None means unknown.
 
         Notes
@@ -663,7 +663,9 @@ Transformations
 
     .. code-block:: text
 
-        Restrict the function to a field of a structured input:
+        Restrict the function to a field of a structured input.
+
+        That is:
 
             T(f)(x) = f(x[dim])
 
@@ -673,7 +675,7 @@ Transformations
 
         Parameters
         ----------
-        xdim, ydim: None, str, list of str
+        xdim, ydim : None, str, list of str
             Field names or lists of field names.
 
 
@@ -705,7 +707,7 @@ Transformations
 
     .. code-block:: text
 
-        Translate the process inputs:
+        Translate the process inputs.
 
         .. math:
             T(f)(x) = f(x - \mathrm{loc})
@@ -726,7 +728,7 @@ Transformations
 
         Parameters
         ----------
-        xmaxdim, ymaxdim: None, int
+        xmaxdim, ymaxdim : None, int
             Maximum dimensionality of the input.
 
         Notes
@@ -777,7 +779,7 @@ Transformations
 
     .. code-block:: text
 
-        Rescale the process inputs:
+        Rescale the process inputs.
 
         .. math:
             T(f)(x) = f(x / \mathrm{scale})
@@ -812,7 +814,7 @@ Transformations
 
     .. code-block:: text
 
-        Force the kernel to be a separate product over dimensions:
+        Force the kernel to be a separate product over dimensions.
 
         .. math:
             \mathrm{newkernel}(x, y) = \prod_i \mathrm{kernel}(x_i, y_i)
