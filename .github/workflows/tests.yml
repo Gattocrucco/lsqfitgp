@@ -115,7 +115,7 @@ jobs:
         run: make ${{ matrix.target }} COVERAGE_SUFFIX=-${{ matrix.os }} NPROC=auto
 
       - name: Save coverage information
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           archive: false # the artifact name is equal to the file name
           path: .coverage.${{ matrix.target }}-${{ matrix.os }}
@@ -172,7 +172,7 @@ jobs:
         run: make covreport
 
       - name: Save coverage report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: covreport
           path: htmlcov
